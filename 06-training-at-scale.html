@@ -142,6 +142,8 @@
         canvas {
             display: block;
             border-radius: 4px;
+            max-width: 100%;
+            height: auto;
         }
 
       
@@ -295,7 +297,11 @@
   .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
   .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
 
+  .katex { color: #e8e8ff; font-size: 1.1em; }
 </style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '\\(', right: '\\)', display: false}]});"></script>
 </head>
 <body>
     <div class="container">
@@ -357,15 +363,15 @@
 
             <div class="insight-box">
                 <div class="insight-title">Distributed Training: Data vs Model Parallelism</div>
-                <strong>Key Insight:</strong> Data parallelism (model replicas, per-device gradients synced via AllReduce) dominates; model parallelism splits model across devices but has O(N) communication overhead.
+                <strong>Key Insight:</strong> Data parallelism (model replicas, per-device gradients synced via AllReduce) dominates; model parallelism splits model across devices but has \(O(N)\) communication overhead.
                 <div class="comparison">
                   <div class="option">
                     <div class="opt-title">Data Parallelism</div>
-                    <div class="opt-desc">Each GPU holds identical model, processes disjoint data, computes gradients locally; sync via AllReduce (O(log N)); communication-efficient</div>
+                    <div class="opt-desc">Each GPU holds identical model, processes disjoint data, computes gradients locally; sync via AllReduce (\(O(\log N)\)); communication-efficient</div>
                   </div>
                   <div class="option">
                     <div class="opt-title">Model Parallelism</div>
-                    <div class="opt-desc">Different layers on different GPUs; forward/backward require inter-GPU communication (O(N) per layer); slower unless model huge</div>
+                    <div class="opt-desc">Different layers on different GPUs; forward/backward require inter-GPU communication (\(O(N)\) per layer); slower unless model huge</div>
                   </div>
                 </div>
                 <div class="key-point"><span class="label">Pipeline parallelism:</span><span class="desc">Stages (layer groups) on different GPUs, multiple micro-batches in flight; maximizes utilization but complex scheduling (Megatron, GShard)</span></div>
@@ -429,19 +435,19 @@
             <div class="insight-box">
                 <div class="insight-title">Learning Rate Schedules and Training Dynamics</div>
                 <strong>Key Insight:</strong> Warmup (ramp up LR early) + decay (reduce LR late) helps escape sharp minima and converge to flat minima with better generalization.
-                <div class="formula">LR(t) = LR_max · 0.5 · <span class="highlight">(1 + cos(π · t / T))</span>, cosine annealing decays smoothly from max to near-zero over T epochs</div>
-                <div class="key-point"><span class="label">LR(t):</span><span class="desc">Learning rate at epoch t; dynamically adjusted during training; controls optimizer step magnitude</span></div>
-                <div class="key-point"><span class="label">LR_max:</span><span class="desc">Maximum learning rate (peak value); typically 10^-3 to 10^-4 for LLMs; set via learning rate finder or grid search</span></div>
-                <div class="key-point"><span class="label">0.5:</span><span class="desc">Scale factor; ensures LR oscillates between LR_max and ~0 (not negative); formula: LR(0)=LR_max, LR(T)≈0</span></div>
-                <div class="key-point"><span class="label">t:</span><span class="desc">Current epoch number (0 ≤ t ≤ T); training progresses from t=0 to t=T</span></div>
-                <div class="key-point"><span class="label">T:</span><span class="desc">Total number of epochs (training duration); annealing period; larger T = longer slow decay phase</span></div>
-                <div class="key-point"><span class="label">π · t / T:</span><span class="desc">Phase angle in radians; as t goes 0 → T, angle goes 0 → π; controls cosine curve shape</span></div>
-                <div class="key-point"><span class="label">cos(π · t / T):</span><span class="desc">Cosine function; starts at cos(0)=1 and decays to cos(π)=-1; smooth monotonic decay</span></div>
-                <div class="key-point"><span class="label">1 + cos(π · t / T):</span><span class="desc">Shifts cosine to range [0, 2]; ensures final LR approaches 0 (not negative)</span></div>
+                <div class="formula">$$LR(t) = LR_{\max} \cdot 0.5 \cdot \left(1 + \cos\left(\frac{\pi \cdot t}{T}\right)\right)$$cosine annealing decays smoothly from max to near-zero over \(T\) epochs</div>
+                <div class="key-point"><span class="label">\(LR(t)\):</span><span class="desc">Learning rate at epoch \(t\); dynamically adjusted during training; controls optimizer step magnitude</span></div>
+                <div class="key-point"><span class="label">\(LR_{\max}\):</span><span class="desc">Maximum learning rate (peak value); typically \(10^{-3}\) to \(10^{-4}\) for LLMs; set via learning rate finder or grid search</span></div>
+                <div class="key-point"><span class="label">\(0.5\):</span><span class="desc">Scale factor; ensures LR oscillates between \(LR_{\max}\) and \(\approx 0\) (not negative); formula: \(LR(0)=LR_{\max}\), \(LR(T) \approx 0\)</span></div>
+                <div class="key-point"><span class="label">\(t\):</span><span class="desc">Current epoch number (\(0 \leq t \leq T\)); training progresses from \(t=0\) to \(t=T\)</span></div>
+                <div class="key-point"><span class="label">\(T\):</span><span class="desc">Total number of epochs (training duration); annealing period; larger \(T\) = longer slow decay phase</span></div>
+                <div class="key-point"><span class="label">\(\pi \cdot t / T\):</span><span class="desc">Phase angle in radians; as \(t\) goes \(0 \rightarrow T\), angle goes \(0 \rightarrow \pi\); controls cosine curve shape</span></div>
+                <div class="key-point"><span class="label">\(\cos(\pi \cdot t / T)\):</span><span class="desc">Cosine function; starts at \(\cos(0)=1\) and decays to \(\cos(\pi)=-1\); smooth monotonic decay</span></div>
+                <div class="key-point"><span class="label">\(1 + \cos(\pi \cdot t / T)\):</span><span class="desc">Shifts cosine to range \([0, 2]\); ensures final LR approaches 0 (not negative)</span></div>
                 <div class="key-point"><span class="label">Constant LR fails:</span><span class="desc">Too large → gradients explode → diverge; too small → slow convergence; schedule adapts dynamically</span></div>
                 <div class="key-point"><span class="label">Warmup:</span><span class="desc">Start from very low LR, ramp up linearly over initial epochs; stabilizes gradient flow when weights random and loss unstable; critical for Transformers</span></div>
                 <div class="key-point"><span class="label">Decay (Annealing):</span><span class="desc">Reduce LR as training progresses for fine-grained updates near convergence; cosine annealing smooth (avoid sudden disruptions)</span></div>
-                <div class="key-point"><span class="label">LR finder:</span><span class="desc">Train for epoch, exponentially increase LR (10^-5 to 10), plot loss vs LR, choose LR in steep descent region (not minimum)</span></div>
+                <div class="key-point"><span class="label">LR finder:</span><span class="desc">Train for epoch, exponentially increase LR (\(10^{-5}\) to \(10\)), plot loss vs LR, choose LR in steep descent region (not minimum)</span></div>
                 <div class="key-point"><span class="label">Sharp vs flat minima:</span><span class="desc">Sharp (high curvature) = overfits, generalizes poorly; flat (low curvature) = robust. Schedules help escape sharp minima.</span></div>
                 <hr class="divider">
                 <div class="interview-tip">Warmup necessity: Large-batch training destabilizes early iterations (gradient norms vary wildly); warmup smooths initial gradient flow. Without it, loss explodes.</div>
@@ -504,20 +510,20 @@
 
             <div class="insight-box">
                 <div class="insight-title">Mixed Precision Training and Numerical Stability</div>
-                <strong>Key Insight:</strong> Mix FP16/BF16 (fast, low memory) and FP32 (accurate) for 2x speedup; loss scaling amplifies gradients to avoid FP16 underflow.
+                <strong>Key Insight:</strong> Mix FP16/BF16 (fast, low memory) and FP32 (accurate) for \(2\times\) speedup; loss scaling amplifies gradients to avoid FP16 underflow.
                 <div class="comparison">
                   <div class="option">
                     <div class="opt-title">FP16</div>
-                    <div class="opt-desc">1 sign, 5 exponent, 10 mantissa; 2x speed, 2x memory savings; limited range (min ~6×10^-5)—gradients underflow to zero</div>
+                    <div class="opt-desc">1 sign, 5 exponent, 10 mantissa; \(2\times\) speed, \(2\times\) memory savings; limited range (min \(\sim 6 \times 10^{-5}\))—gradients underflow to zero</div>
                   </div>
                   <div class="option">
                     <div class="opt-title">BF16</div>
                     <div class="opt-desc">1 sign, 8 exponent (matches FP32!), 7 mantissa; preserves range while saving memory; no underflow risk, more robust</div>
                   </div>
                 </div>
-                <div class="key-point"><span class="label">Loss scaling technique:</span><span class="desc">Multiply loss by scale (e.g., 2^15) before backward, amplifying gradients; divide after backward; dynamic scaling adjusts for overflow/underflow</span></div>
-                <div class="key-point"><span class="label">Autocast (PyTorch):</span><span class="desc">Automatically use FP16/BF16 for matmuls (stable), FP32 for reductions/losses (require full precision); near-FP32 convergence with 2x speedup</span></div>
-                <div class="key-point"><span class="label">Gradient underflow:</span><span class="desc">FP16 gradients < 6×10^-5 become zero → no gradient update → training stalled. Loss scaling prevents by enlarging gradients.</span></div>
+                <div class="key-point"><span class="label">Loss scaling technique:</span><span class="desc">Multiply loss by scale (e.g., \(2^{15}\)) before backward, amplifying gradients; divide after backward; dynamic scaling adjusts for overflow/underflow</span></div>
+                <div class="key-point"><span class="label">Autocast (PyTorch):</span><span class="desc">Automatically use FP16/BF16 for matmuls (stable), FP32 for reductions/losses (require full precision); near-FP32 convergence with \(2\times\) speedup</span></div>
+                <div class="key-point"><span class="label">Gradient underflow:</span><span class="desc">FP16 gradients \(< 6 \times 10^{-5}\) become zero \(\rightarrow\) no gradient update \(\rightarrow\) training stalled. Loss scaling prevents by enlarging gradients.</span></div>
                 <div class="key-point"><span class="label">Production preference:</span><span class="desc">TPUs use BF16 natively (hardware-efficient); GPUs A100+ prefer BF16 (better stability than FP16); older GPUs default to FP16</span></div>
                 <hr class="divider">
                 <div class="interview-tip">Debug numerical instabilities: Monitor loss and gradient norms across iterations. Exploding norms → reduce LR or increase loss scaling. NaN/Inf → investigate data or loss function.</div>
@@ -579,15 +585,15 @@
             <div class="insight-box">
                 <div class="insight-title">Gradient Accumulation for Effective Batch Size Control</div>
                 <strong>Key Insight:</strong> Simulate large batch size B by accumulating gradients over N micro-batches (size B/N each), then apply optimizer step on aggregated gradients.
-                <div class="formula">Accumulated gradient ≈ average(N gradient steps) ≈ one step on batch size B, even if B doesn't fit in GPU memory</div>
-                <div class="key-point"><span class="label">Accumulated gradient:</span><span class="desc">Sum of gradients from N micro-batches; stored in parameter .grad attributes; approximates gradient on full batch B</span></div>
-                <div class="key-point"><span class="label">average(N gradient steps):</span><span class="desc">Average of N individual backward passes; scaled by 1/N when computing optimizer step to match single batch</span></div>
-                <div class="key-point"><span class="label">N:</span><span class="desc">Number of accumulation steps (micro-batches); typical range 2-8; larger N trades compute time for memory savings</span></div>
-                <div class="key-point"><span class="label">B (effective batch size):</span><span class="desc">Target total batch size; B = N × B_micro where B_micro is GPU-resident micro-batch size</span></div>
-                <div class="key-point"><span class="label">B_micro (micro-batch size):</span><span class="desc">Batch size per forward-backward pass; fits in GPU memory; typically 32-256</span></div>
-                <div class="key-point"><span class="label">B/N:</span><span class="desc">Micro-batch size; size of each gradient computation before accumulation</span></div>
+                <div class="formula">$$\text{Accumulated gradient} \approx \text{average}(N \text{ gradient steps}) \approx \text{one step on batch size } B$$even if \(B\) doesn't fit in GPU memory</div>
+                <div class="key-point"><span class="label">Accumulated gradient:</span><span class="desc">Sum of gradients from \(N\) micro-batches; stored in parameter .grad attributes; approximates gradient on full batch \(B\)</span></div>
+                <div class="key-point"><span class="label">average(\(N\) gradient steps):</span><span class="desc">Average of \(N\) individual backward passes; scaled by \(1/N\) when computing optimizer step to match single batch</span></div>
+                <div class="key-point"><span class="label">\(N\):</span><span class="desc">Number of accumulation steps (micro-batches); typical range 2-8; larger \(N\) trades compute time for memory savings</span></div>
+                <div class="key-point"><span class="label">\(B\) (effective batch size):</span><span class="desc">Target total batch size; \(B = N \times B_{\text{micro}}\) where \(B_{\text{micro}}\) is GPU-resident micro-batch size</span></div>
+                <div class="key-point"><span class="label">\(B_{\text{micro}}\) (micro-batch size):</span><span class="desc">Batch size per forward-backward pass; fits in GPU memory; typically 32-256</span></div>
+                <div class="key-point"><span class="label">\(B/N\):</span><span class="desc">Micro-batch size; size of each gradient computation before accumulation</span></div>
                 <div class="key-point"><span class="label">Execution flow:</span><span class="desc">(1) forward on micro-batch i, (2) backward (gradients accumulate), (3) repeat i=2..N, (4) optimizer step, (5) zero gradients</span></div>
-                <div class="key-point"><span class="label">Trade-off:</span><span class="desc">Memory reduced by N (effective batch B with micro-batch B/N); wall-clock time increased ~N× (N forward-backward iterations)</span></div>
+                <div class="key-point"><span class="label">Trade-off:</span><span class="desc">Memory reduced by \(N\) (effective batch \(B\) with micro-batch \(B/N\)); wall-clock time increased \(\sim N \times\) (\(N\) forward-backward iterations)</span></div>
                 <div class="key-point"><span class="label">Convergence benefit:</span><span class="desc">Larger effective batch size improves generalization and gradient stability; empirically often converges better than single micro-batch</span></div>
                 <div class="key-point"><span class="label">Critical implementation:</span><span class="desc">Do NOT zero between accumulation steps (loses accumulated gradients); with autocast, scale/unscale correctly; gradient clipping after full accumulation</span></div>
                 <div class="key-point"><span class="label">Batch normalization:</span><span class="desc">Computed per micro-batch (not full batch); causes biased estimates; synchronized batch norm across accumulation complex (usually ignored)</span></div>
@@ -653,17 +659,17 @@
 
             <div class="insight-box">
                 <div class="insight-title">ZeRO Optimization: Partitioning for Massive Scale</div>
-                <strong>Key Insight:</strong> ZeRO partitions optimizer state/gradients/parameters across GPUs, enabling training of models 10-100× larger by trading memory for communication.
-                <div class="formula">Per-param memory: 4 bytes (weight) + 4 bytes (grad) + 8 bytes (Adam state) = <span class="highlight">16 bytes</span>; 7B model = 112GB per GPU → impossible</div>
+                <strong>Key Insight:</strong> ZeRO partitions optimizer state/gradients/parameters across GPUs, enabling training of models \(10\text{-}100\times\) larger by trading memory for communication.
+                <div class="formula">$$\text{Per-param memory: } 4\text{ bytes (weight)} + 4\text{ bytes (grad)} + 8\text{ bytes (Adam state)} = 16\text{ bytes}$$7B model = 112GB per GPU \(\rightarrow\) impossible</div>
                 <div class="key-point"><span class="label">Per-param memory:</span><span class="desc">Total memory required per parameter across all training components</span></div>
-                <div class="key-point"><span class="label">4 bytes (weight):</span><span class="desc">FP32 model parameter; 1 parameter = 4 bytes; 7B parameters × 4 = 28GB</span></div>
-                <div class="key-point"><span class="label">4 bytes (grad):</span><span class="desc">FP32 gradient accumulator; 1 parameter = 4 bytes; 7B × 4 = 28GB</span></div>
-                <div class="key-point"><span class="label">8 bytes (Adam state):</span><span class="desc">Two FP32 buffers (momentum m, variance v) per parameter; 2 × 4 = 8 bytes; 7B × 8 = 56GB</span></div>
-                <div class="key-point"><span class="label">16 bytes/param total:</span><span class="desc">Sum of weight + grad + optimizer state; 7B × 16 bytes = 112GB per single GPU (impossible for typical 40-80GB VRAM)</span></div>
-                <div class="key-point"><span class="label">N:</span><span class="desc">Number of GPUs in distributed training group; ZeRO partitions across N devices</span></div>
-                <div class="key-point"><span class="label">Stage 1 (Optimizer states):</span><span class="desc">Each GPU stores 1/N of Adam momentum/variance; memory → 12 bytes/param; 7B + 8 GPUs = 14GB/GPU (11× reduction)</span></div>
-                <div class="key-point"><span class="label">Stage 2 (Gradients + Stage 1):</span><span class="desc">Each GPU stores 1/N of gradient buffer; memory → 8 bytes/param; 7B + 8 GPUs = 7GB/GPU (16× reduction)</span></div>
-                <div class="key-point"><span class="label">Stage 3 (Parameters + Stage 1-2):</span><span class="desc">Parameters gathered on-the-fly during forward/backward; memory → 4 bytes/param; 7B + 8 GPUs = 3.5GB/GPU (32× reduction); 2-3× communication overhead</span></div>
+                <div class="key-point"><span class="label">4 bytes (weight):</span><span class="desc">FP32 model parameter; 1 parameter = 4 bytes; \(7B \times 4 = 28\text{GB}\)</span></div>
+                <div class="key-point"><span class="label">4 bytes (grad):</span><span class="desc">FP32 gradient accumulator; 1 parameter = 4 bytes; \(7B \times 4 = 28\text{GB}\)</span></div>
+                <div class="key-point"><span class="label">8 bytes (Adam state):</span><span class="desc">Two FP32 buffers (momentum \(m\), variance \(v\)) per parameter; \(2 \times 4 = 8\) bytes; \(7B \times 8 = 56\text{GB}\)</span></div>
+                <div class="key-point"><span class="label">16 bytes/param total:</span><span class="desc">Sum of weight + grad + optimizer state; \(7B \times 16 = 112\text{GB}\) per single GPU (impossible for typical 40-80GB VRAM)</span></div>
+                <div class="key-point"><span class="label">\(N\):</span><span class="desc">Number of GPUs in distributed training group; ZeRO partitions across \(N\) devices</span></div>
+                <div class="key-point"><span class="label">Stage 1 (Optimizer states):</span><span class="desc">Each GPU stores \(1/N\) of Adam momentum/variance; memory \(\rightarrow\) 12 bytes/param; 7B + 8 GPUs = 14GB/GPU (\(11\times\) reduction)</span></div>
+                <div class="key-point"><span class="label">Stage 2 (Gradients + Stage 1):</span><span class="desc">Each GPU stores \(1/N\) of gradient buffer; memory \(\rightarrow\) 8 bytes/param; 7B + 8 GPUs = 7GB/GPU (\(16\times\) reduction)</span></div>
+                <div class="key-point"><span class="label">Stage 3 (Parameters + Stage 1-2):</span><span class="desc">Parameters gathered on-the-fly during forward/backward; memory \(\rightarrow\) 4 bytes/param; 7B + 8 GPUs = 3.5GB/GPU (\(32\times\) reduction); \(2\text{-}3\times\) communication overhead</span></div>
                 <div class="key-point"><span class="label">CPU offloading:</span><span class="desc">Store partitions in pinned CPU RAM, asynchronously transfer to GPU; further GPU memory reduction; requires high PCIe bandwidth</span></div>
                 <div class="key-point"><span class="label">Trade-off tiers:</span><span class="desc">Stage 1-2: cost-effective (10-20% overhead); Stage 3: necessary for extreme scale but requires high-bandwidth interconnects (NVLink, RoCE)</span></div>
                 <hr class="divider">
@@ -705,26 +711,26 @@
             </div>
             <div class="description">
                 <strong>None:</strong> Store all intermediate activations. Maximum memory, zero recomputation. <br>
-                <strong>Selective:</strong> Store every k-th layer's activations (√N memory). Recompute others during backward pass. Best tradeoff. <br>
+                <strong>Selective:</strong> Store every k-th layer's activations (\(\sqrt{N}\) memory). Recompute others during backward pass. Best tradeoff. <br>
                 <strong>Full Recompute:</strong> Store only inputs. Recompute everything during backward. ~33% slower but massive memory savings.
             </div>
             <div class="insight-box">
                 <div class="insight-title">Activation Checkpointing: Trading Compute for Memory</div>
-                <strong>Key Insight:</strong> Selectively checkpoint activations instead of storing all; recompute during backward; memory reduces O(L) → O(√L) with modest compute overhead.
+                <strong>Key Insight:</strong> Selectively checkpoint activations instead of storing all; recompute during backward; memory reduces \(O(L) \rightarrow O(\sqrt{L})\) with modest compute overhead.
                 <div class="comparison">
                   <div class="option">
                     <div class="opt-title">Standard (All activations)</div>
-                    <div class="opt-desc">Store all h_1, ..., h_L during forward; memory O(L); backward uses stored activations instantly</div>
+                    <div class="opt-desc">Store all \(h_1, \ldots, h_L\) during forward; memory \(O(L)\); backward uses stored activations instantly</div>
                   </div>
                   <div class="option">
                     <div class="opt-title">Selective checkpoint</div>
-                    <div class="opt-desc">Store every k-th layer (k=√L); recompute missing on-demand during backward; memory O(√L), time T_f × 1.2-1.5</div>
+                    <div class="opt-desc">Store every \(k\)-th layer (\(k=\sqrt{L}\)); recompute missing on-demand during backward; memory \(O(\sqrt{L})\), time \(T_f \times 1.2\text{-}1.5\)</div>
                   </div>
                 </div>
-                <div class="key-point"><span class="label">Full recomputation:</span><span class="desc">Store only inputs, recompute all activations during backward; memory O(1) (maximum savings), ~33% slowdown (extra forward passes)</span></div>
+                <div class="key-point"><span class="label">Full recomputation:</span><span class="desc">Store only inputs, recompute all activations during backward; memory \(O(1)\) (maximum savings), \(\sim\)33% slowdown (extra forward passes)</span></div>
                 <div class="key-point"><span class="label">Checkpoint frequency:</span><span class="desc">Trade-off: more frequent checkpoints → less recomputation (faster) but more memory; less frequent → more recomputation (slower) but less memory</span></div>
-                <div class="key-point"><span class="label">Math:</span><span class="desc">If forward = T_f, memory = M; selective checkpoint ≈ T_f + (1/√L)·T_f ≈ 1.2-1.5T_f time, M/√L memory</span></div>
-                <div class="key-point"><span class="label">When worthwhile:</span><span class="desc">Deep networks (L > 100, e.g., ResNet-200, GPT-3); memory-constrained hardware; compute cheaper than memory bandwidth</span></div>
+                <div class="key-point"><span class="label">Math:</span><span class="desc">If forward = \(T_f\), memory = \(M\); selective checkpoint \(\approx T_f + \frac{1}{\sqrt{L}} \cdot T_f \approx 1.2\text{-}1.5 \cdot T_f\) time, \(M/\sqrt{L}\) memory</span></div>
+                <div class="key-point"><span class="label">When worthwhile:</span><span class="desc">Deep networks (\(L > 100\), e.g., ResNet-200, GPT-3); memory-constrained hardware; compute cheaper than memory bandwidth</span></div>
                 <div class="key-point"><span class="label">Production use:</span><span class="desc">Checkpointing + ZeRO-3 enables training 100B+ parameter models on 8-16 GPUs with 20-30% slowdown (acceptable)</span></div>
                 <hr class="divider">
                 <div class="interview-tip">Debug checkpointing: Verify gradients match between checkpointed and non-checkpointed via numerical differentiation (finite differences); catches recomputation errors.</div>
@@ -825,20 +831,20 @@
             <div class="insight-box">
                 <div class="insight-title">Hardware Awareness and the Roofline Model</div>
                 <strong>Key Insight:</strong> Roofline model predicts performance: workloads are compute-bound or memory-bound; understand arithmetic intensity to optimize kernels.
-                <div class="formula">Peak_Performance = min(<span class="highlight">Peak_FLOPS</span>, Arithmetic_Intensity × Bandwidth)</div>
+                <div class="formula">$$\text{Peak Performance} = \min(\text{Peak FLOPS},\; \text{Arithmetic Intensity} \times \text{Bandwidth})$$</div>
                 <div class="key-point"><span class="label">Peak_Performance:</span><span class="desc">Maximum achievable throughput (FLOPS); limited by either compute or memory, whichever is tighter</span></div>
                 <div class="key-point"><span class="label">min(·,·):</span><span class="desc">Takes minimum of two terms; bottleneck is whichever resource saturates first (compute or memory)</span></div>
                 <div class="key-point"><span class="label">Peak_FLOPS:</span><span class="desc">Theoretical peak floating-point operations per second; GPU spec (e.g., A100: 312 TFLOPS FP32); hardware limit</span></div>
-                <div class="key-point"><span class="label">Arithmetic_Intensity (AI):</span><span class="desc">Ratio of FLOPs to bytes transferred (FLOPS/byte); measures compute-to-communication ratio; higher AI → more compute-bound</span></div>
+                <div class="key-point"><span class="label">Arithmetic Intensity (AI):</span><span class="desc">Ratio of FLOPs to bytes transferred (FLOPS/byte); measures compute-to-communication ratio; higher AI \(\rightarrow\) more compute-bound</span></div>
                 <div class="key-point"><span class="label">Bandwidth:</span><span class="desc">Maximum memory bandwidth (bytes/sec); GPU-memory throughput (e.g., A100 HBM: 2TB/s); hardware limit</span></div>
                 <div class="key-point"><span class="label">AI × Bandwidth:</span><span class="desc">FLOPS achievable if memory bandwidth is saturated; determines memory-bound performance ceiling</span></div>
-                <div class="key-point"><span class="label">Compute-bound condition:</span><span class="desc">AI × Bandwidth ≥ Peak_FLOPS; workload compute requirement exceeds bandwidth capacity; optimize compute</span></div>
-                <div class="key-point"><span class="label">Memory-bound condition:</span><span class="desc">AI × Bandwidth < Peak_FLOPS; workload limited by memory bandwidth, not compute; optimize memory access</span></div>
+                <div class="key-point"><span class="label">Compute-bound condition:</span><span class="desc">\(\text{AI} \times \text{Bandwidth} \geq \text{Peak FLOPS}\); workload compute requirement exceeds bandwidth capacity; optimize compute</span></div>
+                <div class="key-point"><span class="label">Memory-bound condition:</span><span class="desc">\(\text{AI} \times \text{Bandwidth} < \text{Peak FLOPS}\); workload limited by memory bandwidth, not compute; optimize memory access</span></div>
                 <div class="key-point"><span class="label">Memory hierarchy:</span><span class="desc">SRAM (1 cycle), L2 (10 cycles), HBM (100 cycles)—100× latency difference; data movement dominates latency</span></div>
-                <div class="key-point"><span class="label">Arithmetic intensity (AI):</span><span class="desc">FLOPs per byte transferred; matmul high AI (O(n³) FLOPs, O(n²) memory → compute-bound); ReLU low AI (O(n), memory-bound)</span></div>
+                <div class="key-point"><span class="label">Arithmetic intensity (AI):</span><span class="desc">FLOPs per byte transferred; matmul high AI (\(O(n^3)\) FLOPs, \(O(n^2)\) memory \(\rightarrow\) compute-bound); ReLU low AI (\(O(n)\), memory-bound)</span></div>
                 <div class="key-point"><span class="label">Compute-bound:</span><span class="desc">AI high enough that computation saturates GPU compute (achieves near-peak FLOPS); examples: dense matmuls, convolutions</span></div>
                 <div class="key-point"><span class="label">Memory-bound:</span><span class="desc">Memory bandwidth saturates first; increasing compute doesn't help (still limited by BW); examples: element-wise ops, normalization</span></div>
-                <div class="key-point"><span class="label">Flash Attention:</span><span class="desc">Standard attention memory-bound (softmax O(n²) HBM passes); Flash computes in SRAM (tiling, recomputing) → O(n) passes → compute-bound</span></div>
+                <div class="key-point"><span class="label">Flash Attention:</span><span class="desc">Standard attention memory-bound (softmax \(O(n^2)\) HBM passes); Flash computes in SRAM (tiling, recomputing) \(\rightarrow O(n)\) passes \(\rightarrow\) compute-bound</span></div>
                 <div class="key-point"><span class="label">Kernel fusion:</span><span class="desc">Combine operations to avoid intermediate HBM writes/reads; 2-10× speedup vs naive implementation</span></div>
                 <hr class="divider">
                 <div class="interview-tip">Calculate AI for your model: Count FLOPs (matrix multiplications, convolutions) and memory transfers (gradient updates, batch norm). High AI = compute-bound (optimize compute); low AI = memory-bound (optimize memory access).</div>

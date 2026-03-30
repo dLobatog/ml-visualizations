@@ -82,6 +82,8 @@
         canvas {
             display: block;
             border-radius: 5px;
+            max-width: 100%;
+            height: auto;
         }
 
         .controls {
@@ -229,8 +231,12 @@
   .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
   .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
   .insight-box { grid-column: 1 / -1; }
+  .katex { color: #e8e8ff; font-size: 1.1em; }
 
 </style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '\\(', right: '\\)', display: false}]});"></script>
 </head>
 <body>
     <div class="container">
@@ -257,13 +263,13 @@
                 <div class="insight-box">
                 <h3>CLIP: Contrastive Language-Image Pre-training</h3>
                 <p><strong>Core Concept:</strong> CLIP learns a joint embedding space where matched image-text pairs are close together, mismatched pairs far apart. Enables zero-shot classification by comparing image embeddings to text class label embeddings.</p>
-                <div class="formula">L_CLIP = -log(exp(sim(I,T)/τ) / Σ_j exp(sim(I,T_j)/τ))</div>
+                <div class="formula">$$\mathcal{L}_{\text{CLIP}} = -\log\frac{\exp(\text{sim}(I,T)/\tau)}{\sum_j \exp(\text{sim}(I,T_j)/\tau)}$$</div>
                 <div class="key-point"><span class="label">L_CLIP:</span><span class="desc">Contrastive loss; negative log-likelihood of matching image-text pair among negatives</span></div>
-                <div class="key-point"><span class="label">sim(I,T):</span><span class="desc">Cosine similarity between image embedding I and text embedding T; ∈ [-1, 1]</span></div>
-                <div class="key-point"><span class="label">τ:</span><span class="desc">Temperature parameter > 0; controls softmax sharpness. Lower τ = sharper (harder negs), higher τ = softer. Typical: 0.07</span></div>
+                <div class="key-point"><span class="label">\(\text{sim}(I,T)\):</span><span class="desc">Cosine similarity between image embedding \(I\) and text embedding \(T\); \(\in [-1, 1]\)</span></div>
+                <div class="key-point"><span class="label">\(\tau\):</span><span class="desc">Temperature parameter \(> 0\); controls softmax sharpness. Lower τ = sharper (harder negs), higher τ = softer. Typical: 0.07</span></div>
                 <div class="key-point"><span class="label">Σ_j:</span><span class="desc">Sum over all N text embeddings in batch (1 positive + N-1 negatives)</span></div>
-                <div class="key-point"><span class="label">exp(sim(...)/τ):</span><span class="desc">Numerator: similarity of positive pair, temperature-scaled</span></div>
-                <div class="key-point"><span class="label">Σ_j exp(sim(I,T_j)/τ):</span><span class="desc">Denominator: sum of all (positive + negatives), forms softmax partition function</span></div>
+                <div class="key-point"><span class="label">\(\exp(\text{sim}(\cdot)/\tau)\):</span><span class="desc">Numerator: similarity of positive pair, temperature-scaled</span></div>
+                <div class="key-point"><span class="label">\(\sum_j \exp(\text{sim}(I,T_j)/\tau)\):</span><span class="desc">Denominator: sum of all (positive + negatives), forms softmax partition function</span></div>
                 <div class="key-point"><span class="label">Architecture:</span><span class="desc">Image encoder (CNN/ViT) and text encoder (Transformer) produce same-dim embeddings for cosine similarity</span></div>
                 <div class="key-point"><span class="label">InfoNCE Loss:</span><span class="desc">N image-text pairs; each image's matched text is positive, N-1 others are negatives</span></div>
                 <div class="key-point"><span class="label">Temperature τ:</span><span class="desc">Controls distribution sharpness; higher τ makes hard negatives easier to distinguish</span></div>
@@ -295,12 +301,12 @@
                 <div class="insight-box">
                 <h3>Vision Transformer: Pure Attention for Vision</h3>
                 <p><strong>Core Intuition:</strong> Treat image as sequence of patches; use pure self-attention instead of convolutions. Removes translation equivariance assumption of CNNs; learns all spatial relationships from data.</p>
-                <div class="formula">Attention(Q, K, V) = softmax(Q K^T / √d_k) V</div>
-                <div class="key-point"><span class="label">Q (Query):</span><span class="desc">Query matrix ∈ ℝ^{L×d_k}; what to attend to. L = sequence length, d_k = key dimension</span></div>
-                <div class="key-point"><span class="label">K (Key):</span><span class="desc">Key matrix ∈ ℝ^{L×d_k}; what can be attended to</span></div>
-                <div class="key-point"><span class="label">V (Value):</span><span class="desc">Value matrix ∈ ℝ^{L×d_v}; what information is aggregated; often d_v = d_k</span></div>
-                <div class="key-point"><span class="label">Q K^T:</span><span class="desc">Attention scores ∈ ℝ^{L×L}; (i,j) entry = similarity between query i and key j</span></div>
-                <div class="key-point"><span class="label">√d_k:</span><span class="desc">Scaling factor; prevents attention scores from growing too large (variance stabilization). d_k = head dimension</span></div>
+                <div class="formula">$$\text{Attention}(Q, K, V) = \text{softmax}\!\left(\frac{QK^T}{\sqrt{d_k}}\right) V$$</div>
+                <div class="key-point"><span class="label">\(Q\) (Query):</span><span class="desc">Query matrix \(\in \mathbb{R}^{L \times d_k}\); what to attend to. L = sequence length, d_k = key dimension</span></div>
+                <div class="key-point"><span class="label">\(K\) (Key):</span><span class="desc">Key matrix \(\in \mathbb{R}^{L \times d_k}\); what can be attended to</span></div>
+                <div class="key-point"><span class="label">\(V\) (Value):</span><span class="desc">Value matrix \(\in \mathbb{R}^{L \times d_v}\); what information is aggregated; often d_v = d_k</span></div>
+                <div class="key-point"><span class="label">\(QK^T\):</span><span class="desc">Attention scores \(\in \mathbb{R}^{L \times L}\); (i,j) entry = similarity between query i and key j</span></div>
+                <div class="key-point"><span class="label">\(\sqrt{d_k}\):</span><span class="desc">Scaling factor; prevents attention scores from growing too large (variance stabilization). d_k = head dimension</span></div>
                 <div class="key-point"><span class="label">softmax(...):</span><span class="desc">Normalizes attention weights per query; sums to 1 across keys for each position</span></div>
                 <div class="key-point"><span class="label">Attention(...)·V:</span><span class="desc">Weighted sum of values; each position's output is mixture of all values, weighted by attention</span></div>
                 <div class="key-point"><span class="label">Tokenization:</span><span class="desc">224x224 image → 16x16 patches (196 total) → flatten to 768D via linear projection</span></div>
@@ -367,10 +373,10 @@
                 </div>
                 </div>
                 <hr class="divider">
-                <div class="formula">Attention_out = softmax(Q_text · K_image^T / √d_k) · V_image</div>
+                <div class="formula">$$\text{Attention}_{\text{out}} = \text{softmax}\!\left(\frac{Q_{\text{text}} \cdot K_{\text{image}}^T}{\sqrt{d_k}}\right) \cdot V_{\text{image}}$$</div>
                 <div class="key-point"><span class="label">Q_text:</span><span class="desc">Query from text modality; what text attends to</span></div>
                 <div class="key-point"><span class="label">K_image, V_image:</span><span class="desc">Keys and values from image modality; what text can attend to and get from images</span></div>
-                <div class="key-point"><span class="label">√d_k:</span><span class="desc">Scaling factor for stability; d_k = key dimension (often 64 per head)</span></div>
+                <div class="key-point"><span class="label">\(\sqrt{d_k}\):</span><span class="desc">Scaling factor for stability; d_k = key dimension (often 64 per head)</span></div>
                 <div class="key-point"><span class="label">softmax(...):</span><span class="desc">Attention weights per text position over image tokens; ∈ [0,1]</span></div>
                 <div class="key-point"><span class="label">Attention_out:</span><span class="desc">Text-attended-to-image output; each text token updated with relevant image info</span></div>
                 <p style="margin: 8px 0; font-size: 0.93em; text-align: center;">Cross-attention: one modality queries, other provides keys/values</p>
@@ -402,11 +408,11 @@
                 <div class="insight-box">
                 <h3>SimCLR: Simple Contrastive Learning</h3>
                 <p><strong>Core Intuition:</strong> Maximize agreement between embeddings of different augmented views of same image. "Same image" provides supervision (self-supervised). Simple framework, powerful results.</p>
-                <div class="formula">L = -log(exp(sim(z_i, z_j)/τ) / Σ_k exp(sim(z_i, z_k)/τ))</div>
+                <div class="formula">$$\mathcal{L} = -\log\frac{\exp(\text{sim}(z_i, z_j)/\tau)}{\sum_k \exp(\text{sim}(z_i, z_k)/\tau)}$$</div>
                 <div class="key-point"><span class="label">L:</span><span class="desc">NT-Xent (Normalized Temperature-scaled Cross-Entropy) loss</span></div>
                 <div class="key-point"><span class="label">z_i, z_j:</span><span class="desc">Normalized embeddings (after projection) from two augmented views of same image (positive pair)</span></div>
-                <div class="key-point"><span class="label">sim(z_i, z_j):</span><span class="desc">Cosine similarity between z_i and z_j; ∈ [-1, 1], higher for similar views</span></div>
-                <div class="key-point"><span class="label">τ:</span><span class="desc">Temperature ∈ (0, ∞); controls softmax sharpness. Typical: 0.07. Lower τ = harder negative mining</span></div>
+                <div class="key-point"><span class="label">\(\text{sim}(z_i, z_j)\):</span><span class="desc">Cosine similarity between \(z_i\) and \(z_j\); \(\in [-1, 1]\), higher for similar views</span></div>
+                <div class="key-point"><span class="label">\(\tau\):</span><span class="desc">Temperature \(\in (0, \infty)\); controls softmax sharpness. Typical: 0.07. Lower τ = harder negative mining</span></div>
                 <div class="key-point"><span class="label">Σ_k:</span><span class="desc">Sum over all 2N embeddings in batch (z_i paired with z_j positive + 2N-2 negatives from other images)</span></div>
                 <div class="key-point"><span class="label">Algorithm:</span><span class="desc">Image → 2 augmentations → shared encoder → projection head → contrastive loss</span></div>
                 <div class="key-point"><span class="label">Positive Pair:</span><span class="desc">Two views of same image (should be close); batch provides negatives</span></div>
@@ -458,10 +464,10 @@
                 <div class="insight-box">
                 <h3>MoCo: Large Queue of Negative Samples</h3>
                 <p><strong>Core Problem:</strong> SimCLR needs huge batches for good negatives. MoCo solves by maintaining queue of past negatives—enables training on single GPU with smaller batches.</p>
-                <div class="formula">θ_k ← m·θ_k + (1-m)·θ_q  (m ≈ 0.999)</div>
-                <div class="key-point"><span class="label">θ_k:</span><span class="desc">Key encoder parameters; updated via exponential moving average (EMA)</span></div>
-                <div class="key-point"><span class="label">θ_q:</span><span class="desc">Query encoder parameters; updated via gradient descent</span></div>
-                <div class="key-point"><span class="label">m:</span><span class="desc">Momentum coefficient ∈ (0, 1); controls EMA decay. Higher m = slower tracking, more staleness. Typical: 0.999</span></div>
+                <div class="formula">$$\theta_k \leftarrow m \cdot \theta_k + (1-m) \cdot \theta_q \quad (m \approx 0.999)$$</div>
+                <div class="key-point"><span class="label">\(\theta_k\):</span><span class="desc">Key encoder parameters; updated via exponential moving average (EMA)</span></div>
+                <div class="key-point"><span class="label">\(\theta_q\):</span><span class="desc">Query encoder parameters; updated via gradient descent</span></div>
+                <div class="key-point"><span class="label">\(m\):</span><span class="desc">Momentum coefficient \(\in (0, 1)\); controls EMA decay. Higher m = slower tracking, more staleness. Typical: 0.999</span></div>
                 <div class="key-point"><span class="label">1-m:</span><span class="desc">Learning rate for key encoder; (1-0.999) = 0.001 = 0.1% of query update per step</span></div>
                 <p style="margin: 8px 0; font-size: 0.93em;">Momentum update: slow key encoder tracks query encoder, ensures queue consistency</p>
                 <div class="key-point"><span class="label">Two Encoders:</span><span class="desc">Query (gradient updates) and Key (momentum updates); produces consistent representations</span></div>
@@ -506,7 +512,7 @@
                 <div class="insight-box">
                 <h3>BYOL & DINO: Negatives-Free Learning</h3>
                 <p><strong>Core Insight:</strong> Contrastive learning NOT required! BYOL: student trained to match EMA teacher. No negatives, yet excellent representations—shocking result.</p>
-                <div class="formula">L_BYOL = ||h_student - [h_teacher]_sg||^2</div>
+                <div class="formula">$$\mathcal{L}_{\text{BYOL}} = \|h_{\text{student}} - [h_{\text{teacher}}]_{\text{sg}}\|^2$$</div>
                 <div class="key-point"><span class="label">L_BYOL:</span><span class="desc">Mean-squared error (MSE) between student and teacher representations</span></div>
                 <div class="key-point"><span class="label">h_student:</span><span class="desc">Representation from student network; receives gradients during backprop</span></div>
                 <div class="key-point"><span class="label">h_teacher:</span><span class="desc">Representation from teacher network; should match student after training</span></div>
@@ -559,7 +565,7 @@
                 <div class="insight-box">
                 <h3>SHAP: SHapley Additive exPlanations</h3>
                 <p><strong>Core Idea:</strong> Use game theory (Shapley values) to assign each feature its contribution to prediction. Shapley value = average marginal contribution across all possible coalitions of features.</p>
-                <div class="formula">φ_i(f, x) = Σ_{S⊆F\{i}} |S|!(|F|-|S|-1)! / |F|! · (f(S∪{i}) - f(S))</div>
+                <div class="formula">$$\phi_i(f, x) = \sum_{S \subseteq F \setminus \{i\}} \frac{|S|!\,(|F|-|S|-1)!}{|F|!} \cdot (f(S \cup \{i\}) - f(S))$$</div>
                 <div class="key-point"><span class="label">φ_i(f,x):</span><span class="desc">Shapley value for feature i on sample x; contribution of i to prediction f(x)</span></div>
                 <div class="key-point"><span class="label">f:</span><span class="desc">Model/function being explained; outputs scalar prediction</span></div>
                 <div class="key-point"><span class="label">F:</span><span class="desc">Full set of all features; |F| = number of features</span></div>
@@ -568,7 +574,7 @@
                 <div class="key-point"><span class="label">|S|!(|F|-|S|-1)! / |F|!:</span><span class="desc">Coalition weight; ensures each ordering weighted equally. Normalized by factorial terms</span></div>
                 <p style="margin: 8px 0; font-size: 0.93em;">Accounts for ALL possible orderings/coalitions; φ_i = marginal contribution of feature i</p>
                 <div class="key-point"><span class="label">Interpretation:</span><span class="desc">f(x) = E[f(X)] + Σ φ_i(x); φ_i > 0 pushes prediction higher, φ_i < 0 pushes lower</span></div>
-                <div class="key-point"><span class="label">Computational Cost:</span><span class="desc">Exact = 2^|F| subsets (exponential); TreeSHAP (poly); KernelSHAP (any model, regression)</span></div>
+                <div class="key-point"><span class="label">Computational Cost:</span><span class="desc">Exact = \(2^{|F|}\) subsets (exponential); TreeSHAP (poly); KernelSHAP (any model, regression)</span></div>
                 <div class="key-point"><span class="label">KernelSHAP:</span><span class="desc">Generate binary feature masks, fit weighted linear regression with normalized weights</span></div>
                 <hr class="divider">
                 <div class="comparison">
@@ -617,16 +623,16 @@
                 <div class="insight-box">
                 <h3>LIME: Local Linear Approximations</h3>
                 <p><strong>Core Concept:</strong> Explain predictions by fitting simple linear model in neighborhood. Complex model locally linear → linear model provides human-understandable explanation.</p>
-                <div class="formula">min_w Σ_j weight_j · (f(x_j) - (w_0 + Σ_i w_i · x_j^i))^2 + λ||w||</div>
+                <div class="formula">$$\min_w \sum_j \text{weight}_j \cdot (f(x_j) - (w_0 + \sum_i w_i \cdot x_j^i))^2 + \lambda\|w\|$$</div>
                 <div class="key-point"><span class="label">w:</span><span class="desc">Linear regression coefficients to learn; w_0 = intercept, w_i = feature slopes</span></div>
                 <div class="key-point"><span class="label">weight_j:</span><span class="desc">Proximity weight for sample j; higher for samples near x (example). Computed via exponential kernel</span></div>
                 <div class="key-point"><span class="label">f(x_j):</span><span class="desc">Prediction from complex model on perturbed sample j</span></div>
                 <div class="key-point"><span class="label">w_0 + Σ_i w_i · x_j^i:</span><span class="desc">Prediction from linear approximation; simple interpretable model</span></div>
-                <div class="key-point"><span class="label">λ||w||:</span><span class="desc">Regularization term (L1 or L2); λ ≥ 0 controls sparsity. Larger λ = simpler model</span></div>
+                <div class="key-point"><span class="label">\(\lambda\|w\|\):</span><span class="desc">Regularization term (L1 or L2); \(\lambda \geq 0\) controls sparsity. Larger λ = simpler model</span></div>
                 <div class="key-point"><span class="label">Σ_j:</span><span class="desc">Sum over perturbed samples in local neighborhood (typically 100-1000 samples)</span></div>
                 <p style="margin: 8px 0; font-size: 0.93em;">Weighted regression with proximity weights; L1/L2 encourages sparse solutions</p>
                 <div class="key-point"><span class="label">Algorithm:</span><span class="desc">Perturb features randomly → get predictions → fit weighted linear regression → interpret coefficients</span></div>
-                <div class="key-point"><span class="label">Weights:</span><span class="desc">Exponential kernel: weight_j = exp(-dist²/σ²); closer instances weighted more</span></div>
+                <div class="key-point"><span class="label">Weights:</span><span class="desc">Exponential kernel: weight_j = \(\exp(-\text{dist}^2/\sigma^2)\); closer instances weighted more</span></div>
                 <div class="key-point"><span class="label">Text/Images:</span><span class="desc">Text = remove words; Images = superpixels (treat segments not pixels as features)</span></div>
                 <hr class="divider">
                 <div class="comparison">
@@ -675,9 +681,9 @@
                 <div class="insight-box">
                 <h3>Mechanistic Interpretability: Understanding Neural Networks</h3>
                 <p><strong>Goal:</strong> Reverse-engineer learned algorithms by understanding individual components and how they compose. Move beyond "black box" to understand mechanisms of computation.</p>
-                <div class="formula">Output = Σ (neuron_activation · learned_weight · downstream_importance)</div>
+                <div class="formula">$$\text{Output} = \sum (\text{neuron\_activation} \cdot \text{learned\_weight} \cdot \text{downstream\_importance})$$</div>
                 <div class="key-point"><span class="label">Output:</span><span class="desc">Final model prediction or logit</span></div>
-                <div class="key-point"><span class="label">neuron_activation:</span><span class="desc">Activation value of neuron; output of ReLU, tanh, etc. ∈ [0, ∞) or [-1, 1]</span></div>
+                <div class="key-point"><span class="label">neuron_activation:</span><span class="desc">Activation value of neuron; output of ReLU, tanh, etc. \(\in [0, \infty)\) or \([-1, 1]\)</span></div>
                 <div class="key-point"><span class="label">learned_weight:</span><span class="desc">Weight connecting neuron to downstream layer; trained parameter</span></div>
                 <div class="key-point"><span class="label">downstream_importance:</span><span class="desc">Measure of how much downstream layers use this neuron's output. Can be gradient, attention, or causal</span></div>
                 <div class="key-point"><span class="label">Σ:</span><span class="desc">Sum over all neurons in layer; aggregates contributions to final output</span></div>
@@ -736,7 +742,7 @@
                 <p><strong>Core Problem:</strong> Two ways alignment can fail: (1) Outer: Can we specify what we want? (2) Inner: Does training achieve it?</p>
                 <div class="key-point"><span class="label">Outer Alignment:</span><span class="desc">Specification problem. Objective ambiguous ("help humans" — how?). Reward hacking, goal misgeneralization, specification gaming.</span></div>
                 <div class="key-point"><span class="label">Inner Alignment:</span><span class="desc">Training problem. Loss L ≠ true objective O. Model learns spurious correlations, shortcuts on training distribution.</span></div>
-                <div class="key-point"><span class="label">Perfect Alignment:</span><span class="desc">argmin_θ L(θ) = argmin_θ O(θ); rarely true in practice</span></div>
+                <div class="key-point"><span class="label">Perfect Alignment:</span><span class="desc">\(\arg\min_\theta \mathcal{L}(\theta) = \arg\min_\theta O(\theta)\); rarely true in practice</span></div>
                 <hr class="divider">
                 <div class="comparison">
                 <div class="option">
@@ -847,12 +853,12 @@
                 <div class="insight-box">
                 <h3>Mixture of Experts: Conditional Computation</h3>
                 <p><strong>Core Idea:</strong> Route inputs to different expert networks. Each input goes to relevant experts only. Sparse activation → efficient compute scaling.</p>
-                <div class="formula">output = Σ_i g_i(x) · expert_i(x)   where g = learned gating</div>
+                <div class="formula">$$\text{output} = \sum_i g_i(x) \cdot \text{expert}_i(x) \quad \text{where } g = \text{learned gating}$$</div>
                 <div class="key-point"><span class="label">output:</span><span class="desc">Final prediction; weighted mixture of expert outputs</span></div>
-                <div class="key-point"><span class="label">g_i(x):</span><span class="desc">Gating weight for expert i; softmax output ∈ [0, 1], Σ_i g_i(x) = 1</span></div>
+                <div class="key-point"><span class="label">\(g_i(x)\):</span><span class="desc">Gating weight for expert \(i\); softmax output \(\in [0, 1]\), \(\sum_i g_i(x) = 1\)</span></div>
                 <div class="key-point"><span class="label">expert_i(x):</span><span class="desc">Output from expert network i (small neural network or learned function)</span></div>
-                <div class="key-point"><span class="label">Σ_i:</span><span class="desc">Sum over K experts; typical K = 8-1000 in modern MoE</span></div>
-                <div class="key-point"><span class="label">Gating Network:</span><span class="desc">Learns routing: g_i(x) = softmax(W_g·x); selects which experts compute</span></div>
+                <div class="key-point"><span class="label">\(\sum_i\):</span><span class="desc">Sum over K experts; typical K = 8-1000 in modern MoE</span></div>
+                <div class="key-point"><span class="label">Gating Network:</span><span class="desc">Learns routing: \(g_i(x) = \text{softmax}(W_g \cdot x)\); selects which experts compute</span></div>
                 <div class="key-point"><span class="label">Conditional Computation:</span><span class="desc">Only active experts compute; huge parameter count with efficient inference</span></div>
                 <hr class="divider">
                 <div class="interview-tip">Massive parameters but sparse activation: trade compute for capacity. Expert specialization.</div>
@@ -914,12 +920,12 @@
                 <div class="insight-box">
                 <h3>Graph Neural Networks: Relational Learning</h3>
                 <p><strong>Core Idea:</strong> Learn on graph-structured data. Nodes = entities, edges = relationships. Aggregate neighbor features.</p>
-                <div class="formula">h'_v = σ(Σ_{u∈N(v)} W·h_u)   N(v) = neighbors</div>
+                <div class="formula">$$h'_v = \sigma\!\left(\sum_{u \in N(v)} W \cdot h_u\right) \quad N(v) = \text{neighbors}$$</div>
                 <div class="key-point"><span class="label">h'_v:</span><span class="desc">Updated representation (embedding) of node v after one layer</span></div>
-                <div class="key-point"><span class="label">h_u:</span><span class="desc">Feature/embedding of neighbor node u ∈ N(v); input to aggregation</span></div>
-                <div class="key-point"><span class="label">W:</span><span class="desc">Weight matrix ∈ ℝ^{d_out × d_in}; shared transformation applied to all neighbors</span></div>
-                <div class="key-point"><span class="label">Σ_{u∈N(v)}:</span><span class="desc">Aggregation function; typically mean or sum over neighbors. Other options: max, attention</span></div>
-                <div class="key-point"><span class="label">σ(·):</span><span class="desc">Activation function; ReLU, tanh, or others. Introduces non-linearity</span></div>
+                <div class="key-point"><span class="label">\(h_u\):</span><span class="desc">Feature/embedding of neighbor node u ∈ N(v); input to aggregation</span></div>
+                <div class="key-point"><span class="label">\(W\):</span><span class="desc">Weight matrix \(\in \mathbb{R}^{d_{\text{out}} \times d_{\text{in}}}\); shared transformation applied to all neighbors</span></div>
+                <div class="key-point"><span class="label">\(\sum_{u \in N(v)}\):</span><span class="desc">Aggregation function; typically mean or sum over neighbors. Other options: max, attention</span></div>
+                <div class="key-point"><span class="label">\(\sigma(\cdot)\):</span><span class="desc">Activation function; ReLU, tanh, or others. Introduces non-linearity</span></div>
                 <div class="key-point"><span class="label">N(v):</span><span class="desc">Neighborhood of node v; set of adjacent nodes (1-hop neighbors in graph)</span></div>
                 <div class="key-point"><span class="label">Message Passing:</span><span class="desc">Nodes send messages to neighbors; aggregate to update representation</span></div>
                 <div class="key-point"><span class="label">Graph Types:</span><span class="desc">Directed, undirected, heterogeneous (multi-type nodes/edges), dynamic</span></div>
@@ -951,13 +957,13 @@
                 <div class="insight-box">
                 <h3>Knowledge Distillation: Model Compression</h3>
                 <p><strong>Core Idea:</strong> Train small "student" model to match large "teacher" model. Compress knowledge into smaller network via soft targets.</p>
-                <div class="formula">L = α·L_CE(y_student, y_true) + (1-α)·L_KL(T_student, T_teacher)</div>
+                <div class="formula">$$\mathcal{L} = \alpha \cdot \mathcal{L}_{\text{CE}}(y_{\text{student}}, y_{\text{true}}) + (1-\alpha) \cdot \mathcal{L}_{\text{KL}}(T_{\text{student}}, T_{\text{teacher}})$$</div>
                 <div class="key-point"><span class="label">L:</span><span class="desc">Combined loss for student model</span></div>
-                <div class="key-point"><span class="label">α:</span><span class="desc">Weight balancing hard labels vs soft targets; ∈ [0, 1]. Typical: 0.5-0.9</span></div>
+                <div class="key-point"><span class="label">\(\alpha\):</span><span class="desc">Weight balancing hard labels vs soft targets; \(\in [0, 1]\). Typical: 0.5-0.9</span></div>
                 <div class="key-point"><span class="label">L_CE(y_student, y_true):</span><span class="desc">Cross-entropy loss on hard labels; standard classification loss</span></div>
                 <div class="key-point"><span class="label">y_true:</span><span class="desc">Ground-truth one-hot labels</span></div>
                 <div class="key-point"><span class="label">L_KL(T_student, T_teacher):</span><span class="desc">KL divergence between softened student and teacher outputs. T = temperature</span></div>
-                <div class="key-point"><span class="label">T (Temperature):</span><span class="desc">Softening factor ∈ (1, ∞); higher T = softer probability distributions. Typical: 3-5. T=1 → no softening</span></div>
+                <div class="key-point"><span class="label">\(T\) (Temperature):</span><span class="desc">Softening factor \(\in (1, \infty)\); higher T = softer probability distributions. Typical: 3-5. T=1 → no softening</span></div>
                 <div class="key-point"><span class="label">Temperature T:</span><span class="desc">Controls softness of outputs; higher T = softer targets = easier learning for student</span></div>
                 <div class="key-point"><span class="label">Dark Knowledge:</span><span class="desc">Soft targets encode class relationships teacher learned; more informative than hard labels</span></div>
                 <hr class="divider">
@@ -1033,7 +1039,7 @@
         <!-- LoRA Section -->
         <div class="section">
             <h2>LoRA: Low-Rank Adaptation</h2>
-            <p style="color: #a0a0b0; margin-bottom: 15px;">Instead of fine-tuning W fully (expensive), add low-rank decomposition: ΔW = AB^T. A ∈ ℝ^{d×r}, B ∈ ℝ^{d×r}, with r << d. Adjust rank r: small = cheap, large = flexible. Watch: training parameters drop 100x while accuracy stays competitive.</p>
+            <p style="color: #a0a0b0; margin-bottom: 15px;">Instead of fine-tuning W fully (expensive), add low-rank decomposition: \(\Delta W = AB^T\). \(A \in \mathbb{R}^{d \times r}\), \(B \in \mathbb{R}^{d \times r}\), with \(r \ll d\). Adjust rank r: small = cheap, large = flexible. Watch: training parameters drop 100x while accuracy stays competitive.</p>
             <div class="section-content">
                 <div class="canvas-wrapper">
                     <canvas id="loraCanvas" width="550" height="500"></canvas>
@@ -1048,14 +1054,14 @@
                 <div class="insight-box">
                 <h3>LoRA: Efficient Fine-tuning</h3>
                 <p><strong>Core Idea:</strong> Instead of fine-tuning all weights, train low-rank adaptations. Freeze original weights, add trainable low-rank matrices.</p>
-                <div class="formula">W' = W + ΔW = W + A·B^T   where A ∈ ℝ^{n×r}, B ∈ ℝ^{m×r}, r << min(n,m)</div>
+                <div class="formula">$$W' = W + \Delta W = W + A \cdot B^T \quad \text{where } A \in \mathbb{R}^{n \times r},\; B \in \mathbb{R}^{m \times r},\; r \ll \min(n,m)$$</div>
                 <div class="key-point"><span class="label">W':</span><span class="desc">Updated weight matrix after LoRA; W' = original + low-rank update</span></div>
-                <div class="key-point"><span class="label">W:</span><span class="desc">Original (frozen) weight matrix ∈ ℝ^{n×m}; does not receive gradients</span></div>
-                <div class="key-point"><span class="label">A:</span><span class="desc">Left low-rank matrix ∈ ℝ^{n×r}; trainable (receives gradients)</span></div>
-                <div class="key-point"><span class="label">B:</span><span class="desc">Right low-rank matrix ∈ ℝ^{m×r}; trainable (receives gradients)</span></div>
-                <div class="key-point"><span class="label">r:</span><span class="desc">Rank ∈ [1, min(n,m)]; much smaller than dimensions. Typical: 8-64. Larger r = more expressive</span></div>
-                <div class="key-point"><span class="label">A·B^T:</span><span class="desc">Low-rank update; produces ∈ ℝ^{n×m}, same shape as W</span></div>
-                <div class="key-point"><span class="label">Parameter Efficient:</span><span class="desc">Only r·(n+m) params vs n·m full; r ≈ 8-64 typical = 10-100x fewer params</span></div>
+                <div class="key-point"><span class="label">\(W\):</span><span class="desc">Original (frozen) weight matrix \(\in \mathbb{R}^{n \times m}\); does not receive gradients</span></div>
+                <div class="key-point"><span class="label">\(A\):</span><span class="desc">Left low-rank matrix \(\in \mathbb{R}^{n \times r}\); trainable (receives gradients)</span></div>
+                <div class="key-point"><span class="label">\(B\):</span><span class="desc">Right low-rank matrix \(\in \mathbb{R}^{m \times r}\); trainable (receives gradients)</span></div>
+                <div class="key-point"><span class="label">\(r\):</span><span class="desc">Rank \(\in [1, \min(n,m)]\); much smaller than dimensions. Typical: 8-64. Larger r = more expressive</span></div>
+                <div class="key-point"><span class="label">\(A \cdot B^T\):</span><span class="desc">Low-rank update; produces \(\in \mathbb{R}^{n \times m}\), same shape as W</span></div>
+                <div class="key-point"><span class="label">Parameter Efficient:</span><span class="desc">Only \(r \cdot (n+m)\) params vs \(n \cdot m\) full; r ≈ 8-64 typical = 10-100x fewer params</span></div>
                 <div class="key-point"><span class="label">Composable:</span><span class="desc">Multiple LoRAs combine for different tasks; switch without reloading weights</span></div>
                 <div class="key-point"><span class="label">Hypothesis:</span><span class="desc">Fine-tuning changes live in low-dimensional subspace; LoRA exploits this</span></div>
                 <hr class="divider">

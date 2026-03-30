@@ -14,7 +14,7 @@
   .viz-section { background: #12121f; border: 1px solid #2a2a4a; border-radius: 16px; padding: 32px; margin-bottom: 40px; }
   .viz-section h2 { font-size: 1.5em; color: #ff6b6b; margin-bottom: 8px; }
   .viz-section .subtitle { color: #888; margin-bottom: 24px; font-size: 0.95em; }
-  canvas { display: block; background: #0d0d1a; border-radius: 12px; }
+  canvas { display: block; background: #0d0d1a; border-radius: 12px; max-width: 100%; height: auto; }
   .controls { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; align-items: center; }
   .control-group { display: flex; flex-direction: column; gap: 4px; }
   .control-group label { font-size: 0.85em; color: #aaa; }
@@ -46,7 +46,13 @@
   .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
   .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
 
+  .katex { color: #e8e8ff; font-size: 1.1em; }
+  .formula .katex { font-size: 1.2em; }
+
 </style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '\\(', right: '\\)', display: false}]});"></script>
 </head>
 <body>
 
@@ -83,19 +89,19 @@
       <span class="label">Architecture:</span>
       <span class="desc">Input → Hidden layers (learn features) → Output. Each layer builds on lower layer representations.</span>
     </div>
-    <div class="formula">Forward pass: h_l = σ(W_l·h_{l-1} + b_l)</div>
-    <div class="key-point"><span class="label">h_l:</span><span class="desc">Hidden layer output/activation at layer l. Shape: (batch_size, layer_width)</span></div>
-    <div class="key-point"><span class="label">W_l:</span><span class="desc">Weight matrix for layer l. Shape: (input_dim, output_dim). Learned during training.</span></div>
-    <div class="key-point"><span class="label">h_{l-1}:</span><span class="desc">Input to layer l (output from previous layer l-1). At layer 0, this is the raw input x.</span></div>
-    <div class="key-point"><span class="label">b_l:</span><span class="desc">Bias vector for layer l. Shape: (output_dim,). Shifted learned parameter, one per output unit.</span></div>
-    <div class="key-point"><span class="label">W_l·h_{l-1} + b_l:</span><span class="desc">Linear transformation (affine). Without σ would just be linear combinations, stack of linear layers = one linear layer.</span></div>
-    <div class="key-point"><span class="label">σ:</span><span class="desc">Activation function—introduces non-linearity. Examples: ReLU (max(0,x)), tanh, sigmoid. Critical: without it, network is just linear.</span></div>
+    <div class="formula">$$\text{Forward pass: } h_l = \sigma(W_l \cdot h_{l-1} + b_l)$$</div>
+    <div class="key-point"><span class="label">\(h_l\):</span><span class="desc">Hidden layer output/activation at layer l. Shape: (batch_size, layer_width)</span></div>
+    <div class="key-point"><span class="label">\(W_l\):</span><span class="desc">Weight matrix for layer l. Shape: (input_dim, output_dim). Learned during training.</span></div>
+    <div class="key-point"><span class="label">\(h_{l-1}\):</span><span class="desc">Input to layer l (output from previous layer l-1). At layer 0, this is the raw input x.</span></div>
+    <div class="key-point"><span class="label">\(b_l\):</span><span class="desc">Bias vector for layer l. Shape: (output_dim,). Shifted learned parameter, one per output unit.</span></div>
+    <div class="key-point"><span class="label">\(W_l \cdot h_{l-1} + b_l\):</span><span class="desc">Linear transformation (affine). Without \(\sigma\) would just be linear combinations, stack of linear layers = one linear layer.</span></div>
+    <div class="key-point"><span class="label">\(\sigma\):</span><span class="desc">Activation function—introduces non-linearity. Examples: ReLU (max(0,x)), tanh, sigmoid. Critical: without it, network is just linear.</span></div>
     <div class="key-point">
       <span class="label">Backpropagation:</span>
-      <span class="desc">Compute ∂L/∂W by chain rule. Gradients flow backward. Updates all weights to reduce loss.</span>
+      <span class="desc">Compute \(\frac{\partial L}{\partial W}\) by chain rule. Gradients flow backward. Updates all weights to reduce loss.</span>
     </div>
     <div class="key-point">
-      <span class="label">Activation function σ:</span>
+      <span class="label">Activation function \(\sigma\):</span>
       <span class="desc">Introduces non-linearity. Without it, network is just linear transformation. ReLU, tanh, sigmoid common choices.</span>
     </div>
     <hr class="divider">
@@ -123,14 +129,14 @@
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Backpropagation efficiently computes gradients for all weights using the chain rule.
-    <div class="formula">∂L/∂W = (∂L/∂output) · (∂output/∂W)</div>
-    <div class="key-point"><span class="label">∂L/∂W:</span><span class="desc">Gradient of loss w.r.t. weights. Tells how much each weight affects final loss. Used to update weights.</span></div>
-    <div class="key-point"><span class="label">∂L/∂output:</span><span class="desc">Gradient of loss w.r.t. final output. How much the output contributes to loss.</span></div>
-    <div class="key-point"><span class="label">∂output/∂W:</span><span class="desc">Gradient of output w.r.t. weights. How much changing W changes the output.</span></div>
-    <div class="key-point"><span class="label">Chain rule (·):</span><span class="desc">Multiply gradients along the computation path. Example: if loss depends on output, and output depends on W, then ∂L/∂W = ∂L/∂output × ∂output/∂W</span></div>
+    <div class="formula">$$\frac{\partial L}{\partial W} = \frac{\partial L}{\partial \text{output}} \cdot \frac{\partial \text{output}}{\partial W}$$</div>
+    <div class="key-point"><span class="label">\(\frac{\partial L}{\partial W}\):</span><span class="desc">Gradient of loss w.r.t. weights. Tells how much each weight affects final loss. Used to update weights.</span></div>
+    <div class="key-point"><span class="label">\(\frac{\partial L}{\partial \text{output}}\):</span><span class="desc">Gradient of loss w.r.t. final output. How much the output contributes to loss.</span></div>
+    <div class="key-point"><span class="label">\(\frac{\partial \text{output}}{\partial W}\):</span><span class="desc">Gradient of output w.r.t. weights. How much changing W changes the output.</span></div>
+    <div class="key-point"><span class="label">Chain rule (\(\cdot\)):</span><span class="desc">Multiply gradients along the computation path. Example: if loss depends on output, and output depends on W, then \(\frac{\partial L}{\partial W} = \frac{\partial L}{\partial \text{output}} \times \frac{\partial \text{output}}{\partial W}\)</span></div>
     <div class="key-point">
       <span class="label">Chain rule in networks:</span>
-      <span class="desc">Error at output flows backward through layers. Each layer contributes to gradient via local ∂h/∂W.</span>
+      <span class="desc">Error at output flows backward through layers. Each layer contributes to gradient via local \(\frac{\partial h}{\partial W}\).</span>
     </div>
     <div class="key-point">
       <span class="label">Computational complexity:</span>
@@ -176,8 +182,8 @@
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Gradients vanish or explode because backprop multiplies derivatives through every layer via the chain rule.
-    <div class="formula">∂L/∂W₁ = ∂L/∂hₙ × ∂hₙ/∂hₙ₋₁ × ··· × ∂h₂/∂h₁ × ∂h₁/∂W₁</div>
-    <div class="key-point"><span class="label">The problem:</span><span class="desc">Each ∂hₖ/∂hₖ₋₁ factor includes the activation derivative. For sigmoid, this is at most 0.25. Multiply 50 factors of 0.25 → gradient ≈ 10⁻³⁰ (vanished). For weight scale > 1, gradients explode exponentially.</span></div>
+    <div class="formula">$$\frac{\partial L}{\partial W_1} = \frac{\partial L}{\partial h_n} \times \frac{\partial h_n}{\partial h_{n-1}} \times \cdots \times \frac{\partial h_2}{\partial h_1} \times \frac{\partial h_1}{\partial W_1}$$</div>
+    <div class="key-point"><span class="label">The problem:</span><span class="desc">Each \(\frac{\partial h_k}{\partial h_{k-1}}\) factor includes the activation derivative. For sigmoid, this is at most 0.25. Multiply 50 factors of 0.25 → gradient \(\approx 10^{-30}\) (vanished). For weight scale > 1, gradients explode exponentially.</span></div>
     <div class="key-point"><span class="label">Why depth matters:</span><span class="desc">More layers = more multiplied factors. A 5-layer network with sigmoid barely trains. A 50-layer network with sigmoid is dead.</span></div>
     <div class="key-point"><span class="label">ReLU helps:</span><span class="desc">ReLU derivative = 1 for positive inputs (no shrinkage!). But "dead ReLU" problem: if input is always negative, gradient = 0 permanently.</span></div>
     <div class="key-point"><span class="label">Residual connections fix it:</span><span class="desc">y = F(x) + x. Gradient of skip connection = 1. Even if F's gradient vanishes, the gradient flows through the skip. This is why ResNets can be 100+ layers deep.</span></div>
@@ -210,7 +216,7 @@
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Convolution is template matching — a small kernel slides across the input, computing local dot products to detect features (edges, textures, shapes).
-    <div class="formula">output[i,j] = Σₐ Σᵦ kernel[a,b] × input[i+a, j+b] + bias</div>
+    <div class="formula">$$\text{output}[i,j] = \sum_a \sum_b \text{kernel}[a,b] \times \text{input}[i+a, j+b] + \text{bias}$$</div>
     <div class="key-point"><span class="label">kernel[a,b]:</span><span class="desc">Small learnable weight matrix (e.g., 3×3). Each kernel detects one pattern — vertical edges, horizontal edges, corners, etc.</span></div>
     <div class="key-point"><span class="label">input[i+a, j+b]:</span><span class="desc">Local patch of input centered at position (i,j). Convolution exploits spatial locality — nearby pixels are more related.</span></div>
     <div class="key-point"><span class="label">Stride:</span><span class="desc">How far the kernel moves each step. Stride 1 = overlap (detailed features). Stride 2 = skip pixels (downsample, fewer parameters).</span></div>
@@ -255,11 +261,11 @@
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Convolutional layers learn local spatial patterns via weight sharing and local connections.
-    <div class="formula">Conv output: y[i,j] = Σ w[a,b] * x[i+a, j+b] + b</div>
+    <div class="formula">$$\text{Conv output: } y[i,j] = \sum w[a,b] \cdot x[i+a, j+b] + b$$</div>
     <div class="key-point"><span class="label">y[i,j]:</span><span class="desc">Output activation at spatial position (i,j). Shape across all filters: (height_out, width_out, num_filters)</span></div>
     <div class="key-point"><span class="label">w[a,b]:</span><span class="desc">Filter/kernel weights at local offset (a,b). Learned parameter. Size: (kernel_h, kernel_w). Same for all positions (weight sharing).</span></div>
     <div class="key-point"><span class="label">x[i+a, j+b]:</span><span class="desc">Input values in the receptive field—rectangular region around position (i,j). Sliding window centered at (i,j).</span></div>
-    <div class="key-point"><span class="label">Σ w[a,b] * x[i+a, j+b]:</span><span class="desc">Dot product of filter and local patch. Computes correlation/match between filter and local region.</span></div>
+    <div class="key-point"><span class="label">\(\sum w[a,b] \cdot x[i{+}a, j{+}b]\):</span><span class="desc">Dot product of filter and local patch. Computes correlation/match between filter and local region.</span></div>
     <div class="key-point"><span class="label">+ b:</span><span class="desc">Bias term—learned scalar added to dot product. Same bias for all spatial positions.</span></div>
     <div class="key-point"><span class="label">Spatial locality:</span><span class="desc">Only uses values in small receptive field around (i,j), not entire image. Efficient and captures local features.</span></div>
     <div class="key-point">
@@ -307,15 +313,15 @@
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Recurrent networks process sequences by maintaining hidden state that captures context from previous steps.
-    <div class="formula">h_t = σ(W_hh·h_{t-1} + W_xh·x_t + b_h)</div>
-    <div class="key-point"><span class="label">h_t:</span><span class="desc">Hidden state at timestep t. Acts as memory. Shape: (batch_size, hidden_dim). Updated every step based on current input and previous state.</span></div>
-    <div class="key-point"><span class="label">h_{t-1}:</span><span class="desc">Hidden state from previous timestep t-1. Carries information forward in sequence.</span></div>
-    <div class="key-point"><span class="label">x_t:</span><span class="desc">Input at timestep t (e.g., word embedding, single token). Shape: (batch_size, input_dim)</span></div>
-    <div class="key-point"><span class="label">W_hh:</span><span class="desc">Recurrent weight matrix (hidden-to-hidden). Shared across all timesteps. Shape: (hidden_dim, hidden_dim)</span></div>
-    <div class="key-point"><span class="label">W_xh:</span><span class="desc">Input-to-hidden weight matrix. Shape: (input_dim, hidden_dim). Also shared across timesteps.</span></div>
-    <div class="key-point"><span class="label">b_h:</span><span class="desc">Bias vector for hidden state. Shape: (hidden_dim,)</span></div>
-    <div class="key-point"><span class="label">W_hh·h_{t-1} + W_xh·x_t + b_h:</span><span class="desc">Linear combination of previous hidden state and current input. Combines memory with new information.</span></div>
-    <div class="key-point"><span class="label">σ(...):</span><span class="desc">Activation function (tanh common for RNNs). Bounds hidden state, typically to (-1,1) range.</span></div>
+    <div class="formula">$$h_t = \sigma(W_{hh} \cdot h_{t-1} + W_{xh} \cdot x_t + b_h)$$</div>
+    <div class="key-point"><span class="label">\(h_t\):</span><span class="desc">Hidden state at timestep t. Acts as memory. Shape: (batch_size, hidden_dim). Updated every step based on current input and previous state.</span></div>
+    <div class="key-point"><span class="label">\(h_{t-1}\):</span><span class="desc">Hidden state from previous timestep t-1. Carries information forward in sequence.</span></div>
+    <div class="key-point"><span class="label">\(x_t\):</span><span class="desc">Input at timestep t (e.g., word embedding, single token). Shape: (batch_size, input_dim)</span></div>
+    <div class="key-point"><span class="label">\(W_{hh}\):</span><span class="desc">Recurrent weight matrix (hidden-to-hidden). Shared across all timesteps. Shape: (hidden_dim, hidden_dim)</span></div>
+    <div class="key-point"><span class="label">\(W_{xh}\):</span><span class="desc">Input-to-hidden weight matrix. Shape: (input_dim, hidden_dim). Also shared across timesteps.</span></div>
+    <div class="key-point"><span class="label">\(b_h\):</span><span class="desc">Bias vector for hidden state. Shape: (hidden_dim,)</span></div>
+    <div class="key-point"><span class="label">\(W_{hh} \cdot h_{t-1} + W_{xh} \cdot x_t + b_h\):</span><span class="desc">Linear combination of previous hidden state and current input. Combines memory with new information.</span></div>
+    <div class="key-point"><span class="label">\(\sigma(\ldots)\):</span><span class="desc">Activation function (tanh common for RNNs). Bounds hidden state, typically to (-1,1) range.</span></div>
     <div class="key-point">
       <span class="label">Hidden state h_t:</span>
       <span class="desc">Memory that carries information from previous positions. Initialized to zero, updated at each step.</span>
@@ -363,7 +369,7 @@
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> ResNets add skip connections that allow direct gradient flow and enable training of very deep networks.
-    <div class="formula">y = F(x) + <span class="highlight">x</span>  (instead of just y = F(x))</div>
+    <div class="formula">$$y = F(x) + \color{#ff6b6b}{x} \quad \text{(instead of just } y = F(x)\text{)}$$</div>
     <div class="key-point"><span class="label">x:</span><span class="desc">Input to residual block. Shape: (batch_size, feature_dim)</span></div>
     <div class="key-point"><span class="label">F(x):</span><span class="desc">Transformation by residual block—typically 2-3 layers (conv, norm, activation). Learns feature changes.</span></div>
     <div class="key-point"><span class="label">+ x:</span><span class="desc">Skip/shortcut connection. Identity mapping directly adds input to output. Enables information to bypass block.</span></div>
@@ -414,14 +420,14 @@
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Attention mechanisms compute weighted combinations of values based on query-key similarities, enabling long-range dependencies.
-    <div class="formula">Attention(Q,K,V) = softmax(QK^T/√d_k)V</div>
-    <div class="key-point"><span class="label">Q (Query):</span><span class="desc">Matrix of query vectors, shape (seq_len, d_k). "What am I looking for?" Linear projection of input.</span></div>
-    <div class="key-point"><span class="label">K (Key):</span><span class="desc">Matrix of key vectors, shape (seq_len, d_k). "What does each position represent?" Compared against queries.</span></div>
-    <div class="key-point"><span class="label">V (Value):</span><span class="desc">Matrix of value vectors, shape (seq_len, d_v). "What to output?" Weighted by attention scores.</span></div>
-    <div class="key-point"><span class="label">QK^T:</span><span class="desc">Dot product of queries and keys. Shape: (seq_len, seq_len). Measures similarity between each query and all keys. Unnormalized attention scores.</span></div>
-    <div class="key-point"><span class="label">√d_k:</span><span class="desc">Scaling factor. d_k = dimension of keys (usually 64). Prevents attention scores from becoming too large (softmax gradient issues).</span></div>
-    <div class="key-point"><span class="label">softmax(QK^T/√d_k):</span><span class="desc">Convert scaled scores to probability distribution over sequence positions. Each query sums to 1 across all keys. Attention weights.</span></div>
-    <div class="key-point"><span class="label">softmax(...) · V:</span><span class="desc">Weighted sum of values. Each value is weighted by its corresponding attention score. Output shape: (seq_len, d_v)</span></div>
+    <div class="formula">$$\text{Attention}(Q,K,V) = \text{softmax}\!\left(\frac{QK^T}{\sqrt{d_k}}\right)V$$</div>
+    <div class="key-point"><span class="label">\(Q\) (Query):</span><span class="desc">Matrix of query vectors, shape \((\text{seq\_len}, d_k)\). "What am I looking for?" Linear projection of input.</span></div>
+    <div class="key-point"><span class="label">\(K\) (Key):</span><span class="desc">Matrix of key vectors, shape \((\text{seq\_len}, d_k)\). "What does each position represent?" Compared against queries.</span></div>
+    <div class="key-point"><span class="label">\(V\) (Value):</span><span class="desc">Matrix of value vectors, shape \((\text{seq\_len}, d_v)\). "What to output?" Weighted by attention scores.</span></div>
+    <div class="key-point"><span class="label">\(QK^T\):</span><span class="desc">Dot product of queries and keys. Shape: (seq_len, seq_len). Measures similarity between each query and all keys. Unnormalized attention scores.</span></div>
+    <div class="key-point"><span class="label">\(\sqrt{d_k}\):</span><span class="desc">Scaling factor. \(d_k\) = dimension of keys (usually 64). Prevents attention scores from becoming too large (softmax gradient issues).</span></div>
+    <div class="key-point"><span class="label">\(\text{softmax}(QK^T/\sqrt{d_k})\):</span><span class="desc">Convert scaled scores to probability distribution over sequence positions. Each query sums to 1 across all keys. Attention weights.</span></div>
+    <div class="key-point"><span class="label">\(\text{softmax}(\ldots) \cdot V\):</span><span class="desc">Weighted sum of values. Each value is weighted by its corresponding attention score. Output shape: \((\text{seq\_len}, d_v)\)</span></div>
     <div class="key-point">
       <span class="label">Query, Key, Value:</span>
       <span class="desc">Q = what we're looking for. K = what each position represents. V = what to output. Learned linear projections of input.</span>
@@ -436,7 +442,7 @@
     </div>
     <div class="key-point">
       <span class="label">Computational cost:</span>
-      <span class="desc">Attention is O(n²) in sequence length. For long sequences, use approximations: local attention, sparse attention, linear attention.</span>
+      <span class="desc">Attention is \(O(n^2)\) in sequence length. For long sequences, use approximations: local attention, sparse attention, linear attention.</span>
     </div>
     <hr class="divider">
     <div class="interview-tip">Attention is core of Transformers. Self-attention: each position attends to all positions. Enables parallelization unlike RNNs.</div>

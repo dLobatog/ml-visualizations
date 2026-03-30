@@ -14,7 +14,7 @@
   .viz-section { background: #12121f; border: 1px solid #2a2a4a; border-radius: 16px; padding: 32px; margin-bottom: 40px; }
   .viz-section h2 { font-size: 1.5em; color: #4ecdc4; margin-bottom: 8px; }
   .viz-section .subtitle { color: #b0b0c0; margin-bottom: 24px; font-size: 0.95em; }
-  canvas { display: block; background: #0d0d1a; border-radius: 12px; margin-bottom: 16px; }
+  canvas { display: block; background: #0d0d1a; border-radius: 12px; margin-bottom: 16px; max-width: 100%; height: auto; }
   .controls { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; align-items: center; }
   .control-group { display: flex; flex-direction: column; gap: 4px; }
   .control-group label { font-size: 0.85em; color: #aaa; }
@@ -44,7 +44,13 @@
   .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
   .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
 
+  .katex { color: #e8e8ff; font-size: 1.1em; }
+  .formula .katex { font-size: 1.2em; }
+
 </style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '\\(', right: '\\)', display: false}]});"></script>
 </head>
 <body>
 
@@ -104,14 +110,14 @@
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Self-attention is the core mechanism enabling Transformers to learn long-range dependencies.
-    <div class="formula">Self-Attention(Q,K,V) = softmax(QK^T/√d_k)V</div>
-    <div class="key-point"><span class="label">Q (Query):</span><span class="desc">Query matrix, shape (seq_len, d_k). "What am I looking for?" Learned projection of input.</span></div>
-    <div class="key-point"><span class="label">K (Key):</span><span class="desc">Key matrix, shape (seq_len, d_k). "What does each position represent?" Compared against queries to determine relevance.</span></div>
-    <div class="key-point"><span class="label">V (Value):</span><span class="desc">Value matrix, shape (seq_len, d_v). "What information to extract?" Weighted and aggregated based on attention scores.</span></div>
-    <div class="key-point"><span class="label">d_k:</span><span class="desc">Dimension of keys (usually 64). Affects scaling factor and model capacity.</span></div>
-    <div class="key-point"><span class="label">d_v:</span><span class="desc">Dimension of values (usually 64). Output dimension per head. Total output = num_heads × d_v.</span></div>
-    <div class="key-point"><span class="label">QK^T:</span><span class="desc">Attention logits, shape (seq_len, seq_len). Measures similarity between each query and all keys. Unnormalized scores.</span></div>
-    <div class="key-point"><span class="label">1/√d_k:</span><span class="desc">Scaling factor prevents attention weights from becoming too confident. Variance of QK^T is O(d_k), scaling keeps gradient O(1).</span></div>
+    <div class="formula">$$\text{Self-Attention}(Q,K,V) = \text{softmax}\!\left(\frac{QK^T}{\sqrt{d_k}}\right)V$$</div>
+    <div class="key-point"><span class="label">\(Q\) (Query):</span><span class="desc">Query matrix, shape \((\text{seq\_len}, d_k)\). "What am I looking for?" Learned projection of input.</span></div>
+    <div class="key-point"><span class="label">\(K\) (Key):</span><span class="desc">Key matrix, shape \((\text{seq\_len}, d_k)\). "What does each position represent?" Compared against queries to determine relevance.</span></div>
+    <div class="key-point"><span class="label">\(V\) (Value):</span><span class="desc">Value matrix, shape \((\text{seq\_len}, d_v)\). "What information to extract?" Weighted and aggregated based on attention scores.</span></div>
+    <div class="key-point"><span class="label">\(d_k\):</span><span class="desc">Dimension of keys (usually 64). Affects scaling factor and model capacity.</span></div>
+    <div class="key-point"><span class="label">\(d_v\):</span><span class="desc">Dimension of values (usually 64). Output dimension per head. Total output = \(\text{num\_heads} \times d_v\).</span></div>
+    <div class="key-point"><span class="label">\(QK^T\):</span><span class="desc">Attention logits, shape (seq_len, seq_len). Measures similarity between each query and all keys. Unnormalized scores.</span></div>
+    <div class="key-point"><span class="label">\(1/\sqrt{d_k}\):</span><span class="desc">Scaling factor prevents attention weights from becoming too confident. Variance of \(QK^T\) is \(O(d_k)\), scaling keeps gradient \(O(1)\).</span></div>
     <div class="key-point"><span class="label">softmax(...):</span><span class="desc">Converts scaled scores to probability distribution. Each row sums to 1. Determines how much each position attends to others.</span></div>
     <div class="key-point"><span class="label">softmax(...) · V:</span><span class="desc">Weighted sum of values. Output shape: (seq_len, d_v). Each position gets weighted combination of all value vectors.</span></div>
     <div class="key-point">
@@ -124,7 +130,7 @@
     </div>
     <div class="key-point">
       <span class="label">Scaling by √d_k:</span>
-      <span class="desc">Prevents softmax from becoming too peaked. Variance of QK^T is O(d_k), so scale gradients stay O(1).</span>
+      <span class="desc">Prevents softmax from becoming too peaked. Variance of \(QK^T\) is \(O(d_k)\), so scale gradients stay \(O(1)\).</span>
     </div>
     <div class="key-point">
       <span class="label">Masking in decoder:</span>
@@ -151,15 +157,15 @@
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Layer normalization and position-wise feed-forward networks stabilize Transformer training.
-    <div class="formula">LayerNorm(x) = γ · (x - μ) / √(σ² + ε) + β</div>
-    <div class="key-point"><span class="label">x:</span><span class="desc">Input to layer normalization. Shape: (batch_size, seq_len, hidden_dim) or (batch_size, hidden_dim)</span></div>
-    <div class="key-point"><span class="label">μ:</span><span class="desc">Mean of x computed per example (across the feature dimension). Shape: (batch_size, seq_len) or (batch_size,)</span></div>
-    <div class="key-point"><span class="label">σ²:</span><span class="desc">Variance of x per example (across features). Measures spread of activation values.</span></div>
-    <div class="key-point"><span class="label">ε:</span><span class="desc">Small constant (e.g., 1e-5 or 1e-6) for numerical stability. Prevents division by zero when variance is very small.</span></div>
-    <div class="key-point"><span class="label">(x - μ) / √(σ² + ε):</span><span class="desc">Standardization step. Shifts to mean 0, scales to variance 1. Normalizes across features for each example.</span></div>
-    <div class="key-point"><span class="label">γ (gamma):</span><span class="desc">Learnable scale parameter. Shape: (hidden_dim,). Allows network to scale normalized activations. Learned during training.</span></div>
-    <div class="key-point"><span class="label">β (beta):</span><span class="desc">Learnable shift parameter. Shape: (hidden_dim,). Allows network to shift normalized activations. Learned during training.</span></div>
-    <div class="key-point"><span class="label">γ · (...) + β:</span><span class="desc">Affine transformation. Restores model expressiveness after normalization. If γ=1, β=0 everywhere, recovers standard normalization.</span></div>
+    <div class="formula">$$\text{LayerNorm}(x) = \gamma \cdot \frac{x - \mu}{\sqrt{\sigma^2 + \epsilon}} + \beta$$</div>
+    <div class="key-point"><span class="label">\(x\):</span><span class="desc">Input to layer normalization. Shape: (batch_size, seq_len, hidden_dim) or (batch_size, hidden_dim)</span></div>
+    <div class="key-point"><span class="label">\(\mu\):</span><span class="desc">Mean of x computed per example (across the feature dimension). Shape: (batch_size, seq_len) or (batch_size,)</span></div>
+    <div class="key-point"><span class="label">\(\sigma^2\):</span><span class="desc">Variance of x per example (across features). Measures spread of activation values.</span></div>
+    <div class="key-point"><span class="label">\(\epsilon\):</span><span class="desc">Small constant (e.g., 1e-5 or 1e-6) for numerical stability. Prevents division by zero when variance is very small.</span></div>
+    <div class="key-point"><span class="label">\(\frac{x - \mu}{\sqrt{\sigma^2 + \epsilon}}\):</span><span class="desc">Standardization step. Shifts to mean 0, scales to variance 1. Normalizes across features for each example.</span></div>
+    <div class="key-point"><span class="label">\(\gamma\) (gamma):</span><span class="desc">Learnable scale parameter. Shape: (hidden_dim,). Allows network to scale normalized activations. Learned during training.</span></div>
+    <div class="key-point"><span class="label">\(\beta\) (beta):</span><span class="desc">Learnable shift parameter. Shape: (hidden_dim,). Allows network to shift normalized activations. Learned during training.</span></div>
+    <div class="key-point"><span class="label">\(\gamma \cdot (\ldots) + \beta\):</span><span class="desc">Affine transformation. Restores model expressiveness after normalization. If \(\gamma=1, \beta=0\) everywhere, recovers standard normalization.</span></div>
     <div class="key-point">
       <span class="label">Why layer norm (not batch norm):</span>
       <span class="desc">Batch norm needs batch dimension. Transformers process variable-length sequences. LayerNorm normalizes per instance.</span>
@@ -235,11 +241,11 @@
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Language model pretraining learns general linguistic patterns from large unlabeled text via next-token prediction.
-    <div class="formula">P(x_{t+1} | x_1, ..., x_t) = softmax(W · h_t + b)</div>
-    <div class="key-point"><span class="label">P(x_{t+1} | x_1, ..., x_t):</span><span class="desc">Conditional probability distribution over next token x_{t+1}, given all previous tokens. Output shape: (vocab_size,). Sum to 1.</span></div>
-    <div class="key-point"><span class="label">x_{t+1}:</span><span class="desc">Next token to predict. Element of vocabulary (0 to vocab_size-1). Loss = cross-entropy between true next token and this distribution.</span></div>
-    <div class="key-point"><span class="label">x_1, ..., x_t:</span><span class="desc">All previous tokens (context). Model processes entire sequence, attends to all previous positions via self-attention masks.</span></div>
-    <div class="key-point"><span class="label">h_t:</span><span class="desc">Hidden representation after processing sequence up to position t. Shape: (batch_size, hidden_dim). Contains context from all previous tokens.</span></div>
+    <div class="formula">$$P(x_{t+1} | x_1, \ldots, x_t) = \text{softmax}(W \cdot h_t + b)$$</div>
+    <div class="key-point"><span class="label">\(P(x_{t+1} | x_1, \ldots, x_t)\):</span><span class="desc">Conditional probability distribution over next token \(x_{t+1}\), given all previous tokens. Output shape: (vocab_size,). Sum to 1.</span></div>
+    <div class="key-point"><span class="label">\(x_{t+1}\):</span><span class="desc">Next token to predict. Element of vocabulary (0 to vocab_size-1). Loss = cross-entropy between true next token and this distribution.</span></div>
+    <div class="key-point"><span class="label">\(x_1, \ldots, x_t\):</span><span class="desc">All previous tokens (context). Model processes entire sequence, attends to all previous positions via self-attention masks.</span></div>
+    <div class="key-point"><span class="label">\(h_t\):</span><span class="desc">Hidden representation after processing sequence up to position t. Shape: (batch_size, hidden_dim). Contains context from all previous tokens.</span></div>
     <div class="key-point"><span class="label">W:</span><span class="desc">Output projection matrix. Shape: (hidden_dim, vocab_size). Projects hidden state to logit space (unscaled scores for each token).</span></div>
     <div class="key-point"><span class="label">b:</span><span class="desc">Output bias. Shape: (vocab_size,). Learned scalar offset per token.</span></div>
     <div class="key-point"><span class="label">W · h_t + b:</span><span class="desc">Logits (unnormalized scores for each vocab token). Shape: (vocab_size,). No probability constraints yet.</span></div>
@@ -294,7 +300,7 @@
     </div>
     <div class="key-point">
       <span class="label">RL loss:</span>
-      <span class="desc">PPO or similar policy gradient. Maximize: E[reward] - KL(π_new || π_old). KL term prevents diverging from pretrained model.</span>
+      <span class="desc">PPO or similar policy gradient. Maximize: \(E[\text{reward}] - D_{KL}(\pi_{\text{new}} \| \pi_{\text{old}})\). KL term prevents diverging from pretrained model.</span>
     </div>
     <hr class="divider">
 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click "Step Through" to animate data flow. Pause at each stage: after Attention, watch residual add. After FFN, watch residual add again. These skips are critical—they let gradients flow back unobstructed. Toggle "Remove Residuals" to see training collapse. This is why Transformers can be 100+ layers deep.</div>
@@ -362,7 +368,7 @@
     <strong>Key Insight:</strong> Context window length limits what the model can attend to. Longer windows = more history but higher compute cost.
     <div class="key-point">
       <span class="label">Attention complexity:</span>
-      <span class="desc">Self-attention is O(n²) in sequence length. 4K context: manageable. 128K context: expensive. Trade-off everywhere.</span>
+      <span class="desc">Self-attention is \(O(n^2)\) in sequence length. 4K context: manageable. 128K context: expensive. Trade-off everywhere.</span>
     </div>
     <div class="key-point">
       <span class="label">Position interpolation:</span>
@@ -427,20 +433,20 @@
   <canvas id="continuousBatchCanvas" width="900" height="480"></canvas>
   <div class="insight-box">
     <strong>Key Insight:</strong> Scaling laws govern how model performance improves with more parameters, data, and compute.
-    <div class="formula">Loss(N) ≈ a / N^α  (model size scaling)</div>
-    <div class="key-point"><span class="label">Loss(N):</span><span class="desc">Test loss when training with N parameters. Lower = better performance. Asymptotically approaches optimal loss.</span></div>
-    <div class="key-point"><span class="label">N:</span><span class="desc">Number of model parameters (weights, biases). Measured in millions (M) or billions (B). Ranges from 1M to 400B+ for LLMs.</span></div>
-    <div class="key-point"><span class="label">a:</span><span class="desc">Scaling constant (empirical fit). Depends on task, data quality, architecture. Fitted from experimental data.</span></div>
-    <div class="key-point"><span class="label">α:</span><span class="desc">Scaling exponent for model size, typically 0.07-0.1. Log-log slope. α = 0.1 means 10x params → ~2x loss reduction.</span></div>
+    <div class="formula">$$\text{Loss}(N) \approx \frac{a}{N^{\alpha}} \quad \text{(model size scaling)}$$</div>
+    <div class="key-point"><span class="label">\(\text{Loss}(N)\):</span><span class="desc">Test loss when training with N parameters. Lower = better performance. Asymptotically approaches optimal loss.</span></div>
+    <div class="key-point"><span class="label">\(N\):</span><span class="desc">Number of model parameters (weights, biases). Measured in millions (M) or billions (B). Ranges from 1M to 400B+ for LLMs.</span></div>
+    <div class="key-point"><span class="label">\(a\):</span><span class="desc">Scaling constant (empirical fit). Depends on task, data quality, architecture. Fitted from experimental data.</span></div>
+    <div class="key-point"><span class="label">\(\alpha\):</span><span class="desc">Scaling exponent for model size, typically 0.07-0.1. Log-log slope. \(\alpha = 0.1\) means 10x params → ~2x loss reduction.</span></div>
     <div class="key-point"><span class="label">≈:</span><span class="desc">Approximation sign. Empirical power law, not exact theory. Holds across wide range of N (millions to hundreds of billions).</span></div>
-    <div class="formula">Loss(D) ≈ b / D^β  (data scaling)</div>
-    <div class="key-point"><span class="label">Loss(D):</span><span class="desc">Test loss when training with D tokens of data. Larger D → lower loss. Follows similar power law to model size.</span></div>
-    <div class="key-point"><span class="label">D:</span><span class="desc">Number of training tokens (data quantity). For 70B parameter model, optimal D ≈ 1.4 trillion tokens (Chinchilla scaling).</span></div>
-    <div class="key-point"><span class="label">b:</span><span class="desc">Scaling constant for data dimension. Empirically fitted. Typically larger coefficient than model scaling constant a.</span></div>
-    <div class="key-point"><span class="label">β:</span><span class="desc">Scaling exponent for data, typically 0.1-0.2. β = 0.15 means 10x more data → ~1.4x loss reduction. Slower than model scaling.</span></div>
+    <div class="formula">$$\text{Loss}(D) \approx \frac{b}{D^{\beta}} \quad \text{(data scaling)}$$</div>
+    <div class="key-point"><span class="label">\(\text{Loss}(D)\):</span><span class="desc">Test loss when training with D tokens of data. Larger D → lower loss. Follows similar power law to model size.</span></div>
+    <div class="key-point"><span class="label">\(D\):</span><span class="desc">Number of training tokens (data quantity). For 70B parameter model, optimal \(D \approx 1.4\) trillion tokens (Chinchilla scaling).</span></div>
+    <div class="key-point"><span class="label">\(b\):</span><span class="desc">Scaling constant for data dimension. Empirically fitted. Typically larger coefficient than model scaling constant a.</span></div>
+    <div class="key-point"><span class="label">\(\beta\):</span><span class="desc">Scaling exponent for data, typically 0.1-0.2. \(\beta = 0.15\) means 10x more data → ~1.4x loss reduction. Slower than model scaling.</span></div>
     <div class="key-point">
       <span class="label">Observed exponents:</span>
-      <span class="desc">α ≈ 0.07-0.1 (model), β ≈ 0.1-0.2 (data). Both improve loss, but slowly (power law).</span>
+      <span class="desc">\(\alpha \approx 0.07\text{-}0.1\) (model), \(\beta \approx 0.1\text{-}0.2\) (data). Both improve loss, but slowly (power law).</span>
     </div>
     <div class="key-point">
       <span class="label">Chinchilla/Compute optimal:</span>
@@ -481,7 +487,7 @@
     </div>
     <div class="key-point">
       <span class="label">KD training:</span>
-      <span class="desc">Loss = α · cross_entropy(student, hard_labels) + (1-α) · KL(student_logits, teacher_logits). Soft targets from teacher.</span>
+      <span class="desc">Loss = \(\alpha \cdot \text{CE}(\text{student}, \text{hard\_labels}) + (1-\alpha) \cdot D_{KL}(\text{student\_logits}, \text{teacher\_logits})\). Soft targets from teacher.</span>
     </div>
     <div class="key-point">
       <span class="label">Temperature scaling:</span>

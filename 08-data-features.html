@@ -120,6 +120,8 @@
             display: block;
             margin: 20px auto;
             border: 1px solid #2a2a38;
+            max-width: 100%;
+            height: auto;
         }
 
       
@@ -257,7 +259,11 @@
   .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
   .insight-box { grid-column: 1 / -1; }
 
+  .katex { color: #e8e8ff; font-size: 1.1em; }
 </style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '\\(', right: '\\)', display: false}]});"></script>
 </head>
 <body>
     <div class="container">
@@ -296,21 +302,21 @@
                 <h4>Interview Tips: Feature Standardization and Scaling</h4>
                 <p><strong>What it is:</strong> Rescales numeric features to common scale. Critical for linear models, distance-based algorithms, regularization. Different methods for different data distributions.</p>
 
-                <div class="formula">Z-Score: z = (x - mean) / std_dev  →  mean=0, std=1</div>
-                <div class="key-point"><span class="label">x:</span><span class="desc">Original feature value</span></div>
-                <div class="key-point"><span class="label">mean:</span><span class="desc">Sample mean of the feature; computed on training data only</span></div>
-                <div class="key-point"><span class="label">std_dev:</span><span class="desc">Sample standard deviation; computed on training data only</span></div>
-                <div class="key-point"><span class="label">z:</span><span class="desc">Standardized value with mean=0, std_dev=1; allows all features comparable</span></div>
-                <div class="formula">Min-Max: x_scaled = (x - min) / (max - min)  →  range [0,1]</div>
-                <div class="key-point"><span class="label">x:</span><span class="desc">Original feature value</span></div>
-                <div class="key-point"><span class="label">min:</span><span class="desc">Minimum value in training data</span></div>
-                <div class="key-point"><span class="label">max:</span><span class="desc">Maximum value in training data</span></div>
-                <div class="key-point"><span class="label">x_scaled:</span><span class="desc">Scaled value, always ∈ [0, 1]; sensitive to outliers if min/max based on outliers</span></div>
-                <div class="formula">Robust: x_scaled = (x - median) / IQR  →  outlier-resistant</div>
-                <div class="key-point"><span class="label">x:</span><span class="desc">Original feature value</span></div>
+                <div class="formula">$$z = \frac{x - \mu}{\sigma} \quad \rightarrow \quad \mu=0,\; \sigma=1$$</div>
+                <div class="key-point"><span class="label">\(x\):</span><span class="desc">Original feature value</span></div>
+                <div class="key-point"><span class="label">\(\mu\):</span><span class="desc">Sample mean of the feature; computed on training data only</span></div>
+                <div class="key-point"><span class="label">\(\sigma\):</span><span class="desc">Sample standard deviation; computed on training data only</span></div>
+                <div class="key-point"><span class="label">\(z\):</span><span class="desc">Standardized value with \(\mu=0, \sigma=1\); allows all features comparable</span></div>
+                <div class="formula">$$x_{\text{scaled}} = \frac{x - x_{\min}}{x_{\max} - x_{\min}} \quad \rightarrow \quad \text{range } [0,1]$$</div>
+                <div class="key-point"><span class="label">\(x\):</span><span class="desc">Original feature value</span></div>
+                <div class="key-point"><span class="label">\(x_{\min}\):</span><span class="desc">Minimum value in training data</span></div>
+                <div class="key-point"><span class="label">\(x_{\max}\):</span><span class="desc">Maximum value in training data</span></div>
+                <div class="key-point"><span class="label">\(x_{\text{scaled}}\):</span><span class="desc">Scaled value, always \(\in [0, 1]\); sensitive to outliers if min/max based on outliers</span></div>
+                <div class="formula">$$x_{\text{scaled}} = \frac{x - \text{median}}{IQR} \quad \rightarrow \quad \text{outlier-resistant}$$</div>
+                <div class="key-point"><span class="label">\(x\):</span><span class="desc">Original feature value</span></div>
                 <div class="key-point"><span class="label">median:</span><span class="desc">50th percentile of training data; unaffected by extreme outliers</span></div>
-                <div class="key-point"><span class="label">IQR (Interquartile Range):</span><span class="desc">Q3 - Q1 (75th percentile - 25th percentile); insensitive to outliers</span></div>
-                <div class="key-point"><span class="label">x_scaled:</span><span class="desc">Scaled value; robust to outliers; different range than [0,1] (depends on data distribution)</span></div>
+                <div class="key-point"><span class="label">IQR (Interquartile Range):</span><span class="desc">\(Q_3 - Q_1\) (75th percentile - 25th percentile); insensitive to outliers</span></div>
+                <div class="key-point"><span class="label">\(x_{\text{scaled}}\):</span><span class="desc">Scaled value; robust to outliers; different range than \([0,1]\) (depends on data distribution)</span></div>
 
                 <div class="mnemonic">Z-Score puts all features on common scale. Salary (high variance) won't dominate age (low variance) in L2 regularization.</div>
 
@@ -331,7 +337,7 @@
 
                 <div class="key-point">
                     <span class="label">Log transform:</span>
-                    <span class="desc">For right-skewed distributions (income, traffic). Use log(x+1) to handle zeros. Normalizes variance.</span>
+                    <span class="desc">For right-skewed distributions (income, traffic). Use \(\log(x+1)\) to handle zeros. Normalizes variance.</span>
                 </div>
 
                 <div class="key-point">
@@ -365,15 +371,15 @@
                 <h4>Interview Tips: Feature Encoding for Categorical Variables</h4>
                 <p><strong>What it is:</strong> Converts categorical variables to numeric for ML. Three main methods: one-hot (binary indicators), label (integers), target (mean encoding).</p>
 
-                <div class="formula">One-Hot: d categories → d-1 binary columns (reference category dropped)</div>
-                <div class="key-point"><span class="label">d:</span><span class="desc">Number of unique categories/classes in the categorical variable</span></div>
-                <div class="key-point"><span class="label">d-1:</span><span class="desc">Number of binary columns created; one category chosen as reference (usually most frequent or first alphabetically)</span></div>
-                <div class="key-point"><span class="label">Binary columns:</span><span class="desc">Each column ∈ {0, 1}; value=1 if sample belongs to that category, 0 otherwise; reference category = all zeros</span></div>
-                <div class="formula">Target Encoding: category → mean(y | category) = proportion of positives</div>
+                <div class="formula">$$\text{One-Hot: } d \text{ categories} \rightarrow d-1 \text{ binary columns (reference category dropped)}$$</div>
+                <div class="key-point"><span class="label">\(d\):</span><span class="desc">Number of unique categories/classes in the categorical variable</span></div>
+                <div class="key-point"><span class="label">\(d-1\):</span><span class="desc">Number of binary columns created; one category chosen as reference (usually most frequent or first alphabetically)</span></div>
+                <div class="key-point"><span class="label">Binary columns:</span><span class="desc">Each column \(\in \{0, 1\}\); value=1 if sample belongs to that category, 0 otherwise; reference category = all zeros</span></div>
+                <div class="formula">$$\text{Target Encoding: category} \rightarrow \mathbb{E}[y \mid \text{category}] = \text{proportion of positives}$$</div>
                 <div class="key-point"><span class="label">category:</span><span class="desc">A unique value in the categorical feature (e.g., "red" in color feature)</span></div>
-                <div class="key-point"><span class="label">y:</span><span class="desc">Target variable; for binary classification, y ∈ {0, 1}</span></div>
-                <div class="key-point"><span class="label">mean(y | category):</span><span class="desc">Average of target values for all samples with this category; represents probability of positive class</span></div>
-                <div class="key-point"><span class="label">Target Encoding Range:</span><span class="desc">∈ [0, 1] for binary classification; captures class imbalance per category</span></div>
+                <div class="key-point"><span class="label">\(y\):</span><span class="desc">Target variable; for binary classification, \(y \in \{0, 1\}\)</span></div>
+                <div class="key-point"><span class="label">\(\mathbb{E}[y \mid \text{category}]\):</span><span class="desc">Average of target values for all samples with this category; represents probability of positive class</span></div>
+                <div class="key-point"><span class="label">Target Encoding Range:</span><span class="desc">\(\in [0, 1]\) for binary classification; captures class imbalance per category</span></div>
 
                 <div class="mnemonic">One-hot: [red, blue, green] → columns [red, blue] (green=reference=[0,0]). Prevents dummy variable trap (multicollinearity).</div>
 
@@ -470,7 +476,7 @@
                 <div class="comparison">
                     <div class="option">
                         <div class="opt-title">Model-based</div>
-                        <div class="opt-desc">Fit regression X_obs → X_miss. Powerful for MAR. Assumes model captures true relationship.</div>
+                        <div class="opt-desc">Fit regression \(X_{\text{obs}} \rightarrow X_{\text{miss}}\). Powerful for MAR. Assumes model captures true relationship.</div>
                     </div>
                     <div class="option">
                         <div class="opt-title">Multiple Imputation</div>
@@ -537,16 +543,16 @@
                 <h4>Interview Tips: Class Imbalance Handling</h4>
                 <p><strong>What it is:</strong> Minority class rare (e.g., 1% fraud, 0.1% disease). Algorithms optimize accuracy, which is trivial: "always predict negative" = 99% accuracy but zero recall on minority. Need special strategies: resampling, weighting, thresholding, different metrics.</p>
 
-                <div class="formula">SMOTE: synthetic_sample = sample_i + λ·(neighbor_j - sample_i), where λ ∈ [0,1] random</div>
-                <div class="key-point"><span class="label">sample_i:</span><span class="desc">A randomly selected minority class sample (the one to interpolate from)</span></div>
-                <div class="key-point"><span class="label">neighbor_j:</span><span class="desc">One of the k nearest neighbors of sample_i in feature space (typically k=5), also minority class</span></div>
-                <div class="key-point"><span class="label">λ:</span><span class="desc">Random interpolation weight, λ ∈ [0, 1] uniform; different value sampled for each synthetic sample</span></div>
-                <div class="key-point"><span class="label">synthetic_sample:</span><span class="desc">New artificial minority sample created by linear interpolation; lies between sample_i and neighbor_j</span></div>
-                <div class="formula">Cost-sensitive: loss = w_minority · L(y_neg|y_true_pos) + w_majority · L(y_pos|y_true_neg)</div>
-                <div class="key-point"><span class="label">w_minority:</span><span class="desc">Class weight for minority class; typically > 1.0 to penalize minority errors more; often inversely proportional to class frequency</span></div>
-                <div class="key-point"><span class="label">w_majority:</span><span class="desc">Class weight for majority class; typically < 1.0; often set to balance total weighted samples across classes</span></div>
-                <div class="key-point"><span class="label">L(y_neg|y_true_pos):</span><span class="desc">Loss for predicting negative when true label is positive (false negative); penalized by w_minority</span></div>
-                <div class="key-point"><span class="label">L(y_pos|y_true_neg):</span><span class="desc">Loss for predicting positive when true label is negative (false positive); penalized by w_majority</span></div>
+                <div class="formula">$$x_{\text{synth}} = x_i + \lambda \cdot (x_j - x_i), \quad \lambda \in [0,1] \text{ random}$$</div>
+                <div class="key-point"><span class="label">\(x_i\):</span><span class="desc">A randomly selected minority class sample (the one to interpolate from)</span></div>
+                <div class="key-point"><span class="label">\(x_j\):</span><span class="desc">One of the \(k\) nearest neighbors of \(x_i\) in feature space (typically \(k=5\)), also minority class</span></div>
+                <div class="key-point"><span class="label">\(\lambda\):</span><span class="desc">Random interpolation weight, \(\lambda \in [0, 1]\) uniform; different value sampled for each synthetic sample</span></div>
+                <div class="key-point"><span class="label">\(x_{\text{synth}}\):</span><span class="desc">New artificial minority sample created by linear interpolation; lies between \(x_i\) and \(x_j\)</span></div>
+                <div class="formula">$$\mathcal{L} = w_{\text{min}} \cdot L(\hat{y}_{\text{neg}} \mid y_{\text{pos}}) + w_{\text{maj}} \cdot L(\hat{y}_{\text{pos}} \mid y_{\text{neg}})$$</div>
+                <div class="key-point"><span class="label">\(w_{\text{min}}\):</span><span class="desc">Class weight for minority class; typically \(> 1.0\) to penalize minority errors more; often inversely proportional to class frequency</span></div>
+                <div class="key-point"><span class="label">\(w_{\text{maj}}\):</span><span class="desc">Class weight for majority class; typically \(< 1.0\); often set to balance total weighted samples across classes</span></div>
+                <div class="key-point"><span class="label">\(L(\hat{y}_{\text{neg}} \mid y_{\text{pos}})\):</span><span class="desc">Loss for predicting negative when true label is positive (false negative); penalized by \(w_{\text{min}}\)</span></div>
+                <div class="key-point"><span class="label">\(L(\hat{y}_{\text{pos}} \mid y_{\text{neg}})\):</span><span class="desc">Loss for predicting positive when true label is negative (false positive); penalized by \(w_{\text{maj}}\)</span></div>
 
                 <div class="mnemonic">Never use accuracy for imbalanced data. Always F1 (harmonic mean), AUC-PR (focuses on minority), or recall (catch positives).</div>
 
@@ -584,7 +590,7 @@
 
                 <div class="key-point">
                     <span class="label">Threshold tuning:</span>
-                    <span class="desc">Instead of P(y=1) > 0.5, use P(y=1) > 0.3 to raise recall. Trade precision for recall based on business cost.</span>
+                    <span class="desc">Instead of \(P(y=1) > 0.5\), use \(P(y=1) > 0.3\) to raise recall. Trade precision for recall based on business cost.</span>
                 </div>
 
                 <div class="key-point">
@@ -763,16 +769,16 @@
                 <h4>Interview Tips: Data Augmentation</h4>
                 <p><strong>What it is:</strong> Generate new training samples from existing via transformations preserving label. Cheap way to increase training size. Only for training, not test/inference.</p>
 
-                <div class="formula">MixUp: x_aug = λ·x_i + (1-λ)·x_j, y_aug = λ·y_i + (1-λ)·y_j, where λ ~ Beta(α,α)</div>
-                <div class="key-point"><span class="label">x_i, x_j:</span><span class="desc">Two randomly sampled training examples (e.g., images or feature vectors); can have same or different classes</span></div>
-                <div class="key-point"><span class="label">λ:</span><span class="desc">Mixing weight sampled from Beta(α, α); α typically 1.0; λ ∈ [0, 1] controls the blend ratio</span></div>
-                <div class="key-point"><span class="label">x_aug:</span><span class="desc">Augmented feature; linear combination of two samples; new synthetic example</span></div>
-                <div class="key-point"><span class="label">y_i, y_j:</span><span class="desc">Target labels (0 or 1 for binary, or class indices for multiclass)</span></div>
-                <div class="key-point"><span class="label">y_aug:</span><span class="desc">Mixed target label; soft target ∈ [0, 1]; represents uncertain/interpolated label between two classes</span></div>
-                <div class="key-point"><span class="label">Beta(α, α):</span><span class="desc">Symmetric Beta distribution; α=1 gives uniform [0,1], α>1 concentrates near 0.5 (balanced mixing)</span></div>
-                <div class="formula">CutMix: patch one image with region from another; aggressive + label-preserving</div>
+                <div class="formula">$$\tilde{x} = \lambda \cdot x_i + (1-\lambda) \cdot x_j, \quad \tilde{y} = \lambda \cdot y_i + (1-\lambda) \cdot y_j, \quad \lambda \sim \text{Beta}(\alpha, \alpha)$$</div>
+                <div class="key-point"><span class="label">\(x_i, x_j\):</span><span class="desc">Two randomly sampled training examples (e.g., images or feature vectors); can have same or different classes</span></div>
+                <div class="key-point"><span class="label">\(\lambda\):</span><span class="desc">Mixing weight sampled from \(\text{Beta}(\alpha, \alpha)\); \(\alpha\) typically 1.0; \(\lambda \in [0, 1]\) controls the blend ratio</span></div>
+                <div class="key-point"><span class="label">\(\tilde{x}\):</span><span class="desc">Augmented feature; linear combination of two samples; new synthetic example</span></div>
+                <div class="key-point"><span class="label">\(y_i, y_j\):</span><span class="desc">Target labels (0 or 1 for binary, or class indices for multiclass)</span></div>
+                <div class="key-point"><span class="label">\(\tilde{y}\):</span><span class="desc">Mixed target label; soft target \(\in [0, 1]\); represents uncertain/interpolated label between two classes</span></div>
+                <div class="key-point"><span class="label">\(\text{Beta}(\alpha, \alpha)\):</span><span class="desc">Symmetric Beta distribution; \(\alpha=1\) gives uniform \([0,1]\), \(\alpha>1\) concentrates near 0.5 (balanced mixing)</span></div>
+                <div class="formula">$$\text{CutMix: patch one image with region from another; aggressive + label-preserving}$$</div>
                 <div class="key-point"><span class="label">CutMix mechanism:</span><span class="desc">Cuts a random rectangular patch from one image, pastes it into another image at a random location</span></div>
-                <div class="key-point"><span class="label">Label handling:</span><span class="desc">Label proportional to patch area ratio; if 30% of image from class A, label = 0.3·y_A + 0.7·y_B (soft label)</span></div>
+                <div class="key-point"><span class="label">Label handling:</span><span class="desc">Label proportional to patch area ratio; if 30% of image from class A, label = \(0.3 \cdot y_A + 0.7 \cdot y_B\) (soft label)</span></div>
 
                 <div class="mnemonic">Images: rotate, flip, crop, color jitter. Text: back-translate, synonym replace. Tabular: SMOTE better. Augment train only, never test.</div>
 
@@ -847,18 +853,18 @@
                 <h4>Interview Tips: Temporal Features and Time-Series Representation</h4>
                 <p><strong>What it is:</strong> Encode time-indexed data into ML-friendly features. Adjacent time steps correlated (non-i.i.d.). Need cyclical, lag, rolling features. Avoid lookahead bias.</p>
 
-                <div class="formula">Cyclical: hour_sin = sin(2π·hour/24), hour_cos = cos(2π·hour/24)  →  circularity preserved</div>
-                <div class="key-point"><span class="label">hour:</span><span class="desc">Hour-of-day value, ∈ {0, 1, ..., 23}</span></div>
-                <div class="key-point"><span class="label">2π:</span><span class="desc">Full circle in radians; maps period to complete rotation</span></div>
-                <div class="key-point"><span class="label">hour/24:</span><span class="desc">Normalized hour to [0, 1) fraction of day</span></div>
-                <div class="key-point"><span class="label">hour_sin:</span><span class="desc">Sine component ∈ [-1, 1]; represents y-coordinate on unit circle</span></div>
-                <div class="key-point"><span class="label">hour_cos:</span><span class="desc">Cosine component ∈ [-1, 1]; represents x-coordinate on unit circle; together preserve circularity (hour 23 ≈ hour 0)</span></div>
-                <div class="formula">Lag features: X_{t-1}, X_{t-2}, ..., X_{t-k} as features  |  Rolling MA_t = mean(X_{t-6}...X_t)</div>
-                <div class="key-point"><span class="label">X_t:</span><span class="desc">Feature value at current time step t</span></div>
-                <div class="key-point"><span class="label">X_{t-i}:</span><span class="desc">Feature value i steps in the past (lag i); i ∈ {1, 2, ..., k}</span></div>
-                <div class="key-point"><span class="label">k:</span><span class="desc">Maximum lag; number of past time steps to use as features; chosen via ACF plots or domain knowledge</span></div>
-                <div class="key-point"><span class="label">Rolling MA_t:</span><span class="desc">Moving average at time t computed over last L time steps (e.g., L=6); smooths noise, captures trend</span></div>
-                <div class="key-point"><span class="label">L:</span><span class="desc">Window size for rolling statistic; L=24 for daily seasonality (hourly data), L=168 for weekly (hourly data)</span></div>
+                <div class="formula">$$\text{hour\_sin} = \sin\!\left(\frac{2\pi \cdot \text{hour}}{24}\right), \quad \text{hour\_cos} = \cos\!\left(\frac{2\pi \cdot \text{hour}}{24}\right) \;\rightarrow\; \text{circularity preserved}$$</div>
+                <div class="key-point"><span class="label">hour:</span><span class="desc">Hour-of-day value, \(\in \{0, 1, \ldots, 23\}\)</span></div>
+                <div class="key-point"><span class="label">\(2\pi\):</span><span class="desc">Full circle in radians; maps period to complete rotation</span></div>
+                <div class="key-point"><span class="label">hour/24:</span><span class="desc">Normalized hour to \([0, 1)\) fraction of day</span></div>
+                <div class="key-point"><span class="label">hour_sin:</span><span class="desc">Sine component \(\in [-1, 1]\); represents y-coordinate on unit circle</span></div>
+                <div class="key-point"><span class="label">hour_cos:</span><span class="desc">Cosine component \(\in [-1, 1]\); represents x-coordinate on unit circle; together preserve circularity (hour 23 \(\approx\) hour 0)</span></div>
+                <div class="formula">$$\text{Lag features: } X_{t-1}, X_{t-2}, \ldots, X_{t-k} \quad | \quad MA_t = \frac{1}{L}\sum_{i=0}^{L-1} X_{t-i}$$</div>
+                <div class="key-point"><span class="label">\(X_t\):</span><span class="desc">Feature value at current time step \(t\)</span></div>
+                <div class="key-point"><span class="label">\(X_{t-i}\):</span><span class="desc">Feature value \(i\) steps in the past (lag \(i\)); \(i \in \{1, 2, \ldots, k\}\)</span></div>
+                <div class="key-point"><span class="label">\(k\):</span><span class="desc">Maximum lag; number of past time steps to use as features; chosen via ACF plots or domain knowledge</span></div>
+                <div class="key-point"><span class="label">\(MA_t\):</span><span class="desc">Moving average at time \(t\) computed over last \(L\) time steps (e.g., \(L=6\)); smooths noise, captures trend</span></div>
+                <div class="key-point"><span class="label">\(L\):</span><span class="desc">Window size for rolling statistic; \(L=24\) for daily seasonality (hourly data), \(L=168\) for weekly (hourly data)</span></div>
 
                 <div class="mnemonic">Hour 23 close to hour 0 (one-hot fails). Use sin/cos. Lag-24 = 1 day seasonality, lag-168 = 1 week (for hourly data).</div>
 
@@ -871,7 +877,7 @@
                     </div>
                     <div class="option">
                         <div class="opt-title">Lag Features</div>
-                        <div class="opt-desc">Past values X_{t-k}. Capture autoregressive patterns. Use ACF plots to find significant lags. Too many = noise.</div>
+                        <div class="opt-desc">Past values \(X_{t-k}\). Capture autoregressive patterns. Use ACF plots to find significant lags. Too many = noise.</div>
                     </div>
                 </div>
 
@@ -901,10 +907,10 @@
 
                 <div class="key-point">
                     <span class="label">Stationarity:</span>
-                    <span class="desc">If non-stationary (trend), difference: X_t - X_{t-1}. For seasonality: X_t - X_{t-s}. Many models assume stationarity.</span>
+                    <span class="desc">If non-stationary (trend), difference: \(X_t - X_{t-1}\). For seasonality: \(X_t - X_{t-s}\). Many models assume stationarity.</span>
                 </div>
 
-                <div class="interview-tip">Include target lag-1 as feature? Yes if available at train. Production: use X_{t-1} predict Y_t (not Y_{t-1}, which unavailable).</div>
+                <div class="interview-tip">Include target lag-1 as feature? Yes if available at train. Production: use \(X_{t-1}\) predict \(Y_t\) (not \(Y_{t-1}\), which unavailable).</div>
                 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Build a time-series model: use X_{t-1} to predict Y_t (previous input predicts current target). Never use Y_{t-1} as input—it's unavailable at deployment. Lag-1 often most predictive; higher lags add noise.</div>
             </div>
         </div>
@@ -933,13 +939,13 @@
                 <h4>Interview Tips: Weak Supervision and Programmatic Labeling</h4>
                 <p><strong>What it is:</strong> Label data via noisy heuristics (labeling functions) instead of manual annotation. Trade annotation cost (low) for label quality (imperfect). Snorkel learns LF accuracies, downweights bad ones.</p>
 
-                <div class="mnemonic">Labeling function = heuristic rule mapping sample → label (or abstain). Snorkel combines multiple LFs via label model learning P(Y | LF outputs).</div>
+                <div class="mnemonic">Labeling function = heuristic rule mapping sample \(\rightarrow\) label (or abstain). Snorkel combines multiple LFs via label model learning \(P(Y \mid \text{LF outputs})\).</div>
 
                 <hr class="divider">
 
                 <div class="key-point">
                     <span class="label">Label model learning:</span>
-                    <span class="desc">Learns (1) accuracy of each LF, (2) correlations between LFs. Outputs P(Y | L_1, ..., L_k). High-confidence samples become train data.</span>
+                    <span class="desc">Learns (1) accuracy of each LF, (2) correlations between LFs. Outputs \(P(Y \mid L_1, \ldots, L_k)\). High-confidence samples become train data.</span>
                 </div>
 
                 <div class="key-point">

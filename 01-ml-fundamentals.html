@@ -48,7 +48,13 @@
   .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
   .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
 
+  .katex { color: #e8e8ff; font-size: 1.1em; }
+  .formula .katex { font-size: 1.2em; }
+
 </style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '\\(', right: '\\)', display: false}]});"></script>
 </head>
 <body>
 
@@ -86,29 +92,29 @@
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Bayes Theorem is the foundation of probabilistic inference.
-    <div class="formula">P(A|B) = <span class="highlight">P(B|A) · P(A)</span> / P(B)</div>
+    <div class="formula">$$P(A|B) = \frac{\color{#64ffda}{P(B|A) \cdot P(A)}}{P(B)}$$</div>
     <div class="key-point">
       <span class="label">Posterior:</span>
-      <span class="desc">P(A|B) - updated belief after observing evidence</span>
+      <span class="desc">\(P(A|B)\) - updated belief after observing evidence</span>
     </div>
     <div class="key-point">
       <span class="label">Likelihood:</span>
-      <span class="desc">P(B|A) - probability of data if hypothesis is true</span>
+      <span class="desc">\(P(B|A)\) - probability of data if hypothesis is true</span>
     </div>
     <div class="key-point">
       <span class="label">Prior:</span>
-      <span class="desc">P(A) - initial belief before seeing data</span>
+      <span class="desc">\(P(A)\) - initial belief before seeing data</span>
     </div>
     <div class="key-point">
       <span class="label">Evidence:</span>
-      <span class="desc">P(B) - total probability of observing data (normalizer)</span>
+      <span class="desc">\(P(B)\) - total probability of observing data (normalizer)</span>
     </div>
     <hr class="divider">
     <div class="interview-tip">Base rate fallacy: A 99% accurate test on a 1% prevalence disease gives only ~50% posterior probability. Prior dominates with rare events!</div>
     <div class="mnemonic">Posterior ∝ Likelihood × Prior. Update beliefs by multiplying how well data fits with what you already believed.</div>
     <div class="key-point">
       <span class="label">ML Connection:</span>
-      <span class="desc">L2 regularization λ||w||² = log Gaussian prior on weights. Regularization = MAP with Gaussian prior.</span>
+      <span class="desc">L2 regularization \(\lambda\|w\|^2\) = log Gaussian prior on weights. Regularization = MAP with Gaussian prior.</span>
     
     <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set Prior=1%, Sensitivity=99%, Specificity=99%. The posterior is ~50%, not 99%! Now increase Prior to 50% — the posterior jumps to 99%. Base rate is everything. Then reduce Sensitivity to 70% with Prior=1% — posterior drops below 10%.</div>
   </div>
@@ -145,19 +151,19 @@
     <div class="comparison">
       <div class="option">
         <div class="opt-title">Bernoulli / Binomial</div>
-        <div class="opt-desc">Binary events. Binomial: E[X]=np, Var=np(1-p) for n trials.
+        <div class="opt-desc">Binary events. Binomial: \(E[X] = np\), \(\text{Var} = np(1-p)\) for n trials.
     <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click Gaussian and drag Parameter to 0.1, then to 0.9 — watch mean shift but variance stay high. Switch to Poisson with λ=1, then λ=10 — watch the shape change from spike to bell curve. Why? As λ increases, Poisson approximates Gaussian.</div>
   </div>
 </div>
       <div class="option">
         <div class="opt-title">Poisson</div>
-        <div class="opt-desc">Rare events with rate λ. When n large, p small, approximates Binomial.</div>
+        <div class="opt-desc">Rare events with rate \(\lambda\). When n large, p small, approximates Binomial.</div>
       </div>
     </div>
     <div class="comparison">
       <div class="option">
         <div class="opt-title">Gaussian</div>
-        <div class="opt-desc">Parameterized by μ, σ². Everywhere due to Central Limit Theorem.</div>
+        <div class="opt-desc">Parameterized by \(\mu, \sigma^2\). Everywhere due to Central Limit Theorem.</div>
       </div>
       <div class="option">
         <div class="opt-title">Exponential</div>
@@ -166,7 +172,7 @@
     </div>
     <div class="key-point">
       <span class="label">Beta Distribution:</span>
-      <span class="desc">Conjugate prior to Binomial. Flexible shapes via α, β. Standard for Bayesian A/B tests.</span>
+      <span class="desc">Conjugate prior to Binomial. Flexible shapes via \(\alpha, \beta\). Standard for Bayesian A/B tests.</span>
     </div>
     <hr class="divider">
     <div class="interview-tip">When to use each? Poisson for counts, Gaussian for continuous data, Beta for probability parameters, Exponential for waiting times.</div>
@@ -200,14 +206,14 @@
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> MLE maximizes likelihood; MAP incorporates prior beliefs.
-    <div class="formula">MLE: θ* = argmax<sub>θ</sub> log P(data|θ)</div>
-    <div class="key-point"><span class="label">θ:</span><span class="desc">Model parameters to optimize (weights, means, variances, etc.). θ* is the optimal value.</span></div>
-    <div class="key-point"><span class="label">argmax<sub>θ</sub>:</span><span class="desc">Find the parameter value θ that maximizes the expression—returns θ not the maximum value</span></div>
-    <div class="key-point"><span class="label">P(data|θ):</span><span class="desc">Likelihood—probability of observing the data given parameters θ. Higher = better fit.</span></div>
-    <div class="formula">MAP: θ* = argmax<sub>θ</sub> [log P(data|θ) + <span class="highlight">log P(θ)</span>]</div>
-    <div class="key-point"><span class="label">P(data|θ):</span><span class="desc">Likelihood—same as MLE, fits data well</span></div>
-    <div class="key-point"><span class="label">P(θ):</span><span class="desc">Prior—encodes domain belief about which θ values are reasonable before seeing data</span></div>
-    <div class="key-point"><span class="label">Adding log P(θ):</span><span class="desc">Biases optimization toward high-probability θ regions. In neural networks, this is regularization (L2 = Gaussian prior, L1 = Laplace prior)</span></div>
+    <div class="formula">$$\text{MLE: } \theta^* = \arg\max_{\theta} \log P(\text{data}|\theta)$$</div>
+    <div class="key-point"><span class="label">\(\theta\):</span><span class="desc">Model parameters to optimize (weights, means, variances, etc.). \(\theta^*\) is the optimal value.</span></div>
+    <div class="key-point"><span class="label">\(\arg\max_{\theta}\):</span><span class="desc">Find the parameter value \(\theta\) that maximizes the expression—returns \(\theta\) not the maximum value</span></div>
+    <div class="key-point"><span class="label">\(P(\text{data}|\theta)\):</span><span class="desc">Likelihood—probability of observing the data given parameters \(\theta\). Higher = better fit.</span></div>
+    <div class="formula">$$\text{MAP: } \theta^* = \arg\max_{\theta} \left[\log P(\text{data}|\theta) + \color{#64ffda}{\log P(\theta)}\right]$$</div>
+    <div class="key-point"><span class="label">\(P(\text{data}|\theta)\):</span><span class="desc">Likelihood—same as MLE, fits data well</span></div>
+    <div class="key-point"><span class="label">\(P(\theta)\):</span><span class="desc">Prior—encodes domain belief about which \(\theta\) values are reasonable before seeing data</span></div>
+    <div class="key-point"><span class="label">Adding \(\log P(\theta)\):</span><span class="desc">Biases optimization toward high-probability \(\theta\) regions. In neural networks, this is regularization (L2 = Gaussian prior, L1 = Laplace prior)</span></div>
     <div class="comparison">
       <div class="option">
         <div class="opt-title">Maximum Likelihood</div>
@@ -217,13 +223,13 @@
 </div>
       <div class="option">
         <div class="opt-title">Maximum A Posteriori</div>
-        <div class="opt-desc">Incorporates P(θ). Combines likelihood with domain knowledge.</div>
+        <div class="opt-desc">Incorporates \(P(\theta)\). Combines likelihood with domain knowledge.</div>
       </div>
     </div>
     <hr class="divider">
     <div class="key-point">
       <span class="label">Regularization = MAP:</span>
-      <span class="desc">L2 regularization λ||w||² = log Gaussian prior. Regularization is MAP in disguise.</span>
+      <span class="desc">L2 regularization \(\lambda\|w\|^2\) = log Gaussian prior. Regularization is MAP in disguise.</span>
     </div>
     <div class="interview-tip">Use MAP when you have domain knowledge or limited data. Why regularization works? It encodes the belief that weights should be small.</div>
     <div class="mnemonic">MLE = trust data completely. MAP = balance data with prior beliefs. Regularization = MAP hidden in neural networks.</div>
@@ -252,7 +258,7 @@
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Sample means approach a Gaussian distribution as sample size increases, regardless of underlying distribution.
-    <div class="formula">If X₁, X₂, ..., Xₙ ~ any distribution with mean μ, variance σ²<br>Then: (X̄ - μ)/(σ/√n) → <span class="highlight">N(0,1)</span></div>
+    <div class="formula">$$\text{If } X_1, X_2, \ldots, X_n \sim \text{any distribution with mean } \mu, \text{ variance } \sigma^2$$$$\text{Then: } \frac{\bar{X} - \mu}{\sigma / \sqrt{n}} \to \color{#64ffda}{\mathcal{N}(0,1)}$$</div>
     <div class="key-point">
       <span class="label">Key condition:</span>
       <span class="desc">Finite variance. Distribution shape doesn't matter—only mean and variance.</span>
@@ -299,18 +305,18 @@
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Entropy measures information content and fundamental limits of compression.
-    <div class="formula">H(p) = -Σ p(x) log p(x)</div>
-    <div class="key-point"><span class="label">p(x):</span><span class="desc">True probability of outcome x (the real data distribution)</span></div>
-    <div class="key-point"><span class="label">Σ:</span><span class="desc">Sum over all possible outcomes x in the distribution</span></div>
+    <div class="formula">$$H(p) = -\sum p(x) \log p(x)$$</div>
+    <div class="key-point"><span class="label">\(p(x)\):</span><span class="desc">True probability of outcome x (the real data distribution)</span></div>
+    <div class="key-point"><span class="label">\(\sum\):</span><span class="desc">Sum over all possible outcomes x in the distribution</span></div>
     <div class="key-point"><span class="label">H(p):</span><span class="desc">Minimum average bits needed to encode outcomes from distribution p (lossless compression limit). Maximum = log₂(N) for N equally likely outcomes.</span></div>
     <hr class="divider">
-    <div class="formula">Cross-entropy: H(p, q) = -Σ p(x) log q(x)</div>
+    <div class="formula">$$\text{Cross-entropy: } H(p, q) = -\sum p(x) \log q(x)$$</div>
     <div class="key-point"><span class="label">p(x):</span><span class="desc">True distribution — how outcomes actually occur (e.g., true labels)</span></div>
     <div class="key-point"><span class="label">q(x):</span><span class="desc">Model's predicted distribution — your approximation (e.g., softmax outputs)</span></div>
     <div class="key-point"><span class="label">H(p, q):</span><span class="desc">Average bits needed when encoding with wrong distribution q. Always ≥ H(p). The gap is the KL divergence.</span></div>
     <hr class="divider">
-    <div class="formula">KL(p ‖ q) = H(p, q) − H(p) = Σ p(x) log <span class="highlight">p(x) / q(x)</span></div>
-    <div class="key-point"><span class="label">p(x) / q(x):</span><span class="desc">Likelihood ratio — how much the true distribution disagrees with the model at each point x</span></div>
+    <div class="formula">$$D_{KL}(p \| q) = H(p, q) - H(p) = \sum p(x) \log \color{#64ffda}{\frac{p(x)}{q(x)}}$$</div>
+    <div class="key-point"><span class="label">\(\frac{p(x)}{q(x)}\):</span><span class="desc">Likelihood ratio — how much the true distribution disagrees with the model at each point x</span></div>
     <div class="key-point"><span class="label">KL = 0:</span><span class="desc">q perfectly matches p everywhere. KL ≥ 0 always (Gibbs' inequality).</span></div>
     <div class="key-point"><span class="label">Asymmetric:</span><span class="desc">KL(p‖q) ≠ KL(q‖p) — this matters hugely for VAEs vs. expectation propagation</span></div>
     <hr class="divider">
@@ -395,25 +401,25 @@
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Momentum accelerates convergence by accumulating velocity over time.
-    <div class="formula">Standard SGD: θ ← θ - <span class="highlight">lr·∇L(θ)</span></div>
-    <div class="key-point"><span class="label">θ:</span><span class="desc">Model parameters (weights, biases). ← means "update to"</span></div>
-    <div class="key-point"><span class="label">lr:</span><span class="desc">Learning rate—step size for parameter update. Typical range: 0.001 to 0.1 depending on optimizer. Too large = divergence, too small = slow convergence.</span></div>
-    <div class="key-point"><span class="label">∇L(θ):</span><span class="desc">Gradient of loss w.r.t. parameters. Points in direction of steepest increase. We move opposite (negative sign) to decrease loss.</span></div>
-    <div class="formula">Momentum: v<sub>t</sub> = <span class="highlight">β·v<sub>t-1</sub></span> + ∇L(θ),  then θ ← θ - lr·v<sub>t</sub></div>
-    <div class="key-point"><span class="label">v<sub>t</sub>:</span><span class="desc">Velocity vector at iteration t. Accumulates gradients over time with decay</span></div>
-    <div class="key-point"><span class="label">β:</span><span class="desc">Momentum coefficient, typically 0.9. Controls how much history to retain. β ∈ (0,1)</span></div>
-    <div class="key-point"><span class="label">β·v<sub>t-1</sub> + ∇L(θ):</span><span class="desc">Weighted sum: retain 90% of previous velocity (β=0.9), add current gradient. Smooths oscillations, accelerates consistent directions.</span></div>
+    <div class="formula">$$\text{Standard SGD: } \theta \leftarrow \theta - \color{#64ffda}{\eta \cdot \nabla L(\theta)}$$</div>
+    <div class="key-point"><span class="label">\(\theta\):</span><span class="desc">Model parameters (weights, biases). \(\leftarrow\) means "update to"</span></div>
+    <div class="key-point"><span class="label">\(\eta\):</span><span class="desc">Learning rate—step size for parameter update. Typical range: 0.001 to 0.1 depending on optimizer. Too large = divergence, too small = slow convergence.</span></div>
+    <div class="key-point"><span class="label">\(\nabla L(\theta)\):</span><span class="desc">Gradient of loss w.r.t. parameters. Points in direction of steepest increase. We move opposite (negative sign) to decrease loss.</span></div>
+    <div class="formula">$$\text{Momentum: } v_t = \color{#64ffda}{\beta \cdot v_{t-1}} + \nabla L(\theta), \quad \theta \leftarrow \theta - \eta \cdot v_t$$</div>
+    <div class="key-point"><span class="label">\(v_t\):</span><span class="desc">Velocity vector at iteration t. Accumulates gradients over time with decay</span></div>
+    <div class="key-point"><span class="label">\(\beta\):</span><span class="desc">Momentum coefficient, typically 0.9. Controls how much history to retain. \(\beta \in (0,1)\)</span></div>
+    <div class="key-point"><span class="label">\(\beta \cdot v_{t-1} + \nabla L(\theta)\):</span><span class="desc">Weighted sum: retain 90% of previous velocity (\(\beta=0.9\)), add current gradient. Smooths oscillations, accelerates consistent directions.</span></div>
     <div class="key-point">
       <span class="label">What momentum does:</span>
       <span class="desc">Accumulates velocity in consistent directions. Dampens oscillations in directions that change sign. Accelerates in plateau regions.</span>
     </div>
     <div class="key-point">
-      <span class="label">β parameter:</span>
-      <span class="desc">Typically 0.9. Controls how much history to retain. Higher β = more history, smoother but slower to change direction.</span>
+      <span class="label">\(\beta\) parameter:</span>
+      <span class="desc">Typically 0.9. Controls how much history to retain. Higher \(\beta\) = more history, smoother but slower to change direction.</span>
     </div>
     <div class="key-point">
       <span class="label">Typical choices:</span>
-      <span class="desc">β=0.9 for standard SGD. Modern optimizers (Adam) incorporate momentum automatically.</span>
+      <span class="desc">\(\beta=0.9\) for standard SGD. Modern optimizers (Adam) incorporate momentum automatically.</span>
     </div>
     <hr class="divider">
     <div class="interview-tip">Momentum helps escape local minima and plateaus. It's like a ball rolling downhill—accumulates speed in good directions.</div>
@@ -441,17 +447,17 @@
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Learning rate controls gradient step magnitude—most critical hyperparameter.
-    <div class="formula">θ ← θ - <span class="highlight">α·∇L(θ)</span>  where α is learning rate</div>
+    <div class="formula">$$\theta \leftarrow \theta - \color{#64ffda}{\alpha \cdot \nabla L(\theta)} \quad \text{where } \alpha \text{ is learning rate}$$</div>
     <div class="key-point">
-      <span class="label">Too small α:</span>
+      <span class="label">Too small \(\alpha\):</span>
       <span class="desc">Training prohibitively slow. May get stuck in local minima. High variance from noise.</span>
     </div>
     <div class="key-point">
-      <span class="label">Too large α:</span>
+      <span class="label">Too large \(\alpha\):</span>
       <span class="desc">Parameters diverge, loss oscillates wildly, training explodes. May diverge immediately.</span>
     </div>
     <div class="key-point">
-      <span class="label">Finding the right α:</span>
+      <span class="label">Finding the right \(\alpha\):</span>
       <span class="desc">Learning rate schedules (decay, warm restart). Rule of thumb: start with 0.001-0.01, adjust based on loss curve.</span>
     </div>
     <div class="key-point">
@@ -486,17 +492,17 @@
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> SVD factors any matrix into orthogonal matrices and singular values.
-    <div class="formula">A (m×n) = <span class="highlight">U·Σ·V<sup>T</sup></span></div>
+    <div class="formula">$$A_{(m \times n)} = \color{#64ffda}{U \cdot \Sigma \cdot V^T}$$</div>
     <div class="key-point">
       <span class="label">U (m×m):</span>
       <span class="desc">Orthogonal matrix. Columns are principal directions of A.</span>
     </div>
     <div class="key-point">
-      <span class="label">Σ (m×n):</span>
-      <span class="desc">Diagonal with singular values σ₁≥σ₂≥... decreasing order. Represents importance of each direction.</span>
+      <span class="label">\(\Sigma\) (m×n):</span>
+      <span class="desc">Diagonal with singular values \(\sigma_1 \geq \sigma_2 \geq \ldots\) decreasing order. Represents importance of each direction.</span>
     </div>
     <div class="key-point">
-      <span class="label">V<sup>T</sup> (n×n):</span>
+      <span class="label">\(V^T\) (n×n):</span>
       <span class="desc">Orthogonal matrix. Rows are principal directions in original space.</span>
     </div>
     <div class="key-point">
@@ -537,14 +543,14 @@
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Eigendecomposition factorizes symmetric matrices into eigenvectors and eigenvalues.
-    <div class="formula">For symmetric A: <span class="highlight">A = Q·Λ·Q<sup>T</sup></span></div>
+    <div class="formula">$$\text{For symmetric } A: \quad \color{#64ffda}{A = Q \cdot \Lambda \cdot Q^T}$$</div>
     <div class="key-point">
       <span class="label">Q (n×n):</span>
       <span class="desc">Orthogonal matrix of eigenvectors. Columns are principal axes of A.</span>
     </div>
     <div class="key-point">
-      <span class="label">Λ (n×n):</span>
-      <span class="desc">Diagonal matrix with eigenvalues λ₁, λ₂, ... on diagonal. Represents stretch/compression along each eigenvector.</span>
+      <span class="label">\(\Lambda\) (n×n):</span>
+      <span class="desc">Diagonal matrix with eigenvalues \(\lambda_1, \lambda_2, \ldots\) on diagonal. Represents stretch/compression along each eigenvector.</span>
     </div>
     <div class="key-point">
       <span class="label">For covariance matrices:</span>
@@ -585,7 +591,7 @@
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Test error decomposes into three parts: bias, variance, and irreducible error.
-    <div class="formula">E[(y - f̂)²] = <span class="highlight">Bias(f̂)²</span> + <span class="highlight">Var(f̂)</span> + σ²</div>
+    <div class="formula">$$E[(y - \hat{f})^2] = \color{#64ffda}{\text{Bias}(\hat{f})^2} + \color{#64ffda}{\text{Var}(\hat{f})} + \sigma^2$$</div>
     <div class="key-point">
       <span class="label">Bias:</span>
       <span class="desc">Error from wrong modeling assumptions. E.g., fitting a line to curved data. High bias = underfitting.</span>
@@ -595,7 +601,7 @@
       <span class="desc">Sensitivity to training set fluctuations. Small changes in data cause large model changes. High variance = overfitting.</span>
     </div>
     <div class="key-point">
-      <span class="label">Irreducible error σ²:</span>
+      <span class="label">Irreducible error \(\sigma^2\):</span>
       <span class="desc">Noise in labels. Can't reduce below this. Sets performance ceiling.</span>
     </div>
     <hr class="divider">
@@ -631,14 +637,14 @@
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> L1 regularization induces sparsity by constraining weights to a diamond region.
-    <div class="formula">Loss + <span class="highlight">λ·Σ|w<sub>i</sub>|</span>  (add L1 penalty)</div>
+    <div class="formula">$$\text{Loss} + \color{#64ffda}{\lambda \cdot \sum |w_i|} \quad \text{(add L1 penalty)}$$</div>
     <div class="key-point">
       <span class="label">Geometric intuition:</span>
       <span class="desc">Constraint region is diamond-shaped (axis-aligned). Loss contours are elliptical. Optimum hits corner on axes → many w=0.</span>
     </div>
     <div class="key-point">
       <span class="label">Sparsity:</span>
-      <span class="desc">As λ increases, more weights become exactly zero. Natural feature selection. Only important features remain.</span>
+      <span class="desc">As \(\lambda\) increases, more weights become exactly zero. Natural feature selection. Only important features remain.</span>
     </div>
     <div class="key-point">
       <span class="label">Why L1 sparsifies:</span>
@@ -679,14 +685,14 @@
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Kernel trick enables high/infinite-dimensional computations without explicit feature vectors.
-    <div class="formula">If K(x, x') = φ(x)·φ(x'), then can work in feature space using K</div>
+    <div class="formula">$$\text{If } K(x, x') = \varphi(x) \cdot \varphi(x'), \text{ then can work in feature space using } K$$</div>
     <div class="key-point">
       <span class="label">Core idea:</span>
-      <span class="desc">Compute dot products in high-dimensional feature space φ(x)·φ(x') without computing φ explicitly. Only need kernel K.</span>
+      <span class="desc">Compute dot products in high-dimensional feature space \(\varphi(x) \cdot \varphi(x')\) without computing \(\varphi\) explicitly. Only need kernel K.</span>
     </div>
     <div class="key-point">
       <span class="label">Examples:</span>
-      <span class="desc">Linear: K(x,x')=x·x'. Polynomial: (x·x'+1)^d. RBF: exp(-γ||x-x'||²). Each corresponds to implicit feature space.</span>
+      <span class="desc">Linear: \(K(x,x')=x \cdot x'\). Polynomial: \((x \cdot x'+1)^d\). RBF: \(\exp(-\gamma\|x-x'\|^2)\). Each corresponds to implicit feature space.</span>
     </div>
     <div class="key-point">
       <span class="label">Advantage:</span>
@@ -694,7 +700,7 @@
     </div>
     <div class="key-point">
       <span class="label">Limitation:</span>
-      <span class="desc">Kernel matrix is O(n²) in memory. Only for kernelized algorithms (SVM, kernel regression, GP). Not all algorithms support kernels.</span>
+      <span class="desc">Kernel matrix is \(O(n^2)\) in memory. Only for kernelized algorithms (SVM, kernel regression, GP). Not all algorithms support kernels.</span>
     </div>
     <hr class="divider">
     <div class="interview-tip">Kernel trick = avoid curse of dimensionality. RBF kernel in high-dim is powerful but computationally expensive. Always check kernel matrix size.</div>
@@ -725,7 +731,7 @@
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> K-fold CV splits data into K disjoint folds for robust generalization estimates.
-    <div class="formula">Repeat K times: <span class="highlight">Train on K-1 folds</span>, test on held-out fold</div>
+    <div class="formula">$$\text{Repeat K times: } \color{#64ffda}{\text{Train on K-1 folds}}\text{, test on held-out fold}$$</div>
     <div class="key-point">
       <span class="label">Process:</span>
       <span class="desc">1. Split data into K disjoint folds. 2. Train on K-1, test on 1 fold. 3. Repeat K times. 4. Average K test errors.</span>
@@ -772,7 +778,7 @@
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Boosting sequentially trains weak learners, each correcting previous mistakes.
-    <div class="formula">F_m = F_{m-1} + <span class="highlight">learning_rate·tree_m(residuals)</span></div>
+    <div class="formula">$$F_m = F_{m-1} + \color{#64ffda}{\eta \cdot \text{tree}_m(\text{residuals})}$$</div>
     <div class="key-point">
       <span class="label">Algorithm:</span>
       <span class="desc">1. Train weak learner on data. 2. Compute residuals (prediction errors). 3. Train next learner on residuals. 4. Add with learning rate.</span>
@@ -837,14 +843,14 @@
       <span class="label">What p-value is NOT:</span>
       <span class="desc">NOT probability that H₀ is true. NOT probability your result is reproducible. NOT effect size or practical significance.</span>
     </div>
-    <div class="formula">Decision rule: p-value <span class="highlight">&lt; α</span> (typically 0.05) → reject H₀</div>
+    <div class="formula">$$\text{Decision rule: p-value } \color{#64ffda}{< \alpha} \text{ (typically 0.05)} \to \text{reject } H_0$$</div>
     <div class="key-point">
       <span class="label">Type I error (false positive):</span>
-      <span class="desc">Reject H₀ when it's true. Probability = α. Setting α=0.05 means 5% false positive rate.</span>
+      <span class="desc">Reject \(H_0\) when it's true. Probability = \(\alpha\). Setting \(\alpha=0.05\) means 5% false positive rate.</span>
     </div>
     <div class="key-point">
       <span class="label">Type II error (false negative):</span>
-      <span class="desc">Fail to reject H₀ when it's false. Probability = β. Power = 1-β.</span>
+      <span class="desc">Fail to reject \(H_0\) when it's false. Probability = \(\beta\). Power = \(1 - \beta\).</span>
     </div>
     <hr class="divider">
     <div class="interview-tip">Multiple comparisons: if you test 20 hypotheses at α=0.05, expect ~1 false positive. Use Bonferroni correction or false discovery rate control.</div>
@@ -879,14 +885,14 @@
   </div>
   <div class="insight-box">
     <strong>Interview Tips:</strong> Monte Carlo sampling is fundamental for intractable expectations.
-    <div class="formula">E[f(X)] = ∫f(x)p(x)dx ≈ <span class="highlight">(1/n)·Σf(x_i)</span>  where x_i ~ p(x)</div>
+    <div class="formula">$$E[f(X)] = \int f(x)p(x)dx \approx \color{#64ffda}{\frac{1}{n} \cdot \sum f(x_i)} \quad \text{where } x_i \sim p(x)$$</div>
     <div class="key-point">
       <span class="label">Algorithm:</span>
-      <span class="desc">1. Sample x₁,...,xₙ from p(x). 2. Compute average f̂ = (1/n)·Σf(xᵢ). 3. f̂ → E[f(X)] as n→∞ (Law of Large Numbers).</span>
+      <span class="desc">1. Sample \(x_1,\ldots,x_n\) from \(p(x)\). 2. Compute average \(\hat{f} = \frac{1}{n} \cdot \sum f(x_i)\). 3. \(\hat{f} \to E[f(X)]\) as \(n \to \infty\) (Law of Large Numbers).</span>
     </div>
     <div class="key-point">
       <span class="label">Convergence rate:</span>
-      <span class="desc">O(1/√n). Very slow! Need n² samples to halve error. Curse of dimensionality.</span>
+      <span class="desc">\(O(1/\sqrt{n})\). Very slow! Need \(n^2\) samples to halve error. Curse of dimensionality.</span>
     </div>
     <div class="key-point">
       <span class="label">Variance reduction:</span>
@@ -898,7 +904,7 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">Slow convergence but embarrassingly parallel. Useful when analytical integral is intractable. Always consider variance reduction.</div>
-    <div class="mnemonic">Monte Carlo = approximate integral by sampling. Simple, general, slow (O(1/√n)). Variance reduction is key.
+    <div class="mnemonic">Monte Carlo = approximate integral by sampling. Simple, general, slow (\(O(1/\sqrt{n})\)). Variance reduction is key.
     <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Generate 100 samples — estimate bounces around π. Generate 1000 samples (click 10 times) — estimate settles. Generate 10,000 samples — estimate ≈ 3.14159. Sampling error shrinks as O(1/√n). Quadruple samples to halve error.</div>
   </div>
 </div>
@@ -925,7 +931,7 @@
   </div>
   <div class="insight-box">
     <strong>Interview Tips:</strong> Log-sum-exp trick is essential for numerical stability in machine learning.
-    <div class="formula">log(Σexp(xᵢ)) = <span class="highlight">m + log(Σexp(xᵢ - m))</span>  where m = max(xᵢ)</div>
+    <div class="formula">$$\log\left(\sum \exp(x_i)\right) = \color{#64ffda}{m + \log\left(\sum \exp(x_i - m)\right)} \quad \text{where } m = \max(x_i)$$</div>
     <div class="key-point">
       <span class="label">The problem:</span>
       <span class="desc">Direct computation exp(x) overflows when x is large. E.g., exp(1000) exceeds float64 range.</span>
@@ -940,10 +946,10 @@
     </div>
     <div class="key-point">
       <span class="label">Equivalent form:</span>
-      <span class="desc">logsumexp(x) = m + log(Σexp(x-m)). PyTorch: torch.logsumexp(). NumPy: scipy.special.logsumexp().</span>
+      <span class="desc">\(\text{logsumexp}(x) = m + \log(\sum \exp(x - m))\). PyTorch: torch.logsumexp(). NumPy: scipy.special.logsumexp().</span>
     </div>
     <hr class="divider">
-    <div class="interview-tip">Always use log-space computation for probabilities and likelihoods. Never compute softmax as exp(x)/Σexp(x) directly.</div>
+    <div class="interview-tip">Always use log-space computation for probabilities and likelihoods. Never compute softmax as \(\exp(x)/\sum\exp(x)\) directly.</div>
     <div class="mnemonic">Log-sum-exp = prevent overflow/underflow by shifting to max. Subtract max, exponentiate safely, add max back in log space.
     <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set logits to [0, 1, 2] with Temperature=1. Both softmax versions work. Increase logits to [0, 100, 200]. Blue softmax overflows to NaN (exp(200) is huge!). Red (stable) softmax gives [~0, ~0, ~1]. Subtract max first, always.</div>
   </div>

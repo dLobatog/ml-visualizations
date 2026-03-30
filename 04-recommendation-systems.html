@@ -15,7 +15,7 @@
   .viz-section h2 { font-size: 1.5em; color: #ff9ff3; margin-bottom: 8px; }
   .viz-section .subtitle { color: #888; margin-bottom: 24px; font-size: 0.95em; }
   .viz-canvas { background: #0d0d1a; border-radius: 12px; position: relative; overflow: hidden; }
-  canvas { display: block; }
+  canvas { display: block; max-width: 100%; height: auto; }
   .controls { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; align-items: center; }
   .control-group { display: flex; flex-direction: column; gap: 4px; }
   .control-group label { font-size: 0.85em; color: #aaa; }
@@ -51,7 +51,13 @@
   .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
   .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
 
+  .katex { color: #e8e8ff; font-size: 1.1em; }
+  .formula .katex { font-size: 1.2em; }
+
 </style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '\\(', right: '\\)', display: false}]});"></script>
 </head>
 <body>
 
@@ -80,16 +86,16 @@
   <div class="metric-box" id="mfMetrics">Reconstruction Error: --</div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Singular Value Decomposition decomposes user-item matrix R into low-rank factors U, Σ, V, enabling scalable collaborative filtering despite sparse data.
-    <div class="formula">R ≈ U·Σ·Vᵀ, where ||R - <span class="highlight">Uₖ·Σₖ·Vₖᵀ</span>||² is minimized for rank-k approximation</div>
-    <div class="key-point"><span class="label">R:</span><span class="desc">User-item interaction matrix (m users × n items), sparse with mostly missing entries (0.01-1% observed)</span></div>
-    <div class="key-point"><span class="label">U:</span><span class="desc">User embedding matrix (m × k), each row is a user's latent preference vector in k-dimensional space</span></div>
-    <div class="key-point"><span class="label">Σ:</span><span class="desc">Singular values diagonal matrix (k × k), ordered by magnitude; higher values indicate more important latent factors</span></div>
-    <div class="key-point"><span class="label">Vᵀ:</span><span class="desc">Item embedding matrix transposed (k × n), each column is an item's latent factor vector</span></div>
+    <div class="formula">$$R \approx U \cdot \Sigma \cdot V^T, \text{ where } \|R - \color{#ff9ff3}{U_k \cdot \Sigma_k \cdot V_k^T}\|^2 \text{ is minimized for rank-k approximation}$$</div>
+    <div class="key-point"><span class="label">\(R\):</span><span class="desc">User-item interaction matrix (m users × n items), sparse with mostly missing entries (0.01-1% observed)</span></div>
+    <div class="key-point"><span class="label">\(U\):</span><span class="desc">User embedding matrix (m × k), each row is a user's latent preference vector in k-dimensional space</span></div>
+    <div class="key-point"><span class="label">\(\Sigma\):</span><span class="desc">Singular values diagonal matrix (k × k), ordered by magnitude; higher values indicate more important latent factors</span></div>
+    <div class="key-point"><span class="label">\(V^T\):</span><span class="desc">Item embedding matrix transposed (k × n), each column is an item's latent factor vector</span></div>
     <div class="key-point"><span class="label">k:</span><span class="desc">Latent dimension (rank of approximation), typically 64-512 in production; controls model capacity and latency trade-off</span></div>
     <div class="key-point"><span class="label">Data property:</span><span class="desc">Netflix-scale systems have only ~0.01-1% observed entries; explicit SVD cannot handle missing data</span></div>
     <div class="key-point"><span class="label">Parameter reduction:</span><span class="desc">From m·n (dense) to (m+n)·k (low-rank); k controls model capacity and latency trade-off</span></div>
     <div class="key-point"><span class="label">Algorithms:</span><span class="desc">SGD or Alternating Least Squares (ALS) instead of explicit eigendecomposition</span></div>
-    <div class="key-point"><span class="label">Production detail:</span><span class="desc">L2 regularization λ||U||² + λ||V||² prevents overfitting; normalize random initialization</span></div>
+    <div class="key-point"><span class="label">Production detail:</span><span class="desc">L2 regularization \(\lambda\|U\|^2 + \lambda\|V\|^2\) prevents overfitting; normalize random initialization</span></div>
     <hr class="divider">
 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Slide k from 1 to 50. At k=1, reconstruction is poor (RMSE high). At k=10–15, quality plateaus—diminishing returns. At k=50, you're overfitting (perfect train but bad test). The sweet spot is k=10–20. Also watch rank: smaller k = simpler model = generalizes better. This is the bias-variance tradeoff in dimensionality reduction.</div>
     <div class="interview-tip">Why does sparse data require different algorithms? Explicit SVD solvers (eigendecomposition) cannot handle missing values; SGD/ALS gracefully skip unobserved entries by computing only on observed pairs.</div>
@@ -116,7 +122,7 @@
   <div class="metric-box" id="towerMetrics">Top-3 Recommendations: --</div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Two-Tower (TT) decouples user and item feature processing, enabling pre-computed item embeddings and fast ANN-based retrieval at serving time.
-    <div class="formula">Score(u, i) = u · i, where u ∈ ℝᵈ (user embedding) and i ∈ ℝᵈ (item embedding) via independent towers</div>
+    <div class="formula">$$\text{Score}(u, i) = u \cdot i, \text{ where } u \in \mathbb{R}^d \text{ (user embedding) and } i \in \mathbb{R}^d \text{ (item embedding) via independent towers}$$</div>
     <div class="key-point"><span class="label">Score(u, i):</span><span class="desc">Relevance score for user u and item i; higher scores indicate better recommendations; used for ranking candidates</span></div>
     <div class="key-point"><span class="label">u:</span><span class="desc">User embedding vector (d-dimensional), output of user tower; learned from user features (ID, demographics, history)</span></div>
     <div class="key-point"><span class="label">i:</span><span class="desc">Item embedding vector (d-dimensional), output of item tower; learned from item features (metadata, content, category)</span></div>
@@ -252,11 +258,11 @@
         <div class="opt-desc">Embeddings + ReLU layers learn implicit nonlinear patterns; generalizes well but may miss important low-order feature interactions</div>
       </div>
     </div>
-    <div class="formula">L = α·L_wide + (1-α)·L_deep, balancing memorization and generalization (α typically 0.5)</div>
-    <div class="key-point"><span class="label">L:</span><span class="desc">Total training loss to optimize; weighted sum of wide and deep path losses</span></div>
-    <div class="key-point"><span class="label">L_wide:</span><span class="desc">Cross-entropy or logistic loss from wide path (linear model); penalizes incorrect memorized patterns</span></div>
-    <div class="key-point"><span class="label">L_deep:</span><span class="desc">Cross-entropy or logistic loss from deep path (neural network); penalizes incorrect generalized patterns</span></div>
-    <div class="key-point"><span class="label">α:</span><span class="desc">Weight balancing memorization vs generalization; α ∈ [0, 1]; α=0.5 gives equal importance; tune via validation</span></div>
+    <div class="formula">$$L = \alpha \cdot L_{\text{wide}} + (1-\alpha) \cdot L_{\text{deep}}, \text{ balancing memorization and generalization } (\alpha \text{ typically } 0.5)$$</div>
+    <div class="key-point"><span class="label">\(L\):</span><span class="desc">Total training loss to optimize; weighted sum of wide and deep path losses</span></div>
+    <div class="key-point"><span class="label">\(L_{\text{wide}}\):</span><span class="desc">Cross-entropy or logistic loss from wide path (linear model); penalizes incorrect memorized patterns</span></div>
+    <div class="key-point"><span class="label">\(L_{\text{deep}}\):</span><span class="desc">Cross-entropy or logistic loss from deep path (neural network); penalizes incorrect generalized patterns</span></div>
+    <div class="key-point"><span class="label">\(\alpha\):</span><span class="desc">Weight balancing memorization vs generalization; \(\alpha \in [0, 1]\); \(\alpha=0.5\) gives equal importance; tune via validation</span></div>
     <div class="key-point"><span class="label">Serving latency:</span><span class="desc">Wide path (linear) adds minimal cost; deep path dominates computation</span></div>
     <div class="key-point"><span class="label">Regularization:</span><span class="desc">L2 on wide weights (prevent overfit to specific user-item pairs); dropout on deep layers (prevent co-adaptation)</span></div>
     <div class="key-point"><span class="label">Shared embeddings:</span><span class="desc">Both paths share embedding tables; deep path learns better representations, improving wide path</span></div>
@@ -286,17 +292,17 @@
   <div class="metric-box" id="dcnMetrics">Cross Layers: -- | Deep Layers: 4</div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Deep & Cross Network (DCN) automates feature crossing without exponential explosion: each cross layer generates polynomial order 2^l interactions with only O(d) parameters per layer.
-    <div class="formula">x_{l+1} = x_0 ⊙ <span class="highlight">(wₗᵀ xₗ + bₗ)</span> + xₗ, where ⊙ is element-wise multiplication and x_0 is original input</div>
-    <div class="key-point"><span class="label">x_{l+1}:</span><span class="desc">Output of l-th cross layer; contains polynomial feature interactions up to order 2^l</span></div>
-    <div class="key-point"><span class="label">x_0:</span><span class="desc">Original input feature vector to first cross layer; preserved and used in residual connection throughout network</span></div>
-    <div class="key-point"><span class="label">x_l:</span><span class="desc">Input to l-th cross layer; output of previous cross layer (or x_0 if l=1)</span></div>
-    <div class="key-point"><span class="label">w_l:</span><span class="desc">Weight vector for l-th cross layer (d-dimensional); learns linear projection of input x_l to scalar</span></div>
-    <div class="key-point"><span class="label">b_l:</span><span class="desc">Bias term for l-th cross layer (scalar); adds offset to weighted sum w_l^T x_l</span></div>
-    <div class="key-point"><span class="label">⊙:</span><span class="desc">Element-wise (Hadamard) multiplication; gates original input x_0 by learned projection (w_l^T x_l + b_l)</span></div>
+    <div class="formula">$$x_{l+1} = x_0 \odot \color{#ff9ff3}{(w_l^T x_l + b_l)} + x_l, \text{ where } \odot \text{ is element-wise multiplication and } x_0 \text{ is original input}$$</div>
+    <div class="key-point"><span class="label">\(x_{l+1}\):</span><span class="desc">Output of l-th cross layer; contains polynomial feature interactions up to order \(2^l\)</span></div>
+    <div class="key-point"><span class="label">\(x_0\):</span><span class="desc">Original input feature vector to first cross layer; preserved and used in residual connection throughout network</span></div>
+    <div class="key-point"><span class="label">\(x_l\):</span><span class="desc">Input to l-th cross layer; output of previous cross layer (or \(x_0\) if l=1)</span></div>
+    <div class="key-point"><span class="label">\(w_l\):</span><span class="desc">Weight vector for l-th cross layer (d-dimensional); learns linear projection of input \(x_l\) to scalar</span></div>
+    <div class="key-point"><span class="label">\(b_l\):</span><span class="desc">Bias term for l-th cross layer (scalar); adds offset to weighted sum \(w_l^T x_l\)</span></div>
+    <div class="key-point"><span class="label">\(\odot\):</span><span class="desc">Element-wise (Hadamard) multiplication; gates original input \(x_0\) by learned projection \((w_l^T x_l + b_l)\)</span></div>
     <div class="key-point"><span class="label">l:</span><span class="desc">Cross layer index starting from 0; l-th layer produces 2^l-order feature interactions</span></div>
-    <div class="key-point"><span class="label">d:</span><span class="desc">Feature dimension; same throughout network; parameter count per layer is O(d), not O(d^2)</span></div>
+    <div class="key-point"><span class="label">\(d\):</span><span class="desc">Feature dimension; same throughout network; parameter count per layer is \(O(d)\), not \(O(d^2)\)</span></div>
     <div class="key-point"><span class="label">vs Wide & Deep:</span><span class="desc">Wide requires manual feature engineering (expensive); DCN learns feature crosses automatically</span></div>
-    <div class="key-point"><span class="label">Cross layer output:</span><span class="desc">l-th layer produces polynomial order 2^l (Layer 1: 2nd order, Layer 2: 4th order, etc.); exponential expressivity with linear parameters</span></div>
+    <div class="key-point"><span class="label">Cross layer output:</span><span class="desc">l-th layer produces polynomial order \(2^l\) (Layer 1: 2nd order, Layer 2: 4th order, etc.); exponential expressivity with linear parameters</span></div>
     <div class="key-point"><span class="label">Architecture:</span><span class="desc">Cross network (automatic feature crosses) + Deep network (embeddings + MLPs) in parallel; concatenate outputs for final classification layer</span></div>
     <div class="key-point"><span class="label">Serving cost:</span><span class="desc">Minimal latency overhead (simple dot products and element-wise ops); ideal for production constraints</span></div>
     <hr class="divider">
@@ -325,13 +331,13 @@
   <div class="metric-box" id="dinMetrics">Attention Weights: --</div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Attention computes dynamic relevance weights for historical items, capturing user's multi-faceted interests as weighted aggregation.
-    <div class="formula">Interest representation I = Σᵢ αᵢ · embed(item_i), where αᵢ = softmax(score(item_i, candidate))</div>
-    <div class="key-point"><span class="label">I:</span><span class="desc">Final user interest representation (d-dimensional); weighted average of historical item embeddings relevant to candidate</span></div>
-    <div class="key-point"><span class="label">Σᵢ:</span><span class="desc">Sum over all i historical items in user's sequence (i = 1..sequence_length)</span></div>
-    <div class="key-point"><span class="label">αᵢ:</span><span class="desc">Attention weight for item i; αᵢ ∈ [0,1] and Σαᵢ = 1; higher if item i is relevant to candidate</span></div>
-    <div class="key-point"><span class="label">embed(item_i):</span><span class="desc">Embedding vector (d-dimensional) of historical item i; learned during training</span></div>
-    <div class="key-point"><span class="label">score(item_i, candidate):</span><span class="desc">Raw relevance score (before softmax); typically dot product or learned bilinear similarity between historical and candidate embeddings</span></div>
-    <div class="key-point"><span class="label">softmax(·):</span><span class="desc">Converts scores to normalized weights; ensures αᵢ ≥ 0 and Σαᵢ = 1; emphasizes high-scoring items exponentially</span></div>
+    <div class="formula">$$I = \sum_i \alpha_i \cdot \text{embed}(\text{item}_i), \text{ where } \alpha_i = \text{softmax}(\text{score}(\text{item}_i, \text{candidate}))$$</div>
+    <div class="key-point"><span class="label">\(I\):</span><span class="desc">Final user interest representation (d-dimensional); weighted average of historical item embeddings relevant to candidate</span></div>
+    <div class="key-point"><span class="label">\(\sum_i\):</span><span class="desc">Sum over all i historical items in user's sequence (i = 1..sequence_length)</span></div>
+    <div class="key-point"><span class="label">\(\alpha_i\):</span><span class="desc">Attention weight for item i; \(\alpha_i \in [0,1]\) and \(\sum \alpha_i = 1\); higher if item i is relevant to candidate</span></div>
+    <div class="key-point"><span class="label">\(\text{embed}(\text{item}_i)\):</span><span class="desc">Embedding vector (d-dimensional) of historical item i; learned during training</span></div>
+    <div class="key-point"><span class="label">\(\text{score}(\text{item}_i, \text{candidate})\):</span><span class="desc">Raw relevance score (before softmax); typically dot product or learned bilinear similarity between historical and candidate embeddings</span></div>
+    <div class="key-point"><span class="label">\(\text{softmax}(\cdot)\):</span><span class="desc">Converts scores to normalized weights; ensures \(\alpha_i \geq 0\) and \(\sum \alpha_i = 1\); emphasizes high-scoring items exponentially</span></div>
     <div class="key-point"><span class="label">candidate:</span><span class="desc">Query item being ranked; all attention weights computed relative to this single candidate</span></div>
     <div class="key-point"><span class="label">Scoring function:</span><span class="desc">Typically dot product or learned bilinear similarity between historical item and candidate embeddings</span></div>
     <div class="key-point"><span class="label">Dynamic weighting:</span><span class="desc">Candidate item "pulls" relevant historical items to the forefront; users with diverse interests (action + documentaries) are naturally handled</span></div>
@@ -404,13 +410,13 @@
   <div class="metric-box" id="sasrecMetrics">Predicted Next Item: -- | Confidence: --</div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Transformers via self-attention capture long-range item dependencies without sequential bottleneck; each item attends to all prior items in sequence.
-    <div class="formula">Attention(Q,K,V) = softmax(QK^T / <span class="highlight">√d</span>)V, where Q, K, V are projections of embedding sequence; √d stabilizes gradients</div>
-    <div class="key-point"><span class="label">Q (Query):</span><span class="desc">Query matrix (sequence_length × d); projections of input embeddings; represents "what to attend to"</span></div>
-    <div class="key-point"><span class="label">K (Key):</span><span class="desc">Key matrix (sequence_length × d); projections of input embeddings; represents "what can be attended"</span></div>
-    <div class="key-point"><span class="label">V (Value):</span><span class="desc">Value matrix (sequence_length × d); projections of input embeddings; represents "information to aggregate"</span></div>
-    <div class="key-point"><span class="label">QK^T:</span><span class="desc">Matrix multiplication (sequence_length × sequence_length); each element [i,j] = dot product of query i and key j</span></div>
-    <div class="key-point"><span class="label">d:</span><span class="desc">Embedding dimension; typically 64 per head in multi-head attention; impacts gradient scale</span></div>
-    <div class="key-point"><span class="label">√d (scaling factor):</span><span class="desc">Divides attention scores by sqrt(d); stabilizes gradients (prevents very large/small dot products); ensures softmax doesn't saturate</span></div>
+    <div class="formula">$$\text{Attention}(Q,K,V) = \text{softmax}\!\left(\frac{QK^T}{\color{#ff9ff3}{\sqrt{d}}}\right)V$$</div>
+    <div class="key-point"><span class="label">\(Q\) (Query):</span><span class="desc">Query matrix (sequence_length × d); projections of input embeddings; represents "what to attend to"</span></div>
+    <div class="key-point"><span class="label">\(K\) (Key):</span><span class="desc">Key matrix (sequence_length × d); projections of input embeddings; represents "what can be attended"</span></div>
+    <div class="key-point"><span class="label">\(V\) (Value):</span><span class="desc">Value matrix (sequence_length × d); projections of input embeddings; represents "information to aggregate"</span></div>
+    <div class="key-point"><span class="label">\(QK^T\):</span><span class="desc">Matrix multiplication (sequence_length × sequence_length); each element [i,j] = dot product of query i and key j</span></div>
+    <div class="key-point"><span class="label">\(d\):</span><span class="desc">Embedding dimension; typically 64 per head in multi-head attention; impacts gradient scale</span></div>
+    <div class="key-point"><span class="label">\(\sqrt{d}\) (scaling factor):</span><span class="desc">Divides attention scores by \(\sqrt{d}\); stabilizes gradients (prevents very large/small dot products); ensures softmax doesn't saturate</span></div>
     <div class="key-point"><span class="label">softmax(·):</span><span class="desc">Converts scaled scores to normalized attention weights; each row sums to 1; emphasizes high-scoring positions</span></div>
     <div class="key-point"><span class="label">softmax(QK^T/√d)V:</span><span class="desc">Final output (sequence_length × d); weighted sum of values by attention weights; each position attends to all previous positions</span></div>
     <div class="key-point"><span class="label">Mechanism:</span><span class="desc">Each position i attends to all previous positions [1..i-1] (causal masking prevents future leakage); item representation = weighted sum of all prior items</span></div>
@@ -443,12 +449,12 @@
   <div class="metric-box" id="mmoeMetrics">Task Weights: CTR -- | CVR -- | Watch Time --</div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Multi-Task Learning optimizes correlated objectives (CTR, CVR, watch-time) jointly; Multi-gate Mixture of Experts (MMOE) allows task-specific expert selection via gating.
-    <div class="formula">Task_k output = gate_k ⊗ Σᵢ<span class="highlight">expertᵢ</span>, where gate_k = softmax(W_k · features) selects task-relevant experts</div>
-    <div class="key-point"><span class="label">Task_k output:</span><span class="desc">Final prediction for task k (CTR, CVR, watch-time, etc.); vector of shape (batch_size, output_dim)</span></div>
-    <div class="key-point"><span class="label">gate_k:</span><span class="desc">Gating vector for task k (m-dimensional); softmax weights over m experts; emphasizes task-relevant expert representations</span></div>
-    <div class="key-point"><span class="label">Σᵢ expertᵢ:</span><span class="desc">Sum of all expert outputs; each expert i is a small MLP producing (batch_size, output_dim) representation</span></div>
+    <div class="formula">$$\text{Task}_k\text{ output} = \text{gate}_k \otimes \sum_i \color{#ff9ff3}{\text{expert}_i}, \text{ where gate}_k = \text{softmax}(W_k \cdot \text{features})$$</div>
+    <div class="key-point"><span class="label">\(\text{Task}_k\) output:</span><span class="desc">Final prediction for task k (CTR, CVR, watch-time, etc.); vector of shape (batch_size, output_dim)</span></div>
+    <div class="key-point"><span class="label">\(\text{gate}_k\):</span><span class="desc">Gating vector for task k (m-dimensional); softmax weights over m experts; emphasizes task-relevant expert representations</span></div>
+    <div class="key-point"><span class="label">\(\sum_i \text{expert}_i\):</span><span class="desc">Sum of all expert outputs; each expert i is a small MLP producing (batch_size, output_dim) representation</span></div>
     <div class="key-point"><span class="label">m:</span><span class="desc">Number of shared experts; typical range 4-10 in production; each expert is a small MLP (2-3 hidden layers)</span></div>
-    <div class="key-point"><span class="label">⊗:</span><span class="desc">Broadcasting multiplication; gate_k (m-dimensional) multiplies across experts dimension of Σᵢ expertᵢ</span></div>
+    <div class="key-point"><span class="label">\(\otimes\):</span><span class="desc">Broadcasting multiplication; \(\text{gate}_k\) (m-dimensional) multiplies across experts dimension of \(\sum_i \text{expert}_i\)</span></div>
     <div class="key-point"><span class="label">W_k:</span><span class="desc">Weight matrix for task k's gating network; shapes (feature_dim, m); learns task-specific expert preferences</span></div>
     <div class="key-point"><span class="label">features:</span><span class="desc">Input feature vector (user context, item features, etc.); shared across all experts and gating networks</span></div>
     <div class="key-point"><span class="label">softmax(W_k · features):</span><span class="desc">Normalized weights over m experts; ensures gate_k sums to 1 and all weights in [0,1]</span></div>
@@ -456,7 +462,7 @@
     <div class="key-point"><span class="label">Objectives:</span><span class="desc">CTR (click), CVR (conversion), watch time, engagement—all correlated; joint training improves data efficiency and calibration</span></div>
     <div class="key-point"><span class="label">MoE architecture:</span><span class="desc">m shared experts (small MLPs, e.g., m=6); per-task gating networks learn softmax weights over experts; task output = weighted sum</span></div>
     <div class="key-point"><span class="label">Benefits:</span><span class="desc">Parameter efficiency (shared experts << task-specific towers); mutual information between tasks improves generalization; flexible task importance weighting</span></div>
-    <div class="key-point"><span class="label">Joint loss:</span><span class="desc">L = α·L_ctr + β·L_cvr + γ·L_watch, where α, β, γ reflect business priorities (tune on validation set)</span></div>
+    <div class="key-point"><span class="label">Joint loss:</span><span class="desc">\(L = \alpha \cdot L_{\text{ctr}} + \beta \cdot L_{\text{cvr}} + \gamma \cdot L_{\text{watch}}\), where \(\alpha, \beta, \gamma\) reflect business priorities (tune on validation set)</span></div>
     <div class="key-point"><span class="label">Production gotchas:</span><span class="desc">Task calibration (different loss scales → gradient dominance); label delay (CVR takes days, CTR immediate); negative transfer (tasks conflict)</span></div>
     <hr class="divider">
 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click task tabs (CTR, CVR, Watch-Time). Each has its own gating network that selects from shared experts. Watch "Expert Utilization" bars: does CTR prefer certain experts? Click "Shared = 0%" (no sharing, 3 separate models). Now "Shared = 100%" (one shared expert). Shared usually gives 5–10% improvement despite sharing—tasks are correlated. Slide "Task Weighting" to balance importance.</div>
@@ -493,7 +499,7 @@
       </div>
       <div class="option">
         <div class="opt-title">Pairwise</div>
-        <div class="opt-desc">Minimize inversion loss for pairs: log(1 + exp(-σ(s_i - s_j))). Captures ranking structure; O(n²) pairs per example.</div>
+        <div class="opt-desc">Minimize inversion loss for pairs: \(\log(1 + \exp(-\sigma(s_i - s_j)))\). Captures ranking structure; \(O(n^2)\) pairs per example.</div>
       </div>
     </div>
     <div class="key-point"><span class="label">Listwise:</span><span class="desc">Direct NDCG optimization: loss = -NDCG(ranked_list). Most principled but requires sorting (expensive); LambdaMART combines with pairwise for efficiency</span></div>
@@ -521,12 +527,12 @@
   <div class="metric-box" id="adsMetrics">Mode: Attribution | Total Revenue: --</div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Auction equation balances advertiser bid, user relevance (pCTR), and platform incentives; strategy-proof design prevents bid manipulation.
-    <div class="formula">Rank ∝ bid × <span class="highlight">pCTR</span> × quality_score</div>
+    <div class="formula">$$\text{Rank} \propto \text{bid} \times \color{#ff9ff3}{\text{pCTR}} \times \text{quality\_score}$$</div>
     <div class="key-point"><span class="label">Rank:</span><span class="desc">Final ranking position of ad in auction; higher score = better position (higher visibility and CTR)</span></div>
-    <div class="key-point"><span class="label">∝ (proportional to):</span><span class="desc">Ranking function not strictly equals due to other factors (position, context); function is monotonic in product</span></div>
+    <div class="key-point"><span class="label">\(\propto\) (proportional to):</span><span class="desc">Ranking function not strictly equals due to other factors (position, context); function is monotonic in product</span></div>
     <div class="key-point"><span class="label">bid:</span><span class="desc">Advertiser's monetary bid per click ($/click); advertiser's valuation of user engagement; set by bidder</span></div>
-    <div class="key-point"><span class="label">pCTR:</span><span class="desc">Predicted click-through rate (probability ∈ [0,1]); neural network (DIN-style) predicting P(click | user, ad, context)</span></div>
-    <div class="key-point"><span class="label">quality_score:</span><span class="desc">Platform quality metric (typically ∈ [0,10]); penalizes low-CTR ads; rewards relevant/high-quality ads</span></div>
+    <div class="key-point"><span class="label">pCTR:</span><span class="desc">Predicted click-through rate (probability \(\in [0,1]\)); neural network (DIN-style) predicting \(P(\text{click} | \text{user, ad, context})\)</span></div>
+    <div class="key-point"><span class="label">quality_score:</span><span class="desc">Platform quality metric (typically \(\in [0,10]\)); penalizes low-CTR ads; rewards relevant/high-quality ads</span></div>
     <div class="key-point"><span class="label">Strategy-proof:</span><span class="desc">Advertisers cannot benefit from misreporting bids; dominant strategy is truthful bidding (game theory property)</span></div>
     <div class="key-point"><span class="label">Attribution:</span><span class="desc">Last-click (simple, biased); linear (fair); time-decay (recent ads more credit); Shapley value (game-theory fair, expensive)</span></div>
     <div class="key-point"><span class="label">Production risks:</span><span class="desc">Feedback loops (ads affect exposure → clicks → retraining); position bias (top ads get more clicks); brand safety (toxic adjacencies); budget constraints</span></div>

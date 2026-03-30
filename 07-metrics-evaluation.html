@@ -73,6 +73,8 @@
             border: 1px solid #2a2a3e;
             border-radius: 4px;
             cursor: crosshair;
+            max-width: 100%;
+            height: auto;
         }
 
         .control-panel {
@@ -338,7 +340,11 @@
   .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
   .insight-box { grid-column: 1 / -1; }
 
+  .katex { color: #e8e8ff; font-size: 1.1em; }
 </style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '\\(', right: '\\)', display: false}]});"></script>
 </head>
 <body>
     <header>
@@ -400,13 +406,13 @@
 
                     <div class="key-point">
                         <span class="label">Formulas:</span>
-                        <span class="desc">TPR = TP/(TP+FN), FPR = FP/(FP+TN)</span>
+                        <span class="desc">\(TPR = \frac{TP}{TP+FN}\), \(FPR = \frac{FP}{FP+TN}\)</span>
                     </div>
-                    <div class="formula">AUC = P(score<sub>positive</sub> > score<sub>negative</sub>)</div>
-                    <div class="key-point"><span class="label">score<sub>positive</sub>:</span><span class="desc">Model's predicted score/probability for a randomly chosen positive example from the dataset</span></div>
-                    <div class="key-point"><span class="label">score<sub>negative</sub>:</span><span class="desc">Model's predicted score/probability for a randomly chosen negative example from the dataset</span></div>
-                    <div class="key-point"><span class="label">P():</span><span class="desc">Probability function; AUC = the probability that the model ranks a random positive higher than a random negative</span></div>
-                    <div class="key-point"><span class="label">AUC Range:</span><span class="desc">∈ [0, 1]. AUC = 0.5 means random classifier, AUC = 1.0 means perfect discrimination</span></div>
+                    <div class="formula">$$AUC = P(\text{score}_{\text{positive}} > \text{score}_{\text{negative}})$$</div>
+                    <div class="key-point"><span class="label">\(\text{score}_{\text{positive}}\):</span><span class="desc">Model's predicted score/probability for a randomly chosen positive example from the dataset</span></div>
+                    <div class="key-point"><span class="label">\(\text{score}_{\text{negative}}\):</span><span class="desc">Model's predicted score/probability for a randomly chosen negative example from the dataset</span></div>
+                    <div class="key-point"><span class="label">\(P(\cdot)\):</span><span class="desc">Probability function; AUC = the probability that the model ranks a random positive higher than a random negative</span></div>
+                    <div class="key-point"><span class="label">AUC Range:</span><span class="desc">\(\in [0, 1]\). AUC = 0.5 means random classifier, AUC = 1.0 means perfect discrimination</span></div>
 
                     <div class="mnemonic">ROC = Receiver Operating Characteristic. Imagine moving a threshold dial from 0 to 1; the curve traces all possible (FPR, TPR) trade-offs.</div>
 
@@ -472,13 +478,13 @@
                     <h4>Interview Tips: Precision-Recall Curve</h4>
                     <p><strong>What it is:</strong> PR curve plots Precision vs Recall across thresholds. Superior to ROC for imbalanced data because it focuses on minority class performance only.</p>
 
-                    <div class="formula">Precision = TP/(TP+FP)  |  Recall = TP/(TP+FN)  |  F1 = 2·Precision·Recall/(Precision+Recall)</div>
+                    <div class="formula">$$\text{Precision} = \frac{TP}{TP+FP} \quad | \quad \text{Recall} = \frac{TP}{TP+FN} \quad | \quad F_1 = \frac{2 \cdot \text{Precision} \cdot \text{Recall}}{\text{Precision}+\text{Recall}}$$</div>
                     <div class="key-point"><span class="label">TP (True Positives):</span><span class="desc">Model correctly predicted positive class</span></div>
                     <div class="key-point"><span class="label">FP (False Positives):</span><span class="desc">Model incorrectly predicted positive (ground truth was negative)</span></div>
                     <div class="key-point"><span class="label">FN (False Negatives):</span><span class="desc">Model incorrectly predicted negative (ground truth was positive)</span></div>
-                    <div class="key-point"><span class="label">Precision Range:</span><span class="desc">∈ [0, 1]; high precision = few false alarms, low precision = many false positives</span></div>
-                    <div class="key-point"><span class="label">Recall Range:</span><span class="desc">∈ [0, 1]; also called sensitivity or true positive rate; high recall = few positives missed</span></div>
-                    <div class="key-point"><span class="label">F1 Range:</span><span class="desc">∈ [0, 1]; harmonic mean of precision and recall; balanced metric, penalizes extreme skew</span></div>
+                    <div class="key-point"><span class="label">Precision Range:</span><span class="desc">\(\in [0, 1]\); high precision = few false alarms, low precision = many false positives</span></div>
+                    <div class="key-point"><span class="label">Recall Range:</span><span class="desc">\(\in [0, 1]\); also called sensitivity or true positive rate; high recall = few positives missed</span></div>
+                    <div class="key-point"><span class="label">\(F_1\) Range:</span><span class="desc">\(\in [0, 1]\); harmonic mean of precision and recall; balanced metric, penalizes extreme skew</span></div>
 
                     <div class="mnemonic"><strong>Precision</strong> = "of my positive predictions, how many are correct?" (quality of positives) | <strong>Recall</strong> = "of true positives in data, how many did I catch?" (coverage)</div>
 
@@ -545,13 +551,13 @@
                 </div>
                 <div class="insight-box">
                     <h4>Interview Tips: Confusion Matrix and Derived Metrics</h4>
-                    <p><strong>What it is:</strong> 2x2 matrix (binary) or NxN (multiclass) showing joint distribution of predicted and true labels. Foundation for all threshold-dependent metrics and reveals systematic classifier errors.</p>
+                    <p><strong>What it is:</strong> \(2 \times 2\) matrix (binary) or \(N \times N\) (multiclass) showing joint distribution of predicted and true labels. Foundation for all threshold-dependent metrics and reveals systematic classifier errors.</p>
 
-                    <div class="formula">Precision = TP/(TP+FP)  |  Recall = TP/(TP+FN)  |  Specificity = TN/(TN+FP)</div>
+                    <div class="formula">$$\text{Precision} = \frac{TP}{TP+FP} \quad | \quad \text{Recall} = \frac{TP}{TP+FN} \quad | \quad \text{Specificity} = \frac{TN}{TN+FP}$$</div>
                     <div class="key-point"><span class="label">TN (True Negatives):</span><span class="desc">Model correctly predicted negative class</span></div>
-                    <div class="key-point"><span class="label">Specificity Range:</span><span class="desc">∈ [0, 1]; also called true negative rate; high specificity = few false positives</span></div>
-                    <div class="formula">Accuracy = (TP+TN)/(TP+FP+FN+TN)  |  F1 = 2·P·R/(P+R)</div>
-                    <div class="key-point"><span class="label">Accuracy Range:</span><span class="desc">∈ [0, 1]; overall correctness across all predictions; misleading on imbalanced datasets</span></div>
+                    <div class="key-point"><span class="label">Specificity Range:</span><span class="desc">\(\in [0, 1]\); also called true negative rate; high specificity = few false positives</span></div>
+                    <div class="formula">$$\text{Accuracy} = \frac{TP+TN}{TP+FP+FN+TN} \quad | \quad F_1 = \frac{2 \cdot P \cdot R}{P+R}$$</div>
+                    <div class="key-point"><span class="label">Accuracy Range:</span><span class="desc">\(\in [0, 1]\); overall correctness across all predictions; misleading on imbalanced datasets</span></div>
                     <div class="key-point"><span class="label">P (Precision):</span><span class="desc">See Precision-Recall section; abbreviation for Precision</span></div>
                     <div class="key-point"><span class="label">R (Recall):</span><span class="desc">See Precision-Recall section; abbreviation for Recall</span></div>
 
@@ -632,16 +638,16 @@
                     <h4>Interview Tips: Calibration Plot and Confidence</h4>
                     <p><strong>What it is:</strong> Calibration = whether predicted confidence matches empirical correctness. A 70% confidence prediction should be correct 70% of the time. Critical for downstream decision-making (credit limits, thresholds, recommendations).</p>
 
-                    <div class="formula">ECE = Σ|predicted_confidence<sub>bin</sub> - empirical_accuracy<sub>bin</sub>| × bin_fraction</div>
-                    <div class="key-point"><span class="label">Σ:</span><span class="desc">Sum over all K probability bins (e.g., K=10 for deciles: [0-0.1], [0.1-0.2], ..., [0.9-1.0])</span></div>
-                    <div class="key-point"><span class="label">predicted_confidence<sub>bin</sub>:</span><span class="desc">Average predicted probability for all samples falling into this bin</span></div>
-                    <div class="key-point"><span class="label">empirical_accuracy<sub>bin</sub>:</span><span class="desc">Fraction of samples in this bin that have correct predictions (actual positive labels)</span></div>
-                    <div class="key-point"><span class="label">bin_fraction:</span><span class="desc">Proportion of total samples that fall into this bin; ∑ bin_fraction = 1</span></div>
-                    <div class="key-point"><span class="label">ECE Range:</span><span class="desc">∈ [0, 1]; lower is better; 0 = perfect calibration, measures average mismatch across bins</span></div>
-                    <div class="formula">Brier Score = mean((predicted_prob - true_label)<sup>2</sup>)  |  Perfect calibration = diagonal line y=x</div>
-                    <div class="key-point"><span class="label">predicted_prob:</span><span class="desc">Model's predicted probability ∈ [0, 1] for positive class</span></div>
-                    <div class="key-point"><span class="label">true_label:</span><span class="desc">Ground truth label, ∈ {0, 1} (0 for negative, 1 for positive)</span></div>
-                    <div class="key-point"><span class="label">Brier Score Range:</span><span class="desc">∈ [0, 1]; lower is better; 0 = perfect predictions, 0.25 = predicting always 0.5, 1 = always wrong</span></div>
+                    <div class="formula">$$ECE = \sum_{b=1}^{K} \left| \text{confidence}_b - \text{accuracy}_b \right| \times \text{fraction}_b$$</div>
+                    <div class="key-point"><span class="label">\(\sum\):</span><span class="desc">Sum over all \(K\) probability bins (e.g., \(K=10\) for deciles: \([0\text{-}0.1], [0.1\text{-}0.2], \ldots, [0.9\text{-}1.0]\))</span></div>
+                    <div class="key-point"><span class="label">\(\text{confidence}_b\):</span><span class="desc">Average predicted probability for all samples falling into this bin</span></div>
+                    <div class="key-point"><span class="label">\(\text{accuracy}_b\):</span><span class="desc">Fraction of samples in this bin that have correct predictions (actual positive labels)</span></div>
+                    <div class="key-point"><span class="label">\(\text{fraction}_b\):</span><span class="desc">Proportion of total samples that fall into this bin; \(\sum \text{fraction}_b = 1\)</span></div>
+                    <div class="key-point"><span class="label">ECE Range:</span><span class="desc">\(\in [0, 1]\); lower is better; 0 = perfect calibration, measures average mismatch across bins</span></div>
+                    <div class="formula">$$\text{Brier Score} = \frac{1}{N}\sum_{i=1}^{N}(\hat{p}_i - y_i)^2 \quad | \quad \text{Perfect calibration} = \text{diagonal line } y=x$$</div>
+                    <div class="key-point"><span class="label">\(\hat{p}_i\):</span><span class="desc">Model's predicted probability \(\in [0, 1]\) for positive class</span></div>
+                    <div class="key-point"><span class="label">\(y_i\):</span><span class="desc">Ground truth label, \(\in \{0, 1\}\) (0 for negative, 1 for positive)</span></div>
+                    <div class="key-point"><span class="label">Brier Score Range:</span><span class="desc">\(\in [0, 1]\); lower is better; 0 = perfect predictions, 0.25 = predicting always 0.5, 1 = always wrong</span></div>
 
                     <div class="mnemonic">Perfect calibration: if model says 70%, it's correct 70% of the time. Overconfident: says 90% but only correct 60%. Underconfident: says 60% but correct 90%.</div>
 
@@ -658,12 +664,12 @@
 
                     <div class="key-point">
                         <span class="label">Post-hoc fixes:</span>
-                        <span class="desc"><strong>Temperature scaling</strong>: p_cal = softmax(logits/T), T>1 reduces overconfidence. <strong>Isotonic regression</strong>: fit monotonic mapping, preserves ranking.</span>
+                        <span class="desc"><strong>Temperature scaling</strong>: \(p_{\text{cal}} = \text{softmax}(\text{logits}/T)\), \(T>1\) reduces overconfidence. <strong>Isotonic regression</strong>: fit monotonic mapping, preserves ranking.</span>
                     </div>
 
                     <hr class="divider">
 
-                    <div class="interview-tip">How is calibration different from AUC? AUC = discrimination (ranking). Calibration = trustworthiness of probabilities. High AUC ≠ good calibration.</div>
+                    <div class="interview-tip">How is calibration different from AUC? AUC = discrimination (ranking). Calibration = trustworthiness of probabilities. High AUC \(\neq\) good calibration.</div>
 
                     <div class="key-point">
                         <span class="label">Production pitfall:</span>
@@ -712,7 +718,7 @@
                             <span class="step-num">Relevance Scores:</span> Highly Relevant=3, Relevant=1, Not Relevant=0
                         </div>
                         <div class="step">
-                            <span class="step-num">DCG:</span> Σ((2^relevance - 1) / log2(position+1)) - positions count from 1
+                            <span class="step-num">DCG:</span> \(\sum\left(\frac{2^{\text{rel}} - 1}{\log_2(\text{pos}+1)}\right)\) - positions count from 1
                         </div>
                         <div class="step">
                             <span class="step-num">Normalized Discounted Cumulative Gain (NDCG):</span> DCG / IDCG - normalized to [0,1]
@@ -726,18 +732,18 @@
                     <h4>Interview Tips: Ranking Metrics (NDCG and MAP)</h4>
                     <p><strong>What it is:</strong> NDCG evaluates ranking quality by measuring how well relevant items are placed, penalizing low positions. Users consume top-k results predominantly, so position matters exponentially.</p>
 
-                    <div class="formula">DCG = Σ((2<sup>relevance<sub>i</sub></sup> - 1) / log<sub>2</sub>(i+1))  |  NDCG (Normalized Discounted Cumulative Gain) = DCG / IDCG</div>
-                    <div class="key-point"><span class="label">Σ:</span><span class="desc">Sum over all ranked positions i from 1 to k (or total results)</span></div>
-                    <div class="key-point"><span class="label">relevance<sub>i</sub>:</span><span class="desc">Relevance score of item at position i; typically 0 (not relevant), 1 (relevant), or 2-3 (highly relevant)</span></div>
-                    <div class="key-point"><span class="label">i:</span><span class="desc">Position in ranking, starting from 1 (top)</span></div>
-                    <div class="key-point"><span class="label">log<sub>2</sub>(i+1):</span><span class="desc">Logarithmic discount factor; position 1: 1.0, position 2: 0.63, position 4: 0.43, position 8: 0.33</span></div>
-                    <div class="key-point"><span class="label">iDCG (Ideal DCG):</span><span class="desc">DCG of perfect ranking (all relevant items at top, sorted by relevance descending)</span></div>
-                    <div class="key-point"><span class="label">NDCG Range:</span><span class="desc">∈ [0, 1]; normalized to [0, 1] where 1 = perfect ranking, 0 = worst ranking</span></div>
-                    <div class="formula">MAP = Σ(precision@k) / (# relevant items), where k = positions of relevant items</div>
-                    <div class="key-point"><span class="label">precision@k:</span><span class="desc">Precision computed at each position k where a relevant item appears; 0 if no relevant items at/before position k</span></div>
+                    <div class="formula">$$DCG = \sum_{i=1}^{k} \frac{2^{\text{rel}_i} - 1}{\log_2(i+1)} \quad | \quad NDCG = \frac{DCG}{IDCG}$$</div>
+                    <div class="key-point"><span class="label">\(\sum\):</span><span class="desc">Sum over all ranked positions \(i\) from 1 to \(k\) (or total results)</span></div>
+                    <div class="key-point"><span class="label">\(\text{rel}_i\):</span><span class="desc">Relevance score of item at position \(i\); typically 0 (not relevant), 1 (relevant), or 2-3 (highly relevant)</span></div>
+                    <div class="key-point"><span class="label">\(i\):</span><span class="desc">Position in ranking, starting from 1 (top)</span></div>
+                    <div class="key-point"><span class="label">\(\log_2(i+1)\):</span><span class="desc">Logarithmic discount factor; position 1: 1.0, position 2: 0.63, position 4: 0.43, position 8: 0.33</span></div>
+                    <div class="key-point"><span class="label">IDCG (Ideal DCG):</span><span class="desc">DCG of perfect ranking (all relevant items at top, sorted by relevance descending)</span></div>
+                    <div class="key-point"><span class="label">NDCG Range:</span><span class="desc">\(\in [0, 1]\); normalized to \([0, 1]\) where 1 = perfect ranking, 0 = worst ranking</span></div>
+                    <div class="formula">$$MAP = \frac{\sum_{k} \text{precision}@k}{\text{\# relevant items}}$$where \(k\) = positions of relevant items</div>
+                    <div class="key-point"><span class="label">\(\text{precision}@k\):</span><span class="desc">Precision computed at each position \(k\) where a relevant item appears; 0 if no relevant items at/before position \(k\)</span></div>
                     <div class="key-point"><span class="label"># relevant items:</span><span class="desc">Total number of relevant items in the entire ground truth result set</span></div>
-                    <div class="key-point"><span class="label">k:</span><span class="desc">Positions where relevant items appear; MAP averages precision only at these positions, ignoring non-relevant positions</span></div>
-                    <div class="key-point"><span class="label">MAP Range:</span><span class="desc">∈ [0, 1]; 1 = all relevant items ranked first, 0 = no relevant items ranked first</span></div>
+                    <div class="key-point"><span class="label">\(k\):</span><span class="desc">Positions where relevant items appear; MAP averages precision only at these positions, ignoring non-relevant positions</span></div>
+                    <div class="key-point"><span class="label">MAP Range:</span><span class="desc">\(\in [0, 1]\); 1 = all relevant items ranked first, 0 = no relevant items ranked first</span></div>
 
                     <div class="mnemonic">NDCG uses log discount: position 1 = 1.0, position 2 = 0.63, position 4 = 0.43. Reflects that users rarely scroll past 5.</div>
 

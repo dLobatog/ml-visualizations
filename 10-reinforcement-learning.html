@@ -81,6 +81,8 @@
             border-radius: 4px;
             display: block;
             margin-bottom: 15px;
+            max-width: 100%;
+            height: auto;
         }
 
         .controls {
@@ -312,8 +314,12 @@
   .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
   .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
   .insight-box { grid-column: 1 / -1; }
+  .katex { color: #e8e8ff; font-size: 1.1em; }
 
 </style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '\\(', right: '\\)', display: false}]});"></script>
 </head>
 <body>
     <div class="header">
@@ -325,7 +331,7 @@
         <!-- Section 1: Markov Decision Process -->
         <div class="section">
             <h2>1️⃣ Markov Decision Process</h2>
-            <p style="color: #a0a0b0; margin-bottom: 15px;">Click through states on the canvas—watch transitions and rewards. Adjust discount factor γ (gamma) to see immediate vs long-term tradeoff. γ≈0 = myopic (care only about next reward). γ≈1 = farsighted (consider all future rewards). Observe how optimal policy changes.</p>
+            <p style="color: #a0a0b0; margin-bottom: 15px;">Click through states on the canvas—watch transitions and rewards. Adjust discount factor \(\gamma\) (gamma) to see immediate vs long-term tradeoff. \(\gamma \approx 0\) = myopic (care only about next reward). \(\gamma \approx 1\) = farsighted (consider all future rewards). Observe how optimal policy changes.</p>
             <div class="section-content">
                 <div class="visualization">
                     <canvas id="mdpCanvas" width="450" height="450"></canvas>
@@ -339,7 +345,7 @@
                             <div class="stat-value" id="mdpReward">0</div>
                         </div>
                         <div class="stat-item">
-                            <div class="stat-label">Avg V(s)</div>
+                            <div class="stat-label">Avg \(V(s)\)</div>
                             <div class="stat-value" id="mdpValue">0.00</div>
                         </div>
                     </div>
@@ -364,7 +370,7 @@
                     <button onclick="computeMDPValues()">Compute Values</button>
                 </div>
             </div>
-            <div class="equation">V(s) = E[R + γ·V(s')] | Bellman Expectation Equation</div>
+            <div class="equation">$$V(s) = \mathbb{E}[R + \gamma \cdot V(s')] \quad \text{Bellman Expectation Equation}$$</div>
             <div class="legend">
                 <div class="legend-item">
                     <div class="legend-color" style="background: #4a9eff;"></div>
@@ -380,40 +386,40 @@
                 </div>
             </div>
             <div class="insight-box">
-                <p><strong>Core Concept:</strong> Markov Decision Processes (MDPs) formalize sequential decision-making. An MDP has states S, actions A, transition dynamics P(s'|s,a), rewards R(s,a,s'), and discount γ ∈ [0,1].</p>
-                <div class="formula">V(s) = E[Σ γ^t R_t | starting from s under optimal policy]</div>
-                <div class="key-point"><span class="label">V(s):</span><span class="desc">State value function; expected cumulative discounted reward from state s under optimal policy</span></div>
-                <div class="key-point"><span class="label">E[·]:</span><span class="desc">Expectation over randomness in transitions and rewards</span></div>
-                <div class="key-point"><span class="label">Σ γ^t R_t:</span><span class="desc">Sum of discounted rewards; return G_t = R_t + γR_{t+1} + γ²R_{t+2} + ...</span></div>
-                <div class="key-point"><span class="label">γ:</span><span class="desc">Discount factor ∈ [0,1); how much to value future rewards relative to immediate. Typical: 0.99</span></div>
+                <p><strong>Core Concept:</strong> Markov Decision Processes (MDPs) formalize sequential decision-making. An MDP has states S, actions A, transition dynamics P(s'|s,a), rewards R(s,a,s'), and discount \(\gamma \in [0,1]\).</p>
+                <div class="formula">$$V(s) = \mathbb{E}\left[\sum \gamma^t R_t \;\middle|\; \text{starting from } s \text{ under optimal policy}\right]$$</div>
+                <div class="key-point"><span class="label">\(V(s)\):</span><span class="desc">State value function; expected cumulative discounted reward from state \(s\) under optimal policy</span></div>
+                <div class="key-point"><span class="label">\(\mathbb{E}[\cdot]\):</span><span class="desc">Expectation over randomness in transitions and rewards</span></div>
+                <div class="key-point"><span class="label">\(\sum \gamma^t R_t\):</span><span class="desc">Sum of discounted rewards; return \(G_t = R_t + \gamma R_{t+1} + \gamma^2 R_{t+2} + \ldots\)</span></div>
+                <div class="key-point"><span class="label">\(\gamma\):</span><span class="desc">Discount factor \(\in [0,1)\); how much to value future rewards relative to immediate. Typical: 0.99</span></div>
                 <div class="key-point"><span class="label">R_t:</span><span class="desc">Reward at time step t; scalar signal of immediate performance</span></div>
-                <div class="key-point"><span class="label">π*:</span><span class="desc">Optimal policy; maximizes V(s); can be deterministic or stochastic</span></div>
+                <div class="key-point"><span class="label">\(\pi^*\):</span><span class="desc">Optimal policy; maximizes \(V(s)\); can be deterministic or stochastic</span></div>
                 <div class="key-point"><span class="label">Markov Property:</span><span class="desc">Future depends only on current state, not history (memoryless)</span></div>
-                <div class="key-point"><span class="label">Policy π(a|s):</span><span class="desc">Maps states to action distributions; π* maximizes expected return</span></div>
+                <div class="key-point"><span class="label">Policy \(\pi(a|s)\):</span><span class="desc">Maps states to action distributions; \(\pi^*\) maximizes expected return</span></div>
                 <hr class="divider">
                 <p><strong>Key Mathematical Intuition:</strong></p>
-                <div class="formula">V(s) = E[R(s,a,s') + <span class="highlight">γV(s')</span> | a~π(s)]</div>
-                <div class="key-point"><span class="label">V(s):</span><span class="desc">Current state value</span></div>
-                <div class="key-point"><span class="label">R(s,a,s'):</span><span class="desc">Expected reward for action a taken in state s, transitioning to s'</span></div>
-                <div class="key-point"><span class="label">γ:</span><span class="desc">Discount factor ∈ [0,1); weights future value. Typical: 0.99</span></div>
-                <div class="key-point"><span class="label">V(s'):</span><span class="desc">Value of successor state s'; enables dynamic programming recursion</span></div>
-                <div class="key-point"><span class="label">a~π(s):</span><span class="desc">Action sampled from policy π(a|s); distributes expectation over action probabilities</span></div>
+                <div class="formula">$$V(s) = \mathbb{E}[R(s,a,s') + \gamma V(s') \;|\; a \sim \pi(s)]$$</div>
+                <div class="key-point"><span class="label">\(V(s)\):</span><span class="desc">Current state value</span></div>
+                <div class="key-point"><span class="label">\(R(s,a,s')\):</span><span class="desc">Expected reward for action a taken in state s, transitioning to s'</span></div>
+                <div class="key-point"><span class="label">\(\gamma\):</span><span class="desc">Discount factor \(\in [0,1)\); weights future value. Typical: 0.99</span></div>
+                <div class="key-point"><span class="label">\(V(s')\):</span><span class="desc">Value of successor state \(s'\); enables dynamic programming recursion</span></div>
+                <div class="key-point"><span class="label">\(a \sim \pi(s)\):</span><span class="desc">Action sampled from policy π(a|s); distributes expectation over action probabilities</span></div>
                 <p style="margin: 8px 0; font-size: 0.95em;">Bellman equation: state value equals immediate reward plus discounted successor value.</p>
                 <div class="comparison">
                     <div class="option">
-                        <div class="opt-title">Value V(s)</div>
+                        <div class="opt-title">Value \(V(s)\)</div>
                         <div class="opt-desc">Expected return from state; enables value iteration</div>
                     </div>
                     <div class="option">
-                        <div class="opt-title">Q-function Q(s,a)</div>
-                        <div class="opt-desc">Expected return from state+action; Q = E[R + γV(s')]</div>
+                        <div class="opt-title">\(Q\)-function \(Q(s,a)\)</div>
+                        <div class="opt-desc">Expected return from state+action; \(Q = \mathbb{E}[R + \gamma V(s')]\)</div>
                     </div>
                     <div class="option">
-                        <div class="opt-title">Low γ (→0)</div>
+                        <div class="opt-title">Low \(\gamma\) (\(\to 0\))</div>
                         <div class="opt-desc">Myopic: prioritizes immediate rewards</div>
                     </div>
                     <div class="option">
-                        <div class="opt-title">High γ (→1)</div>
+                        <div class="opt-title">High \(\gamma\) (\(\to 1\))</div>
                         <div class="opt-desc">Farsighted: balances long-term rewards</div>
                     </div>
                 </div>
@@ -473,16 +479,16 @@
                     <button onclick="resetQLearning()">Reset</button>
                 </div>
             </div>
-            <div class="equation">Q(s,a) ← Q(s,a) + α[r + γ·max Q(s',a') - Q(s,a)]</div>
+            <div class="equation">$$Q(s,a) \leftarrow Q(s,a) + \alpha[r + \gamma \cdot \max_{a'} Q(s',a') - Q(s,a)]$$</div>
             <div class="insight-box">
                 <p><strong>Core Concept:</strong> Q-learning is a model-free, off-policy temporal-difference algorithm for learning optimal action-values Q(s,a). Learns from experience without knowing P or R.</p>
-                <div class="formula">Q(s,a) ← Q(s,a) + α[R + <span class="highlight">γ max Q(s',a')</span> - Q(s,a)]</div>
-                <div class="key-point"><span class="label">Q(s,a):</span><span class="desc">Action-value function; expected return from taking action a in state s, then following optimal policy</span></div>
-                <div class="key-point"><span class="label">α:</span><span class="desc">Learning rate ∈ (0,1]; step size for each update. Typical: 0.01-0.1. Lower = more stable, slower convergence</span></div>
-                <div class="key-point"><span class="label">R:</span><span class="desc">Immediate reward received after taking action a in state s</span></div>
-                <div class="key-point"><span class="label">γ:</span><span class="desc">Discount factor ∈ [0,1); devalues future rewards. Typical: 0.99</span></div>
-                <div class="key-point"><span class="label">max Q(s',a'):</span><span class="desc">Maximum Q-value over all possible actions a' in next state s' (greedy lookahead)</span></div>
-                <div class="key-point"><span class="label">δ (TD Error):</span><span class="desc">R + γ max Q(s',a') - Q(s,a); measures prediction error, drives updates toward better estimates</span></div>
+                <div class="formula">$$Q(s,a) \leftarrow Q(s,a) + \alpha[R + \gamma \max_{a'} Q(s',a') - Q(s,a)]$$</div>
+                <div class="key-point"><span class="label">\(Q(s,a)\):</span><span class="desc">Action-value function; expected return from taking action \(a\) in state \(s\), then following optimal policy</span></div>
+                <div class="key-point"><span class="label">\(\alpha\):</span><span class="desc">Learning rate \(\in (0,1]\); step size for each update. Typical: 0.01-0.1. Lower = more stable, slower convergence</span></div>
+                <div class="key-point"><span class="label">\(R\):</span><span class="desc">Immediate reward received after taking action a in state s</span></div>
+                <div class="key-point"><span class="label">\(\gamma\):</span><span class="desc">Discount factor \(\in [0,1)\); devalues future rewards. Typical: 0.99</span></div>
+                <div class="key-point"><span class="label">\(\max_{a'} Q(s',a')\):</span><span class="desc">Maximum Q-value over all possible actions a' in next state s' (greedy lookahead)</span></div>
+                <div class="key-point"><span class="label">\(\delta\) (TD Error):</span><span class="desc">\(R + \gamma \max_{a'} Q(s',a') - Q(s,a)\); measures prediction error, drives updates toward better estimates</span></div>
                 <div class="key-point"><span class="label">Off-Policy:</span><span class="desc">Uses greedy max for update; behavior policy can differ from target policy</span></div>
                 <hr class="divider">
                 <p><strong>Key Insight vs. SARSA:</strong></p>
@@ -547,20 +553,20 @@
                     <button onclick="resetPolicyGradient()">Reset</button>
                 </div>
             </div>
-            <div class="equation">∇J(θ) = E[∇log π(a|s,θ) · G_t]  ← Policy Gradient Theorem</div>
-            <div class="equation">θ ← θ + α·∇log π(a|s,θ) · G_t</div>
+            <div class="equation">$$\nabla J(\theta) = \mathbb{E}[\nabla \log \pi(a|s,\theta) \cdot G_t] \quad \leftarrow \text{Policy Gradient Theorem}$$</div>
+            <div class="equation">$$\theta \leftarrow \theta + \alpha \cdot \nabla \log \pi(a|s,\theta) \cdot G_t$$</div>
             <div class="insight-box">
                 <p><strong>Core Concept:</strong> Policy gradient methods directly optimize policy π_θ(a|s) instead of learning value functions. Enables stochastic policies and continuous control.</p>
-                <div class="formula">∇J(θ) = E[∇log π_θ(a|s) · Q(s,a)]</div>
-                <div class="key-point"><span class="label">∇J(θ):</span><span class="desc">Gradient of objective function J with respect to policy parameters θ</span></div>
-                <div class="key-point"><span class="label">π_θ(a|s):</span><span class="desc">Parameterized policy; probability of action a given state s, with parameters θ</span></div>
-                <div class="key-point"><span class="label">∇log π_θ(a|s):</span><span class="desc">Score function; gradient of log probability. Gradient flows through stochastic policy</span></div>
-                <div class="key-point"><span class="label">Q(s,a):</span><span class="desc">Action-value estimate; controls variance of gradient. Can use returns or learned Q</span></div>
-                <div class="key-point"><span class="label">E[·]:</span><span class="desc">Expectation over states and actions during rollout</span></div>
+                <div class="formula">$$\nabla J(\theta) = \mathbb{E}[\nabla \log \pi_\theta(a|s) \cdot Q(s,a)]$$</div>
+                <div class="key-point"><span class="label">\(\nabla J(\theta)\):</span><span class="desc">Gradient of objective function J with respect to policy parameters θ</span></div>
+                <div class="key-point"><span class="label">\(\pi_\theta(a|s)\):</span><span class="desc">Parameterized policy; probability of action a given state s, with parameters θ</span></div>
+                <div class="key-point"><span class="label">\(\nabla \log \pi_\theta(a|s)\):</span><span class="desc">Score function; gradient of log probability. Gradient flows through stochastic policy</span></div>
+                <div class="key-point"><span class="label">\(Q(s,a)\):</span><span class="desc">Action-value estimate; controls variance of gradient. Can use returns or learned Q</span></div>
+                <div class="key-point"><span class="label">\(\mathbb{E}[\cdot]\):</span><span class="desc">Expectation over states and actions during rollout</span></div>
                 <p style="margin: 8px 0; font-size: 0.93em; text-align: center; color: #ddd;">Policy Gradient Theorem: gradient increases probability of high-value actions</p>
-                <div class="key-point"><span class="label">REINFORCE:</span><span class="desc">Uses full return G_t = Σγ^k R_{t+k} as Q estimate; high variance</span></div>
-                <div class="key-point"><span class="label">Log-Trick:</span><span class="desc">∇π = π ∇log π allows backprop through stochastic policy</span></div>
-                <div class="key-point"><span class="label">Advantage:</span><span class="desc">A(s,a) = Q(s,a) - V(s) reduces variance without bias (baseline cancels)</span></div>
+                <div class="key-point"><span class="label">REINFORCE:</span><span class="desc">Uses full return \(G_t = \sum \gamma^k R_{t+k}\) as \(Q\) estimate; high variance</span></div>
+                <div class="key-point"><span class="label">Log-Trick:</span><span class="desc">\(\nabla \pi = \pi \nabla \log \pi\) allows backprop through stochastic policy</span></div>
+                <div class="key-point"><span class="label">Advantage:</span><span class="desc">\(A(s,a) = Q(s,a) - V(s)\) reduces variance without bias (baseline cancels)</span></div>
                 <hr class="divider">
                 <p><strong>Algorithm Variants:</strong></p>
                 <div class="comparison">
@@ -570,7 +576,7 @@
                     </div>
                     <div class="option">
                         <div class="opt-title">Actor-Critic</div>
-                        <div class="opt-desc">Critic estimates V(s); lower variance via advantage</div>
+                        <div class="opt-desc">Critic estimates \(V(s)\); lower variance via advantage</div>
                     </div>
                     <div class="option">
                         <div class="opt-title">Proximal Policy Optimization (PPO)</div>
@@ -638,21 +644,21 @@
             </div>
             <div class="insight-box">
                 <p><strong>Core Concept:</strong> Multi-armed bandits isolate exploration-exploitation tradeoff. K arms with unknown reward distributions; no states, no sequential dependence.</p>
-                <div class="formula">Regret_T = E[Σ R*(a) - Σ R(a_t)] over T rounds</div>
-                <div class="key-point"><span class="label">Regret_T:</span><span class="desc">Cumulative performance gap; sum of optimal rewards minus actual rewards. Lower = better exploration-exploitation balance</span></div>
-                <div class="key-point"><span class="label">R*(a):</span><span class="desc">Reward of optimal arm in round; R* = max_a μ_a (best expected payoff)</span></div>
-                <div class="key-point"><span class="label">R(a_t):</span><span class="desc">Actual reward from chosen arm a_t at round t</span></div>
+                <div class="formula">$$\text{Regret}_T = \mathbb{E}\left[\sum R^*(a) - \sum R(a_t)\right] \text{ over } T \text{ rounds}$$</div>
+                <div class="key-point"><span class="label">\(\text{Regret}_T\):</span><span class="desc">Cumulative performance gap; sum of optimal rewards minus actual rewards. Lower = better exploration-exploitation balance</span></div>
+                <div class="key-point"><span class="label">\(R^*(a)\):</span><span class="desc">Reward of optimal arm in round; \(R^* = \max_a \mu_a\) (best expected payoff)</span></div>
+                <div class="key-point"><span class="label">\(R(a_t)\):</span><span class="desc">Actual reward from chosen arm a_t at round t</span></div>
                 <div class="key-point"><span class="label">T:</span><span class="desc">Total number of rounds; longer horizon → larger regret. Regret rate (regret/T) → 0 = good algorithm</span></div>
-                <div class="key-point"><span class="label">E[·]:</span><span class="desc">Expectation over arm reward distributions and algorithm randomness</span></div>
-                <div class="key-point"><span class="label">ε-Greedy:</span><span class="desc">Exploit best arm (1-ε); explore uniform (ε). Regret: O(εT + (1-ε)K log T)</span></div>
+                <div class="key-point"><span class="label">\(\mathbb{E}[\cdot]\):</span><span class="desc">Expectation over arm reward distributions and algorithm randomness</span></div>
+                <div class="key-point"><span class="label">\(\epsilon\)-Greedy:</span><span class="desc">Exploit best arm \((1-\epsilon)\); explore uniform \((\epsilon)\). Regret: \(O(\epsilon T + (1-\epsilon)K \log T)\)</span></div>
                 <div class="key-point"><span class="label">Upper Confidence Bound (UCB):</span><span class="desc">Q&#x0302;(a) + c&#x221A;(ln T / n(a)) = empirical + uncertainty bonus. Regret: O(log T)</span></div>
-                <div class="key-point"><span class="label">Thompson Sampling:</span><span class="desc">Bayesian posterior; sample rewards, play best. Regret: O(log T)</span></div>
+                <div class="key-point"><span class="label">Thompson Sampling:</span><span class="desc">Bayesian posterior; sample rewards, play best. Regret: \(O(\log T)\)</span></div>
                 <hr class="divider">
                 <p><strong>Regret Analysis:</strong></p>
                 <div class="comparison">
                     <div class="option">
                         <div class="opt-title">ε-Greedy</div>
-                        <div class="opt-desc">O(εT): linear term is wasted; suboptimal</div>
+                        <div class="opt-desc">\(O(\epsilon T)\): linear term is wasted; suboptimal</div>
                     </div>
                     <div class="option">
                         <div class="opt-title">Upper Confidence Bound (UCB)</div>
@@ -664,7 +670,7 @@
                     </div>
                 </div>
                 <hr class="divider">
-                <div class="interview-tip">Lower bound on regret is Ω(log T). Only UCB and Thompson Sampling achieve this; ε-greedy is fundamentally suboptimal (linear waste term).</div>
+                <div class="interview-tip">Lower bound on regret is \(\Omega(\log T)\). Only UCB and Thompson Sampling achieve this; ε-greedy is fundamentally suboptimal (linear waste term).</div>
                 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Switch between ε-greedy (fixed exploration) and UCB. ε-greedy with ε=0.1 wastes 10% of budget on suboptimal arms (linear regret). UCB allocates adaptively—arms with high uncertainty get more trials. Cumulative regret log(T) vs T—huge difference at scale.</div>
                 <div class="mnemonic">UCB = empirical mean + exploration bonus that shrinks as arm is played. Thompson = posterior samples naturally balance exploration (high uncertainty) and exploitation (posterior peaks).</div>
                 <p><strong>Key Gotchas:</strong> ε-greedy regret is linear in T (bad for long horizons); UCB constant c requires tuning; Thompson Sampling needs Bayesian inference; Contextual bandits are realistic but harder.</p>
@@ -700,17 +706,17 @@
                     <div class="status-bar" id="rlhfStatus">Ready</div>
                 </div>
             </div>
-            <div class="equation">Loss = -E[min(r_t·Â, clip(r_t, 1-ε, 1+ε)·Â)] - β·KL(π_new || π_ref)</div>
+            <div class="equation">$$\mathcal{L} = -\mathbb{E}[\min(r_t \cdot \hat{A},\; \text{clip}(r_t, 1-\epsilon, 1+\epsilon) \cdot \hat{A})] - \beta \cdot \text{KL}(\pi_{\text{new}} \| \pi_{\text{ref}})$$</div>
             <div class="insight-box">
                 <p><strong>Core Concept:</strong> Reinforcement Learning from Human Feedback aligns large language models with human preferences via reinforcement learning. No explicit reward labels; instead, learn from preference comparisons.</p>
-                <div class="formula">Loss = -E[min(r_t·Â, clip(r_t, 1-ε, 1+ε)·Â)] - β·KL(π_new || π_ref)</div>
+                <div class="formula">$$\mathcal{L} = -\mathbb{E}[\min(r_t \cdot \hat{A},\; \text{clip}(r_t, 1-\epsilon, 1+\epsilon) \cdot \hat{A})] - \beta \cdot \text{KL}(\pi_{\text{new}} \| \pi_{\text{ref}})$$</div>
                 <div class="key-point"><span class="label">Loss:</span><span class="desc">Objective to minimize (negative because we maximize reward and penalize divergence)</span></div>
-                <div class="key-point"><span class="label">r_t:</span><span class="desc">Probability ratio = π_new(a_t|s_t) / π_ref(a_t|s_t); >1 means new policy more likely than reference</span></div>
-                <div class="key-point"><span class="label">Â:</span><span class="desc">Advantage estimate; reward_model(s_t,a_t) - baseline. Positive = good actions, negative = bad</span></div>
-                <div class="key-point"><span class="label">clip(r_t, 1-ε, 1+ε):</span><span class="desc">Clips ratio to prevent too-large policy changes. Typical ε = 0.2; prevents instability</span></div>
-                <div class="key-point"><span class="label">β:</span><span class="desc">KL penalty weight ∈ [0.05, 1]; higher β = stricter adherence to reference. Typical: 0.1-1.0</span></div>
-                <div class="key-point"><span class="label">KL(π_new || π_ref):</span><span class="desc">Kullback-Leibler divergence; measures distributional distance. Prevents mode collapse to reward gaming</span></div>
-                <div class="key-point"><span class="label">π_ref:</span><span class="desc">Reference policy (usually supervised fine-tuned model); keeps new policy from drifting too far</span></div>
+                <div class="key-point"><span class="label">\(r_t\):</span><span class="desc">Probability ratio \(= \pi_{\text{new}}(a_t|s_t) / \pi_{\text{ref}}(a_t|s_t)\); >1 means new policy more likely than reference</span></div>
+                <div class="key-point"><span class="label">\(\hat{A}\):</span><span class="desc">Advantage estimate; reward_model(s_t,a_t) - baseline. Positive = good actions, negative = bad</span></div>
+                <div class="key-point"><span class="label">\(\text{clip}(r_t, 1-\epsilon, 1+\epsilon)\):</span><span class="desc">Clips ratio to prevent too-large policy changes. Typical \(\epsilon = 0.2\); prevents instability</span></div>
+                <div class="key-point"><span class="label">\(\beta\):</span><span class="desc">KL penalty weight \(\in [0.05, 1]\); higher β = stricter adherence to reference. Typical: 0.1-1.0</span></div>
+                <div class="key-point"><span class="label">\(\text{KL}(\pi_{\text{new}} \| \pi_{\text{ref}})\):</span><span class="desc">Kullback-Leibler divergence; measures distributional distance. Prevents mode collapse to reward gaming</span></div>
+                <div class="key-point"><span class="label">\(\pi_{\text{ref}}\):</span><span class="desc">Reference policy (usually supervised fine-tuned model); keeps new policy from drifting too far</span></div>
                 <p style="margin: 8px 0; font-size: 0.93em; text-align: center; color: #ddd;">Proximal Policy Optimization with KL penalty: maximize reward while staying close to reference model</p>
                 <div class="key-point"><span class="label">Pipeline Step 1:</span><span class="desc">Supervised fine-tuning on human examples to bootstrap quality</span></div>
                 <div class="key-point"><span class="label">Pipeline Step 2:</span><span class="desc">Collect human preferences (A vs B comparisons)</span></div>
@@ -718,11 +724,11 @@
                 <div class="key-point"><span class="label">Pipeline Step 4:</span><span class="desc">Reinforcement learning fine-tune language model on reward signal with KL regularization</span></div>
                 <hr class="divider">
                 <p><strong>Bradley-Terry Model:</strong></p>
-                <div class="formula">P(y ≻ x) = σ(R(x,y))</div>
-                <div class="key-point"><span class="label">P(y ≻ x):</span><span class="desc">Probability that response y is preferred over response x; ∈ [0,1]</span></div>
-                <div class="key-point"><span class="label">σ(·):</span><span class="desc">Sigmoid activation σ(z) = 1/(1+e^{-z}); maps real numbers to [0,1]</span></div>
-                <div class="key-point"><span class="label">R(x,y):</span><span class="desc">Scalar reward difference from learned reward model; R(x,y) = r_θ(y) - r_θ(x)</span></div>
-                <div class="key-point"><span class="label">r_θ:</span><span class="desc">Learned reward model (neural network); outputs scalar reward for text pair</span></div>
+                <div class="formula">$$P(y \succ x) = \sigma(R(x,y))$$</div>
+                <div class="key-point"><span class="label">\(P(y \succ x)\):</span><span class="desc">Probability that response y is preferred over response x; ∈ [0,1]</span></div>
+                <div class="key-point"><span class="label">\(\sigma(\cdot)\):</span><span class="desc">Sigmoid activation \(\sigma(z) = \frac{1}{1+e^{-z}}\); maps real numbers to [0,1]</span></div>
+                <div class="key-point"><span class="label">\(R(x,y)\):</span><span class="desc">Scalar reward difference from learned reward model; \(R(x,y) = r_\theta(y) - r_\theta(x)\)</span></div>
+                <div class="key-point"><span class="label">\(r_\theta\):</span><span class="desc">Learned reward model (neural network); outputs scalar reward for text pair</span></div>
                 <p style="margin: 8px 0; font-size: 0.93em;">Preference probability = sigmoid of reward difference; trainable via cross-entropy</p>
                 <hr class="divider">
                 <div class="interview-tip">KL penalty is crucial: without it, the language model mode-collapses to trivial outputs that maximally exploit the reward model. KL keeps it close to the supervised fine-tuning baseline.</div>

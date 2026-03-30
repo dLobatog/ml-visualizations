@@ -78,6 +78,8 @@
             margin: 0 auto;
             background: #0a0a0f;
             border-radius: 4px;
+            max-width: 100%;
+            height: auto;
         }
 
         .controls {
@@ -246,8 +248,12 @@
   .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
   .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
   .insight-box { grid-column: 1 / -1; }
+  .katex { color: #e8e8ff; font-size: 1.1em; }
 
 </style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '\\(', right: '\\)', display: false}]});"></script>
 </head>
 <body>
     <div class="header">
@@ -305,16 +311,16 @@
                         <h3>Interview Tips: β-VAE</h3>
                         <p><strong>What it is:</strong> VAE with weighted KL divergence. Higher β = more disentanglement, lower reconstruction. Trade-off is explicit and unavoidable.</p>
 
-                        <div class="formula">ELBO = E[log p(x|z)] - β·KL(q(z|x) || p(z))</div>
-                        <div class="key-point"><span class="label">ELBO (Evidence Lower Bound):</span><span class="desc">Log-likelihood lower bound; maximize to improve both reconstruction and latent consistency</span></div>
-                        <div class="key-point"><span class="label">E[log p(x|z)]:</span><span class="desc">Reconstruction term; expected log-likelihood of data given latent; higher = better reconstruction</span></div>
+                        <div class="formula">$$\text{ELBO} = \mathbb{E}[\log p(x|z)] - \beta \cdot \text{KL}(q(z|x) \| p(z))$$</div>
+                        <div class="key-point"><span class="label">\(\text{ELBO}\) (Evidence Lower Bound):</span><span class="desc">Log-likelihood lower bound; maximize to improve both reconstruction and latent consistency</span></div>
+                        <div class="key-point"><span class="label">\(\mathbb{E}[\log p(x|z)]\):</span><span class="desc">Reconstruction term; expected log-likelihood of data given latent; higher = better reconstruction</span></div>
                         <div class="key-point"><span class="label">x:</span><span class="desc">Input data (e.g., image)</span></div>
                         <div class="key-point"><span class="label">z:</span><span class="desc">Latent representation; lower-dimensional encoding of x</span></div>
-                        <div class="key-point"><span class="label">KL(q(z|x) || p(z)):</span><span class="desc">Kullback-Leibler divergence; regularization term; measures how much posterior q(z|x) deviates from prior p(z) ≈ N(0, I)</span></div>
-                        <div class="key-point"><span class="label">β:</span><span class="desc">Weighting parameter ∈ [0, ∞); β=1 standard VAE, β>1 encourages disentanglement, β<1 prefers reconstruction</span></div>
-                        <div class="formula">Posterior Collapse: q(z|x) = p(z) when β too high → encoder useless, no info in z</div>
+                        <div class="key-point"><span class="label">\(\text{KL}(q(z|x) \| p(z))\):</span><span class="desc">Kullback-Leibler divergence; regularization term; measures how much posterior \(q(z|x)\) deviates from prior \(p(z) \approx \mathcal{N}(0, I)\)</span></div>
+                        <div class="key-point"><span class="label">\(\beta\):</span><span class="desc">Weighting parameter \(\in [0, \infty)\); \(\beta=1\) standard VAE, \(\beta>1\) encourages disentanglement, \(\beta<1\) prefers reconstruction</span></div>
+                        <div class="formula">$$\text{Posterior Collapse: } q(z|x) = p(z) \text{ when } \beta \text{ too high} \rightarrow \text{encoder useless, no info in } z$$</div>
                         <div class="key-point"><span class="label">Posterior Collapse:</span><span class="desc">When KL term dominates, encoder learns to ignore x; latent z becomes independent of input, learned nothing</span></div>
-                        <div class="key-point"><span class="label">KL Divergence:</span><span class="desc">For Gaussian VAE: KL = 0.5 * Σ(μ² + σ² - 1 - log(σ²)); when σ²→1, μ→0, KL→0 (collapse)</span></div>
+                        <div class="key-point"><span class="label">KL Divergence:</span><span class="desc">For Gaussian VAE: \(\text{KL} = 0.5 \cdot \sum(\mu^2 + \sigma^2 - 1 - \log(\sigma^2))\); when \(\sigma^2 \to 1\), \(\mu \to 0\), \(\text{KL} \to 0\) (collapse)</span></div>
 
                         <div class="mnemonic">β=1 baseline. High β = disentangled (each z dimension independent). Low β = good reconstruction. Can't have both.</div>
 
@@ -392,22 +398,22 @@
                 </div>
                     <div class="insight-box">
                         <h3>Interview Tips: Diffusion Models</h3>
-                        <p><strong>What it is:</strong> Learn to reverse noise addition. Forward adds noise T steps: x_t = √ᾱ_t·x_0 + √(1-ᾱ_t)·ε. Reverse: x_t → x_{t-1} iteratively. Stable vs GANs. High quality samples.</p>
+                        <p><strong>What it is:</strong> Learn to reverse noise addition. Forward adds noise T steps: \(x_t = \sqrt{\bar{\alpha}_t} \cdot x_0 + \sqrt{1-\bar{\alpha}_t} \cdot \epsilon\). Reverse: \(x_t \to x_{t-1}\) iteratively. Stable vs GANs. High quality samples.</p>
 
-                        <div class="formula">Forward: q(x_t|x_0) = N(√ᾱ_t·x_0, (1-ᾱ_t)I)  |  Reverse: denoise ε ~ N(0,I)</div>
+                        <div class="formula">$$\text{Forward: } q(x_t|x_0) = \mathcal{N}(\sqrt{\bar{\alpha}_t} \cdot x_0,\; (1-\bar{\alpha}_t)\mathbf{I}) \quad|\quad \text{Reverse: denoise } \epsilon \sim \mathcal{N}(0, \mathbf{I})$$</div>
                         <div class="key-point"><span class="label">q(x_t|x_0):</span><span class="desc">Forward process distribution; conditionally Gaussian given clean x_0</span></div>
                         <div class="key-point"><span class="label">x_0:</span><span class="desc">Clean original data</span></div>
                         <div class="key-point"><span class="label">x_t:</span><span class="desc">Noisy data at diffusion step t; interpolation between x_0 and pure noise</span></div>
-                        <div class="key-point"><span class="label">ᾱ_t (alpha_bar_t):</span><span class="desc">Cumulative product of noise schedule; starts at ≈1 (t=0, clean), approaches 0 (t=T, full noise); ᾱ_t = ∏_{i=1}^t α_i where α_i = 1 - β_i</span></div>
-                        <div class="key-point"><span class="label">β_i:</span><span class="desc">Noise variance at step i; β_i ∈ [0, 0.02] typically; defines how much noise added at each step</span></div>
-                        <div class="key-point"><span class="label">√ᾱ_t·x_0:</span><span class="desc">Signal coefficient; how much original signal remains at step t; decreases over time</span></div>
+                        <div class="key-point"><span class="label">\(\bar{\alpha}_t\) (alpha_bar_t):</span><span class="desc">Cumulative product of noise schedule; starts at \(\approx 1\) (t=0, clean), approaches 0 (t=T, full noise); \(\bar{\alpha}_t = \prod_{i=1}^t \alpha_i\) where \(\alpha_i = 1 - \beta_i\)</span></div>
+                        <div class="key-point"><span class="label">\(\beta_i\):</span><span class="desc">Noise variance at step i; \(\beta_i \in [0, 0.02]\) typically; defines how much noise added at each step</span></div>
+                        <div class="key-point"><span class="label">\(\sqrt{\bar{\alpha}_t} \cdot x_0\):</span><span class="desc">Signal coefficient; how much original signal remains at step t; decreases over time</span></div>
                         <div class="key-point"><span class="label">(1-ᾱ_t)I:</span><span class="desc">Noise variance (covariance matrix); noise increases over time as ᾱ_t decreases</span></div>
-                        <div class="key-point"><span class="label">ε ~ N(0,I):</span><span class="desc">Standard Gaussian noise used in forward process; mean 0, variance 1</span></div>
-                        <div class="formula">Loss: ||ε_θ(x_t, t) - ε||²  →  predict added noise at step t</div>
-                        <div class="key-point"><span class="label">ε_θ(x_t, t):</span><span class="desc">Neural network prediction of noise at step t given noisy input x_t; outputs estimated noise ε̂</span></div>
-                        <div class="key-point"><span class="label">ε:</span><span class="desc">Ground truth noise that was added in forward process; sampled fresh for each training example</span></div>
-                        <div class="key-point"><span class="label">||...||²:</span><span class="desc">Mean squared error (L2 loss); measures pixel-level reconstruction error between predicted and actual noise</span></div>
-                        <div class="key-point"><span class="label">θ:</span><span class="desc">Neural network parameters (typically UNet or transformer); learned during training</span></div>
+                        <div class="key-point"><span class="label">\(\epsilon \sim \mathcal{N}(0,I)\):</span><span class="desc">Standard Gaussian noise used in forward process; mean 0, variance 1</span></div>
+                        <div class="formula">$$\mathcal{L} = \|\epsilon_\theta(x_t, t) - \epsilon\|^2 \;\rightarrow\; \text{predict added noise at step } t$$</div>
+                        <div class="key-point"><span class="label">\(\epsilon_\theta(x_t, t)\):</span><span class="desc">Neural network prediction of noise at step t given noisy input x_t; outputs estimated noise ε̂</span></div>
+                        <div class="key-point"><span class="label">\(\epsilon\):</span><span class="desc">Ground truth noise that was added in forward process; sampled fresh for each training example</span></div>
+                        <div class="key-point"><span class="label">\(\|\cdot\|^2\):</span><span class="desc">Mean squared error (L2 loss); measures pixel-level reconstruction error between predicted and actual noise</span></div>
+                        <div class="key-point"><span class="label">\(\theta\):</span><span class="desc">Neural network parameters (typically UNet or transformer); learned during training</span></div>
 
                         <div class="mnemonic">Closed-form diffusion: add noise → learn to reverse → sample via T denoising steps. More stable than adversarial training.</div>
 
@@ -490,7 +496,7 @@
                         <h3>Interview Tips: GANs</h3>
                         <p><strong>What it is:</strong> Generator G: z→fake. Discriminator D: real vs fake. Min-max game. Nash Eq = D can't distinguish. Fast sampling. Hard to train.</p>
 
-                        <div class="formula">min_G max_D E[log D(x)] - E[log(1-D(G(z)))]  =  -2log(2) - 2·JS(p_data || p_gen)</div>
+                        <div class="formula">$$\min_G \max_D \;\mathbb{E}[\log D(x)] - \mathbb{E}[\log(1-D(G(z)))] = -2\log(2) - 2 \cdot \text{JS}(p_{\text{data}} \| p_{\text{gen}})$$</div>
                         <div class="key-point"><span class="label">min_G max_D:</span><span class="desc">Min-max game: Generator G minimizes, Discriminator D maximizes (adversarial objectives)</span></div>
                         <div class="key-point"><span class="label">D(x):</span><span class="desc">Discriminator output for real data x; probability [0, 1] that input is real; ideally D(x) → 1</span></div>
                         <div class="key-point"><span class="label">E[log D(x)]:</span><span class="desc">Expected log-likelihood of real data; D wants to maximize (output → 1), G indifferent</span></div>
@@ -498,11 +504,11 @@
                         <div class="key-point"><span class="label">D(G(z)):</span><span class="desc">Discriminator output for fake data; probability that generated sample is real; ideally D(G(z)) → 0</span></div>
                         <div class="key-point"><span class="label">E[log(1-D(G(z)))]:</span><span class="desc">D wants to maximize (detect fakes), G wants to minimize (fool D); when D(G(z)) → 1, this term → 0</span></div>
                         <div class="key-point"><span class="label">JS(p_data || p_gen):</span><span class="desc">Jensen-Shannon divergence between real and generated distributions; at Nash equilibrium = 0 (distributions match)</span></div>
-                        <div class="key-point"><span class="label">-2log(2) ≈ -1.39:</span><span class="desc">Constant in GAN objective; Nash equilibrium value when JS divergence = 0</span></div>
-                        <div class="formula">Wasserstein GAN: min_G max_D E[D(x)] - E[D(G(z))] s.t. ||D||_L ≤ 1  →  better gradients</div>
+                        <div class="key-point"><span class="label">\(-2\log(2) \approx -1.39\):</span><span class="desc">Constant in GAN objective; Nash equilibrium value when JS divergence = 0</span></div>
+                        <div class="formula">$$\text{WGAN: } \min_G \max_D \;\mathbb{E}[D(x)] - \mathbb{E}[D(G(z))] \;\text{s.t. } \|D\|_L \leq 1 \;\rightarrow\; \text{better gradients}$$</div>
                         <div class="key-point"><span class="label">E[D(x)] - E[D(G(z))]:</span><span class="desc">Wasserstein distance (critic network, not probability); measures distribution distance directly</span></div>
                         <div class="key-point"><span class="label">D (Critic):</span><span class="desc">No sigmoid; outputs real-valued score; higher for real data, lower for fake; 1-Lipschitz constraint ensures smooth gradients</span></div>
-                        <div class="key-point"><span class="label">||D||_L ≤ 1:</span><span class="desc">Lipschitz constraint; 1-Lipschitz ensures gradients well-behaved (≤1 everywhere); prevents vanishing/exploding gradients</span></div>
+                        <div class="key-point"><span class="label">\(\|D\|_L \leq 1\):</span><span class="desc">Lipschitz constraint; 1-Lipschitz ensures gradients well-behaved (≤1 everywhere); prevents vanishing/exploding gradients</span></div>
                         <div class="key-point"><span class="label">Practical enforcement:</span><span class="desc">Weight clipping (clip weights to [-c, c]) or gradient penalty (adds regularization term); gradient penalty preferred</span></div>
 
                         <div class="mnemonic">Generator wants D to say "real". Discriminator wants to separate. If training converges = Nash Eq = D output 1/2 everywhere (can't distinguish).</div>
@@ -556,14 +562,14 @@
                         <h3>How It Works: Classifier-Free Guidance</h3>
                         <p><strong>What it is:</strong> Steer generation without separate classifier. Reweight conditional vs unconditional predictions. w=0 (unconditional), w=1 (conditional), w>1 (amplify condition). Enables text-to-image control.</p>
 
-                        <div class="formula">ε_guided = ε_θ(x_t, ∅) + w·(ε_θ(x_t, c) - ε_θ(x_t, ∅))</div>
-                        <div class="key-point"><span class="label">ε_θ(x_t, ∅):</span><span class="desc">Network prediction for unconditional generation (condition c is None/dropped); baseline noise estimate</span></div>
-                        <div class="key-point"><span class="label">ε_θ(x_t, c):</span><span class="desc">Network prediction for conditional generation given condition c (e.g., text prompt, image class)</span></div>
+                        <div class="formula">$$\epsilon_{\text{guided}} = \epsilon_\theta(x_t, \varnothing) + w \cdot (\epsilon_\theta(x_t, c) - \epsilon_\theta(x_t, \varnothing))$$</div>
+                        <div class="key-point"><span class="label">\(\epsilon_\theta(x_t, \varnothing)\):</span><span class="desc">Network prediction for unconditional generation (condition c is None/dropped); baseline noise estimate</span></div>
+                        <div class="key-point"><span class="label">\(\epsilon_\theta(x_t, c)\):</span><span class="desc">Network prediction for conditional generation given condition c (e.g., text prompt, image class)</span></div>
                         <div class="key-point"><span class="label">c:</span><span class="desc">Conditioning signal (e.g., text embedding from CLIP, class embedding); modulates generation direction</span></div>
-                        <div class="key-point"><span class="label">w (guidance scale):</span><span class="desc">Scaling factor ∈ [0, ∞); w=0 = unconditional only, w=1 = conditional only, w>1 = emphasize condition; w=7.5 typical, w>15 = artifacts</span></div>
-                        <div class="key-point"><span class="label">ε_guided:</span><span class="desc">Final guided noise prediction combining unconditional baseline with conditional offset amplified by w</span></div>
+                        <div class="key-point"><span class="label">\(w\) (guidance scale):</span><span class="desc">Scaling factor \(\in [0, \infty)\); w=0 = unconditional only, w=1 = conditional only, w>1 = emphasize condition; w=7.5 typical, w>15 = artifacts</span></div>
+                        <div class="key-point"><span class="label">\(\epsilon_{\text{guided}}\):</span><span class="desc">Final guided noise prediction combining unconditional baseline with conditional offset amplified by w</span></div>
                         <div class="key-point"><span class="label">Interpretation:</span><span class="desc">w=0 ignores condition, w=1 only listens to condition, w=7.5 amplifies conditional signal 7.5x relative to unconditional</span></div>
-                        <div class="formula">Importance reweighting: p(x_t|c) ∝ p(x_t) · [p(x_t|c)/p(x_t)]^w  →  sharpens distribution</div>
+                        <div class="formula">$$p(x_t|c) \propto p(x_t) \cdot \left[\frac{p(x_t|c)}{p(x_t)}\right]^w \;\rightarrow\; \text{sharpens distribution}$$</div>
                         <div class="key-point"><span class="label">p(x_t):</span><span class="desc">Unconditional distribution; prior without any guidance</span></div>
                         <div class="key-point"><span class="label">p(x_t|c):</span><span class="desc">Conditional distribution given condition c; posterior after observing condition</span></div>
                         <div class="key-point"><span class="label">[p(x_t|c)/p(x_t)]^w:</span><span class="desc">Likelihood ratio raised to power w; reweights samples toward condition; higher w = stronger reweighting</span></div>
@@ -620,13 +626,13 @@
                         <h3>Pipeline: Encode → Diffuse → Decode</h3>
                         <p><strong>What it is:</strong> Diffuse in compressed latent space not pixels. 3-stage: (1) VAE encode x→z (8-16x spatial reduction), (2) diffuse in z, (3) VAE decode z→x̂. 10-50x speedup vs pixel-diffusion, quality maintained.</p>
 
-                        <div class="formula">Latent forward: q(z_t | z_0) = √ᾱ_t·z_0 + √(1-ᾱ_t)·ε  (same form, compressed space)</div>
-                        <div class="key-point"><span class="label">z_0:</span><span class="desc">Latent representation from VAE encoder; compressed version of original image x_0; shape ≈ H/8 × W/8 × D where D ∈ [4, 8]</span></div>
+                        <div class="formula">$$q(z_t | z_0) = \sqrt{\bar{\alpha}_t} \cdot z_0 + \sqrt{1-\bar{\alpha}_t} \cdot \epsilon \quad \text{(same form, compressed space)}$$</div>
+                        <div class="key-point"><span class="label">\(z_0\):</span><span class="desc">Latent representation from VAE encoder; compressed version of original image x_0; shape ≈ H/8 × W/8 × D where D ∈ [4, 8]</span></div>
                         <div class="key-point"><span class="label">z_t:</span><span class="desc">Latent at diffusion step t; noisy version of z_0; same shape as z_0 but with added noise</span></div>
                         <div class="key-point"><span class="label">ᾱ_t:</span><span class="desc">Cumulative noise schedule in latent space; same as pixel-diffusion but operates on compressed features</span></div>
-                        <div class="key-point"><span class="label">√ᾱ_t·z_0:</span><span class="desc">Signal component; original latent scaled by signal retention at step t</span></div>
-                        <div class="key-point"><span class="label">√(1-ᾱ_t)·ε:</span><span class="desc">Noise component; Gaussian noise scaled by noise level at step t</span></div>
-                        <div class="formula">Compression: 512×512 image → 64×64 latent + 4-8 channels = 50-100x compression</div>
+                        <div class="key-point"><span class="label">\(\sqrt{\bar{\alpha}_t} \cdot z_0\):</span><span class="desc">Signal component; original latent scaled by signal retention at step t</span></div>
+                        <div class="key-point"><span class="label">\(\sqrt{1-\bar{\alpha}_t} \cdot \epsilon\):</span><span class="desc">Noise component; Gaussian noise scaled by noise level at step t</span></div>
+                        <div class="formula">$$512 \times 512 \text{ image} \rightarrow 64 \times 64 \text{ latent} + 4\text{-}8 \text{ channels} = 50\text{-}100\times \text{ compression}$$</div>
                         <div class="key-point"><span class="label">Input image:</span><span class="desc">Original pixel space; 512×512×3 = ~786K values</span></div>
                         <div class="key-point"><span class="label">VAE encoding:</span><span class="desc">Spatial reduction 8× (512→64), channels reduced from 3 to 4-8; typically 8 channels for high quality</span></div>
                         <div class="key-point"><span class="label">Latent space:</span><span class="desc">64×64×8 = 32,768 values; ~24x fewer than pixel space</span></div>
@@ -688,22 +694,22 @@
                         <h3>Discrete Latent Space: VQ-VAE</h3>
                         <p><strong>What it is:</strong> Replace continuous Gaussian z with discrete tokens via codebook quantization. Enables Transformer-based autoregressive generation. Two-stage: (1) tokenize via VQ-VAE, (2) autoregressive language model on tokens.</p>
 
-                        <div class="formula">Quantize: ẑ = e_k where k = argmin_i ||z - e_i||²  (nearest codebook entry)</div>
+                        <div class="formula">$$\hat{z} = e_k \;\text{where}\; k = \arg\min_i \|z - e_i\|^2 \quad \text{(nearest codebook entry)}$$</div>
                         <div class="key-point"><span class="label">z:</span><span class="desc">Continuous latent vector from encoder; the value to be quantized</span></div>
                         <div class="key-point"><span class="label">e_i:</span><span class="desc">i-th entry (embedding) in the codebook; dimension matches z, one per discrete token</span></div>
-                        <div class="key-point"><span class="label">||z - e_i||²:</span><span class="desc">L2 distance between z and each codebook entry e_i</span></div>
-                        <div class="key-point"><span class="label">k = argmin_i:</span><span class="desc">Index of nearest codebook entry; discrete choice ∈ {0, 1, ..., K-1}</span></div>
+                        <div class="key-point"><span class="label">\(\|z - e_i\|^2\):</span><span class="desc">L2 distance between z and each codebook entry e_i</span></div>
+                        <div class="key-point"><span class="label">\(k = \arg\min_i\):</span><span class="desc">Index of nearest codebook entry; discrete choice \(\in \{0, 1, \ldots, K-1\}\)</span></div>
                         <div class="key-point"><span class="label">ẑ = e_k:</span><span class="desc">Quantized representation; replaces continuous z with closest codebook entry (discrete token)</span></div>
-                        <div class="key-point"><span class="label">K:</span><span class="desc">Codebook size; number of discrete tokens available; K ∈ [64, 1024] typically</span></div>
-                        <div class="formula">Loss: ||x - dec(ẑ)||² + β₁||z - sg[e_k]||² + β₂||sg[z] - e_k||²</div>
-                        <div class="key-point"><span class="label">||x - dec(ẑ)||²:</span><span class="desc">Reconstruction loss; penalizes decoder for not recovering original x from quantized latent ẑ</span></div>
+                        <div class="key-point"><span class="label">\(K\):</span><span class="desc">Codebook size; number of discrete tokens available; \(K \in [64, 1024]\) typically</span></div>
+                        <div class="formula">$$\mathcal{L} = \|x - \text{dec}(\hat{z})\|^2 + \beta_1\|z - \text{sg}[e_k]\|^2 + \beta_2\|\text{sg}[z] - e_k\|^2$$</div>
+                        <div class="key-point"><span class="label">\(\|x - \text{dec}(\hat{z})\|^2\):</span><span class="desc">Reconstruction loss; penalizes decoder for not recovering original x from quantized latent ẑ</span></div>
                         <div class="key-point"><span class="label">x:</span><span class="desc">Original input</span></div>
                         <div class="key-point"><span class="label">dec():</span><span class="desc">Decoder network that reconstructs x̂ from latent representation</span></div>
-                        <div class="key-point"><span class="label">β₁||z - sg[e_k]||²:</span><span class="desc">Codebook loss; moves codebook entries e_k toward encoder outputs z; sg[] = stop-gradient (no backprop to encoder)</span></div>
-                        <div class="key-point"><span class="label">β₁:</span><span class="desc">Weight for codebook loss term; typically β₁=0.99; prevents codebook collapse</span></div>
+                        <div class="key-point"><span class="label">\(\beta_1\|z - \text{sg}[e_k]\|^2\):</span><span class="desc">Codebook loss; moves codebook entries e_k toward encoder outputs z; sg[] = stop-gradient (no backprop to encoder)</span></div>
+                        <div class="key-point"><span class="label">\(\beta_1\):</span><span class="desc">Weight for codebook loss term; typically β₁=0.99; prevents codebook collapse</span></div>
                         <div class="key-point"><span class="label">sg[] (stop-gradient):</span><span class="desc">Detaches gradients; prevents backpropagation through this term; critical for stable training</span></div>
-                        <div class="key-point"><span class="label">β₂||sg[z] - e_k||²:</span><span class="desc">Encoder commitment loss; pulls encoder outputs z toward selected codebook entries; sg[z] prevents codebook gradient</span></div>
-                        <div class="key-point"><span class="label">β₂:</span><span class="desc">Weight for commitment loss; typically β₂=0.25; balances learning speed of encoder vs codebook</span></div>
+                        <div class="key-point"><span class="label">\(\beta_2\|\text{sg}[z] - e_k\|^2\):</span><span class="desc">Encoder commitment loss; pulls encoder outputs z toward selected codebook entries; sg[z] prevents codebook gradient</span></div>
+                        <div class="key-point"><span class="label">\(\beta_2\):</span><span class="desc">Weight for commitment loss; typically β₂=0.25; balances learning speed of encoder vs codebook</span></div>
 
                         <div class="mnemonic">Discrete tokens = H×W grid of K-way choices. Transformers better at scaling than diffusion on tokens. Used in DALL-E, Jukebox.</div>
 
@@ -724,7 +730,7 @@
 
                         <div class="key-point">
                             <span class="label">Production rule:</span>
-                            <span class="desc">K ∈ [512, 8192], 4096 typical. EMA updates: e_i = (m·e_i + n(a)·z_a)/(m + n(a) + ε). Monitor usage: if <80% used, increase K.</span>
+                            <span class="desc">\(K \in [512, 8192]\), 4096 typical. EMA updates: e_i = (m·e_i + n(a)·z_a)/(m + n(a) + ε). Monitor usage: if <80% used, increase K.</span>
                         </div>
 
                         <div class="key-point">
@@ -765,7 +771,7 @@
                             </div>
                             <div class="option">
                                 <div class="opt-title">DiT</div>
-                                <div class="opt-desc">O((HW)² · D) memory (quadratic bottleneck). Global receptive field. More compute but scales like LLMs. Init critical for stability.</div>
+                                <div class="opt-desc">\(O((HW)^2 \cdot D)\) memory (quadratic bottleneck). Global receptive field. More compute but scales like LLMs. Init critical for stability.</div>
                             </div>
                         </div>
 
@@ -849,23 +855,23 @@
                         <h3>Interview Tips: Flow Models</h3>
                         <p><strong>What it is:</strong> Invertible transformations z→x via coupling layers. Exact likelihood (no lower bound like VAE). Sample z~N(0,I), compute x=f(z). Bidirectional generation.</p>
 
-                        <div class="formula">log p(x) = log p(z) - log|det J_f|  where J_f = ∂f/∂z (Jacobian)</div>
+                        <div class="formula">$$\log p(x) = \log p(z) - \log|\det J_f| \;\text{where}\; J_f = \frac{\partial f}{\partial z} \;\text{(Jacobian)}$$</div>
                         <div class="key-point"><span class="label">p(x):</span><span class="desc">Probability of data x; what we want to maximize (log-likelihood)</span></div>
                         <div class="key-point"><span class="label">p(z):</span><span class="desc">Prior distribution, typically N(0, I); probability of latent code z</span></div>
                         <div class="key-point"><span class="label">f (flow):</span><span class="desc">Invertible transformation z → x; must be bijective (one-to-one, onto)</span></div>
-                        <div class="key-point"><span class="label">J_f = ∂f/∂z:</span><span class="desc">Jacobian matrix; partial derivatives of each output w.r.t. each input; size d×d where d = dimension</span></div>
+                        <div class="key-point"><span class="label">\(J_f = \frac{\partial f}{\partial z}\):</span><span class="desc">Jacobian matrix; partial derivatives of each output w.r.t. each input; size d×d where d = dimension</span></div>
                         <div class="key-point"><span class="label">det J_f:</span><span class="desc">Determinant of Jacobian; measures volume scaling of transformation; must be ≠ 0 for invertibility</span></div>
                         <div class="key-point"><span class="label">|det J_f|:</span><span class="desc">Absolute value of Jacobian determinant; always positive; quantifies how much transformation stretches/shrinks volume</span></div>
                         <div class="key-point"><span class="label">log|det J_f|:</span><span class="desc">Log absolute Jacobian determinant; correction term to account for volume change (change of variables formula)</span></div>
-                        <div class="key-point"><span class="label">Exact likelihood:</span><span class="desc">No approximation; unlike VAE (ELBO lower bound), flows give true log p(x) without variational bound</span></div>
-                        <div class="formula">Coupling: z'_2 = T_θ(z_1) * z_2 + S_θ(z_1)  →  Jacobian triangular, |det|=product diagonal</div>
+                        <div class="key-point"><span class="label">Exact likelihood:</span><span class="desc">No approximation; unlike VAE (ELBO lower bound), flows give true \(\log p(x)\) without variational bound</span></div>
+                        <div class="formula">$$z'_2 = T_\theta(z_1) \cdot z_2 + S_\theta(z_1) \;\rightarrow\; \text{Jacobian triangular, } |\det| = \prod \text{diagonal}$$</div>
                         <div class="key-point"><span class="label">z = [z_1, z_2]:</span><span class="desc">Latent split into two parts; z_1 kept fixed, z_2 transformed conditioned on z_1</span></div>
-                        <div class="key-point"><span class="label">T_θ(z_1):</span><span class="desc">Transform (scale) network; outputs multiplicative factor for z_2; depends on z_1, no gradients through z_2</span></div>
-                        <div class="key-point"><span class="label">S_θ(z_1):</span><span class="desc">Shift (translation) network; outputs additive bias for z_2; depends on z_1</span></div>
-                        <div class="key-point"><span class="label">z'_2 = T_θ(z_1) * z_2 + S_θ(z_1):</span><span class="desc">Affine transformation of z_2 conditioned on z_1; invertible via z_2 = (z'_2 - S_θ(z_1)) / T_θ(z_1)</span></div>
+                        <div class="key-point"><span class="label">\(T_\theta(z_1)\):</span><span class="desc">Transform (scale) network; outputs multiplicative factor for z_2; depends on z_1, no gradients through z_2</span></div>
+                        <div class="key-point"><span class="label">\(S_\theta(z_1)\):</span><span class="desc">Shift (translation) network; outputs additive bias for z_2; depends on z_1</span></div>
+                        <div class="key-point"><span class="label">\(z'_2 = T_\theta(z_1) \cdot z_2 + S_\theta(z_1)\):</span><span class="desc">Affine transformation of z_2 conditioned on z_1; invertible via z_2 = (z'_2 - S_θ(z_1)) / T_θ(z_1)</span></div>
                         <div class="key-point"><span class="label">Jacobian triangular:</span><span class="desc">Because z_1 → z'_1 identity (no change), z_2 → z'_2 affine; results in triangular Jacobian matrix</span></div>
                         <div class="key-point"><span class="label">|det| = product diagonal:</span><span class="desc">For triangular matrix, determinant = product of diagonal elements; diagonal = [1, 1, ..., 1, T_θ(z_1)] = T_θ(z_1)</span></div>
-                        <div class="key-point"><span class="label">O(d) complexity:</span><span class="desc">Computing determinant = O(d) vs O(d³) for general Jacobian; huge speedup enables efficient exact likelihood</span></div>
+                        <div class="key-point"><span class="label">\(O(d)\) complexity:</span><span class="desc">Computing determinant = O(d) vs \(O(d^3)\) for general Jacobian; huge speedup enables efficient exact likelihood</span></div>
 
                         <div class="mnemonic">Invertibility constraint = exact likelihood but architectures restrictive. Triangular Jacobian = O(d) not O(d³) det. Bidirectional: encode x→z, modify, decode z→x.</div>
 
