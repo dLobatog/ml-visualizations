@@ -1802,5 +1802,202 @@ drawRNN();
 drawFlash();
 drawScaling();
 </script>
+
+<!-- Quiz Mode Toggle Button -->
+<button id="quizToggleBtn" onclick="toggleQuiz()" style="
+  position: fixed; top: 20px; right: 20px; z-index: 1000;
+  padding: 12px 20px; border: 2px solid #ff6b6b; background: #12121f;
+  color: #ff6b6b; border-radius: 12px; cursor: pointer; font-size: 1em;
+  font-weight: 600; transition: all 0.3s; box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+" onmouseover="this.style.background='#ff6b6b22'" onmouseout="this.style.background='#12121f'">&#129504; Quiz Mode</button>
+
+<!-- Quiz Section -->
+<div id="quizSection" style="display:none">
+  <div style="max-width:1200px; margin:0 auto; padding:40px 20px 60px;">
+    <div style="background:#12121f; border:1px solid #2a2a4a; border-radius:16px; padding:32px;">
+      <h2 style="font-size:1.5em; color:#ff6b6b; margin-bottom:8px; text-align:center;">Deep Learning Foundations Quiz</h2>
+      <p style="color:#888; text-align:center; margin-bottom:24px;">Test your understanding — click an answer to check it.</p>
+      <p id="quizScore" style="color:#ff6b6b; font-size:1.2em; font-weight:700; text-align:center; margin-bottom:24px;">Score: 0 / 8</p>
+
+      <div id="quizQuestions"></div>
+
+      <div style="display:flex; gap:16px; justify-content:center; margin-top:32px;">
+        <button onclick="resetQuiz()" style="padding:10px 24px; border:2px solid #ff6b6b; background:transparent; color:#ff6b6b; border-radius:10px; cursor:pointer; font-size:1em; font-weight:600; transition:all 0.2s;" onmouseover="this.style.background='#ff6b6b22'" onmouseout="this.style.background='transparent'">Reset Quiz</button>
+        <button onclick="toggleQuiz()" style="padding:10px 24px; border:2px solid #888; background:transparent; color:#888; border-radius:10px; cursor:pointer; font-size:1em; font-weight:600; transition:all 0.2s;" onmouseover="this.style.background='#ffffff11'" onmouseout="this.style.background='transparent'">Hide Quiz</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const quizData = [
+    {
+      q: "Q1: Why are activation functions necessary in neural networks?",
+      options: [
+        "To speed up training",
+        "To introduce non-linearity, enabling learning of complex patterns",
+        "To reduce the number of parameters",
+        "To normalize the output"
+      ],
+      correct: 1
+    },
+    {
+      q: "Q2: What is the \u201cdying ReLU\u201d problem?",
+      options: [
+        "ReLU outputs become too large",
+        "Neurons with negative inputs always output 0 and stop learning",
+        "ReLU causes exploding gradients",
+        "ReLU is computationally expensive"
+      ],
+      correct: 1
+    },
+    {
+      q: "Q3: During backpropagation, gradients are computed using:",
+      options: [
+        "Random sampling",
+        "The chain rule of calculus",
+        "Genetic algorithms",
+        "Brute force search"
+      ],
+      correct: 1
+    },
+    {
+      q: "Q4: What causes the vanishing gradient problem in deep networks?",
+      options: [
+        "Using ReLU activation",
+        "Multiplying many small gradients (<1) through layers",
+        "Using too large a learning rate",
+        "Having too few parameters"
+      ],
+      correct: 1
+    },
+    {
+      q: "Q5: In a convolutional layer, what does a filter/kernel detect?",
+      options: [
+        "The total brightness of an image",
+        "Local spatial patterns like edges or textures",
+        "The size of the input",
+        "The number of channels"
+      ],
+      correct: 1
+    },
+    {
+      q: "Q6: What is the purpose of Batch Normalization?",
+      options: [
+        "To increase batch size",
+        "To normalize layer inputs, stabilizing and accelerating training",
+        "To reduce the number of layers",
+        "To eliminate the need for activation functions"
+      ],
+      correct: 1
+    },
+    {
+      q: "Q7: Which RNN variant uses forget, input, and output gates to control information flow?",
+      options: [
+        "Vanilla RNN",
+        "GRU (Gated Recurrent Unit)",
+        "LSTM (Long Short-Term Memory)",
+        "Transformer"
+      ],
+      correct: 2
+    },
+    {
+      q: "Q8: What is the key advantage of residual connections (skip connections)?",
+      options: [
+        "They reduce model size",
+        "They allow gradients to flow directly through skip paths, enabling deeper networks",
+        "They eliminate the need for backpropagation",
+        "They make the network fully linear"
+      ],
+      correct: 1
+    }
+  ];
+
+  const labels = ["A", "B", "C", "D"];
+  let score = 0;
+  let answered = new Array(quizData.length).fill(false);
+
+  function buildQuiz() {
+    const container = document.getElementById("quizQuestions");
+    container.innerHTML = "";
+    quizData.forEach(function(item, qi) {
+      const qDiv = document.createElement("div");
+      qDiv.style.cssText = "background:#0d0d1a; border:1px solid #2a2a4a; border-radius:12px; padding:20px; margin-bottom:16px;";
+      qDiv.id = "quiz-q-" + qi;
+
+      let html = '<p style="color:#e0e0e0; font-weight:600; margin-bottom:12px;">' + item.q + '</p>';
+      item.options.forEach(function(opt, oi) {
+        html += '<div class="quiz-opt" data-qi="' + qi + '" data-oi="' + oi + '" style="'
+          + 'padding:10px 16px; margin-bottom:8px; border:1px solid #2a2a4a; border-radius:8px;'
+          + 'cursor:pointer; color:#ccc; transition:all 0.2s; font-size:0.95em;'
+          + '" onmouseover="if(!this.dataset.locked)this.style.background=\'#1a1a3e\'"'
+          + ' onmouseout="if(!this.dataset.locked)this.style.background=\'transparent\'"'
+          + '><strong style="color:#ff6b6b;">' + labels[oi] + ')</strong> ' + opt + '</div>';
+      });
+      qDiv.innerHTML = html;
+      container.appendChild(qDiv);
+    });
+
+    // attach click handlers
+    document.querySelectorAll(".quiz-opt").forEach(function(el) {
+      el.addEventListener("click", function() {
+        handleAnswer(this);
+      });
+    });
+  }
+
+  function handleAnswer(el) {
+    const qi = parseInt(el.dataset.qi);
+    const oi = parseInt(el.dataset.oi);
+    if (answered[qi]) return;
+    answered[qi] = true;
+
+    const qDiv = document.getElementById("quiz-q-" + qi);
+    const opts = qDiv.querySelectorAll(".quiz-opt");
+
+    opts.forEach(function(o) {
+      o.dataset.locked = "true";
+      o.style.cursor = "default";
+    });
+
+    if (oi === quizData[qi].correct) {
+      el.style.background = "#2ecc71";
+      el.style.color = "#fff";
+      el.style.borderColor = "#2ecc71";
+      score++;
+    } else {
+      el.style.background = "#e74c3c";
+      el.style.color = "#fff";
+      el.style.borderColor = "#e74c3c";
+      // reveal correct
+      opts[quizData[qi].correct].style.background = "#2ecc71";
+      opts[quizData[qi].correct].style.color = "#fff";
+      opts[quizData[qi].correct].style.borderColor = "#2ecc71";
+    }
+
+    document.getElementById("quizScore").textContent = "Score: " + score + " / 8";
+  }
+
+  window.resetQuiz = function() {
+    score = 0;
+    answered = new Array(quizData.length).fill(false);
+    document.getElementById("quizScore").textContent = "Score: 0 / 8";
+    buildQuiz();
+  };
+
+  window.toggleQuiz = function() {
+    const section = document.getElementById("quizSection");
+    if (section.style.display === "none") {
+      section.style.display = "block";
+      section.scrollIntoView({ behavior: "smooth" });
+    } else {
+      section.style.display = "none";
+    }
+  };
+
+  buildQuiz();
+})();
+</script>
 </body>
 </html>

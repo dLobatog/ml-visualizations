@@ -327,12 +327,30 @@
   .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
 
   .katex { color: #e8e8ff; font-size: 1.1em; }
+
+  #quizToggle { position: fixed; top: 20px; right: 20px; z-index: 1000; padding: 12px 20px; background: #54a0ff; color: #0a0a0f; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 1em; box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: transform 0.2s; }
+  #quizToggle:hover { transform: scale(1.05); }
+  #quizSection { background: #12121f; border-top: 2px solid #54a0ff; padding: 40px 20px; margin-top: 40px; }
+  .quiz-container { max-width: 900px; margin: 0 auto; }
+  .quiz-question { background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+  .quiz-question h3 { color: #54a0ff; margin-bottom: 16px; font-size: 1.1em; }
+  .quiz-option { display: block; width: 100%; padding: 12px 16px; margin: 8px 0; background: #0d0d1a; border: 1px solid #2a2a4a; border-radius: 8px; color: #e0e0e0; cursor: pointer; text-align: left; font-size: 0.95em; transition: all 0.2s; }
+  .quiz-option:hover { border-color: #54a0ff; background: #1a1a3e; }
+  .quiz-option.correct { background: #1a3a2a; border-color: #2ecc71; color: #2ecc71; }
+  .quiz-option.wrong { background: #3a1a1a; border-color: #e74c3c; color: #e74c3c; }
+  .quiz-option.reveal { border-color: #2ecc71; color: #2ecc71; }
+  .quiz-option:disabled { cursor: default; opacity: 0.7; }
+  .quiz-score { text-align: center; font-size: 1.5em; color: #54a0ff; margin-bottom: 30px; }
+  .quiz-actions { text-align: center; margin-top: 20px; }
+  .quiz-actions button { padding: 10px 24px; margin: 0 8px; border-radius: 8px; border: 1px solid #54a0ff; background: transparent; color: #54a0ff; cursor: pointer; font-size: 1em; }
+  .quiz-actions button:hover { background: rgba(255,255,255,0.05); }
 </style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '\\(', right: '\\)', display: false}]});"></script>
 </head>
 <body>
+<button id="quizToggle" onclick="document.getElementById('quizSection').style.display = document.getElementById('quizSection').style.display === 'none' ? 'block' : 'none'">&#129504; Quiz Mode</button>
     <div class="container">
         <header>
             <h1>🚀 ML System Design Interview Prep</h1>
@@ -1577,5 +1595,72 @@
         drawServing();
         drawDrift();
     </script>
+
+<div id="quizSection" style="display:none">
+  <div class="quiz-container">
+    <h2 style="text-align:center; color:#54a0ff; margin-bottom:10px;">ML System Design Quiz</h2>
+    <div class="quiz-score">Score: <span id="quizScore">0</span> / <span id="quizTotal">7</span></div>
+    <div id="quizQuestions"></div>
+    <div class="quiz-actions">
+      <button onclick="resetQuiz()">Reset Quiz</button>
+      <button onclick="document.getElementById('quizSection').style.display='none'">Hide Quiz</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const quizData = [
+    { q: "Q1: What is the primary purpose of A/B testing in ML systems?", options: ["To train models faster", "To measure the causal impact of changes on user metrics", "To debug code", "To reduce latency"], answer: 1 },
+    { q: "Q2: What is model serving latency most affected by?", options: ["Training data size", "Model complexity, batch size, and infrastructure", "Number of features only", "Programming language"], answer: 1 },
+    { q: "Q3: What is a canary deployment?", options: ["Deploying to all users at once", "Gradually rolling out to a small % of traffic to detect issues", "Rolling back a deployment", "Testing in staging only"], answer: 1 },
+    { q: "Q4: What does online/real-time feature computation enable?", options: ["Faster training", "Using the freshest signals (e.g., recent clicks) at inference time", "Reducing model size", "Eliminating the need for a feature store"], answer: 1 },
+    { q: "Q5: What is the shadow mode deployment pattern?", options: ["Running the new model in production handling real traffic", "Running the new model alongside the old one, logging predictions but not serving them to users", "Training a model in the dark", "Deploying without monitoring"], answer: 1 },
+    { q: "Q6: Why is monitoring model performance in production critical?", options: ["To impress stakeholders", "To detect data drift, feature drift, and model degradation over time", "To reduce cloud costs", "To speed up training"], answer: 1 },
+    { q: "Q7: What is the typical architecture for a large-scale recommendation system?", options: ["Single model for everything", "Multi-stage: candidate generation \u2192 ranking \u2192 re-ranking", "One nearest-neighbor lookup", "Manual curation"], answer: 1 }
+  ];
+
+  let score = 0;
+  let answered = 0;
+
+  function buildQuiz() {
+    const container = document.getElementById('quizQuestions');
+    container.innerHTML = '';
+    score = 0; answered = 0;
+    document.getElementById('quizScore').textContent = '0';
+    quizData.forEach((item, qi) => {
+      const div = document.createElement('div');
+      div.className = 'quiz-question';
+      div.innerHTML = '<h3>' + item.q + '</h3>';
+      item.options.forEach((opt, oi) => {
+        const btn = document.createElement('button');
+        btn.className = 'quiz-option';
+        btn.textContent = String.fromCharCode(65 + oi) + ') ' + opt;
+        btn.onclick = function() { handleAnswer(qi, oi, div); };
+        div.appendChild(btn);
+      });
+      container.appendChild(div);
+    });
+  }
+
+  function handleAnswer(qi, oi, div) {
+    const buttons = div.querySelectorAll('.quiz-option');
+    if (buttons[0].disabled) return;
+    buttons.forEach(b => b.disabled = true);
+    if (oi === quizData[qi].answer) {
+      buttons[oi].classList.add('correct');
+      score++;
+    } else {
+      buttons[oi].classList.add('wrong');
+      buttons[quizData[qi].answer].classList.add('reveal');
+    }
+    answered++;
+    document.getElementById('quizScore').textContent = score;
+  }
+
+  window.resetQuiz = buildQuiz;
+  buildQuiz();
+})();
+</script>
 </body>
 </html>

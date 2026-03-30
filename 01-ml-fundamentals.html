@@ -3002,5 +3002,242 @@ function drawNS() {
 drawNS();
 </script>
 
+<!-- Quiz Mode Toggle Button -->
+<button id="quizToggleBtn" onclick="toggleQuiz()" style="
+  position: fixed; top: 20px; right: 20px; z-index: 1000;
+  padding: 12px 20px; border: 2px solid #64ffda; background: #12121f;
+  color: #64ffda; border-radius: 12px; cursor: pointer; font-size: 1em;
+  font-weight: 600; transition: all 0.3s; box-shadow: 0 4px 20px rgba(100,255,218,0.15);
+">&#x1F9E0; Quiz Mode</button>
+
+<!-- Quiz Section -->
+<div id="quizSection" style="display:none;">
+<style>
+  #quizSection {
+    background: #0a0a0f;
+    border-top: 2px solid #64ffda;
+    padding: 40px 20px 60px;
+  }
+  #quizSection .quiz-container {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  #quizSection .quiz-header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  #quizSection .quiz-header h2 {
+    font-size: 2em;
+    background: linear-gradient(90deg, #64ffda, #7c4dff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 12px;
+  }
+  #quizSection .quiz-score {
+    font-size: 1.3em;
+    color: #64ffda;
+    font-family: monospace;
+    margin-bottom: 16px;
+  }
+  #quizSection .quiz-controls {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 24px;
+  }
+  #quizSection .quiz-btn {
+    padding: 10px 24px;
+    border: 1px solid #64ffda;
+    background: transparent;
+    color: #64ffda;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.95em;
+    transition: all 0.2s;
+  }
+  #quizSection .quiz-btn:hover {
+    background: rgba(100,255,218,0.1);
+  }
+  #quizSection .question-card {
+    background: #12121f;
+    border: 1px solid #2a2a4a;
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+  #quizSection .question-card .q-number {
+    color: #64ffda;
+    font-size: 0.85em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+  #quizSection .question-card .q-text {
+    font-size: 1.1em;
+    color: #e0e0e0;
+    margin-bottom: 20px;
+    line-height: 1.6;
+  }
+  #quizSection .option-btn {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 14px 18px;
+    margin-bottom: 10px;
+    background: #0d0d1a;
+    border: 1px solid #2a2a4a;
+    border-radius: 10px;
+    color: #ccc;
+    font-size: 1em;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  #quizSection .option-btn:hover:not(.disabled) {
+    border-color: #64ffda;
+    background: rgba(100,255,218,0.05);
+  }
+  #quizSection .option-btn.correct {
+    background: rgba(46,204,113,0.2);
+    border-color: #2ecc71;
+    color: #fff;
+  }
+  #quizSection .option-btn.wrong {
+    background: rgba(231,76,60,0.2);
+    border-color: #e74c3c;
+    color: #e74c3c;
+  }
+  #quizSection .option-btn.show-correct {
+    border-color: #2ecc71;
+    color: #2ecc71;
+  }
+  #quizSection .option-btn.disabled {
+    cursor: default;
+    opacity: 0.7;
+  }
+</style>
+
+<div class="quiz-container">
+  <div class="quiz-header">
+    <h2>ML Fundamentals Quiz</h2>
+    <div class="quiz-score" id="quizScore">Score: 0 / 8</div>
+    <div class="quiz-controls">
+      <button class="quiz-btn" onclick="resetQuiz()">Reset Quiz</button>
+      <button class="quiz-btn" onclick="toggleQuiz()">Hide Quiz</button>
+    </div>
+  </div>
+  <div id="quizQuestions"></div>
+</div>
+</div>
+
+<script>
+(function() {
+  const quizData = [
+    {
+      question: "In Bayes' theorem P(A|B) = P(B|A)\u00b7P(A)/P(B), what does P(A) represent?",
+      options: ["The likelihood", "The posterior probability", "The prior probability", "The evidence"],
+      correct: 2
+    },
+    {
+      question: "A 99% accurate disease test is applied to a population where 1% have the disease. What is approximately the probability that a person who tests positive actually has the disease?",
+      options: ["99%", "50%", "1%", "90%"],
+      correct: 1
+    },
+    {
+      question: "What happens to the MLE estimate as the number of observations increases?",
+      options: ["It becomes more biased", "It converges to the true parameter value", "It always equals the MAP estimate", "It diverges"],
+      correct: 1
+    },
+    {
+      question: "Which distribution would you use to model the number of events occurring in a fixed time interval?",
+      options: ["Bernoulli", "Gaussian", "Poisson", "Beta"],
+      correct: 2
+    },
+    {
+      question: "In the bias-variance tradeoff, what happens as model complexity increases?",
+      options: ["Both bias and variance decrease", "Bias decreases, variance increases", "Bias increases, variance decreases", "Both bias and variance increase"],
+      correct: 1
+    },
+    {
+      question: "What is the key difference between L1 (Lasso) and L2 (Ridge) regularization?",
+      options: ["L1 is always stronger than L2", "L1 produces sparse solutions (zeros), L2 shrinks weights toward zero", "L2 produces sparse solutions, L1 shrinks weights", "They are mathematically identical"],
+      correct: 1
+    },
+    {
+      question: "The Central Limit Theorem states that the sampling distribution of the mean approaches a normal distribution as:",
+      options: ["The variance increases", "The population becomes normal", "The sample size increases", "The mean converges to zero"],
+      correct: 2
+    },
+    {
+      question: "In gradient descent, what does the learning rate control?",
+      options: ["The direction of parameter updates", "The size of parameter update steps", "The number of training epochs", "The batch size"],
+      correct: 1
+    }
+  ];
+
+  const labels = ['A', 'B', 'C', 'D'];
+  let score = 0;
+  let answered = new Array(quizData.length).fill(false);
+
+  function renderQuiz() {
+    const container = document.getElementById('quizQuestions');
+    container.innerHTML = '';
+    quizData.forEach(function(q, qi) {
+      const card = document.createElement('div');
+      card.className = 'question-card';
+      card.innerHTML = '<div class="q-number">Question ' + (qi + 1) + ' of 8</div>' +
+        '<div class="q-text">' + q.question + '</div>';
+      q.options.forEach(function(opt, oi) {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.id = 'q' + qi + 'o' + oi;
+        btn.textContent = labels[oi] + ') ' + opt;
+        btn.onclick = function() { selectAnswer(qi, oi); };
+        card.appendChild(btn);
+      });
+      container.appendChild(card);
+    });
+  }
+
+  function selectAnswer(qi, oi) {
+    if (answered[qi]) return;
+    answered[qi] = true;
+    const q = quizData[qi];
+    const selected = document.getElementById('q' + qi + 'o' + oi);
+    if (oi === q.correct) {
+      selected.classList.add('correct');
+      score++;
+    } else {
+      selected.classList.add('wrong');
+      document.getElementById('q' + qi + 'o' + q.correct).classList.add('show-correct');
+    }
+    // Disable all options for this question
+    for (var i = 0; i < q.options.length; i++) {
+      document.getElementById('q' + qi + 'o' + i).classList.add('disabled');
+    }
+    document.getElementById('quizScore').textContent = 'Score: ' + score + ' / 8';
+  }
+
+  window.resetQuiz = function() {
+    score = 0;
+    answered = new Array(quizData.length).fill(false);
+    document.getElementById('quizScore').textContent = 'Score: 0 / 8';
+    renderQuiz();
+  };
+
+  window.toggleQuiz = function() {
+    const section = document.getElementById('quizSection');
+    if (section.style.display === 'none') {
+      section.style.display = 'block';
+      section.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      section.style.display = 'none';
+    }
+  };
+
+  renderQuiz();
+})();
+</script>
+
 </body>
 </html>

@@ -316,6 +316,23 @@
   .insight-box { grid-column: 1 / -1; }
   .katex { color: #e8e8ff; font-size: 1.1em; }
 
+    /* Quiz Mode Styles */
+    #quizToggle { position: fixed; top: 20px; right: 20px; z-index: 1000; padding: 12px 20px; background: #ff9f43; color: #0a0a0f; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 1em; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+    #quizToggle:hover { transform: scale(1.05); }
+    #quizSection { background: #12121f; border-top: 2px solid #ff9f43; padding: 40px 20px; margin-top: 40px; }
+    .quiz-container { max-width: 900px; margin: 0 auto; }
+    .quiz-question { background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+    .quiz-question h3 { color: #ff9f43; margin-bottom: 16px; font-size: 1.1em; }
+    .quiz-option { display: block; width: 100%; padding: 12px 16px; margin: 8px 0; background: #0d0d1a; border: 1px solid #2a2a4a; border-radius: 8px; color: #e0e0e0; cursor: pointer; text-align: left; font-size: 0.95em; transition: all 0.2s; }
+    .quiz-option:hover:not(:disabled) { border-color: #ff9f43; background: #1a1a3e; }
+    .quiz-option.correct { background: #1a3a2a; border-color: #2ecc71; color: #2ecc71; }
+    .quiz-option.wrong { background: #3a1a1a; border-color: #e74c3c; color: #e74c3c; }
+    .quiz-option.reveal { border-color: #2ecc71; color: #2ecc71; }
+    .quiz-option:disabled { cursor: default; }
+    .quiz-score { text-align: center; font-size: 1.5em; color: #ff9f43; margin-bottom: 30px; }
+    .quiz-actions { text-align: center; margin-top: 20px; }
+    .quiz-actions button { padding: 10px 24px; margin: 0 8px; border-radius: 8px; border: 1px solid #ff9f43; background: transparent; color: #ff9f43; cursor: pointer; font-size: 1em; }
+
 </style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -1453,6 +1470,114 @@
             drawBandit();
             drawRLHF();
         });
+    </script>
+
+    <!-- Quiz Toggle Button -->
+    <button id="quizToggle" onclick="toggleQuiz()">&#129504; Quiz Mode</button>
+
+    <!-- Quiz Section -->
+    <div id="quizSection" style="display:none">
+        <div class="quiz-container">
+            <h2 style="text-align:center; color:#e0e0e0; margin-bottom:10px;">Reinforcement Learning Quiz</h2>
+            <div class="quiz-score" id="quizScore"></div>
+            <div id="quizQuestions"></div>
+            <div class="quiz-actions">
+                <button onclick="resetQuiz()">Reset Quiz</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        var quizQuestions = [
+            {q: "What is the Bellman equation used for?", options: ["Feature engineering", "Expressing the value of a state as immediate reward plus discounted future value", "Data preprocessing", "Model selection"], answer: 1},
+            {q: "What is the exploration-exploitation tradeoff?", options: ["Training vs testing", "Trying new actions to discover rewards vs. choosing known good actions", "Speed vs accuracy", "Online vs offline learning"], answer: 1},
+            {q: "What does the discount factor \u03b3 (gamma) control?", options: ["The learning rate", "How much future rewards are valued relative to immediate rewards", "The number of episodes", "The exploration rate"], answer: 1},
+            {q: "What is the key advantage of policy gradient methods over value-based methods?", options: ["They're simpler", "They can handle continuous action spaces and learn stochastic policies", "They converge faster", "They need less data"], answer: 1},
+            {q: "In RLHF (RL from Human Feedback), what is the reward model trained on?", options: ["Game scores", "Human preferences/comparisons between model outputs", "Automated metrics", "Random rewards"], answer: 1},
+            {q: "What is the difference between on-policy and off-policy learning?", options: ["Online vs offline", "On-policy learns from its own actions; off-policy can learn from data collected by another policy", "Supervised vs unsupervised", "Model-based vs model-free"], answer: 1},
+            {q: "What does PPO (Proximal Policy Optimization) constrain?", options: ["The model size", "How much the policy can change per update, preventing destabilizing large steps", "The reward function", "The number of environments"], answer: 1}
+        ];
+        var quizAnswered = 0;
+        var quizCorrect = 0;
+        var totalQuestions = quizQuestions.length;
+
+        function shuffleOptions(q) {
+            var indices = q.options.map(function(_, i) { return i; });
+            for (var i = indices.length - 1; i > 0; i--) {
+                var j = Math.floor(Math.random() * (i + 1));
+                var tmp = indices[i]; indices[i] = indices[j]; indices[j] = tmp;
+            }
+            return indices;
+        }
+
+        function buildQuiz() {
+            var container = document.getElementById('quizQuestions');
+            container.innerHTML = '';
+            quizAnswered = 0;
+            quizCorrect = 0;
+            updateScore();
+            quizQuestions.forEach(function(q, qi) {
+                var div = document.createElement('div');
+                div.className = 'quiz-question';
+                div.setAttribute('data-answered', 'false');
+                var h3 = document.createElement('h3');
+                h3.textContent = 'Q' + (qi + 1) + ': ' + q.q;
+                div.appendChild(h3);
+                var shuffled = shuffleOptions(q);
+                shuffled.forEach(function(origIdx) {
+                    var btn = document.createElement('button');
+                    btn.className = 'quiz-option';
+                    btn.textContent = q.options[origIdx];
+                    btn.setAttribute('data-correct', origIdx === q.answer ? 'true' : 'false');
+                    btn.onclick = function() { handleAnswer(this, div, origIdx === q.answer); };
+                    div.appendChild(btn);
+                });
+                container.appendChild(div);
+            });
+        }
+
+        function handleAnswer(btn, questionDiv, isCorrect) {
+            if (questionDiv.getAttribute('data-answered') === 'true') return;
+            questionDiv.setAttribute('data-answered', 'true');
+            var buttons = questionDiv.querySelectorAll('.quiz-option');
+            buttons.forEach(function(b) {
+                b.disabled = true;
+                if (b.getAttribute('data-correct') === 'true') {
+                    b.classList.add(b === btn ? 'correct' : 'reveal');
+                }
+            });
+            if (isCorrect) {
+                btn.classList.add('correct');
+                quizCorrect++;
+            } else {
+                btn.classList.add('wrong');
+            }
+            quizAnswered++;
+            updateScore();
+        }
+
+        function updateScore() {
+            document.getElementById('quizScore').textContent = 'Score: ' + quizCorrect + ' / ' + totalQuestions + (quizAnswered === totalQuestions ? ' — Quiz Complete!' : '');
+        }
+
+        window.toggleQuiz = function() {
+            var section = document.getElementById('quizSection');
+            if (section.style.display === 'none') {
+                section.style.display = 'block';
+                section.scrollIntoView({ behavior: 'smooth' });
+                if (!document.getElementById('quizQuestions').hasChildNodes()) {
+                    buildQuiz();
+                }
+            } else {
+                section.style.display = 'none';
+            }
+        };
+
+        window.resetQuiz = function() {
+            buildQuiz();
+        };
+    })();
     </script>
 </body>
 </html>

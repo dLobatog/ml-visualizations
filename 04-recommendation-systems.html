@@ -2376,5 +2376,141 @@ window.addEventListener('load', () => {
 });
 </script>
 
+<!-- Quiz Mode Toggle Button -->
+<button id="quizToggleBtn" onclick="toggleQuiz()" style="
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  background: linear-gradient(135deg, #ff9ff3, #f368e0);
+  color: #0a0a0f;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 25px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(255, 159, 243, 0.4);
+  transition: transform 0.2s, box-shadow 0.2s;
+">🧠 Quiz Mode</button>
+
+<!-- Quiz Panel -->
+<div id="quizSection" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:999; background:rgba(0,0,0,0.7); overflow-y:auto;">
+  <div style="max-width:800px; margin:80px auto 40px; background:#12121f; border-radius:16px; padding:40px; border:1px solid rgba(255,159,243,0.2); box-shadow:0 8px 32px rgba(0,0,0,0.5);">
+    <h2 style="color:#ff9ff3; text-align:center; margin:0 0 10px; font-size:28px;">Recommendation Systems Quiz</h2>
+    <p id="quizScore" style="text-align:center; color:#ccc; font-size:16px; margin-bottom:30px;">Score: 0 / 10</p>
+    <div id="quizQuestions"></div>
+    <div style="text-align:center; margin-top:30px;">
+      <button onclick="resetQuiz()" style="background:#ff9ff3; color:#0a0a0f; border:none; padding:10px 24px; border-radius:20px; font-size:15px; font-weight:700; cursor:pointer; margin:0 8px;">Reset</button>
+      <button onclick="toggleQuiz()" style="background:#333; color:#ccc; border:1px solid #555; padding:10px 24px; border-radius:20px; font-size:15px; font-weight:700; cursor:pointer; margin:0 8px;">Hide</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const quizData = [
+    { q: "In collaborative filtering with matrix factorization, what is being decomposed?", options: ["The feature matrix", "The user-item interaction matrix into user and item latent factor matrices", "The neural network weights", "The loss function"], correct: 1 },
+    { q: "What problem does the Two-Tower architecture solve efficiently?", options: ["Training speed", "Retrieval at scale — precompute embeddings for fast approximate nearest neighbor search", "Cold start", "Feature engineering"], correct: 1 },
+    { q: "What does HNSW (Hierarchical Navigable Small World) provide?", options: ["Exact nearest neighbor search", "Approximate nearest neighbor search with logarithmic query time", "Dimensionality reduction", "Feature selection"], correct: 1 },
+    { q: "In the Wide & Deep architecture, what does the \"Wide\" component capture?", options: ["Complex nonlinear patterns", "Memorization of specific feature interactions/cross-products", "User embeddings", "Sequential patterns"], correct: 1 },
+    { q: "What is the cold start problem in recommendation systems?", options: ["The system runs too slowly", "Inability to make good recommendations for new users/items with no interaction history", "The model overfits", "Too many features"], correct: 1 },
+    { q: "In MMOE (Multi-gate Mixture of Experts), what do the gating networks do?", options: ["Filter out bad recommendations", "Learn task-specific weighted combinations of shared expert outputs", "Reduce model size", "Encode user features"], correct: 1 },
+    { q: "What is the key idea behind DCN (Deep & Cross Network)?", options: ["Using only deep layers", "Explicitly learning bounded-degree feature crosses through cross layers", "Combining CNN and RNN", "Using attention only"], correct: 1 },
+    { q: "In Learning to Rank (LTR), what does a pairwise approach optimize?", options: ["Individual document relevance scores", "The relative ordering between pairs of documents", "The absolute position of each document", "Click-through rate directly"], correct: 1 },
+    { q: "What does a feature store provide in a recommendation system?", options: ["Model training code", "Centralized, consistent feature computation and serving for both training and inference", "A/B testing framework", "User interface components"], correct: 1 },
+    { q: "In SASRec (Self-Attentive Sequential Recommendation), why is self-attention used?", options: ["To reduce model parameters", "To capture long-range dependencies in user interaction sequences", "To generate item descriptions", "To perform matrix factorization"], correct: 1 }
+  ];
+
+  let score = 0;
+  let answered = new Array(quizData.length).fill(false);
+
+  const container = document.getElementById('quizQuestions');
+
+  function renderQuiz() {
+    container.innerHTML = '';
+    quizData.forEach(function(item, qi) {
+      const qDiv = document.createElement('div');
+      qDiv.style.cssText = 'background:#0a0a0f; border-radius:12px; padding:20px; margin-bottom:16px; border:1px solid #222;';
+      qDiv.id = 'quiz-q-' + qi;
+
+      let html = '<p style="color:#e0e0e0; font-weight:600; margin:0 0 12px; font-size:15px;">Q' + (qi + 1) + ': ' + item.q + '</p>';
+      const labels = ['A', 'B', 'C', 'D'];
+      item.options.forEach(function(opt, oi) {
+        html += '<div class="quiz-option" data-qi="' + qi + '" data-oi="' + oi + '" style="padding:10px 14px; margin:6px 0; border-radius:8px; border:1px solid #333; color:#ccc; cursor:pointer; transition:background 0.2s, border-color 0.2s; font-size:14px;">' + labels[oi] + ') ' + opt + '</div>';
+      });
+      html += '<p class="quiz-feedback" id="feedback-' + qi + '" style="margin:8px 0 0; font-size:13px; font-weight:600; display:none;"></p>';
+      qDiv.innerHTML = html;
+      container.appendChild(qDiv);
+    });
+
+    // Attach click handlers
+    document.querySelectorAll('.quiz-option').forEach(function(el) {
+      el.addEventListener('click', function() {
+        const qi = parseInt(this.getAttribute('data-qi'));
+        const oi = parseInt(this.getAttribute('data-oi'));
+        handleAnswer(qi, oi, this);
+      });
+      el.addEventListener('mouseenter', function() {
+        const qi = parseInt(this.getAttribute('data-qi'));
+        if (!answered[qi]) this.style.borderColor = '#ff9ff3';
+      });
+      el.addEventListener('mouseleave', function() {
+        const qi = parseInt(this.getAttribute('data-qi'));
+        if (!answered[qi]) this.style.borderColor = '#333';
+      });
+    });
+  }
+
+  function handleAnswer(qi, oi, el) {
+    if (answered[qi]) return;
+    answered[qi] = true;
+
+    const isCorrect = oi === quizData[qi].correct;
+    const feedback = document.getElementById('feedback-' + qi);
+    feedback.style.display = 'block';
+
+    // Disable hover on all options for this question
+    const allOpts = document.querySelectorAll('.quiz-option[data-qi="' + qi + '"]');
+    allOpts.forEach(function(o) {
+      o.style.cursor = 'default';
+      if (parseInt(o.getAttribute('data-oi')) === quizData[qi].correct) {
+        o.style.borderColor = '#2ecc71';
+        o.style.background = 'rgba(46,204,113,0.1)';
+        o.style.color = '#2ecc71';
+      }
+    });
+
+    if (isCorrect) {
+      score++;
+      feedback.textContent = 'Correct!';
+      feedback.style.color = '#2ecc71';
+    } else {
+      el.style.borderColor = '#e74c3c';
+      el.style.background = 'rgba(231,76,60,0.1)';
+      el.style.color = '#e74c3c';
+      feedback.textContent = 'Incorrect. The correct answer is ' + ['A','B','C','D'][quizData[qi].correct] + '.';
+      feedback.style.color = '#e74c3c';
+    }
+
+    document.getElementById('quizScore').textContent = 'Score: ' + score + ' / ' + quizData.length;
+  }
+
+  window.toggleQuiz = function() {
+    const panel = document.getElementById('quizSection');
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  };
+
+  window.resetQuiz = function() {
+    score = 0;
+    answered = new Array(quizData.length).fill(false);
+    document.getElementById('quizScore').textContent = 'Score: 0 / ' + quizData.length;
+    renderQuiz();
+  };
+
+  renderQuiz();
+})();
+</script>
+
 </body>
 </html>

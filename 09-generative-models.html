@@ -250,6 +250,23 @@
   .insight-box { grid-column: 1 / -1; }
   .katex { color: #e8e8ff; font-size: 1.1em; }
 
+    /* Quiz Mode Styles */
+    #quizToggle { position: fixed; top: 20px; right: 20px; z-index: 1000; padding: 12px 20px; background: #e056fd; color: #0a0a0f; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 1em; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+    #quizToggle:hover { transform: scale(1.05); }
+    #quizSection { background: #12121f; border-top: 2px solid #e056fd; padding: 40px 20px; margin-top: 40px; }
+    .quiz-container { max-width: 900px; margin: 0 auto; }
+    .quiz-question { background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+    .quiz-question h3 { color: #e056fd; margin-bottom: 16px; font-size: 1.1em; }
+    .quiz-option { display: block; width: 100%; padding: 12px 16px; margin: 8px 0; background: #0d0d1a; border: 1px solid #2a2a4a; border-radius: 8px; color: #e0e0e0; cursor: pointer; text-align: left; font-size: 0.95em; transition: all 0.2s; }
+    .quiz-option:hover:not(:disabled) { border-color: #e056fd; background: #1a1a3e; }
+    .quiz-option.correct { background: #1a3a2a; border-color: #2ecc71; color: #2ecc71; }
+    .quiz-option.wrong { background: #3a1a1a; border-color: #e74c3c; color: #e74c3c; }
+    .quiz-option.reveal { border-color: #2ecc71; color: #2ecc71; }
+    .quiz-option:disabled { cursor: default; }
+    .quiz-score { text-align: center; font-size: 1.5em; color: #e056fd; margin-bottom: 30px; }
+    .quiz-actions { text-align: center; margin-top: 20px; }
+    .quiz-actions button { padding: 10px 24px; margin: 0 8px; border-radius: 8px; border: 1px solid #e056fd; background: transparent; color: #e056fd; cursor: pointer; font-size: 1em; }
+
 </style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -2033,6 +2050,115 @@
         }
         drawArchitecture();
 
+    </script>
+
+    <!-- Quiz Toggle Button -->
+    <button id="quizToggle" onclick="toggleQuiz()">&#129504; Quiz Mode</button>
+
+    <!-- Quiz Section -->
+    <div id="quizSection" style="display:none">
+        <div class="quiz-container">
+            <h2 style="text-align:center; color:#e0e0e0; margin-bottom:10px;">Generative Models Quiz</h2>
+            <div class="quiz-score" id="quizScore"></div>
+            <div id="quizQuestions"></div>
+            <div class="quiz-actions">
+                <button onclick="resetQuiz()">Reset Quiz</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        var quizQuestions = [
+            {q: "What is the ELBO (Evidence Lower Bound) in a VAE?", options: ["The exact likelihood", "A lower bound on log p(x), consisting of reconstruction loss minus KL divergence", "The encoder loss only", "The discriminator score"], answer: 1},
+            {q: "In a diffusion model, what does the reverse process learn?", options: ["To add noise", "To gradually denoise, predicting and removing noise at each timestep", "To encode images", "To discriminate real from fake"], answer: 1},
+            {q: "What is the purpose of the KL divergence term in VAE loss?", options: ["To improve image quality", "To regularize the latent space toward a prior distribution (e.g., standard Gaussian)", "To speed up training", "To reduce model size"], answer: 1},
+            {q: "What advantage do diffusion models have over GANs?", options: ["They're faster", "Stable training (no mode collapse) and better coverage of the data distribution", "Smaller model size", "They don't need GPUs"], answer: 1},
+            {q: "In a VQ-VAE, what is the codebook?", options: ["The encoder architecture", "A discrete set of learnable embedding vectors that quantize the latent space", "The decoder weights", "The training data"], answer: 1},
+            {q: "What does classifier-free guidance (CFG) do in diffusion models?", options: ["Removes the classifier", "Interpolates between conditional and unconditional predictions to strengthen conditioning", "Adds a classifier", "Reduces sampling steps"], answer: 1},
+            {q: "What is \"posterior collapse\" in VAEs?", options: ["The decoder fails", "The encoder is ignored \u2014 the KL term dominates, and the latent code becomes uninformative", "The model explodes", "Training diverges"], answer: 1},
+            {q: "What is the key idea behind normalizing flows?", options: ["Normalizing the input data", "Using invertible transformations with tractable Jacobian determinants for exact likelihood", "Using normalization layers", "Flowing data through convolutions"], answer: 1}
+        ];
+        var quizAnswered = 0;
+        var quizCorrect = 0;
+        var totalQuestions = quizQuestions.length;
+
+        function shuffleOptions(q) {
+            var indices = q.options.map(function(_, i) { return i; });
+            for (var i = indices.length - 1; i > 0; i--) {
+                var j = Math.floor(Math.random() * (i + 1));
+                var tmp = indices[i]; indices[i] = indices[j]; indices[j] = tmp;
+            }
+            return indices;
+        }
+
+        function buildQuiz() {
+            var container = document.getElementById('quizQuestions');
+            container.innerHTML = '';
+            quizAnswered = 0;
+            quizCorrect = 0;
+            updateScore();
+            quizQuestions.forEach(function(q, qi) {
+                var div = document.createElement('div');
+                div.className = 'quiz-question';
+                div.setAttribute('data-answered', 'false');
+                var h3 = document.createElement('h3');
+                h3.textContent = 'Q' + (qi + 1) + ': ' + q.q;
+                div.appendChild(h3);
+                var shuffled = shuffleOptions(q);
+                shuffled.forEach(function(origIdx) {
+                    var btn = document.createElement('button');
+                    btn.className = 'quiz-option';
+                    btn.textContent = q.options[origIdx];
+                    btn.setAttribute('data-correct', origIdx === q.answer ? 'true' : 'false');
+                    btn.onclick = function() { handleAnswer(this, div, origIdx === q.answer); };
+                    div.appendChild(btn);
+                });
+                container.appendChild(div);
+            });
+        }
+
+        function handleAnswer(btn, questionDiv, isCorrect) {
+            if (questionDiv.getAttribute('data-answered') === 'true') return;
+            questionDiv.setAttribute('data-answered', 'true');
+            var buttons = questionDiv.querySelectorAll('.quiz-option');
+            buttons.forEach(function(b) {
+                b.disabled = true;
+                if (b.getAttribute('data-correct') === 'true') {
+                    b.classList.add(b === btn ? 'correct' : 'reveal');
+                }
+            });
+            if (isCorrect) {
+                btn.classList.add('correct');
+                quizCorrect++;
+            } else {
+                btn.classList.add('wrong');
+            }
+            quizAnswered++;
+            updateScore();
+        }
+
+        function updateScore() {
+            document.getElementById('quizScore').textContent = 'Score: ' + quizCorrect + ' / ' + totalQuestions + (quizAnswered === totalQuestions ? ' — Quiz Complete!' : '');
+        }
+
+        window.toggleQuiz = function() {
+            var section = document.getElementById('quizSection');
+            if (section.style.display === 'none') {
+                section.style.display = 'block';
+                section.scrollIntoView({ behavior: 'smooth' });
+                if (!document.getElementById('quizQuestions').hasChildNodes()) {
+                    buildQuiz();
+                }
+            } else {
+                section.style.display = 'none';
+            }
+        };
+
+        window.resetQuiz = function() {
+            buildQuiz();
+        };
+    })();
     </script>
 </body>
 </html>
