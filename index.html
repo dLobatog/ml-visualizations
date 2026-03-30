@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ML Interview Prep — Interactive Visualizations & Quizzes</title>
 <meta name="description" content="100+ interactive visualizations and 500+ quiz questions covering ML fundamentals, deep learning, transformers, recommendation systems, and more. Zero dependencies, pure HTML/JS/Canvas.">
+<meta property="og:title" content="ML Interview Prep — 100+ Interactive Visualizations & 500+ Quizzes">
+<meta property="og:description" content="Self-contained, zero-dependency interactive visualizations and quizzes for every ML interview topic. Covers probability, deep learning, transformers, RL, system design, and more.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://dlobatog.github.io/ml-visualizations/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="ML Interview Prep — Interactive Visualizations & Quizzes">
+<meta name="twitter:description" content="100+ canvas visualizations and 500+ quiz questions. Zero dependencies. Works offline.">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #0a0a0f; color: #e0e0e0; line-height: 1.6; min-height: 100vh; }
@@ -352,6 +359,44 @@
 <div class="footer">
   <p>Built for MLE interview prep — covers concepts tested at Anthropic, DeepMind, OpenAI, Google, Meta, and more</p>
   <p style="margin-top:8px;">All visualizations are self-contained HTML with zero dependencies. Works offline. <a href="https://github.com/dLobatog/ml-visualizations">Source on GitHub</a></p>
+  <p style="margin-top:12px;color:#444;font-size:0.78em;">Tip: Press number keys 1-9 or 0 (for 10) to jump to any topic page</p>
 </div>
+<script>
+// Keyboard navigation
+document.addEventListener('keydown', function(e) {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  var pages = ['01-ml-fundamentals.html','02-deep-learning-foundations.html','03-llms-transformers.html','04-recommendation-systems.html','05-ml-system-design.html','06-training-at-scale.html','07-metrics-evaluation.html','08-data-features.html','09-generative-models.html','10-reinforcement-learning.html','11-specialized-topics.html'];
+  var num = parseInt(e.key);
+  if (num === 0) num = 10;
+  if (num >= 1 && num <= 11) window.location.href = pages[num - 1];
+});
+// Count-up animation for stat numbers
+function animateStats() {
+  var stats = document.querySelectorAll('.stat-num');
+  stats.forEach(function(el) {
+    var text = el.textContent.trim();
+    var suffix = text.replace(/[0-9]/g, '');
+    var target = parseInt(text);
+    if (isNaN(target)) return;
+    var duration = 1200;
+    var start = performance.now();
+    el.textContent = '0' + suffix;
+    function tick(now) {
+      var progress = Math.min((now - start) / duration, 1);
+      var eased = 1 - Math.pow(1 - progress, 3);
+      el.textContent = Math.round(target * eased) + suffix;
+      if (progress < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  });
+}
+// Run when stats scroll into view
+var observer = new IntersectionObserver(function(entries) {
+  entries.forEach(function(entry) {
+    if (entry.isIntersecting) { animateStats(); observer.disconnect(); }
+  });
+}, { threshold: 0.5 });
+observer.observe(document.querySelector('.stats'));
+</script>
 </body>
 </html>
