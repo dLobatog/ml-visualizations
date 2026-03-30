@@ -58,7 +58,7 @@
 <!-- ===== TOKENIZATION ===== -->
 <div class="viz-section">
   <h2>Tokenization: Byte Pair Encoding (BPE)</h2>
-  <p class="subtitle">BPE iteratively merges the most frequent byte pairs into tokens. Watch the vocabulary grow and merges happen step by step.</p>
+  <p class="subtitle">Click 'Next Merge' repeatedly and watch vocabulary grow from characters to common subwords. Notice how frequent patterns like 'the', 'ing', 'tion' emerge early—that's BPE finding the most common byte pairs. Adjust Target Vocab Size to see how final vocabulary changes.</p>
   <canvas id="bpeCanvas" width="900" height="480"></canvas>
   <div class="controls">
     <button class="btn" id="bpePlayBtn" onclick="toggleBPE()">▶ Next Merge</button>
@@ -70,33 +70,22 @@
     </div>
   </div>
   <div class="insight-box">
-    <strong>Key Insight:</strong> The Transformer replaces RNNs with pure attention, enabling parallel training and longer dependencies.
-    <div class="key-point">
-      <span class="label">Key innovation:</span>
-      <span class="desc">Self-attention allows each position to directly attend to all other positions. No sequential dependency. Parallel training.</span>
-    </div>
-    <div class="key-point">
-      <span class="label">Architecture:</span>
-      <span class="desc">Encoder: multi-head self-attention + feed-forward. Decoder: masked self-attention + cross-attention + feed-forward. Stacked L times.</span>
-    </div>
-    <div class="key-point">
-      <span class="label">Positional encoding:</span>
-      <span class="desc">Add sinusoidal position embeddings to preserve order information. Attention is permutation-equivariant, needs position info.</span>
-    </div>
-    <div class="key-point">
-      <span class="label">Advantages over RNNs:</span>
-      <span class="desc">Parallelizable (all timesteps at once). Long-range dependencies (no vanishing gradient). Faster training.</span>
-    </div>
+    <strong>Key Insight:</strong> BPE solves the vocabulary problem — how to represent any text with a fixed-size token set, balancing sequence length vs. vocabulary size.
+    <div class="key-point"><span class="label">The problem:</span><span class="desc">Character-level: vocab = 256 (tiny), but sequences are very long (slow). Word-level: vocab = 100K+ (huge embedding table), can't handle typos or new words ("ChatGPT" = unknown).</span></div>
+    <div class="key-point"><span class="label">BPE solution:</span><span class="desc">Start with 256 byte-level tokens. Find the most frequent adjacent pair (e.g., "t"+"h" → "th"). Merge it into one new token. Repeat until vocab reaches target size (32K–100K).</span></div>
+    <div class="key-point"><span class="label">Why it works:</span><span class="desc">Common words become single tokens ("the" = 1 token). Rare words decompose into subwords ("unforgettable" = "un" + "forget" + "table"). New words always representable by falling back to bytes.</span></div>
+    <div class="key-point"><span class="label">Vocab size tradeoff:</span><span class="desc">Larger vocab = shorter sequences (faster inference) but bigger embedding table (more memory). GPT-4 uses ~100K tokens. LLaMA uses ~32K.</span></div>
     <hr class="divider">
-    <div class="interview-tip">Transformers dominate NLP now. Understand attention mechanism thoroughly. Trade-off: O(n²) memory vs parallelization benefit.</div>
-    <div class="mnemonic">Transformer = all-attention architecture. No recurrence. Parallel training. Position encodings + attention = sequence modeling.</div>
+    <div class="interview-tip">"Why not just use words as tokens?" → Unknown words break the model. "ChatGPT" isn't in any dictionary. BPE decomposes it to known subwords. Also: multilingual models need subword tokenization to share tokens across languages.</div>
+    <div class="mnemonic">BPE = greedy compression. Most frequent pair → merge → repeat. Common things get short codes, rare things decompose. Like zip compression for language.</div>
+    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click "Next Merge" repeatedly. Watch vocabulary grow from characters to common subwords. Notice how "the", "ing", "tion" emerge early — these are the most frequent patterns in English.</div>
   </div>
   </div>
 
 <!-- ===== EXISTING: SELF-ATTENTION ===== -->
 <div class="viz-section">
   <h2>Self-Attention: Q, K, V Computation</h2>
-  <p class="subtitle">Follow the full attention computation: input → Q,K,V projections → attention scores → softmax → weighted values → output. Click tokens to see what they attend to.</p>
+  <p class="subtitle">Click different tokens (try 'cat' vs 'the') to see what they attend to in the sentence. Watch which tokens light up—notice how 'cat' attends to nearby content words. Now drag the Temperature slider from left to right: at low temps, attention focuses sharply on one token; at high temps, it spreads evenly. This shows how temperature controls attention concentration.</p>
   <canvas id="attnCanvas" width="900" height="500"></canvas>
   <div class="controls">
     <div class="control-group">
@@ -142,6 +131,7 @@
       <span class="desc">Prevent attending to future tokens. Set attention weights to -∞ for future positions before softmax.</span>
     </div>
     <hr class="divider">
+<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Select different tokens (try 'cat' vs 'sat'). Watch attention weights change—what does each token attend to? Lower Temperature to 1, then raise to 50. Notice how attention becomes sharp (one token dominates) vs spread (distributed across many). This is temperature controlling softmax concentration.</div>
     <div class="interview-tip">Why Q, K, V not just use input directly? Learned projections provide flexibility. Different heads can attend differently.</div>
     <div class="mnemonic">Self-attention = compare all positions with each other. Learn what to pay attention to. Q asks, K answers, V provides info.</div>
   </div>
@@ -150,7 +140,7 @@
 <!-- ===== EXISTING: MULTI-HEAD ATTENTION ===== -->
 <div class="viz-section">
   <h2>Multi-Head Attention</h2>
-  <p class="subtitle">Each attention head learns different patterns. One head might focus on syntax, another on semantics, another on position.</p>
+  <p class="subtitle">Adjust the Number of Heads slider from 1 to 8. Watch the visualization change to show more parallel attention patterns. With 1 head, you see one attention pattern. With 8 heads, you see 8 different perspectives simultaneously—some focus on syntax, others on word relationships. Compare the patterns at 1 head vs 8 heads.</p>
   <canvas id="mhaCanvas" width="900" height="380"></canvas>
   <div class="controls">
     <div class="control-group">
@@ -187,6 +177,7 @@
       <span class="desc">Add input to output of each sublayer. Enables training of deep Transformers. Stabilizes gradients.</span>
     </div>
     <hr class="divider">
+<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Move the "Number of Heads" slider from 1 to 8. At 1 head, you see one attention pattern. At 4 heads, you see 4 parallel patterns emerging. At 8, it's more complex. Try comparing a low-entropy head (one token gets all weight) vs high-entropy (spread across many). Which is more useful depends on the task.</div>
     <div class="interview-tip">Transformer depth comes from stacking. Each layer adds computational power but also parameters and memory.</div>
     <div class="mnemonic">LayerNorm normalizes each example independently. FFN expands then contracts. Residual connections = skip highways.</div>
   </div>
@@ -195,7 +186,7 @@
 <!-- ===== EXISTING: POSITIONAL ENCODING ===== -->
 <div class="viz-section">
   <h2>Positional Encodings: Sinusoidal & RoPE</h2>
-  <p class="subtitle">Transformers have no inherent position sense. Positional encodings inject position information via sinusoidal waves or rotations.</p>
+  <p class="subtitle">Click the 'Sinusoidal (Original)' and 'RoPE (LLaMA/GPT-NeoX)' tabs to compare two approaches. Watch how each encodes position information differently. Slide Max Position to see how encoding patterns extend to longer sequences. RoPE produces tighter rotations—notice the difference in periodicity.</p>
   <canvas id="posCanvas" width="900" height="380"></canvas>
   <div class="controls">
     <div class="tab-bar">
@@ -227,6 +218,7 @@
       <span class="desc">[CLS] = classification (BERT). [SEP] = separator. [PAD] = padding. [UNK] = unknown word. Handle these during tokenization.</span>
     </div>
     <hr class="divider">
+<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click "Sinusoidal" and "RoPE" tabs to compare. Sinusoidal uses sin/cos waves at different frequencies. RoPE rotates embeddings. Increase Max Position to 256. Notice RoPE maintains better distance preservation at long sequences—this is why modern models prefer RoPE. Watch the rotation pattern change.</div>
     <div class="interview-tip">Subword tokenization is crucial for handling rare words and multilingual text. Understand vocab size trade-offs.</div>
     <div class="mnemonic">Tokenization + embedding = convert text to dense vectors. Positions matter. Special tokens provide structure.</div>
   </div>
@@ -235,7 +227,7 @@
 <!-- ===== EXISTING: KV-CACHE ===== -->
 <div class="viz-section">
   <h2>KV-Cache: Efficient Autoregressive Inference</h2>
-  <p class="subtitle">During generation, cache K and V from previous tokens to avoid recomputation. Watch the cache grow as new tokens are generated.</p>
+  <p class="subtitle">Click 'Generate Next Token' and watch the KV-cache expand. Notice how the cache stores computed keys and values from all previous tokens. Toggle 'Without Cache' to see the full recomputation—watch how much slower it becomes. This shows why caching is critical for inference speed.</p>
   <canvas id="kvCanvas" width="900" height="360"></canvas>
   <div class="controls">
     <button class="btn" id="kvPlayBtn" onclick="toggleKV()">▶ Generate Token</button>
@@ -269,6 +261,7 @@
       <span class="desc">Optimal allocation: train to model convergence (2T tokens, where T = model parameters). LLaMA follows this principle.</span>
     </div>
     <hr class="divider">
+<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click "Generate Next Token" repeatedly and watch cache grow (should see increasing bars for K and V). Turn on "Show Cache Memory" to see total memory. Then toggle "Without Cache" and watch inference slow down—each token must recompute all previous keys and values. For 100-token sequence, cache is ~100x faster.</div>
     <div class="interview-tip">Pretraining is expensive but transfer learning is powerful. Fine-tuning on specific task often very effective. Few-shot prompting often works!</div>
     <div class="mnemonic">LM pretraining = predict next token from massive unlabeled text. Learns grammar, facts, reasoning. Scale → emergent abilities.</div>
   </div>
@@ -277,7 +270,7 @@
 <!-- ===== EXISTING: TRANSFORMER BLOCK ===== -->
 <div class="viz-section">
   <h2>Transformer Block Architecture</h2>
-  <p class="subtitle">The complete flow through a decoder block: LayerNorm → Attention → Residual → LayerNorm → FFN → Residual.</p>
+  <p class="subtitle">Click 'Step Through' to follow data flow through each sub-layer. Watch the signal pass through LayerNorm → Attention → residual add, then LayerNorm → FFN → residual add. Toggle the 'Visualize Residuals' checkbox to highlight skip connections. These shortcuts are why deep Transformers can train effectively.</p>
   <canvas id="blockCanvas" width="900" height="480"></canvas>
   <div class="controls">
     <div class="tab-bar">
@@ -304,6 +297,7 @@
       <span class="desc">PPO or similar policy gradient. Maximize: E[reward] - KL(π_new || π_old). KL term prevents diverging from pretrained model.</span>
     </div>
     <hr class="divider">
+<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click "Step Through" to animate data flow. Pause at each stage: after Attention, watch residual add. After FFN, watch residual add again. These skips are critical—they let gradients flow back unobstructed. Toggle "Remove Residuals" to see training collapse. This is why Transformers can be 100+ layers deep.</div>
     <div class="interview-tip">RLHF is expensive (human feedback needed) but crucial for alignment. Alternative: DPO (direct preference optimization, no reward model).</div>
     <div class="mnemonic">Instruction tuning = teach format. RLHF = optimize for human preferences. Alignment = make models helpful, safe, honest.</div>
   </div>
@@ -312,7 +306,7 @@
 <!-- ===== NEW: FINE-TUNING & PEFT ===== -->
 <div class="viz-section">
   <h2>Fine-Tuning & Parameter-Efficient Methods</h2>
-  <p class="subtitle">Compare full fine-tuning (train all params) vs LoRA (train low-rank adapters) vs QLoRA (4-bit quantization + LoRA).</p>
+  <p class="subtitle">Click the three tabs: 'Full Fine-Tune', 'LoRA', 'QLoRA'. For each, watch the parameter count and memory usage. LoRA adds only ~2% of parameters but achieves 90%+ of full tuning performance. QLoRA shrinks memory further with 4-bit quantization. Compare the memory cost vs accuracy tradeoff.</p>
   <div class="multi-canvas">
     <div>
       <canvas id="loraCanvas" width="420" height="400"></canvas>
@@ -347,6 +341,7 @@
       <span class="desc">Pretraining on diverse data teaches patterns. Transformers learn what comes next. Context updates hidden state toward task.</span>
     </div>
     <hr class="divider">
+<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Toggle between "Full Fine-Tune", "LoRA", "QLoRA". Watch Parameters and Memory metrics. Full tune = 7B params, 28GB memory. LoRA = 0.1B params, 3GB memory. QLoRA = 0.1B params + 4-bit base = 1GB memory. All achieve 85–90% of full tuning performance. This is why LoRA dominates in practice.</div>
     <div class="interview-tip">In-context learning is remarkable emergent ability of large models. Scaling laws: bigger models learn from fewer examples.</div>
     <div class="mnemonic">In-context learning = pattern matching via sequence completion. No parameter update. Examples are powerful context.</div>
   </div>
@@ -355,7 +350,7 @@
 <!-- ===== NEW: RLHF & ALIGNMENT ===== -->
 <div class="viz-section">
   <h2>RLHF & Alignment Pipeline</h2>
-  <p class="subtitle">The full pipeline: Pretrained → SFT → Reward Model → PPO. Compare with simpler DPO (Direct Preference Optimization).</p>
+  <p class="subtitle">Click 'Play Pipeline' to animate through Pretrained → SFT (Supervised Fine-Tune) → Reward Model → PPO. Watch how each stage refines the model. Then click 'Compare: DPO' to see Direct Preference Optimization—a simpler pipeline. Notice how DPO skips the reward model step, making training faster.</p>
   <canvas id="rlhfCanvas" width="900" height="450"></canvas>
   <div class="controls">
     <div class="tab-bar">
@@ -382,6 +377,7 @@
       <span class="desc">Sparse attention patterns. Local + global attention. Linear attention approximations. Hierarchical attention.</span>
     </div>
     <hr class="divider">
+<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click "Play Pipeline" to step through SFT → Reward Model → PPO. Watch reward scores improve at each stage. Then compare "DPO" (Direct Preference Optimization)—it skips reward model, learning from pairwise preferences directly. DPO is simpler, faster, nearly same quality. Slide "λ regularization" to see KL divergence control.</div>
     <div class="interview-tip">Longer context important for long documents, conversations, code. But comes with memory cost. Understanding context window critical.</div>
     <div class="mnemonic">Context window = how much history model sees. Longer = better for understanding long documents. O(n²) cost is limiting.</div>
   </div>
@@ -390,7 +386,7 @@
 <!-- ===== NEW: INFERENCE & SERVING ===== -->
 <div class="viz-section">
   <h2>Inference Optimization: Speculative Decoding & Quantization</h2>
-  <p class="subtitle">Speed up inference with draft models (speculative decoding) and reduce memory via quantization (FP32 → INT8 → INT4).</p>
+  <p class="subtitle">Slide the Quantization slider from FP32 to INT4. Watch the memory footprint shrink and inference speed improve (but watch for quality loss at INT4). Then toggle 'Use Draft Model' to see speculative decoding: a smaller model drafts 5 tokens, the main model verifies them. This can 2.5x speed at the cost of small quality drop.</p>
   <div class="multi-canvas">
     <div>
       <canvas id="speculativeCanvas" width="420" height="380"></canvas>
@@ -418,6 +414,7 @@
       <span class="desc">Keep critical layers (embeddings, attention output) in higher precision. Quantize feed-forward networks heavily. Optimal quality/speed.</span>
     </div>
     <hr class="divider">
+<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Drag Quantization slider FP32 → INT4. Watch memory drop (28GB → 7GB) and speed increase. But quality metric drops too. Then toggle "Use Draft Model"—watch it generate 5 tokens, main model verifies them. If all correct: 5x speedup. If wrong: resample. Try draft_scale=0.3 (faster but riskier) vs 0.7 (slower, more accurate).</div>
     <div class="interview-tip">Quantization crucial for deployment on edge devices. int8 very practical. int4 requires careful tuning but very memory efficient.</div>
     <div class="mnemonic">Quantization = smaller, faster, less accurate. int8 sweet spot: 4x smaller, minimal loss. int4 when size critical.</div>
   </div>
@@ -426,7 +423,7 @@
 <!-- ===== NEW: CONTINUOUS BATCHING & PAGED ATTENTION ===== -->
 <div class="viz-section">
   <h2>Serving: Continuous Batching & Paged Attention (vLLM)</h2>
-  <p class="subtitle">Traditional batching waits for all sequences to finish. Continuous batching removes completed sequences and adds new ones. PagedAttention stores KV-cache in variable-length blocks.</p>
+  <p class="subtitle">Toggle between 'Traditional Batching' and 'Continuous Batching'. Watch how continuous batching removes completed sequences mid-batch and adds new ones—no idle waiting. Then view 'PagedAttention' to see how variable-length blocks replace fixed allocations. Compare throughput: traditional batching often leaves GPUs 30% idle.</p>
   <canvas id="continuousBatchCanvas" width="900" height="420"></canvas>
   <div class="insight-box">
     <strong>Key Insight:</strong> Scaling laws govern how model performance improves with more parameters, data, and compute.
@@ -458,6 +455,7 @@
       <span class="desc">Predicting loss on held-out data. Choosing model size. Budget allocation (compute, parameters, data).</span>
     </div>
     <hr class="divider">
+<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Toggle "Traditional Batching" vs "Continuous Batching". Traditional waits for slowest request (maybe stuck on hard prompt). Continuous removes completed requests mid-batch, adds new ones. Watch GPU utilization jump from 60% to 95%. Then view "PagedAttention"—notice how variable-length blocks prevent memory waste compared to fixed allocations.</div>
     <div class="interview-tip">Scaling laws are empirical (fit from data) not proven. But remarkably consistent across orders of magnitude. Useful for planning.</div>
     <div class="mnemonic">Scaling laws = loss improves as power law with model/data size. Chinchilla = balance model and data. Bigger = better.</div>
   </div>
@@ -466,7 +464,7 @@
 <!-- ===== NEW: RAG PIPELINE ===== -->
 <div class="viz-section">
   <h2>RAG: Retrieval-Augmented Generation</h2>
-  <p class="subtitle">Query → Embed → Retrieve → Rerank → Augment Prompt → Generate. Compare chunking strategies: fixed, semantic, recursive.</p>
+  <p class="subtitle">Click 'Step Through RAG' to walk through each stage. At the Retrieve step, toggle between Chunking Strategy (Fixed vs Semantic vs Recursive) and watch how chunk boundaries change. Fixed = dumb boundaries, Semantic = respects meaning, Recursive = hierarchical. See how Semantic chunking retrieves more relevant context than Fixed.</p>
   <canvas id="ragPipelineCanvas" width="900" height="450"></canvas>
   <div class="controls">
     <div class="tab-bar">
@@ -494,6 +492,7 @@
       <span class="desc">Student can match large part of teacher performance at much smaller size. 10x compression: ~5-10% quality loss.</span>
     </div>
     <hr class="divider">
+<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click "Step Through" RAG pipeline. At Retrieve step, toggle "Fixed vs Semantic chunking". Fixed chunks are dumb (mid-sentence breaks). Semantic chunks respect meaning boundaries. Watch retrieval quality improve. Then try "Recursive chunking"—multi-level hierarchy for hierarchical reasoning. Compare retrieval accuracy at each strategy.</div>
     <div class="interview-tip">Distillation effective for deployment. Student learns from teacher's mistakes too (soft probability targets reveal model uncertainty).</div>
     <div class="mnemonic">Knowledge distillation = student learns from teacher. Soft targets more informative than hard labels. Trade: quality for size/speed.</div>
   </div>
@@ -502,7 +501,7 @@
 <!-- ===== NEW: VECTOR DB & RETRIEVAL ===== -->
 <div class="viz-section">
   <h2>Vector Database & HNSW Indexing</h2>
-  <p class="subtitle">Efficient nearest neighbor search with Hierarchical Navigable Small World (HNSW) graphs. Compare with brute-force search.</p>
+  <p class="subtitle">Toggle 'HNSW' vs 'Brute-Force' to compare two search methods. With HNSW, search visits only a few nodes to find neighbors (fast). With brute-force, it checks every point (slow but accurate). Slide Query Dimension to see how HNSW scales better than brute-force as dimensionality increases.</p>
   <div class="multi-canvas">
     <div>
       <canvas id="hnsqCanvas" width="420" height="400"></canvas>
@@ -537,6 +536,7 @@
       <span class="desc">MoE: higher memory (all experts loaded), better scaling. Merging: simpler, but capacity limited by individual models.</span>
     </div>
     <hr class="divider">
+<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Toggle "HNSW vs Brute-Force" search. HNSW (hierarchical navigable small world) visits ~50 nodes to find nearest neighbor. Brute-force checks all 1M points. Watch latency: HNSW 1–5ms, brute-force 50–200ms. Increase Query Dimension. HNSW scales beautifully (still ~5ms), brute-force explodes (→ 500ms). This is why HNSW powers modern vector DBs.</div>
     <div class="interview-tip">MoE prevalent in large models (Gemini, Mixtral). Gating network quality critical. Understand expert utilization monitoring.</div>
     <div class="mnemonic">MoE = selective expert activation. Sparse = many parameters but low compute. Merging = simpler multi-capability scaling.</div>
   </div>
@@ -578,6 +578,7 @@ function resetBPE() {
 
 function drawBPE() {
   const canvas = document.getElementById('bpeCanvas');
+  if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height;
   ctx.fillStyle = '#0d0d1a';
@@ -708,7 +709,7 @@ function initAttn() {
 function softmax(arr) {
   const max = Math.max(...arr);
   const exps = arr.map(x => Math.exp(x - max));
-  const sum = exps.reduce((a, b) => a + b);
+  const sum = exps.reduce((a, b) => a + b, 0);
   return exps.map(x => x / sum);
 }
 

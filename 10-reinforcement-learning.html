@@ -311,6 +311,7 @@
   .insight-box .comparison .option .opt-title { color: #ff9f43; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
   .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
   .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
+  .insight-box { grid-column: 1 / -1; }
 
 </style>
 </head>
@@ -324,6 +325,7 @@
         <!-- Section 1: MDP -->
         <div class="section">
             <h2>1️⃣ Markov Decision Process (MDP)</h2>
+            <p style="color: #a0a0b0; margin-bottom: 15px;">Click through states on the canvas—watch transitions and rewards. Adjust discount factor γ (gamma) to see immediate vs long-term tradeoff. γ≈0 = myopic (care only about next reward). γ≈1 = farsighted (consider all future rewards). Observe how optimal policy changes.</p>
             <div class="section-content">
                 <div class="visualization">
                     <canvas id="mdpCanvas" width="450" height="450"></canvas>
@@ -417,6 +419,7 @@
                 </div>
                 <hr class="divider">
                 <div class="interview-tip">Why does Markov assumption matter? It enables dynamic programming solutions; without it, you'd need full history, making problems intractable.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: In the MDP visualization, verify Markov property: P(s'|s, a) depends only on s and a, not history. This independence enables Bellman equations, value iteration, and policy gradients. Without Markov: infinite history needed (intractable).</div>
                 <div class="mnemonic">Think: Bellman = backwards induction. Each state's value = what you get now + discounted value of successor states.</div>
                 <p><strong>Interview Gotchas:</strong> Markov property is strong (not all problems satisfy it); Value iteration rate depends on γ and space size; Large spaces need function approximation; Exploration-exploitation is orthogonal to MDPs.</p>
                 <p><strong>Production Tips:</strong> Verify Markov assumption holds. Use γ=0.99 for long horizons. Function approximation essential for continuous spaces. Monitor episode returns. Always simulate offline before deployment.</p>
@@ -426,6 +429,7 @@
         <!-- Section 2: Q-Learning -->
         <div class="section">
             <h2>2️⃣ Q-Learning (Temporal Difference)</h2>
+            <p style="color: #a0a0b0; margin-bottom: 15px;">Drag learning rate (α) slider to control step size toward optimal Q-values. Low α = stable but slow. High α = fast but noisy. Observation: Q-Learning updates are bootstrapped (use current estimates, not full rollouts)—more efficient than Monte Carlo, more stable than policy gradients.</p>
             <div class="section-content">
                 <div class="visualization">
                     <canvas id="qlearningCanvas" width="450" height="450"></canvas>
@@ -494,6 +498,7 @@
                 </div>
                 <hr class="divider">
                 <div class="interview-tip">Q-learning converges in tabular case if every s,a pair visited infinitely often with decaying learning rate. In practice, function approximation breaks these guarantees.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Run Q-Learning with α=0.1 (stable) and α=0.9 (noisy). Convergence guarantee requires tabular (small state space), exploration (ε-greedy), and learning rate decay. With neural networks (DQN), only approximation—divergence possible. Always monitor for instability.</div>
                 <div class="mnemonic">Q-Learning: Maximize future Q values (greedy bootstrap). The max makes it optimistic and off-policy—you explore but learn about the best policy.</div>
                 <p><strong>Key Gotchas:</strong> Overestimation bias from max (max_a Q is biased up); Function approximation breaks convergence; Off-policy divergence if policies drift; ε-greedy is inefficient.</p>
                 <p><strong>Production Solutions:</strong> Double DQN (separate target/online networks for bias reduction); Experience replay (decorrelates samples); Slow target network updates (stable targets); Policy gradients for continuous control; Monitor Q-value distributions for explosions; Always simulate before deployment.</p>
@@ -503,6 +508,7 @@
         <!-- Section 3: Policy Gradient / REINFORCE -->
         <div class="section">
             <h2>3️⃣ Policy Gradient (REINFORCE)</h2>
+            <p style="color: #a0a0b0; margin-bottom: 15px;">Adjust learning rate to see gradient step magnitude. High rates overshoot, low rates creep slowly. Watch the policy optimize toward high-reward regions. REINFORCE is simple: sample trajectories, compute log-prob gradient, weight by return. Key insight: you can't backprop through stochasticity, but you can through log-probability.</p>
             <div class="section-content">
                 <div class="visualization">
                     <canvas id="pgCanvas" width="450" height="450"></canvas>
@@ -577,6 +583,7 @@
                 </div>
                 <hr class="divider">
                 <div class="interview-tip">Log-probability trick is key: you can't backprop through stochasticity, but you can backprop through log(π)—differentiate the log, then multiply by the result.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: REINFORCE uses ∇_θ log π(a|s) · R (score function estimator). This works because ∇ log π = (∇π) / π—clever algebraic trick. High-variance (full trajectory return). Modern methods: A3C reduces variance with baseline (critic). PPO uses clipped objective instead.</div>
                 <div class="mnemonic">Actor-Critic = actor (policy) makes decisions, critic (value) evaluates them. Critic reduces variance of policy gradients via advantage estimation.</div>
                 <p><strong>Key Gotchas:</strong> REINFORCE high variance without baselines; Critic bias if poorly trained; High sample complexity; Local optima common; Off-policy corrections can explode.</p>
                 <p><strong>Production Best Practices:</strong> Use PPO/TRPO for stability (clip/trust region updates); Actor-critic more sample-efficient; GAE balances bias-variance; Monitor policy entropy; Test exhaustively (can exploit simulator); Continuous control is PG sweet spot.</p>
@@ -586,6 +593,7 @@
         <!-- Section 4: Exploration vs Exploitation -->
         <div class="section">
             <h2>4️⃣ Exploration vs Exploitation (Multi-Armed Bandit)</h2>
+            <p style="color: #a0a0b0; margin-bottom: 15px;">Adjust exploration rate ε to see tradeoff. ε=0 (pure exploit) = converge fast but suboptimal (stuck in local optima). ε=0.5 = balance exploration/exploitation. Watch how UCB (upper confidence bound) adaptively allocates trials—no need to tune ε, the algorithm balances for you.</p>
             <div class="tabs">
                 <button class="tab active" onclick="switchBanditTab(0)">ε-Greedy</button>
                 <button class="tab" onclick="switchBanditTab(1)">UCB</button>
@@ -657,6 +665,7 @@
                 </div>
                 <hr class="divider">
                 <div class="interview-tip">Lower bound on regret is Ω(log T). Only UCB and Thompson Sampling achieve this; ε-greedy is fundamentally suboptimal (linear waste term).</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Switch between ε-greedy (fixed exploration) and UCB. ε-greedy with ε=0.1 wastes 10% of budget on suboptimal arms (linear regret). UCB allocates adaptively—arms with high uncertainty get more trials. Cumulative regret log(T) vs T—huge difference at scale.</div>
                 <div class="mnemonic">UCB = empirical mean + exploration bonus that shrinks as arm is played. Thompson = posterior samples naturally balance exploration (high uncertainty) and exploitation (posterior peaks).</div>
                 <p><strong>Key Gotchas:</strong> ε-greedy regret is linear in T (bad for long horizons); UCB constant c requires tuning; Thompson Sampling needs Bayesian inference; Contextual bandits are realistic but harder.</p>
                 <p><strong>Production Best Practices:</strong> Use Thompson Sampling for A/B testing/ad serving (auto-balances, easy to explain); UCB for explicit control; Avoid ε-greedy unless trivial; Contextual variants (LinUCB, ContextTS) for recommendations; Monitor arm frequencies; Cold-start: all arms equally unknown.</p>
@@ -666,6 +675,7 @@
         <!-- Section 5: RLHF -->
         <div class="section">
             <h2>5️⃣ RLHF (RL from Human Feedback)</h2>
+            <p style="color: #a0a0b0; margin-bottom: 15px;">Watch the reward model train on human preferences (A > B). Then optimize the LLM policy away from SFT baseline while staying close (KL penalty). Adjust KL coefficient to see the tradeoff: low KL = reward maximization (reward hacking), high KL = stay near SFT (boring). Sweet spot balances alignment + diversity.</p>
             <div class="section-content">
                 <div class="visualization">
                     <canvas id="rlhfCanvas" width="450" height="400"></canvas>
@@ -716,6 +726,7 @@
                 <p style="margin: 8px 0; font-size: 0.93em;">Preference probability = sigmoid of reward difference; trainable via cross-entropy</p>
                 <hr class="divider">
                 <div class="interview-tip">KL penalty is crucial: without it, LLM mode-collapses to trivial outputs that maximally exploit the reward model. KL keeps it close to SFT baseline.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set KL coefficient = 0 (reward-only optimization). LLM exploits reward model, outputs degenerate (e.g., repeat "yes" forever if human likes agreement). KL=0.1: balanced Pareto frontier. KL=1.0: plays it safe, boring outputs. Find your coefficient based on alignment criticality.</div>
                 <div class="mnemonic">RLHF = teach model to please humans. Bradley-Terry = learn what humans like. PPO+KL = apply RL while staying sensible. Three-stage dance between SFT, reward, and policy.</div>
                 <p><strong>Key Challenges:</strong> Reward hacking (exploiting model weaknesses); Expensive annotation with labeler bias; Reward model overfits or goes off-distribution; KL tuning critical; Computational cost high.</p>
                 <p><strong>Production Best Practices:</strong> Multiple annotators, measure agreement; Diverse preference data; Monitor RM accuracy on held-out; Use β ≈ 0.1-1.0; Test on multiple benchmarks; Iteratively improve RM as LLM improves; Static RM becomes suboptimal over time.</p>

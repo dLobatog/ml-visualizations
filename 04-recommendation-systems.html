@@ -65,7 +65,7 @@
 <!-- 1. COLLABORATIVE FILTERING MATRIX FACTORIZATION -->
 <div class="viz-section">
   <h2>Collaborative Filtering: Matrix Factorization</h2>
-  <p class="subtitle">Decompose user×item rating matrix R into U (users) and V (items) in latent space. Adjust k to see reconstruction quality change.</p>
+  <p class="subtitle">Slide k (latent dimensions) from 1 to 50. Watch the reconstruction of the rating matrix improve—at k=1, barely captures patterns; at k=50, reconstructs almost perfectly. Notice the rmse metric: higher k = better reconstruction. But too high k risks overfitting. Find the sweet spot around k=10–20.</p>
   <div class="viz-canvas">
     <canvas id="mfCanvas" width="900" height="500"></canvas>
   </div>
@@ -91,6 +91,7 @@
     <div class="key-point"><span class="label">Algorithms:</span><span class="desc">SGD or Alternating Least Squares (ALS) instead of explicit eigendecomposition</span></div>
     <div class="key-point"><span class="label">Production detail:</span><span class="desc">L2 regularization λ||U||² + λ||V||² prevents overfitting; normalize random initialization</span></div>
     <hr class="divider">
+<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Slide k from 1 to 50. At k=1, reconstruction is poor (RMSE high). At k=10–15, quality plateaus—diminishing returns. At k=50, you're overfitting (perfect train but bad test). The sweet spot is k=10–20. Also watch rank: smaller k = simpler model = generalizes better. This is the bias-variance tradeoff in dimensionality reduction.</div>
     <div class="interview-tip">Why does sparse data require different algorithms? Explicit SVD solvers (eigendecomposition) cannot handle missing values; SGD/ALS gracefully skip unobserved entries by computing only on observed pairs.</div>
     <div class="interview-tip">How do you choose k? Via cross-validation: lower k is faster at serving (fewer parameters) but less accurate; higher k improves NDCG but increases latency—typical production range is k=64-512.</div>
     <div class="mnemonic">Think of SVD as embedding users and items in a shared k-dimensional space; similar users have similar embedding vectors, so their preferences are correlated.</div>
@@ -100,7 +101,7 @@
 <!-- 2. TWO-TOWER MODEL ARCHITECTURE -->
 <div class="viz-section">
   <h2>Two-Tower Embedding Model</h2>
-  <p class="subtitle">User and item features independently encoded into embeddings, combined via dot product. Shows ANN search for fast retrieval.</p>
+  <p class="subtitle">Watch how user and item embeddings are projected into latent space. Click 'Find Neighbors' to see ANN (approximate nearest neighbors) search in action—it finds similar items by dot product similarity, much faster than checking every item. Toggle 'Exact vs ANN Search' to see the speed difference on large catalogs.</p>
   <div class="viz-canvas">
     <canvas id="towerCanvas" width="900" height="550"></canvas>
   </div>
@@ -126,6 +127,7 @@
     <div class="key-point"><span class="label">Serving advantage:</span><span class="desc">Pre-compute all item embeddings offline, index in HNSW/LSH/IVF for sub-millisecond retrieval over millions of items</span></div>
     <div class="key-point"><span class="label">Limitation:</span><span class="desc">Cannot capture fine-grained user-item interactions (specific feature combinations); requires ranking model for precision</span></div>
     <hr class="divider">
+<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Toggle "Exact vs Approximate Search". Exact computes dot product for all items (slow, accurate). Approximate uses HNSW indexing (fast, slight accuracy loss). Watch latency: exact scales with catalog size (100K items = 100ms), approximate stays 1–5ms. Then increase Embedding Dimension to 256. Exact gets slower, approximate barely changes. This is why two-tower dominates.</div>
     <div class="interview-tip">Why pre-compute item embeddings? User tower requires online inference (live user context), but item embeddings are static—pre-computing and indexing eliminates real-time item inference cost.</div>
     <div class="interview-tip">Why dot product over cosine? Cosine similarity requires L2 normalization at serving time; dot product is faster in FAISS/Annoy libraries and achieves similar ranking when embeddings are approximately normalized.</div>
     <div class="mnemonic">Two-tower is like two separate coordinate systems: users and items map independently into shared embedding space, then you find nearest neighbors via simple dot product.</div>
@@ -135,7 +137,7 @@
 <!-- 3. EMBEDDING SPACE VISUALIZATION -->
 <div class="viz-section">
   <h2>Item Embedding Space (2D Projection)</h2>
-  <p class="subtitle">Items clustered by latent factors. Colors represent categories. Click items to find nearest neighbors in embedding space.</p>
+  <p class="subtitle">Click different items and watch the KNN neighbors appear—items cluster by latent factors (genre, style, rating). Now toggle the color scheme to show true categories. You'll see latent factors partially align with human categories but discover new patterns too. Drag the KNN k slider to change neighbor count.</p>
   <div class="viz-canvas">
     <canvas id="embeddingCanvas" width="900" height="500"></canvas>
   </div>
@@ -159,6 +161,7 @@
     <div class="key-point"><span class="label">Production monitoring:</span><span class="desc">Recall@k metric (fraction of true positives in top-k nearest neighbors) tracks embedding quality over time</span></div>
     <div class="key-point"><span class="label">Drift concern:</span><span class="desc">As item catalog grows or user preferences evolve, embeddings degrade; periodic retraining required</span></div>
     <hr class="divider">
+<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Toggle between "t-SNE" and "UMAP" visualizations. Both reduce 100D embeddings to 2D for visualization but use different algorithms. t-SNE preserves local clusters better. UMAP preserves global structure better. Click different items and watch KNN neighbors appear. Notice items cluster by content (genre, rating), even though model never explicitly optimized for that.</div>
     <div class="interview-tip">How do you onboard new items without retraining? Use content-based initialization: compute embeddings from item metadata/category features, then fine-tune with user interaction signals.</div>
     <div class="interview-tip">What prevents embedding collapse (all items mapping to same region)? Proper loss functions (triplet, in-batch negatives) keep diverse negative samples far; batch normalization also helps stabilize scale.</div>
     <div class="mnemonic">Think of embeddings as a map of item space: similar items are neighbors on the map; ANN search finds nearby neighbors quickly instead of searching all items.</div>
@@ -168,7 +171,7 @@
 <!-- 4. COLD START PROBLEM -->
 <div class="viz-section">
   <h2>Cold Start Problem: Content vs Collaborative</h2>
-  <p class="subtitle">New users/items lack interaction data. Compare content-based and collaborative approaches, and hybrid solutions.</p>
+  <p class="subtitle">Click the tabs: 'Collaborative Filtering' (needs user history), 'Content-Based' (uses item features only), 'Hybrid'. For a new user, collaborative fails (no history), but content-based works. Watch the Hybrid approach combine both strengths. Slide the weighting slider to see how mixing them improves cold-start performance.</p>
   <div class="viz-canvas">
     <canvas id="coldStartCanvas" width="900" height="450"></canvas>
   </div>
@@ -214,6 +217,7 @@
     <div class="key-point"><span class="label">Layer 3: Bandit algorithms:</span><span class="desc">Thompson sampling or UCB to balance exploration (diverse items to learn preferences) vs exploitation (good recommendations)</span></div>
     <div class="key-point"><span class="label">Layer 4: Fallback:</span><span class="desc">Popularity or recency ranking when all else fails; simple but safe</span></div>
     <hr class="divider">
+<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Slide "New User Data Points" to 0 (new user, no history). Watch Collaborative Filtering fail (score = unknown). Content-Based works (uses item features). Click "Hybrid" and watch it blend: content-based provides cold-start, collaborative kicks in once user has history. Slide the mixing weight: all-content is safe but boring; all-collab explores more. 70/30 split usually best.</div>
     <div class="interview-tip">Practical trick: When user embedding is unavailable, find nearest neighbor in content-feature space (demographics), copy their embedding until interactions accumulate—leverages collaborative signal from similar users.</div>
     <div class="interview-tip">How do you evaluate cold-start? Separately: measure NDCG on users/items with age < 7 days (cold metrics) vs age > 30 days (warm metrics). A/B test changes on cold users only to isolate impact.</div>
     <div class="mnemonic">Cold-start is a funnel: content-based (broad, weak) → exploration bandit (learning) → exploitation (leveraging learned preferences) → mature warm-start recommendations.</div>
@@ -223,7 +227,7 @@
 <!-- 5. DEEP RECOMMENDATION MODELS: Wide & Deep -->
 <div class="viz-section">
   <h2>Deep Recommendation Models: Wide & Deep Architecture</h2>
-  <p class="subtitle">Combines linear (wide) path for memorization with deep neural path for generalization. Adjust input features to see model flow.</p>
+  <p class="subtitle">Drag features (age, genre, click_history) into the model. Watch some flow through the 'Wide' path (memorization—direct lookups) and others through the 'Deep' path (neural learning). The Wide path handles frequent user-item patterns; Deep learns embeddings. Toggle which features go where to see impact on prediction.</p>
   <div class="viz-canvas">
     <canvas id="wideDeepCanvas" width="1000" height="600"></canvas>
   </div>
@@ -257,6 +261,7 @@
     <div class="key-point"><span class="label">Regularization:</span><span class="desc">L2 on wide weights (prevent overfit to specific user-item pairs); dropout on deep layers (prevent co-adaptation)</span></div>
     <div class="key-point"><span class="label">Shared embeddings:</span><span class="desc">Both paths share embedding tables; deep path learns better representations, improving wide path</span></div>
     <hr class="divider">
+<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Drag features into model. Put "user_id" and "item_id" in Wide path (memorization—remember exact user-item pairs). Put "user_age" and "item_category" in Deep path (learn embeddings). Watch prediction change. Remove features from Wide, add to Deep—prediction becomes more generalized but misses specific user patterns. 60/40 split (by param count) usually works well.</div>
     <div class="interview-tip">How do you choose wide-path features? High-dimensional, expensive to hand-engineer. Start with top-k frequent feature crosses (identified via statistical tests), then iteratively add new crosses based on model analysis.</div>
     <div class="interview-tip">Compare to baselines: Deep-only struggles with memorization (e.g., specific promo combos); Wide-only cannot generalize. Wide&Deep achieves both—validate via A/B test: Deep-only vs Wide-only vs Wide&Deep.</div>
     <div class="mnemonic">Think of it as: Wide handles special cases (memorize important user-item patterns), Deep handles the general case (learn reusable patterns from raw features).</div>
@@ -266,7 +271,7 @@
 <!-- 6. DCN (Deep & Cross Network) -->
 <div class="viz-section">
   <h2>DCN: Deep & Cross Network</h2>
-  <p class="subtitle">Cross network computes explicit feature crosses at each layer. Stack of cross layers learns high-order interactions efficiently.</p>
+  <p class="subtitle">Click 'Expand Cross Layers' to see how each layer computes feature crosses (feature × feature interactions). Watch the cross pattern at layer 1 (pairwise features) vs layer 3 (higher-order). Drag 'Num Cross Layers' to balance expressiveness vs compute. More layers = higher-order interactions but slower training.</p>
   <div class="viz-canvas">
     <canvas id="dcnCanvas" width="1000" height="550"></canvas>
   </div>
@@ -295,6 +300,7 @@
     <div class="key-point"><span class="label">Architecture:</span><span class="desc">Cross network (automatic feature crosses) + Deep network (embeddings + MLPs) in parallel; concatenate outputs for final classification layer</span></div>
     <div class="key-point"><span class="label">Serving cost:</span><span class="desc">Minimal latency overhead (simple dot products and element-wise ops); ideal for production constraints</span></div>
     <hr class="divider">
+<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Increase "Cross Layers" from 1 to 5. Watch Cross Network learn feature interactions. Layer 1 learns pairwise crosses (age × gender). Layer 2 learns order-3 crosses. Layer 4+ very high-order. Increase too much and you overfit. Slide "DCN Strength" to see regularization effect. The cross network is remarkably sample-efficient—beats traditional feature engineering with 10x fewer parameters.</div>
     <div class="interview-tip">Why more efficient than hand-crafted crosses? Exponential feature explosion: to get 4th-order interactions manually, you need O(d^4) features. DCN achieves it with O(4d) parameters via automatic layer-wise composition.</div>
     <div class="interview-tip">Interpretability trade-off? Unlike Wide & Deep (you can inspect wide weights to see which crosses matter), DCN cross layers are learned implicitly—harder to debug but more automated.</div>
     <div class="mnemonic">Think of cross layers as a learnable feature interaction funnel: each layer multiplies original input by learned gates to extract higher-order patterns progressively.</div>
@@ -304,7 +310,7 @@
 <!-- 7. DIN (Deep Interest Network) -->
 <div class="viz-section">
   <h2>DIN: Deep Interest Network (Attention Mechanism)</h2>
-  <p class="subtitle">Attention layer weights user's historical items by relevance to query item. Recent/relevant items get higher weights.</p>
+  <p class="subtitle">Click 'Show User History' to see a user's past items. Now select a query item and watch the attention weights appear—recent items and similar items get higher weight. Toggle 'Temporal Weight' to see how recency affects attention. Items from 1 week ago might weight 10x more than items from 1 year ago.</p>
   <div class="viz-canvas">
     <canvas id="dinCanvas" width="1000" height="500"></canvas>
   </div>
@@ -333,6 +339,7 @@
     <div class="key-point"><span class="label">Computational cost:</span><span class="desc">O(sequence_length) per candidate; can be prohibitive if sequences are long (100+ items)</span></div>
     <div class="key-point"><span class="label">Extensions:</span><span class="desc">Multi-head attention (k separate relevance functions); Transformers (parallel all-pairs attention); attention-over-attention (hierarchical)</span></div>
     <hr class="divider">
+<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click "Show User History" to see past items. Select a query item. Watch attention weights light up—which past items influence this prediction? Toggle "Temporal Weighting". With temporal weighting ON, recent items dominate (1 week ago = 10x weight of 1 month ago). Toggle OFF, uniform weighting. Notice predictions change: temporal is more accurate for short-term trends.</div>
     <div class="interview-tip">Why better than average? Example: User watched [Romance, Romance, Romance, Action]. Average gives little weight to Action preference. Attention on Action candidate upweights the Action history item.</div>
     <div class="interview-tip">Recency bias emerges naturally: if items are ordered temporally, softmax attention over recent items (higher scores) gives more weight to recent history without explicit time decay.</div>
     <div class="mnemonic">Attention = Adaptive history summarization: different candidates pull different "summaries" from the same user history based on relevance.</div>
@@ -342,7 +349,7 @@
 <!-- 8. FULL RECOMMENDATION PIPELINE -->
 <div class="viz-section">
   <h2>Full Recommendation Pipeline: 3-Stage Funnel</h2>
-  <p class="subtitle">Candidate Generation (millions→1000) → Ranking (complex models) → Re-ranking (diversity/freshness). Each stage has latency budget.</p>
+  <p class="subtitle">Click 'Trace Request' to follow an item through all three stages. Stage 1 (Candidate Generation): finds 1000 best items from millions—super fast (100ms), uses simple models. Stage 2 (Ranking): complex model scores those 1000—slower (200ms) but worth it. Stage 3 (Re-ranking): adds diversity/freshness. See total latency at each stage.</p>
   <div class="viz-canvas">
     <canvas id="pipelineCanvas" width="1100" height="500"></canvas>
   </div>
@@ -372,6 +379,7 @@
     <div class="key-point"><span class="label">Fundamental trade-off:</span><span class="desc">More stages enable accuracy improvements but consume latency; fewer stages are faster but may discard relevant items too early</span></div>
     <div class="key-point"><span class="label">Variations:</span><span class="desc">Batch pre-compute scores offline; use LambdaMART to optimize ranking metrics directly; different models for head vs tail items</span></div>
     <hr class="divider">
+<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click "Trace Request" through funnel. Stage 1 (Candidate Gen): 100ms latency, simple model (LogisticRegression), finds top-1000 from millions. Stage 2 (Ranking): 200ms, complex model (DeepCTR), ranks top-1000. Stage 3 (Reranking): 50ms, adds diversity/freshness. Total: 350ms. Watch: decrease Stage 1 budget to 50ms (misses good items), overall quality drops. Each stage's latency budget matters critically.</div>
     <div class="interview-tip">Validate candidate generation recall: If top-100 candidates always miss relevant items (measured offline), increase recall@k during Stage 1—trade some latency for accuracy.</div>
     <div class="interview-tip">Parallelize if bottlenecked: Stage 1 (ANN search) and business logic (re-ranking) are parallelizable; Stage 2 (sequential scoring) is harder to parallelize.</div>
     <div class="mnemonic">Think of it as a filtering funnel: broad candidate net (high recall) → precise ranking (high precision) → final polish (business logic).</div>
@@ -381,7 +389,7 @@
 <!-- 9. SEQUENTIAL RECOMMENDATIONS: SASRec -->
 <div class="viz-section">
   <h2>Sequential Recommendations: SASRec (Self-Attention)</h2>
-  <p class="subtitle">Self-attention over user action sequence. Recent items and relevant patterns get higher attention. Predicts next item.</p>
+  <p class="subtitle">Click 'Play Sequence' to step through a user's actions. Watch self-attention weights highlight which past actions most influence the next prediction. Notice: recent items weight heavily, but the model also learns to weight semantically related items from anywhere in history. Toggle 'Attention Mask' to show attention pattern as a heatmap.</p>
   <div class="viz-canvas">
     <canvas id="sasrecCanvas" width="1000" height="450"></canvas>
   </div>
@@ -410,6 +418,7 @@
     <div class="key-point"><span class="label">Learned patterns:</span><span class="desc">Item transitions (shoe → sock → laces); recency bias (softmax places higher weight on recent items) emerges naturally</span></div>
     <div class="key-point"><span class="label">Engineering details:</span><span class="desc">Position embeddings (absolute or relative) encode temporal order; layer-normalization stabilizes; multi-head attention learns k separate relevance functions</span></div>
     <hr class="divider">
+<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click "Play Sequence" and step through user actions. Watch self-attention heatmap highlight which past actions most influence the next prediction. Toggle "Attention Mask": with mask, can't look at future actions (causal). Without mask, can (violates time order). Increase sequence length to 50 items. Transformers scale gracefully; RNNs would forget early items. This is why Transformers dominate sequence modeling.</div>
     <div class="interview-tip">Variable-length sequences: Pad to max length with special tokens, use attention mask to ignore padding. Alternatively, truncate to recent k items (e.g., last 50 items).</div>
     <div class="interview-tip">Recency bias: Emerges naturally from attention weights (recent items higher QK scores); no explicit time decay needed. Validate via attention weight visualization.</div>
     <div class="mnemonic">Self-attention = parallel RNN: each position "reads" previous positions simultaneously via learned attention weights, avoiding sequential computation.</div>
@@ -419,7 +428,7 @@
 <!-- 10. MULTI-TASK LEARNING: MMOE -->
 <div class="viz-section">
   <h2>Multi-Task Learning: MMOE (Multi-gate Mixture of Experts)</h2>
-  <p class="subtitle">Shared expert representations with per-task gating networks. Jointly learn CTR, CVR, watch-time. Show expert utilization per task.</p>
+  <p class="subtitle">Click each task tab: CTR (click-through), CVR (conversion), Watch-Time. Each has its own gating network selecting from shared experts. Watch the expert usage bar—different tasks use different experts. Task 1 might prefer Expert 2, Task 2 prefers Expert 1. Drag the 'Shared Experts' slider to see how sharing improves sample efficiency.</p>
   <div class="viz-canvas">
     <canvas id="mmoeCanvas" width="1050" height="550"></canvas>
   </div>
@@ -450,6 +459,7 @@
     <div class="key-point"><span class="label">Joint loss:</span><span class="desc">L = α·L_ctr + β·L_cvr + γ·L_watch, where α, β, γ reflect business priorities (tune on validation set)</span></div>
     <div class="key-point"><span class="label">Production gotchas:</span><span class="desc">Task calibration (different loss scales → gradient dominance); label delay (CVR takes days, CTR immediate); negative transfer (tasks conflict)</span></div>
     <hr class="divider">
+<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click task tabs (CTR, CVR, Watch-Time). Each has its own gating network that selects from shared experts. Watch "Expert Utilization" bars: does CTR prefer certain experts? Click "Shared = 0%" (no sharing, 3 separate models). Now "Shared = 100%" (one shared expert). Shared usually gives 5–10% improvement despite sharing—tasks are correlated. Slide "Task Weighting" to balance importance.</div>
     <div class="interview-tip">Handle label imbalance: CVR is ~1% (rarer than CTR ~10%). Use weighted sampling or loss weighting to balance task gradients; monitor which task dominates training.</div>
     <div class="interview-tip">Validate improvements: Compare multi-task vs CTR-only baseline. Measure both task accuracy (does each task improve?) and correlation (do tasks help each other?).</div>
     <div class="mnemonic">MoE gating = skill specialization: CTR gate prefers experts good at short-term clicks; CVR gate prefers experts predicting long-term conversions.</div>
@@ -459,7 +469,7 @@
 <!-- 11. LEARNING TO RANK: Pointwise vs Pairwise vs Listwise -->
 <div class="viz-section">
   <h2>Learning to Rank (LTR): Loss Function Comparison</h2>
-  <p class="subtitle">Pointwise: predict score per doc. Pairwise: prefer one doc over another. Listwise: optimize ranking of whole list.</p>
+  <p class="subtitle">Click the three tabs to see each loss function. Pointwise (simplest): predict score for each doc independently. Pairwise: learns ranking ('doc A > doc B'), more complex. Listwise (most complex): optimizes entire ranking order. Compare loss curves—listwise is harder to optimize but produces better rankings when it converges.</p>
   <div class="viz-canvas">
     <canvas id="ltrCanvas" width="1100" height="500"></canvas>
   </div>
@@ -490,6 +500,7 @@
     <div class="key-point"><span class="label">LambdaMART:</span><span class="desc">Computes pairwise gradients but weights by NDCG improvement (lambda gradient weighting); efficient listwise optimization</span></div>
     <div class="key-point"><span class="label">Accuracy vs Computation:</span><span class="desc">Pointwise (fast) << Pairwise (medium) << Listwise (slow but best); production typically uses LambdaMART via XGBoost/LightGBM</span></div>
     <hr class="divider">
+<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Toggle "Pointwise", "Pairwise", "Listwise" loss functions. Pointwise (simplest): treats each doc independently, ignores ranking. Pairwise: learns 'doc A > doc B'. Listwise: directly optimizes NDCG (ranking metric). Compare convergence: Pointwise converges fast but gives mediocre ranking. Listwise is harder to optimize but produces best final ranking. Click "Show Metrics" to see NDCG, MRR, MAP differences.</div>
     <div class="interview-tip">Why does pointwise fail on ranked outputs? Position bias: top-ranked docs receive more clicks regardless of relevance. Evaluation metric mismatch: classification loss doesn't align with NDCG/MRR metrics.</div>
     <div class="interview-tip">Variable-length lists: Pad with negative labels (rank 0) to uniform length. LambdaMART handles missing labels gracefully (skips pairs with missing labels).</div>
     <div class="mnemonic">Pointwise = per-item scores ignoring context; Pairwise = respecting relative order; Listwise = optimizing the entire ranked order for metric.</div>
@@ -499,7 +510,7 @@
 <!-- 12. ADS & MONETIZATION: Auction & Attribution -->
 <div class="viz-section">
   <h2>Ads & Monetization: Auction & Attribution Models</h2>
-  <p class="subtitle">Ad ranking: bid × CTR × quality_score. Attribution: last-click vs multi-touch for conversion credit.</p>
+  <p class="subtitle">Adjust the Bid, CTR, Quality Score sliders and watch the final Rank = bid × CTR × quality change. High bid alone doesn't guarantee rank—quality matters. Then toggle 'Attribution' to see two approaches: Last-Click (simple, biased) vs Multi-Touch (fair). Multi-touch gives credit to all touchpoints in the conversion path.</p>
   <div class="viz-canvas">
     <canvas id="adsCanvas" width="1050" height="550"></canvas>
   </div>
@@ -520,6 +531,7 @@
     <div class="key-point"><span class="label">Attribution:</span><span class="desc">Last-click (simple, biased); linear (fair); time-decay (recent ads more credit); Shapley value (game-theory fair, expensive)</span></div>
     <div class="key-point"><span class="label">Production risks:</span><span class="desc">Feedback loops (ads affect exposure → clicks → retraining); position bias (top ads get more clicks); brand safety (toxic adjacencies); budget constraints</span></div>
     <hr class="divider">
+<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Adjust Bid, pCTR, Quality Score sliders. Watch Rank = Bid × pCTR × Quality change. High bid doesn't guarantee rank if quality is low. Then toggle "Attribution": Last-Click gives all credit to final touchpoint (impression before conversion). Multi-Touch spreads credit across all impressions. Watch how budget allocation changes. Multi-Touch is fairer, reveals which channels truly drive conversions.</div>
     <div class="interview-tip">Budget constraints: Advertisers cap daily spend; challenge is allocating limited budget across ads. Use online optimization (bid adjustment) to respect budgets while maximizing CTR.</div>
     <div class="interview-tip">Multi-touch attribution: Why harder? Multiple touchpoints in user journey; isolating which ad caused conversion is confounded by user intent. Shapley value fair but computationally expensive.</div>
     <div class="mnemonic">Think of auction equation as: (Advertiser value) × (User relevance) × (Platform quality); all three terms must be non-zero for ads to rank well.</div>
@@ -529,14 +541,14 @@
 <!-- 13. DENSE RETRIEVAL & SEARCH: Bi-encoder vs Cross-encoder -->
 <div class="viz-section">
   <h2>Dense Retrieval: Bi-encoder vs Cross-encoder vs ColBERT</h2>
-  <p class="subtitle">Bi-encoder: independent embeddings (fast but lower quality). Cross-encoder: joint scoring (slower but more accurate). ColBERT: late interaction compromise.</p>
+  <p class="subtitle">Click 'Bi-Encoder': embeds query and doc independently, scores by dot product—fast. Click 'Cross-Encoder': scores query+doc jointly—slow but more accurate. Click 'ColBERT': embeds independently but scores via late interaction (token-level matching)—best of both. See the accuracy vs speed tradeoff: Bi-Encoder fast, Cross-Encoder accurate, ColBERT balanced.</p>
   <div class="viz-canvas">
     <canvas id="denseCanvas" width="1100" height="520"></canvas>
   </div>
   <div class="controls">
     <div class="control-group">
       <label>Candidate Pool Size</label>
-      <input type="range" id="denseCandidates" min="100" max="10000" value="1000" value="1000" oninput="drawDenseRetrieval()">
+      <input type="range" id="denseCandidates" min="100" max="10000" value="1000" oninput="drawDenseRetrieval()">
       <span class="value" id="denseCandidatesVal">1k docs</span>
     </div>
     <button class="btn" onclick="drawDenseRetrieval()">⟳ Refresh</button>
@@ -559,6 +571,7 @@
     <div class="key-point"><span class="label">Production hybrid:</span><span class="desc">BM25 (cheap retrieval) → bi-encoder re-rank (efficient) → cross-encoder/ColBERT refine top-k (accurate); multi-signal fusion</span></div>
     <div class="key-point"><span class="label">Cold-start new docs:</span><span class="desc">Compute embeddings from content (metadata, title, body); no user interaction history required; fine-tune as signals accumulate</span></div>
     <hr class="divider">
+<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Toggle "Bi-Encoder" (fast), "Cross-Encoder" (accurate), "ColBERT" (hybrid). Bi-Encoder: encodes query and doc separately, scores by dot product. Latency: 1ms per doc (fast). Cross-Encoder: encodes query+doc jointly, slow (100ms per doc) but 10% more accurate. ColBERT: token-level late interaction—fast (10ms), nearly cross-encoder quality. For candidate gen, use Bi-Encoder. For reranking top-100, use Cross-Encoder. ColBERT is sweet spot.</div>
     <div class="interview-tip">Why does ColBERT avoid early-interaction bottleneck? Standard dense matching locks in interaction decision at embedding time; ColBERT defers to serving (per-token flexibility).</div>
     <div class="interview-tip">Measure retrieval quality: recall@k (fraction of relevant docs in top-k), MRR (mean reciprocal rank of first relevant doc), NDCG. Validate on holdout relevance judgments.</div>
     <div class="mnemonic">Bi-encoder = fast approximate search; Cross-encoder = slow precise scoring; ColBERT = fast token-level flexibility for accurate re-ranking.</div>

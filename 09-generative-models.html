@@ -61,7 +61,7 @@
 
         .section-content {
             display: grid;
-            grid-template-columns: 2fr 1fr;
+            grid-template-columns: 1fr 1fr;
             gap: 20px;
             align-items: start;
         }
@@ -245,6 +245,7 @@
   .insight-box .comparison .option .opt-title { color: #e056fd; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
   .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
   .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
+  .insight-box { grid-column: 1 / -1; }
 
 </style>
 </head>
@@ -258,6 +259,7 @@
         <!-- VAE Section -->
         <div class="section">
             <h2>1. Variational Autoencoder (VAE)</h2>
+            <p style="color: #a0a0b0; margin-bottom: 15px;">Increase the β (KL Weight) slider—watch the latent space collapse toward a smooth Gaussian (good for interpolation, but reconstructions get blurry). Decrease it—latent space becomes chaotic (sharp reconstructions, but interpolation fails). The sweet spot? That's the VAE tradeoff. Use Latent Dimension to control expressiveness.</p>
             <div class="section-content">
                 <div class="visualization">
                     <div style="margin-bottom: 10px;">
@@ -323,8 +325,10 @@
                         </div>
 
                         <div class="interview-tip">Tuning β: critical, often overlooked. Wrong β gives fuzzy reconstructions (low β) or collapsed latents (high β).</div>
+                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set β to 0.1 and click Train Step—reconstructions stay sharp but latent becomes spaghetti. Set β to 1.0—smoother interpolation, slight blur. Set to 2.0—clean Gaussian but fuzzy outputs. The sweet spot (usually β=0.3-0.7) balances both.</div>
 
                         <div class="interview-tip">Posterior collapse: if KL → 0 after few epochs, you have collapse. Use KL warmup schedule to prevent.</div>
+                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Watch the KL Divergence stat as you train. If it drops to 0 (encoder ignored), collapse happened. Increase Latent Dimension or adjust β warmup to prevent. Collapse means z ≈ N(0,1) regardless of x—the encoder learned nothing.</div>
 
                         <hr class="divider">
 
@@ -340,6 +344,7 @@
         <!-- Diffusion Section -->
         <div class="section">
             <h2>2. Diffusion Models</h2>
+            <p style="color: #a0a0b0; margin-bottom: 15px;">Slide the Timestep (t) from 0 to 100—watch the forward process add noise gradually. Then animate the reverse process (denoising). Try different Noise Schedules—linear is simple, cosine allocates more steps to fine details. The schedule is a critical tuning knob for quality.</p>
             <div class="section-content">
                 <div class="visualization">
                     <div style="margin-bottom: 10px;">
@@ -413,8 +418,10 @@
                         </div>
 
                         <div class="interview-tip">Variance schedule (linear, cosine, etc.) tunes quality. Wrong schedule = poor samples. Critical tuning knob.</div>
+                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Select Cosine schedule on the dropdown—watch Signal Ratio and Noise Ratio evolve. Cosine spends more time at high SNR (fine details). Switch to Linear—uniform noise addition. Try both with Timestep slider to see signal preservation differences.</div>
 
                         <div class="interview-tip">Score matching = predict noise, not mean directly. More stable training than explicit mean prediction.</div>
+                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: As you animate, the network predicts ε at each step t. That's score matching (noise prediction). It's more stable than predicting the mean μ directly. Try T=1000 (many steps, high quality, slow) vs T=50 (few steps, faster, slight quality loss).</div>
 
                         <hr class="divider">
 
@@ -435,6 +442,7 @@
         <!-- GAN Section -->
         <div class="section">
             <h2>3. GAN Training Dynamics</h2>
+            <p style="color: #a0a0b0; margin-bottom: 15px;">Watch Generator vs Discriminator loss curves as training progresses. GAN is a two-player game: D tries to distinguish real from fake, G tries to fool D. Unstable equilibrium—no convergence guarantee. Adjust learning rates to see collapse or mode coverage breakdown.</p>
             <div class="section-content">
                 <div class="visualization">
                     <div style="margin-bottom: 10px;">
@@ -460,6 +468,7 @@
         <!-- Classifier-Free Guidance -->
         <div class="section">
             <h2>5. Classifier-Free Guidance: Conditional Generation Control</h2>
+            <p style="color: #a0a0b0; margin-bottom: 15px;">Increase the guidance weight (w) slider—watch the model commit harder to the conditional signal (class, text, etc.). At w=0, pure unconditional samples. At w=1, balanced conditional. At w=15+, mode collapse and artifacts. Find your w sweet spot, then sample multiple times to see diversity collapse.</p>
             <div class="section-content">
                 <div class="visualization">
                     <canvas id="cfgCanvas" width="480" height="300"></canvas>
@@ -499,8 +508,10 @@
                         </div>
 
                         <div class="interview-tip">High w (w>15) causes mode collapse, artifacts, saturated colors, over-sharpening. Guidance cannot "invent" outside training data.</div>
+                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set w=1.0 and generate—natural samples respecting condition. w=7.0—sharp, committed samples. w=20.0—oversaturated, distorted. Guidance amplifies what the model learned; it can't "imagine" beyond training data. Typical range: w=7-15 for best results.</div>
 
                         <div class="interview-tip">Guidance is orthogonal to likelihood. Doesn't improve likelihood, just reweights sampling distribution toward condition.</div>
+                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Guidance reweights—doesn't improve the model itself, just changes sampling strategy toward the condition. Think: "which samples from the model match the condition best?" Higher w = stricter filtering. Monitor diversity alongside quality.</div>
 
                         <hr class="divider">
 
@@ -521,6 +532,7 @@
         <!-- Latent Diffusion / Stable Diffusion -->
         <div class="section">
             <h2>6. Latent Diffusion & Stable Diffusion</h2>
+            <p style="color: #a0a0b0; margin-bottom: 15px;">Diffusion in latent space (not pixel space) enables fast generation. Increase Latent Scale to compress representations; the VAE reconstructs after denoising. Watch reconstruction quality vs speed tradeoff. CLIP text embeddings condition the process—adjust to see semantic control.</p>
             <div class="section-content">
                 <div class="visualization">
                     <canvas id="latentDiffCanvas" width="480" height="300"></canvas>
@@ -559,8 +571,10 @@
                         </div>
 
                         <div class="interview-tip">Latent scaling (0.18 in Stable Diffusion) important. Posterior scaling matches diffusion model's expected statistics. Fine-tune diffusion, freeze VAE.</div>
+                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Adjust latent scale on slider—too small, noisy latents; too large, saturated colors. 0.18 is Stable Diffusion's magic number. The VAE encoder/decoder is frozen (pre-trained); only the diffusion U-Net is trained. This separation makes fine-tuning efficient.</div>
 
                         <div class="interview-tip">Text encoders (CLIP, T5) condition via cross-attention. Conditioning orthogonal to latent compression benefit. Can swap independently.</div>
+                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: CLIP embeddings inject semantic control via cross-attention. Swap to T5 (better language understanding)—different semantic space, same diffusion. Test text control: change prompt semantics. The text encoder is modular—swap for better ones.</div>
 
                         <hr class="divider">
 
@@ -581,6 +595,7 @@
         <!-- VQ-VAE -->
         <div class="section">
             <h2>7. VQ-VAE: Vector Quantization for Discrete Latents</h2>
+            <p style="color: #a0a0b0; margin-bottom: 15px;">Adjust Codebook Size (K)—more codewords = more expressive but entropy-bounded. Watch reconstruction quality vs codebook utilization. Lower K = information bottleneck (some samples map to same codeword). Increase K—utilization improves, but risk collapse if K too large.</p>
             <div class="section-content">
                 <div class="visualization">
                     <canvas id="vqvaeCanvas" width="480" height="300"></canvas>
@@ -629,8 +644,10 @@
                         </div>
 
                         <div class="interview-tip">Codebook collapse: if K too large, some embeddings unused (reduce effective quantization). Use EMA updates + per-embedding loss penalty.</div>
+                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set K=512 (reasonable). Watch utilization %—good coverage. Increase to K=2048—some codewords unused, collapse risk. Decrease to K=64—forced quantization, lower quality. K=256-512 typical for most datasets. Monitor: dead codewords = wasted capacity.</div>
 
                         <div class="interview-tip">Entropy bottleneck: each token carries log K bits. Too small K = poor reconstruction. Too large K = entropy unbounded.</div>
+                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: K=64 → log(64)=6 bits per code. K=256 → 8 bits. K=1024 → 10 bits. Fewer bits = compression but info loss. More bits = fidelity but less compression. Tradeoff is fundamental. Choose K to balance your latent size constraint vs quality needs.</div>
 
                         <hr class="divider">
 
@@ -652,6 +669,7 @@
         <!-- U-Net vs DiT -->
         <div class="section">
             <h2>8. U-Net vs DiT: Architecture for Diffusion</h2>
+            <p style="color: #a0a0b0; margin-bottom: 15px;">Toggle between U-Net (CNN-based) and DiT (Transformer-based). Watch latency and FLOP count. U-Net is deployed widely (fast), DiT is research (quadratic complexity). For 4K+ resolution, U-Net with sparse attention beats DiT. Scale-wise, DiT follows LLM-like improvements; U-Net plateaus.</p>
             <div class="section-content">
                 <div class="visualization">
                     <canvas id="architectureCanvas" width="480" height="350"></canvas>
@@ -684,8 +702,10 @@
                         <hr class="divider">
 
                         <div class="interview-tip">U-Net skip design matters. Poor skips limit quality. DiT quadratic complexity prohibitive for 4K (use sparse/linear attention, pruning).</div>
+                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: U-Net uses skip connections from encoder to decoder (crucial for quality). Toggle architecture—notice U-Net is faster. For high resolutions, U-Net wins unless you can afford sparse/linear attention on DiT. Skip design = major quality lever.</div>
 
                         <div class="interview-tip">U-Net: improvements plateau with size. DiT: continues improving (LLM-like scaling). DiT = future-proof but engineering-intensive.</div>
+                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Increase model depth in both—U-Net quality flattens beyond ~300M params. DiT keeps improving. This is why research favors DiT (long-term scaling), but production prefers U-Net (proven efficiency). Choose based on scale: small=U-Net, large=DiT.</div>
 
                         <div class="key-point">
                             <span class="label">Production:</span>
@@ -759,8 +779,10 @@
                         </div>
 
                         <div class="interview-tip">Vanishing gradients: D confident (output 0 or 1) = small gradients = training stalls. Use Wasserstein loss or Lipschitz constraint (spectral norm).</div>
+                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Standard GAN (BCE loss) vanishes gradients when D confidence = 0 or 1. Wasserstein GAN (WGAN) = Earth-Mover distance, smoother gradients. Toggle on canvas: watch vanilla GAN mode coverage collapse while WGAN stays stable. Spectral normalization enforces 1-Lipschitz discriminator.</div>
 
                         <div class="interview-tip">Training instability: G/D learning rates must be tuned together. No guarantee of Nash convergence (may cycle/diverge). Different archs need different schedules.</div>
+                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set Generator LR=0.0002, Discriminator LR=0.0004 (typical). Balance is critical: if G too fast, D can't keep up (mode collapse). If D too fast, G starves (vanishing gradients). Use spectral norm, instance norm, gradient penalties to stabilize. Monitor loss ratio.</div>
 
                         <hr class="divider">
 
@@ -781,6 +803,7 @@
         <!-- Flow Models Section -->
         <div class="section">
             <h2>4. Flow-Based Models</h2>
+            <p style="color: #a0a0b0; margin-bottom: 15px;">Invertible function f transforms data distribution to base distribution. Exact likelihood via Jacobian determinant (change of variables). Adjust flow depth and hidden dimension. Watch log-determinant track model capacity. Perfect likelihood but slower than diffusion.</p>
             <div class="section-content">
                 <div class="visualization">
                     <div style="margin-bottom: 10px;">
@@ -857,8 +880,10 @@
                         </div>
 
                         <div class="interview-tip">Likelihood ≠ quality. Exact likelihood can be far from log-prob if overtrained. Monitor both likelihood + FID. Likelihood alone insufficient.</div>
+                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Flow models compute exact likelihood (Jacobian determinant). High likelihood doesn't guarantee good samples (overfitting to low-probability regions). Coupling layers (triangular Jacobian) = O(d) determinant. Monitor log|det(J)| on canvas. Evaluate likelihood + FID + IS together for full picture.</div>
 
                         <div class="interview-tip">Jacobian efficiency critical. Coupling layers triangular = O(d) determinant. Naive = O(d³) via LU. Use special structure.</div>
+                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Coupling layers: x' = (x_1, x_2 ⊕ t(x_1)). Jacobian is triangular (determinant = product diagonal). O(d) vs O(d³) for dense. Autoregressive flows: p(x) = ∏p(x_i|x_{<i}). Both enable efficient likelihood. Slow sampling (sequential x_i), fast training.</div>
 
                         <hr class="divider">
 

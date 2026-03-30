@@ -305,6 +305,7 @@
         <!-- Section 1: Data Parallelism vs Model Parallelism -->
         <div class="section">
             <div class="section-title">Data Parallelism vs Model Parallelism</div>
+            <p class="subtitle">Click the Data Parallel, Model Parallel, and Pipeline Parallel buttons. Watch how GPUs communicate—data parallel broadcasts weights, model parallel passes activations. Notice the communication overhead tradeoff.</p>
 
             <div class="content-wrapper">
                 <div class="visualization">
@@ -374,6 +375,7 @@
                 <hr class="divider">
                 <div class="interview-tip">Communication vs computation ratio: If model has X FLOPs and communication transfers Y bytes, ratio = Y/X. High ratio = communication-bound; low ratio = compute-bound.</div>
                 <div class="interview-tip">Reduce synchronization: Gradient accumulation (accumulate over k batches before sync), communication-computation overlap (compute while communicating), reduce precision (FP16 transfers 2x less data).</div>
+                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set k=64 and toggle data parallelism ON with 4 GPUs. Observe all-reduce overhead. Increase k to 512 and notice per-GPU gradient communication cost. Then try model parallelism with k=2048 and watch different GPUs become communication bottlenecks.</div>
                 <div class="mnemonic">Data parallelism = many workers, one model copy each; Model parallelism = one worker per model shard (harder to coordinate).</div>
             </div>
         </div>
@@ -381,6 +383,7 @@
         <!-- Section 2: Learning Rate Schedules -->
         <div class="section">
             <div class="section-title">Learning Rate Schedules</div>
+            <p class="subtitle">Drag the learning rate slider from 0.0001 to 0.1. Watch training curves oscillate or diverge—find the "Goldilocks" rate. Then toggle different schedules (Linear, Exponential, Cosine) and observe convergence patterns.</p>
 
             <div class="content-wrapper">
                 <div class="visualization">
@@ -443,6 +446,7 @@
                 <hr class="divider">
                 <div class="interview-tip">Warmup necessity: Large-batch training destabilizes early iterations (gradient norms vary wildly); warmup smooths initial gradient flow. Without it, loss explodes.</div>
                 <div class="interview-tip">Validate schedule: Plot training loss curve. Does earlier decay help (lower final loss) or hurt (slower convergence)? Validate on final validation metric.</div>
+                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Start with LR=0.001 and watch smooth training. Increase to 0.01 and see oscillations. Jump to 0.1 and watch divergence. Then select "Cosine" schedule and watch LR decay smoothly—better convergence than constant. Try "Exponential" with different decay rates.</div>
                 <div class="mnemonic">Warmup = preparation (stabilize); cosine = smooth descent (avoid shocks); flat minima = robustness (generalize well).</div>
             </div>
         </div>
@@ -450,6 +454,7 @@
         <!-- Section 3: Mixed Precision Training -->
         <div class="section">
             <div class="section-title">Mixed Precision Training (FP32 vs FP16 vs BF16)</div>
+            <p class="subtitle">Toggle between FP32, FP16, and BF16 using the dropdown. Watch memory usage drop and speed increase with lower precision. Observe where numerical instability appears and how loss scaling prevents underflow.</p>
 
             <div class="content-wrapper">
                 <div class="visualization">
@@ -517,6 +522,7 @@
                 <hr class="divider">
                 <div class="interview-tip">Debug numerical instabilities: Monitor loss and gradient norms across iterations. Exploding norms → reduce LR or increase loss scaling. NaN/Inf → investigate data or loss function.</div>
                 <div class="interview-tip">When to use BF16 vs FP16: BF16 has range advantage (prefer unless hardware accelerates FP16). If gradient norms are very small (< 1e-4), loss scaling must be more aggressive.</div>
+                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Train with FP32 and watch memory usage and speed. Switch to FP16 and see 2x speedup, half memory. Try BF16 (faster overflow protection) and compare stability. Set loss scaling to 1.0 with FP16 and watch gradients underflow; increase scaling to 1024 and recover.</div>
                 <div class="mnemonic">FP16 = fast but fragile (underflow risk); BF16 = fast and robust (range-safe); loss scaling = safety net (prevent underflow).</div>
             </div>
         </div>
@@ -524,6 +530,7 @@
         <!-- Section 4: Gradient Accumulation -->
         <div class="section">
             <div class="section-title">Gradient Accumulation</div>
+            <p class="subtitle">Drag the Accumulation Steps slider from 1 to 16. Watch how effective batch size grows without increasing GPU memory. Observe the gradient norm—when does it become too small?</p>
 
             <div class="content-wrapper">
                 <div class="visualization">
@@ -587,6 +594,7 @@
                 <hr class="divider">
                 <div class="interview-tip">Batch size for stable training: Typical rule is 32-256 for vision, 64-512 for NLP. If loss noisy, increase batch size; if gradient updates too conservative, decrease.</div>
                 <div class="interview-tip">Choose accumulation steps: If effective batch B needed but GPU memory only holds B/N, use N accumulation steps. Example: want batch 512, GPU holds 128 → N=4 steps.</div>
+                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set batch size=16, accumulation=1 (total 16). Then keep batch=8, accumulation=2 (same total, less memory). Compare training curves—should match. Increase accumulation to 8 with batch=2 and observe when accumulated gradient becomes stale.</div>
                 <div class="mnemonic">Gradient accumulation = financial analogy: collect payments (gradients) over time, apply one large transaction (optimizer step) periodically.</div>
             </div>
         </div>
@@ -594,6 +602,7 @@
         <!-- Section 5: ZeRO Optimization -->
         <div class="section">
             <div class="section-title">ZeRO Optimization Stages (DeepSpeed)</div>
+            <p class="subtitle">Click through ZeRO Stages 0→1→2→3. Watch memory per-GPU drop as optimizer states, gradients, then parameters partition across GPUs. Notice the all-gather communication cost appearing.</p>
 
             <div class="content-wrapper">
                 <div class="visualization">
@@ -660,6 +669,7 @@
                 <hr class="divider">
                 <div class="interview-tip">Communication overhead analysis: If bandwidth is B GB/s and gather 1TB parameters, overhead = 1TB / B seconds per iteration. Example: 100 GB/s × 1TB = 10s overhead—significant.</div>
                 <div class="interview-tip">When to offload to CPU: GPU memory < 10GB available; trade GPU-CPU PCIe bandwidth for GPU VRAM. Typical: CPU offloading worthwhile only if PCIe bandwidth > 50 GB/s.</div>
+                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Stage 0 (no sharding) baseline—see full optimizer/gradient/param memory. Stage 1: optimizer state splits (25% memory). Stage 2: gradients split (50% total). Stage 3: parameters split (75% total, all-gather on backward). Watch memory drop and communication increase.</div>
                 <div class="mnemonic">ZeRO = sharing is caring: partition parameters/gradients across GPUs, gather only what's needed, reduce per-GPU memory drastically.</div>
             </div>
         </div>
@@ -667,6 +677,7 @@
         <!-- Activation Checkpointing -->
         <div class="section">
             <div class="section-title">Activation Checkpointing</div>
+            <p class="subtitle">Toggle checkpointing ON/OFF. Watch memory drop dramatically when enabled (recomputes activations instead of storing). Then increase batch size—see how checkpointing unlocks larger batches at modest speed cost.</p>
             <div style="display:flex;flex-wrap:wrap;gap:15px;align-items:flex-start;">
                 <div style="flex:1;min-width:300px;">
                     <canvas id="checkpointCanvas" width="600" height="300" style="width:100%;background:#0f0f17;border-radius:6px;"></canvas>
@@ -718,6 +729,7 @@
                 <hr class="divider">
                 <div class="interview-tip">Debug checkpointing: Verify gradients match between checkpointed and non-checkpointed via numerical differentiation (finite differences); catches recomputation errors.</div>
                 <div class="interview-tip">Choose k (checkpoint frequency): Start k=√L; if still OOM, increase k (less checkpoints, more recompute). If mostly memory-bound, decrease k (more checkpoints, less recompute).</div>
+                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Batch=32 without checkpointing—set as baseline memory. Enable checkpointing and memory drops 50%. Now increase batch to 64 with checkpointing (same peak memory as original batch 32). Observe speed slowdown (recomputation overhead) vs memory savings.</div>
                 <div class="mnemonic">Checkpointing = bookmarks: mark certain pages (layers), skip middle pages during reading (backward), flip back to marked pages to reread (recompute).</div>
             </div>
         </div>
@@ -725,6 +737,7 @@
         <!-- Training Monitoring -->
         <div class="section">
             <div class="section-title">Training Monitoring & Debugging</div>
+            <p class="subtitle">Watch the live training curves—loss should decrease smoothly. Click "Inject Gradient Explosion" and observe loss spike. Then adjust gradient clipping and watch recovery. Toggle "Sync Loss" to see how async updates cause divergence.</p>
             <div style="display:flex;flex-wrap:wrap;gap:15px;align-items:flex-start;">
                 <div style="flex:1;min-width:300px;">
                     <canvas id="monitoringCanvas" width="600" height="300" style="width:100%;background:#0f0f17;border-radius:6px;"></canvas>
@@ -767,6 +780,7 @@
                 <hr class="divider">
                 <div class="interview-tip">Leading indicators of failure: Gradient norms explode 1-2 iterations before NaN loss; catch early via norm thresholds (alert if >100).</div>
                 <div class="interview-tip">Monitoring architecture: Central logging (W&B, TensorBoard, MLflow) with alerting thresholds; saves best validation model (not last); enables post-hoc analysis.</div>
+                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Run training, watch loss decrease smoothly. Click "Inject Gradient Explosion"—loss spikes, training breaks. Increase gradient clip norm from 1.0 to 10.0 and training recovers. Toggle "Async Update" ON and observe loss divergence despite gradient clipping.</div>
                 <div class="mnemonic">Monitor = early warning system: gradient norms → health check; loss curve → performance; throughput → efficiency.</div>
             </div>
         </div>
@@ -774,6 +788,7 @@
         <!-- Hardware Awareness / Roofline Model -->
         <div class="section">
             <div class="section-title">Hardware Awareness & Roofline Model</div>
+            <p class="subtitle">Drag Arithmetic Intensity slider to see where compute becomes GPU-bound (roofline ceiling). Below the ridge = memory-bound (optimize memory). Above = compute-bound (optimize kernels). Toggle hardware to see roofline change.</p>
             <div style="display:flex;flex-wrap:wrap;gap:15px;align-items:flex-start;">
                 <div style="flex:1;min-width:300px;">
                     <canvas id="hardwareCanvas" width="600" height="300" style="width:100%;background:#0f0f17;border-radius:6px;"></canvas>
@@ -828,6 +843,7 @@
                 <hr class="divider">
                 <div class="interview-tip">Calculate AI for your model: Count FLOPs (matrix multiplications, convolutions) and memory transfers (gradient updates, batch norm). High AI = compute-bound (optimize compute); low AI = memory-bound (optimize memory access).</div>
                 <div class="interview-tip">Quantization effect: Lower precision reduces memory traffic (good for memory-bound ops) but reduces compute (hurts compute-bound ops). Analyze AI before and after quantization.</div>
+                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Low arithmetic intensity (left side of graph)—model is memory-bound (roofline ceiling set by memory BW). High AI (right side)—compute-bound (ceiling by FLOPS). Drag slider to the "ridge" where memory and compute balance. Toggle GPU and watch roofline angle steepen (higher memory BW on newer GPUs).</div>
                 <div class="mnemonic">Roofline = ceiling for performance: either compute or memory bandwidth caps you; find which and optimize that bottleneck.</div>
             </div>
         </div>
@@ -1715,7 +1731,7 @@
                 memUsage = 100;
                 computeOverhead = 0;
             } else if (checkpointType === 'selective') {
-                memUsage = Math.sqrt(100);
+                memUsage = 50;
                 computeOverhead = 15;
             } else {
                 memUsage = 20;

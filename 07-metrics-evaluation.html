@@ -336,6 +336,7 @@
   .insight-box .comparison .option .opt-title { color: #ffd93d; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
   .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
   .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
+  .insight-box { grid-column: 1 / -1; }
 
 </style>
 </head>
@@ -349,6 +350,7 @@
         <!-- Section 1: ROC Curve & AUC -->
         <div class="section">
             <h2>📊 ROC Curve & AUC</h2>
+            <p class="subtitle">Drag the Classification Threshold slider left (toward 0.0) and right (toward 1.0). Watch TPR rise (catch more positives) while FPR also rises (more false alarms). The ROC curve traces all tradeoffs. Diagonal line = random guessing (AUC=0.5). Your curve should bow toward top-left.</p>
             <div class="section-content">
                 <div class="viz-area">
                     <canvas id="rocCanvas" width="400" height="400"></canvas>
@@ -413,6 +415,8 @@
 
                         <div class="interview-tip">Why report AUC instead of picking one threshold? Different applications have different false positive vs. false negative costs. AUC lets stakeholders choose their operating point.</div>
 
+                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set threshold to 0.1—TPR soars near 1.0, FPR near 1.0. Drag to 0.9—TPR drops to 0.1, FPR to 0.01. Watch the red dot trace the curve. At 0.5, is it above or below diagonal? Drag to find where AUC=0.75 line would intersect.</div>
+
                         <hr class="divider">
 
                         <p><strong>Key insight:</strong> AUC = probability that model ranks a random positive higher than a random negative. For AUC=0.85, 85% of positive-negative pairs are ranked correctly.</p>
@@ -434,6 +438,7 @@
         <!-- Section 2: Precision-Recall Curve -->
         <div class="section">
             <h2>📈 Precision-Recall Curve</h2>
+            <p class="subtitle">Drag the Confidence Threshold slider to adjust. Watch precision (how many predicted positives are actually positive) vs recall (how many actual positives you catch). The curve shape reveals class imbalance—imbalanced datasets drop recall faster as threshold increases.</p>
             <div class="section-content">
                 <div class="viz-area">
                     <canvas id="prCanvas" width="400" height="400"></canvas>
@@ -487,6 +492,8 @@
 
                         <div class="interview-tip">Can a model have high precision but low recall? Yes! Predict positive only on high-confidence examples. E.g., fraud detection at 95% precision but 5% recall (catches few frauds).</div>
 
+                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set confidence threshold to 0.1 and watch recall spike (catch all positives) but precision tank. Drag to 0.9 and precision rises but recall crashes. Find the 'sweet spot' at 0.5. Does this curve show class imbalance?</div>
+
                         <hr class="divider">
 
                         <div class="key-point">
@@ -506,6 +513,7 @@
         <!-- Section 3: Confusion Matrix -->
         <div class="section">
             <h2>🎯 Confusion Matrix & Derived Metrics</h2>
+            <p class="subtitle">Toggle the Decision Threshold slider. Watch the confusion matrix cells change—TP and TN increase while FP and FN decrease (or vice versa). See how Accuracy, Precision, Recall, F1 all shift with the threshold. Different metrics reward different outcomes.</p>
             <div class="section-content">
                 <div class="viz-area">
                     <canvas id="cmCanvas" width="450" height="400"></canvas>
@@ -559,6 +567,8 @@
 
                         <div class="interview-tip">When do false positives cost more than false negatives? When alerting users with false positives is expensive/annoying (spam), or triggers costly human review.</div>
 
+                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Toggle threshold from 0.1 to 0.9 and watch TP+TN peak at different thresholds than FP+FN. Notice when Accuracy=95% but Recall=10%—model predicts too many negatives. Find the threshold matching your business cost (FP vs FN).</div>
+
                         <hr class="divider">
 
                         <div class="key-point">
@@ -578,6 +588,7 @@
         <!-- Section 4: Calibration Plot -->
         <div class="section">
             <h2>⚖️ Calibration Plot & Confidence</h2>
+            <p class="subtitle">Compare the blue diagonal (perfect calibration) to your red model curve. If red is above diagonal, model is overconfident. Below diagonal = underconfident. Drag the temperature slider to re-calibrate predictions and watch the curve shift toward the diagonal.</p>
             <div class="section-content">
                 <div class="viz-area">
                     <canvas id="calCanvas" width="400" height="400"></canvas>
@@ -642,6 +653,8 @@
 
                         <div class="interview-tip">Why does my neural network output 99% confidence on wrong predictions? DNNs optimize for accuracy, not calibration. Use dropout, weight decay, label smoothing, or post-hoc calibration.</div>
 
+                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Compare the blue diagonal (perfect) to red model curve. If red is above = overconfident (says 70%, actually 50%). Below = underconfident. Drag temperature slider left (T=0.5) and watch red bend toward diagonal—calibration improves.</div>
+
                         <div class="key-point">
                             <span class="label">Post-hoc fixes:</span>
                             <span class="desc"><strong>Temperature scaling</strong>: p_cal = softmax(logits/T), T>1 reduces overconfidence. <strong>Isotonic regression</strong>: fit monotonic mapping, preserves ranking.</span>
@@ -663,6 +676,7 @@
         <!-- Section 5: Ranking Metrics -->
         <div class="section">
             <h2>🏆 Ranking Metrics: NDCG & MAP</h2>
+            <p class="subtitle">Adjust the Ranking Position slider to see how early mistakes (wrong items at rank 1) devastate NDCG more than late mistakes (wrong items at rank 10). Toggle between NDCG and MAP to compare position-weighted (NDCG) vs simple average (MAP) ranking quality.</p>
             <div class="section-content">
                 <div>
                     <label style="color: #ffd93d; font-weight: 600; margin-bottom: 10px; display: block;">Drag to reorder results (affects DCG, NDCG, MAP)</label>
@@ -745,6 +759,8 @@
                         <hr class="divider">
 
                         <div class="interview-tip">Position bias trap: Users rarely scroll past position 5. Clicks NOT reliable relevance signals. Models learn to exploit this. Use inverse propensity weighting.</div>
+
+                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Move wrong item to position 1 and watch NDCG crash to ~0.5 (huge log penalty). Move same item to position 5 and NDCG rises to ~0.85 (smaller penalty). Compare to MAP—it penalizes position 1 and 5 equally. At position 10, which metric cares more, NDCG or MAP?</div>
 
                         <div class="key-point">
                             <span class="label">Production rule:</span>
@@ -1250,12 +1266,13 @@
             const items = Array.from(rankingList.querySelectorAll('.dnd-item'));
             let dcg = 0, idcg = 0;
             const idealOrder = [3, 1, 3, 1, 0];
+            const sortedIdeal = idealOrder.slice().sort((a, b) => b - a);
 
             for (let i = 0; i < items.length; i++) {
                 const docName = items[i].textContent.split('\n')[0].trim();
                 const rel = relevanceScores[docName] || 0;
                 dcg += rel / Math.log2(i + 2);
-                idcg += idealOrder.sort((a, b) => b - a)[i] / Math.log2(i + 2);
+                idcg += sortedIdeal[i] / Math.log2(i + 2);
             }
 
             const ndcg = idcg > 0 ? dcg / idcg : 0;

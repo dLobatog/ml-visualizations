@@ -336,6 +336,7 @@
         <!-- 1. ML Pipeline Architecture -->
         <div class="section">
             <h2>1. ML Pipeline Architecture</h2>
+            <p class="subtitle">Click the Offline and Online Pipeline buttons to trace data flow. Watch how each path optimizes for different constraints—offline prioritizes accuracy, online prioritizes speed.</p>
             <div class="controls">
                 <button onclick="togglePath('offline')">Offline Pipeline</button>
                 <button onclick="togglePath('online')">Online Pipeline</button>
@@ -359,6 +360,7 @@
                     <div class="interview-tip">Data quality is foundational: bad labels (late feedback, label noise) propagate through retraining cycles, degrading all downstream models. Implement data quality checks early.</div>
                     <div class="interview-tip">Feedback loops can amplify biases: popular items get more exposure → more training data → stronger model → more exposure (rich-get-richer problem). Monitor for feedback loop amplification.</div>
                     <div class="mnemonic">Offline = preparation (take time to validate); Online = execution (must be fast); feedback loop = learning (continuously improve).</div>
+                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click "Offline Pipeline" and trace the training loop from raw logs through feature engineering. Then click "Online Pipeline" and observe the latency constraint (50-300ms) forcing lighter computation. Finally click both to see how offline accuracy and online speed coexist in production.</div>
                 </div>
             </div>
         </div>
@@ -366,6 +368,7 @@
         <!-- 2. A/B Testing Visualization -->
         <div class="section">
             <h2>2. A/B Testing & Statistical Significance</h2>
+            <p class="subtitle">Drag the Sample Size slider from 100 to 50,000. Watch the Confidence Interval shrink—larger samples → tighter bounds. Click "Simulate A/B Test" and observe when p-Value dips below 0.05.</p>
             <div class="controls">
                 <div class="control-group">
                     <div class="control-label">Sample Size: <span class="value-display" id="sampleSizeDisplay">1000</span></div>
@@ -415,6 +418,7 @@
                     <div class="interview-tip">Practical vs statistical significance: 0.01% CTR lift may be statistically significant with millions of users but business impact negligible. Always compute MDE and business impact before running.</div>
                     <div class="interview-tip">Why not run tests until significance? That's p-hacking. You must pre-register sample size and duration; stopping early when results look good biases estimates toward false positives.</div>
                     <div class="mnemonic">α = false positive risk; β = false negative risk; power = ability to detect truth; larger n = smaller errors.</div>
+                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set Sample Size slider to 1000, run test (p-value likely > 0.05). Then drag to 10000 and run again (likely significant). Notice the confidence interval tightens. Try predicting: at what sample size will this effect become detectable?</div>
                 </div>
             </div>
         </div>
@@ -422,6 +426,7 @@
         <!-- 3. Feature Store Architecture -->
         <div class="section">
             <h2>3. Feature Store Architecture</h2>
+            <p class="subtitle">Click "Both," "Batch Only," and "Streaming Only" buttons to toggle data paths. Watch latency differences and observe which features can be precomputed vs must be real-time.</p>
             <div class="controls">
                 <button class="toggle-button active" onclick="toggleFeatureType('both')">Both</button>
                 <button class="toggle-button" onclick="toggleFeatureType('batch')">Batch Only</button>
@@ -480,6 +485,7 @@
                     <div class="interview-tip">Train/serve skew example: Training uses "user_past_10_days" but online serves "user_past_7_days"; model trained on 10 days behavior performs poorly on 7-day patterns.</div>
                     <div class="interview-tip">Tools: Feast (open-source, K8s-native), Tecton (enterprise, seamless offline/online), Hopsworks (distributed, MLOps-focused). Choose based on latency/scale requirements.</div>
                     <div class="mnemonic">Feature store = single source of truth: one definition, two implementations (offline + online), no skew.</div>
+                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click "Batch Only" and observe the delay (historical data) but perfect logic. Then click "Streaming Only" and see real-time but risk of logic drift. Click "Both" to see how hybrid systems pre-compute batch features, then enrich with streaming. Try toggling and predicting accuracy vs latency.</div>
                 </div>
             </div>
         </div>
@@ -487,6 +493,7 @@
         <!-- 4. Online vs Batch Serving -->
         <div class="section">
             <h2>4. Online vs Batch Serving Comparison</h2>
+            <p class="subtitle">Use the freshness and latency sliders to compare online vs batch serving. Watch how online prioritizes per-request accuracy while batch trades latency for throughput on large datasets.</p>
             <div class="controls">
                 <button onclick="toggleServingMode('comparison')">Comparison View</button>
                 <button onclick="toggleServingMode('latency')">Latency Analysis</button>
@@ -559,6 +566,7 @@
                     <div class="interview-tip">Choose based on freshness requirements: hourly-changing user preferences → online; daily-changing → batch; stable preferences → batch with weekly refresh.</div>
                     <div class="interview-tip">Hybrid sweet spot: batch pre-compute embeddings (expensive, static); online compute lightweight scores (fresh, fast). Example: batch BERT embeddings, online dot-product ranking.</div>
                     <div class="mnemonic">Online = fresh but expensive; Batch = cheap but stale; Hybrid = batch for expensive, online for fresh.</div>
+                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Drag the freshness slider left to 1 day (batch) and latency stays low but predictions age. Then drag latency slider right to 500ms and freshness improves but cost skyrockets. Try finding the "sweet spot" for your use case. Which matters more: freshness or latency?</div>
                 </div>
             </div>
         </div>
@@ -566,6 +574,7 @@
         <!-- 5. Model Monitoring & Data Drift -->
         <div class="section">
             <h2>5. Model Monitoring & Data Drift Detection</h2>
+            <p class="subtitle">Drag the drift magnitude slider to introduce distribution shifts. Watch accuracy drop and observe how drift detection thresholds trigger alerts—then simulate a retrain and observe recovery.</p>
             <div class="controls">
                 <div class="control-group">
                     <div class="control-label">Drift Magnitude: <span class="value-display" id="driftDisplay">0.0</span></div>
@@ -618,6 +627,7 @@
                     <div class="interview-tip">Critical gotcha: drift ≠ causation. Feature drift might correlate with accuracy loss, but root cause could be missing features or label quality decay. Investigate root cause before responding.</div>
                     <div class="interview-tip">When to retrain vs accept: Seasonal variations (expected, monitor but don't panic); unexpected drifts (investigate and retrain). Set baselines for normal drift ranges.</div>
                     <div class="mnemonic">Drift detection = sentinel; if drift exceeds threshold, investigate root cause before applying fixes.</div>
+                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Drag the drift magnitude slider to 0.5 and watch accuracy tank. Observe the drift detection threshold light up red. Then click "Retrain" and watch accuracy recover as the model adapts. Set threshold high (0.30 PSI) and see delayed detection, then low (0.10) and observe faster alerts.</div>
                 </div>
             </div>
         </div>

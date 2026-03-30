@@ -255,6 +255,7 @@
   .insight-box .comparison .option .opt-title { color: #5f27cd; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
   .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
   .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
+  .insight-box { grid-column: 1 / -1; }
 
 </style>
 </head>
@@ -262,7 +263,7 @@
     <div class="container">
         <header>
             <h1>8. Data & Features</h1>
-            <p class="subtitle">Data Preprocessing, Feature Engineering, Augmentation & Weak Supervision</p>
+            <p class="subtitle">Toggle between scaling methods above. Watch how Z-Score centers the distribution and makes features comparable—critical for algorithms with regularization. Try Min-Max to see bounded scaling, or Log Transform to handle right-skewed data.</p>
         </header>
 
         <!-- Section 1: Feature Scaling & Normalization -->
@@ -321,8 +322,10 @@
                 </div>
 
                 <div class="interview-tip">Do tree-based models need scaling? No. Decision trees invariant to scaling. Standardization unnecessary and wastes compute.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click the Z-Score button and watch the distribution center at 0. Then try Robust scaling with the log-transformed data—see how it handles outliers differently. Compare Min-Max for bounded features vs Z-Score for unbounded.</div>
 
                 <div class="interview-tip">Should I standardize before or after train/test split? Always AFTER. Fit mean/std on train only, apply to test. Prevents data leakage.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Use Log Transform on income-like data (right-skewed). Watch how it stabilizes variance compared to raw scaling. Then increase kurtosis—see which scaling handles heavy tails best.</div>
 
                 <hr class="divider">
 
@@ -337,6 +340,7 @@
                 </div>
 
                 <div class="interview-tip">Non-normal data? Use robust scaling (median/IQR) or power transform (Yeo-Johnson, Box-Cox) before standardization.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Toggle outlier magnitude slider to 10x and rewatch Z-Score vs Robust. Notice how Robust stays stable while Z-Score gets pulled. This is why Robust is best when outliers are real (not errors).</div>
             </div>
         </div>
 
@@ -400,8 +404,10 @@
                 <hr class="divider">
 
                 <div class="interview-tip">Why drop one column in one-hot? All d columns sum to 1 (perfect multicollinearity). Drop one → preserves info + maintains rank.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Switch Encoding Method to One-Hot and observe the dummy variable trap prevention. Toggle to Label encoding to see artificial ordering introduced. Then use Target Encoding on a high-cardinality feature—watch how it smoothly compresses categories.</div>
 
                 <div class="interview-tip">High-cardinality features (millions of values)? Don't one-hot—causes sparsity + memory bloat. Use target encoding or embeddings instead.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click through all three encoding methods. For One-Hot, count output dimensions; for Target, notice each category becomes a single feature. Target Encoding is your friend for postal codes, ZIP codes, or user IDs.</div>
 
                 <div class="key-point">
                     <span class="label">Unseen categories:</span>
@@ -473,8 +479,10 @@
                 </div>
 
                 <div class="interview-tip">Can I just delete missing rows? Only if MCAR AND <5% missing. Deleting MAR/MNAR rows biases estimates.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Select KNN imputation and watch it use neighbors to fill gaps. Now increase missing percentage to 30%—KNN struggles in high-dimensional space (curse of dimensionality). Compare Mean vs Median on skewed data to see variance underestimation.</div>
 
                 <div class="interview-tip">What if data is MNAR? Create binary missing indicator feature (is_missing=1/0). Then impute. Lets model learn missingness is predictive.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Toggle between original (has missing) and Forward Fill methods. For MNAR data (e.g., high-income hiding income), the missing pattern itself is predictive—create an is_missing feature alongside imputation.</div>
 
                 <hr class="divider">
 
@@ -569,8 +577,10 @@
                 <hr class="divider">
 
                 <div class="interview-tip">Oversample before or after train/test split? ALWAYS AFTER. Before = leakage (duplicate in both sets inflates metrics).</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Drag the Imbalance Ratio slider to 1:50. Watch what happens with "None"—majority class dominates. Switch to SMOTE and observe synthetic samples between minority neighbors. Now try Class Weight to see the penalty trade-off without data duplication.</div>
 
                 <div class="interview-tip">SMOTE in high dimensions? Curse of dimensionality—distances meaningless, synthetic samples off manifold. Use feature selection first.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set ratio to 1:100 (extreme imbalance). SMOTE at high dimensions creates samples far from true manifold. Compare with Class Weight (no synthetic samples needed, just penalize minority errors more).</div>
 
                 <div class="key-point">
                     <span class="label">Threshold tuning:</span>
@@ -632,10 +642,13 @@
                 <hr class="divider">
 
                 <div class="interview-tip">Report validation or test performance? Test only. Validation is for dev; test is for stakeholders. Reporting validation = optimistic bias (you picked best on val).</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click K-Fold CV button and watch fold boundaries. Observe how each fold becomes validation once while others train. Now try Time-Based for temporal data—notice past/future separation preventing leakage. Stratified keeps class balance in each fold.</div>
 
                 <div class="interview-tip">Why not reuse same validation split? You implicitly overfit to it via hyperparameter selection. Use multiple splits or nested CV.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Random Split is fast but high variance on small data. K-Fold (k=5 or 10) uses data efficiently. Time-Based mandates past→future for realistic deployment simulation. Which do you need depends on data type and size.</div>
 
                 <div class="interview-tip">Why time-based split for time-series? Adjacent points correlated (non-i.i.d.). Random split mixes past/future = temporal leakage. Time-based respects causality.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click Random Split on the canvas—data shuffles arbitrarily. Now switch to Time-Based—clean chronological order. See the difference? For stock prices or sensor data, random split is a fantasy that doesn't match production.</div>
 
                 <hr class="divider">
 
@@ -703,8 +716,10 @@
                 <hr class="divider">
 
                 <div class="interview-tip">Using month M to predict month M+1 = valid. Using month M to predict month M where M ∈ test = temporal leakage.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click the Temporal button to visualize temporal leakage. Notice how random mixing of past/future breaks causality. Switch to Clean—future info is unavailable at prediction time. This is why time-based splits prevent leakage.</div>
 
                 <div class="interview-tip">Can I detect leakage from train/test gap? No, unreliable. Large gaps suggest it, but can be subtle. Audit pipeline, check timestamps, verify features.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Cycle through Clean, Train-Test, Feature Leakage. Each looks different on the canvas. Clean: independent sets. Feature Leakage: a single feature carries target info (post-hoc label). Always audit your pipeline, not just check metrics.</div>
 
                 <div class="key-point">
                     <span class="label">Leakage sources:</span>
@@ -717,6 +732,7 @@
                 </div>
 
                 <div class="interview-tip">Offline-online gap >5% = likely leakage. For temporal data: ALWAYS time-based split, verify timestamps ascending order.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set split to Time-Based, then look at the canvas: data flows left-to-right (past to future). Verify: does your preprocessing fit on train-only data? Are timestamps monotonically increasing? Check your code—leakage hides in these details.</div>
             </div>
         </div>
 
@@ -787,8 +803,10 @@
                 <hr class="divider">
 
                 <div class="interview-tip">Augment test set? No—test must be fixed, representative of deployment. Augmenting test inflates estimates.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Drag Intensity slider from 10% to 100% and watch augmentations strengthen. At 10%, subtle rotations; at 100%, aggressive warping. Find the sweet spot where augmentations remain label-preserving (flip yes, invert no). Only augment training data.</div>
 
                 <div class="interview-tip">Augmentation strength = hyperparameter. Too weak = no benefit. Too strong = distort labels (180° rotation changes 6→9). Cross-validate.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Toggle Image vs Text vs MixUp. Each has different intensity semantics. For images, 50% intensity ≈ mild rotation; for text, same intensity ≈ semantic-preserving paraphrasing. MixUp blends inputs—watch it create soft labels.</div>
 
                 <div class="key-point">
                     <span class="label">Production rule:</span>
@@ -871,8 +889,10 @@
                 <hr class="divider">
 
                 <div class="interview-tip">One-hot hour-of-day? Creates 24 sparse columns, treats 23 far from 0 (wrong). Sin/cos naturally wraps circle.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Select Cyclical feature type and watch the sin/cos encode hours on a circle. Hour 23 and Hour 0 are neighbors (nearby in Euclidean space). Lag-24 captures daily seasonality (tomorrow looks like today). Rolling average smooths noise—watch standard deviation shrink.</div>
 
                 <div class="interview-tip">Rolling average lookahead bias? Only if include future samples. Lag-based (past k) = safe. Centered (past+future) = lookahead.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Toggle between Lag and Rolling on the canvas. Lag uses past data only (safe). Centered rolling (past+future) leaks future info (production breaks). Adjust Period slider to capture different seasonality windows.</div>
 
                 <div class="key-point">
                     <span class="label">Production rule:</span>
@@ -885,6 +905,7 @@
                 </div>
 
                 <div class="interview-tip">Include target lag-1 as feature? Yes if available at train. Production: use X_{t-1} predict Y_t (not Y_{t-1}, which unavailable).</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Build a time-series model: use X_{t-1} to predict Y_t (previous input predicts current target). Never use Y_{t-1} as input—it's unavailable at deployment. Lag-1 often most predictive; higher lags add noise.</div>
             </div>
         </div>
 
@@ -929,10 +950,13 @@
                 <hr class="divider">
 
                 <div class="interview-tip">Can weak supervision replace manual labeling? Dramatically reduces burden but not entirely. Need small labeled dev set for LF accuracy estimation. Shines at 1000s-millions unlabeled samples.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Drag # Labeling Functions slider to 2—simple but coverage limited. Drag to 10—coverage better but correlations complex. Adjust Average Accuracy from 50% to 95%—Snorkel learns to upweight good LFs and ignore bad ones. Design 5-7 good LFs, not 20 poor ones.</div>
 
                 <div class="interview-tip">Bad LF (40% accuracy)? Snorkel learns to ignore it automatically. LFs can be arbitrary accuracy—learns to upweight good, downweight bad.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set Average Accuracy to 50% (barely better than random coin flip). Snorkel automatically downweights these. Now 95%—these dominate. Mix them: some 60%, some 85%. Watch the label model blend them intelligently. This is the power—heterogeneous LF quality accepted.</div>
 
                 <div class="interview-tip">Label leakage trap: if LF uses info unavailable at inference, downstream model fails in production. E.g., use "fraud" keyword to label but keyword only post-hoc.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: LF using "fraud_detected" keyword at training time seems great (high accuracy). But in production, you don't have this label yet! Every LF must use inference-available features only. Audit: will this LF work in production?</div>
 
                 <hr class="divider">
 

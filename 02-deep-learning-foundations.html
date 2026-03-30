@@ -60,7 +60,7 @@
 <!-- 1. NEURAL NETWORK FORWARD & BACKWARD PASS -->
 <div class="viz-section">
   <h2>Neural Network: Forward & Backward Pass</h2>
-  <p class="subtitle">Watch activations flow forward (blue) and gradients flow backward (red) through a 2-layer MLP. Hover over nodes to see values.</p>
+  <p class="subtitle">Hover over nodes during forward pass to see activation values (blue arrows). Then hover during backward pass to see gradient flow (red arrows). Notice how gradients combine at nodes via the chain rule. Watch the weights update after each backward pass.</p>
   <canvas id="nnCanvas" width="800" height="450"></canvas>
   <div class="controls">
     <button class="btn" id="nnFwdBtn" onclick="runForward()">→ Forward Pass</button>
@@ -100,14 +100,16 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">Why deep networks? Deeper networks learn more abstract representations. Trade-off: harder to train, need more data.</div>
-    <div class="mnemonic">Neural network = function composition. Each layer learns a transformation. Depth = abstraction hierarchy.</div>
+    <div class="mnemonic">Neural network = function composition. Each layer learns a transformation. Depth = abstraction hierarchy.
+    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: During forward pass, hover over an output node — activation = 0.7 (result of ReLU(0.1 * input)). During backward pass, hover over same node — gradient = 0.03 (chain rule: local gradient × upstream gradient). Change an input and watch activations and gradients update.</div>
   </div>
+</div>
   </div>
 
 <!-- 2. ACTIVATION FUNCTIONS -->
 <div class="viz-section">
   <h2>Activation Functions Compared</h2>
-  <p class="subtitle">See each function and its derivative. The derivative matters for gradient flow — flat regions = vanishing gradients.</p>
+  <p class="subtitle">Toggle between Sigmoid, ReLU, and Tanh. Watch the derivative plots (bottom row) — Sigmoid has near-zero derivatives at extremes (vanishing gradients!). ReLU has constant 1 in the positive region (stable gradients). Flat regions = gradient death.</p>
   <canvas id="actCanvas" width="800" height="400"></canvas>
   <div class="controls">
     <div class="tab-bar">
@@ -144,14 +146,16 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">Use ReLU instead of sigmoid/tanh to avoid vanishing gradients. Use batch normalization to stabilize gradient flow.</div>
-    <div class="mnemonic">Backpropagation = chain rule applied recursively. Efficient but suffers from vanishing/exploding gradients in deep networks.</div>
+    <div class="mnemonic">Backpropagation = chain rule applied recursively. Efficient but suffers from vanishing/exploding gradients in deep networks.
+    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click Sigmoid. At extremes (x=-10, x=10), derivative ≈ 0 (white/flat). In the middle (x=0), derivative = 0.25 (steepest). Switch to ReLU — derivative is constant 1 for x>0 (no vanishing!). This is why ReLU enabled deep networks.</div>
   </div>
+</div>
   </div>
 
 <!-- 3. VANISHING & EXPLODING GRADIENTS -->
 <div class="viz-section">
   <h2>Vanishing & Exploding Gradients</h2>
-  <p class="subtitle">See how gradient magnitude changes across layers. Adjust depth and activation to watch gradients vanish or explode.</p>
+  <p class="subtitle">Set "Network Depth" to 2 and observe gradient magnitudes across layers (the color bars). Increase depth to 20 with Sigmoid — watch gradients fade to white at early layers (vanishing!). Switch to ReLU — gradients stay colorful. Adjust learning rate to see explosion.</p>
   <canvas id="vgCanvas" width="800" height="350"></canvas>
   <div class="controls">
     <div class="control-group">
@@ -171,40 +175,23 @@
     </div>
   </div>
   <div class="insight-box">
-    <strong>Key Insight:</strong> Batch normalization standardizes layer inputs, stabilizing training and improving generalization.
-    <div class="formula">x̂ = (x - μ_batch) / √(σ²_batch + ε)</div>
-    <div class="key-point"><span class="label">x:</span><span class="desc">Input activation (pre-normalization). Can be output of previous layer or raw features.</span></div>
-    <div class="key-point"><span class="label">x̂:</span><span class="desc">Normalized activation. Centered at mean 0, scale variance 1 (approximately).</span></div>
-    <div class="key-point"><span class="label">μ_batch:</span><span class="desc">Mean of x computed over current minibatch. Different batches have different means, adds regularization noise.</span></div>
-    <div class="key-point"><span class="label">σ²_batch:</span><span class="desc">Variance of x over current minibatch. Measures spread of values in batch.</span></div>
-    <div class="key-point"><span class="label">√(σ²_batch + ε):</span><span class="desc">Standard deviation plus epsilon. ε is small constant (e.g., 1e-5) for numerical stability (avoid division by zero).</span></div>
-    <div class="key-point"><span class="label">(x - μ_batch) / √(...):</span><span class="desc">Standardization: shift by mean, divide by std dev. Makes scale invariant, centers distribution at 0.</span></div>
-    <div class="key-point">
-      <span class="label">What it does:</span>
-      <span class="desc">Normalize each activation to mean 0, variance 1 during training. Reduces internal covariate shift.</span>
-    </div>
-    <div class="key-point">
-      <span class="label">Benefits:</span>
-      <span class="desc">Stabilizes gradient flow (reduces vanishing gradient). Allows higher learning rates. Acts as regularizer (noise from batch statistics).</span>
-    </div>
-    <div class="key-point">
-      <span class="label">Learnable scale/shift:</span>
-      <span class="desc">Network learns γ, β to scale/shift normalized activations. Preserves expressiveness.</span>
-    </div>
-    <div class="key-point">
-      <span class="label">At test time:</span>
-      <span class="desc">Use running mean/variance from training. No randomness at test time. Important for reproducibility.</span>
-    </div>
+    <strong>Key Insight:</strong> Gradients vanish or explode because backprop multiplies derivatives through every layer via the chain rule.
+    <div class="formula">∂L/∂W₁ = ∂L/∂hₙ × ∂hₙ/∂hₙ₋₁ × ··· × ∂h₂/∂h₁ × ∂h₁/∂W₁</div>
+    <div class="key-point"><span class="label">The problem:</span><span class="desc">Each ∂hₖ/∂hₖ₋₁ factor includes the activation derivative. For sigmoid, this is at most 0.25. Multiply 50 factors of 0.25 → gradient ≈ 10⁻³⁰ (vanished). For weight scale > 1, gradients explode exponentially.</span></div>
+    <div class="key-point"><span class="label">Why depth matters:</span><span class="desc">More layers = more multiplied factors. A 5-layer network with sigmoid barely trains. A 50-layer network with sigmoid is dead.</span></div>
+    <div class="key-point"><span class="label">ReLU helps:</span><span class="desc">ReLU derivative = 1 for positive inputs (no shrinkage!). But "dead ReLU" problem: if input is always negative, gradient = 0 permanently.</span></div>
+    <div class="key-point"><span class="label">Residual connections fix it:</span><span class="desc">y = F(x) + x. Gradient of skip connection = 1. Even if F's gradient vanishes, the gradient flows through the skip. This is why ResNets can be 100+ layers deep.</span></div>
     <hr class="divider">
-    <div class="interview-tip">Batch norm before activation vs after? Both work, but before activation more common. Careful with small batch sizes (batch norm estimates are noisy).</div>
-    <div class="mnemonic">Batch norm = normalize activations to stabilize training. Side effect: regularization. Test time: use training statistics.</div>
+    <div class="interview-tip">"Why can't we train a 50-layer sigmoid network?" → Chain rule multiplies derivatives. Sigmoid max derivative = 0.25. After 50 layers: 0.25⁵⁰ ≈ 10⁻³⁰. Gradient is effectively zero. Solution: ReLU + residual connections + careful initialization (He/Xavier).</div>
+    <div class="mnemonic">Vanishing = multiplying numbers &lt; 1 repeatedly. Exploding = multiplying numbers &gt; 1 repeatedly. Residual connections = adding a highway that always carries gradient = 1.</div>
+    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set depth to 5 with Sigmoid — gradients are okay. Now drag to 25 — watch them collapse. Switch to ReLU — they stabilize. Switch to Residual — rock solid even at depth 30.</div>
   </div>
   </div>
 
 <!-- 4. CNN CONVOLUTION OPERATION -->
 <div class="viz-section">
   <h2>Convolution Operation Step by Step</h2>
-  <p class="subtitle">Watch a 3×3 kernel slide across the input, computing the dot product at each position. This is the core of CNNs.</p>
+  <p class="subtitle">Click "Next Step" to watch the kernel slide one position at a time. See the element-wise multiplication and summation at each position. The output is built position-by-position. This is why 3×3 kernels are efficient (only 9 parameters per filter).</p>
   <canvas id="cnnCanvas" width="800" height="420"></canvas>
   <div class="controls">
     <button class="btn" id="cnnPlayBtn" onclick="toggleCNN()">▶ Animate</button>
@@ -222,14 +209,13 @@
     </div>
   </div>
   <div class="insight-box">
-    <strong>Key Insight:</strong> Dropout randomly zeros activations during training to prevent overfitting and co-adaptation.
-    <div class="formula">During training: h_drop = h * mask,  where mask_i ~ Bernoulli(p)</div>
-    <div class="key-point"><span class="label">h:</span><span class="desc">Hidden layer activations before dropout. Shape: (batch_size, num_units)</span></div>
-    <div class="key-point"><span class="label">mask:</span><span class="desc">Random binary mask. Each element drawn independently from Bernoulli(p)—probability p of being 1, probability (1-p) of being 0</span></div>
-    <div class="key-point"><span class="label">mask_i ~ Bernoulli(p):</span><span class="desc">Each unit i has independent probability p of being kept (mask_i=1) and probability (1-p) of being dropped (mask_i=0)</span></div>
-    <div class="key-point"><span class="label">h * mask:</span><span class="desc">Element-wise multiplication. Units with mask_i=0 are zeroed out (dropped). Units with mask_i=1 pass through unchanged.</span></div>
-    <div class="key-point"><span class="label">h_drop:</span><span class="desc">Output after dropout. Sparsified version of h. At test time, use h directly (or scale by p)</span></div>
-    <div class="key-point"><span class="label">p (keep probability):</span><span class="desc">Fraction of units to retain (typically 0.5 for hidden layers). Complementary to dropout rate: dropout_rate = 1-p</span></div>
+    <strong>Key Insight:</strong> Convolution is template matching — a small kernel slides across the input, computing local dot products to detect features (edges, textures, shapes).
+    <div class="formula">output[i,j] = Σₐ Σᵦ kernel[a,b] × input[i+a, j+b] + bias</div>
+    <div class="key-point"><span class="label">kernel[a,b]:</span><span class="desc">Small learnable weight matrix (e.g., 3×3). Each kernel detects one pattern — vertical edges, horizontal edges, corners, etc.</span></div>
+    <div class="key-point"><span class="label">input[i+a, j+b]:</span><span class="desc">Local patch of input centered at position (i,j). Convolution exploits spatial locality — nearby pixels are more related.</span></div>
+    <div class="key-point"><span class="label">Stride:</span><span class="desc">How far the kernel moves each step. Stride 1 = overlap (detailed features). Stride 2 = skip pixels (downsample, fewer parameters).</span></div>
+    <div class="key-point"><span class="label">Padding:</span><span class="desc">Add zeros around input border. "Same" padding preserves spatial size. "Valid" = no padding, output shrinks.</span></div>
+    <div class="key-point"><span class="label">Output size:</span><span class="desc">(input_size - kernel_size + 2×padding) / stride + 1. E.g., 32×32 input, 3×3 kernel, stride 1, padding 1 → 32×32 output.</span></div>
     <div class="key-point">
       <span class="label">Why dropout works:</span>
       <span class="desc">Prevents neurons from co-adapting (relying on specific other neurons). Forces network to learn robust features.</span>
@@ -248,14 +234,16 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">Dropout is a simple, powerful regularizer. Less important with batch norm, but still useful together. Monitor train vs test error.</div>
-    <div class="mnemonic">Dropout = train multiple nets simultaneously, average at test time. Prevents co-adaptation. Ensemble effect = better generalization.</div>
+    <div class="mnemonic">Dropout = train multiple nets simultaneously, average at test time. Prevents co-adaptation. Ensemble effect = better generalization.
+    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click "Next Step" 5 times — kernel slides from left to right. After each step, output value = (sum of element-wise products). Try "Prev Step" to backtrack. This simple sliding dot product is the entire CNN operation — applied millions of times.</div>
   </div>
+</div>
   </div>
 
 <!-- 5. BATCH NORM vs LAYER NORM -->
 <div class="viz-section">
   <h2>Normalization: Batch vs Layer vs RMS</h2>
-  <p class="subtitle">Visualize which dimensions each normalization technique operates over. The highlighted region shows what gets normalized together.</p>
+  <p class="subtitle">Toggle between Batch Norm, Layer Norm, and RMSNorm. For each, the colored region shows which activations get normalized together. Batch Norm normalizes across batch (column), Layer Norm across features (row). Notice: Batch Norm behavior depends on batch size!</p>
   <canvas id="normCanvas" width="800" height="350"></canvas>
   <div class="controls">
     <div class="tab-bar">
@@ -292,14 +280,16 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">CNNs are the backbone of computer vision. Receptive field grows with depth. Understand how filter size and stride affect output dimensions.</div>
-    <div class="mnemonic">CNN = local pattern matching with weight sharing. Captures spatial hierarchies. Deep = large receptive fields = global context.</div>
+    <div class="mnemonic">CNN = local pattern matching with weight sharing. Captures spatial hierarchies. Deep = large receptive fields = global context.
+    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Select Batch Norm. Colored region highlights entire column (normalize across batch). Batch size = 32 activations, all scaled together. Switch to Layer Norm — colored region is entire row (normalize across features for each sample independently). RMSNorm normalizes only by variance, not mean.</div>
   </div>
+</div>
   </div>
 
 <!-- 6. RNN/LSTM/GRU -->
 <div class="viz-section">
   <h2>RNN/LSTM/GRU: Recurrence & Gating</h2>
-  <p class="subtitle">Visualize how recurrent cells maintain hidden state and use gates to control information flow. Watch how LSTM solves vanishing gradients.</p>
+  <p class="subtitle">Toggle between Vanilla RNN, LSTM, and GRU. For Vanilla RNN, trace the hidden state flow and see it accumulate (or vanish) through timesteps. For LSTM, watch the cell state bypass (straight arrow) — this is the "memory" that avoids vanishing gradients. Gates control what flows.</p>
   <canvas id="rnnCanvas" width="900" height="480"></canvas>
   <div class="controls">
     <div class="tab-bar">
@@ -344,14 +334,16 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">LSTMs widely used in practice. But Transformers (attention) often better for many tasks now. Sequence length matters: quadratic memory for attention.</div>
-    <div class="mnemonic">RNN = process sequence step-by-step, carrying memory. Long dependencies = vanishing gradients. LSTM = gates solve this via cell state.</div>
+    <div class="mnemonic">RNN = process sequence step-by-step, carrying memory. Long dependencies = vanishing gradients. LSTM = gates solve this via cell state.
+    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Vanilla RNN, 20 timesteps: hidden state accumulates or decays rapidly (recurrent arrow shows values exploding or vanishing). LSTM, same setup: hidden state flows through cell state (long straight arrow bypasses gates), gradients survive 20 steps. GRU: simpler than LSTM but similar solution.</div>
   </div>
+</div>
   </div>
 
 <!-- 7. FLASH ATTENTION -->
 <div class="viz-section">
   <h2>Flash Attention: Tiled IO-Aware Computation</h2>
-  <p class="subtitle">See how standard attention has O(N²) memory, while Flash Attention tiles computation to reduce HBM access by ~4-10x.</p>
+  <p class="subtitle">Watch the "Standard Attention" animation — it materializes the full N×N attention matrix (memory bottleneck!). Toggle to "Flash Attention" — computation is tiled into blocks (no full matrix in memory). Despite the same result, tiling reduces slow memory access (HBM) dramatically.</p>
   <canvas id="flashCanvas" width="900" height="400"></canvas>
   <div class="controls">
     <div class="tab-bar">
@@ -395,14 +387,16 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">ResNets revolutionized deep learning. Skip connections are now standard everywhere (Transformers, dense nets, etc.).</div>
-    <div class="mnemonic">ResNet = learn residuals, not full function. Skip connection = highway for gradients. Enables very deep networks.</div>
+    <div class="mnemonic">ResNet = learn residuals, not full function. Skip connection = highway for gradients. Enables very deep networks.
+    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Sequence length = 100. Standard Attention materializes 100×100 matrix (10K values in slow memory). Flash Attention: tiles into 4×4 blocks (only 25 values in fast memory at a time). Result is identical, but memory bandwidth drops 4-10x. This is why Flash Attention made long sequences practical.</div>
   </div>
+</div>
   </div>
 
 <!-- 8. SCALING LAWS -->
 <div class="viz-section">
   <h2>Scaling Laws: Loss vs Compute/Data/Parameters</h2>
-  <p class="subtitle">Plot loss curves following Chinchilla scaling (power-law). Adjust allocation of compute budget between parameters and data.</p>
+  <p class="subtitle">Drag "Compute Budget" slider — the optimal point follows Chinchilla scaling (allocate equal compute to parameters and data tokens). If you allocate too much to parameters (left), loss plateaus (data bottleneck). If too much to data (right), loss plateaus too (parameter bottleneck). The diagonal is optimal.</p>
   <canvas id="scalingCanvas" width="900" height="400"></canvas>
   <div class="controls">
     <div class="control-group">
@@ -446,8 +440,10 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">Attention is core of Transformers. Self-attention: each position attends to all positions. Enables parallelization unlike RNNs.</div>
-    <div class="mnemonic">Attention = soft selection of values based on relevance. Queries ask questions, keys match queries, values are answers.</div>
+    <div class="mnemonic">Attention = soft selection of values based on relevance. Queries ask questions, keys match queries, values are answers.
+    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Move compute budget left (favor parameters, 80/20 split) — loss plateaus (data bottleneck). Move right (80/20 data favoring) — loss plateaus (parameter bottleneck). The diagonal (50/50 split) is optimal. Chinchilla discovered this: equal compute to parameters and data.</div>
   </div>
+</div>
   </div>
 
 </div>
@@ -470,7 +466,7 @@ function computeNN(x1, x2) {
   const a1 = z1.map(relu);
   const z2 = nnWeights.w2.map((w, i) => w[0]*a1[0] + w[1]*a1[1] + w[2]*a1[2] + nnWeights.b2[i]);
   const expZ = z2.map(z => Math.exp(z));
-  const sumExp = expZ.reduce((a,b) => a+b);
+  const sumExp = expZ.reduce((a,b) => a+b, 0);
   const a2 = expZ.map(e => e / sumExp);
   const loss = -Math.log(a2[0] + 1e-8);
   const da2 = [a2[0] - 1, a2[1]];
