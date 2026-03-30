@@ -51,12 +51,43 @@
   .katex { color: #e8e8ff; font-size: 1.1em; }
   .formula .katex { font-size: 1.2em; }
 
+#quizToggle{position:fixed;top:20px;right:20px;z-index:1000;padding:12px 20px;background:#64ffda;color:#0a0a0f;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:1em;box-shadow:0 4px 15px rgba(0,0,0,0.3);transition:transform 0.2s}
+#quizToggle:hover{transform:scale(1.05)}
+#quizSection{background:#0a0a0f;border-top:2px solid #64ffda;padding:40px 20px;margin-top:40px}
+.quiz-container{max-width:900px;margin:0 auto}
+.quiz-topic{margin-bottom:30px}
+.quiz-topic-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:10px;cursor:pointer;margin-bottom:12px;user-select:none}
+.quiz-topic-header h3{color:#64ffda;margin:0;font-size:1.15em}
+.quiz-topic-header:hover{background:#1f1f3a}
+.quiz-topic-score{color:#888;font-size:0.95em}
+.quiz-topic-questions{display:none}
+.quiz-topic-questions.open{display:block}
+.quiz-question{background:#12121f;border:1px solid #2a2a4a;border-radius:12px;padding:24px;margin-bottom:16px}
+.quiz-question h4{color:#e0e0e0;margin-bottom:16px;font-size:1.05em;line-height:1.5}
+.quiz-option{display:block;width:100%;padding:12px 16px;margin:8px 0;background:#0d0d1a;border:1px solid #2a2a4a;border-radius:8px;color:#e0e0e0;cursor:pointer;text-align:left;font-size:0.95em;transition:all 0.2s;font-family:inherit}
+.quiz-option:hover:not(:disabled){border-color:#64ffda;background:#1a1a3e}
+.quiz-option.correct{background:#1a3a2a !important;border-color:#2ecc71 !important;color:#2ecc71 !important}
+.quiz-option.wrong{background:#3a1a1a !important;border-color:#e74c3c !important;color:#e74c3c !important}
+.quiz-option.reveal{border-color:#2ecc71 !important;color:#2ecc71 !important}
+.quiz-option:disabled{cursor:default}
+.quiz-explanation{margin-top:12px;padding:14px 18px;border-radius:8px;font-size:0.93em;line-height:1.6;display:none}
+.quiz-explanation.show{display:block}
+.quiz-explanation.correct-exp{border-left:4px solid #2ecc71;background:rgba(46,204,113,0.08);color:#b0ffb0}
+.quiz-explanation.wrong-exp{border-left:4px solid #e74c3c;background:rgba(231,76,60,0.08);color:#ffb0b0}
+.quiz-score{text-align:center;font-size:1.5em;color:#64ffda;margin-bottom:30px}
+.quiz-actions{text-align:center;margin-top:30px;margin-bottom:20px}
+.quiz-actions button{padding:10px 24px;margin:0 8px;border-radius:8px;border:1px solid #64ffda;background:transparent;color:#64ffda;cursor:pointer;font-size:1em}
+.quiz-actions button:hover{background:rgba(100,255,218,0.1)}
+.quiz-progress{height:4px;background:#1a1a2e;border-radius:2px;margin-bottom:20px;overflow:hidden}
+.quiz-progress-bar{height:100%;background:#64ffda;border-radius:2px;transition:width 0.3s}
+
 </style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '\\(', right: '\\)', display: false}]});"></script>
 </head>
 <body>
+<button id="quizToggle" onclick="toggleQuiz()">&#x1F9E0; Quiz Mode</button>
 
 <div class="header">
   <a href="index.html">&larr; Back to Index</a>
@@ -3002,242 +3033,302 @@ function drawNS() {
 drawNS();
 </script>
 
-<!-- Quiz Mode Toggle Button -->
-<button id="quizToggleBtn" onclick="toggleQuiz()" style="
-  position: fixed; top: 20px; right: 20px; z-index: 1000;
-  padding: 12px 20px; border: 2px solid #64ffda; background: #12121f;
-  color: #64ffda; border-radius: 12px; cursor: pointer; font-size: 1em;
-  font-weight: 600; transition: all 0.3s; box-shadow: 0 4px 20px rgba(100,255,218,0.15);
-">&#x1F9E0; Quiz Mode</button>
 
-<!-- Quiz Section -->
-<div id="quizSection" style="display:none;">
-<style>
-  #quizSection {
-    background: #0a0a0f;
-    border-top: 2px solid #64ffda;
-    padding: 40px 20px 60px;
-  }
-  #quizSection .quiz-container {
-    max-width: 900px;
-    margin: 0 auto;
-  }
-  #quizSection .quiz-header {
-    text-align: center;
-    margin-bottom: 32px;
-  }
-  #quizSection .quiz-header h2 {
-    font-size: 2em;
-    background: linear-gradient(90deg, #64ffda, #7c4dff);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    margin-bottom: 12px;
-  }
-  #quizSection .quiz-score {
-    font-size: 1.3em;
-    color: #64ffda;
-    font-family: monospace;
-    margin-bottom: 16px;
-  }
-  #quizSection .quiz-controls {
-    display: flex;
-    gap: 12px;
-    justify-content: center;
-    margin-bottom: 24px;
-  }
-  #quizSection .quiz-btn {
-    padding: 10px 24px;
-    border: 1px solid #64ffda;
-    background: transparent;
-    color: #64ffda;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 0.95em;
-    transition: all 0.2s;
-  }
-  #quizSection .quiz-btn:hover {
-    background: rgba(100,255,218,0.1);
-  }
-  #quizSection .question-card {
-    background: #12121f;
-    border: 1px solid #2a2a4a;
-    border-radius: 16px;
-    padding: 28px;
-    margin-bottom: 24px;
-  }
-  #quizSection .question-card .q-number {
-    color: #64ffda;
-    font-size: 0.85em;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 8px;
-  }
-  #quizSection .question-card .q-text {
-    font-size: 1.1em;
-    color: #e0e0e0;
-    margin-bottom: 20px;
-    line-height: 1.6;
-  }
-  #quizSection .option-btn {
-    display: block;
-    width: 100%;
-    text-align: left;
-    padding: 14px 18px;
-    margin-bottom: 10px;
-    background: #0d0d1a;
-    border: 1px solid #2a2a4a;
-    border-radius: 10px;
-    color: #ccc;
-    font-size: 1em;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  #quizSection .option-btn:hover:not(.disabled) {
-    border-color: #64ffda;
-    background: rgba(100,255,218,0.05);
-  }
-  #quizSection .option-btn.correct {
-    background: rgba(46,204,113,0.2);
-    border-color: #2ecc71;
-    color: #fff;
-  }
-  #quizSection .option-btn.wrong {
-    background: rgba(231,76,60,0.2);
-    border-color: #e74c3c;
-    color: #e74c3c;
-  }
-  #quizSection .option-btn.show-correct {
-    border-color: #2ecc71;
-    color: #2ecc71;
-  }
-  #quizSection .option-btn.disabled {
-    cursor: default;
-    opacity: 0.7;
-  }
-</style>
-
+<div id="quizSection" style="display:none">
 <div class="quiz-container">
-  <div class="quiz-header">
-    <h2>ML Fundamentals Quiz</h2>
-    <div class="quiz-score" id="quizScore">Score: 0 / 8</div>
-    <div class="quiz-controls">
-      <button class="quiz-btn" onclick="resetQuiz()">Reset Quiz</button>
-      <button class="quiz-btn" onclick="toggleQuiz()">Hide Quiz</button>
-    </div>
+  <h2 style="text-align:center;color:#64ffda;margin-bottom:10px;font-size:1.8em;">ML Fundamentals Quiz</h2>
+  <p style="text-align:center;color:#888;margin-bottom:20px;">5 questions per topic &bull; Click answers to reveal explanations</p>
+  <div class="quiz-progress"><div class="quiz-progress-bar" id="quizProgressBar" style="width:0%"></div></div>
+  <div class="quiz-score">Score: <span id="quizScore">0</span> / <span id="quizTotal">90</span></div>
+  <div class="quiz-actions">
+    <button onclick="resetQuiz()">&#8634; Reset All</button>
+    <button onclick="toggleQuiz()">&#10005; Hide Quiz</button>
   </div>
   <div id="quizQuestions"></div>
 </div>
 </div>
 
 <script>
-(function() {
-  const quizData = [
-    {
-      question: "In Bayes' theorem P(A|B) = P(B|A)\u00b7P(A)/P(B), what does P(A) represent?",
-      options: ["The likelihood", "The posterior probability", "The prior probability", "The evidence"],
-      correct: 2
-    },
-    {
-      question: "A 99% accurate disease test is applied to a population where 1% have the disease. What is approximately the probability that a person who tests positive actually has the disease?",
-      options: ["99%", "50%", "1%", "90%"],
-      correct: 1
-    },
-    {
-      question: "What happens to the MLE estimate as the number of observations increases?",
-      options: ["It becomes more biased", "It converges to the true parameter value", "It always equals the MAP estimate", "It diverges"],
-      correct: 1
-    },
-    {
-      question: "Which distribution would you use to model the number of events occurring in a fixed time interval?",
-      options: ["Bernoulli", "Gaussian", "Poisson", "Beta"],
-      correct: 2
-    },
-    {
-      question: "In the bias-variance tradeoff, what happens as model complexity increases?",
-      options: ["Both bias and variance decrease", "Bias decreases, variance increases", "Bias increases, variance decreases", "Both bias and variance increase"],
-      correct: 1
-    },
-    {
-      question: "What is the key difference between L1 (Lasso) and L2 (Ridge) regularization?",
-      options: ["L1 is always stronger than L2", "L1 produces sparse solutions (zeros), L2 shrinks weights toward zero", "L2 produces sparse solutions, L1 shrinks weights", "They are mathematically identical"],
-      correct: 1
-    },
-    {
-      question: "The Central Limit Theorem states that the sampling distribution of the mean approaches a normal distribution as:",
-      options: ["The variance increases", "The population becomes normal", "The sample size increases", "The mean converges to zero"],
-      correct: 2
-    },
-    {
-      question: "In gradient descent, what does the learning rate control?",
-      options: ["The direction of parameter updates", "The size of parameter update steps", "The number of training epochs", "The batch size"],
-      correct: 1
-    }
-  ];
+(function(){
+const quizData = [
+  {
+    topic: "Bayes Theorem",
+    questions: [
+      { q: "In Bayes' theorem P(A|B) = P(B|A)P(A)/P(B), what does P(A) represent?", options: ["A) The likelihood", "B) The posterior probability", "C) The prior probability", "D) The marginal likelihood"], correct: 2, explanation: "P(A) is the prior probability \u2014 our belief about A before observing evidence B. The likelihood is P(B|A) and the posterior is P(A|B)." },
+      { q: "A disease affects 1% of a population. A test has 95% sensitivity and 5% false positive rate. If someone tests positive, what is approximately the probability they have the disease?", options: ["A) 95%", "B) 50%", "C) 16%", "D) 1%"], correct: 2, explanation: "Using Bayes' theorem: P(D|+) = (0.95 \u00d7 0.01) / (0.95 \u00d7 0.01 + 0.05 \u00d7 0.99) \u2248 0.16. The low base rate dramatically reduces the posterior despite a good test." },
+      { q: "How does increasing the strength of the prior in a Bayesian model affect the posterior as more data is collected?", options: ["A) The prior always dominates regardless of data", "B) The posterior converges to the prior", "C) With enough data the likelihood overwhelms even a strong prior", "D) A strong prior prevents the model from learning"], correct: 2, explanation: "As data accumulates, the likelihood term dominates. A strong prior slows convergence but cannot prevent it \u2014 the posterior will eventually reflect the data." },
+      { q: "In a spam filter using naive Bayes, what assumption makes the model 'naive'?", options: ["A) All emails are equally likely to be spam", "B) Features (words) are conditionally independent given the class", "C) The prior probability of spam is 0.5", "D) Word frequencies follow a Gaussian distribution"], correct: 1, explanation: "Naive Bayes assumes that features are conditionally independent given the class label. This simplifies computation from exponential to linear in the number of features." },
+      { q: "A Bayesian model with a uniform prior over parameters is equivalent to which frequentist approach?", options: ["A) Ridge regression", "B) Lasso regression", "C) Maximum Likelihood Estimation", "D) Hypothesis testing"], correct: 2, explanation: "With a uniform (flat) prior, the MAP estimate equals the MLE because the prior contributes a constant factor. The posterior is then proportional to the likelihood alone." }
+    ]
+  },
+  {
+    topic: "Probability Distributions",
+    questions: [
+      { q: "Which distribution would you use to model the number of customer arrivals per hour at a store?", options: ["A) Bernoulli", "B) Gaussian", "C) Poisson", "D) Uniform"], correct: 2, explanation: "The Poisson distribution models the count of events in a fixed interval when events occur independently at a constant average rate \u2014 perfect for arrival counts." },
+      { q: "The Beta distribution is commonly used as a prior for which type of parameter?", options: ["A) Mean of a Gaussian", "B) Variance of a Gaussian", "C) Probability parameter of a Bernoulli/Binomial", "D) Rate parameter of a Poisson"], correct: 2, explanation: "The Beta distribution is defined on [0,1], making it a natural conjugate prior for probability parameters in Bernoulli and Binomial models." },
+      { q: "What is the relationship between the exponential and Poisson distributions?", options: ["A) They are identical", "B) The exponential models time between events; the Poisson models event counts", "C) The Poisson is the continuous version of the exponential", "D) They have no relationship"], correct: 1, explanation: "If events follow a Poisson process, the time between consecutive events follows an exponential distribution. They are two views of the same process." },
+      { q: "A data scientist observes that a feature has a heavy right tail. Which distribution family might be most appropriate?", options: ["A) Gaussian", "B) Uniform", "C) Log-normal or Pareto", "D) Bernoulli"], correct: 2, explanation: "Heavy right tails suggest skewed distributions. Log-normal and Pareto distributions naturally model positive, right-skewed data like income or file sizes." },
+      { q: "What happens to a Binomial(n, p) distribution as n becomes very large and p becomes very small while np stays constant?", options: ["A) It approaches a Gaussian", "B) It approaches a Poisson", "C) It approaches a uniform", "D) It diverges"], correct: 1, explanation: "This is the Poisson limit theorem. When n is large and p is small with np = \u03bb held constant, the Binomial converges to a Poisson(\u03bb) distribution." }
+    ]
+  },
+  {
+    topic: "MLE vs MAP",
+    questions: [
+      { q: "What does Maximum Likelihood Estimation (MLE) optimize?", options: ["A) The prior probability of the parameters", "B) The probability of the data given the parameters", "C) The posterior probability of the parameters", "D) The marginal likelihood of the data"], correct: 1, explanation: "MLE finds parameters that maximize P(data|\u03b8), the likelihood function. It asks: which parameters make the observed data most probable?" },
+      { q: "MAP estimation with a Gaussian prior on weights is equivalent to which regularization technique?", options: ["A) L1 regularization (Lasso)", "B) L2 regularization (Ridge)", "C) Dropout", "D) Early stopping"], correct: 1, explanation: "A Gaussian prior centered at zero penalizes large weights quadratically, which is exactly the L2 penalty term added in Ridge regression." },
+      { q: "A coin is flipped 3 times and all land heads. What is the MLE estimate of the probability of heads?", options: ["A) 0.5", "B) 0.75", "C) 1.0", "D) Cannot be determined"], correct: 2, explanation: "MLE maximizes the likelihood P(HHH|p) = p\u00b3, which is maximized at p=1.0. This illustrates how MLE can overfit with small samples \u2014 it has no regularizing prior." },
+      { q: "What is the key advantage of MAP over MLE in practice?", options: ["A) MAP is always faster to compute", "B) MAP incorporates prior knowledge and reduces overfitting", "C) MAP does not require specifying a likelihood", "D) MAP always gives unbiased estimates"], correct: 1, explanation: "MAP combines the likelihood with a prior distribution, which acts as regularization. This is especially helpful with limited data where MLE tends to overfit." },
+      { q: "In the limit of infinite data, how do MLE and MAP estimates compare?", options: ["A) They diverge", "B) MAP is always better", "C) They converge to the same value", "D) MLE becomes undefined"], correct: 2, explanation: "With infinite data, the likelihood overwhelms any finite prior, so the MAP estimate converges to the MLE. The prior's influence diminishes as evidence accumulates." }
+    ]
+  },
+  {
+    topic: "Central Limit Theorem",
+    questions: [
+      { q: "The Central Limit Theorem states that the sampling distribution of the sample mean approaches a normal distribution as:", options: ["A) The population variance increases", "B) The population itself becomes normal", "C) The sample size increases", "D) The number of populations increases"], correct: 2, explanation: "The CLT says that regardless of the population distribution, the distribution of sample means approaches a Gaussian as the sample size n grows, typically n \u2265 30 is sufficient." },
+      { q: "A factory produces bolts with a mean length of 10cm and standard deviation of 2cm (non-normal distribution). What can you say about the mean of 100 randomly sampled bolts?", options: ["A) Nothing, since the population is not normal", "B) It follows approximately N(10, 0.04)", "C) It follows approximately N(10, 0.2)", "D) It follows approximately N(10, 2)"], correct: 1, explanation: "By the CLT, the sample mean follows N(\u03bc, \u03c3\u00b2/n) = N(10, 4/100) = N(10, 0.04). The standard error is \u03c3/\u221an = 2/10 = 0.2, so variance is 0.04." },
+      { q: "Which condition is NOT required for the Central Limit Theorem to hold?", options: ["A) The samples must be independent", "B) The sample size must be sufficiently large", "C) The population must be normally distributed", "D) The population must have finite variance"], correct: 2, explanation: "The CLT applies regardless of the population distribution shape \u2014 that is its power. It does require independence, sufficient n, and finite variance." },
+      { q: "Why is the CLT important for hypothesis testing?", options: ["A) It eliminates the need for data", "B) It allows us to use z-tests and t-tests even when the population is not normal", "C) It proves all data is normally distributed", "D) It reduces the required sample size to 1"], correct: 1, explanation: "The CLT justifies using normal-based test statistics for the sample mean, even when the underlying population is non-normal, as long as the sample size is large enough." },
+      { q: "If you average 10,000 rolls of a fair die, the CLT predicts the result will be very close to:", options: ["A) 3.0", "B) 3.5", "C) 4.0", "D) 6.0"], correct: 1, explanation: "The expected value of a fair die is (1+2+3+4+5+6)/6 = 3.5. By the CLT, the average of many rolls concentrates tightly around this mean with standard error \u03c3/\u221an." }
+    ]
+  },
+  {
+    topic: "Entropy & Cross-Entropy",
+    questions: [
+      { q: "What does Shannon entropy measure?", options: ["A) The energy of a system", "B) The average amount of information (or uncertainty) in a random variable", "C) The error rate of a classifier", "D) The number of classes in a dataset"], correct: 1, explanation: "Shannon entropy H(X) = -\u03a3 p(x) log p(x) quantifies the average number of bits needed to encode outcomes \u2014 higher entropy means more uncertainty." },
+      { q: "A fair coin has entropy H = 1 bit. What is the entropy of a coin that always lands heads?", options: ["A) 1 bit", "B) 2 bits", "C) 0 bits", "D) 0.5 bits"], correct: 2, explanation: "A deterministic outcome has zero uncertainty, so entropy is 0. Entropy is maximized when all outcomes are equally likely (the fair coin case)." },
+      { q: "In machine learning, cross-entropy loss is commonly used for classification. What does it measure?", options: ["A) The distance between two sets of features", "B) The difference between the predicted probability distribution and the true distribution", "C) The number of misclassified samples", "D) The variance of the predictions"], correct: 1, explanation: "Cross-entropy H(p,q) = -\u03a3 p(x) log q(x) measures how well predicted distribution q approximates true distribution p. Minimizing it pushes predictions toward true labels." },
+      { q: "Why is cross-entropy preferred over mean squared error for classification tasks?", options: ["A) It is computationally cheaper", "B) It provides stronger gradients when predictions are confidently wrong", "C) It works only for binary classification", "D) It does not require probability outputs"], correct: 1, explanation: "Cross-entropy produces large gradients when predictions are far from the truth, enabling faster learning. MSE gradients shrink near 0 and 1 due to the sigmoid saturation." },
+      { q: "If a model predicts class probabilities [0.7, 0.2, 0.1] and the true label is class 0, what is the cross-entropy loss?", options: ["A) -log(0.7) \u2248 0.36", "B) -log(0.2) \u2248 1.61", "C) -log(0.1) \u2248 2.30", "D) 0"], correct: 0, explanation: "Cross-entropy loss for a single sample is -log(p_true). Since the true class is 0 and the model assigns probability 0.7 to it, the loss is -log(0.7) \u2248 0.36." }
+    ]
+  },
+  {
+    topic: "KL Divergence",
+    questions: [
+      { q: "KL divergence D_KL(P||Q) measures:", options: ["A) The symmetric distance between distributions P and Q", "B) The information lost when Q is used to approximate P", "C) The entropy of distribution P", "D) The correlation between P and Q"], correct: 1, explanation: "KL divergence measures the extra bits needed when using approximation Q instead of the true distribution P. It quantifies information loss in the approximation." },
+      { q: "Is KL divergence symmetric \u2014 that is, does D_KL(P||Q) = D_KL(Q||P)?", options: ["A) Yes, always", "B) No, it is asymmetric in general", "C) Only for Gaussian distributions", "D) Only when P = Q"], correct: 1, explanation: "KL divergence is not symmetric: D_KL(P||Q) \u2260 D_KL(Q||P) in general. This is why it is not a true metric. The asymmetry reflects the different roles of P and Q." },
+      { q: "In variational autoencoders (VAEs), KL divergence is used to:", options: ["A) Measure reconstruction error", "B) Regularize the latent space toward a prior distribution", "C) Compute the learning rate", "D) Select the number of layers"], correct: 1, explanation: "The VAE loss includes a KL term that pushes the encoder's approximate posterior q(z|x) toward the prior p(z), typically a standard Gaussian, ensuring a smooth latent space." },
+      { q: "What is the minimum possible value of KL divergence?", options: ["A) -1", "B) Negative infinity", "C) 0", "D) 1"], correct: 2, explanation: "KL divergence is always non-negative (Gibbs' inequality) and equals zero if and only if P and Q are identical distributions. It has no upper bound." },
+      { q: "How is cross-entropy related to KL divergence?", options: ["A) They are unrelated", "B) H(P,Q) = H(P) + D_KL(P||Q)", "C) H(P,Q) = D_KL(P||Q) - H(P)", "D) H(P,Q) = H(P) \u00d7 D_KL(P||Q)"], correct: 1, explanation: "Cross-entropy decomposes as the entropy of P plus the KL divergence from P to Q. Since H(P) is constant w.r.t. model parameters, minimizing cross-entropy is equivalent to minimizing KL divergence." }
+    ]
+  },
+  {
+    topic: "Gradient Descent Variants",
+    questions: [
+      { q: "What is the main difference between batch gradient descent and stochastic gradient descent (SGD)?", options: ["A) Batch uses the full dataset per update; SGD uses one sample (or a mini-batch)", "B) SGD always converges faster", "C) Batch gradient descent does not use gradients", "D) SGD cannot be used with neural networks"], correct: 0, explanation: "Batch GD computes the gradient over the entire dataset for each update, while SGD uses one sample (or a mini-batch). SGD is noisier but much more efficient for large datasets." },
+      { q: "What problem does the Adam optimizer address compared to vanilla SGD?", options: ["A) Adam removes the need for a loss function", "B) Adam adapts learning rates per parameter using first and second moment estimates", "C) Adam eliminates all local minima", "D) Adam uses the full batch like standard GD"], correct: 1, explanation: "Adam maintains running averages of both gradients (first moment) and squared gradients (second moment) to adapt the learning rate for each parameter individually." },
+      { q: "In mini-batch SGD, what is the typical effect of increasing the batch size?", options: ["A) The gradient estimate becomes noisier", "B) The gradient estimate becomes more accurate but each step costs more computation", "C) The model always converges faster", "D) The learning rate must decrease proportionally"], correct: 1, explanation: "Larger batches provide more accurate gradient estimates with lower variance, but each step requires more computation. There is a practical trade-off between noise and cost." },
+      { q: "What is the purpose of momentum in gradient descent?", options: ["A) To increase the learning rate over time", "B) To accumulate past gradients to accelerate convergence and dampen oscillations", "C) To randomly perturb the weights", "D) To reduce the batch size"], correct: 1, explanation: "Momentum adds a fraction of the previous update to the current one, helping the optimizer move faster along consistent gradient directions and reducing oscillations in ravines." },
+      { q: "A model's training loss oscillates wildly and diverges. Which gradient descent modification would most likely help?", options: ["A) Remove all regularization", "B) Use gradient clipping to cap the gradient norm", "C) Increase the learning rate", "D) Switch from Adam to vanilla SGD"], correct: 1, explanation: "Wild oscillation and divergence suggest exploding gradients. Gradient clipping caps the gradient norm to a maximum value, stabilizing training by preventing excessively large updates." }
+    ]
+  },
+  {
+    topic: "Learning Rate Effect",
+    questions: [
+      { q: "What typically happens when the learning rate is set too high?", options: ["A) Training is very slow but stable", "B) The loss oscillates or diverges", "C) The model underfits", "D) Gradients vanish"], correct: 1, explanation: "A high learning rate causes parameter updates that overshoot the optimum, leading to oscillations or divergence. The loss may bounce around or increase instead of decreasing." },
+      { q: "What is the benefit of a learning rate schedule that decreases over time?", options: ["A) It makes the model more complex", "B) It allows fast initial progress then fine-grained convergence near the optimum", "C) It increases the batch size automatically", "D) It eliminates the need for momentum"], correct: 1, explanation: "A decaying learning rate enables large steps early for rapid progress, then smaller steps later for precise convergence. This combines speed with accuracy." },
+      { q: "The 'warmup' strategy for learning rates involves:", options: ["A) Starting with a high learning rate and keeping it constant", "B) Gradually increasing the learning rate from a small value before decaying it", "C) Using a random learning rate each epoch", "D) Setting the learning rate to zero initially"], correct: 1, explanation: "Warmup starts with a small learning rate and gradually increases it. This helps stabilize early training when parameter estimates are far from optimal and gradients may be unreliable." },
+      { q: "A practitioner finds that the model converges but to a sharp minimum with poor generalization. What learning rate strategy might help?", options: ["A) Use a very small constant learning rate", "B) Use cyclical learning rates or stochastic weight averaging", "C) Remove the learning rate entirely", "D) Set learning rate to 1.0"], correct: 1, explanation: "Cyclical learning rates and SWA help the optimizer escape sharp minima and find flatter regions of the loss landscape, which tend to generalize better to unseen data." },
+      { q: "In the context of learning rate, what does the 'loss landscape' metaphor help us understand?", options: ["A) The shape of the data distribution", "B) How the loss function varies as parameters change, revealing valleys, saddle points, and local minima", "C) The architecture of the neural network", "D) The distribution of training labels"], correct: 1, explanation: "The loss landscape visualizes loss as a surface over parameter space. Learning rate determines step size on this surface \u2014 too large jumps over valleys, too small gets stuck." }
+    ]
+  },
+  {
+    topic: "SVD & Rank-k Approximation",
+    questions: [
+      { q: "In Singular Value Decomposition A = U\u03a3V^T, what do the columns of U represent?", options: ["A) The eigenvalues of A", "B) The left singular vectors (orthonormal basis for column space)", "C) The right singular vectors", "D) The singular values"], correct: 1, explanation: "The columns of U are the left singular vectors, forming an orthonormal basis for the column space of A. They represent the output directions of the transformation." },
+      { q: "How is SVD used in dimensionality reduction (e.g., PCA)?", options: ["A) By keeping only the largest singular values and their corresponding vectors", "B) By removing all singular values", "C) By transposing the matrix", "D) By multiplying all singular values by zero"], correct: 0, explanation: "Keeping the top-k singular values and corresponding singular vectors gives the best rank-k approximation (Eckart-Young theorem). PCA uses this to project data onto the directions of maximum variance." },
+      { q: "A 1000\u00d7500 matrix has at most how many non-zero singular values?", options: ["A) 1000", "B) 500", "C) 1500", "D) 500000"], correct: 1, explanation: "The number of singular values equals min(m, n). For a 1000\u00d7500 matrix, there are at most 500 non-zero singular values, which equals the rank of the matrix." },
+      { q: "In recommendation systems, low-rank matrix factorization via SVD helps by:", options: ["A) Making the matrix larger", "B) Discovering latent factors that explain user-item interactions", "C) Removing all users from the dataset", "D) Converting ratings to binary values"], correct: 1, explanation: "Low-rank SVD decomposes the user-item matrix into latent factors capturing hidden patterns like genre preferences, enabling prediction of missing ratings." },
+      { q: "What norm does the Eckart-Young theorem guarantee the rank-k SVD approximation minimizes?", options: ["A) L1 norm only", "B) Both Frobenius norm and spectral norm", "C) Only the infinity norm", "D) No norm is minimized"], correct: 1, explanation: "The Eckart-Young theorem states that truncated SVD gives the closest rank-k approximation in both the Frobenius norm and the spectral (operator) norm among all rank-k matrices." }
+    ]
+  },
+  {
+    topic: "Eigenvalues & Eigenvectors",
+    questions: [
+      { q: "If Av = \u03bbv, what is \u03bb called?", options: ["A) An eigenvector", "B) An eigenvalue", "C) A singular value", "D) The determinant"], correct: 1, explanation: "\u03bb is the eigenvalue associated with eigenvector v. It represents the factor by which the eigenvector is scaled when the linear transformation A is applied." },
+      { q: "In PCA, eigenvalues of the covariance matrix represent:", options: ["A) The mean of each feature", "B) The amount of variance captured along each principal component", "C) The number of data points", "D) The correlation between features"], correct: 1, explanation: "Each eigenvalue tells you how much variance the corresponding principal component explains. Larger eigenvalues indicate directions where the data varies most." },
+      { q: "A 3\u00d73 matrix has eigenvalues 5, 3, and 0. What is the rank of this matrix?", options: ["A) 3", "B) 2", "C) 1", "D) 0"], correct: 1, explanation: "The rank equals the number of non-zero eigenvalues. Since one eigenvalue is 0, the matrix has rank 2 \u2014 it maps 3D space onto a 2D subspace." },
+      { q: "Why must a covariance matrix have non-negative eigenvalues?", options: ["A) Because covariance is always positive", "B) Because it is positive semi-definite (v^T \u03a3 v \u2265 0 for all v)", "C) Because eigenvalues are always non-negative", "D) Because the matrix is square"], correct: 1, explanation: "A covariance matrix is positive semi-definite by construction: v^T \u03a3 v = Var(v^T X) \u2265 0 for any vector v. This guarantees all eigenvalues are \u2265 0." },
+      { q: "The spectral theorem states that a real symmetric matrix can be decomposed as:", options: ["A) A = LU (LU decomposition)", "B) A = Q\u039bQ^T where Q is orthogonal and \u039b is diagonal", "C) A = U\u03a3V^T (always with U \u2260 V)", "D) A = A^T A"], correct: 1, explanation: "The spectral theorem guarantees that any real symmetric matrix has an orthogonal basis of eigenvectors and can be written as Q\u039bQ^T. This is the foundation of PCA." }
+    ]
+  },
+  {
+    topic: "Bias-Variance Tradeoff",
+    questions: [
+      { q: "A model with high bias and low variance is most likely:", options: ["A) Overfitting the training data", "B) Underfitting the training data", "C) Perfectly fitting the training data", "D) Memorizing noise"], correct: 1, explanation: "High bias means the model makes strong assumptions that prevent it from capturing the true pattern \u2014 it underfits. Low variance means it is stable across different training sets." },
+      { q: "You train a decision tree with no depth limit and it achieves 99% training accuracy but 60% test accuracy. What is the likely problem?", options: ["A) High bias", "B) High variance (overfitting)", "C) Insufficient features", "D) The test set is too large"], correct: 1, explanation: "The large gap between training and test accuracy is a hallmark of overfitting (high variance). The deep tree memorizes training data including noise, failing to generalize." },
+      { q: "Which strategy directly addresses high variance?", options: ["A) Using a more complex model", "B) Adding more features", "C) Collecting more training data or using regularization", "D) Removing regularization"], correct: 2, explanation: "More data helps the model learn true patterns rather than noise. Regularization constrains model complexity. Both reduce variance at the potential cost of slightly more bias." },
+      { q: "The expected test error can be decomposed into which three components?", options: ["A) Precision, recall, F1", "B) Bias\u00b2, variance, and irreducible error (noise)", "C) Training error, validation error, test error", "D) Accuracy, loss, and gradient"], correct: 1, explanation: "Expected error = Bias\u00b2 + Variance + Irreducible noise. Bias\u00b2 measures systematic error, variance measures sensitivity to training data, and noise is the inherent data randomness." },
+      { q: "Ensemble methods like bagging primarily reduce which component of error?", options: ["A) Bias", "B) Variance", "C) Irreducible error", "D) All three equally"], correct: 1, explanation: "Bagging (e.g., Random Forests) trains multiple models on bootstrap samples and averages predictions. Averaging reduces variance while keeping bias roughly the same." }
+    ]
+  },
+  {
+    topic: "L1 vs L2 Regularization",
+    questions: [
+      { q: "L1 regularization adds which penalty term to the loss?", options: ["A) \u03bb \u00d7 sum of squared weights", "B) \u03bb \u00d7 sum of absolute weights", "C) \u03bb \u00d7 max weight", "D) \u03bb \u00d7 product of weights"], correct: 1, explanation: "L1 (Lasso) adds \u03bb\u03a3|w\u1d62| to the loss. The absolute value penalty is non-differentiable at zero, which is key to why it drives weights exactly to zero." },
+      { q: "Why does L1 regularization produce sparse models while L2 does not?", options: ["A) L1 has a larger penalty", "B) The L1 penalty's diamond-shaped constraint region has corners on axes, favoring zero-valued weights", "C) L2 ignores small weights", "D) L1 uses a different optimizer"], correct: 1, explanation: "Geometrically, the L1 constraint region is a diamond whose corners lie on coordinate axes. The loss contours are most likely to intersect at these corners, setting some weights to exactly zero." },
+      { q: "A dataset has 1000 features but you suspect only 20 are relevant. Which regularization should you prefer?", options: ["A) L2 (Ridge)", "B) No regularization", "C) L1 (Lasso)", "D) Dropout only"], correct: 2, explanation: "L1/Lasso performs automatic feature selection by driving irrelevant feature weights to zero. This is ideal when you expect a sparse solution with few truly important features." },
+      { q: "Elastic Net regularization combines L1 and L2. When is it preferred over pure Lasso?", options: ["A) When there are no correlated features", "B) When groups of correlated features exist and you want to select them together", "C) When the dataset is very small", "D) When you want no regularization at all"], correct: 1, explanation: "Pure Lasso tends to pick one feature from a correlated group and ignore others. Elastic Net's L2 component encourages correlated features to have similar weights, selecting the group together." },
+      { q: "In the Bayesian interpretation, L2 regularization corresponds to a Gaussian prior, while L1 corresponds to:", options: ["A) A uniform prior", "B) A Laplace (double exponential) prior", "C) A Cauchy prior", "D) A Bernoulli prior"], correct: 1, explanation: "The Laplace distribution has a sharp peak at zero with heavy tails. As a prior, it concentrates probability mass at zero, explaining why MAP with a Laplace prior (L1) yields sparse solutions." }
+    ]
+  },
+  {
+    topic: "Decision Boundaries",
+    questions: [
+      { q: "A linear classifier in 2D creates what kind of decision boundary?", options: ["A) A circle", "B) A straight line", "C) A parabola", "D) An arbitrary curve"], correct: 1, explanation: "A linear classifier computes w^T x + b = 0, which defines a hyperplane \u2014 in 2D, this is a straight line separating the two classes." },
+      { q: "Adding polynomial features (e.g., x\u00b2, x\u2081x\u2082) to a linear classifier allows it to learn:", options: ["A) Only linear boundaries", "B) Non-linear decision boundaries in the original feature space", "C) Higher-dimensional data only", "D) Fewer classes"], correct: 1, explanation: "Polynomial features map the input to a higher-dimensional space where a linear boundary corresponds to a curved boundary in the original space \u2014 enabling non-linear separation." },
+      { q: "An SVM with an RBF (Gaussian) kernel can produce:", options: ["A) Only linear boundaries", "B) Only circular boundaries", "C) Complex non-linear boundaries of arbitrary shape", "D) Only polynomial boundaries"], correct: 2, explanation: "The RBF kernel implicitly maps data to an infinite-dimensional space, allowing the SVM to learn highly complex, non-linear decision boundaries that can adapt to intricate class structures." },
+      { q: "If a neural network's decision boundary is too complex and jagged, what does this suggest?", options: ["A) The model is underfitting", "B) The model is overfitting and fitting to noise", "C) The learning rate is too low", "D) The model needs more layers"], correct: 1, explanation: "Overly complex, jagged boundaries indicate the model is fitting noise in the training data rather than the underlying pattern. Regularization or simpler architecture can help." },
+      { q: "In a 100-dimensional feature space, a linear decision boundary is a:", options: ["A) Line", "B) Plane", "C) 99-dimensional hyperplane", "D) 100-dimensional hyperplane"], correct: 2, explanation: "A linear boundary in n-dimensional space is an (n-1)-dimensional hyperplane. In 100D, it is a 99-dimensional hyperplane defined by w^T x + b = 0." }
+    ]
+  },
+  {
+    topic: "K-Fold Cross-Validation",
+    questions: [
+      { q: "In 5-fold cross-validation, what fraction of the data is used for testing in each fold?", options: ["A) 1/5 (20%)", "B) 4/5 (80%)", "C) 1/2 (50%)", "D) All of it"], correct: 0, explanation: "In k-fold CV, the data is split into k equal parts. Each fold uses 1 part (1/k) for testing and the remaining k-1 parts for training. With 5 folds, each test set is 20%." },
+      { q: "Why is cross-validation preferred over a single train/test split?", options: ["A) It is faster", "B) It provides a more reliable estimate of model performance by averaging over multiple splits", "C) It uses less data", "D) It eliminates the need for a test set entirely"], correct: 1, explanation: "A single split may be unrepresentative. Cross-validation averages performance over k different splits, reducing the variance of the performance estimate and using all data for both training and testing." },
+      { q: "Leave-One-Out Cross-Validation (LOOCV) is a special case of k-fold CV where k equals:", options: ["A) 2", "B) 10", "C) The number of samples n", "D) The number of features"], correct: 2, explanation: "LOOCV sets k = n, so each fold has exactly one test sample. It has very low bias but high variance and is computationally expensive for large datasets." },
+      { q: "Stratified k-fold cross-validation ensures that:", options: ["A) Each fold has the same number of features", "B) Each fold preserves the class distribution of the full dataset", "C) Folds are randomly sized", "D) No data is used for testing"], correct: 1, explanation: "Stratification ensures each fold has approximately the same proportion of each class. This is crucial for imbalanced datasets where random splits might create folds with missing classes." },
+      { q: "A model shows 95% accuracy in cross-validation but 60% on a held-out test set. What is the most likely cause?", options: ["A) The CV folds were too large", "B) Data leakage \u2014 information from the test set leaked into training during CV", "C) The model is too simple", "D) Cross-validation is unreliable"], correct: 1, explanation: "A large gap between CV and held-out test performance strongly suggests data leakage. Common causes include preprocessing (e.g., scaling) using the full dataset before splitting." }
+    ]
+  },
+  {
+    topic: "Gradient Boosted Trees",
+    questions: [
+      { q: "In gradient boosting, each new tree is trained to predict:", options: ["A) The original target values", "B) The residuals (errors) of the current ensemble", "C) Random subsets of features", "D) The average prediction"], correct: 1, explanation: "Each new tree fits the negative gradient of the loss function, which for squared error equals the residuals. This iteratively corrects the mistakes of the existing ensemble." },
+      { q: "How does the learning rate (shrinkage) parameter affect gradient boosting?", options: ["A) It controls the depth of each tree", "B) It scales each tree's contribution, trading off between fewer large steps and more small steps", "C) It determines the number of features", "D) It has no effect on performance"], correct: 1, explanation: "A smaller learning rate means each tree contributes less, requiring more trees but generally improving generalization. It acts as a form of regularization through shrinkage." },
+      { q: "Compared to a Random Forest, gradient boosted trees are generally:", options: ["A) Less prone to overfitting", "B) More prone to overfitting but often achieve higher accuracy when tuned properly", "C) Always faster to train", "D) Unable to handle categorical features"], correct: 1, explanation: "Boosting builds trees sequentially, each correcting prior errors, which can lead to overfitting if not regularized. However, well-tuned boosting often outperforms random forests." },
+      { q: "XGBoost and LightGBM improve upon basic gradient boosting primarily through:", options: ["A) Using linear models instead of trees", "B) Algorithmic optimizations like histogram-based splitting, regularization, and parallelism", "C) Removing the boosting framework entirely", "D) Using only one tree"], correct: 1, explanation: "XGBoost adds regularization terms and efficient split finding. LightGBM uses histogram-based methods and leaf-wise growth for speed. Both add engineering optimizations to the core boosting idea." },
+      { q: "A gradient boosted model has low training error but high validation error. Which hyperparameter change would most likely help?", options: ["A) Increase the number of trees and max depth", "B) Decrease max depth, increase min samples per leaf, or reduce the learning rate", "C) Remove all regularization", "D) Set the learning rate to 1.0"], correct: 1, explanation: "The symptoms indicate overfitting. Reducing tree depth, requiring more samples per leaf, and lowering the learning rate all constrain model complexity and reduce overfitting." }
+    ]
+  },
+  {
+    topic: "Hypothesis Testing",
+    questions: [
+      { q: "In hypothesis testing, what does the p-value represent?", options: ["A) The probability that the null hypothesis is true", "B) The probability of observing results as extreme as the data, assuming the null hypothesis is true", "C) The probability of making a correct decision", "D) The effect size"], correct: 1, explanation: "The p-value is the probability of obtaining a test statistic as extreme as (or more extreme than) the observed value, assuming H\u2080 is true. It is NOT the probability that H\u2080 is true." },
+      { q: "A Type I error occurs when:", options: ["A) We fail to reject a false null hypothesis", "B) We reject a true null hypothesis (false positive)", "C) The test has low power", "D) The sample size is too large"], correct: 1, explanation: "Type I error (false positive) means concluding there is an effect when there is none. The significance level \u03b1 is the maximum acceptable Type I error rate." },
+      { q: "Increasing the sample size in a hypothesis test generally:", options: ["A) Increases the p-value", "B) Increases the power to detect a true effect", "C) Increases the Type I error rate", "D) Has no effect on the test"], correct: 1, explanation: "Larger samples reduce the standard error, making it easier to detect true effects. This increases statistical power (1 - Type II error rate) without affecting the significance level." },
+      { q: "A/B testing at a tech company finds p = 0.03 for a new feature's effect on click rate. With \u03b1 = 0.05, what is the conclusion?", options: ["A) The effect is large and practically significant", "B) We reject H\u2080; the result is statistically significant, but practical significance requires examining effect size", "C) We accept H\u2080", "D) The test is invalid"], correct: 1, explanation: "p < \u03b1 means we reject H\u2080, but statistical significance does not imply practical importance. A tiny effect can be statistically significant with large n. Always check effect size." },
+      { q: "The Bonferroni correction addresses which problem?", options: ["A) Small sample sizes", "B) The increased false positive rate when performing multiple simultaneous hypothesis tests", "C) Non-normal distributions", "D) Heteroscedasticity"], correct: 1, explanation: "Running m tests at level \u03b1 gives a family-wise error rate much higher than \u03b1. Bonferroni corrects this by testing each at \u03b1/m, controlling the overall false positive rate." }
+    ]
+  },
+  {
+    topic: "Monte Carlo Estimation",
+    questions: [
+      { q: "The fundamental idea behind Monte Carlo estimation is:", options: ["A) Using deterministic algorithms for exact solutions", "B) Approximating expectations by averaging random samples", "C) Fitting a parametric model to data", "D) Using gradient descent for optimization"], correct: 1, explanation: "Monte Carlo methods approximate integrals and expectations by drawing random samples and averaging. By the law of large numbers, the estimate converges to the true value." },
+      { q: "To estimate \u03c0 using Monte Carlo, you could:", options: ["A) Count primes below a number", "B) Randomly sample points in a square and compute the fraction falling inside an inscribed circle", "C) Use gradient descent on a circle", "D) Solve a differential equation"], correct: 1, explanation: "Sampling uniformly in a unit square and computing the fraction inside the quarter-circle estimates \u03c0/4. Multiplying by 4 gives an estimate of \u03c0 that improves with more samples." },
+      { q: "How does the estimation error of a Monte Carlo estimate scale with the number of samples N?", options: ["A) O(1/N)", "B) O(1/\u221aN)", "C) O(1/N\u00b2)", "D) O(log N)"], correct: 1, explanation: "The standard error of a Monte Carlo estimate decreases as O(1/\u221aN). This means you need 4\u00d7 the samples to halve the error \u2014 a fundamental and dimension-independent rate." },
+      { q: "Importance sampling is a variance reduction technique that:", options: ["A) Samples uniformly from all distributions", "B) Samples more frequently from regions that contribute most to the estimate and reweights accordingly", "C) Eliminates all randomness", "D) Requires the exact integral value"], correct: 1, explanation: "Importance sampling uses a proposal distribution that concentrates samples where the integrand is large, then corrects for the biased sampling with likelihood ratios (importance weights)." },
+      { q: "In reinforcement learning, Monte Carlo methods estimate value functions by:", options: ["A) Solving the Bellman equation exactly", "B) Averaging the actual returns observed after visiting each state across many episodes", "C) Using only one-step transitions", "D) Ignoring rewards"], correct: 1, explanation: "Monte Carlo RL averages the cumulative rewards (returns) observed from each state across complete episodes. Unlike TD methods, they do not bootstrap from estimated values." }
+    ]
+  },
+  {
+    topic: "Numerical Stability",
+    questions: [
+      { q: "Why do we compute log-probabilities instead of raw probabilities in many ML algorithms?", options: ["A) Logs are faster to compute", "B) Multiplying many small probabilities causes underflow; log converts products to sums", "C) Log-probabilities are always larger", "D) It has no practical benefit"], correct: 1, explanation: "Multiplying many probabilities (e.g., in likelihood computation) quickly approaches zero, causing floating-point underflow. Working in log-space converts products to sums, maintaining precision." },
+      { q: "The log-sum-exp trick is used to compute log(\u03a3 exp(x\u1d62)) stably. It works by:", options: ["A) Replacing exp with a polynomial", "B) Subtracting the maximum value before exponentiating: log(\u03a3 exp(x\u1d62 - max)) + max", "C) Using double precision floats", "D) Clipping all values to [-1, 1]"], correct: 1, explanation: "By subtracting max(x\u1d62) before exponentiating, the largest exponent becomes exp(0) = 1, preventing overflow. The subtracted constant is added back in log-space to preserve correctness." },
+      { q: "When computing softmax(z), what numerical issue can arise if z contains very large values?", options: ["A) The output sums to more than 1", "B) exp(z) overflows to infinity", "C) The gradients become too small", "D) The output becomes negative"], correct: 1, explanation: "Large values of z cause exp(z) to overflow to inf, producing NaN in the division. The standard fix is to subtract max(z) from all elements before applying softmax." },
+      { q: "Batch normalization helps with numerical stability during training by:", options: ["A) Removing all non-linearities", "B) Normalizing layer inputs to have zero mean and unit variance, preventing internal covariate shift", "C) Using integer arithmetic", "D) Removing the bias term"], correct: 1, explanation: "Batch normalization standardizes each layer's inputs across the mini-batch. This keeps activations in a stable numerical range, enabling higher learning rates and smoother optimization." },
+      { q: "A neural network produces NaN loss after a few training iterations. Which of these is the LEAST likely cause?", options: ["A) Learning rate too high causing exploding gradients", "B) Division by zero in a custom loss function", "C) Log of zero or negative number", "D) Using too many training epochs"], correct: 3, explanation: "NaN typically results from numerical operations like 0/0, log(0), or overflow from exploding gradients. Simply training for many epochs would not itself produce NaN \u2014 it might overfit, but the arithmetic remains valid." }
+    ]
+  }
+];
 
-  const labels = ['A', 'B', 'C', 'D'];
-  let score = 0;
-  let answered = new Array(quizData.length).fill(false);
+let score = 0;
+let totalQuestions = 90;
+let answeredSet = new Set();
+let topicScores = {};
 
-  function renderQuiz() {
-    const container = document.getElementById('quizQuestions');
-    container.innerHTML = '';
-    quizData.forEach(function(q, qi) {
-      const card = document.createElement('div');
-      card.className = 'question-card';
-      card.innerHTML = '<div class="q-number">Question ' + (qi + 1) + ' of 8</div>' +
-        '<div class="q-text">' + q.question + '</div>';
-      q.options.forEach(function(opt, oi) {
+quizData.forEach(function(t, ti) { topicScores[ti] = { correct: 0, answered: 0, total: t.questions.length }; });
+
+function buildQuiz() {
+  const container = document.getElementById('quizQuestions');
+  container.innerHTML = '';
+  quizData.forEach(function(topic, ti) {
+    const topicDiv = document.createElement('div');
+    topicDiv.className = 'quiz-topic';
+    const header = document.createElement('div');
+    header.className = 'quiz-topic-header';
+    header.innerHTML = '<h3>' + topic.topic + '</h3><span class="quiz-topic-score" id="topicScore' + ti + '">0 / ' + topic.questions.length + '</span>';
+    header.onclick = function() {
+      const qs = document.getElementById('topicQ' + ti);
+      qs.classList.toggle('open');
+    };
+    topicDiv.appendChild(header);
+    const questionsDiv = document.createElement('div');
+    questionsDiv.className = 'quiz-topic-questions';
+    questionsDiv.id = 'topicQ' + ti;
+    topic.questions.forEach(function(question, qi) {
+      const qDiv = document.createElement('div');
+      qDiv.className = 'quiz-question';
+      qDiv.innerHTML = '<h4>Q' + (qi + 1) + '. ' + question.q + '</h4>';
+      question.options.forEach(function(opt, oi) {
         const btn = document.createElement('button');
-        btn.className = 'option-btn';
-        btn.id = 'q' + qi + 'o' + oi;
-        btn.textContent = labels[oi] + ') ' + opt;
-        btn.onclick = function() { selectAnswer(qi, oi); };
-        card.appendChild(btn);
+        btn.className = 'quiz-option';
+        btn.id = 'qz_' + ti + '_' + qi + '_' + oi;
+        btn.textContent = opt;
+        btn.onclick = function() { handleAnswer(ti, qi, oi, question); };
+        qDiv.appendChild(btn);
       });
-      container.appendChild(card);
+      const exp = document.createElement('div');
+      exp.className = 'quiz-explanation';
+      exp.id = 'exp_' + ti + '_' + qi;
+      exp.textContent = question.explanation;
+      qDiv.appendChild(exp);
+      questionsDiv.appendChild(qDiv);
     });
+    topicDiv.appendChild(questionsDiv);
+    container.appendChild(topicDiv);
+  });
+}
+
+function handleAnswer(ti, qi, oi, question) {
+  const key = ti + '_' + qi;
+  if (answeredSet.has(key)) return;
+  answeredSet.add(key);
+  const isCorrect = oi === question.correct;
+  const selectedBtn = document.getElementById('qz_' + ti + '_' + qi + '_' + oi);
+  const expDiv = document.getElementById('exp_' + ti + '_' + qi);
+  if (isCorrect) {
+    selectedBtn.classList.add('correct');
+    expDiv.classList.add('correct-exp');
+    score++;
+    topicScores[ti].correct++;
+  } else {
+    selectedBtn.classList.add('wrong');
+    document.getElementById('qz_' + ti + '_' + qi + '_' + question.correct).classList.add('reveal');
+    expDiv.classList.add('wrong-exp');
   }
-
-  function selectAnswer(qi, oi) {
-    if (answered[qi]) return;
-    answered[qi] = true;
-    const q = quizData[qi];
-    const selected = document.getElementById('q' + qi + 'o' + oi);
-    if (oi === q.correct) {
-      selected.classList.add('correct');
-      score++;
-    } else {
-      selected.classList.add('wrong');
-      document.getElementById('q' + qi + 'o' + q.correct).classList.add('show-correct');
-    }
-    // Disable all options for this question
-    for (var i = 0; i < q.options.length; i++) {
-      document.getElementById('q' + qi + 'o' + i).classList.add('disabled');
-    }
-    document.getElementById('quizScore').textContent = 'Score: ' + score + ' / 8';
+  topicScores[ti].answered++;
+  expDiv.classList.add('show');
+  for (var i = 0; i < question.options.length; i++) {
+    document.getElementById('qz_' + ti + '_' + qi + '_' + i).disabled = true;
   }
+  document.getElementById('quizScore').textContent = score;
+  document.getElementById('topicScore' + ti).textContent = topicScores[ti].correct + ' / ' + topicScores[ti].total;
+  document.getElementById('quizProgressBar').style.width = (answeredSet.size / totalQuestions * 100) + '%';
+}
 
-  window.resetQuiz = function() {
-    score = 0;
-    answered = new Array(quizData.length).fill(false);
-    document.getElementById('quizScore').textContent = 'Score: 0 / 8';
-    renderQuiz();
-  };
+window.resetQuiz = function() {
+  score = 0;
+  answeredSet = new Set();
+  quizData.forEach(function(t, ti) { topicScores[ti] = { correct: 0, answered: 0, total: t.questions.length }; });
+  document.getElementById('quizScore').textContent = '0';
+  document.getElementById('quizProgressBar').style.width = '0%';
+  buildQuiz();
+};
 
-  window.toggleQuiz = function() {
-    const section = document.getElementById('quizSection');
-    if (section.style.display === 'none') {
-      section.style.display = 'block';
-      section.scrollIntoView({ behavior: 'smooth' });
-    } else {
-      section.style.display = 'none';
-    }
-  };
+window.toggleQuiz = function() {
+  const section = document.getElementById('quizSection');
+  if (section.style.display === 'none') {
+    section.style.display = 'block';
+    section.scrollIntoView({ behavior: 'smooth' });
+  } else {
+    section.style.display = 'none';
+  }
+};
 
-  renderQuiz();
+buildQuiz();
 })();
 </script>
-
 </body>
 </html>

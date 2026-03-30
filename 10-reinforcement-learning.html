@@ -317,21 +317,33 @@
   .katex { color: #e8e8ff; font-size: 1.1em; }
 
     /* Quiz Mode Styles */
-    #quizToggle { position: fixed; top: 20px; right: 20px; z-index: 1000; padding: 12px 20px; background: #ff9f43; color: #0a0a0f; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 1em; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
-    #quizToggle:hover { transform: scale(1.05); }
-    #quizSection { background: #12121f; border-top: 2px solid #ff9f43; padding: 40px 20px; margin-top: 40px; }
-    .quiz-container { max-width: 900px; margin: 0 auto; }
-    .quiz-question { background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 12px; padding: 24px; margin-bottom: 20px; }
-    .quiz-question h3 { color: #ff9f43; margin-bottom: 16px; font-size: 1.1em; }
-    .quiz-option { display: block; width: 100%; padding: 12px 16px; margin: 8px 0; background: #0d0d1a; border: 1px solid #2a2a4a; border-radius: 8px; color: #e0e0e0; cursor: pointer; text-align: left; font-size: 0.95em; transition: all 0.2s; }
-    .quiz-option:hover:not(:disabled) { border-color: #ff9f43; background: #1a1a3e; }
-    .quiz-option.correct { background: #1a3a2a; border-color: #2ecc71; color: #2ecc71; }
-    .quiz-option.wrong { background: #3a1a1a; border-color: #e74c3c; color: #e74c3c; }
-    .quiz-option.reveal { border-color: #2ecc71; color: #2ecc71; }
-    .quiz-option:disabled { cursor: default; }
-    .quiz-score { text-align: center; font-size: 1.5em; color: #ff9f43; margin-bottom: 30px; }
-    .quiz-actions { text-align: center; margin-top: 20px; }
-    .quiz-actions button { padding: 10px 24px; margin: 0 8px; border-radius: 8px; border: 1px solid #ff9f43; background: transparent; color: #ff9f43; cursor: pointer; font-size: 1em; }
+#quizToggle{position:fixed;top:20px;right:20px;z-index:1000;padding:12px 20px;background:#ff9f43;color:#0a0a0f;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:1em;box-shadow:0 4px 15px rgba(0,0,0,0.3);transition:transform 0.2s}
+#quizToggle:hover{transform:scale(1.05)}
+#quizSection{background:#0a0a0f;border-top:2px solid #ff9f43;padding:40px 20px;margin-top:40px}
+.quiz-container{max-width:900px;margin:0 auto}
+.quiz-topic{margin-bottom:30px}
+.quiz-topic-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:10px;cursor:pointer;margin-bottom:12px}
+.quiz-topic-header h3{color:#ff9f43;margin:0;font-size:1.15em}
+.quiz-topic-score{color:#888;font-size:0.95em}
+.quiz-topic-questions{display:none}
+.quiz-topic-questions.open{display:block}
+.quiz-question{background:#12121f;border:1px solid #2a2a4a;border-radius:12px;padding:24px;margin-bottom:16px}
+.quiz-question h4{color:#e0e0e0;margin-bottom:16px;font-size:1.05em;line-height:1.5}
+.quiz-option{display:block;width:100%;padding:12px 16px;margin:8px 0;background:#0d0d1a;border:1px solid #2a2a4a;border-radius:8px;color:#e0e0e0;cursor:pointer;text-align:left;font-size:0.95em;transition:all 0.2s;font-family:inherit}
+.quiz-option:hover:not(:disabled){border-color:#ff9f43;background:#1a1a3e}
+.quiz-option.correct{background:#1a3a2a!important;border-color:#2ecc71!important;color:#2ecc71!important}
+.quiz-option.wrong{background:#3a1a1a!important;border-color:#e74c3c!important;color:#e74c3c!important}
+.quiz-option.reveal{border-color:#2ecc71!important;color:#2ecc71!important}
+.quiz-option:disabled{cursor:default}
+.quiz-explanation{margin-top:12px;padding:14px 18px;border-radius:8px;font-size:0.93em;line-height:1.6;display:none}
+.quiz-explanation.show{display:block}
+.quiz-explanation.correct-exp{border-left:4px solid #2ecc71;background:rgba(46,204,113,0.08);color:#b0ffb0}
+.quiz-explanation.wrong-exp{border-left:4px solid #e74c3c;background:rgba(231,76,60,0.08);color:#ffb0b0}
+.quiz-score{text-align:center;font-size:1.5em;color:#ff9f43;margin-bottom:30px}
+.quiz-actions{text-align:center;margin-top:30px;margin-bottom:20px}
+.quiz-actions button{padding:10px 24px;margin:0 8px;border-radius:8px;border:1px solid #ff9f43;background:transparent;color:#ff9f43;cursor:pointer;font-size:1em}
+.quiz-progress{height:4px;background:#1a1a2e;border-radius:2px;margin-bottom:20px;overflow:hidden}
+.quiz-progress-bar{height:100%;background:#ff9f43;border-radius:2px;transition:width 0.3s}
 
 </style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
@@ -1478,87 +1490,130 @@
     <!-- Quiz Section -->
     <div id="quizSection" style="display:none">
         <div class="quiz-container">
-            <h2 style="text-align:center; color:#e0e0e0; margin-bottom:10px;">Reinforcement Learning Quiz</h2>
-            <div class="quiz-score" id="quizScore"></div>
+            <h2 style="text-align:center; color:#ff9f43; margin-bottom:10px;">Reinforcement Learning Quiz</h2>
+            <div class="quiz-progress"><div class="quiz-progress-bar" id="quizProgressBar" style="width:0%"></div></div>
+            <div class="quiz-score">Score: <span id="quizScore">0</span> / <span id="quizTotal">25</span></div>
             <div id="quizQuestions"></div>
             <div class="quiz-actions">
                 <button onclick="resetQuiz()">Reset Quiz</button>
+                <button onclick="document.getElementById('quizSection').style.display='none'">Hide Quiz</button>
             </div>
         </div>
     </div>
 
     <script>
     (function() {
-        var quizQuestions = [
-            {q: "What is the Bellman equation used for?", options: ["Feature engineering", "Expressing the value of a state as immediate reward plus discounted future value", "Data preprocessing", "Model selection"], answer: 1},
-            {q: "What is the exploration-exploitation tradeoff?", options: ["Training vs testing", "Trying new actions to discover rewards vs. choosing known good actions", "Speed vs accuracy", "Online vs offline learning"], answer: 1},
-            {q: "What does the discount factor \u03b3 (gamma) control?", options: ["The learning rate", "How much future rewards are valued relative to immediate rewards", "The number of episodes", "The exploration rate"], answer: 1},
-            {q: "What is the key advantage of policy gradient methods over value-based methods?", options: ["They're simpler", "They can handle continuous action spaces and learn stochastic policies", "They converge faster", "They need less data"], answer: 1},
-            {q: "In RLHF (RL from Human Feedback), what is the reward model trained on?", options: ["Game scores", "Human preferences/comparisons between model outputs", "Automated metrics", "Random rewards"], answer: 1},
-            {q: "What is the difference between on-policy and off-policy learning?", options: ["Online vs offline", "On-policy learns from its own actions; off-policy can learn from data collected by another policy", "Supervised vs unsupervised", "Model-based vs model-free"], answer: 1},
-            {q: "What does PPO (Proximal Policy Optimization) constrain?", options: ["The model size", "How much the policy can change per update, preventing destabilizing large steps", "The reward function", "The number of environments"], answer: 1}
+        var quizData = [
+            { topic: "Markov Decision Process", questions: [
+                { q: "What does the \u201cMarkov\u201d property mean in an MDP?", options: ["Actions are random", "The future depends only on the current state, not the history", "States are continuous", "Rewards are always positive"], answer: 1, explanation: "The Markov property means P(s_{t+1}|s_t, a_t) = P(s_{t+1}|s_0,...,s_t, a_0,...,a_t) \u2014 the current state contains all relevant information." },
+                { q: "In an MDP, what does the transition function T(s,a,s') represent?", options: ["The reward", "The probability of reaching state s' from state s after taking action a", "The policy", "The value function"], answer: 1, explanation: "T(s,a,s') = P(s'|s,a) defines the environment dynamics \u2014 how the world changes in response to actions." },
+                { q: "What is the discount factor \u03b3 used for?", options: ["To make learning faster", "To balance immediate vs future rewards; \u03b3=0 is greedy, \u03b3\u21921 is far-sighted", "To normalize rewards", "To select actions"], answer: 1, explanation: "\u03b3^t discounts reward at step t. Without discounting (\u03b3=1), infinite-horizon returns could diverge. \u03b3 < 1 makes the agent prefer sooner rewards." },
+                { q: "A robot navigating a maze gets -1 per step and +100 at the goal. What does the optimal policy minimize?", options: ["Number of actions", "Total discounted negative reward (i.e., find the goal as quickly as possible)", "The discount factor", "The state space"], answer: 1, explanation: "Each step costs -1, so the agent learns to reach +100 in minimum steps, maximizing cumulative discounted reward." },
+                { q: "Why is partial observability (POMDP) harder than a standard MDP?", options: ["More actions", "The agent can\u2019t see the full state, so it must maintain a belief distribution over possible states", "Rewards are hidden", "The discount factor changes"], answer: 1, explanation: "Without full state access, the Markov property breaks from the agent\u2019s perspective. It must infer the hidden state from observations, vastly increasing complexity." }
+            ]},
+            { topic: "Q-Learning", questions: [
+                { q: "What does Q(s,a) represent?", options: ["The immediate reward", "The expected cumulative discounted reward of taking action a in state s, then following the optimal policy", "The transition probability", "The policy"], answer: 1, explanation: "Q(s,a) = E[R_t + \u03b3R_{t+1} + ... | s_t=s, a_t=a, \u03c0*] \u2014 the value of an action in context, assuming optimal play thereafter." },
+                { q: "Q-learning is off-policy. What does this mean?", options: ["It doesn\u2019t use a policy", "It can learn the optimal Q-values even from data collected by a different (e.g., exploratory) policy", "It only works offline", "It ignores rewards"], answer: 1, explanation: "The Q-learning update uses max_a' Q(s',a') regardless of what action was actually taken \u2014 it learns about the greedy policy while following an exploratory one." },
+                { q: "The Q-learning update rule uses max_a' Q(s', a'). What problem can this cause?", options: ["Slow convergence", "Maximization bias \u2014 overestimating Q-values because max of noisy estimates is biased upward", "Underestimation", "No exploration"], answer: 1, explanation: "If Q-values have estimation error, taking the max systematically overestimates. Double Q-learning fixes this by using two independent estimators." },
+                { q: "Deep Q-Network (DQN) introduced two key innovations. What are they?", options: ["Policy gradient and actor-critic", "Experience replay buffer and target network", "Monte Carlo and TD learning", "Entropy regularization and curriculum"], answer: 1, explanation: "Replay buffer breaks temporal correlation in training data. Target network (frozen copy updated periodically) stabilizes the moving target problem in bootstrapping." },
+                { q: "In \u03b5-greedy exploration, what happens as training progresses?", options: ["\u03b5 increases", "\u03b5 typically decays toward 0, shifting from exploration to exploitation", "\u03b5 stays constant", "\u03b5 is removed"], answer: 1, explanation: "Early training needs high \u03b5 (explore). As Q-values become accurate, reduce \u03b5 to exploit learned knowledge. Common schedule: \u03b5 from 1.0 to 0.01 over training." }
+            ]},
+            { topic: "Policy Gradient (REINFORCE)", questions: [
+                { q: "How does policy gradient differ from Q-learning?", options: ["It\u2019s the same", "Policy gradient directly optimizes the policy \u03c0(a|s;\u03b8), while Q-learning learns a value function", "Policy gradient can\u2019t handle continuous actions", "Q-learning is always better"], answer: 1, explanation: "Policy gradient methods parameterize and directly optimize the policy. This naturally handles continuous actions and stochastic policies." },
+                { q: "What is the REINFORCE estimator?", options: ["A value function", "\u2207J(\u03b8) \u2248 E[\u2207log \u03c0(a|s;\u03b8) \u00b7 G_t] \u2014 gradient of log-probability weighted by return", "A replay buffer", "A normalization technique"], answer: 1, explanation: "Actions that led to high returns get their probability increased. The log-probability gradient provides the direction; the return provides the magnitude." },
+                { q: "Why does REINFORCE have high variance?", options: ["It uses a neural network", "Monte Carlo returns G_t vary wildly across episodes, making gradient estimates noisy", "The policy is stochastic", "The learning rate is too high"], answer: 1, explanation: "G_t depends on the entire future trajectory which is random. This makes each gradient sample noisy, requiring many episodes for a good estimate." },
+                { q: "What is a baseline in policy gradients and why is it used?", options: ["The minimum reward", "A value estimate subtracted from returns: \u2207log \u03c0 \u00b7 (G_t - b); reduces variance without adding bias", "The learning rate", "The discount factor"], answer: 1, explanation: "Subtracting baseline b (often V(s)) centers the advantage: actions better than average get reinforced, worse get discouraged. This dramatically reduces variance." },
+                { q: "Actor-Critic methods combine what two components?", options: ["Two neural networks", "A policy (actor) that selects actions and a value function (critic) that evaluates them", "Online and offline learning", "Exploration and exploitation"], answer: 1, explanation: "The critic provides low-variance value estimates as a baseline, while the actor updates the policy. This gives lower variance than pure REINFORCE." }
+            ]},
+            { topic: "Exploration vs Exploitation", questions: [
+                { q: "In the multi-armed bandit problem, what is the exploration-exploitation dilemma?", options: ["Choosing between different algorithms", "Balancing trying new arms (explore) vs pulling the currently best-known arm (exploit)", "Selecting the number of arms", "Setting the reward function"], answer: 1, explanation: "You must try arms to learn their payoffs (explore) but also want to maximize cumulative reward by choosing the best (exploit). Doing one costs the other." },
+                { q: "Upper Confidence Bound (UCB) balances exploration by:", options: ["Random action selection", "Adding a bonus to under-explored actions: pick argmax[Q(a) + c\u221a(ln t / N(a))]", "Always picking the best action", "Using a replay buffer"], answer: 1, explanation: "UCB adds an exploration bonus that\u2019s large for rarely-tried actions (small N(a)). As an action is tried more, the bonus shrinks, naturally shifting to exploitation." },
+                { q: "Thompson Sampling explores by:", options: ["Random selection", "Sampling from posterior distributions over each arm\u2019s reward, then picking the arm with highest sample", "Cycling through arms", "Using epsilon-greedy"], answer: 1, explanation: "Each arm has a posterior (e.g., Beta distribution). Sampling naturally explores uncertain arms (wide posteriors) while exploiting known good ones (concentrated posteriors)." },
+                { q: "Why is pure exploitation (always pick current best) suboptimal in the long run?", options: ["It\u2019s always optimal", "You may miss better options; early estimates are noisy and the best arm might not be identified yet", "It explores too much", "It requires more compute"], answer: 1, explanation: "With limited data, the estimated best arm might not be the true best. Without exploration, you lock into a suboptimal choice permanently." },
+                { q: "In contextual bandits, what additional information is used compared to standard bandits?", options: ["More arms", "Context/features about the current situation that affect which arm is best", "Multiple rewards", "Sequential states"], answer: 1, explanation: "Contextual bandits observe features (user profile, time of day, etc.) and learn a policy mapping contexts to arms. This is between standard bandits and full RL." }
+            ]},
+            { topic: "RLHF", questions: [
+                { q: "What are the three main stages of RLHF?", options: ["Pre-train, fine-tune, deploy", "Supervised fine-tuning (SFT), reward model training from human preferences, PPO optimization", "Collect data, train model, evaluate", "Encoding, decoding, attention"], answer: 1, explanation: "SFT gives a starting policy, the reward model learns from human comparisons, then PPO optimizes the policy against the reward model with a KL penalty." },
+                { q: "Why does RLHF use pairwise comparisons rather than absolute scores?", options: ["It\u2019s faster", "Humans are more consistent at comparing two outputs than assigning absolute quality scores", "It requires less data", "Absolute scores don\u2019t work"], answer: 1, explanation: "Human inter-annotator agreement is much higher for \u201cA is better than B\u201d than for \u201cA is 7/10\u201d. Pairwise preferences also naturally handle calibration differences." },
+                { q: "What is the KL penalty in RLHF and why is it needed?", options: ["A regularization that penalizes the policy for deviating too far from the SFT model", "A reward bonus", "A learning rate scheduler", "Part of the reward model"], answer: 0, explanation: "Without KL penalty, the policy would exploit the imperfect reward model \u2014 finding adversarial outputs that score high but are actually low quality (reward hacking)." },
+                { q: "What is \u201creward hacking\u201d in RLHF?", options: ["Humans manipulating rewards", "The policy learning to exploit flaws in the reward model to get high scores without actually improving quality", "The reward model being too accurate", "Using too many human annotations"], answer: 1, explanation: "Reward models are imperfect proxies. The policy can find outputs that score highly on the proxy but are nonsensical or degenerate \u2014 Goodhart\u2019s Law in action." },
+                { q: "Direct Preference Optimization (DPO) differs from RLHF PPO by:", options: ["Using more human data", "Directly optimizing the policy from preferences without training a separate reward model", "Being faster at inference", "Using more compute"], answer: 1, explanation: "DPO reparameterizes the RLHF objective to derive a closed-form loss that can be optimized directly on preference pairs, eliminating the reward model and RL training loop." }
+            ]}
         ];
-        var quizAnswered = 0;
-        var quizCorrect = 0;
-        var totalQuestions = quizQuestions.length;
 
-        function shuffleOptions(q) {
-            var indices = q.options.map(function(_, i) { return i; });
-            for (var i = indices.length - 1; i > 0; i--) {
-                var j = Math.floor(Math.random() * (i + 1));
-                var tmp = indices[i]; indices[i] = indices[j]; indices[j] = tmp;
-            }
-            return indices;
-        }
+        var score = 0;
+        var answered = 0;
+        var totalQuestions = 25;
 
         function buildQuiz() {
             var container = document.getElementById('quizQuestions');
             container.innerHTML = '';
-            quizAnswered = 0;
-            quizCorrect = 0;
-            updateScore();
-            quizQuestions.forEach(function(q, qi) {
-                var div = document.createElement('div');
-                div.className = 'quiz-question';
-                div.setAttribute('data-answered', 'false');
-                var h3 = document.createElement('h3');
-                h3.textContent = 'Q' + (qi + 1) + ': ' + q.q;
-                div.appendChild(h3);
-                var shuffled = shuffleOptions(q);
-                shuffled.forEach(function(origIdx) {
-                    var btn = document.createElement('button');
-                    btn.className = 'quiz-option';
-                    btn.textContent = q.options[origIdx];
-                    btn.setAttribute('data-correct', origIdx === q.answer ? 'true' : 'false');
-                    btn.onclick = function() { handleAnswer(this, div, origIdx === q.answer); };
-                    div.appendChild(btn);
+            score = 0; answered = 0;
+            document.getElementById('quizScore').textContent = '0';
+            document.getElementById('quizProgressBar').style.width = '0%';
+
+            quizData.forEach(function(topic, ti) {
+                var topicDiv = document.createElement('div');
+                topicDiv.className = 'quiz-topic';
+
+                var header = document.createElement('div');
+                header.className = 'quiz-topic-header';
+                header.innerHTML = '<h3>' + topic.topic + '</h3><span class="quiz-topic-score" id="topicScore' + ti + '">0 / ' + topic.questions.length + '</span>';
+                header.onclick = function() {
+                    var qDiv = topicDiv.querySelector('.quiz-topic-questions');
+                    qDiv.classList.toggle('open');
+                };
+                topicDiv.appendChild(header);
+
+                var questionsDiv = document.createElement('div');
+                questionsDiv.className = 'quiz-topic-questions';
+
+                topic.questions.forEach(function(item, qi) {
+                    var div = document.createElement('div');
+                    div.className = 'quiz-question';
+                    div.innerHTML = '<h4>Q' + (qi + 1) + ': ' + item.q + '</h4>';
+                    item.options.forEach(function(opt, oi) {
+                        var btn = document.createElement('button');
+                        btn.className = 'quiz-option';
+                        btn.textContent = String.fromCharCode(65 + oi) + ') ' + opt;
+                        btn.onclick = function() { handleAnswer(ti, qi, oi, div); };
+                        div.appendChild(btn);
+                    });
+                    var explanation = document.createElement('div');
+                    explanation.className = 'quiz-explanation';
+                    explanation.textContent = item.explanation;
+                    div.appendChild(explanation);
+                    questionsDiv.appendChild(div);
                 });
-                container.appendChild(div);
+
+                topicDiv.appendChild(questionsDiv);
+                container.appendChild(topicDiv);
             });
         }
 
-        function handleAnswer(btn, questionDiv, isCorrect) {
-            if (questionDiv.getAttribute('data-answered') === 'true') return;
-            questionDiv.setAttribute('data-answered', 'true');
-            var buttons = questionDiv.querySelectorAll('.quiz-option');
-            buttons.forEach(function(b) {
-                b.disabled = true;
-                if (b.getAttribute('data-correct') === 'true') {
-                    b.classList.add(b === btn ? 'correct' : 'reveal');
-                }
-            });
-            if (isCorrect) {
-                btn.classList.add('correct');
-                quizCorrect++;
+        function handleAnswer(ti, qi, oi, div) {
+            var buttons = div.querySelectorAll('.quiz-option');
+            if (buttons[0].disabled) return;
+            for (var i = 0; i < buttons.length; i++) buttons[i].disabled = true;
+            var explanation = div.querySelector('.quiz-explanation');
+            var correct = quizData[ti].questions[qi].answer;
+
+            if (oi === correct) {
+                buttons[oi].classList.add('correct');
+                explanation.classList.add('correct-exp');
+                score++;
+                var topicScore = document.getElementById('topicScore' + ti);
+                var current = parseInt(topicScore.textContent) + 1;
+                topicScore.textContent = current + ' / ' + quizData[ti].questions.length;
             } else {
-                btn.classList.add('wrong');
+                buttons[oi].classList.add('wrong');
+                buttons[correct].classList.add('reveal');
+                explanation.classList.add('wrong-exp');
             }
-            quizAnswered++;
-            updateScore();
-        }
-
-        function updateScore() {
-            document.getElementById('quizScore').textContent = 'Score: ' + quizCorrect + ' / ' + totalQuestions + (quizAnswered === totalQuestions ? ' — Quiz Complete!' : '');
+            explanation.classList.add('show');
+            answered++;
+            document.getElementById('quizScore').textContent = score;
+            document.getElementById('quizProgressBar').style.width = (answered / totalQuestions * 100) + '%';
         }
 
         window.toggleQuiz = function() {
@@ -1577,6 +1632,8 @@
         window.resetQuiz = function() {
             buildQuiz();
         };
+
+        buildQuiz();
     })();
     </script>
 </body>

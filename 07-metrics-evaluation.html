@@ -342,22 +342,33 @@
 
   .katex { color: #e8e8ff; font-size: 1.1em; }
 
-  #quizToggle { position: fixed; top: 20px; right: 20px; z-index: 1000; padding: 12px 20px; background: #ffd93d; color: #0a0a0f; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 1em; box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: transform 0.2s; }
-  #quizToggle:hover { transform: scale(1.05); }
-  #quizSection { background: #12121f; border-top: 2px solid #ffd93d; padding: 40px 20px; margin-top: 40px; }
-  .quiz-container { max-width: 900px; margin: 0 auto; }
-  .quiz-question { background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 12px; padding: 24px; margin-bottom: 20px; }
-  .quiz-question h3 { color: #ffd93d; margin-bottom: 16px; font-size: 1.1em; }
-  .quiz-option { display: block; width: 100%; padding: 12px 16px; margin: 8px 0; background: #0d0d1a; border: 1px solid #2a2a4a; border-radius: 8px; color: #e0e0e0; cursor: pointer; text-align: left; font-size: 0.95em; transition: all 0.2s; }
-  .quiz-option:hover { border-color: #ffd93d; background: #1a1a3e; }
-  .quiz-option.correct { background: #1a3a2a; border-color: #2ecc71; color: #2ecc71; }
-  .quiz-option.wrong { background: #3a1a1a; border-color: #e74c3c; color: #e74c3c; }
-  .quiz-option.reveal { border-color: #2ecc71; color: #2ecc71; }
-  .quiz-option:disabled { cursor: default; opacity: 0.7; }
-  .quiz-score { text-align: center; font-size: 1.5em; color: #ffd93d; margin-bottom: 30px; }
-  .quiz-actions { text-align: center; margin-top: 20px; }
-  .quiz-actions button { padding: 10px 24px; margin: 0 8px; border-radius: 8px; border: 1px solid #ffd93d; background: transparent; color: #ffd93d; cursor: pointer; font-size: 1em; }
-  .quiz-actions button:hover { background: rgba(255,255,255,0.05); }
+#quizToggle{position:fixed;top:20px;right:20px;z-index:1000;padding:12px 20px;background:#ffd93d;color:#0a0a0f;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:1em;box-shadow:0 4px 15px rgba(0,0,0,0.3);transition:transform 0.2s}
+#quizToggle:hover{transform:scale(1.05)}
+#quizSection{background:#0a0a0f;border-top:2px solid #ffd93d;padding:40px 20px;margin-top:40px}
+.quiz-container{max-width:900px;margin:0 auto}
+.quiz-topic{margin-bottom:30px}
+.quiz-topic-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:10px;cursor:pointer;margin-bottom:12px}
+.quiz-topic-header h3{color:#ffd93d;margin:0;font-size:1.15em}
+.quiz-topic-score{color:#888;font-size:0.95em}
+.quiz-topic-questions{display:none}
+.quiz-topic-questions.open{display:block}
+.quiz-question{background:#12121f;border:1px solid #2a2a4a;border-radius:12px;padding:24px;margin-bottom:16px}
+.quiz-question h4{color:#e0e0e0;margin-bottom:16px;font-size:1.05em;line-height:1.5}
+.quiz-option{display:block;width:100%;padding:12px 16px;margin:8px 0;background:#0d0d1a;border:1px solid #2a2a4a;border-radius:8px;color:#e0e0e0;cursor:pointer;text-align:left;font-size:0.95em;transition:all 0.2s;font-family:inherit}
+.quiz-option:hover:not(:disabled){border-color:#ffd93d;background:#1a1a3e}
+.quiz-option.correct{background:#1a3a2a!important;border-color:#2ecc71!important;color:#2ecc71!important}
+.quiz-option.wrong{background:#3a1a1a!important;border-color:#e74c3c!important;color:#e74c3c!important}
+.quiz-option.reveal{border-color:#2ecc71!important;color:#2ecc71!important}
+.quiz-option:disabled{cursor:default}
+.quiz-explanation{margin-top:12px;padding:14px 18px;border-radius:8px;font-size:0.93em;line-height:1.6;display:none}
+.quiz-explanation.show{display:block}
+.quiz-explanation.correct-exp{border-left:4px solid #2ecc71;background:rgba(46,204,113,0.08);color:#b0ffb0}
+.quiz-explanation.wrong-exp{border-left:4px solid #e74c3c;background:rgba(231,76,60,0.08);color:#ffb0b0}
+.quiz-score{text-align:center;font-size:1.5em;color:#ffd93d;margin-bottom:30px}
+.quiz-actions{text-align:center;margin-top:30px;margin-bottom:20px}
+.quiz-actions button{padding:10px 24px;margin:0 8px;border-radius:8px;border:1px solid #ffd93d;background:transparent;color:#ffd93d;cursor:pointer;font-size:1em}
+.quiz-progress{height:4px;background:#1a1a2e;border-radius:2px;margin-bottom:20px;overflow:hidden}
+.quiz-progress-bar{height:100%;background:#ffd93d;border-radius:2px;transition:width 0.3s}
 </style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -1367,7 +1378,8 @@
 <div id="quizSection" style="display:none">
   <div class="quiz-container">
     <h2 style="text-align:center; color:#ffd93d; margin-bottom:10px;">Metrics & Evaluation Quiz</h2>
-    <div class="quiz-score">Score: <span id="quizScore">0</span> / <span id="quizTotal">8</span></div>
+    <div class="quiz-progress"><div class="quiz-progress-bar" id="quizProgressBar" style="width:0%"></div></div>
+    <div class="quiz-score">Score: <span id="quizScore">0</span> / <span id="quizTotal">25</span></div>
     <div id="quizQuestions"></div>
     <div class="quiz-actions">
       <button onclick="resetQuiz()">Reset Quiz</button>
@@ -1379,52 +1391,116 @@
 <script>
 (function() {
   const quizData = [
-    { q: "Q1: When is accuracy a poor metric for classification?", options: ["When the model is simple", "When classes are highly imbalanced (e.g., 99% negative)", "When using deep learning", "When the dataset is large"], answer: 1 },
-    { q: "Q2: What does AUC-ROC measure?", options: ["Model training speed", "The probability that a random positive example is scored higher than a random negative example", "The number of correct predictions", "The loss function value"], answer: 1 },
-    { q: "Q3: In the precision-recall tradeoff, increasing the classification threshold generally:", options: ["Increases both precision and recall", "Increases precision, decreases recall", "Decreases precision, increases recall", "Has no effect"], answer: 1 },
-    { q: "Q4: What does NDCG (Normalized Discounted Cumulative Gain) measure?", options: ["Classification accuracy", "Ranking quality \u2014 giving more credit to relevant items at higher positions", "Calibration", "Regression error"], answer: 1 },
-    { q: "Q5: What is Expected Calibration Error (ECE)?", options: ["The total number of errors", "The difference between predicted probabilities and actual frequencies of outcomes", "The variance of predictions", "The bias of the model"], answer: 1 },
-    { q: "Q6: What does a confusion matrix show?", options: ["Model architecture", "The counts of true positives, true negatives, false positives, and false negatives", "Feature importance", "Training loss"], answer: 1 },
-    { q: "Q7: What is the F1 score?", options: ["The arithmetic mean of precision and recall", "The harmonic mean of precision and recall", "The geometric mean of precision and recall", "The maximum of precision and recall"], answer: 1 },
-    { q: "Q8: Why might you prefer PR-AUC over ROC-AUC?", options: ["PR-AUC is always higher", "PR-AUC is more informative when the positive class is rare (imbalanced data)", "ROC-AUC is deprecated", "PR-AUC is faster to compute"], answer: 1 }
+    { topic: "ROC Curve & AUC", questions: [
+      { q: "What does AUC = 0.5 mean for a classifier?", options: ["Perfect", "Random / no discrimination", "Worst possible", "Overfitting"], answer: 1, explanation: "AUC 0.5 means the model ranks positive and negative examples equally \u2014 no better than a random coin flip. The ROC curve lies on the diagonal." },
+      { q: "If you increase the classification threshold, what happens to the point on the ROC curve?", options: ["Moves right", "Moves up", "Moves toward origin (lower TPR, lower FPR)", "Stays the same"], answer: 2, explanation: "Higher threshold means fewer positive predictions, reducing both true positive rate and false positive rate." },
+      { q: "A model has AUC=0.95 but performs poorly in production. What\u2019s the most likely cause?", options: ["AUC is wrong", "Class imbalance \u2014 high AUC doesn\u2019t mean good precision on the rare class", "The test set was too large", "AUC doesn\u2019t measure accuracy"], answer: 1, explanation: "With severe class imbalance, a high AUC can be misleading because FPR stays low even with many false positives relative to the rare positive class." },
+      { q: "What is the ROC curve plotting?", options: ["Precision vs Recall", "True Positive Rate vs False Positive Rate", "Accuracy vs Threshold", "Loss vs Epochs"], answer: 1, explanation: "ROC plots sensitivity (TPR = TP/(TP+FN)) on the y-axis against fall-out (FPR = FP/(FP+TN)) on the x-axis at various thresholds." },
+      { q: "Can two models with the same AUC have very different performance at a specific threshold?", options: ["No, same AUC means same performance", "Yes, ROC curves can cross \u2014 AUC is an aggregate measure", "Only if they have different architectures", "Only for imbalanced data"], answer: 1, explanation: "AUC summarizes performance across ALL thresholds. Two curves can cross, meaning one model is better at low FPR and the other at high FPR." }
+    ]},
+    { topic: "Precision-Recall Curve", questions: [
+      { q: "When should you prefer PR-AUC over ROC-AUC?", options: ["Always", "When positive class is rare (imbalanced data)", "When classes are balanced", "For regression tasks"], answer: 1, explanation: "PR curves focus on the positive class. With severe imbalance, ROC-AUC can be misleadingly high because FPR stays low even with many false positives." },
+      { q: "What does a precision of 0.01 with recall of 0.90 suggest?", options: ["Excellent model", "Model catches most positives but generates massive false positives", "Model misses most positives", "Perfect balance"], answer: 1, explanation: "High recall but very low precision means nearly every prediction is a false positive \u2014 the model says \u201cyes\u201d to almost everything." },
+      { q: "You\u2019re building a spam filter. Users hate spam (false negatives) but tolerate some ham in spam folder. Optimize for:", options: ["High precision", "High recall", "High accuracy", "Low AUC"], answer: 1, explanation: "Since users hate seeing spam in their inbox (FN), maximize recall to catch nearly all spam, even at the cost of some legitimate emails flagged." },
+      { q: "What happens to the PR curve as you lower the classification threshold toward 0?", options: ["Precision increases, recall decreases", "Recall approaches 1.0, precision approaches the positive class prevalence", "Both go to 1.0", "Both go to 0"], answer: 1, explanation: "At threshold 0, everything is predicted positive, so recall = 1 but precision = (# positives / # total) = base rate." },
+      { q: "The F1 score is the harmonic mean of precision and recall. Why harmonic rather than arithmetic mean?", options: ["Tradition", "Harmonic mean penalizes imbalance \u2014 if either P or R is low, F1 is low", "It\u2019s easier to compute", "It gives higher values"], answer: 1, explanation: "Arithmetic mean of (0.99, 0.01) = 0.50, which seems OK. Harmonic mean = 0.02, correctly reflecting that the model is terrible at one of them." }
+    ]},
+    { topic: "Confusion Matrix & Derived Metrics", questions: [
+      { q: "In a medical screening test, which error is typically more costly?", options: ["False positive (healthy person flagged)", "False negative (sick person missed)", "They\u2019re equally costly", "True negative"], answer: 1, explanation: "Missing a disease (FN) can be fatal, while a false alarm (FP) leads to additional testing \u2014 costly but not life-threatening." },
+      { q: "If a model predicts all examples as negative on an imbalanced dataset (99% negative), what is its accuracy?", options: ["50%", "99%", "0%", "Unknown"], answer: 1, explanation: "It correctly classifies all 99% of negatives. Accuracy = 99%, but recall = 0% and the model is useless for detecting positives." },
+      { q: "What is specificity?", options: ["TP / (TP + FN)", "TN / (TN + FP)", "TP / (TP + FP)", "FP / (FP + TN)"], answer: 1, explanation: "Specificity = TN/(TN+FP) = true negative rate. It measures how well the model identifies negatives. Specificity = 1 - FPR." },
+      { q: "You have 100 predictions: 80 TN, 10 TP, 5 FP, 5 FN. What is precision?", options: ["90%", "67%", "95%", "50%"], answer: 1, explanation: "Precision = TP/(TP+FP) = 10/(10+5) = 10/15 \u2248 0.667 or 67%." },
+      { q: "What is Matthews Correlation Coefficient (MCC) and when is it preferred?", options: ["Same as F1", "A balanced measure using all 4 confusion matrix values, preferred for imbalanced data", "Only for multi-class", "A regression metric"], answer: 1, explanation: "MCC ranges from -1 to +1 and considers all four quadrants, making it informative even when classes are imbalanced \u2014 unlike accuracy or F1 alone." }
+    ]},
+    { topic: "Calibration Plot & Confidence", questions: [
+      { q: "A model says \u201c80% chance of rain\u201d for 100 days. It actually rains on 50 of them. Is the model calibrated?", options: ["Yes", "No \u2014 it\u2019s overconfident", "No \u2014 it\u2019s underconfident", "Cannot determine"], answer: 1, explanation: "A calibrated model at 80% confidence should be correct 80% of the time, not 50%. This model is overconfident." },
+      { q: "What does Expected Calibration Error (ECE) measure?", options: ["Accuracy", "The average gap between predicted confidence and actual accuracy across bins", "The model\u2019s loss", "The number of parameters"], answer: 1, explanation: "ECE bins predictions by confidence and computes |accuracy_bin - confidence_bin| weighted by bin size. Lower ECE = better calibrated." },
+      { q: "Which post-hoc method is commonly used to calibrate a classifier?", options: ["Dropout", "Platt scaling (logistic regression on logits)", "Batch normalization", "Weight decay"], answer: 1, explanation: "Platt scaling fits a logistic regression on the model\u2019s logits using a held-out validation set, transforming raw scores into calibrated probabilities." },
+      { q: "Why is calibration important for decision-making in production?", options: ["It improves AUC", "Predicted probabilities can be trusted for thresholding and cost-sensitive decisions", "It speeds up inference", "It reduces model size"], answer: 1, explanation: "If a model says 90% confidence, you want that to truly mean ~90% chance. Downstream systems (alerts, bidding, triage) rely on these probabilities being reliable." },
+      { q: "Temperature scaling is a calibration technique. What does it do?", options: ["Changes the model architecture", "Divides logits by a learned temperature T before softmax, adjusting confidence spread", "Retrains the model", "Removes outliers"], answer: 1, explanation: "A single scalar T > 1 softens predictions (less confident), T < 1 sharpens them. It\u2019s the simplest post-hoc calibration and often surprisingly effective." }
+    ]},
+    { topic: "Ranking Metrics: NDCG & MAP", questions: [
+      { q: "NDCG uses a logarithmic discount. Why not a linear discount?", options: ["Logarithmic is faster to compute", "Log discount reflects that users pay exponentially less attention to lower-ranked results", "Linear discount gives the same result", "It\u2019s a convention with no reason"], answer: 1, explanation: "Users are much more likely to examine result #1 than #10. The log discount captures this diminishing attention \u2014 position 2 is much more valuable than position 100." },
+      { q: "What is the \u201cI\u201d in IDCG?", options: ["Inverse", "Ideal \u2014 DCG computed on the perfect ranking", "Incremental", "Interpolated"], answer: 1, explanation: "IDCG is the DCG you\u2019d get if you ranked all documents in perfect relevance order. NDCG = DCG/IDCG normalizes to [0,1]." },
+      { q: "NDCG@5 = 0.8 and NDCG@100 = 0.4. What does this suggest?", options: ["The model is broken", "The model ranks the top results well but struggles with tail quality", "The model is perfect at rank 5", "NDCG can\u2019t differ at different k"], answer: 1, explanation: "Good NDCG@5 means the most relevant items appear in top positions. Lower NDCG@100 means relevant items further down are poorly ranked." },
+      { q: "Mean Average Precision (MAP) computes precision at each relevant document. Why \u201caverage\u201d twice?", options: ["It\u2019s not \u2014 MAP = mean across queries of AP per query", "Mathematical error in naming", "It averages precision and recall", "It averages across folds"], answer: 0, explanation: "AP averages precision values at each position where a relevant doc appears (for one query). MAP then averages AP across all queries." },
+      { q: "You\u2019re ranking search results. Doc relevance: [3, 0, 2, 0, 1]. What\u2019s the ideal ordering for maximum DCG?", options: ["[3, 0, 2, 0, 1]", "[3, 2, 1, 0, 0]", "[0, 0, 1, 2, 3]", "[1, 2, 3, 0, 0]"], answer: 1, explanation: "Maximum DCG requires sorting by relevance descending \u2014 highest relevance docs get the smallest position discount." }
+    ]}
   ];
 
   let score = 0;
   let answered = 0;
+  const totalQuestions = 25;
 
   function buildQuiz() {
     const container = document.getElementById('quizQuestions');
     container.innerHTML = '';
     score = 0; answered = 0;
     document.getElementById('quizScore').textContent = '0';
-    quizData.forEach((item, qi) => {
-      const div = document.createElement('div');
-      div.className = 'quiz-question';
-      div.innerHTML = '<h3>' + item.q + '</h3>';
-      item.options.forEach((opt, oi) => {
-        const btn = document.createElement('button');
-        btn.className = 'quiz-option';
-        btn.textContent = String.fromCharCode(65 + oi) + ') ' + opt;
-        btn.onclick = function() { handleAnswer(qi, oi, div); };
-        div.appendChild(btn);
+    document.getElementById('quizProgressBar').style.width = '0%';
+
+    quizData.forEach((topic, ti) => {
+      const topicDiv = document.createElement('div');
+      topicDiv.className = 'quiz-topic';
+
+      const header = document.createElement('div');
+      header.className = 'quiz-topic-header';
+      header.innerHTML = '<h3>' + topic.topic + '</h3><span class="quiz-topic-score" id="topicScore' + ti + '">0 / ' + topic.questions.length + '</span>';
+      header.onclick = function() {
+        const qDiv = topicDiv.querySelector('.quiz-topic-questions');
+        qDiv.classList.toggle('open');
+      };
+      topicDiv.appendChild(header);
+
+      const questionsDiv = document.createElement('div');
+      questionsDiv.className = 'quiz-topic-questions';
+
+      topic.questions.forEach((item, qi) => {
+        const div = document.createElement('div');
+        div.className = 'quiz-question';
+        div.innerHTML = '<h4>Q' + (qi + 1) + ': ' + item.q + '</h4>';
+        item.options.forEach((opt, oi) => {
+          const btn = document.createElement('button');
+          btn.className = 'quiz-option';
+          btn.textContent = String.fromCharCode(65 + oi) + ') ' + opt;
+          btn.onclick = function() { handleAnswer(ti, qi, oi, div); };
+          div.appendChild(btn);
+        });
+        const explanation = document.createElement('div');
+        explanation.className = 'quiz-explanation';
+        explanation.textContent = item.explanation;
+        div.appendChild(explanation);
+        questionsDiv.appendChild(div);
       });
-      container.appendChild(div);
+
+      topicDiv.appendChild(questionsDiv);
+      container.appendChild(topicDiv);
     });
   }
 
-  function handleAnswer(qi, oi, div) {
+  function handleAnswer(ti, qi, oi, div) {
     const buttons = div.querySelectorAll('.quiz-option');
     if (buttons[0].disabled) return;
     buttons.forEach(b => b.disabled = true);
-    if (oi === quizData[qi].answer) {
+    const explanation = div.querySelector('.quiz-explanation');
+    const correct = quizData[ti].questions[qi].answer;
+
+    if (oi === correct) {
       buttons[oi].classList.add('correct');
+      explanation.classList.add('correct-exp');
       score++;
+      const topicScore = document.getElementById('topicScore' + ti);
+      const current = parseInt(topicScore.textContent) + 1;
+      topicScore.textContent = current + ' / ' + quizData[ti].questions.length;
     } else {
       buttons[oi].classList.add('wrong');
-      buttons[quizData[qi].answer].classList.add('reveal');
+      buttons[correct].classList.add('reveal');
+      explanation.classList.add('wrong-exp');
     }
+    explanation.classList.add('show');
     answered++;
     document.getElementById('quizScore').textContent = score;
+    document.getElementById('quizProgressBar').style.width = (answered / totalQuestions * 100) + '%';
   }
 
   window.resetQuiz = buildQuiz;
