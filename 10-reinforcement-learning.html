@@ -299,8 +299,8 @@
   .insight-box strong { color: #ff9f43; font-size: 1.05em; }
   .insight-box .formula { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 12px 18px; margin: 12px 0; font-family: 'Courier New', monospace; color: #e8e8ff; font-size: 1.05em; text-align: center; letter-spacing: 0.5px; line-height: 1.9; }
   .insight-box .formula .highlight { color: #ff9f43; font-weight: bold; }
-  .insight-box .key-point { display: flex; gap: 8px; margin: 8px 0; padding: 4px 0; }
-  .insight-box .key-point .label { color: #ff9f43; font-weight: 600; white-space: nowrap; min-width: 90px; }
+  .insight-box .key-point { display: flex; flex-wrap: wrap; gap: 4px 8px; margin: 8px 0; padding: 4px 0; align-items: baseline; }
+  .insight-box .key-point .label { color: #ff9f43; font-weight: 600; min-width: 160px; flex-shrink: 0; }
   .insight-box .key-point .desc { color: #ddd; }
   .insight-box .interview-tip { background: rgba(100, 255, 100, 0.05); border: 1px solid rgba(100, 255, 100, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #b0ffb0; font-size: 0.93em; line-height: 1.6; }
   .insight-box .interview-tip::before { content: '\1F4A1  Interview Tip: '; font-weight: 700; color: #7fff7f; }
@@ -322,9 +322,9 @@
     </div>
 
     <div class="container">
-        <!-- Section 1: MDP -->
+        <!-- Section 1: Markov Decision Process -->
         <div class="section">
-            <h2>1️⃣ Markov Decision Process (MDP)</h2>
+            <h2>1️⃣ Markov Decision Process</h2>
             <p style="color: #a0a0b0; margin-bottom: 15px;">Click through states on the canvas—watch transitions and rewards. Adjust discount factor γ (gamma) to see immediate vs long-term tradeoff. γ≈0 = myopic (care only about next reward). γ≈1 = farsighted (consider all future rewards). Observe how optimal policy changes.</p>
             <div class="section-content">
                 <div class="visualization">
@@ -498,10 +498,10 @@
                 </div>
                 <hr class="divider">
                 <div class="interview-tip">Q-learning converges in tabular case if every s,a pair visited infinitely often with decaying learning rate. In practice, function approximation breaks these guarantees.</div>
-                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Run Q-Learning with α=0.1 (stable) and α=0.9 (noisy). Convergence guarantee requires tabular (small state space), exploration (ε-greedy), and learning rate decay. With neural networks (DQN), only approximation—divergence possible. Always monitor for instability.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Run Q-Learning with α=0.1 (stable) and α=0.9 (noisy). Convergence guarantee requires tabular (small state space), exploration (ε-greedy), and learning rate decay. With neural networks (Deep Q-Network), only approximation—divergence possible. Always monitor for instability.</div>
                 <div class="mnemonic">Q-Learning: Maximize future Q values (greedy bootstrap). The max makes it optimistic and off-policy—you explore but learn about the best policy.</div>
                 <p><strong>Key Gotchas:</strong> Overestimation bias from max (max_a Q is biased up); Function approximation breaks convergence; Off-policy divergence if policies drift; ε-greedy is inefficient.</p>
-                <p><strong>Production Solutions:</strong> Double DQN (separate target/online networks for bias reduction); Experience replay (decorrelates samples); Slow target network updates (stable targets); Policy gradients for continuous control; Monitor Q-value distributions for explosions; Always simulate before deployment.</p>
+                <p><strong>Production Solutions:</strong> Double Deep Q-Network (separate target/online networks for bias reduction); Experience replay (decorrelates samples); Slow target network updates (stable targets); Policy gradients for continuous control; Monitor Q-value distributions for explosions; Always simulate before deployment.</p>
             </div>
         </div>
 
@@ -573,20 +573,20 @@
                         <div class="opt-desc">Critic estimates V(s); lower variance via advantage</div>
                     </div>
                     <div class="option">
-                        <div class="opt-title">PPO</div>
+                        <div class="opt-title">Proximal Policy Optimization (PPO)</div>
                         <div class="opt-desc">Clipped objective; stable large updates</div>
                     </div>
                     <div class="option">
-                        <div class="opt-title">TRPO</div>
+                        <div class="opt-title">Trust Region Policy Optimization (TRPO)</div>
                         <div class="opt-desc">KL constraint on updates; theoretically principled</div>
                     </div>
                 </div>
                 <hr class="divider">
                 <div class="interview-tip">Log-probability trick is key: you can't backprop through stochasticity, but you can backprop through log(π)—differentiate the log, then multiply by the result.</div>
-                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: REINFORCE uses ∇_θ log π(a|s) · R (score function estimator). This works because ∇ log π = (∇π) / π—clever algebraic trick. High-variance (full trajectory return). Modern methods: A3C reduces variance with baseline (critic). PPO uses clipped objective instead.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: REINFORCE uses ∇_θ log π(a|s) · R (score function estimator). This works because ∇ log π = (∇π) / π—clever algebraic trick. High-variance (full trajectory return). Modern methods: A3C reduces variance with baseline (critic). Proximal Policy Optimization uses clipped objective instead.</div>
                 <div class="mnemonic">Actor-Critic = actor (policy) makes decisions, critic (value) evaluates them. Critic reduces variance of policy gradients via advantage estimation.</div>
                 <p><strong>Key Gotchas:</strong> REINFORCE high variance without baselines; Critic bias if poorly trained; High sample complexity; Local optima common; Off-policy corrections can explode.</p>
-                <p><strong>Production Best Practices:</strong> Use PPO/TRPO for stability (clip/trust region updates); Actor-critic more sample-efficient; GAE balances bias-variance; Monitor policy entropy; Test exhaustively (can exploit simulator); Continuous control is PG sweet spot.</p>
+                <p><strong>Production Best Practices:</strong> Use Proximal Policy Optimization / Trust Region Policy Optimization for stability (clip/trust region updates); Actor-critic more sample-efficient; Generalized Advantage Estimation balances bias-variance; Monitor policy entropy; Test exhaustively (can exploit simulator); Continuous control is PG sweet spot.</p>
             </div>
         </div>
 
@@ -645,7 +645,7 @@
                 <div class="key-point"><span class="label">T:</span><span class="desc">Total number of rounds; longer horizon → larger regret. Regret rate (regret/T) → 0 = good algorithm</span></div>
                 <div class="key-point"><span class="label">E[·]:</span><span class="desc">Expectation over arm reward distributions and algorithm randomness</span></div>
                 <div class="key-point"><span class="label">ε-Greedy:</span><span class="desc">Exploit best arm (1-ε); explore uniform (ε). Regret: O(εT + (1-ε)K log T)</span></div>
-                <div class="key-point"><span class="label">UCB:</span><span class="desc">Q̂(a) + c√(ln T / n(a)) = empirical + uncertainty bonus. Regret: O(log T)</span></div>
+                <div class="key-point"><span class="label">Upper Confidence Bound (UCB):</span><span class="desc">Q&#x0302;(a) + c&#x221A;(ln T / n(a)) = empirical + uncertainty bonus. Regret: O(log T)</span></div>
                 <div class="key-point"><span class="label">Thompson Sampling:</span><span class="desc">Bayesian posterior; sample rewards, play best. Regret: O(log T)</span></div>
                 <hr class="divider">
                 <p><strong>Regret Analysis:</strong></p>
@@ -655,7 +655,7 @@
                         <div class="opt-desc">O(εT): linear term is wasted; suboptimal</div>
                     </div>
                     <div class="option">
-                        <div class="opt-title">UCB</div>
+                        <div class="opt-title">Upper Confidence Bound (UCB)</div>
                         <div class="opt-desc">O(log T): exploration bonus shrinks; theoretically optimal</div>
                     </div>
                     <div class="option">
@@ -672,10 +672,10 @@
             </div>
         </div>
 
-        <!-- Section 5: RLHF -->
+        <!-- Section 5: Reinforcement Learning from Human Feedback -->
         <div class="section">
-            <h2>5️⃣ RLHF (RL from Human Feedback)</h2>
-            <p style="color: #a0a0b0; margin-bottom: 15px;">Watch the reward model train on human preferences (A > B). Then optimize the LLM policy away from SFT baseline while staying close (KL penalty). Adjust KL coefficient to see the tradeoff: low KL = reward maximization (reward hacking), high KL = stay near SFT (boring). Sweet spot balances alignment + diversity.</p>
+            <h2>5️⃣ Reinforcement Learning from Human Feedback</h2>
+            <p style="color: #a0a0b0; margin-bottom: 15px;">Watch the reward model train on human preferences (A > B). Then optimize the language model policy away from the supervised fine-tuning baseline while staying close (KL penalty). Adjust KL coefficient to see the tradeoff: low KL = reward maximization (reward hacking), high KL = stay near supervised fine-tuning (boring). Sweet spot balances alignment + diversity.</p>
             <div class="section-content">
                 <div class="visualization">
                     <canvas id="rlhfCanvas" width="450" height="400"></canvas>
@@ -692,17 +692,17 @@
                         <div class="value-display" id="rlhfAccuracyVal">0.85</div>
                     </div>
                     <div class="control-group">
-                        <label>PPO Epochs</label>
+                        <label>Proximal Policy Optimization Epochs</label>
                         <input type="range" id="rlhfEpochs" min="1" max="10" value="3" step="1">
                         <div class="value-display" id="rlhfEpochsVal">3</div>
                     </div>
-                    <button onclick="runRLHF()">Simulate RLHF</button>
+                    <button onclick="runRLHF()">Simulate Reinforcement Learning from Human Feedback</button>
                     <div class="status-bar" id="rlhfStatus">Ready</div>
                 </div>
             </div>
             <div class="equation">Loss = -E[min(r_t·Â, clip(r_t, 1-ε, 1+ε)·Â)] - β·KL(π_new || π_ref)</div>
             <div class="insight-box">
-                <p><strong>Core Concept:</strong> RLHF aligns LLMs with human preferences via reinforcement learning. No explicit reward labels; instead, learn from preference comparisons.</p>
+                <p><strong>Core Concept:</strong> Reinforcement Learning from Human Feedback aligns large language models with human preferences via reinforcement learning. No explicit reward labels; instead, learn from preference comparisons.</p>
                 <div class="formula">Loss = -E[min(r_t·Â, clip(r_t, 1-ε, 1+ε)·Â)] - β·KL(π_new || π_ref)</div>
                 <div class="key-point"><span class="label">Loss:</span><span class="desc">Objective to minimize (negative because we maximize reward and penalize divergence)</span></div>
                 <div class="key-point"><span class="label">r_t:</span><span class="desc">Probability ratio = π_new(a_t|s_t) / π_ref(a_t|s_t); >1 means new policy more likely than reference</span></div>
@@ -710,12 +710,12 @@
                 <div class="key-point"><span class="label">clip(r_t, 1-ε, 1+ε):</span><span class="desc">Clips ratio to prevent too-large policy changes. Typical ε = 0.2; prevents instability</span></div>
                 <div class="key-point"><span class="label">β:</span><span class="desc">KL penalty weight ∈ [0.05, 1]; higher β = stricter adherence to reference. Typical: 0.1-1.0</span></div>
                 <div class="key-point"><span class="label">KL(π_new || π_ref):</span><span class="desc">Kullback-Leibler divergence; measures distributional distance. Prevents mode collapse to reward gaming</span></div>
-                <div class="key-point"><span class="label">π_ref:</span><span class="desc">Reference policy (usually SFT model); keeps new policy from drifting too far</span></div>
-                <p style="margin: 8px 0; font-size: 0.93em; text-align: center; color: #ddd;">PPO with KL penalty: maximize reward while staying close to reference model</p>
-                <div class="key-point"><span class="label">Pipeline Step 1:</span><span class="desc">SFT on human examples to bootstrap quality</span></div>
+                <div class="key-point"><span class="label">π_ref:</span><span class="desc">Reference policy (usually supervised fine-tuned model); keeps new policy from drifting too far</span></div>
+                <p style="margin: 8px 0; font-size: 0.93em; text-align: center; color: #ddd;">Proximal Policy Optimization with KL penalty: maximize reward while staying close to reference model</p>
+                <div class="key-point"><span class="label">Pipeline Step 1:</span><span class="desc">Supervised fine-tuning on human examples to bootstrap quality</span></div>
                 <div class="key-point"><span class="label">Pipeline Step 2:</span><span class="desc">Collect human preferences (A vs B comparisons)</span></div>
                 <div class="key-point"><span class="label">Pipeline Step 3:</span><span class="desc">Train reward model via Bradley-Terry logistic regression</span></div>
-                <div class="key-point"><span class="label">Pipeline Step 4:</span><span class="desc">RL fine-tune LLM on reward signal with KL regularization</span></div>
+                <div class="key-point"><span class="label">Pipeline Step 4:</span><span class="desc">Reinforcement learning fine-tune language model on reward signal with KL regularization</span></div>
                 <hr class="divider">
                 <p><strong>Bradley-Terry Model:</strong></p>
                 <div class="formula">P(y ≻ x) = σ(R(x,y))</div>
@@ -725,11 +725,11 @@
                 <div class="key-point"><span class="label">r_θ:</span><span class="desc">Learned reward model (neural network); outputs scalar reward for text pair</span></div>
                 <p style="margin: 8px 0; font-size: 0.93em;">Preference probability = sigmoid of reward difference; trainable via cross-entropy</p>
                 <hr class="divider">
-                <div class="interview-tip">KL penalty is crucial: without it, LLM mode-collapses to trivial outputs that maximally exploit the reward model. KL keeps it close to SFT baseline.</div>
-                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set KL coefficient = 0 (reward-only optimization). LLM exploits reward model, outputs degenerate (e.g., repeat "yes" forever if human likes agreement). KL=0.1: balanced Pareto frontier. KL=1.0: plays it safe, boring outputs. Find your coefficient based on alignment criticality.</div>
-                <div class="mnemonic">RLHF = teach model to please humans. Bradley-Terry = learn what humans like. PPO+KL = apply RL while staying sensible. Three-stage dance between SFT, reward, and policy.</div>
+                <div class="interview-tip">KL penalty is crucial: without it, the language model mode-collapses to trivial outputs that maximally exploit the reward model. KL keeps it close to the supervised fine-tuning baseline.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set KL coefficient = 0 (reward-only optimization). The language model exploits reward model, outputs degenerate (e.g., repeat "yes" forever if human likes agreement). KL=0.1: balanced Pareto frontier. KL=1.0: plays it safe, boring outputs. Find your coefficient based on alignment criticality.</div>
+                <div class="mnemonic">Reinforcement Learning from Human Feedback = teach model to please humans. Bradley-Terry = learn what humans like. Proximal Policy Optimization + KL = apply reinforcement learning while staying sensible. Three-stage dance between supervised fine-tuning, reward, and policy.</div>
                 <p><strong>Key Challenges:</strong> Reward hacking (exploiting model weaknesses); Expensive annotation with labeler bias; Reward model overfits or goes off-distribution; KL tuning critical; Computational cost high.</p>
-                <p><strong>Production Best Practices:</strong> Multiple annotators, measure agreement; Diverse preference data; Monitor RM accuracy on held-out; Use β ≈ 0.1-1.0; Test on multiple benchmarks; Iteratively improve RM as LLM improves; Static RM becomes suboptimal over time.</p>
+                <p><strong>Production Best Practices:</strong> Multiple annotators, measure agreement; Diverse preference data; Monitor reward model accuracy on held-out; Use β ≈ 0.1-1.0; Test on multiple benchmarks; Iteratively improve reward model as language model improves; Static reward model becomes suboptimal over time.</p>
             </div>
         </div>
 
@@ -781,9 +781,9 @@
                     // Draw value
                     if (!isGoal && !isObstacle) {
                         mdpCtx.fillStyle = '#ffb366';
-                        mdpCtx.font = '12px monospace';
+                        mdpCtx.font = '15px monospace';
                         mdpCtx.textAlign = 'left';
-                        mdpCtx.fillText('V:' + mdpValues[j * gridSize + i].toFixed(1), x + 5, y + 20);
+                        mdpCtx.fillText('V:' + mdpValues[j * gridSize + i].toFixed(1), x + 5, y + 22);
                     }
 
                     // Draw agent
@@ -892,9 +892,9 @@
                             maxQ = Math.max(...Object.values(qlQTable[state]));
                         }
                         qlCtx.fillStyle = '#ffb366';
-                        qlCtx.font = '12px monospace';
+                        qlCtx.font = '15px monospace';
                         qlCtx.textAlign = 'left';
-                        qlCtx.fillText('Q:' + maxQ.toFixed(1), x + 5, y + 20);
+                        qlCtx.fillText('Q:' + maxQ.toFixed(1), x + 5, y + 22);
                     }
 
                     if (isAgent) {
@@ -1173,20 +1173,20 @@
 
                 // Label
                 banditCtx.fillStyle = '#e0e0e0';
-                banditCtx.font = 'bold 14px sans-serif';
+                banditCtx.font = 'bold 17px sans-serif';
                 banditCtx.textAlign = 'center';
                 banditCtx.fillText('Arm ' + (i + 1), x + barWidth / 2, startY + 25);
 
                 // Count
-                banditCtx.font = '12px sans-serif';
-                banditCtx.fillStyle = '#b0b0b0';
-                banditCtx.fillText('n=' + banditCounts[i], x + barWidth / 2, startY + 45);
+                banditCtx.font = '15px sans-serif';
+                banditCtx.fillStyle = '#b0b0c0';
+                banditCtx.fillText('n=' + banditCounts[i], x + barWidth / 2, startY + 47);
             }
 
             // Draw title
-            let strategyName = ['ε-Greedy', 'UCB', 'Thompson'][banditStrategy];
+            let strategyName = ['Epsilon-Greedy', 'Upper Confidence Bound', 'Thompson Sampling'][banditStrategy];
             banditCtx.fillStyle = '#ff9f43';
-            banditCtx.font = 'bold 16px sans-serif';
+            banditCtx.font = 'bold 17px sans-serif';
             banditCtx.textAlign = 'left';
             banditCtx.fillText(strategyName, 20, 30);
         }
@@ -1275,72 +1275,95 @@
             rlhfCtx.fillStyle = '#0a0a0f';
             rlhfCtx.fillRect(0, 0, 450, 400);
 
-            // Draw RLHF pipeline
+            // Draw Reinforcement Learning from Human Feedback pipeline
             let stages = [
-                { name: 'LLM', x: 50, color: '#4a9eff' },
-                { name: 'Generate', x: 120, color: '#ff6b6b' },
-                { name: 'Rank', x: 210, color: '#ffd93d' },
-                { name: 'Reward', x: 300, color: '#6bcf7f' },
-                { name: 'PPO', x: 380, color: '#ff9f43' }
+                { name: 'Language\nModel', x: 65, color: '#4a9eff' },
+                { name: 'Generate\nOutputs', x: 175, color: '#ff6b6b' },
+                { name: 'Human\nRanking', x: 285, color: '#ffd93d' },
+                { name: 'Reward\nModel', x: 395, color: '#6bcf7f' }
             ];
 
-            rlhfCtx.font = 'bold 14px sans-serif';
+            rlhfCtx.font = 'bold 15px sans-serif';
             rlhfCtx.textAlign = 'center';
 
             stages.forEach((stage, i) => {
-                let y = 100;
+                let y = 55;
 
                 // Draw box
                 rlhfCtx.fillStyle = stage.color;
-                rlhfCtx.fillRect(stage.x - 25, y - 25, 50, 50);
+                rlhfCtx.fillRect(stage.x - 35, y - 25, 70, 50);
 
-                // Label
+                // Label (multi-line)
                 rlhfCtx.fillStyle = '#0a0a0f';
-                rlhfCtx.fillText(stage.name, stage.x, y + 5);
+                let lines = stage.name.split('\n');
+                lines.forEach((line, li) => {
+                    rlhfCtx.fillText(line, stage.x, y - 3 + li * 17);
+                });
 
                 // Arrow
                 if (i < stages.length - 1) {
                     rlhfCtx.strokeStyle = '#ff9f43';
                     rlhfCtx.lineWidth = 2;
                     rlhfCtx.beginPath();
-                    rlhfCtx.moveTo(stage.x + 25, y);
-                    rlhfCtx.lineTo(stages[i + 1].x - 25, y);
+                    rlhfCtx.moveTo(stage.x + 35, y);
+                    rlhfCtx.lineTo(stages[i + 1].x - 35, y);
                     rlhfCtx.stroke();
                     rlhfCtx.beginPath();
-                    rlhfCtx.moveTo(stages[i + 1].x - 35, y - 5);
-                    rlhfCtx.lineTo(stages[i + 1].x - 25, y);
-                    rlhfCtx.lineTo(stages[i + 1].x - 35, y + 5);
+                    rlhfCtx.moveTo(stages[i + 1].x - 45, y - 5);
+                    rlhfCtx.lineTo(stages[i + 1].x - 35, y);
+                    rlhfCtx.lineTo(stages[i + 1].x - 45, y + 5);
                     rlhfCtx.stroke();
                 }
             });
 
+            // Draw Proximal Policy Optimization arrow returning from Reward to Language Model
+            rlhfCtx.strokeStyle = '#ff9f43';
+            rlhfCtx.lineWidth = 2;
+            rlhfCtx.beginPath();
+            rlhfCtx.moveTo(395, 80);
+            rlhfCtx.lineTo(395, 105);
+            rlhfCtx.lineTo(65, 105);
+            rlhfCtx.lineTo(65, 80);
+            rlhfCtx.stroke();
+            // Arrowhead
+            rlhfCtx.beginPath();
+            rlhfCtx.moveTo(60, 90);
+            rlhfCtx.lineTo(65, 80);
+            rlhfCtx.lineTo(70, 90);
+            rlhfCtx.stroke();
+            // Label on feedback loop
+            rlhfCtx.fillStyle = '#ff9f43';
+            rlhfCtx.font = 'bold 15px sans-serif';
+            rlhfCtx.textAlign = 'center';
+            rlhfCtx.fillText('Proximal Policy Optimization (fine-tuning loop)', 225, 122);
+
             // Draw KL penalty diagram
             rlhfCtx.fillStyle = '#2a2a3f';
-            rlhfCtx.fillRect(50, 200, 350, 120);
+            rlhfCtx.fillRect(30, 145, 390, 135);
 
             rlhfCtx.fillStyle = '#ff9f43';
-            rlhfCtx.font = 'bold 14px sans-serif';
+            rlhfCtx.font = 'bold 17px sans-serif';
             rlhfCtx.textAlign = 'left';
-            rlhfCtx.fillText('KL Penalty: Prevents Distribution Drift', 60, 225);
+            rlhfCtx.fillText('KL Penalty: Prevents Distribution Drift', 45, 172);
 
-            rlhfCtx.fillStyle = '#e0e0e0';
-            rlhfCtx.font = '12px monospace';
-            rlhfCtx.fillText('L = E[r(y)] - β·KL(π || π_ref)', 60, 250);
-            rlhfCtx.fillText('• β controls trade-off', 60, 270);
-            rlhfCtx.fillText('• Higher β: closer to reference model', 60, 285);
-            rlhfCtx.fillText('• Lower β: more reward optimization', 60, 300);
+            rlhfCtx.fillStyle = '#b0b0c0';
+            rlhfCtx.font = '15px monospace';
+            rlhfCtx.fillText('L = E[r(y)] - \u03B2\u00B7KL(\u03C0 || \u03C0_ref)', 45, 198);
+            rlhfCtx.fillText('\u2022 \u03B2 controls trade-off', 45, 220);
+            rlhfCtx.fillText('\u2022 Higher \u03B2: closer to reference', 45, 242);
+            rlhfCtx.fillText('\u2022 Lower \u03B2: more reward optimization', 45, 264);
 
             // Legend
-            rlhfCtx.fillStyle = '#b0b0b0';
-            rlhfCtx.font = '11px sans-serif';
-            rlhfCtx.fillText('Human feedback shapes rewards → PPO fine-tunes policy', 60, 350);
+            rlhfCtx.fillStyle = '#b0b0c0';
+            rlhfCtx.font = '15px sans-serif';
+            rlhfCtx.fillText('Human feedback shapes rewards, then policy is fine-tuned', 45, 300);
         }
 
         function runRLHF() {
             const beta = parseFloat(document.getElementById('rlhfBeta').value);
             const accuracy = parseFloat(document.getElementById('rlhfAccuracy').value);
 
-            document.getElementById('rlhfStatus').textContent = 'Simulating RLHF with β=' + beta.toFixed(2) + ', accuracy=' + accuracy.toFixed(2);
+            document.getElementById('rlhfStatus').textContent = 'Simulating Reinforcement Learning from Human Feedback with \u03B2=' + beta.toFixed(2) + ', accuracy=' + accuracy.toFixed(2);
 
             setTimeout(() => {
                 let finalLoss = (1 - accuracy) * 0.5 + beta * 0.2;

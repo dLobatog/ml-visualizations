@@ -245,7 +245,7 @@
             <p style="color: #a0a0b0; margin-bottom: 15px;">Click between Image and Text to see embeddings converge to a shared space. Increase temperature τ (tau) to see softmax distribution soften (more uniform, less confident). Watch how image/text pairs align. CLIP learns via contrastive loss—aligned pairs attract, unaligned repel.</p>
             <div class="section-content">
                 <div class="canvas-wrapper">
-                    <canvas id="clipCanvas" width="500" height="450"></canvas>
+                    <canvas id="clipCanvas" width="550" height="500"></canvas>
                 </div>
                 <div class="controls">
                     <div class="control-group">
@@ -253,26 +253,26 @@
                         <input type="range" id="clipAlign" min="0" max="100" value="50">
                         <div class="slider-value" id="clipAlignValue">50%</div>
                     </div>
-                    <div class="insight-box">
-                        <h3>CLIP: Contrastive Language-Image Pre-training</h3>
-                        <p><strong>Core Concept:</strong> CLIP learns a joint embedding space where matched image-text pairs are close together, mismatched pairs far apart. Enables zero-shot classification by comparing image embeddings to text class label embeddings.</p>
-                        <div class="formula">L_CLIP = -log(exp(sim(I,T)/τ) / Σ_j exp(sim(I,T_j)/τ))</div>
-                        <div class="key-point"><span class="label">L_CLIP:</span><span class="desc">Contrastive loss; negative log-likelihood of matching image-text pair among negatives</span></div>
-                        <div class="key-point"><span class="label">sim(I,T):</span><span class="desc">Cosine similarity between image embedding I and text embedding T; ∈ [-1, 1]</span></div>
-                        <div class="key-point"><span class="label">τ:</span><span class="desc">Temperature parameter > 0; controls softmax sharpness. Lower τ = sharper (harder negs), higher τ = softer. Typical: 0.07</span></div>
-                        <div class="key-point"><span class="label">Σ_j:</span><span class="desc">Sum over all N text embeddings in batch (1 positive + N-1 negatives)</span></div>
-                        <div class="key-point"><span class="label">exp(sim(...)/τ):</span><span class="desc">Numerator: similarity of positive pair, temperature-scaled</span></div>
-                        <div class="key-point"><span class="label">Σ_j exp(sim(I,T_j)/τ):</span><span class="desc">Denominator: sum of all (positive + negatives), forms softmax partition function</span></div>
-                        <div class="key-point"><span class="label">Architecture:</span><span class="desc">Image encoder (CNN/ViT) and text encoder (Transformer) produce same-dim embeddings for cosine similarity</span></div>
-                        <div class="key-point"><span class="label">InfoNCE Loss:</span><span class="desc">N image-text pairs; each image's matched text is positive, N-1 others are negatives</span></div>
-                        <div class="key-point"><span class="label">Temperature τ:</span><span class="desc">Controls distribution sharpness; higher τ makes hard negatives easier to distinguish</span></div>
-                        <hr class="divider">
-                        <div class="interview-tip">Why does CLIP work zero-shot? Text embeddings naturally encode semantic information about classes—classifier emerges without seeing those classes during training.</div>
-                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Give CLIP a class it never saw (e.g., "zebra" if trained on birds). It classifies zero-shot because text encoder learns semantic features. Temperature τ controls confidence—low τ = sharp predictions, high τ = uncertain. Typical τ=0.07.</div>
-                        <div class="mnemonic">CLIP = two encoders in a joint space. Align image-text pairs; text carries semantic labels. At test time, embed class names, find nearest image.</div>
-                        <p><strong>Key Gotchas:</strong> Domain shift hurts performance (fine-tune text encoder on target); Embedding collapse if not careful; Temperature tuning matters.</p>
-                        <p><strong>Production Practices:</strong> Pre-compute/cache image embeddings; Use FAISS for fast retrieval; Monitor embedding distribution for collapse; Combine with downstream classifier for specificity.</p>
-                    </div>
+                </div>
+                <div class="insight-box">
+                <h3>CLIP: Contrastive Language-Image Pre-training</h3>
+                <p><strong>Core Concept:</strong> CLIP learns a joint embedding space where matched image-text pairs are close together, mismatched pairs far apart. Enables zero-shot classification by comparing image embeddings to text class label embeddings.</p>
+                <div class="formula">L_CLIP = -log(exp(sim(I,T)/τ) / Σ_j exp(sim(I,T_j)/τ))</div>
+                <div class="key-point"><span class="label">L_CLIP:</span><span class="desc">Contrastive loss; negative log-likelihood of matching image-text pair among negatives</span></div>
+                <div class="key-point"><span class="label">sim(I,T):</span><span class="desc">Cosine similarity between image embedding I and text embedding T; ∈ [-1, 1]</span></div>
+                <div class="key-point"><span class="label">τ:</span><span class="desc">Temperature parameter > 0; controls softmax sharpness. Lower τ = sharper (harder negs), higher τ = softer. Typical: 0.07</span></div>
+                <div class="key-point"><span class="label">Σ_j:</span><span class="desc">Sum over all N text embeddings in batch (1 positive + N-1 negatives)</span></div>
+                <div class="key-point"><span class="label">exp(sim(...)/τ):</span><span class="desc">Numerator: similarity of positive pair, temperature-scaled</span></div>
+                <div class="key-point"><span class="label">Σ_j exp(sim(I,T_j)/τ):</span><span class="desc">Denominator: sum of all (positive + negatives), forms softmax partition function</span></div>
+                <div class="key-point"><span class="label">Architecture:</span><span class="desc">Image encoder (CNN/ViT) and text encoder (Transformer) produce same-dim embeddings for cosine similarity</span></div>
+                <div class="key-point"><span class="label">InfoNCE Loss:</span><span class="desc">N image-text pairs; each image's matched text is positive, N-1 others are negatives</span></div>
+                <div class="key-point"><span class="label">Temperature τ:</span><span class="desc">Controls distribution sharpness; higher τ makes hard negatives easier to distinguish</span></div>
+                <hr class="divider">
+                <div class="interview-tip">Why does CLIP work zero-shot? Text embeddings naturally encode semantic information about classes—classifier emerges without seeing those classes during training.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Give CLIP a class it never saw (e.g., "zebra" if trained on birds). It classifies zero-shot because text encoder learns semantic features. Temperature τ controls confidence—low τ = sharp predictions, high τ = uncertain. Typical τ=0.07.</div>
+                <div class="mnemonic">CLIP = two encoders in a joint space. Align image-text pairs; text carries semantic labels. At test time, embed class names, find nearest image.</div>
+                <p><strong>Key Gotchas:</strong> Domain shift hurts performance (fine-tune text encoder on target); Embedding collapse if not careful; Temperature tuning matters.</p>
+                <p><strong>Production Practices:</strong> Pre-compute/cache image embeddings; Use FAISS for fast retrieval; Monitor embedding distribution for collapse; Combine with downstream classifier for specificity.</p>
                 </div>
             </div>
         </div>
@@ -283,7 +283,7 @@
             <p style="color: #a0a0b0; margin-bottom: 15px;">Adjust patch size (P) on the canvas—small patches = high resolution but more tokens (compute expensive). Large patches = fast but lose fine details. Watch token count and sequence length. ViT treats image like NLP: convert to tokens, apply Transformer.</p>
             <div class="section-content">
                 <div class="canvas-wrapper">
-                    <canvas id="vitCanvas" width="500" height="450"></canvas>
+                    <canvas id="vitCanvas" width="550" height="500"></canvas>
                 </div>
                 <div class="controls">
                     <div class="control-group">
@@ -291,38 +291,38 @@
                         <input type="range" id="vitPatchSize" min="1" max="5" value="3">
                         <div class="slider-value" id="vitPatchValue">16x16</div>
                     </div>
-                    <div class="insight-box">
-                        <h3>Vision Transformer: Pure Attention for Vision</h3>
-                        <p><strong>Core Intuition:</strong> Treat image as sequence of patches; use pure self-attention instead of convolutions. Removes translation equivariance assumption of CNNs; learns all spatial relationships from data.</p>
-                        <div class="formula">Attention(Q, K, V) = softmax(Q K^T / √d_k) V</div>
-                        <div class="key-point"><span class="label">Q (Query):</span><span class="desc">Query matrix ∈ ℝ^{L×d_k}; what to attend to. L = sequence length, d_k = key dimension</span></div>
-                        <div class="key-point"><span class="label">K (Key):</span><span class="desc">Key matrix ∈ ℝ^{L×d_k}; what can be attended to</span></div>
-                        <div class="key-point"><span class="label">V (Value):</span><span class="desc">Value matrix ∈ ℝ^{L×d_v}; what information is aggregated; often d_v = d_k</span></div>
-                        <div class="key-point"><span class="label">Q K^T:</span><span class="desc">Attention scores ∈ ℝ^{L×L}; (i,j) entry = similarity between query i and key j</span></div>
-                        <div class="key-point"><span class="label">√d_k:</span><span class="desc">Scaling factor; prevents attention scores from growing too large (variance stabilization). d_k = head dimension</span></div>
-                        <div class="key-point"><span class="label">softmax(...):</span><span class="desc">Normalizes attention weights per query; sums to 1 across keys for each position</span></div>
-                        <div class="key-point"><span class="label">Attention(...)·V:</span><span class="desc">Weighted sum of values; each position's output is mixture of all values, weighted by attention</span></div>
-                        <div class="key-point"><span class="label">Tokenization:</span><span class="desc">224x224 image → 16x16 patches (196 total) → flatten to 768D via linear projection</span></div>
-                        <div class="key-point"><span class="label">[CLS] Token:</span><span class="desc">Prepended learned token; its output used for classification (like NLP)</span></div>
-                        <div class="key-point"><span class="label">Positional Embeddings:</span><span class="desc">Learned 1D embeddings added to preserve spatial info; can interpolate for different resolutions</span></div>
-                        <hr class="divider">
-                        <div class="comparison">
-                            <div class="option">
-                                <div class="opt-title">ViT vs CNNs</div>
-                                <div class="opt-desc">Better scaling with compute/data; Long-range interactions; Needs more training data</div>
-                            </div>
-                            <div class="option">
-                                <div class="opt-title">Variable Size Images</div>
-                                <div class="opt-desc">Interpolate position embeddings or use relative position bias</div>
-                            </div>
-                        </div>
-                        <hr class="divider">
-                        <div class="interview-tip">ViT needs more data than CNNs because it has no convolutional inductive bias. It must learn spatial relationships purely from data.</div>
-                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set image size to 224×224 and patch size P=16 → 196 tokens. P=32 → 49 tokens. ViT is permutation-invariant (no built-in 2D structure), so it needs 4x data compared to ResNet. Pre-train on large datasets (ImageNet-21K, JFT-300M), then fine-tune efficiently.</div>
-                        <div class="mnemonic">ViT = image as text. Patches = tokens. [CLS] = special token like NLP. Attention = all patches talk to each other globally.</div>
-                        <p><strong>Key Gotchas:</strong> Requires large datasets; Throughput memory-bounded (batch size critical); Position embedding interpolation impacts performance.</p>
-                        <p><strong>Production Best Practices:</strong> Use relative position bias for generalization; ImageNet normalization critical; Interpolate pos embeddings for different resolutions; Batch size matters more than compute efficiency.</p>
-                    </div>
+                </div>
+                <div class="insight-box">
+                <h3>Vision Transformer: Pure Attention for Vision</h3>
+                <p><strong>Core Intuition:</strong> Treat image as sequence of patches; use pure self-attention instead of convolutions. Removes translation equivariance assumption of CNNs; learns all spatial relationships from data.</p>
+                <div class="formula">Attention(Q, K, V) = softmax(Q K^T / √d_k) V</div>
+                <div class="key-point"><span class="label">Q (Query):</span><span class="desc">Query matrix ∈ ℝ^{L×d_k}; what to attend to. L = sequence length, d_k = key dimension</span></div>
+                <div class="key-point"><span class="label">K (Key):</span><span class="desc">Key matrix ∈ ℝ^{L×d_k}; what can be attended to</span></div>
+                <div class="key-point"><span class="label">V (Value):</span><span class="desc">Value matrix ∈ ℝ^{L×d_v}; what information is aggregated; often d_v = d_k</span></div>
+                <div class="key-point"><span class="label">Q K^T:</span><span class="desc">Attention scores ∈ ℝ^{L×L}; (i,j) entry = similarity between query i and key j</span></div>
+                <div class="key-point"><span class="label">√d_k:</span><span class="desc">Scaling factor; prevents attention scores from growing too large (variance stabilization). d_k = head dimension</span></div>
+                <div class="key-point"><span class="label">softmax(...):</span><span class="desc">Normalizes attention weights per query; sums to 1 across keys for each position</span></div>
+                <div class="key-point"><span class="label">Attention(...)·V:</span><span class="desc">Weighted sum of values; each position's output is mixture of all values, weighted by attention</span></div>
+                <div class="key-point"><span class="label">Tokenization:</span><span class="desc">224x224 image → 16x16 patches (196 total) → flatten to 768D via linear projection</span></div>
+                <div class="key-point"><span class="label">[CLS] Token:</span><span class="desc">Prepended learned token; its output used for classification (like NLP)</span></div>
+                <div class="key-point"><span class="label">Positional Embeddings:</span><span class="desc">Learned 1D embeddings added to preserve spatial info; can interpolate for different resolutions</span></div>
+                <hr class="divider">
+                <div class="comparison">
+                <div class="option">
+                <div class="opt-title">ViT vs CNNs</div>
+                <div class="opt-desc">Better scaling with compute/data; Long-range interactions; Needs more training data</div>
+                </div>
+                <div class="option">
+                <div class="opt-title">Variable Size Images</div>
+                <div class="opt-desc">Interpolate position embeddings or use relative position bias</div>
+                </div>
+                </div>
+                <hr class="divider">
+                <div class="interview-tip">ViT needs more data than CNNs because it has no convolutional inductive bias. It must learn spatial relationships purely from data.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set image size to 224×224 and patch size P=16 → 196 tokens. P=32 → 49 tokens. ViT is permutation-invariant (no built-in 2D structure), so it needs 4x data compared to ResNet. Pre-train on large datasets (ImageNet-21K, JFT-300M), then fine-tune efficiently.</div>
+                <div class="mnemonic">ViT = image as text. Patches = tokens. [CLS] = special token like NLP. Attention = all patches talk to each other globally.</div>
+                <p><strong>Key Gotchas:</strong> Requires large datasets; Throughput memory-bounded (batch size critical); Position embedding interpolation impacts performance.</p>
+                <p><strong>Production Best Practices:</strong> Use relative position bias for generalization; ImageNet normalization critical; Interpolate pos embeddings for different resolutions; Batch size matters more than compute efficiency.</p>
                 </div>
             </div>
         </div>
@@ -333,7 +333,7 @@
             <p style="color: #a0a0b0; margin-bottom: 15px;">Toggle between Early, Mid, and Late fusion. Early: concatenate features before processing (efficient, information loss). Late: process separately, fuse decisions (accurate, slow). Mid-fusion (cross-attention) is a sweet spot. Watch latency and accuracy tradeoff in the stats.</p>
             <div class="section-content">
                 <div class="canvas-wrapper">
-                    <canvas id="multimodalFusionCanvas" width="500" height="450"></canvas>
+                    <canvas id="multimodalFusionCanvas" width="550" height="500"></canvas>
                 </div>
                 <div class="controls">
                     <div class="control-group">
@@ -344,42 +344,42 @@
                             <option value="late">Late Fusion</option>
                         </select>
                     </div>
-                    <div class="insight-box">
-                        <h3>Multi-Modal LLM: Fusion Strategies</h3>
-                        <p><strong>Core Problem:</strong> How to combine image and text representations? Different strategies trade off efficiency, information preservation, and computation.</p>
-                        <div class="comparison">
-                            <div class="option">
-                                <div class="opt-title">Early Fusion</div>
-                                <div class="opt-desc">Concat visual + text before LLM. Fast; may lose modality info early.</div>
-                            </div>
-                            <div class="option">
-                                <div class="opt-title">Cross-Attention (Best)</div>
-                                <div class="opt-desc">Text queries image patches via attention. Fine-grained alignment.</div>
-                            </div>
-                            <div class="option">
-                                <div class="opt-title">Late Fusion</div>
-                                <div class="opt-desc">Process separately, concat final feats. Max accuracy; higher compute.</div>
-                            </div>
-                            <div class="option">
-                                <div class="opt-title">Hierarchical</div>
-                                <div class="opt-desc">Combine strategies: early at token level, cross-attn at sentence level</div>
-                            </div>
-                        </div>
-                        <hr class="divider">
-                        <div class="formula">Attention_out = softmax(Q_text · K_image^T / √d_k) · V_image</div>
-                        <div class="key-point"><span class="label">Q_text:</span><span class="desc">Query from text modality; what text attends to</span></div>
-                        <div class="key-point"><span class="label">K_image, V_image:</span><span class="desc">Keys and values from image modality; what text can attend to and get from images</span></div>
-                        <div class="key-point"><span class="label">√d_k:</span><span class="desc">Scaling factor for stability; d_k = key dimension (often 64 per head)</span></div>
-                        <div class="key-point"><span class="label">softmax(...):</span><span class="desc">Attention weights per text position over image tokens; ∈ [0,1]</span></div>
-                        <div class="key-point"><span class="label">Attention_out:</span><span class="desc">Text-attended-to-image output; each text token updated with relevant image info</span></div>
-                        <p style="margin: 8px 0; font-size: 0.93em; text-align: center;">Cross-attention: one modality queries, other provides keys/values</p>
-                        <hr class="divider">
-                        <div class="interview-tip">Early fusion is efficient for deployment; late fusion maximizes accuracy; cross-attention balances both. Choose based on latency vs accuracy tradeoff.</div>
-                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Early fusion (concatenate) = fast (1x latency). Late fusion (separate encoders) = accurate but slow (3x). Cross-attention (ViLBERT, ALBEF) = 1.5x latency, 2.8x accuracy. For mobile: early. For research: late or cross-attention.</div>
-                        <div class="mnemonic">Early = blend quickly. Late = process separately. Cross = one modality "looks at" the other. Each has pros/cons.</div>
-                        <p><strong>Key Gotchas:</strong> Modality imbalance (text dominates or vice versa); Variable lengths need masking; Alignment may be poor if training is brief.</p>
-                        <p><strong>Production Best Practices:</strong> Separate batch norm per modality; Cache image encodings if text varies; Monitor cross-modal alignment via cosine similarity; Temperature scaling for attention calibration.</p>
-                    </div>
+                </div>
+                <div class="insight-box">
+                <h3>Multi-Modal LLM: Fusion Strategies</h3>
+                <p><strong>Core Problem:</strong> How to combine image and text representations? Different strategies trade off efficiency, information preservation, and computation.</p>
+                <div class="comparison">
+                <div class="option">
+                <div class="opt-title">Early Fusion</div>
+                <div class="opt-desc">Concat visual + text before LLM. Fast; may lose modality info early.</div>
+                </div>
+                <div class="option">
+                <div class="opt-title">Cross-Attention (Best)</div>
+                <div class="opt-desc">Text queries image patches via attention. Fine-grained alignment.</div>
+                </div>
+                <div class="option">
+                <div class="opt-title">Late Fusion</div>
+                <div class="opt-desc">Process separately, concat final feats. Max accuracy; higher compute.</div>
+                </div>
+                <div class="option">
+                <div class="opt-title">Hierarchical</div>
+                <div class="opt-desc">Combine strategies: early at token level, cross-attn at sentence level</div>
+                </div>
+                </div>
+                <hr class="divider">
+                <div class="formula">Attention_out = softmax(Q_text · K_image^T / √d_k) · V_image</div>
+                <div class="key-point"><span class="label">Q_text:</span><span class="desc">Query from text modality; what text attends to</span></div>
+                <div class="key-point"><span class="label">K_image, V_image:</span><span class="desc">Keys and values from image modality; what text can attend to and get from images</span></div>
+                <div class="key-point"><span class="label">√d_k:</span><span class="desc">Scaling factor for stability; d_k = key dimension (often 64 per head)</span></div>
+                <div class="key-point"><span class="label">softmax(...):</span><span class="desc">Attention weights per text position over image tokens; ∈ [0,1]</span></div>
+                <div class="key-point"><span class="label">Attention_out:</span><span class="desc">Text-attended-to-image output; each text token updated with relevant image info</span></div>
+                <p style="margin: 8px 0; font-size: 0.93em; text-align: center;">Cross-attention: one modality queries, other provides keys/values</p>
+                <hr class="divider">
+                <div class="interview-tip">Early fusion is efficient for deployment; late fusion maximizes accuracy; cross-attention balances both. Choose based on latency vs accuracy tradeoff.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Early fusion (concatenate) = fast (1x latency). Late fusion (separate encoders) = accurate but slow (3x). Cross-attention (ViLBERT, ALBEF) = 1.5x latency, 2.8x accuracy. For mobile: early. For research: late or cross-attention.</div>
+                <div class="mnemonic">Early = blend quickly. Late = process separately. Cross = one modality "looks at" the other. Each has pros/cons.</div>
+                <p><strong>Key Gotchas:</strong> Modality imbalance (text dominates or vice versa); Variable lengths need masking; Alignment may be poor if training is brief.</p>
+                <p><strong>Production Best Practices:</strong> Separate batch norm per modality; Cache image encodings if text varies; Monitor cross-modal alignment via cosine similarity; Temperature scaling for attention calibration.</p>
                 </div>
             </div>
         </div>
@@ -390,7 +390,7 @@
             <p style="color: #a0a0b0; margin-bottom: 15px;">Watch positive pairs (same image, different augmentations) cluster. Negative pairs scatter. Increase batch size B—more negatives in memory, better gradient signal but more compute. Temperature τ controls how sharp cluster boundaries are. Higher τ = softer, lower = sharper.</p>
             <div class="section-content">
                 <div class="canvas-wrapper">
-                    <canvas id="simclrCanvas" width="500" height="450"></canvas>
+                    <canvas id="simclrCanvas" width="550" height="510"></canvas>
                 </div>
                 <div class="controls">
                     <div class="control-group">
@@ -398,44 +398,44 @@
                         <input type="range" id="temperature" min="0.1" max="2.0" step="0.1" value="0.7">
                         <div class="slider-value" id="tempValue">0.7</div>
                     </div>
-                    <div class="insight-box">
-                        <h3>SimCLR: Simple Contrastive Learning</h3>
-                        <p><strong>Core Intuition:</strong> Maximize agreement between embeddings of different augmented views of same image. "Same image" provides supervision (self-supervised). Simple framework, powerful results.</p>
-                        <div class="formula">L = -log(exp(sim(z_i, z_j)/τ) / Σ_k exp(sim(z_i, z_k)/τ))</div>
-                        <div class="key-point"><span class="label">L:</span><span class="desc">NT-Xent (Normalized Temperature-scaled Cross-Entropy) loss</span></div>
-                        <div class="key-point"><span class="label">z_i, z_j:</span><span class="desc">Normalized embeddings (after projection) from two augmented views of same image (positive pair)</span></div>
-                        <div class="key-point"><span class="label">sim(z_i, z_j):</span><span class="desc">Cosine similarity between z_i and z_j; ∈ [-1, 1], higher for similar views</span></div>
-                        <div class="key-point"><span class="label">τ:</span><span class="desc">Temperature ∈ (0, ∞); controls softmax sharpness. Typical: 0.07. Lower τ = harder negative mining</span></div>
-                        <div class="key-point"><span class="label">Σ_k:</span><span class="desc">Sum over all 2N embeddings in batch (z_i paired with z_j positive + 2N-2 negatives from other images)</span></div>
-                        <div class="key-point"><span class="label">Algorithm:</span><span class="desc">Image → 2 augmentations → shared encoder → projection head → contrastive loss</span></div>
-                        <div class="key-point"><span class="label">Positive Pair:</span><span class="desc">Two views of same image (should be close); batch provides negatives</span></div>
-                        <div class="key-point"><span class="label">Key Insight:</span><span class="desc">Batch size essential (2N negatives per N images); aggressive augmentations required</span></div>
-                        <hr class="divider">
-                        <div class="comparison">
-                            <div class="option">
-                                <div class="opt-title">Positive Similarity</div>
-                                <div class="opt-desc">Two views same image should be high after training</div>
-                            </div>
-                            <div class="option">
-                                <div class="opt-title">Negative Similarity</div>
-                                <div class="opt-desc">Different images should be low; more negatives better</div>
-                            </div>
-                            <div class="option">
-                                <div class="opt-title">Projection Head</div>
-                                <div class="opt-desc">Training only; discarded at inference (use encoder embeddings)</div>
-                            </div>
-                            <div class="option">
-                                <div class="opt-title">Temperature τ</div>
-                                <div class="opt-desc">Lower (≈0.07) makes loss sharper; controls distribution</div>
-                            </div>
-                        </div>
-                        <hr class="divider">
-                        <div class="interview-tip">Why contrastive learning works: augmentations preserve semantics. Training to match embeddings forces encoder to learn semantic features, not visual artifacts.</div>
-                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Batch size B=256 minimum (needs many negatives). B=4096 (modern GPU). Larger B = more negatives = easier training. Temperature τ=0.07 standard (sharp contrast). Increase to 0.5—softer, easier but weaker signal. Decrease to 0.01—very sharp, training harder but better features.</div>
-                        <div class="mnemonic">SimCLR = two cropped views of same image should agree. The bigger the batch, the harder they have to work to be similar (more negatives to beat).</div>
-                        <p><strong>Key Gotchas:</strong> Batch size directly impacts performance (8K+ needed); Augmentations matter more than architecture; Projection head is training-only.</p>
-                        <p><strong>Production Best Practices:</strong> Aggressive augmentations (cropping, color jitter, blur); Sync batch norm across GPUs; Monitor positive/negative similarities; Linear probe on frozen embeddings to evaluate; Large batches non-negotiable.</p>
-                    </div>
+                </div>
+                <div class="insight-box">
+                <h3>SimCLR: Simple Contrastive Learning</h3>
+                <p><strong>Core Intuition:</strong> Maximize agreement between embeddings of different augmented views of same image. "Same image" provides supervision (self-supervised). Simple framework, powerful results.</p>
+                <div class="formula">L = -log(exp(sim(z_i, z_j)/τ) / Σ_k exp(sim(z_i, z_k)/τ))</div>
+                <div class="key-point"><span class="label">L:</span><span class="desc">NT-Xent (Normalized Temperature-scaled Cross-Entropy) loss</span></div>
+                <div class="key-point"><span class="label">z_i, z_j:</span><span class="desc">Normalized embeddings (after projection) from two augmented views of same image (positive pair)</span></div>
+                <div class="key-point"><span class="label">sim(z_i, z_j):</span><span class="desc">Cosine similarity between z_i and z_j; ∈ [-1, 1], higher for similar views</span></div>
+                <div class="key-point"><span class="label">τ:</span><span class="desc">Temperature ∈ (0, ∞); controls softmax sharpness. Typical: 0.07. Lower τ = harder negative mining</span></div>
+                <div class="key-point"><span class="label">Σ_k:</span><span class="desc">Sum over all 2N embeddings in batch (z_i paired with z_j positive + 2N-2 negatives from other images)</span></div>
+                <div class="key-point"><span class="label">Algorithm:</span><span class="desc">Image → 2 augmentations → shared encoder → projection head → contrastive loss</span></div>
+                <div class="key-point"><span class="label">Positive Pair:</span><span class="desc">Two views of same image (should be close); batch provides negatives</span></div>
+                <div class="key-point"><span class="label">Key Insight:</span><span class="desc">Batch size essential (2N negatives per N images); aggressive augmentations required</span></div>
+                <hr class="divider">
+                <div class="comparison">
+                <div class="option">
+                <div class="opt-title">Positive Similarity</div>
+                <div class="opt-desc">Two views same image should be high after training</div>
+                </div>
+                <div class="option">
+                <div class="opt-title">Negative Similarity</div>
+                <div class="opt-desc">Different images should be low; more negatives better</div>
+                </div>
+                <div class="option">
+                <div class="opt-title">Projection Head</div>
+                <div class="opt-desc">Training only; discarded at inference (use encoder embeddings)</div>
+                </div>
+                <div class="option">
+                <div class="opt-title">Temperature τ</div>
+                <div class="opt-desc">Lower (≈0.07) makes loss sharper; controls distribution</div>
+                </div>
+                </div>
+                <hr class="divider">
+                <div class="interview-tip">Why contrastive learning works: augmentations preserve semantics. Training to match embeddings forces encoder to learn semantic features, not visual artifacts.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Batch size B=256 minimum (needs many negatives). B=4096 (modern GPU). Larger B = more negatives = easier training. Temperature τ=0.07 standard (sharp contrast). Increase to 0.5—softer, easier but weaker signal. Decrease to 0.01—very sharp, training harder but better features.</div>
+                <div class="mnemonic">SimCLR = two cropped views of same image should agree. The bigger the batch, the harder they have to work to be similar (more negatives to beat).</div>
+                <p><strong>Key Gotchas:</strong> Batch size directly impacts performance (8K+ needed); Augmentations matter more than architecture; Projection head is training-only.</p>
+                <p><strong>Production Best Practices:</strong> Aggressive augmentations (cropping, color jitter, blur); Sync batch norm across GPUs; Monitor positive/negative similarities; Linear probe on frozen embeddings to evaluate; Large batches non-negotiable.</p>
                 </div>
             </div>
         </div>
@@ -446,7 +446,7 @@
             <p style="color: #a0a0b0; margin-bottom: 15px;">Watch the memory bank (queue) accumulate embeddings. Momentum encoder updates slowly (exponential moving average), preventing embedding staleness. Increase momentum coefficient m to see queue stability—high m preserves history, low m = fresh embeddings but stale queue.</p>
             <div class="section-content">
                 <div class="canvas-wrapper">
-                    <canvas id="mocoCanvas" width="500" height="450"></canvas>
+                    <canvas id="mocoCanvas" width="550" height="510"></canvas>
                 </div>
                 <div class="controls">
                     <div class="control-group">
@@ -454,36 +454,36 @@
                         <input type="range" id="momentum" min="0.5" max="0.99" step="0.01" value="0.99">
                         <div class="slider-value" id="momentumValue">0.99</div>
                     </div>
-                    <div class="insight-box">
-                        <h3>MoCo: Large Queue of Negative Samples</h3>
-                        <p><strong>Core Problem:</strong> SimCLR needs huge batches for good negatives. MoCo solves by maintaining queue of past negatives—enables training on single GPU with smaller batches.</p>
-                        <div class="formula">θ_k ← m·θ_k + (1-m)·θ_q  (m ≈ 0.999)</div>
-                        <div class="key-point"><span class="label">θ_k:</span><span class="desc">Key encoder parameters; updated via exponential moving average (EMA)</span></div>
-                        <div class="key-point"><span class="label">θ_q:</span><span class="desc">Query encoder parameters; updated via gradient descent</span></div>
-                        <div class="key-point"><span class="label">m:</span><span class="desc">Momentum coefficient ∈ (0, 1); controls EMA decay. Higher m = slower tracking, more staleness. Typical: 0.999</span></div>
-                        <div class="key-point"><span class="label">1-m:</span><span class="desc">Learning rate for key encoder; (1-0.999) = 0.001 = 0.1% of query update per step</span></div>
-                        <p style="margin: 8px 0; font-size: 0.93em;">Momentum update: slow key encoder tracks query encoder, ensures queue consistency</p>
-                        <div class="key-point"><span class="label">Two Encoders:</span><span class="desc">Query (gradient updates) and Key (momentum updates); produces consistent representations</span></div>
-                        <div class="key-point"><span class="label">Queue Mechanism:</span><span class="desc">Store K past embeddings; current positive enqueues, oldest dequeues; provides K negatives</span></div>
-                        <div class="key-point"><span class="label">Momentum m:</span><span class="desc">Higher m = more stale negatives (stable); lower m = fresher (but risks collapse)</span></div>
-                        <hr class="divider">
-                        <div class="comparison">
-                            <div class="option">
-                                <div class="opt-title">SimCLR</div>
-                                <div class="opt-desc">Needs batch_size negatives; requires huge batches</div>
-                            </div>
-                            <div class="option">
-                                <div class="opt-title">MoCo</div>
-                                <div class="opt-desc">Needs queue_size negatives; smaller batches sufficient</div>
-                            </div>
-                        </div>
-                        <hr class="divider">
-                        <div class="interview-tip">Momentum update prevents collapse: if you updated key encoder by gradient, queue would have stale embeddings (from different model state) and collapse.</div>
-                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Momentum m=0.999 (recommended). Key encoder (K) updates slowly: θ_K ← m·θ_K + (1-m)·θ_Q. This maintains stable queue. m=0.9 = updates faster, queue less stable. Queue size=65536 (large bank of negatives). Older entries decay out, newer ones in.</div>
-                        <div class="mnemonic">MoCo = two encoders, one fast (query), one slow (key via momentum). Queue accumulates past keys. Current positive joins queue; oldest leaves.</div>
-                        <p><strong>Key Gotchas:</strong> Momentum coefficient m critical (too low → collapse; too high → stale negatives); Queue initialization; Smaller batch sizes need larger queues.</p>
-                        <p><strong>Production Best Practices:</strong> Tune m based on dataset; Monitor queue freshness; Use in-batch negatives + queue for stronger signal; Distribute queue across GPUs at scale; Enables single-GPU training.</p>
-                    </div>
+                </div>
+                <div class="insight-box">
+                <h3>MoCo: Large Queue of Negative Samples</h3>
+                <p><strong>Core Problem:</strong> SimCLR needs huge batches for good negatives. MoCo solves by maintaining queue of past negatives—enables training on single GPU with smaller batches.</p>
+                <div class="formula">θ_k ← m·θ_k + (1-m)·θ_q  (m ≈ 0.999)</div>
+                <div class="key-point"><span class="label">θ_k:</span><span class="desc">Key encoder parameters; updated via exponential moving average (EMA)</span></div>
+                <div class="key-point"><span class="label">θ_q:</span><span class="desc">Query encoder parameters; updated via gradient descent</span></div>
+                <div class="key-point"><span class="label">m:</span><span class="desc">Momentum coefficient ∈ (0, 1); controls EMA decay. Higher m = slower tracking, more staleness. Typical: 0.999</span></div>
+                <div class="key-point"><span class="label">1-m:</span><span class="desc">Learning rate for key encoder; (1-0.999) = 0.001 = 0.1% of query update per step</span></div>
+                <p style="margin: 8px 0; font-size: 0.93em;">Momentum update: slow key encoder tracks query encoder, ensures queue consistency</p>
+                <div class="key-point"><span class="label">Two Encoders:</span><span class="desc">Query (gradient updates) and Key (momentum updates); produces consistent representations</span></div>
+                <div class="key-point"><span class="label">Queue Mechanism:</span><span class="desc">Store K past embeddings; current positive enqueues, oldest dequeues; provides K negatives</span></div>
+                <div class="key-point"><span class="label">Momentum m:</span><span class="desc">Higher m = more stale negatives (stable); lower m = fresher (but risks collapse)</span></div>
+                <hr class="divider">
+                <div class="comparison">
+                <div class="option">
+                <div class="opt-title">SimCLR</div>
+                <div class="opt-desc">Needs batch_size negatives; requires huge batches</div>
+                </div>
+                <div class="option">
+                <div class="opt-title">MoCo</div>
+                <div class="opt-desc">Needs queue_size negatives; smaller batches sufficient</div>
+                </div>
+                </div>
+                <hr class="divider">
+                <div class="interview-tip">Momentum update prevents collapse: if you updated key encoder by gradient, queue would have stale embeddings (from different model state) and collapse.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Momentum m=0.999 (recommended). Key encoder (K) updates slowly: θ_K ← m·θ_K + (1-m)·θ_Q. This maintains stable queue. m=0.9 = updates faster, queue less stable. Queue size=65536 (large bank of negatives). Older entries decay out, newer ones in.</div>
+                <div class="mnemonic">MoCo = two encoders, one fast (query), one slow (key via momentum). Queue accumulates past keys. Current positive joins queue; oldest leaves.</div>
+                <p><strong>Key Gotchas:</strong> Momentum coefficient m critical (too low → collapse; too high → stale negatives); Queue initialization; Smaller batch sizes need larger queues.</p>
+                <p><strong>Production Best Practices:</strong> Tune m based on dataset; Monitor queue freshness; Use in-batch negatives + queue for stronger signal; Distribute queue across GPUs at scale; Enables single-GPU training.</p>
                 </div>
             </div>
         </div>
@@ -494,7 +494,7 @@
             <p style="color: #a0a0b0; margin-bottom: 15px;">BYOL uses momentum to prevent collapse (no explicit negatives). DINO adds centering to maintain feature diversity. Watch how representations stay diverse despite no negative samples. Toggle between BYOL (simpler) and DINO (more robust). Observe: no need for large batch sizes or memory banks.</p>
             <div class="section-content">
                 <div class="canvas-wrapper">
-                    <canvas id="byolCanvas" width="500" height="450"></canvas>
+                    <canvas id="byolCanvas" width="550" height="500"></canvas>
                 </div>
                 <div class="controls">
                     <div class="control-group">
@@ -502,41 +502,41 @@
                         <input type="range" id="emaCoeff" min="0.5" max="0.99" step="0.01" value="0.996">
                         <div class="slider-value" id="emaValue">0.996</div>
                     </div>
-                    <div class="insight-box">
-                        <h3>BYOL & DINO: Negatives-Free Learning</h3>
-                        <p><strong>Core Insight:</strong> Contrastive learning NOT required! BYOL: student trained to match EMA teacher. No negatives, yet excellent representations—shocking result.</p>
-                        <div class="formula">L_BYOL = ||h_student - [h_teacher]_sg||^2</div>
-                        <div class="key-point"><span class="label">L_BYOL:</span><span class="desc">Mean-squared error (MSE) between student and teacher representations</span></div>
-                        <div class="key-point"><span class="label">h_student:</span><span class="desc">Representation from student network; receives gradients during backprop</span></div>
-                        <div class="key-point"><span class="label">h_teacher:</span><span class="desc">Representation from teacher network; should match student after training</span></div>
-                        <div class="key-point"><span class="label">[·]_sg:</span><span class="desc">Stop-gradient operator; detaches tensor from computational graph. Prevents gradient flow to teacher</span></div>
-                        <div class="key-point"><span class="label">||·||^2:</span><span class="desc">Squared Euclidean norm; L2 distance. Loss = 0 when student and teacher match</span></div>
-                        <p style="margin: 8px 0; font-size: 0.93em;">[ ]_sg = stop-gradient; teacher updated by EMA, not gradients</p>
-                        <div class="key-point"><span class="label">BYOL Architecture:</span><span class="desc">Student (gradient updates) + Teacher (EMA); stop-gradient through teacher prevents collapse</span></div>
-                        <div class="key-point"><span class="label">DINO (ViT):</span><span class="desc">Student learns to match teacher via cross-entropy; centering + sharpening prevent collapse</span></div>
-                        <div class="key-point"><span class="label">Asymmetric Temps:</span><span class="desc">DINO: student τ_s=0.1, teacher τ_t=0.04 (inverted); sharpens teacher outputs</span></div>
-                        <hr class="divider">
-                        <div class="comparison">
-                            <div class="option">
-                                <div class="opt-title">BYOL</div>
-                                <div class="opt-desc">MSE loss; stop-gradient; simpler; emergent semantic segmentation</div>
-                            </div>
-                            <div class="option">
-                                <div class="opt-title">DINO</div>
-                                <div class="opt-desc">Cross-entropy; centering+sharpening; ViT-based; more stable</div>
-                            </div>
-                            <div class="option">
-                                <div class="opt-title">Standard Distill</div>
-                                <div class="opt-desc">Fixed teacher; BYOL updates teacher from student (key difference)</div>
-                            </div>
-                        </div>
-                        <hr class="divider">
-                        <div class="interview-tip">BYOL's big finding: negative samples aren't essential for learning good representations. Paradigm shift from contrastive to self-distillation methods.</div>
-                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: BYOL stops collapse via momentum (no negatives needed). DINO adds center & sharpening to prevent mode collapse. Batch size B=256 fine for both (no memory bank). Key: momentum update on student→teacher. This enables efficient contrastive-free learning.</div>
-                        <div class="mnemonic">BYOL = student chases its moving target (EMA teacher). Stop gradients through teacher prevents collapse. No negatives needed—mind-bending!</div>
-                        <p><strong>Key Gotchas:</strong> EMA momentum critical; Too-fast updates cause instability; Need to monitor embedding variance for collapse; Architecture-specific (works well with ViT/CNN).</p>
-                        <p><strong>Production Best Practices:</strong> More stable than contrastive methods; Less hyperparameter tuning; DINO especially good for ViTs; Monitor embedding collapse metrics; Both more robust than SimCLR.</p>
-                    </div>
+                </div>
+                <div class="insight-box">
+                <h3>BYOL & DINO: Negatives-Free Learning</h3>
+                <p><strong>Core Insight:</strong> Contrastive learning NOT required! BYOL: student trained to match EMA teacher. No negatives, yet excellent representations—shocking result.</p>
+                <div class="formula">L_BYOL = ||h_student - [h_teacher]_sg||^2</div>
+                <div class="key-point"><span class="label">L_BYOL:</span><span class="desc">Mean-squared error (MSE) between student and teacher representations</span></div>
+                <div class="key-point"><span class="label">h_student:</span><span class="desc">Representation from student network; receives gradients during backprop</span></div>
+                <div class="key-point"><span class="label">h_teacher:</span><span class="desc">Representation from teacher network; should match student after training</span></div>
+                <div class="key-point"><span class="label">[·]_sg:</span><span class="desc">Stop-gradient operator; detaches tensor from computational graph. Prevents gradient flow to teacher</span></div>
+                <div class="key-point"><span class="label">||·||^2:</span><span class="desc">Squared Euclidean norm; L2 distance. Loss = 0 when student and teacher match</span></div>
+                <p style="margin: 8px 0; font-size: 0.93em;">[ ]_sg = stop-gradient; teacher updated by EMA, not gradients</p>
+                <div class="key-point"><span class="label">BYOL Architecture:</span><span class="desc">Student (gradient updates) + Teacher (EMA); stop-gradient through teacher prevents collapse</span></div>
+                <div class="key-point"><span class="label">DINO (ViT):</span><span class="desc">Student learns to match teacher via cross-entropy; centering + sharpening prevent collapse</span></div>
+                <div class="key-point"><span class="label">Asymmetric Temps:</span><span class="desc">DINO: student τ_s=0.1, teacher τ_t=0.04 (inverted); sharpens teacher outputs</span></div>
+                <hr class="divider">
+                <div class="comparison">
+                <div class="option">
+                <div class="opt-title">BYOL</div>
+                <div class="opt-desc">MSE loss; stop-gradient; simpler; emergent semantic segmentation</div>
+                </div>
+                <div class="option">
+                <div class="opt-title">DINO</div>
+                <div class="opt-desc">Cross-entropy; centering+sharpening; ViT-based; more stable</div>
+                </div>
+                <div class="option">
+                <div class="opt-title">Standard Distill</div>
+                <div class="opt-desc">Fixed teacher; BYOL updates teacher from student (key difference)</div>
+                </div>
+                </div>
+                <hr class="divider">
+                <div class="interview-tip">BYOL's big finding: negative samples aren't essential for learning good representations. Paradigm shift from contrastive to self-distillation methods.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: BYOL stops collapse via momentum (no negatives needed). DINO adds center & sharpening to prevent mode collapse. Batch size B=256 fine for both (no memory bank). Key: momentum update on student→teacher. This enables efficient contrastive-free learning.</div>
+                <div class="mnemonic">BYOL = student chases its moving target (EMA teacher). Stop gradients through teacher prevents collapse. No negatives needed—mind-bending!</div>
+                <p><strong>Key Gotchas:</strong> EMA momentum critical; Too-fast updates cause instability; Need to monitor embedding variance for collapse; Architecture-specific (works well with ViT/CNN).</p>
+                <p><strong>Production Best Practices:</strong> More stable than contrastive methods; Less hyperparameter tuning; DINO especially good for ViTs; Monitor embedding collapse metrics; Both more robust than SimCLR.</p>
                 </div>
             </div>
         </div>
@@ -547,7 +547,7 @@
             <p style="color: #a0a0b0; margin-bottom: 15px;">Slide through feature contributions in the waterfall. Each bar shows how much that feature pushed the prediction away from baseline. Red = pushes up, blue = pushes down. Adjust prediction sample to see SHAP values shift. Sum all bars = prediction - baseline.</p>
             <div class="section-content">
                 <div class="canvas-wrapper">
-                    <canvas id="shapCanvas" width="500" height="450"></canvas>
+                    <canvas id="shapCanvas" width="550" height="500"></canvas>
                 </div>
                 <div class="controls">
                     <div class="control-group">
@@ -555,46 +555,46 @@
                         <input type="range" id="shapFeatureCount" min="3" max="8" value="5">
                         <div class="slider-value" id="shapFeatureValue">5 features</div>
                     </div>
-                    <div class="insight-box">
-                        <h3>SHAP: SHapley Additive exPlanations</h3>
-                        <p><strong>Core Idea:</strong> Use game theory (Shapley values) to assign each feature its contribution to prediction. Shapley value = average marginal contribution across all possible coalitions of features.</p>
-                        <div class="formula">φ_i(f, x) = Σ_{S⊆F\{i}} |S|!(|F|-|S|-1)! / |F|! · (f(S∪{i}) - f(S))</div>
-                        <div class="key-point"><span class="label">φ_i(f,x):</span><span class="desc">Shapley value for feature i on sample x; contribution of i to prediction f(x)</span></div>
-                        <div class="key-point"><span class="label">f:</span><span class="desc">Model/function being explained; outputs scalar prediction</span></div>
-                        <div class="key-point"><span class="label">F:</span><span class="desc">Full set of all features; |F| = number of features</span></div>
-                        <div class="key-point"><span class="label">S⊆F\{i}:</span><span class="desc">Subset of features excluding i; averages over all possible coalitions</span></div>
-                        <div class="key-point"><span class="label">f(S∪{i}) - f(S):</span><span class="desc">Marginal contribution of feature i when added to coalition S</span></div>
-                        <div class="key-point"><span class="label">|S|!(|F|-|S|-1)! / |F|!:</span><span class="desc">Coalition weight; ensures each ordering weighted equally. Normalized by factorial terms</span></div>
-                        <p style="margin: 8px 0; font-size: 0.93em;">Accounts for ALL possible orderings/coalitions; φ_i = marginal contribution of feature i</p>
-                        <div class="key-point"><span class="label">Interpretation:</span><span class="desc">f(x) = E[f(X)] + Σ φ_i(x); φ_i > 0 pushes prediction higher, φ_i < 0 pushes lower</span></div>
-                        <div class="key-point"><span class="label">Computational Cost:</span><span class="desc">Exact = 2^|F| subsets (exponential); TreeSHAP (poly); KernelSHAP (any model, regression)</span></div>
-                        <div class="key-point"><span class="label">KernelSHAP:</span><span class="desc">Generate binary feature masks, fit weighted linear regression with normalized weights</span></div>
-                        <hr class="divider">
-                        <div class="comparison">
-                            <div class="option">
-                                <div class="opt-title">Local Explanation</div>
-                                <div class="opt-desc">SHAP values per prediction; why did model predict this?</div>
-                            </div>
-                            <div class="option">
-                                <div class="opt-title">Global Importance</div>
-                                <div class="opt-desc">Average |SHAP| values; feature importance across data</div>
-                            </div>
-                            <div class="option">
-                                <div class="opt-title">TreeSHAP</div>
-                                <div class="opt-desc">Exact for tree models; polynomial time</div>
-                            </div>
-                            <div class="option">
-                                <div class="opt-title">vs LIME</div>
-                                <div class="opt-desc">LIME is local approximation; SHAP is game-theoretically founded</div>
-                            </div>
-                        </div>
-                        <hr class="divider">
-                        <div class="interview-tip">Shapley values are uniquely determined by symmetry, dummy, and linearity axioms. This axiomatic foundation makes SHAP more principled than alternative explainability methods.</div>
-                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: SHAP = game theory (Shapley value). Feature i's contribution = its marginal value across all coalitions. Computationally expensive (2^d), so use approximations (TreeSHAP=O(d·T), KernelSHAP=O(m·d)). Perfect for model debugging, feature importance ranking, fairness audits.</div>
-                        <div class="mnemonic">SHAP = each feature gets a "contribution score." Game theory ensures it's fair: sums to difference from baseline. Every possible coalition considered.</div>
-                        <p><strong>Key Gotchas:</strong> Computational cost high (mitigate with TreeSHAP or KernelSHAP); Background dataset choice affects explanations; Missing feature handling via conditional expectation.</p>
-                        <p><strong>Production Best Practices:</strong> Use TreeSHAP for trees; Representative background data; Compute on sample for speed; Waterfall/force plots for viz; Regulatory-friendly (game theory foundation); Finance/healthcare standard.</p>
-                    </div>
+                </div>
+                <div class="insight-box">
+                <h3>SHAP: SHapley Additive exPlanations</h3>
+                <p><strong>Core Idea:</strong> Use game theory (Shapley values) to assign each feature its contribution to prediction. Shapley value = average marginal contribution across all possible coalitions of features.</p>
+                <div class="formula">φ_i(f, x) = Σ_{S⊆F\{i}} |S|!(|F|-|S|-1)! / |F|! · (f(S∪{i}) - f(S))</div>
+                <div class="key-point"><span class="label">φ_i(f,x):</span><span class="desc">Shapley value for feature i on sample x; contribution of i to prediction f(x)</span></div>
+                <div class="key-point"><span class="label">f:</span><span class="desc">Model/function being explained; outputs scalar prediction</span></div>
+                <div class="key-point"><span class="label">F:</span><span class="desc">Full set of all features; |F| = number of features</span></div>
+                <div class="key-point"><span class="label">S⊆F\{i}:</span><span class="desc">Subset of features excluding i; averages over all possible coalitions</span></div>
+                <div class="key-point"><span class="label">f(S∪{i}) - f(S):</span><span class="desc">Marginal contribution of feature i when added to coalition S</span></div>
+                <div class="key-point"><span class="label">|S|!(|F|-|S|-1)! / |F|!:</span><span class="desc">Coalition weight; ensures each ordering weighted equally. Normalized by factorial terms</span></div>
+                <p style="margin: 8px 0; font-size: 0.93em;">Accounts for ALL possible orderings/coalitions; φ_i = marginal contribution of feature i</p>
+                <div class="key-point"><span class="label">Interpretation:</span><span class="desc">f(x) = E[f(X)] + Σ φ_i(x); φ_i > 0 pushes prediction higher, φ_i < 0 pushes lower</span></div>
+                <div class="key-point"><span class="label">Computational Cost:</span><span class="desc">Exact = 2^|F| subsets (exponential); TreeSHAP (poly); KernelSHAP (any model, regression)</span></div>
+                <div class="key-point"><span class="label">KernelSHAP:</span><span class="desc">Generate binary feature masks, fit weighted linear regression with normalized weights</span></div>
+                <hr class="divider">
+                <div class="comparison">
+                <div class="option">
+                <div class="opt-title">Local Explanation</div>
+                <div class="opt-desc">SHAP values per prediction; why did model predict this?</div>
+                </div>
+                <div class="option">
+                <div class="opt-title">Global Importance</div>
+                <div class="opt-desc">Average |SHAP| values; feature importance across data</div>
+                </div>
+                <div class="option">
+                <div class="opt-title">TreeSHAP</div>
+                <div class="opt-desc">Exact for tree models; polynomial time</div>
+                </div>
+                <div class="option">
+                <div class="opt-title">vs LIME</div>
+                <div class="opt-desc">LIME is local approximation; SHAP is game-theoretically founded</div>
+                </div>
+                </div>
+                <hr class="divider">
+                <div class="interview-tip">Shapley values are uniquely determined by symmetry, dummy, and linearity axioms. This axiomatic foundation makes SHAP more principled than alternative explainability methods.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: SHAP = game theory (Shapley value). Feature i's contribution = its marginal value across all coalitions. Computationally expensive (2^d), so use approximations (TreeSHAP=O(d·T), KernelSHAP=O(m·d)). Perfect for model debugging, feature importance ranking, fairness audits.</div>
+                <div class="mnemonic">SHAP = each feature gets a "contribution score." Game theory ensures it's fair: sums to difference from baseline. Every possible coalition considered.</div>
+                <p><strong>Key Gotchas:</strong> Computational cost high (mitigate with TreeSHAP or KernelSHAP); Background dataset choice affects explanations; Missing feature handling via conditional expectation.</p>
+                <p><strong>Production Best Practices:</strong> Use TreeSHAP for trees; Representative background data; Compute on sample for speed; Waterfall/force plots for viz; Regulatory-friendly (game theory foundation); Finance/healthcare standard.</p>
                 </div>
             </div>
         </div>
@@ -605,7 +605,7 @@
             <p style="color: #a0a0b0; margin-bottom: 15px;">Watch LIME perturb features around a prediction (creating local dataset). Fit a simple linear model to approximate the complex model locally. Adjust perturbation radius—small = tight approximation, large = broader context. Feature weights on the linear model = local importance.</p>
             <div class="section-content">
                 <div class="canvas-wrapper">
-                    <canvas id="limeCanvas" width="500" height="450"></canvas>
+                    <canvas id="limeCanvas" width="550" height="500"></canvas>
                 </div>
                 <div class="controls">
                     <div class="control-group">
@@ -613,46 +613,46 @@
                         <input type="range" id="limeNeighborhood" min="20" max="200" step="20" value="100">
                         <div class="slider-value" id="limeNeighborValue">100 samples</div>
                     </div>
-                    <div class="insight-box">
-                        <h3>LIME: Local Linear Approximations</h3>
-                        <p><strong>Core Concept:</strong> Explain predictions by fitting simple linear model in neighborhood. Complex model locally linear → linear model provides human-understandable explanation.</p>
-                        <div class="formula">min_w Σ_j weight_j · (f(x_j) - (w_0 + Σ_i w_i · x_j^i))^2 + λ||w||</div>
-                        <div class="key-point"><span class="label">w:</span><span class="desc">Linear regression coefficients to learn; w_0 = intercept, w_i = feature slopes</span></div>
-                        <div class="key-point"><span class="label">weight_j:</span><span class="desc">Proximity weight for sample j; higher for samples near x (example). Computed via exponential kernel</span></div>
-                        <div class="key-point"><span class="label">f(x_j):</span><span class="desc">Prediction from complex model on perturbed sample j</span></div>
-                        <div class="key-point"><span class="label">w_0 + Σ_i w_i · x_j^i:</span><span class="desc">Prediction from linear approximation; simple interpretable model</span></div>
-                        <div class="key-point"><span class="label">λ||w||:</span><span class="desc">Regularization term (L1 or L2); λ ≥ 0 controls sparsity. Larger λ = simpler model</span></div>
-                        <div class="key-point"><span class="label">Σ_j:</span><span class="desc">Sum over perturbed samples in local neighborhood (typically 100-1000 samples)</span></div>
-                        <p style="margin: 8px 0; font-size: 0.93em;">Weighted regression with proximity weights; L1/L2 encourages sparse solutions</p>
-                        <div class="key-point"><span class="label">Algorithm:</span><span class="desc">Perturb features randomly → get predictions → fit weighted linear regression → interpret coefficients</span></div>
-                        <div class="key-point"><span class="label">Weights:</span><span class="desc">Exponential kernel: weight_j = exp(-dist²/σ²); closer instances weighted more</span></div>
-                        <div class="key-point"><span class="label">Text/Images:</span><span class="desc">Text = remove words; Images = superpixels (treat segments not pixels as features)</span></div>
-                        <hr class="divider">
-                        <div class="comparison">
-                            <div class="option">
-                                <div class="opt-title">Local Linearity</div>
-                                <div class="opt-desc">Complex model may be linear in small neighborhood</div>
-                            </div>
-                            <div class="option">
-                                <div class="opt-title">Neighborhood Size</div>
-                                <div class="opt-desc">Too small = high variance; too large = poor approx</div>
-                            </div>
-                            <div class="option">
-                                <div class="opt-title">vs SHAP</div>
-                                <div class="opt-desc">LIME simpler/faster; SHAP theoretically grounded</div>
-                            </div>
-                            <div class="option">
-                                <div class="opt-title">Model-Agnostic</div>
-                                <div class="opt-desc">Works with any black-box model</div>
-                            </div>
-                        </div>
-                        <hr class="divider">
-                        <div class="interview-tip">Key insight: you don't need to understand the whole model, just the local behavior around one prediction. Linear model works because of local linearity.</div>
-                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: LIME samples m≈1000 perturbed instances. Weights them by distance to original sample (exponential decay). Fits weighted linear model. Feature coefficients = local importance. Good for debugging, bad for global understanding. Fast, intuitive, but unstable (perturbation random).</div>
-                        <div class="mnemonic">LIME = local + linear. Perturb around instance, fit simple linear model. Coefficients show which features matter locally.</div>
-                        <p><strong>Key Gotchas:</strong> Stability issues (perturb twice, get different explanations); Neighborhood size/bandwidth critical; May miss feature interactions; Slower than simple feature importance.</p>
-                        <p><strong>Production Best Practices:</strong> 1000-5000 perturbed samples; Normalize features; Use for debugging model failures; Consider with SHAP for rigor; Superpixels for images; Word removal for text.</p>
-                    </div>
+                </div>
+                <div class="insight-box">
+                <h3>LIME: Local Linear Approximations</h3>
+                <p><strong>Core Concept:</strong> Explain predictions by fitting simple linear model in neighborhood. Complex model locally linear → linear model provides human-understandable explanation.</p>
+                <div class="formula">min_w Σ_j weight_j · (f(x_j) - (w_0 + Σ_i w_i · x_j^i))^2 + λ||w||</div>
+                <div class="key-point"><span class="label">w:</span><span class="desc">Linear regression coefficients to learn; w_0 = intercept, w_i = feature slopes</span></div>
+                <div class="key-point"><span class="label">weight_j:</span><span class="desc">Proximity weight for sample j; higher for samples near x (example). Computed via exponential kernel</span></div>
+                <div class="key-point"><span class="label">f(x_j):</span><span class="desc">Prediction from complex model on perturbed sample j</span></div>
+                <div class="key-point"><span class="label">w_0 + Σ_i w_i · x_j^i:</span><span class="desc">Prediction from linear approximation; simple interpretable model</span></div>
+                <div class="key-point"><span class="label">λ||w||:</span><span class="desc">Regularization term (L1 or L2); λ ≥ 0 controls sparsity. Larger λ = simpler model</span></div>
+                <div class="key-point"><span class="label">Σ_j:</span><span class="desc">Sum over perturbed samples in local neighborhood (typically 100-1000 samples)</span></div>
+                <p style="margin: 8px 0; font-size: 0.93em;">Weighted regression with proximity weights; L1/L2 encourages sparse solutions</p>
+                <div class="key-point"><span class="label">Algorithm:</span><span class="desc">Perturb features randomly → get predictions → fit weighted linear regression → interpret coefficients</span></div>
+                <div class="key-point"><span class="label">Weights:</span><span class="desc">Exponential kernel: weight_j = exp(-dist²/σ²); closer instances weighted more</span></div>
+                <div class="key-point"><span class="label">Text/Images:</span><span class="desc">Text = remove words; Images = superpixels (treat segments not pixels as features)</span></div>
+                <hr class="divider">
+                <div class="comparison">
+                <div class="option">
+                <div class="opt-title">Local Linearity</div>
+                <div class="opt-desc">Complex model may be linear in small neighborhood</div>
+                </div>
+                <div class="option">
+                <div class="opt-title">Neighborhood Size</div>
+                <div class="opt-desc">Too small = high variance; too large = poor approx</div>
+                </div>
+                <div class="option">
+                <div class="opt-title">vs SHAP</div>
+                <div class="opt-desc">LIME simpler/faster; SHAP theoretically grounded</div>
+                </div>
+                <div class="option">
+                <div class="opt-title">Model-Agnostic</div>
+                <div class="opt-desc">Works with any black-box model</div>
+                </div>
+                </div>
+                <hr class="divider">
+                <div class="interview-tip">Key insight: you don't need to understand the whole model, just the local behavior around one prediction. Linear model works because of local linearity.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: LIME samples m≈1000 perturbed instances. Weights them by distance to original sample (exponential decay). Fits weighted linear model. Feature coefficients = local importance. Good for debugging, bad for global understanding. Fast, intuitive, but unstable (perturbation random).</div>
+                <div class="mnemonic">LIME = local + linear. Perturb around instance, fit simple linear model. Coefficients show which features matter locally.</div>
+                <p><strong>Key Gotchas:</strong> Stability issues (perturb twice, get different explanations); Neighborhood size/bandwidth critical; May miss feature interactions; Slower than simple feature importance.</p>
+                <p><strong>Production Best Practices:</strong> 1000-5000 perturbed samples; Normalize features; Use for debugging model failures; Consider with SHAP for rigor; Superpixels for images; Word removal for text.</p>
                 </div>
             </div>
         </div>
@@ -663,7 +663,7 @@
             <p style="color: #a0a0b0; margin-bottom: 15px;">Zoom into individual neurons—what do they activate for? Toggle through activation patterns. Probing classifier shows if info exists; intervention (ablation) proves causation. Watch: probing ≠ causation. A neuron encoding color doesn't mean it causes color perception.</p>
             <div class="section-content">
                 <div class="canvas-wrapper">
-                    <canvas id="mechanisticCanvas" width="500" height="450"></canvas>
+                    <canvas id="mechanisticCanvas" width="550" height="500"></canvas>
                 </div>
                 <div class="controls">
                     <div class="control-group">
@@ -671,45 +671,45 @@
                         <input type="range" id="superpositionDensity" min="1" max="10" value="5">
                         <div class="slider-value" id="superpositionValue">5x</div>
                     </div>
-                    <div class="insight-box">
-                        <h3>Mechanistic Interpretability: Understanding Neural Networks</h3>
-                        <p><strong>Goal:</strong> Reverse-engineer learned algorithms by understanding individual components and how they compose. Move beyond "black box" to understand mechanisms of computation.</p>
-                        <div class="formula">Output = Σ (neuron_activation · learned_weight · downstream_importance)</div>
-                        <div class="key-point"><span class="label">Output:</span><span class="desc">Final model prediction or logit</span></div>
-                        <div class="key-point"><span class="label">neuron_activation:</span><span class="desc">Activation value of neuron; output of ReLU, tanh, etc. ∈ [0, ∞) or [-1, 1]</span></div>
-                        <div class="key-point"><span class="label">learned_weight:</span><span class="desc">Weight connecting neuron to downstream layer; trained parameter</span></div>
-                        <div class="key-point"><span class="label">downstream_importance:</span><span class="desc">Measure of how much downstream layers use this neuron's output. Can be gradient, attention, or causal</span></div>
-                        <div class="key-point"><span class="label">Σ:</span><span class="desc">Sum over all neurons in layer; aggregates contributions to final output</span></div>
-                        <div class="key-point"><span class="label">Feature Decomposition:</span><span class="desc">Neurons activate for specific concepts ("ears", "whiskers" in vision; syntactic properties in NLP)</span></div>
-                        <div class="key-point"><span class="label">Superposition:</span><span class="desc">One neuron encodes multiple features simultaneously via learned interference patterns</span></div>
-                        <div class="key-point"><span class="label">Circuits:</span><span class="desc">Attention heads + MLPs + neurons form "circuits" implementing specific algorithms</span></div>
-                        <hr class="divider">
-                        <p><strong>Key Analysis Techniques:</strong></p>
-                        <div class="comparison">
-                            <div class="option">
-                                <div class="opt-title">Probing (Correlation)</div>
-                                <div class="opt-desc">Train classifier on activations; shows what info exists</div>
-                            </div>
-                            <div class="option">
-                                <div class="opt-title">Intervention (Causation)</div>
-                                <div class="opt-desc">Ablate neurons; test actual causal importance</div>
-                            </div>
-                            <div class="option">
-                                <div class="opt-title">Attribution</div>
-                                <div class="opt-desc">Trace backward via gradients/attention weights</div>
-                            </div>
-                            <div class="option">
-                                <div class="opt-title">Saliency Maps</div>
-                                <div class="opt-desc">Visualize input-output importance via LRP</div>
-                            </div>
-                        </div>
-                        <hr class="divider">
-                        <div class="interview-tip">Probing ≠ causation. Classifier on activations shows info exists, but intervention (ablation) proves components matter for output.</div>
-                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Linear probe: train classifier on neuron activations to predict labels. High accuracy = neuron encodes info. Ablation: set neuron to 0, measure performance drop. Only ablation proves causation. Neurons often multiplex (encode many features at once)—interpretation hard.</div>
-                        <div class="mnemonic">Mechanistic = understand the gears. Feature decomposition answers "what do neurons care about." Circuits answer "how do they talk." Intervention answers "what actually matters."</div>
-                        <p><strong>Key Gotchas:</strong> Superposition complicates interpretation; Probing misleading without intervention; Hypothesis-driven; Small models > large; Causation hard to establish.</p>
-                        <p><strong>Production Best Practices:</strong> Domain-guided study; Probe then intervene; Document mechanisms; Causal analysis essential; Relates to pruning, distillation, safety.</p>
-                    </div>
+                </div>
+                <div class="insight-box">
+                <h3>Mechanistic Interpretability: Understanding Neural Networks</h3>
+                <p><strong>Goal:</strong> Reverse-engineer learned algorithms by understanding individual components and how they compose. Move beyond "black box" to understand mechanisms of computation.</p>
+                <div class="formula">Output = Σ (neuron_activation · learned_weight · downstream_importance)</div>
+                <div class="key-point"><span class="label">Output:</span><span class="desc">Final model prediction or logit</span></div>
+                <div class="key-point"><span class="label">neuron_activation:</span><span class="desc">Activation value of neuron; output of ReLU, tanh, etc. ∈ [0, ∞) or [-1, 1]</span></div>
+                <div class="key-point"><span class="label">learned_weight:</span><span class="desc">Weight connecting neuron to downstream layer; trained parameter</span></div>
+                <div class="key-point"><span class="label">downstream_importance:</span><span class="desc">Measure of how much downstream layers use this neuron's output. Can be gradient, attention, or causal</span></div>
+                <div class="key-point"><span class="label">Σ:</span><span class="desc">Sum over all neurons in layer; aggregates contributions to final output</span></div>
+                <div class="key-point"><span class="label">Feature Decomposition:</span><span class="desc">Neurons activate for specific concepts ("ears", "whiskers" in vision; syntactic properties in NLP)</span></div>
+                <div class="key-point"><span class="label">Superposition:</span><span class="desc">One neuron encodes multiple features simultaneously via learned interference patterns</span></div>
+                <div class="key-point"><span class="label">Circuits:</span><span class="desc">Attention heads + MLPs + neurons form "circuits" implementing specific algorithms</span></div>
+                <hr class="divider">
+                <p><strong>Key Analysis Techniques:</strong></p>
+                <div class="comparison">
+                <div class="option">
+                <div class="opt-title">Probing (Correlation)</div>
+                <div class="opt-desc">Train classifier on activations; shows what info exists</div>
+                </div>
+                <div class="option">
+                <div class="opt-title">Intervention (Causation)</div>
+                <div class="opt-desc">Ablate neurons; test actual causal importance</div>
+                </div>
+                <div class="option">
+                <div class="opt-title">Attribution</div>
+                <div class="opt-desc">Trace backward via gradients/attention weights</div>
+                </div>
+                <div class="option">
+                <div class="opt-title">Saliency Maps</div>
+                <div class="opt-desc">Visualize input-output importance via LRP</div>
+                </div>
+                </div>
+                <hr class="divider">
+                <div class="interview-tip">Probing ≠ causation. Classifier on activations shows info exists, but intervention (ablation) proves components matter for output.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Linear probe: train classifier on neuron activations to predict labels. High accuracy = neuron encodes info. Ablation: set neuron to 0, measure performance drop. Only ablation proves causation. Neurons often multiplex (encode many features at once)—interpretation hard.</div>
+                <div class="mnemonic">Mechanistic = understand the gears. Feature decomposition answers "what do neurons care about." Circuits answer "how do they talk." Intervention answers "what actually matters."</div>
+                <p><strong>Key Gotchas:</strong> Superposition complicates interpretation; Probing misleading without intervention; Hypothesis-driven; Small models > large; Causation hard to establish.</p>
+                <p><strong>Production Best Practices:</strong> Domain-guided study; Probe then intervene; Document mechanisms; Causal analysis essential; Relates to pruning, distillation, safety.</p>
                 </div>
             </div>
         </div>
@@ -720,7 +720,7 @@
             <p style="color: #a0a0b0; margin-bottom: 15px;">Outer alignment: do we want the right objective? (specify loss correctly). Inner alignment: does training find that objective? (optimization converges). Both required. As models scale, both harder. Larger models find shortcuts; specify loss requires philosophy.</p>
             <div class="section-content">
                 <div class="canvas-wrapper">
-                    <canvas id="alignmentTaxonomyCanvas" width="500" height="450"></canvas>
+                    <canvas id="alignmentTaxonomyCanvas" width="550" height="500"></canvas>
                 </div>
                 <div class="controls">
                     <div class="control-group">
@@ -730,38 +730,38 @@
                             <option value="inner">Inner Alignment</option>
                         </select>
                     </div>
-                    <div class="insight-box">
-                        <h3>Alignment: Outer vs Inner Alignment</h3>
-                        <p><strong>Core Problem:</strong> Two ways alignment can fail: (1) Outer: Can we specify what we want? (2) Inner: Does training achieve it?</p>
-                        <div class="key-point"><span class="label">Outer Alignment:</span><span class="desc">Specification problem. Objective ambiguous ("help humans" — how?). Reward hacking, goal misgeneralization, specification gaming.</span></div>
-                        <div class="key-point"><span class="label">Inner Alignment:</span><span class="desc">Training problem. Loss L ≠ true objective O. Model learns spurious correlations, shortcuts on training distribution.</span></div>
-                        <div class="key-point"><span class="label">Perfect Alignment:</span><span class="desc">argmin_θ L(θ) = argmin_θ O(θ); rarely true in practice</span></div>
-                        <hr class="divider">
-                        <div class="comparison">
-                            <div class="option">
-                                <div class="opt-title">Outer Failure Example</div>
-                                <div class="opt-desc">CoastRunners: reward signal hacked (model finds exploit)</div>
-                            </div>
-                            <div class="option">
-                                <div class="opt-title">Inner Failure Example</div>
-                                <div class="opt-desc">Model generalizes shortcut instead of true pattern on new data</div>
-                            </div>
-                            <div class="option">
-                                <div class="opt-title">For LLMs (Outer)</div>
-                                <div class="opt-desc">What behavior do we want? Hard to specify formally</div>
-                            </div>
-                            <div class="option">
-                                <div class="opt-title">For LLMs (Inner)</div>
-                                <div class="opt-desc">Does RLHF training produce intended behavior?</div>
-                            </div>
-                        </div>
-                        <hr class="divider">
-                        <div class="interview-tip">As models scale, both become harder. We know less what we want (outer). Shortcuts become harder to find but easier to exploit globally (inner).</div>
-                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Outer alignment is philosophical (reward hacking risk). Inner alignment is technical (shortcut learning). Example: optimize for human happiness → AI wireheads (self-stimulation). Solution: specify objective robustly (RLHF, Constitutional AI), test distribution shift, audit shortcuts.</div>
-                        <div class="mnemonic">Outer = what do we ask? Inner = what did they learn? Both can fail independently. Advanced systems need both right.</div>
-                        <p><strong>Key Insights:</strong> Orthogonal failure modes; Distributional shift kills inner alignment; Scale makes both harder; Causal thinking needed for true objectives.</p>
-                        <p><strong>Production Practices:</strong> Out-of-distribution testing; Understand exploitation shortcuts; Diverse training; Monitor behavioral changes; Multiple evaluation angles; Alignment = ongoing process, not certification.</p>
-                    </div>
+                </div>
+                <div class="insight-box">
+                <h3>Alignment: Outer vs Inner Alignment</h3>
+                <p><strong>Core Problem:</strong> Two ways alignment can fail: (1) Outer: Can we specify what we want? (2) Inner: Does training achieve it?</p>
+                <div class="key-point"><span class="label">Outer Alignment:</span><span class="desc">Specification problem. Objective ambiguous ("help humans" — how?). Reward hacking, goal misgeneralization, specification gaming.</span></div>
+                <div class="key-point"><span class="label">Inner Alignment:</span><span class="desc">Training problem. Loss L ≠ true objective O. Model learns spurious correlations, shortcuts on training distribution.</span></div>
+                <div class="key-point"><span class="label">Perfect Alignment:</span><span class="desc">argmin_θ L(θ) = argmin_θ O(θ); rarely true in practice</span></div>
+                <hr class="divider">
+                <div class="comparison">
+                <div class="option">
+                <div class="opt-title">Outer Failure Example</div>
+                <div class="opt-desc">CoastRunners: reward signal hacked (model finds exploit)</div>
+                </div>
+                <div class="option">
+                <div class="opt-title">Inner Failure Example</div>
+                <div class="opt-desc">Model generalizes shortcut instead of true pattern on new data</div>
+                </div>
+                <div class="option">
+                <div class="opt-title">For LLMs (Outer)</div>
+                <div class="opt-desc">What behavior do we want? Hard to specify formally</div>
+                </div>
+                <div class="option">
+                <div class="opt-title">For LLMs (Inner)</div>
+                <div class="opt-desc">Does RLHF training produce intended behavior?</div>
+                </div>
+                </div>
+                <hr class="divider">
+                <div class="interview-tip">As models scale, both become harder. We know less what we want (outer). Shortcuts become harder to find but easier to exploit globally (inner).</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Outer alignment is philosophical (reward hacking risk). Inner alignment is technical (shortcut learning). Example: optimize for human happiness → AI wireheads (self-stimulation). Solution: specify objective robustly (RLHF, Constitutional AI), test distribution shift, audit shortcuts.</div>
+                <div class="mnemonic">Outer = what do we ask? Inner = what did they learn? Both can fail independently. Advanced systems need both right.</div>
+                <p><strong>Key Insights:</strong> Orthogonal failure modes; Distributional shift kills inner alignment; Scale makes both harder; Causal thinking needed for true objectives.</p>
+                <p><strong>Production Practices:</strong> Out-of-distribution testing; Understand exploitation shortcuts; Diverse training; Monitor behavioral changes; Multiple evaluation angles; Alignment = ongoing process, not certification.</p>
                 </div>
             </div>
         </div>
@@ -772,7 +772,7 @@
             <p style="color: #a0a0b0; margin-bottom: 15px;">Model generates output → critiques against constitution → revises to improve. Adjust constitution strictness to see tradeoff. Strict constitution = safer but potentially over-conservative. Loose = more diverse but risky. Iterate to find sweet spot.</p>
             <div class="section-content">
                 <div class="canvas-wrapper">
-                    <canvas id="constitutionalAICanvas" width="500" height="450"></canvas>
+                    <canvas id="constitutionalAICanvas" width="550" height="500"></canvas>
                 </div>
                 <div class="controls">
                     <div class="control-group">
@@ -780,7 +780,8 @@
                         <input type="range" id="caiIteration" min="1" max="5" value="2">
                         <div class="slider-value" id="caiIterationValue">Iteration 2</div>
                     </div>
-                                        <div class="insight-box">
+                </div>
+                <div class="insight-box">
                         <h3>Constitutional AI: Self-Improvement Loop</h3>
                         <p><strong>Core Idea:</strong> Self-improve using constitution (principles) without human feedback. Model critiques and revises its own outputs.</p>
                         <div class="key-point"><span class="label">Pipeline:</span><span class="desc">Generate → Self-critique vs constitution → Revise → Train on improved outputs</span></div>
@@ -794,7 +795,6 @@
                         <p><strong>Gotchas:</strong> Contradictory principles; Mode collapse on one principle; Principles incomplete.</p>
                         <p><strong>Production:</strong> Clear principle writing; Test for conflicts; Monitor collapse; Combine with human feedback at scale.</p>
                     </div>
-                </div>
             </div>
         </div>
 
@@ -804,7 +804,7 @@
             <p style="color: #a0a0b0; margin-bottom: 15px;">Cycle through attack types (jailbreaks, prompt injection, adversarial examples). For each, defenses are listed. Goal: find vulnerabilities before production. Cost of red team effort << cost of post-deployment breach. Monitor defense effectiveness over time.</p>
             <div class="section-content">
                 <div class="canvas-wrapper">
-                    <canvas id="redTeamingCanvas" width="500" height="450"></canvas>
+                    <canvas id="redTeamingCanvas" width="550" height="510"></canvas>
                 </div>
                 <div class="controls">
                     <div class="control-group">
@@ -812,19 +812,19 @@
                         <input type="range" id="defenseLayer" min="1" max="5" value="3">
                         <div class="slider-value" id="defenseLayerValue">Layer 3</div>
                     </div>
-                                        <div class="insight-box">
-                        <h3>Red Teaming: Adversarial Testing</h3>
-                        <p><strong>Core Idea:</strong> Adversarially probe model for failures, misalignments, harmful outputs. Find edge cases and jailbreaks before deployment.</p>
-                        <div class="key-point"><span class="label">Process:</span><span class="desc">Humans/AIs attempt to break model; document failures; feed back to improve training</span></div>
-                        <div class="key-point"><span class="label">Techniques:</span><span class="desc">Prompt injection, contradiction, role-play, hypothetical harm, adversarial examples</span></div>
-                        <div class="key-point"><span class="label">Red Team:</span><span class="desc">Security mindset: think like attacker. More effective than passive evaluation</span></div>
-                        <hr class="divider">
-                        <div class="interview-tip">Finds vulnerabilities before real users do. Security testing mindset is essential.</div>
-                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Red teaming = adversarial testing. Jailbreak (bypass safety rules), prompt injection (override instructions), OOD inputs (adversarial examples). For each category, design defenses. Always assume an adversary will try to break your system. Continuous red team = continuous improvement.</div>
-                        <div class="mnemonic">Red team = adversarial testing. Find jailbreaks. Break before users do.</div>
-                        <p><strong>Uses:</strong> Safety testing; Alignment verification; Robustness evaluation; Spec gaming detection.</p>
-                        <p><strong>Methods:</strong> Manual prompts; Automated attacks; Adversarial examples; Multi-step exploitation.</p>
-                    </div>
+                </div>
+                <div class="insight-box">
+                <h3>Red Teaming: Adversarial Testing</h3>
+                <p><strong>Core Idea:</strong> Adversarially probe model for failures, misalignments, harmful outputs. Find edge cases and jailbreaks before deployment.</p>
+                <div class="key-point"><span class="label">Process:</span><span class="desc">Humans/AIs attempt to break model; document failures; feed back to improve training</span></div>
+                <div class="key-point"><span class="label">Techniques:</span><span class="desc">Prompt injection, contradiction, role-play, hypothetical harm, adversarial examples</span></div>
+                <div class="key-point"><span class="label">Red Team:</span><span class="desc">Security mindset: think like attacker. More effective than passive evaluation</span></div>
+                <hr class="divider">
+                <div class="interview-tip">Finds vulnerabilities before real users do. Security testing mindset is essential.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Red teaming = adversarial testing. Jailbreak (bypass safety rules), prompt injection (override instructions), OOD inputs (adversarial examples). For each category, design defenses. Always assume an adversary will try to break your system. Continuous red team = continuous improvement.</div>
+                <div class="mnemonic">Red team = adversarial testing. Find jailbreaks. Break before users do.</div>
+                <p><strong>Uses:</strong> Safety testing; Alignment verification; Robustness evaluation; Spec gaming detection.</p>
+                <p><strong>Methods:</strong> Manual prompts; Automated attacks; Adversarial examples; Multi-step exploitation.</p>
                 </div>
             </div>
         </div>
@@ -835,7 +835,7 @@
             <p style="color: #a0a0b0; margin-bottom: 15px;">Watch tokens route to different experts based on router logits. Adjust load balancing coefficient λ to prevent token imbalance (expert overload). High λ = uniform distribution (wasted experts), low λ = specialist experts but collapsed. Find sweet spot to maximize utilization.</p>
             <div class="section-content">
                 <div class="canvas-wrapper">
-                    <canvas id="moeCanvas" width="500" height="450"></canvas>
+                    <canvas id="moeCanvas" width="550" height="510"></canvas>
                 </div>
                 <div class="controls">
                     <div class="control-group">
@@ -843,22 +843,22 @@
                         <input type="range" id="moeTopK" min="1" max="8" value="2">
                         <div class="slider-value" id="moeTopKValue">Top-2</div>
                     </div>
-                                        <div class="insight-box">
-                        <h3>Mixture of Experts: Conditional Computation</h3>
-                        <p><strong>Core Idea:</strong> Route inputs to different expert networks. Each input goes to relevant experts only. Sparse activation → efficient compute scaling.</p>
-                        <div class="formula">output = Σ_i g_i(x) · expert_i(x)   where g = learned gating</div>
-                        <div class="key-point"><span class="label">output:</span><span class="desc">Final prediction; weighted mixture of expert outputs</span></div>
-                        <div class="key-point"><span class="label">g_i(x):</span><span class="desc">Gating weight for expert i; softmax output ∈ [0, 1], Σ_i g_i(x) = 1</span></div>
-                        <div class="key-point"><span class="label">expert_i(x):</span><span class="desc">Output from expert network i (small neural network or learned function)</span></div>
-                        <div class="key-point"><span class="label">Σ_i:</span><span class="desc">Sum over K experts; typical K = 8-1000 in modern MoE</span></div>
-                        <div class="key-point"><span class="label">Gating Network:</span><span class="desc">Learns routing: g_i(x) = softmax(W_g·x); selects which experts compute</span></div>
-                        <div class="key-point"><span class="label">Conditional Computation:</span><span class="desc">Only active experts compute; huge parameter count with efficient inference</span></div>
-                        <hr class="divider">
-                        <div class="interview-tip">Massive parameters but sparse activation: trade compute for capacity. Expert specialization.</div>
-                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: MoE scales parameter count without compute cost (sparse activation). 1.6T parameter Mixtral = 13B per token. Load balance importance: if tokens all route to one expert, others unused. Auxiliary loss enforces diversity. Expert specialization emerges (e.g., one expert for pronouns, another for syntax).</div>
-                        <div class="mnemonic">MoE = different experts for different inputs. Router decides. Only selected experts activate.</div>
-                        <p><strong>Pros:</strong> Efficient scaling; Large capacity; Expert specialization. <strong>Cons:</strong> Training instability; Load balancing; Communication.</p>
-                    </div>
+                </div>
+                <div class="insight-box">
+                <h3>Mixture of Experts: Conditional Computation</h3>
+                <p><strong>Core Idea:</strong> Route inputs to different expert networks. Each input goes to relevant experts only. Sparse activation → efficient compute scaling.</p>
+                <div class="formula">output = Σ_i g_i(x) · expert_i(x)   where g = learned gating</div>
+                <div class="key-point"><span class="label">output:</span><span class="desc">Final prediction; weighted mixture of expert outputs</span></div>
+                <div class="key-point"><span class="label">g_i(x):</span><span class="desc">Gating weight for expert i; softmax output ∈ [0, 1], Σ_i g_i(x) = 1</span></div>
+                <div class="key-point"><span class="label">expert_i(x):</span><span class="desc">Output from expert network i (small neural network or learned function)</span></div>
+                <div class="key-point"><span class="label">Σ_i:</span><span class="desc">Sum over K experts; typical K = 8-1000 in modern MoE</span></div>
+                <div class="key-point"><span class="label">Gating Network:</span><span class="desc">Learns routing: g_i(x) = softmax(W_g·x); selects which experts compute</span></div>
+                <div class="key-point"><span class="label">Conditional Computation:</span><span class="desc">Only active experts compute; huge parameter count with efficient inference</span></div>
+                <hr class="divider">
+                <div class="interview-tip">Massive parameters but sparse activation: trade compute for capacity. Expert specialization.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: MoE scales parameter count without compute cost (sparse activation). 1.6T parameter Mixtral = 13B per token. Load balance importance: if tokens all route to one expert, others unused. Auxiliary loss enforces diversity. Expert specialization emerges (e.g., one expert for pronouns, another for syntax).</div>
+                <div class="mnemonic">MoE = different experts for different inputs. Router decides. Only selected experts activate.</div>
+                <p><strong>Pros:</strong> Efficient scaling; Large capacity; Expert specialization. <strong>Cons:</strong> Training instability; Load balancing; Communication.</p>
                 </div>
             </div>
         </div>
@@ -869,7 +869,7 @@
             <p style="color: #a0a0b0; margin-bottom: 15px;">Remove weights by magnitude (small = low impact). Watch FLOPs drop with sparsity %. Structured pruning removes entire channels (GPU-friendly). Lottery ticket: find subnetwork that trains well from scratch. Adjust sparsity to find accuracy-efficiency Pareto frontier.</p>
             <div class="section-content">
                 <div class="canvas-wrapper">
-                    <canvas id="pruningCanvas" width="500" height="450"></canvas>
+                    <canvas id="pruningCanvas" width="550" height="500"></canvas>
                 </div>
                 <div class="controls">
                     <div class="control-group">
@@ -880,18 +880,18 @@
                             <option value="lottery">Lottery Ticket</option>
                         </select>
                     </div>
-                                        <div class="insight-box">
-                        <h3>Pruning: Model Compression</h3>
-                        <p><strong>Core Idea:</strong> Remove unnecessary parameters/connections from trained model. Reduce size, compute, latency while maintaining accuracy.</p>
-                        <div class="key-point"><span class="label">Magnitude Pruning:</span><span class="desc">Remove small absolute value weights; assumes small = unimportant</span></div>
-                        <div class="key-point"><span class="label">Structured Pruning:</span><span class="desc">Remove entire neurons/channels/heads; preserves structure for hardware efficiency</span></div>
-                        <div class="key-point"><span class="label">Lottery Ticket Hypothesis:</span><span class="desc">Random init contains "winning tickets" (subnetworks that train well)</span></div>
-                        <hr class="divider">
-                        <div class="interview-tip">50-90% sparsity achievable. Retrain after pruning to recover performance.</div>
-                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Magnitude pruning: remove weights |w| < threshold. 50% sparsity = half weights removed (but dense—poor HW utilization). Structured: remove filters (dense submatrix, GPU-efficient). Lottery ticket: find "winning" subnetwork that trains well standalone. Retraining essential (magnitude pruning ≈ 5% accuracy loss, recover with fine-tune).</div>
-                        <div class="mnemonic">Pruning = trim tree. Remove small branches. Retrain. Works surprisingly well.</div>
-                        <p><strong>Methods:</strong> Magnitude, gradient-based, learned masks; post-training or iterative.</p>
-                    </div>
+                </div>
+                <div class="insight-box">
+                <h3>Pruning: Model Compression</h3>
+                <p><strong>Core Idea:</strong> Remove unnecessary parameters/connections from trained model. Reduce size, compute, latency while maintaining accuracy.</p>
+                <div class="key-point"><span class="label">Magnitude Pruning:</span><span class="desc">Remove small absolute value weights; assumes small = unimportant</span></div>
+                <div class="key-point"><span class="label">Structured Pruning:</span><span class="desc">Remove entire neurons/channels/heads; preserves structure for hardware efficiency</span></div>
+                <div class="key-point"><span class="label">Lottery Ticket Hypothesis:</span><span class="desc">Random init contains "winning tickets" (subnetworks that train well)</span></div>
+                <hr class="divider">
+                <div class="interview-tip">50-90% sparsity achievable. Retrain after pruning to recover performance.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Magnitude pruning: remove weights |w| < threshold. 50% sparsity = half weights removed (but dense—poor HW utilization). Structured: remove filters (dense submatrix, GPU-efficient). Lottery ticket: find "winning" subnetwork that trains well standalone. Retraining essential (magnitude pruning ≈ 5% accuracy loss, recover with fine-tune).</div>
+                <div class="mnemonic">Pruning = trim tree. Remove small branches. Retrain. Works surprisingly well.</div>
+                <p><strong>Methods:</strong> Magnitude, gradient-based, learned masks; post-training or iterative.</p>
                 </div>
             </div>
         </div>
@@ -902,7 +902,7 @@
             <p style="color: #a0a0b0; margin-bottom: 15px;">Watch node embeddings aggregate from neighbors. Each iteration, nodes incorporate neighborhood info. Adjust aggregation type (mean, sum, attention) to see how edges propagate features. Deep GNNs (many layers) suffer over-smoothing—embeddings converge.</p>
             <div class="section-content">
                 <div class="canvas-wrapper">
-                    <canvas id="gnnCanvas" width="500" height="450"></canvas>
+                    <canvas id="gnnCanvas" width="550" height="500"></canvas>
                 </div>
                 <div class="controls">
                     <div class="control-group">
@@ -910,25 +910,25 @@
                         <input type="range" id="gnnIterations" min="1" max="5" value="2">
                         <div class="slider-value" id="gnnIterValue">2 iterations</div>
                     </div>
-                                        <div class="insight-box">
-                        <h3>Graph Neural Networks: Relational Learning</h3>
-                        <p><strong>Core Idea:</strong> Learn on graph-structured data. Nodes = entities, edges = relationships. Aggregate neighbor features.</p>
-                        <div class="formula">h'_v = σ(Σ_{u∈N(v)} W·h_u)   N(v) = neighbors</div>
-                        <div class="key-point"><span class="label">h'_v:</span><span class="desc">Updated representation (embedding) of node v after one layer</span></div>
-                        <div class="key-point"><span class="label">h_u:</span><span class="desc">Feature/embedding of neighbor node u ∈ N(v); input to aggregation</span></div>
-                        <div class="key-point"><span class="label">W:</span><span class="desc">Weight matrix ∈ ℝ^{d_out × d_in}; shared transformation applied to all neighbors</span></div>
-                        <div class="key-point"><span class="label">Σ_{u∈N(v)}:</span><span class="desc">Aggregation function; typically mean or sum over neighbors. Other options: max, attention</span></div>
-                        <div class="key-point"><span class="label">σ(·):</span><span class="desc">Activation function; ReLU, tanh, or others. Introduces non-linearity</span></div>
-                        <div class="key-point"><span class="label">N(v):</span><span class="desc">Neighborhood of node v; set of adjacent nodes (1-hop neighbors in graph)</span></div>
-                        <div class="key-point"><span class="label">Message Passing:</span><span class="desc">Nodes send messages to neighbors; aggregate to update representation</span></div>
-                        <div class="key-point"><span class="label">Graph Types:</span><span class="desc">Directed, undirected, heterogeneous (multi-type nodes/edges), dynamic</span></div>
-                        <div class="key-point"><span class="label">Locality Bias:</span><span class="desc">Neighbors matter; inductive bias matches many domains naturally</span></div>
-                        <hr class="divider">
-                        <div class="interview-tip">Leverages relational structure. More efficient than fully-connected networks for sparse graphs.</div>
-                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: GNN layer: h_i^{l+1} = σ(W · AGG({h_j^l : j ∈ N(i)})). Message passing = aggregation of neighbor info. Sparse edges = low compute. Deep GNNs (L>6) risk over-smoothing (all nodes become similar). Solution: residual connections, skip connections, or shallow networks.</div>
-                        <div class="mnemonic">GNN = aggregate neighbor features. Update nodes. Repeat. Powerful for relational data.</div>
-                        <p><strong>Applications:</strong> Drug discovery, social networks, recommendation, knowledge graphs, physics.</p>
-                    </div>
+                </div>
+                <div class="insight-box">
+                <h3>Graph Neural Networks: Relational Learning</h3>
+                <p><strong>Core Idea:</strong> Learn on graph-structured data. Nodes = entities, edges = relationships. Aggregate neighbor features.</p>
+                <div class="formula">h'_v = σ(Σ_{u∈N(v)} W·h_u)   N(v) = neighbors</div>
+                <div class="key-point"><span class="label">h'_v:</span><span class="desc">Updated representation (embedding) of node v after one layer</span></div>
+                <div class="key-point"><span class="label">h_u:</span><span class="desc">Feature/embedding of neighbor node u ∈ N(v); input to aggregation</span></div>
+                <div class="key-point"><span class="label">W:</span><span class="desc">Weight matrix ∈ ℝ^{d_out × d_in}; shared transformation applied to all neighbors</span></div>
+                <div class="key-point"><span class="label">Σ_{u∈N(v)}:</span><span class="desc">Aggregation function; typically mean or sum over neighbors. Other options: max, attention</span></div>
+                <div class="key-point"><span class="label">σ(·):</span><span class="desc">Activation function; ReLU, tanh, or others. Introduces non-linearity</span></div>
+                <div class="key-point"><span class="label">N(v):</span><span class="desc">Neighborhood of node v; set of adjacent nodes (1-hop neighbors in graph)</span></div>
+                <div class="key-point"><span class="label">Message Passing:</span><span class="desc">Nodes send messages to neighbors; aggregate to update representation</span></div>
+                <div class="key-point"><span class="label">Graph Types:</span><span class="desc">Directed, undirected, heterogeneous (multi-type nodes/edges), dynamic</span></div>
+                <div class="key-point"><span class="label">Locality Bias:</span><span class="desc">Neighbors matter; inductive bias matches many domains naturally</span></div>
+                <hr class="divider">
+                <div class="interview-tip">Leverages relational structure. More efficient than fully-connected networks for sparse graphs.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: GNN layer: h_i^{l+1} = σ(W · AGG({h_j^l : j ∈ N(i)})). Message passing = aggregation of neighbor info. Sparse edges = low compute. Deep GNNs (L>6) risk over-smoothing (all nodes become similar). Solution: residual connections, skip connections, or shallow networks.</div>
+                <div class="mnemonic">GNN = aggregate neighbor features. Update nodes. Repeat. Powerful for relational data.</div>
+                <p><strong>Applications:</strong> Drug discovery, social networks, recommendation, knowledge graphs, physics.</p>
                 </div>
             </div>
         </div>
@@ -939,7 +939,7 @@
             <p style="color: #a0a0b0; margin-bottom: 15px;">Large teacher model produces soft targets (probability distributions) for student to mimic. Adjust temperature τ to control softness—high τ = soft targets (easier learning), low τ = sharp targets. Student compresses knowledge while retaining teacher's reasoning patterns.</p>
             <div class="section-content">
                 <div class="canvas-wrapper">
-                    <canvas id="kdCanvas" width="500" height="450"></canvas>
+                    <canvas id="kdCanvas" width="550" height="500"></canvas>
                 </div>
                 <div class="controls">
                     <div class="control-group">
@@ -947,25 +947,25 @@
                         <input type="range" id="kdTemperature" min="1" max="20" value="4">
                         <div class="slider-value" id="kdTempValue">4</div>
                     </div>
-                                        <div class="insight-box">
-                        <h3>Knowledge Distillation: Model Compression</h3>
-                        <p><strong>Core Idea:</strong> Train small "student" model to match large "teacher" model. Compress knowledge into smaller network via soft targets.</p>
-                        <div class="formula">L = α·L_CE(y_student, y_true) + (1-α)·L_KL(T_student, T_teacher)</div>
-                        <div class="key-point"><span class="label">L:</span><span class="desc">Combined loss for student model</span></div>
-                        <div class="key-point"><span class="label">α:</span><span class="desc">Weight balancing hard labels vs soft targets; ∈ [0, 1]. Typical: 0.5-0.9</span></div>
-                        <div class="key-point"><span class="label">L_CE(y_student, y_true):</span><span class="desc">Cross-entropy loss on hard labels; standard classification loss</span></div>
-                        <div class="key-point"><span class="label">y_true:</span><span class="desc">Ground-truth one-hot labels</span></div>
-                        <div class="key-point"><span class="label">L_KL(T_student, T_teacher):</span><span class="desc">KL divergence between softened student and teacher outputs. T = temperature</span></div>
-                        <div class="key-point"><span class="label">T (Temperature):</span><span class="desc">Softening factor ∈ (1, ∞); higher T = softer probability distributions. Typical: 3-5. T=1 → no softening</span></div>
-                        <div class="key-point"><span class="label">Temperature T:</span><span class="desc">Controls softness of outputs; higher T = softer targets = easier learning for student</span></div>
-                        <div class="key-point"><span class="label">Dark Knowledge:</span><span class="desc">Soft targets encode class relationships teacher learned; more informative than hard labels</span></div>
-                        <hr class="divider">
-                        <div class="interview-tip">Student learns "dark knowledge"—soft targets embed class similarities that hard labels don't convey.</div>
-                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Loss = α·KL(student, teacher) + (1-α)·CE(student, labels). Temperature τ softens teacher logits: p_soft = softmax(z/τ). High τ (e.g., 10) = soft targets (smooth probability, easier gradient). Low τ (e.g., 1) = sharp targets (hard contrast). Typical τ=4-20.</div>
-                        <div class="mnemonic">Distillation = teacher transfers knowledge to student. Soft targets better than hard labels.</div>
-                        <p><strong>Benefits:</strong> Smaller models; Fast inference; Knowledge transfer; Often beats training small from scratch.</p>
-                        <p><strong>vs LoRA:</strong> Distillation for compression; LoRA for efficient fine-tuning. Orthogonal approaches.</p>
-                    </div>
+                </div>
+                <div class="insight-box">
+                <h3>Knowledge Distillation: Model Compression</h3>
+                <p><strong>Core Idea:</strong> Train small "student" model to match large "teacher" model. Compress knowledge into smaller network via soft targets.</p>
+                <div class="formula">L = α·L_CE(y_student, y_true) + (1-α)·L_KL(T_student, T_teacher)</div>
+                <div class="key-point"><span class="label">L:</span><span class="desc">Combined loss for student model</span></div>
+                <div class="key-point"><span class="label">α:</span><span class="desc">Weight balancing hard labels vs soft targets; ∈ [0, 1]. Typical: 0.5-0.9</span></div>
+                <div class="key-point"><span class="label">L_CE(y_student, y_true):</span><span class="desc">Cross-entropy loss on hard labels; standard classification loss</span></div>
+                <div class="key-point"><span class="label">y_true:</span><span class="desc">Ground-truth one-hot labels</span></div>
+                <div class="key-point"><span class="label">L_KL(T_student, T_teacher):</span><span class="desc">KL divergence between softened student and teacher outputs. T = temperature</span></div>
+                <div class="key-point"><span class="label">T (Temperature):</span><span class="desc">Softening factor ∈ (1, ∞); higher T = softer probability distributions. Typical: 3-5. T=1 → no softening</span></div>
+                <div class="key-point"><span class="label">Temperature T:</span><span class="desc">Controls softness of outputs; higher T = softer targets = easier learning for student</span></div>
+                <div class="key-point"><span class="label">Dark Knowledge:</span><span class="desc">Soft targets encode class relationships teacher learned; more informative than hard labels</span></div>
+                <hr class="divider">
+                <div class="interview-tip">Student learns "dark knowledge"—soft targets embed class similarities that hard labels don't convey.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Loss = α·KL(student, teacher) + (1-α)·CE(student, labels). Temperature τ softens teacher logits: p_soft = softmax(z/τ). High τ (e.g., 10) = soft targets (smooth probability, easier gradient). Low τ (e.g., 1) = sharp targets (hard contrast). Typical τ=4-20.</div>
+                <div class="mnemonic">Distillation = teacher transfers knowledge to student. Soft targets better than hard labels.</div>
+                <p><strong>Benefits:</strong> Smaller models; Fast inference; Knowledge transfer; Often beats training small from scratch.</p>
+                <p><strong>vs LoRA:</strong> Distillation for compression; LoRA for efficient fine-tuning. Orthogonal approaches.</p>
                 </div>
             </div>
         </div>
@@ -976,7 +976,7 @@
             <p style="color: #a0a0b0; margin-bottom: 15px;">Watch local training on client, server aggregation, broadcast. Adjust communication rounds and local epochs. Few rounds = low communication but less training. Many rounds = accurate but slow. Bandwidth constraint is primary bottleneck.</p>
             <div class="section-content">
                 <div class="canvas-wrapper">
-                    <canvas id="flCanvas" width="500" height="450"></canvas>
+                    <canvas id="flCanvas" width="550" height="500"></canvas>
                 </div>
                 <div class="controls">
                     <div class="control-group">
@@ -984,18 +984,18 @@
                         <input type="range" id="flRounds" min="1" max="10" value="5">
                         <div class="slider-value" id="flRoundValue">5 rounds</div>
                     </div>
-                                        <div class="insight-box">
-                        <h3>Federated Learning: Distributed ML</h3>
-                        <p><strong>Core Idea:</strong> Train model on decentralized data. Data stays on devices; only model updates transmitted. Privacy-preserving collaborative learning.</p>
-                        <div class="key-point"><span class="label">Process:</span><span class="desc">1) Send model to clients 2) Clients train locally 3) Send gradients back 4) Server aggregates (FedAvg)</span></div>
-                        <div class="key-point"><span class="label">Privacy:</span><span class="desc">Raw data never leaves device; only gradients transmitted (but still vulnerable to gradient attacks)</span></div>
-                        <div class="key-point"><span class="label">Communication Cost:</span><span class="desc">Dominates computation; gradient compression essential for efficiency</span></div>
-                        <hr class="divider">
-                        <div class="interview-tip">Communication bandwidth > computation time bottleneck. Requires careful optimization.</div>
-                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Federated Averaging: 1) local SGD, 2) send updates (not data), 3) server aggregates, 4) broadcast. Non-IID data = convergence slower (clients see different distributions). Gradient compression (quantization, sparsification) reduces bandwidth 10-100x. Communication >> computation—optimize first.</div>
-                        <div class="mnemonic">Federated = distributed training. Data local. Gradients to server. Privacy-first ML.</div>
-                        <p><strong>Challenges:</strong> Non-IID data across clients; Communication bandwidth; Convergence guarantees; Heterogeneity.</p>
-                    </div>
+                </div>
+                <div class="insight-box">
+                <h3>Federated Learning: Distributed ML</h3>
+                <p><strong>Core Idea:</strong> Train model on decentralized data. Data stays on devices; only model updates transmitted. Privacy-preserving collaborative learning.</p>
+                <div class="key-point"><span class="label">Process:</span><span class="desc">1) Send model to clients 2) Clients train locally 3) Send gradients back 4) Server aggregates (FedAvg)</span></div>
+                <div class="key-point"><span class="label">Privacy:</span><span class="desc">Raw data never leaves device; only gradients transmitted (but still vulnerable to gradient attacks)</span></div>
+                <div class="key-point"><span class="label">Communication Cost:</span><span class="desc">Dominates computation; gradient compression essential for efficiency</span></div>
+                <hr class="divider">
+                <div class="interview-tip">Communication bandwidth > computation time bottleneck. Requires careful optimization.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Federated Averaging: 1) local SGD, 2) send updates (not data), 3) server aggregates, 4) broadcast. Non-IID data = convergence slower (clients see different distributions). Gradient compression (quantization, sparsification) reduces bandwidth 10-100x. Communication >> computation—optimize first.</div>
+                <div class="mnemonic">Federated = distributed training. Data local. Gradients to server. Privacy-first ML.</div>
+                <p><strong>Challenges:</strong> Non-IID data across clients; Communication bandwidth; Convergence guarantees; Heterogeneity.</p>
                 </div>
             </div>
         </div>
@@ -1006,7 +1006,7 @@
             <p style="color: #a0a0b0; margin-bottom: 15px;">Reduce precision: FP32 → FP16 → INT8 → INT4. Watch accuracy drop. Adjust quantization level to find sweet spot. INT8 quantization = 4x memory/speed improvement with <2% accuracy loss. INT4 requires careful calibration.</p>
             <div class="section-content">
                 <div class="canvas-wrapper">
-                    <canvas id="quantCanvas" width="500" height="450"></canvas>
+                    <canvas id="quantCanvas" width="550" height="500"></canvas>
                 </div>
                 <div class="controls">
                     <div class="control-group">
@@ -1014,18 +1014,18 @@
                         <input type="range" id="bitWidth" min="1" max="8" value="4">
                         <div class="slider-value" id="bitWidthValue">4-bit</div>
                     </div>
-                                        <div class="insight-box">
-                        <h3>Quantization: Reduce Precision, Maintain Performance</h3>
-                        <p><strong>Core Idea:</strong> Use lower precision (int8, fp16, binary) instead of fp32 to reduce size and speed up inference.</p>
-                        <div class="key-point"><span class="label">Post-Training Quantization:</span><span class="desc">Quantize after training; fast but may lose 1-2% accuracy</span></div>
-                        <div class="key-point"><span class="label">Quantization-Aware Training:</span><span class="desc">Simulate quantization during training; recover accuracy via gradient updates</span></div>
-                        <div class="key-point"><span class="label">Mixed Precision:</span><span class="desc">Different layers at different precisions; balance accuracy and efficiency</span></div>
-                        <hr class="divider">
-                        <div class="interview-tip">Neural networks surprisingly robust to low precision. Often <2% accuracy loss with int8.</div>
-                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: INT8 = 128 levels (vs FP32 = billions). Activation quantization (per-channel) more forgiving than weight quantization. Calibration: collect statistics on representative samples. QAT (quantization-aware training) beats post-training quantization. INT8: mobile-ready, 4x faster. INT4: extreme compression, needs tuning.</div>
-                        <div class="mnemonic">Quantization = fewer bits. int8 instead of fp32. 4x smaller, 4x faster on hardware.</div>
-                        <p><strong>Benefits:</strong> Smaller models; Faster inference; Lower memory; Hardware efficient (TPU/GPU optimized).</p>
-                    </div>
+                </div>
+                <div class="insight-box">
+                <h3>Quantization: Reduce Precision, Maintain Performance</h3>
+                <p><strong>Core Idea:</strong> Use lower precision (int8, fp16, binary) instead of fp32 to reduce size and speed up inference.</p>
+                <div class="key-point"><span class="label">Post-Training Quantization:</span><span class="desc">Quantize after training; fast but may lose 1-2% accuracy</span></div>
+                <div class="key-point"><span class="label">Quantization-Aware Training:</span><span class="desc">Simulate quantization during training; recover accuracy via gradient updates</span></div>
+                <div class="key-point"><span class="label">Mixed Precision:</span><span class="desc">Different layers at different precisions; balance accuracy and efficiency</span></div>
+                <hr class="divider">
+                <div class="interview-tip">Neural networks surprisingly robust to low precision. Often <2% accuracy loss with int8.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: INT8 = 128 levels (vs FP32 = billions). Activation quantization (per-channel) more forgiving than weight quantization. Calibration: collect statistics on representative samples. QAT (quantization-aware training) beats post-training quantization. INT8: mobile-ready, 4x faster. INT4: extreme compression, needs tuning.</div>
+                <div class="mnemonic">Quantization = fewer bits. int8 instead of fp32. 4x smaller, 4x faster on hardware.</div>
+                <p><strong>Benefits:</strong> Smaller models; Faster inference; Lower memory; Hardware efficient (TPU/GPU optimized).</p>
                 </div>
             </div>
         </div>
@@ -1036,7 +1036,7 @@
             <p style="color: #a0a0b0; margin-bottom: 15px;">Instead of fine-tuning W fully (expensive), add low-rank decomposition: ΔW = AB^T. A ∈ ℝ^{d×r}, B ∈ ℝ^{d×r}, with r << d. Adjust rank r: small = cheap, large = flexible. Watch: training parameters drop 100x while accuracy stays competitive.</p>
             <div class="section-content">
                 <div class="canvas-wrapper">
-                    <canvas id="loraCanvas" width="500" height="450"></canvas>
+                    <canvas id="loraCanvas" width="550" height="500"></canvas>
                 </div>
                 <div class="controls">
                     <div class="control-group">
@@ -1044,82 +1044,88 @@
                         <input type="range" id="loraRank" min="1" max="10" value="4">
                         <div class="slider-value" id="loraRankValue">r=4</div>
                     </div>
-                                        <div class="insight-box">
-                        <h3>LoRA: Efficient Fine-tuning</h3>
-                        <p><strong>Core Idea:</strong> Instead of fine-tuning all weights, train low-rank adaptations. Freeze original weights, add trainable low-rank matrices.</p>
-                        <div class="formula">W' = W + ΔW = W + A·B^T   where A ∈ ℝ^{n×r}, B ∈ ℝ^{m×r}, r << min(n,m)</div>
-                        <div class="key-point"><span class="label">W':</span><span class="desc">Updated weight matrix after LoRA; W' = original + low-rank update</span></div>
-                        <div class="key-point"><span class="label">W:</span><span class="desc">Original (frozen) weight matrix ∈ ℝ^{n×m}; does not receive gradients</span></div>
-                        <div class="key-point"><span class="label">A:</span><span class="desc">Left low-rank matrix ∈ ℝ^{n×r}; trainable (receives gradients)</span></div>
-                        <div class="key-point"><span class="label">B:</span><span class="desc">Right low-rank matrix ∈ ℝ^{m×r}; trainable (receives gradients)</span></div>
-                        <div class="key-point"><span class="label">r:</span><span class="desc">Rank ∈ [1, min(n,m)]; much smaller than dimensions. Typical: 8-64. Larger r = more expressive</span></div>
-                        <div class="key-point"><span class="label">A·B^T:</span><span class="desc">Low-rank update; produces ∈ ℝ^{n×m}, same shape as W</span></div>
-                        <div class="key-point"><span class="label">Parameter Efficient:</span><span class="desc">Only r·(n+m) params vs n·m full; r ≈ 8-64 typical = 10-100x fewer params</span></div>
-                        <div class="key-point"><span class="label">Composable:</span><span class="desc">Multiple LoRAs combine for different tasks; switch without reloading weights</span></div>
-                        <div class="key-point"><span class="label">Hypothesis:</span><span class="desc">Fine-tuning changes live in low-dimensional subspace; LoRA exploits this</span></div>
-                        <hr class="divider">
-                        <div class="interview-tip">Low-rank hypothesis: weight updates during fine-tuning don't need full rank. Major efficiency win.</div>
-                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: LoRA rank r=8 or 16 typical (1% params vs full fine-tune). r=4 too constraining, r=64 unnecessary for most tasks. Inference: merge LoRA into base W (no latency cost). Multiple tasks: train separate LoRA modules, share base (switch modules per task). Merging enables efficient deployment.</div>
-                        <div class="mnemonic">LoRA = low-rank update. Add small trainable matrices. Freeze original. Efficient and composable.</div>
-                        <p><strong>Benefits:</strong> 10-100x fewer params; Fast training; Composable; Memory efficient; Production-friendly.</p>
-                    </div>
+                </div>
+                <div class="insight-box">
+                <h3>LoRA: Efficient Fine-tuning</h3>
+                <p><strong>Core Idea:</strong> Instead of fine-tuning all weights, train low-rank adaptations. Freeze original weights, add trainable low-rank matrices.</p>
+                <div class="formula">W' = W + ΔW = W + A·B^T   where A ∈ ℝ^{n×r}, B ∈ ℝ^{m×r}, r << min(n,m)</div>
+                <div class="key-point"><span class="label">W':</span><span class="desc">Updated weight matrix after LoRA; W' = original + low-rank update</span></div>
+                <div class="key-point"><span class="label">W:</span><span class="desc">Original (frozen) weight matrix ∈ ℝ^{n×m}; does not receive gradients</span></div>
+                <div class="key-point"><span class="label">A:</span><span class="desc">Left low-rank matrix ∈ ℝ^{n×r}; trainable (receives gradients)</span></div>
+                <div class="key-point"><span class="label">B:</span><span class="desc">Right low-rank matrix ∈ ℝ^{m×r}; trainable (receives gradients)</span></div>
+                <div class="key-point"><span class="label">r:</span><span class="desc">Rank ∈ [1, min(n,m)]; much smaller than dimensions. Typical: 8-64. Larger r = more expressive</span></div>
+                <div class="key-point"><span class="label">A·B^T:</span><span class="desc">Low-rank update; produces ∈ ℝ^{n×m}, same shape as W</span></div>
+                <div class="key-point"><span class="label">Parameter Efficient:</span><span class="desc">Only r·(n+m) params vs n·m full; r ≈ 8-64 typical = 10-100x fewer params</span></div>
+                <div class="key-point"><span class="label">Composable:</span><span class="desc">Multiple LoRAs combine for different tasks; switch without reloading weights</span></div>
+                <div class="key-point"><span class="label">Hypothesis:</span><span class="desc">Fine-tuning changes live in low-dimensional subspace; LoRA exploits this</span></div>
+                <hr class="divider">
+                <div class="interview-tip">Low-rank hypothesis: weight updates during fine-tuning don't need full rank. Major efficiency win.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: LoRA rank r=8 or 16 typical (1% params vs full fine-tune). r=4 too constraining, r=64 unnecessary for most tasks. Inference: merge LoRA into base W (no latency cost). Multiple tasks: train separate LoRA modules, share base (switch modules per task). Merging enables efficient deployment.</div>
+                <div class="mnemonic">LoRA = low-rank update. Add small trainable matrices. Freeze original. Efficient and composable.</div>
+                <p><strong>Benefits:</strong> 10-100x fewer params; Fast training; Composable; Memory efficient; Production-friendly.</p>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // ============ CLIP Architecture ============
+        // ============ CLIP (Contrastive Language-Image Pre-training) Architecture ============
         function drawClipArchitecture(align) {
             const canvas = document.getElementById('clipCanvas');
             const ctx = canvas.getContext('2d');
             ctx.fillStyle = '#0a0a0f';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            const imageY = 60;
-            const textY = 60;
+            // Title
+            ctx.fillStyle = '#5dade2';
+            ctx.font = 'bold 17px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('CLIP (Contrastive Language-Image Pre-training)', canvas.width / 2, 25);
+
+            const imageY = 50;
+            const textY = 50;
             const encoderY = 150;
             const embeddingY = 280;
 
             // Image input
-            ctx.fillStyle = '#00d2d3';
+            ctx.fillStyle = '#5dade2';
             ctx.fillRect(30, imageY, 80, 80);
             ctx.fillStyle = '#0a0a0f';
-            ctx.font = 'bold 12px Arial';
+            ctx.font = 'bold 15px Arial';
             ctx.textAlign = 'center';
             ctx.fillText('Image', 70, imageY + 45);
 
             // Text input
-            ctx.fillStyle = '#00d2d3';
-            ctx.fillRect(390, textY, 80, 80);
+            ctx.fillStyle = '#5dade2';
+            ctx.fillRect(420, textY, 80, 80);
             ctx.fillStyle = '#0a0a0f';
-            ctx.fillText('Text', 430, textY + 45);
+            ctx.fillText('Text', 460, textY + 45);
 
             // Image encoder
             ctx.fillStyle = '#1a1a4e';
-            ctx.fillRect(30, encoderY, 100, 60);
-            ctx.fillStyle = '#00d2d3';
-            ctx.font = '11px Arial';
-            ctx.fillText('Image Encoder', 80, encoderY + 30);
+            ctx.fillRect(20, encoderY, 120, 60);
+            ctx.fillStyle = '#58d68d';
+            ctx.font = '15px Arial';
+            ctx.fillText('Image Encoder', 80, encoderY + 35);
 
             // Text encoder
             ctx.fillStyle = '#1a1a4e';
-            ctx.fillRect(370, encoderY, 100, 60);
-            ctx.fillStyle = '#00d2d3';
-            ctx.fillText('Text Encoder', 420, encoderY + 30);
+            ctx.fillRect(400, encoderY, 120, 60);
+            ctx.fillStyle = '#58d68d';
+            ctx.fillText('Text Encoder', 460, encoderY + 35);
 
             // Embeddings
             const emb1X = 80;
-            const emb2X = 420;
+            const emb2X = 460;
             const embSize = 50;
             ctx.fillStyle = '#4a2f5e';
             ctx.fillRect(emb1X - embSize/2, embeddingY, embSize, embSize);
             ctx.fillRect(emb2X - embSize/2, embeddingY, embSize, embSize);
 
-            ctx.fillStyle = '#00d2d3';
-            ctx.font = '10px Arial';
-            ctx.fillText('Image Emb', emb1X, embeddingY + 28);
-            ctx.fillText('Text Emb', emb2X, embeddingY + 28);
+            ctx.fillStyle = '#f0b27a';
+            ctx.font = '15px Arial';
+            ctx.fillText('Image Emb.', emb1X, embeddingY + 30);
+            ctx.fillText('Text Emb.', emb2X, embeddingY + 30);
 
             // Alignment visualization
             const alignPercent = align / 100;
@@ -1128,16 +1134,16 @@
             ctx.setLineDash([]);
             ctx.beginPath();
             ctx.moveTo(emb1X, embeddingY + embSize);
-            ctx.quadraticCurveTo(250, embeddingY + embSize + 50, emb2X, embeddingY + embSize);
+            ctx.quadraticCurveTo(270, embeddingY + embSize + 50, emb2X, embeddingY + embSize);
             ctx.stroke();
 
             // Labels and info
             ctx.fillStyle = '#b0b0c0';
-            ctx.font = '12px Arial';
+            ctx.font = '15px Arial';
             ctx.textAlign = 'left';
-            ctx.fillText('InfoNCE Loss: Maximize alignment', 20, 400);
-            ctx.fillText(`Alignment Strength: ${align}%`, 20, 420);
-            ctx.fillText('Matched pairs: closer', 20, 440);
+            ctx.fillText('InfoNCE Loss: Maximize alignment', 20, 420);
+            ctx.fillText(`Alignment Strength: ${align}%`, 20, 445);
+            ctx.fillText('Matched pairs: closer in embedding space', 20, 470);
         }
 
         document.getElementById('clipAlign').addEventListener('input', (e) => {
@@ -1146,12 +1152,18 @@
         });
         drawClipArchitecture(50);
 
-        // ============ Vision Transformer ============
+        // ============ Vision Transformer (ViT) ============
         function drawViT(patchSize) {
             const canvas = document.getElementById('vitCanvas');
             const ctx = canvas.getContext('2d');
             ctx.fillStyle = '#0a0a0f';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Title
+            ctx.fillStyle = '#5dade2';
+            ctx.font = 'bold 17px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Vision Transformer (ViT) Patch Tokenization', canvas.width / 2, 25);
 
             const sizes = [8, 12, 16, 20, 24];
             const actualSize = sizes[patchSize - 1];
@@ -1159,62 +1171,62 @@
 
             // Draw original image
             ctx.fillStyle = '#1a1a2e';
-            ctx.fillRect(30, 30, 150, 150);
-            ctx.strokeStyle = '#00d2d3';
+            ctx.fillRect(30, 45, 150, 150);
+            ctx.strokeStyle = '#5dade2';
             ctx.lineWidth = 1;
 
             const patchCount = Math.ceil(150 / patchSizePx);
             for (let i = 0; i < patchCount; i++) {
                 for (let j = 0; j < patchCount; j++) {
-                    ctx.strokeRect(30 + i * patchSizePx, 30 + j * patchSizePx, patchSizePx, patchSizePx);
+                    ctx.strokeRect(30 + i * patchSizePx, 45 + j * patchSizePx, patchSizePx, patchSizePx);
                 }
             }
 
-            ctx.fillStyle = '#a0a0b0';
-            ctx.font = '11px Arial';
+            ctx.fillStyle = '#b0b0c0';
+            ctx.font = '15px Arial';
             ctx.textAlign = 'center';
-            ctx.fillText('Image', 105, 210);
+            ctx.fillText('Image', 105, 220);
 
             // Linear projection
-            ctx.fillStyle = '#00d2d3';
-            ctx.fillRect(220, 50, 50, 20);
+            ctx.fillStyle = '#58d68d';
+            ctx.fillRect(210, 65, 70, 25);
             ctx.fillStyle = '#0a0a0f';
-            ctx.font = '10px Arial';
-            ctx.fillText('Project', 245, 63);
+            ctx.font = '13px Arial';
+            ctx.fillText('Project', 245, 82);
 
             // Patches to embeddings
-            const embeddingStartY = 100;
-            const embeddingSpacing = 40;
+            const embeddingStartY = 110;
+            const embeddingSpacing = 42;
             for (let i = 0; i < Math.min(4, patchCount * patchCount); i++) {
                 ctx.fillStyle = '#4a2f5e';
-                ctx.fillRect(290, embeddingStartY + i * embeddingSpacing, 35, 30);
-                ctx.fillStyle = '#00d2d3';
-                ctx.font = '8px Arial';
+                ctx.fillRect(290, embeddingStartY + i * embeddingSpacing, 40, 32);
+                ctx.fillStyle = '#f0b27a';
+                ctx.font = '13px Arial';
                 ctx.textAlign = 'center';
-                ctx.fillText('Emb', 307.5, embeddingStartY + i * embeddingSpacing + 18);
+                ctx.fillText('Emb', 310, embeddingStartY + i * embeddingSpacing + 22);
             }
 
             // Transformer
             ctx.fillStyle = '#1a1a4e';
-            ctx.fillRect(340, 80, 120, 100);
-            ctx.fillStyle = '#00d2d3';
-            ctx.font = '11px Arial';
+            ctx.fillRect(345, 95, 130, 110);
+            ctx.fillStyle = '#5dade2';
+            ctx.font = '15px Arial';
             ctx.textAlign = 'center';
-            ctx.fillText('Transformer', 400, 135);
+            ctx.fillText('Transformer', 410, 155);
 
             // Output
             ctx.fillStyle = '#4a2f5e';
-            ctx.fillRect(480, 125, 50, 40);
-            ctx.fillStyle = '#00d2d3';
-            ctx.font = '10px Arial';
-            ctx.fillText('Class', 505, 150);
+            ctx.fillRect(490, 135, 55, 45);
+            ctx.fillStyle = '#58d68d';
+            ctx.font = '15px Arial';
+            ctx.fillText('Class', 517, 163);
 
             // Labels
             ctx.fillStyle = '#b0b0c0';
-            ctx.font = '12px Arial';
+            ctx.font = '15px Arial';
             ctx.textAlign = 'left';
-            ctx.fillText(`Patch Size: ${actualSize}x${actualSize}`, 20, 280);
-            ctx.fillText(`Total Patches: ${Math.ceil(224 / actualSize) ** 2}`, 20, 300);
+            ctx.fillText(`Patch Size: ${actualSize}x${actualSize}`, 20, 300);
+            ctx.fillText(`Total Patches: ${Math.ceil(224 / actualSize) ** 2}`, 20, 325);
         }
 
         document.getElementById('vitPatchSize').addEventListener('input', (e) => {
@@ -1224,83 +1236,87 @@
         });
         drawViT(3);
 
-        // ============ Multi-modal Fusion ============
+        // ============ Multi-modal Large Language Model (LLM) Fusion ============
         function drawMultimodalFusion(method) {
             const canvas = document.getElementById('multimodalFusionCanvas');
             const ctx = canvas.getContext('2d');
             ctx.fillStyle = '#0a0a0f';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Inputs
-            ctx.fillStyle = '#00d2d3';
-            ctx.fillRect(30, 40, 70, 70);
-            ctx.fillRect(400, 40, 70, 70);
-            ctx.fillStyle = '#0a0a0f';
-            ctx.font = '11px Arial';
+            // Title
+            ctx.fillStyle = '#5dade2';
+            ctx.font = 'bold 17px Arial';
             ctx.textAlign = 'center';
-            ctx.fillText('Image', 65, 80);
-            ctx.fillText('Text', 435, 80);
+            ctx.fillText('Multi-Modal Fusion Strategies', canvas.width / 2, 25);
+
+            // Inputs
+            ctx.fillStyle = '#5dade2';
+            ctx.fillRect(30, 50, 80, 70);
+            ctx.fillRect(430, 50, 80, 70);
+            ctx.fillStyle = '#0a0a0f';
+            ctx.font = 'bold 15px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Image', 70, 90);
+            ctx.fillText('Text', 470, 90);
 
             if (method === 'early') {
-                // Early fusion: combine at input level
                 ctx.fillStyle = '#1a1a4e';
-                ctx.fillRect(150, 100, 200, 40);
-                ctx.fillStyle = '#00d2d3';
-                ctx.fillText('Concatenate', 250, 125);
+                ctx.fillRect(150, 110, 240, 45);
+                ctx.fillStyle = '#58d68d';
+                ctx.font = '15px Arial';
+                ctx.fillText('Concatenate', 270, 138);
 
                 ctx.fillStyle = '#4a2f5e';
-                ctx.fillRect(200, 180, 100, 50);
-                ctx.fillStyle = '#00d2d3';
-                ctx.fillText('Joint Encoder', 250, 210);
+                ctx.fillRect(200, 195, 140, 55);
+                ctx.fillStyle = '#f0b27a';
+                ctx.fillText('Joint Encoder', 270, 228);
             } else if (method === 'cross') {
-                // Cross-attention
                 ctx.fillStyle = '#1a1a4e';
-                ctx.fillRect(50, 150, 80, 60);
-                ctx.fillRect(370, 150, 80, 60);
-                ctx.fillStyle = '#00d2d3';
-                ctx.font = '10px Arial';
-                ctx.fillText('Enc Img', 90, 185);
-                ctx.fillText('Enc Txt', 410, 185);
+                ctx.fillRect(40, 160, 100, 60);
+                ctx.fillRect(400, 160, 100, 60);
+                ctx.fillStyle = '#58d68d';
+                ctx.font = '15px Arial';
+                ctx.fillText('Enc. Image', 90, 195);
+                ctx.fillText('Enc. Text', 450, 195);
 
                 ctx.fillStyle = '#4a2f5e';
-                ctx.fillRect(170, 160, 160, 40);
-                ctx.fillStyle = '#00d2d3';
-                ctx.font = '11px Arial';
-                ctx.fillText('Cross-Attention', 250, 185);
+                ctx.fillRect(170, 170, 200, 45);
+                ctx.fillStyle = '#f0b27a';
+                ctx.font = '15px Arial';
+                ctx.fillText('Cross-Attention', 270, 198);
 
                 ctx.fillStyle = '#1a1a4e';
-                ctx.fillRect(200, 250, 100, 50);
-                ctx.fillStyle = '#00d2d3';
-                ctx.fillText('Fused Output', 250, 280);
+                ctx.fillRect(200, 265, 140, 55);
+                ctx.fillStyle = '#58d68d';
+                ctx.fillText('Fused Output', 270, 298);
             } else {
-                // Late fusion
                 ctx.fillStyle = '#1a1a4e';
-                ctx.fillRect(30, 150, 80, 60);
-                ctx.fillRect(390, 150, 80, 60);
-                ctx.fillStyle = '#00d2d3';
-                ctx.font = '10px Arial';
-                ctx.fillText('Enc Img', 70, 185);
-                ctx.fillText('Enc Txt', 430, 185);
+                ctx.fillRect(30, 160, 100, 60);
+                ctx.fillRect(410, 160, 100, 60);
+                ctx.fillStyle = '#58d68d';
+                ctx.font = '15px Arial';
+                ctx.fillText('Enc. Image', 80, 195);
+                ctx.fillText('Enc. Text', 460, 195);
 
                 ctx.fillStyle = '#4a2f5e';
-                ctx.fillRect(150, 180, 60, 40);
-                ctx.fillRect(290, 180, 60, 40);
-                ctx.fillStyle = '#00d2d3';
-                ctx.font = '9px Arial';
-                ctx.fillText('Feat Img', 180, 205);
-                ctx.fillText('Feat Txt', 320, 205);
+                ctx.fillRect(150, 195, 80, 45);
+                ctx.fillRect(310, 195, 80, 45);
+                ctx.fillStyle = '#f0b27a';
+                ctx.font = '13px Arial';
+                ctx.fillText('Feat. Img', 190, 222);
+                ctx.fillText('Feat. Txt', 350, 222);
 
                 ctx.fillStyle = '#1a1a4e';
-                ctx.fillRect(200, 280, 100, 50);
-                ctx.fillStyle = '#00d2d3';
-                ctx.font = '11px Arial';
-                ctx.fillText('Concatenate', 250, 310);
+                ctx.fillRect(200, 295, 140, 55);
+                ctx.fillStyle = '#58d68d';
+                ctx.font = '15px Arial';
+                ctx.fillText('Concatenate', 270, 328);
             }
 
             ctx.fillStyle = '#b0b0c0';
-            ctx.font = '11px Arial';
+            ctx.font = '15px Arial';
             ctx.textAlign = 'left';
-            ctx.fillText(`Method: ${method.charAt(0).toUpperCase() + method.slice(1)} Fusion`, 20, 400);
+            ctx.fillText(`Method: ${method.charAt(0).toUpperCase() + method.slice(1)} Fusion`, 20, 420);
         }
 
         document.getElementById('fusionMethod').addEventListener('change', (e) => {
@@ -1308,75 +1324,81 @@
         });
         drawMultimodalFusion('early');
 
-        // ============ SimCLR Contrastive Learning ============
+        // ============ SimCLR (Simple Contrastive Learning of Representations) ============
         function drawSimCLR(temperature) {
             const canvas = document.getElementById('simclrCanvas');
             const ctx = canvas.getContext('2d');
             ctx.fillStyle = '#0a0a0f';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Original image
-            ctx.fillStyle = '#00d2d3';
-            ctx.fillRect(200, 20, 80, 80);
-            ctx.fillStyle = '#0a0a0f';
-            ctx.font = '10px Arial';
+            // Title
+            ctx.fillStyle = '#5dade2';
+            ctx.font = 'bold 17px Arial';
             ctx.textAlign = 'center';
-            ctx.fillText('Image', 240, 65);
+            ctx.fillText('SimCLR (Simple Contrastive Learning)', canvas.width / 2, 22);
+
+            // Original image
+            ctx.fillStyle = '#5dade2';
+            ctx.fillRect(220, 38, 80, 80);
+            ctx.fillStyle = '#0a0a0f';
+            ctx.font = 'bold 15px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Image', 260, 83);
 
             // Augmentation 1 and 2
             ctx.fillStyle = '#1a1a4e';
-            ctx.fillRect(60, 120, 70, 70);
-            ctx.fillRect(330, 120, 70, 70);
-            ctx.fillStyle = '#00d2d3';
-            ctx.font = '9px Arial';
-            ctx.fillText('Aug 1', 95, 160);
-            ctx.fillText('Aug 2', 365, 160);
+            ctx.fillRect(60, 140, 80, 70);
+            ctx.fillRect(380, 140, 80, 70);
+            ctx.fillStyle = '#f0b27a';
+            ctx.font = '15px Arial';
+            ctx.fillText('Aug. 1', 100, 180);
+            ctx.fillText('Aug. 2', 420, 180);
 
             // Encoders
             ctx.fillStyle = '#4a2f5e';
-            ctx.fillRect(50, 220, 90, 50);
-            ctx.fillRect(320, 220, 90, 50);
-            ctx.fillStyle = '#00d2d3';
-            ctx.font = '10px Arial';
-            ctx.fillText('Encoder', 95, 250);
-            ctx.fillText('Encoder', 365, 250);
+            ctx.fillRect(50, 235, 100, 50);
+            ctx.fillRect(370, 235, 100, 50);
+            ctx.fillStyle = '#58d68d';
+            ctx.font = '15px Arial';
+            ctx.fillText('Encoder', 100, 265);
+            ctx.fillText('Encoder', 420, 265);
 
             // Embeddings
             ctx.fillStyle = '#2a3a6e';
-            ctx.fillRect(55, 310, 80, 40);
-            ctx.fillRect(325, 310, 80, 40);
-            ctx.fillStyle = '#00d2d3';
-            ctx.font = '9px Arial';
-            ctx.fillText('z₁', 95, 335);
-            ctx.fillText('z₂', 365, 335);
+            ctx.fillRect(55, 315, 90, 45);
+            ctx.fillRect(365, 315, 90, 45);
+            ctx.fillStyle = '#bb8fce';
+            ctx.font = '15px Arial';
+            ctx.fillText('z\u2081', 100, 343);
+            ctx.fillText('z\u2082', 410, 343);
 
             // Positive pair connection
             ctx.strokeStyle = `rgba(0, 210, 211, ${0.3 + temperature * 0.3})`;
             ctx.lineWidth = 2;
             ctx.beginPath();
-            ctx.moveTo(135, 330);
-            ctx.lineTo(325, 330);
+            ctx.moveTo(145, 337);
+            ctx.lineTo(365, 337);
             ctx.stroke();
-            ctx.fillStyle = '#00d2d3';
-            ctx.font = '9px Arial';
+            ctx.fillStyle = '#58d68d';
+            ctx.font = '15px Arial';
             ctx.textAlign = 'center';
-            ctx.fillText('+ Positive pair', 230, 360);
+            ctx.fillText('+ Positive pair', 260, 375);
 
             // Negative pairs visualization
             ctx.fillStyle = '#6a3a3e';
-            ctx.fillRect(100, 380, 30, 30);
-            ctx.fillRect(270, 380, 30, 30);
-            ctx.fillStyle = '#ff6b6b';
-            ctx.font = '8px Arial';
+            ctx.fillRect(100, 395, 35, 35);
+            ctx.fillRect(320, 395, 35, 35);
+            ctx.fillStyle = '#ec7063';
+            ctx.font = '15px Arial';
             ctx.textAlign = 'center';
-            ctx.fillText('Neg', 115, 400);
-            ctx.fillText('Neg', 285, 400);
+            ctx.fillText('Neg.', 117, 418);
+            ctx.fillText('Neg.', 337, 418);
 
             ctx.fillStyle = '#b0b0c0';
-            ctx.font = '11px Arial';
+            ctx.font = '15px Arial';
             ctx.textAlign = 'left';
-            ctx.fillText(`Temperature: ${temperature.toFixed(1)}`, 20, 430);
-            ctx.fillText('InfoNCE Loss: Contrast positive vs negatives', 20, 450);
+            ctx.fillText(`Temperature: ${temperature.toFixed(1)}`, 20, 460);
+            ctx.fillText('InfoNCE Loss: Contrast positive vs. negatives', 20, 485);
         }
 
         document.getElementById('temperature').addEventListener('input', (e) => {
@@ -1699,7 +1721,7 @@
             const spacing = 60;
             const neuronSize = 15;
 
-            ctx.fillStyle = '#1a1a4e';
+            ctx.fillStyle = '#7777cc';
             ctx.font = '10px Arial';
             ctx.textAlign = 'center';
             ctx.fillText('Neurons (Potential Features)', 200, 40);
@@ -2020,7 +2042,7 @@
             const gridSize = 12;
 
             if (method === 'magnitude') {
-                ctx.fillStyle = '#1a1a4e';
+                ctx.fillStyle = '#7777cc';
                 ctx.fillText('Magnitude Pruning: Remove small weights', startX, 40);
 
                 for (let i = 0; i < gridSize; i++) {
@@ -2042,7 +2064,7 @@
                 ctx.fillText('Purple: Retained', startX, startY + gridSize * cellSize + 50);
 
             } else if (method === 'structured') {
-                ctx.fillStyle = '#1a1a4e';
+                ctx.fillStyle = '#7777cc';
                 ctx.fillText('Structured Pruning: Remove entire filters/neurons', startX, 40);
 
                 for (let i = 0; i < 4; i++) {
@@ -2067,7 +2089,7 @@
 
             } else {
                 // Lottery ticket
-                ctx.fillStyle = '#1a1a4e';
+                ctx.fillStyle = '#7777cc';
                 ctx.fillText('Lottery Ticket Hypothesis: Sparse subnetwork at init', startX, 40);
 
                 ctx.fillStyle = '#1a1a4e';
@@ -2156,7 +2178,7 @@
                 ctx.arc(node.x, node.y, 15, 0, Math.PI * 2);
                 ctx.fill();
 
-                ctx.fillStyle = '#0a0a0f';
+                ctx.fillStyle = '#e0e0e0';
                 ctx.font = 'bold 10px Arial';
                 ctx.textAlign = 'center';
                 ctx.fillText('N' + idx, node.x, node.y + 3);

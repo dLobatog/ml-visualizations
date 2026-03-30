@@ -33,8 +33,8 @@
   .insight-box strong { color: #ff6b6b; font-size: 1.05em; }
   .insight-box .formula { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 12px 18px; margin: 12px 0; font-family: 'Courier New', monospace; color: #e8e8ff; font-size: 1.05em; text-align: center; letter-spacing: 0.5px; line-height: 1.9; }
   .insight-box .formula .highlight { color: #ff6b6b; font-weight: bold; }
-  .insight-box .key-point { display: flex; gap: 8px; margin: 8px 0; padding: 4px 0; }
-  .insight-box .key-point .label { color: #ff6b6b; font-weight: 600; white-space: nowrap; min-width: 90px; }
+  .insight-box .key-point { display: flex; flex-wrap: wrap; gap: 4px 8px; margin: 8px 0; padding: 4px 0; align-items: baseline; }
+  .insight-box .key-point .label { color: #ff6b6b; font-weight: 600; min-width: 160px; flex-shrink: 0; }
   .insight-box .key-point .desc { color: #ddd; }
   .insight-box .interview-tip { background: rgba(100, 255, 100, 0.05); border: 1px solid rgba(100, 255, 100, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #b0ffb0; font-size: 0.93em; line-height: 1.6; }
   .insight-box .interview-tip::before { content: '\1F4A1  Interview Tip: '; font-weight: 700; color: #7fff7f; }
@@ -192,7 +192,7 @@
 <div class="viz-section">
   <h2>Convolution Operation Step by Step</h2>
   <p class="subtitle">Click "Next Step" to watch the kernel slide one position at a time. See the element-wise multiplication and summation at each position. The output is built position-by-position. This is why 3×3 kernels are efficient (only 9 parameters per filter).</p>
-  <canvas id="cnnCanvas" width="800" height="420"></canvas>
+  <canvas id="cnnCanvas" width="800" height="650"></canvas>
   <div class="controls">
     <button class="btn" id="cnnPlayBtn" onclick="toggleCNN()">▶ Animate</button>
     <button class="btn" onclick="stepCNN()">→ Next Step</button>
@@ -290,7 +290,7 @@
 <div class="viz-section">
   <h2>RNN/LSTM/GRU: Recurrence & Gating</h2>
   <p class="subtitle">Toggle between Vanilla RNN, LSTM, and GRU. For Vanilla RNN, trace the hidden state flow and see it accumulate (or vanish) through timesteps. For LSTM, watch the cell state bypass (straight arrow) — this is the "memory" that avoids vanishing gradients. Gates control what flows.</p>
-  <canvas id="rnnCanvas" width="900" height="480"></canvas>
+  <canvas id="rnnCanvas" width="900" height="560"></canvas>
   <div class="controls">
     <div class="tab-bar">
       <button class="btn active" id="rnnTypeRNN" onclick="setRNNType('rnn')">Vanilla RNN</button>
@@ -502,6 +502,7 @@ function drawNN() {
   const layerX = [120, 350, 600];
   const phase = nnState.phase;
 
+  // Draw connections with computation labels
   for (let l = 0; l < layers.length - 1; l++) {
     const n1 = layers[l].nodes.length;
     const n2 = layers[l + 1].nodes.length;
@@ -527,6 +528,14 @@ function drawNN() {
         ctx.moveTo(layerX[l] + 25, y1);
         ctx.lineTo(layerX[l + 1] - 25, y2);
         ctx.stroke();
+
+        // Draw weight value on edge
+        const midX = (layerX[l] + 25 + layerX[l + 1] - 25) / 2;
+        const midY = (y1 + y2) / 2;
+        ctx.fillStyle = '#b0b0c0';
+        ctx.font = '13px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(`w=${weight.toFixed(2)}`, midX, midY - 8);
       }
     }
   }
@@ -535,8 +544,8 @@ function drawNN() {
     const layer = layers[l];
     const n = layer.nodes.length;
 
-    ctx.fillStyle = '#888';
-    ctx.font = '12px Inter';
+    ctx.fillStyle = '#ff6b6b';
+    ctx.font = '17px Inter';
     ctx.textAlign = 'center';
     ctx.fillText(layer.label, layerX[l], 25);
 
@@ -567,34 +576,85 @@ function drawNN() {
       ctx.arc(layerX[l], y, 25, 0, Math.PI * 2);
       ctx.stroke();
 
-      ctx.fillStyle = '#fff';
-      ctx.font = '11px monospace';
+      // Draw activation value
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '15px monospace';
       ctx.textAlign = 'center';
       const val = layer.values[i];
       ctx.fillText(val.toFixed(2), layerX[l], y + 4);
 
-      if (isActiveBwd && l > 0) {
-        ctx.fillStyle = '#ff6b6b';
-        ctx.font = '10px monospace';
-        ctx.fillText(`∇=${layer.grads[i].toFixed(3)}`, layerX[l], y + 42);
+      // Draw node label
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '15px Inter';
+      ctx.fillText(layer.nodes[i], layerX[l], y - 35);
+
+      // For forward pass: show pre-activation and detailed computation
+      if (phase === 'forward' && isActiveFwd && l === 1 && layer.preact !== undefined) {
+        ctx.fillStyle = '#64ffda';
+        ctx.font = '13px monospace';
+        const preactVal = layer.preact[i];
+        const x1 = vals.x[0], x2 = vals.x[1];
+        const w0 = nnWeights.w1[i][0], w1 = nnWeights.w1[i][1], b = nnWeights.b1[i];
+        ctx.fillText(`z = ${w0.toFixed(1)}*${x1.toFixed(1)} + ${w1.toFixed(1)}*${x2.toFixed(1)} + ${b.toFixed(1)} = ${preactVal.toFixed(2)}`, layerX[l], y + 40);
+        ctx.fillText(`a = ReLU(${preactVal.toFixed(2)}) = ${layer.values[i].toFixed(2)}`, layerX[l], y + 56);
+      }
+      if (phase === 'forward' && isActiveFwd && l === 2) {
+        ctx.fillStyle = '#64ffda';
+        ctx.font = '13px monospace';
+        const preactVal = vals.z2[i];
+        ctx.fillText(`z = Σ(wⱼ·hⱼ)+b = ${preactVal.toFixed(2)}`, layerX[l], y + 40);
+        ctx.fillText(`ŷ = softmax(z) = ${layer.values[i].toFixed(3)}`, layerX[l], y + 56);
       }
 
-      ctx.fillStyle = '#aaa';
-      ctx.font = '11px Inter';
-      ctx.fillText(layer.nodes[i], layerX[l], y - 32);
+      // For backward pass: show gradient computation with detail
+      if (phase === 'backward' && isActiveBwd && l === 2) {
+        ctx.fillStyle = '#ff6b6b';
+        ctx.font = '13px monospace';
+        ctx.fillText(`∂L/∂z₂ = ŷ-y = ${layer.grads[i].toFixed(3)}`, layerX[l], y + 40);
+      }
+      if (phase === 'backward' && isActiveBwd && l === 1) {
+        ctx.fillStyle = '#ff6b6b';
+        ctx.font = '13px monospace';
+        ctx.fillText(`∂L/∂h = wᵀ·∂L/∂z₂ = ${vals.da1[i].toFixed(3)}`, layerX[l], y + 40);
+        ctx.fillText(`∂L/∂z = ${vals.da1[i].toFixed(3)}*${reluDeriv(vals.z1[i])} = ${layer.grads[i].toFixed(3)}`, layerX[l], y + 56);
+      }
     }
   }
 
+  // Draw computation formula in the center
+  const formulaX = 700, formulaY = 80;
   ctx.fillStyle = '#ffd93d';
-  ctx.font = '14px monospace';
+  ctx.font = '17px Inter';
   ctx.textAlign = 'left';
-  ctx.fillText(`Loss = ${vals.loss.toFixed(4)}`, 680, H / 2);
+  ctx.fillText('Forward:', formulaX, formulaY);
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '15px monospace';
+  ctx.fillText('z₁ᵢ = Σⱼ(wᵢⱼ·xⱼ) + bᵢ', formulaX, formulaY + 22);
+  ctx.fillText('h₁ᵢ = ReLU(z₁ᵢ)', formulaX, formulaY + 42);
+  ctx.fillText('z₂ⱼ = Σᵢ(wⱼᵢ·h₁ᵢ) + bⱼ', formulaX, formulaY + 62);
+  ctx.fillText('ŷ = softmax(z₂)', formulaX, formulaY + 82);
+
+  ctx.fillStyle = '#ffd93d';
+  ctx.font = '17px Inter';
+  ctx.fillText('Backward:', formulaX, formulaY + 120);
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '15px monospace';
+  ctx.fillText('∂L/∂z₂ = ŷ - y_true', formulaX, formulaY + 142);
+  ctx.fillText('∂L/∂w = ∂L/∂z · ∂z/∂w', formulaX, formulaY + 162);
+  ctx.fillText('∂L/∂h₁ = wᵀ · ∂L/∂z₂', formulaX, formulaY + 182);
+
+  ctx.fillStyle = '#ffd93d';
+  ctx.font = '15px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText(`Loss = ${vals.loss.toFixed(4)}`, formulaX, formulaY + 220);
 
   if (phase !== 'idle') {
     ctx.fillStyle = phase === 'forward' ? '#64ffda' : '#ff6b6b';
-    ctx.font = '14px Inter';
+    ctx.font = '17px Inter';
     ctx.textAlign = 'right';
-    ctx.fillText(phase === 'forward' ? '→ Forward Pass' : '← Backward Pass', W - 20, 25);
+    ctx.fillText(phase === 'forward' ? '-> Forward Pass' : '<- Backward Pass', W - 20, 25);
   }
 }
 
@@ -670,23 +730,23 @@ function drawAct() {
     ];
   }
 
-  ctx.strokeStyle = '#222';
+  ctx.strokeStyle = '#555';
   ctx.lineWidth = 0.5;
   for (let x = -4; x <= 4; x++) {
     const [sx] = toScreen(x, 0);
     ctx.beginPath(); ctx.moveTo(sx, pad.t); ctx.lineTo(sx, H-pad.b); ctx.stroke();
-    ctx.fillStyle = '#555'; ctx.font = '10px monospace'; ctx.textAlign = 'center';
+    ctx.fillStyle = '#b0b0c0'; ctx.font = '13px monospace'; ctx.textAlign = 'center';
     ctx.fillText(x, sx, H - pad.b + 14);
   }
   for (let y = -1; y <= 3; y++) {
     const [, sy] = toScreen(0, y);
     ctx.beginPath(); ctx.moveTo(pad.l, sy); ctx.lineTo(W-pad.r, sy); ctx.stroke();
-    ctx.fillStyle = '#555'; ctx.font = '10px monospace'; ctx.textAlign = 'right';
+    ctx.fillStyle = '#b0b0c0'; ctx.font = '13px monospace'; ctx.textAlign = 'right';
     ctx.fillText(y, pad.l - 8, sy + 4);
   }
 
   const [ax0, ay0] = toScreen(0, 0);
-  ctx.strokeStyle = '#444';
+  ctx.strokeStyle = '#888';
   ctx.lineWidth = 1.5;
   ctx.beginPath(); ctx.moveTo(pad.l, ay0); ctx.lineTo(W-pad.r, ay0); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(ax0, pad.t); ctx.lineTo(ax0, H-pad.b); ctx.stroke();
@@ -723,15 +783,15 @@ function drawAct() {
     const labelX = name === 'relu' ? 3.5 : name === 'gelu' ? 3 : name === 'silu' ? 2.5 : name === 'sigmoid' ? 2 : 4;
     const [lx, ly] = toScreen(labelX, act.fn(labelX));
     ctx.fillStyle = act.color;
-    ctx.font = '12px Inter';
+    ctx.font = '15px Inter';
     ctx.textAlign = 'left';
     ctx.fillText(name.toUpperCase(), lx + 5, ly - 8);
   }
 
-  ctx.fillStyle = '#666';
-  ctx.font = '11px Inter';
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px Inter';
   ctx.textAlign = 'left';
-  ctx.fillText('— solid: f(x)    --- dashed: f\'(x)', pad.l + 10, pad.t + 15);
+  ctx.fillText('-- solid: f(x)    --- dashed: f\'(x)', pad.l + 10, pad.t + 15);
 }
 
 // ==================== VANISHING/EXPLODING GRADIENTS ====================
@@ -797,15 +857,15 @@ function drawVG() {
     ctx.strokeRect(x, H - pad.b - normalizedH, barW, normalizedH);
 
     if (depth <= 15 || i % 2 === 0) {
-      ctx.fillStyle = '#888';
-      ctx.font = '10px monospace';
+      ctx.fillStyle = '#b0b0c0';
+      ctx.font = '13px monospace';
       ctx.textAlign = 'center';
       ctx.fillText(`L${i+1}`, x + barW / 2, H - pad.b + 14);
       ctx.fillText(gradients[i].toExponential(1), x + barW / 2, H - pad.b - normalizedH - 6);
     }
   }
 
-  ctx.strokeStyle = '#444';
+  ctx.strokeStyle = '#888';
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(pad.l, pad.t);
@@ -813,10 +873,10 @@ function drawVG() {
   ctx.lineTo(W - pad.r, H - pad.b);
   ctx.stroke();
 
-  ctx.fillStyle = '#888';
-  ctx.font = '13px Inter';
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px Inter';
   ctx.textAlign = 'center';
-  ctx.fillText('Layer (input → output)', W / 2, H - 8);
+  ctx.fillText('Layer (input -> output)', W / 2, H - 8);
   ctx.save();
   ctx.translate(18, H / 2);
   ctx.rotate(-Math.PI / 2);
@@ -825,12 +885,12 @@ function drawVG() {
 
   const ratio = gradients[0] / gradients[depth - 1];
   let status, statusColor;
-  if (ratio < 0.01) { status = 'VANISHING — gradients die'; statusColor = '#7c4dff'; }
-  else if (ratio > 100) { status = 'EXPLODING — gradients blow up'; statusColor = '#ff6b6b'; }
-  else { status = 'HEALTHY — gradients flow well'; statusColor = '#64ffda'; }
+  if (ratio < 0.01) { status = 'VANISHING -- gradients die'; statusColor = '#7c4dff'; }
+  else if (ratio > 100) { status = 'EXPLODING -- gradients blow up'; statusColor = '#ff6b6b'; }
+  else { status = 'HEALTHY -- gradients flow well'; statusColor = '#64ffda'; }
 
   ctx.fillStyle = statusColor;
-  ctx.font = '13px Inter';
+  ctx.font = '17px Inter';
   ctx.textAlign = 'left';
   ctx.fillText(status, pad.l, pad.t + 15);
 }
@@ -874,14 +934,14 @@ function drawCNN() {
   const kernRow = posRow * stride;
   const kernCol = posCol * stride;
 
-  const cellSize = 42;
-  const gap = 60;
+  const cellSize = 38;
+  const gap = 50;
 
-  const inputX = 40, inputY = 60;
+  const inputX = 30, inputY = 55;
   ctx.fillStyle = '#64ffda';
-  ctx.font = '14px Inter';
+  ctx.font = '15px Inter';
   ctx.textAlign = 'left';
-  ctx.fillText(`Input (${inSize}×${inSize})`, inputX, inputY - 12);
+  ctx.fillText(`Input (${inSize}x${inSize})`, inputX, inputY - 12);
 
   for (let i = 0; i < padInSize; i++) {
     for (let j = 0; j < padInSize; j++) {
@@ -902,8 +962,8 @@ function drawCNN() {
       }
 
       const val = isPad ? 0 : cnnInput[i - padding]?.[j - padding] ?? 0;
-      ctx.fillStyle = isInKernel ? '#fff' : '#aaa';
-      ctx.font = '12px monospace';
+      ctx.fillStyle = isInKernel ? '#fff' : '#b0b0c0';
+      ctx.font = '15px monospace';
       ctx.textAlign = 'center';
       ctx.fillText(val, x + cellSize / 2, y + cellSize / 2 + 4);
     }
@@ -911,9 +971,9 @@ function drawCNN() {
 
   const kernX = inputX + padInSize * cellSize + gap;
   ctx.fillStyle = '#ffd93d';
-  ctx.font = '14px Inter';
+  ctx.font = '15px Inter';
   ctx.textAlign = 'left';
-  ctx.fillText(`Kernel (${kSize}×${kSize})`, kernX, inputY - 12);
+  ctx.fillText(`Kernel (${kSize}x${kSize})`, kernX, inputY - 12);
 
   for (let i = 0; i < kSize; i++) {
     for (let j = 0; j < kSize; j++) {
@@ -922,7 +982,7 @@ function drawCNN() {
       ctx.fillStyle = '#2a2a1e';
       ctx.fillRect(x, y, cellSize - 1, cellSize - 1);
       ctx.fillStyle = '#ffd93d';
-      ctx.font = '12px monospace';
+      ctx.font = '15px monospace';
       ctx.textAlign = 'center';
       ctx.fillText(cnnKernel[i][j], x + cellSize / 2, y + cellSize / 2 + 4);
     }
@@ -940,15 +1000,15 @@ function drawCNN() {
     }
   }
   ctx.fillStyle = '#64ffda';
-  ctx.font = '13px monospace';
-  ctx.fillText(`Σ(input ⊙ kernel) = ${sum}`, kernX, compY);
+  ctx.font = '15px monospace';
+  ctx.fillText(`Sum(input * kernel) = ${sum}`, kernX, compY);
 
   const outX = kernX;
   const outY = compY + 30;
   ctx.fillStyle = '#4ecdc4';
-  ctx.font = '14px Inter';
+  ctx.font = '15px Inter';
   ctx.textAlign = 'left';
-  ctx.fillText(`Output (${outSize}×${outSize})  [stride=${stride}, pad=${padding}]`, outX, outY - 12);
+  ctx.fillText(`Output (${outSize}x${outSize})  [stride=${stride}, pad=${padding}]`, outX, outY - 12);
 
   for (let i = 0; i < outSize; i++) {
     for (let j = 0; j < outSize; j++) {
@@ -971,17 +1031,17 @@ function drawCNN() {
           }
         }
         ctx.fillStyle = isCurrent ? '#000' : '#4ecdc4';
-        ctx.font = '11px monospace';
+        ctx.font = '15px monospace';
         ctx.textAlign = 'center';
         ctx.fillText(val, x + cellSize / 2, y + cellSize / 2 + 4);
       }
     }
   }
 
-  ctx.fillStyle = '#888';
-  ctx.font = '12px Inter';
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px Inter';
   ctx.textAlign = 'left';
-  ctx.fillText(`Position: (${posRow}, ${posCol}) of ${outSize}×${outSize}  |  Step ${pos + 1}/${totalPositions}`, inputX, H - 15);
+  ctx.fillText(`Position: (${posRow}, ${posCol}) of ${outSize}x${outSize}  |  Step ${pos + 1}/${totalPositions}`, inputX, H - 15);
 }
 
 function stepCNN() {
@@ -1052,12 +1112,12 @@ function drawNorm() {
     gn: 'Group Normalization — normalize within channel groups per sample'
   };
   ctx.fillStyle = '#ff6b6b';
-  ctx.font = '14px Inter';
+  ctx.font = '17px Inter';
   ctx.textAlign = 'center';
   ctx.fillText(titles[normType], W / 2, 30);
 
-  ctx.fillStyle = '#888';
-  ctx.font = '12px Inter';
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px Inter';
   ctx.textAlign = 'right';
 
   const startX = pad.l + 40;
@@ -1065,8 +1125,8 @@ function drawNorm() {
 
   for (let b = 0; b < B; b++) {
     const yOff = startY + b * (C * cellH + 16);
-    ctx.fillStyle = '#aaa';
-    ctx.font = '11px Inter';
+    ctx.fillStyle = '#b0b0c0';
+    ctx.font = '15px Inter';
     ctx.textAlign = 'right';
     ctx.fillText(`Sample ${b + 1}`, startX - 8, yOff + C * cellH / 2 + 4);
 
@@ -1099,8 +1159,8 @@ function drawNorm() {
     }
   }
 
-  ctx.fillStyle = '#888';
-  ctx.font = '10px monospace';
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '13px monospace';
   ctx.textAlign = 'center';
   for (let c = 0; c < C; c++) {
     ctx.fillText(`C${c}`, startX - 18, startY + c * cellH + cellH / 2 + 3);
@@ -1110,10 +1170,10 @@ function drawNorm() {
     ctx.fillText(s, startX + s * cellW + cellW / 2, startY - 6);
   }
 
-  ctx.fillStyle = '#666';
-  ctx.font = '11px Inter';
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px Inter';
   ctx.textAlign = 'center';
-  ctx.fillText('Spatial / Feature dimension →', startX + S * cellW / 2, startY - 22);
+  ctx.fillText('Spatial / Feature dimension ->', startX + S * cellW / 2, startY - 22);
 
   const formulas = {
     bn: 'μ = (1/B)Σxᵢ,  σ² = (1/B)Σ(xᵢ-μ)²,  x̂ = (x-μ)/√(σ²+ε),  y = γx̂+β',
@@ -1129,28 +1189,28 @@ function drawNorm() {
   ctx.strokeRect(panelX, startY, W - panelX - pad.r, 200);
 
   ctx.fillStyle = '#ffd93d';
-  ctx.font = '13px Inter';
+  ctx.font = '17px Inter';
   ctx.textAlign = 'left';
   ctx.fillText(normType.toUpperCase(), panelX + 12, startY + 24);
 
   ctx.fillStyle = '#ccc';
-  ctx.font = '11px monospace';
+  ctx.font = '13px monospace';
   const formula = formulas[normType];
   const words = formula.split(',');
   words.forEach((w, i) => {
-    ctx.fillText(w.trim(), panelX + 12, startY + 48 + i * 20);
+    ctx.fillText(w.trim(), panelX + 12, startY + 48 + i * 22);
   });
 
   const dimInfo = {
     bn: 'Normalizes: across batch (B)\nFor each: channel (C)\nProblem: batch-dependent',
-    ln: 'Normalizes: across features (C×S)\nFor each: sample (B)\nUsed in: Transformers',
-    rms: 'Normalizes: across features (C×S)\nFor each: sample (B)\nUsed in: LLaMA, Gemma',
+    ln: 'Normalizes: across features (CxS)\nFor each: sample (B)\nUsed in: Transformers',
+    rms: 'Normalizes: across features (CxS)\nFor each: sample (B)\nUsed in: LLaMA, Gemma',
     gn: 'Normalizes: across group channels\nFor each: sample (B)\nUsed in: Vision (small batch)'
   };
-  ctx.fillStyle = '#aaa';
-  ctx.font = '11px Inter';
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px Inter';
   dimInfo[normType].split('\n').forEach((line, i) => {
-    ctx.fillText(line, panelX + 12, startY + 130 + i * 18);
+    ctx.fillText(line, panelX + 12, startY + 140 + i * 20);
   });
 }
 
@@ -1186,98 +1246,297 @@ function drawRNN() {
   document.getElementById('rnnLenVal').textContent = seqLen;
   ctx.clearRect(0, 0, W, H);
 
-  const title = rnnType === 'rnn' ? 'Vanilla RNN' : rnnType === 'lstm' ? 'LSTM (Long Short-Term Memory)' : 'GRU (Gated Recurrent Unit)';
+  const fullNames = {
+    rnn: 'Vanilla RNN (Recurrent Neural Network)',
+    lstm: 'LSTM (Long Short-Term Memory)',
+    gru: 'GRU (Gated Recurrent Unit)'
+  };
+  const title = fullNames[rnnType];
   ctx.fillStyle = '#ff6b6b';
-  ctx.font = '16px Inter';
+  ctx.font = '18px Inter';
   ctx.textAlign = 'center';
-  ctx.fillText(title, W / 2, 30);
+  ctx.fillText(title, W / 2, 28);
 
-  const cellW = 120, cellH = 100;
-  const startX = 40, startY = 80;
-  const hSize = 24;
+  // Subtitle explaining architecture
+  const subtitles = {
+    rnn: 'Simple recurrence: hidden state is updated each step. Suffers from vanishing gradients for long sequences.',
+    lstm: '3 gates (forget, input, output) + cell state. Cell state acts as long-term memory highway.',
+    gru: '2 gates (reset, update). Simpler than LSTM but similarly effective at capturing long-range dependencies.'
+  };
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px Inter';
+  ctx.fillText(subtitles[rnnType], W / 2, 50);
 
-  for (let t = 0; t < seqLen; t++) {
-    const x = startX + t * (cellW + 30);
+  const cellW = 140, cellH = 160;
+  const startX = 30, startY = 70;
+
+  // Draw color-coded legend for gates
+  const legendY = 65;
+  if (rnnType === 'lstm') {
+    ctx.font = '15px Inter';
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#ff6b6b'; ctx.fillRect(430, legendY - 10, 12, 12); ctx.fillText('Forget Gate', 448, legendY);
+    ctx.fillStyle = '#4ecdc4'; ctx.fillRect(560, legendY - 10, 12, 12); ctx.fillText('Input Gate', 578, legendY);
+    ctx.fillStyle = '#ffd93d'; ctx.fillRect(680, legendY - 10, 12, 12); ctx.fillText('Output Gate', 698, legendY);
+    ctx.fillStyle = '#c0a0ff'; ctx.fillRect(800, legendY - 10, 12, 12); ctx.fillText('Cell State', 818, legendY);
+  } else if (rnnType === 'gru') {
+    ctx.font = '15px Inter';
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#ff6b6b'; ctx.fillRect(500, legendY - 10, 12, 12); ctx.fillText('Reset Gate', 518, legendY);
+    ctx.fillStyle = '#4ecdc4'; ctx.fillRect(630, legendY - 10, 12, 12); ctx.fillText('Update Gate', 648, legendY);
+    ctx.fillStyle = '#ffd93d'; ctx.fillRect(770, legendY - 10, 12, 12); ctx.fillText('Candidate', 788, legendY);
+  }
+
+  const maxVisibleCells = Math.min(seqLen, 5);
+  const actualCellW = Math.min(cellW, (W - 60) / maxVisibleCells - 20);
+
+  for (let t = 0; t < maxVisibleCells; t++) {
+    const x = startX + t * (actualCellW + 20);
     const isActive = t === rnnStep;
 
-    ctx.fillStyle = isActive ? '#ff6b6b33' : '#1a1a3e';
-    ctx.fillRect(x, startY, cellW, cellH);
+    // Main cell background
+    ctx.fillStyle = isActive ? '#ff6b6b22' : '#1a1a3e';
+    ctx.fillRect(x, startY + 20, actualCellW, cellH);
     ctx.strokeStyle = isActive ? '#ff6b6b' : '#2a2a4a';
     ctx.lineWidth = isActive ? 2 : 1;
-    ctx.strokeRect(x, startY, cellW, cellH);
+    ctx.strokeRect(x, startY + 20, actualCellW, cellH);
 
-    ctx.fillStyle = isActive ? '#ffd93d' : '#888';
-    ctx.font = '13px Inter';
+    // Time step label
+    ctx.fillStyle = isActive ? '#ffd93d' : '#b0b0c0';
+    ctx.font = 'bold 17px Inter';
     ctx.textAlign = 'center';
-    ctx.fillText(`t=${t}`, x + cellW / 2, startY - 8);
+    ctx.fillText(`t=${t}`, x + actualCellW / 2, startY + 40);
 
-    ctx.fillStyle = '#aaa';
-    ctx.font = '11px monospace';
-    ctx.fillText(`x${t}`, x + cellW / 2, startY + 20);
+    // Input arrow from below
+    ctx.strokeStyle = '#64ffda';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x + actualCellW / 2, startY + 20 + cellH);
+    ctx.lineTo(x + actualCellW / 2, startY + 20 + cellH + 20);
+    ctx.stroke();
+    ctx.fillStyle = '#64ffda';
+    ctx.font = '15px monospace';
+    ctx.fillText(`x_${t}`, x + actualCellW / 2, startY + 20 + cellH + 36);
 
     if (rnnType === 'lstm') {
-      ctx.fillStyle = isActive ? '#64ffda' : '#444';
-      ctx.font = '10px monospace';
-      ctx.fillText('i,f,o gates', x + cellW / 2, startY + 40);
-      ctx.fillText('C_t (cell)', x + cellW / 2, startY + 55);
-      ctx.fillText('h_t (out)', x + cellW / 2, startY + 70);
+      // LSTM cell internals with gate visualization
+      const gateY = startY + 55;
+      const gateH = 18;
+      const gateW = actualCellW - 16;
+      const gateX = x + 8;
+
+      // Forget gate (red)
+      ctx.fillStyle = '#ff6b6b33';
+      ctx.fillRect(gateX, gateY, gateW, gateH);
+      ctx.strokeStyle = '#ff6b6b';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(gateX, gateY, gateW, gateH);
+      ctx.fillStyle = '#ff6b6b';
+      ctx.font = '13px Inter';
+      ctx.textAlign = 'center';
+      ctx.fillText('f: forget gate', x + actualCellW / 2, gateY + 14);
+
+      // Input gate (teal)
+      ctx.fillStyle = '#4ecdc433';
+      ctx.fillRect(gateX, gateY + gateH + 4, gateW, gateH);
+      ctx.strokeStyle = '#4ecdc4';
+      ctx.strokeRect(gateX, gateY + gateH + 4, gateW, gateH);
+      ctx.fillStyle = '#4ecdc4';
+      ctx.font = '13px Inter';
+      ctx.fillText('i: input gate', x + actualCellW / 2, gateY + gateH + 18);
+
+      // Cell state (purple)
+      ctx.fillStyle = '#c0a0ff33';
+      ctx.fillRect(gateX, gateY + 2*(gateH + 4), gateW, gateH);
+      ctx.strokeStyle = '#c0a0ff';
+      ctx.strokeRect(gateX, gateY + 2*(gateH + 4), gateW, gateH);
+      ctx.fillStyle = '#c0a0ff';
+      ctx.font = '13px Inter';
+      ctx.fillText('C: cell state', x + actualCellW / 2, gateY + 2*(gateH + 4) + 14);
+
+      // Output gate (yellow)
+      ctx.fillStyle = '#ffd93d33';
+      ctx.fillRect(gateX, gateY + 3*(gateH + 4), gateW, gateH);
+      ctx.strokeStyle = '#ffd93d';
+      ctx.strokeRect(gateX, gateY + 3*(gateH + 4), gateW, gateH);
+      ctx.fillStyle = '#ffd93d';
+      ctx.font = '13px Inter';
+      ctx.fillText('o: output gate', x + actualCellW / 2, gateY + 3*(gateH + 4) + 14);
+
+      // Hidden state output
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 15px monospace';
+      ctx.fillText('h_t', x + actualCellW / 2, gateY + 4*(gateH + 4) + 10);
+
     } else if (rnnType === 'gru') {
-      ctx.fillStyle = isActive ? '#64ffda' : '#444';
-      ctx.font = '10px monospace';
-      ctx.fillText('r,z gates', x + cellW / 2, startY + 40);
-      ctx.fillText('h_t', x + cellW / 2, startY + 65);
+      // GRU cell internals
+      const gateY = startY + 58;
+      const gateH = 22;
+      const gateW = actualCellW - 16;
+      const gateX = x + 8;
+
+      // Reset gate (red)
+      ctx.fillStyle = '#ff6b6b33';
+      ctx.fillRect(gateX, gateY, gateW, gateH);
+      ctx.strokeStyle = '#ff6b6b';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(gateX, gateY, gateW, gateH);
+      ctx.fillStyle = '#ff6b6b';
+      ctx.font = '13px Inter';
+      ctx.textAlign = 'center';
+      ctx.fillText('r: reset gate', x + actualCellW / 2, gateY + 16);
+
+      // Update gate (teal)
+      ctx.fillStyle = '#4ecdc433';
+      ctx.fillRect(gateX, gateY + gateH + 6, gateW, gateH);
+      ctx.strokeStyle = '#4ecdc4';
+      ctx.strokeRect(gateX, gateY + gateH + 6, gateW, gateH);
+      ctx.fillStyle = '#4ecdc4';
+      ctx.font = '13px Inter';
+      ctx.fillText('z: update gate', x + actualCellW / 2, gateY + gateH + 22);
+
+      // Candidate hidden (yellow)
+      ctx.fillStyle = '#ffd93d33';
+      ctx.fillRect(gateX, gateY + 2*(gateH + 6), gateW, gateH);
+      ctx.strokeStyle = '#ffd93d';
+      ctx.strokeRect(gateX, gateY + 2*(gateH + 6), gateW, gateH);
+      ctx.fillStyle = '#ffd93d';
+      ctx.font = '13px Inter';
+      ctx.fillText('h~: candidate', x + actualCellW / 2, gateY + 2*(gateH + 6) + 16);
+
+      // Hidden state
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 15px monospace';
+      ctx.fillText('h_t', x + actualCellW / 2, gateY + 3*(gateH + 6) + 14);
+
     } else {
-      ctx.fillStyle = isActive ? '#64ffda' : '#444';
-      ctx.font = '10px monospace';
-      ctx.fillText('h_t', x + cellW / 2, startY + 55);
+      // Vanilla RNN (Recurrent Neural Network)
+      const stateY = startY + 60;
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '15px Inter';
+      ctx.textAlign = 'center';
+      ctx.fillText('Compute:', x + actualCellW / 2, stateY);
+
+      ctx.fillStyle = '#64ffda';
+      ctx.font = '13px monospace';
+      ctx.fillText('z = W_h*h + W_x*x + b', x + actualCellW / 2, stateY + 22);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 15px monospace';
+      ctx.fillText('h_t = tanh(z)', x + actualCellW / 2, stateY + 46);
+
+      ctx.fillStyle = '#ff6b6b';
+      ctx.font = '15px Inter';
+      ctx.fillText('Vanishing grad!', x + actualCellW / 2, stateY + 70);
+
+      // Explanation for active cell
+      if (isActive) {
+        ctx.fillStyle = '#b0b0c0';
+        ctx.font = '13px Inter';
+        ctx.fillText('tanh squashes to [-1,1]', x + actualCellW / 2, stateY + 90);
+        ctx.fillText('gradient <= 0.25 per step', x + actualCellW / 2, stateY + 106);
+      }
     }
 
-    if (t < seqLen - 1) {
-      ctx.strokeStyle = isActive ? '#ff6b6b' : '#2a2a4a';
-      ctx.lineWidth = isActive ? 2 : 1;
+    // Hidden state carry-over arrow
+    if (t < maxVisibleCells - 1) {
+      const arrowX1 = x + actualCellW;
+      const arrowY1 = startY + 20 + cellH / 2;
+      const arrowX2 = x + actualCellW + 16;
+      const arrowY2 = arrowY1;
+
+      ctx.strokeStyle = isActive ? '#64ffda' : '#555';
+      ctx.lineWidth = isActive ? 3 : 2;
       ctx.beginPath();
-      ctx.moveTo(x + cellW, startY + cellH / 2);
-      ctx.lineTo(x + cellW + 25, startY + cellH / 2);
+      ctx.moveTo(arrowX1, arrowY1);
+      ctx.lineTo(arrowX2, arrowY2);
       ctx.stroke();
+
+      // Arrow head
+      ctx.fillStyle = isActive ? '#64ffda' : '#555';
+      ctx.beginPath();
+      ctx.moveTo(arrowX2, arrowY2);
+      ctx.lineTo(arrowX2 - 6, arrowY2 - 5);
+      ctx.lineTo(arrowX2 - 6, arrowY2 + 5);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = '#64ffda';
+      ctx.font = '15px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('h_t', (arrowX1 + arrowX2) / 2, arrowY2 - 12);
+
+      // For LSTM, also show cell state arrow above
+      if (rnnType === 'lstm') {
+        const cellArrowY = startY + 30;
+        ctx.strokeStyle = isActive ? '#c0a0ff' : '#555';
+        ctx.lineWidth = isActive ? 3 : 2;
+        ctx.beginPath();
+        ctx.moveTo(arrowX1, cellArrowY);
+        ctx.lineTo(arrowX2, cellArrowY);
+        ctx.stroke();
+        ctx.fillStyle = isActive ? '#c0a0ff' : '#555';
+        ctx.beginPath();
+        ctx.moveTo(arrowX2, cellArrowY);
+        ctx.lineTo(arrowX2 - 6, cellArrowY - 5);
+        ctx.lineTo(arrowX2 - 6, cellArrowY + 5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#c0a0ff';
+        ctx.font = '13px monospace';
+        ctx.fillText('C_t', (arrowX1 + arrowX2) / 2, cellArrowY - 10);
+      }
     }
   }
 
-  const formulaY = startY + cellH + 60;
-  ctx.fillStyle = '#ffd93d';
-  ctx.font = '12px Inter';
-  ctx.textAlign = 'left';
-  ctx.fillText('Equations:', 40, formulaY);
+  // If more cells than visible, show ellipsis
+  if (seqLen > maxVisibleCells) {
+    ctx.fillStyle = '#b0b0c0';
+    ctx.font = '17px Inter';
+    ctx.textAlign = 'left';
+    ctx.fillText(`... (${seqLen - maxVisibleCells} more timesteps)`, startX + maxVisibleCells * (actualCellW + 20), startY + 20 + cellH / 2);
+  }
 
-  ctx.fillStyle = '#ccc';
-  ctx.font = '11px monospace';
+  // Equations panel - detailed and explanatory
+  const eqX = 40, eqY = startY + cellH + 68;
+  ctx.fillStyle = '#ffd93d';
+  ctx.font = '17px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText('Key Equations:', eqX, eqY);
+
+  ctx.font = '15px monospace';
   let formulas = [];
   if (rnnType === 'rnn') {
     formulas = [
-      'h_t = tanh(W_hh·h_{t-1} + W_xh·x_t + b_h)',
-      'y_t = W_hy·h_t + b_y',
-      'Problem: tanh derivative ≤ 0.25 → vanishing gradients over time'
+      { text: 'z_t = W_hh * h_{t-1} + W_xh * x_t + b_h', color: '#64ffda' },
+      { text: 'h_t = tanh(z_t)                             -- hidden state', color: '#ffffff' },
+      { text: 'y_t = W_hy * h_t + b_y                      -- output', color: '#ffffff' },
+      { text: 'Problem: d(tanh)/dz <= 0.25, gradients shrink exponentially!', color: '#ff6b6b' },
+      { text: 'After 20 steps: 0.25^20 = 9e-13 (gradient is essentially 0)', color: '#ff6b6b' }
     ];
   } else if (rnnType === 'lstm') {
     formulas = [
-      'i_t = σ(W_i[h_{t-1}, x_t] + b_i)  — input gate (what to add)',
-      'f_t = σ(W_f[h_{t-1}, x_t] + b_f)  — forget gate (what to keep)',
-      'C_t = f_t ⊙ C_{t-1} + i_t ⊙ tanh(W_c[h_{t-1}, x_t] + b_c)',
-      'o_t = σ(W_o[h_{t-1}, x_t] + b_o)  — output gate',
-      'h_t = o_t ⊙ tanh(C_t)',
-      'Key: additive path through C_t allows ∂C_t/∂C_{t-1} = f_t (close to 1) → no vanishing!'
+      { text: 'f_t = sigma(W_f*[h_{t-1}, x_t] + b_f)  -- Forget gate: what to discard', color: '#ff6b6b' },
+      { text: 'i_t = sigma(W_i*[h_{t-1}, x_t] + b_i)  -- Input gate: what new info to store', color: '#4ecdc4' },
+      { text: 'C_t = f_t*C_{t-1} + i_t*tanh(W_c*[h,x]) -- Cell state: additive! No vanishing!', color: '#c0a0ff' },
+      { text: 'o_t = sigma(W_o*[h_{t-1}, x_t] + b_o)  -- Output gate: what to expose', color: '#ffd93d' },
+      { text: 'h_t = o_t * tanh(C_t)                   -- Hidden state output', color: '#ffffff' },
+      { text: 'Key: dC_t/dC_{t-1} = f_t ~ 0.5-1.0 (not 0.25!), gradients survive!', color: '#64ffda' }
     ];
   } else {
     formulas = [
-      'r_t = σ(W_r[h_{t-1}, x_t] + b_r)  — reset gate (forget past)',
-      'z_t = σ(W_z[h_{t-1}, x_t] + b_z)  — update gate (how much new info)',
-      'h̃_t = tanh(W[r_t ⊙ h_{t-1}, x_t] + b)',
-      'h_t = (1 - z_t) ⊙ h_{t-1} + z_t ⊙ h̃_t',
-      'Simpler than LSTM: only 2 gates. Faster but slightly less expressive.'
+      { text: 'r_t = sigma(W_r*[h_{t-1}, x_t] + b_r)    -- Reset gate: how much past to forget', color: '#ff6b6b' },
+      { text: 'z_t = sigma(W_z*[h_{t-1}, x_t] + b_z)    -- Update gate: blend old/new state', color: '#4ecdc4' },
+      { text: 'h~_t = tanh(W_h*[r_t*h_{t-1}, x_t] + b)  -- Candidate new hidden state', color: '#ffd93d' },
+      { text: 'h_t = (1-z_t)*h_{t-1} + z_t*h~_t          -- Interpolate old and new', color: '#ffffff' },
+      { text: 'Simpler than LSTM (2 gates vs 3), trains faster, similar performance', color: '#64ffda' }
     ];
   }
 
   formulas.forEach((f, i) => {
-    ctx.fillText(f, 40, formulaY + 25 + i * 18);
+    ctx.fillStyle = f.color;
+    ctx.fillText(f.text, eqX, eqY + 25 + i * 22);
   });
 }
 
@@ -1306,14 +1565,14 @@ function drawFlash() {
   const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
 
   ctx.fillStyle = '#ff6b6b';
-  ctx.font = '15px Inter';
+  ctx.font = '17px Inter';
   ctx.textAlign = 'center';
   const title = attentionType === 'standard' ? 'Standard Attention: Materialize QK^T' : 'Flash Attention: Tiled Computation';
   ctx.fillText(title, W / 2, 30);
 
   if (attentionType === 'standard') {
-    ctx.fillStyle = '#888';
-    ctx.font = '12px Inter';
+    ctx.fillStyle = '#b0b0c0';
+    ctx.font = '15px Inter';
     ctx.textAlign = 'left';
     ctx.fillText('Memory Layout:', pad.l, pad.t + 20);
 
@@ -1368,7 +1627,7 @@ function drawFlash() {
     const tileH = 60;
 
     let x = pad.l + 40;
-    ctx.fillStyle = '#666';
+    ctx.fillStyle = '#b0b0c0';
     ctx.font = '11px Inter';
     ctx.fillText('Memory moves per block:', pad.l, pad.t + 50);
 

@@ -38,8 +38,8 @@
   .insight-box strong { color: #ff9ff3; font-size: 1.05em; }
   .insight-box .formula { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 12px 18px; margin: 12px 0; font-family: 'Courier New', monospace; color: #e8e8ff; font-size: 1.05em; text-align: center; letter-spacing: 0.5px; line-height: 1.9; }
   .insight-box .formula .highlight { color: #ff9ff3; font-weight: bold; }
-  .insight-box .key-point { display: flex; gap: 8px; margin: 8px 0; padding: 4px 0; }
-  .insight-box .key-point .label { color: #ff9ff3; font-weight: 600; white-space: nowrap; min-width: 90px; }
+  .insight-box .key-point { display: flex; flex-wrap: wrap; gap: 4px 8px; margin: 8px 0; padding: 4px 0; align-items: baseline; }
+  .insight-box .key-point .label { color: #ff9ff3; font-weight: 600; min-width: 160px; flex-shrink: 0; }
   .insight-box .key-point .desc { color: #ddd; }
   .insight-box .interview-tip { background: rgba(100, 255, 100, 0.05); border: 1px solid rgba(100, 255, 100, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #b0ffb0; font-size: 0.93em; line-height: 1.6; }
   .insight-box .interview-tip::before { content: '\1F4A1  Interview Tip: '; font-weight: 700; color: #7fff7f; }
@@ -100,7 +100,7 @@
 
 <!-- 2. TWO-TOWER MODEL ARCHITECTURE -->
 <div class="viz-section">
-  <h2>Two-Tower Embedding Model</h2>
+  <h2>Two-Tower (TT) Embedding Model</h2>
   <p class="subtitle">Watch how user and item embeddings are projected into latent space. Click 'Find Neighbors' to see ANN (approximate nearest neighbors) search in action—it finds similar items by dot product similarity, much faster than checking every item. Toggle 'Exact vs ANN Search' to see the speed difference on large catalogs.</p>
   <div class="viz-canvas">
     <canvas id="towerCanvas" width="900" height="550"></canvas>
@@ -115,7 +115,7 @@
   </div>
   <div class="metric-box" id="towerMetrics">Top-3 Recommendations: --</div>
   <div class="insight-box">
-    <strong>Key Insight:</strong> Two-tower decouples user and item feature processing, enabling pre-computed item embeddings and fast ANN-based retrieval at serving time.
+    <strong>Key Insight:</strong> Two-Tower (TT) decouples user and item feature processing, enabling pre-computed item embeddings and fast ANN-based retrieval at serving time.
     <div class="formula">Score(u, i) = u · i, where u ∈ ℝᵈ (user embedding) and i ∈ ℝᵈ (item embedding) via independent towers</div>
     <div class="key-point"><span class="label">Score(u, i):</span><span class="desc">Relevance score for user u and item i; higher scores indicate better recommendations; used for ranking candidates</span></div>
     <div class="key-point"><span class="label">u:</span><span class="desc">User embedding vector (d-dimensional), output of user tower; learned from user features (ID, demographics, history)</span></div>
@@ -148,10 +148,10 @@
   </div>
   <div class="metric-box" id="embeddingMetrics">Click an item to see details</div>
   <div class="legend" id="embeddingLegend">
-    <div class="legend-item"><div class="legend-dot" style="background:#ff6b9d"></div>Action</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#c06c84"></div>Drama</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#6c567b"></div>Comedy</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#a23b72"></div>Sci-Fi</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#5dade2"></div>Action</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#58d68d"></div>Drama</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#f0b27a"></div>Comedy</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#bb8fce"></div>Sci-Fi</div>
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Embedding visualization (t-SNE, UMAP) reveals learned structure of recommendation models; well-trained embeddings cluster similar items proximally, exploitable by ANN search.
@@ -270,7 +270,7 @@
 
 <!-- 6. DCN (Deep & Cross Network) -->
 <div class="viz-section">
-  <h2>DCN: Deep & Cross Network</h2>
+  <h2>DCN (Deep & Cross Network): Automatic Feature Crossing</h2>
   <p class="subtitle">Click 'Expand Cross Layers' to see how each layer computes feature crosses (feature × feature interactions). Watch the cross pattern at layer 1 (pairwise features) vs layer 3 (higher-order). Drag 'Num Cross Layers' to balance expressiveness vs compute. More layers = higher-order interactions but slower training.</p>
   <div class="viz-canvas">
     <canvas id="dcnCanvas" width="1000" height="550"></canvas>
@@ -285,7 +285,7 @@
   </div>
   <div class="metric-box" id="dcnMetrics">Cross Layers: -- | Deep Layers: 4</div>
   <div class="insight-box">
-    <strong>Key Insight:</strong> DCN automates feature crossing without exponential explosion: each cross layer generates polynomial order 2^l interactions with only O(d) parameters per layer.
+    <strong>Key Insight:</strong> Deep & Cross Network (DCN) automates feature crossing without exponential explosion: each cross layer generates polynomial order 2^l interactions with only O(d) parameters per layer.
     <div class="formula">x_{l+1} = x_0 ⊙ <span class="highlight">(wₗᵀ xₗ + bₗ)</span> + xₗ, where ⊙ is element-wise multiplication and x_0 is original input</div>
     <div class="key-point"><span class="label">x_{l+1}:</span><span class="desc">Output of l-th cross layer; contains polynomial feature interactions up to order 2^l</span></div>
     <div class="key-point"><span class="label">x_0:</span><span class="desc">Original input feature vector to first cross layer; preserved and used in residual connection throughout network</span></div>
@@ -388,10 +388,10 @@
 
 <!-- 9. SEQUENTIAL RECOMMENDATIONS: SASRec -->
 <div class="viz-section">
-  <h2>Sequential Recommendations: SASRec (Self-Attention)</h2>
+  <h2>Sequential Recommendations: SASRec (Self-Attentive Sequential Recommendation)</h2>
   <p class="subtitle">Click 'Play Sequence' to step through a user's actions. Watch self-attention weights highlight which past actions most influence the next prediction. Notice: recent items weight heavily, but the model also learns to weight semantically related items from anywhere in history. Toggle 'Attention Mask' to show attention pattern as a heatmap.</p>
   <div class="viz-canvas">
-    <canvas id="sasrecCanvas" width="1000" height="450"></canvas>
+    <canvas id="sasrecCanvas" width="1000" height="550"></canvas>
   </div>
   <div class="controls">
     <div class="control-group">
@@ -430,7 +430,7 @@
   <h2>Multi-Task Learning: MMOE (Multi-gate Mixture of Experts)</h2>
   <p class="subtitle">Click each task tab: CTR (click-through), CVR (conversion), Watch-Time. Each has its own gating network selecting from shared experts. Watch the expert usage bar—different tasks use different experts. Task 1 might prefer Expert 2, Task 2 prefers Expert 1. Drag the 'Shared Experts' slider to see how sharing improves sample efficiency.</p>
   <div class="viz-canvas">
-    <canvas id="mmoeCanvas" width="1050" height="550"></canvas>
+    <canvas id="mmoeCanvas" width="1050" height="580"></canvas>
   </div>
   <div class="controls">
     <div class="control-group">
@@ -442,7 +442,7 @@
   </div>
   <div class="metric-box" id="mmoeMetrics">Task Weights: CTR -- | CVR -- | Watch Time --</div>
   <div class="insight-box">
-    <strong>Key Insight:</strong> Multi-task learning optimizes correlated objectives (CTR, CVR, watch-time) jointly; Mixture of Experts (MoE) allows task-specific expert selection via gating.
+    <strong>Key Insight:</strong> Multi-Task Learning optimizes correlated objectives (CTR, CVR, watch-time) jointly; Multi-gate Mixture of Experts (MMOE) allows task-specific expert selection via gating.
     <div class="formula">Task_k output = gate_k ⊗ Σᵢ<span class="highlight">expertᵢ</span>, where gate_k = softmax(W_k · features) selects task-relevant experts</div>
     <div class="key-point"><span class="label">Task_k output:</span><span class="desc">Final prediction for task k (CTR, CVR, watch-time, etc.); vector of shape (batch_size, output_dim)</span></div>
     <div class="key-point"><span class="label">gate_k:</span><span class="desc">Gating vector for task k (m-dimensional); softmax weights over m experts; emphasizes task-relevant expert representations</span></div>
@@ -485,7 +485,7 @@
   </div>
   <div class="metric-box" id="ltrMetrics">Mode: Pairwise | Loss: --</div>
   <div class="insight-box">
-    <strong>Key Insight:</strong> LTR optimizes ranking metrics (NDCG, MRR) directly; pointwise ignores ranking structure; pairwise captures pairs; listwise optimizes full ranking.
+    <strong>Key Insight:</strong> Learning to Rank (LTR) optimizes ranking metrics (NDCG, MRR) directly; pointwise ignores ranking structure; pairwise captures pairs; listwise optimizes full ranking.
     <div class="comparison">
       <div class="option">
         <div class="opt-title">Pointwise</div>
@@ -607,9 +607,9 @@ function drawMatrixFactorization() {
   const cellSize = 30;
   const spacing = 100;
   ctx.fillStyle = '#ff9ff3';
-  ctx.font = 'bold 14px monospace';
+  ctx.font = 'bold 17px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('User×Item Rating Matrix (R)', spacing + (cellSize * n) / 2, 30);
+  ctx.fillText('User x Item Rating Matrix (R)', spacing + (cellSize * n) / 2, 30);
   for (let i = 0; i < m; i++) {
     for (let j = 0; j < n; j++) {
       const x = spacing + j * cellSize;
@@ -617,8 +617,8 @@ function drawMatrixFactorization() {
       const val = mfData.R[i][j];
       ctx.fillStyle = val === 0 ? '#2a2a3a' : '#1a4a6a';
       ctx.fillRect(x, y, cellSize - 2, cellSize - 2);
-      ctx.fillStyle = val === 0 ? '#555' : '#ff9ff3';
-      ctx.font = '11px monospace';
+      ctx.fillStyle = val === 0 ? '#999' : '#ff9ff3';
+      ctx.font = '15px monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(val || '?', x + cellSize/2 - 1, y + cellSize/2);
@@ -640,9 +640,9 @@ function drawMatrixFactorization() {
   ctx.fill();
   const uX = arrowX + 60;
   ctx.fillStyle = '#ff9ff3';
-  ctx.font = 'bold 12px monospace';
+  ctx.font = 'bold 15px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText(`U (${m}×${k})`, uX + (cellSize * k) / 2 - 5, 30);
+  ctx.fillText(`U (${m}x${k})`, uX + (cellSize * k) / 2 - 5, 30);
   for (let i = 0; i < Math.min(m, 6); i++) {
     for (let j = 0; j < k; j++) {
       const x = uX + j * cellSize;
@@ -651,7 +651,7 @@ function drawMatrixFactorization() {
       ctx.fillStyle = '#1a4a6a';
       ctx.fillRect(x, y, cellSize - 2, cellSize - 2);
       ctx.fillStyle = '#88ccff';
-      ctx.font = '9px monospace';
+      ctx.font = '13px monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(val, x + cellSize/2 - 1, y + cellSize/2);
@@ -659,9 +659,9 @@ function drawMatrixFactorization() {
   }
   const vX = uX + (cellSize * k) + 40;
   ctx.fillStyle = '#ff9ff3';
-  ctx.font = 'bold 12px monospace';
+  ctx.font = 'bold 15px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText(`Vᵀ (${k}×${n})`, vX + (cellSize * Math.min(n, 8)) / 2 - 5, 30);
+  ctx.fillText(`Vt (${k}x${n})`, vX + (cellSize * Math.min(n, 8)) / 2 - 5, 30);
   for (let i = 0; i < k; i++) {
     for (let j = 0; j < Math.min(n, 8); j++) {
       const x = vX + j * cellSize;
@@ -670,7 +670,7 @@ function drawMatrixFactorization() {
       ctx.fillStyle = '#1a4a6a';
       ctx.fillRect(x, y, cellSize - 2, cellSize - 2);
       ctx.fillStyle = '#88ccff';
-      ctx.font = '9px monospace';
+      ctx.font = '13px monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(val, x + cellSize/2 - 1, y + cellSize/2);
@@ -699,9 +699,26 @@ function drawMatrixFactorization() {
 let towerData = {};
 
 function initTowerModel() {
+  // Per-user feature sets so changing user shows different features
+  const userNames = ['Alice', 'Bob', 'Carol', 'Dave', 'Eve'];
+  const userAges = [25, 34, 19, 42, 28];
+  const userCountries = ['US', 'UK', 'JP', 'DE', 'BR'];
+  const userHistories = ['Action+Sci-Fi', 'Drama+Comedy', 'Horror+Thriller', 'Comedy+Romance', 'Sci-Fi+Drama'];
+  const userDevices = ['Mobile', 'Desktop', 'Tablet', 'Smart TV', 'Mobile'];
+  const userPlans = ['Premium', 'Basic', 'Free', 'Premium', 'Basic'];
+
+  towerData.userFeatures = userNames.map((name, i) => ({
+    name: name,
+    age: userAges[i],
+    country: userCountries[i],
+    history: userHistories[i],
+    device: userDevices[i],
+    plan: userPlans[i]
+  }));
+
   towerData.users = Array(5).fill(0).map((_, i) => ({
     id: i,
-    embedding: Array(8).fill(0).map(() => Math.random() * 2 - 1)
+    embedding: Array(8).fill(0).map((_, d) => Math.sin(i * 1.3 + d * 0.9) * 0.7 + Math.cos(i * 0.5 + d * 0.4) * 0.3)
   }));
   towerData.items = Array(12).fill(0).map((_, i) => ({
     id: i,
@@ -720,17 +737,43 @@ function drawTowerModel() {
   if (!towerData.users) initTowerModel();
   ctx.fillStyle = '#0d0d1a';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Title
   ctx.fillStyle = '#ff9ff3';
+  ctx.font = 'bold 17px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Two-Tower (TT) Embedding Model', canvas.width / 2, 28);
+
+  ctx.fillStyle = '#5dade2';
   ctx.font = 'bold 16px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('User Tower', 50, 35);
-  ctx.fillText('Item Tower', 350, 35);
-  ctx.fillText('Dot Product Search', 650, 35);
+  ctx.fillText('User Tower', 50, 55);
+  ctx.fillStyle = '#58d68d';
+  ctx.fillText('Item Tower', 350, 55);
+  ctx.fillStyle = '#f0b27a';
+  ctx.fillText('Dot Product Search', 650, 55);
+
+  // Draw user tower with per-user features
+  const uf = towerData.userFeatures[userId];
+  const userFeatures = [
+    'Name: ' + uf.name,
+    'Age: ' + uf.age,
+    'Country: ' + uf.country,
+    'History: ' + uf.history,
+    'Device: ' + uf.device
+  ];
+
   const userEmb = towerData.users[userId].embedding;
-  drawTower(ctx, 50, 70, 'User Features', ['Age', 'Country', 'Watch History', ...Array(5).fill('...')], userEmb);
-  drawTower(ctx, 350, 70, 'Item Features', ['Genre', 'Year', 'Length', 'Director', 'Cast', ...Array(3).fill('...')], towerData.items[0].embedding);
+  drawTower(ctx, 50, 70, 'User Features (User ' + userId + ')', userFeatures, userEmb, '#5dade2');
+  drawTower(ctx, 350, 70, 'Item Features', ['Genre', 'Year', 'Length', 'Director', 'Cast'], towerData.items[0].embedding, '#58d68d');
+
+  // Search results box
   ctx.fillStyle = '#1a1a2a';
-  ctx.fillRect(600, 70, 250, 280);
+  ctx.fillRect(600, 70, 270, 300);
+  ctx.strokeStyle = '#f0b27a';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(600, 70, 270, 300);
+
   const scores = towerData.items.map((item, idx) => {
     let score = 0;
     for (let d = 0; d < Math.min(userEmb.length, item.embedding.length); d++) {
@@ -738,44 +781,48 @@ function drawTowerModel() {
     }
     return { idx, title: item.title, score };
   }).sort((a, b) => b.score - a.score).slice(0, 5);
-  ctx.fillStyle = '#ff9ff3';
-  ctx.font = 'bold 12px monospace';
+  ctx.fillStyle = '#f0b27a';
+  ctx.font = 'bold 15px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('Top-5 Recommendations:', 620, 95);
+  ctx.fillText('Top-5 Recommendations:', 615, 95);
   scores.forEach((rec, i) => {
-    const y = 120 + i * 40;
+    const y = 115 + i * 48;
     const bar_w = Math.max(0, (rec.score + 2) * 50);
     ctx.fillStyle = '#2a2a4a';
-    ctx.fillRect(620, y, 200, 28);
-    ctx.fillStyle = '#ff9ff3';
-    ctx.fillRect(620, y, Math.min(bar_w, 200), 28);
+    ctx.fillRect(615, y, 230, 35);
+    ctx.fillStyle = '#f0b27a';
+    ctx.fillRect(615, y, Math.min(bar_w, 230), 35);
     ctx.fillStyle = '#fff';
-    ctx.font = '10px monospace';
+    ctx.font = '15px monospace';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText((i + 1) + '. ' + rec.title.substring(0, 14), 625, y + 14);
-    ctx.fillStyle = '#aaa';
-    ctx.fillText(rec.score.toFixed(2), 630 + bar_w, y + 14);
+    ctx.fillText((i + 1) + '. ' + rec.title.substring(0, 14), 620, y + 17);
+    ctx.fillStyle = '#b0b0c0';
+    ctx.font = '13px monospace';
+    ctx.fillText(rec.score.toFixed(2), 620 + Math.min(bar_w, 200) + 5, y + 17);
   });
-  document.getElementById('towerMetrics').textContent = `Top-3: ${scores.slice(0, 3).map(s => s.title).join(', ')}`;
+  document.getElementById('towerMetrics').textContent = `User ${userId} (${uf.name}) | Top-3: ${scores.slice(0, 3).map(s => s.title).join(', ')}`;
 }
 
-function drawTower(ctx, x, y, label, features, embedding) {
+function drawTower(ctx, x, y, label, features, embedding, color) {
   ctx.fillStyle = '#1a1a2a';
   ctx.fillRect(x, y, 230, 300);
-  ctx.fillStyle = '#88ccff';
-  ctx.font = 'bold 11px monospace';
+  ctx.strokeStyle = color || '#5dade2';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x, y, 230, 300);
+  ctx.fillStyle = color || '#5dade2';
+  ctx.font = 'bold 15px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText(label, x + 115, y + 20);
+  ctx.fillText(label, x + 115, y + 22);
   for (let i = 0; i < 5; i++) {
-    const fy = y + 40 + i * 35;
+    const fy = y + 40 + i * 38;
     ctx.fillStyle = '#2a4a6a';
-    ctx.fillRect(x + 10, fy, 90, 25);
-    ctx.fillStyle = '#88ccff';
-    ctx.font = '10px monospace';
+    ctx.fillRect(x + 10, fy, 210, 28);
+    ctx.fillStyle = color || '#5dade2';
+    ctx.font = '15px monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(features[i], x + 55, fy + 12);
+    ctx.fillText(features[i], x + 115, fy + 14);
   }
   ctx.strokeStyle = '#ff9ff3';
   ctx.lineWidth = 2;
@@ -786,7 +833,7 @@ function drawTower(ctx, x, y, label, features, embedding) {
   ctx.fillStyle = '#1a2a3a';
   ctx.fillRect(x + 30, y + 260, 170, 30);
   ctx.fillStyle = '#ff9ff3';
-  ctx.font = '11px monospace';
+  ctx.font = '15px monospace';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText('Embedding (8-dim)', x + 115, y + 275);
@@ -810,7 +857,7 @@ function initEmbeddings() {
       y: 250 + Math.sin(angle + catOffset) * radius
     };
   });
-  embeddingData.colors = ['#ff6b9d', '#c06c84', '#6c567b', '#a23b72'];
+  embeddingData.colors = ['#5dade2', '#58d68d', '#f0b27a', '#bb8fce'];
   embeddingData.selected = null;
   drawEmbeddingSpace();
 }
@@ -821,7 +868,7 @@ function drawEmbeddingSpace() {
   if (!embeddingData.items) initEmbeddings();
   ctx.fillStyle = '#0d0d1a';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.strokeStyle = '#2a2a4a';
+  ctx.strokeStyle = '#555';
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(50, 250);
@@ -831,10 +878,10 @@ function drawEmbeddingSpace() {
   ctx.moveTo(450, 50);
   ctx.lineTo(450, 450);
   ctx.stroke();
-  ctx.fillStyle = '#555';
-  ctx.font = '10px monospace';
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('Latent Dimension 1', 450, 470);
+  ctx.fillText('Latent Dimension 1', 450, 480);
   ctx.save();
   ctx.translate(20, 250);
   ctx.rotate(-Math.PI / 2);
@@ -847,7 +894,7 @@ function drawEmbeddingSpace() {
     ctx.arc(item.x, item.y, embeddingData.selected === item.id ? 8 : 6, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#fff';
-    ctx.font = '9px monospace';
+    ctx.font = '13px monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(item.id, item.x, item.y);
@@ -917,13 +964,13 @@ function drawColdStart() {
   const boxW = 350, boxH = 350;
   const lX = 50, rX = 500;
   ctx.fillStyle = '#ff9ff3';
-  ctx.font = 'bold 14px monospace';
+  ctx.font = 'bold 17px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('New User Problem', canvas.width / 2, 25);
   ctx.fillStyle = '#1a1a2a';
   ctx.fillRect(lX, 50, boxW, boxH);
-  ctx.fillStyle = '#888';
-  ctx.font = 'bold 12px monospace';
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = 'bold 15px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('User Profile Matrix', lX + boxW / 2, 70);
   const cellSize = 25;
@@ -935,18 +982,18 @@ function drawColdStart() {
       const hasData = i === 0 && j < dataPoints;
       ctx.fillStyle = hasData ? '#1a4a6a' : '#2a1a1a';
       ctx.fillRect(x, y, cellSize - 2, cellSize - 2);
-      ctx.fillStyle = hasData ? '#ff9ff3' : '#555';
-      ctx.font = '9px monospace';
+      ctx.fillStyle = hasData ? '#ff9ff3' : '#999';
+      ctx.font = '13px monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(hasData ? '★' : '?', x + cellSize / 2 - 1, y + cellSize / 2);
+      ctx.fillText(hasData ? '*' : '?', x + cellSize / 2 - 1, y + cellSize / 2);
     }
   }
-  ctx.fillStyle = '#aaa';
-  ctx.font = '10px monospace';
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('New User', lX + 20, 200);
-  ctx.fillText('Existing Users', lX + 20, 225);
+  ctx.fillText('New User', lX + 20, 210);
+  ctx.fillText('Existing Users', lX + 20, 235);
   ctx.fillStyle = '#1a1a2a';
   ctx.fillRect(rX, 50, boxW, boxH);
   const methods = {
@@ -955,68 +1002,68 @@ function drawColdStart() {
     hybrid: 'Hybrid Approach'
   };
   ctx.fillStyle = '#ff9ff3';
-  ctx.font = 'bold 12px monospace';
+  ctx.font = 'bold 15px monospace';
   ctx.textAlign = 'center';
   ctx.fillText(methods[mode], rX + boxW / 2, 70);
   const y0 = 100;
   if (mode === 'content') {
     ctx.fillStyle = '#1a4a6a';
     ctx.fillRect(rX + 20, y0, boxW - 40, 60);
-    ctx.fillStyle = '#88ccff';
-    ctx.font = '10px monospace';
+    ctx.fillStyle = '#5dade2';
+    ctx.font = '15px monospace';
     ctx.textAlign = 'left';
-    ctx.fillText('Match item features to user preferences', rX + 30, y0 + 20);
-    ctx.fillText('(Genre, Director, Cast, etc.)', rX + 30, y0 + 40);
+    ctx.fillText('Match item features to prefs', rX + 30, y0 + 20);
+    ctx.fillText('(Genre, Director, Cast, etc.)', rX + 30, y0 + 42);
     ctx.fillStyle = '#2a4a6a';
     ctx.fillRect(rX + 20, y0 + 80, boxW - 40, 60);
-    ctx.fillStyle = '#88ccff';
-    ctx.fillText('Formula: Score(u,i) = w · f_i', rX + 30, y0 + 100);
-    ctx.fillText('where w = user preference weights', rX + 30, y0 + 120);
+    ctx.fillStyle = '#5dade2';
+    ctx.fillText('Score(u,i) = w . f_i', rX + 30, y0 + 100);
+    ctx.fillText('w = user preference weights', rX + 30, y0 + 122);
     const coverage = Math.max(40, dataPoints * 2);
-    ctx.fillStyle = '#ff6b9d';
+    ctx.fillStyle = '#5dade2';
     ctx.fillRect(rX + 20, y0 + 160, Math.min(coverage, 300), 20);
     ctx.fillStyle = '#fff';
-    ctx.font = '9px monospace';
+    ctx.font = '15px monospace';
     ctx.textAlign = 'center';
     ctx.fillText('Coverage: ' + coverage.toFixed(0) + '%', rX + 170, y0 + 175);
   } else if (mode === 'collab') {
     ctx.fillStyle = '#1a4a6a';
     ctx.fillRect(rX + 20, y0, boxW - 40, 60);
-    ctx.fillStyle = '#88ccff';
-    ctx.font = '10px monospace';
+    ctx.fillStyle = '#58d68d';
+    ctx.font = '15px monospace';
     ctx.textAlign = 'left';
-    ctx.fillText('Find similar users, recommend their items', rX + 30, y0 + 20);
-    ctx.fillText('(No features needed, pure behavior)', rX + 30, y0 + 40);
+    ctx.fillText('Find similar users, recommend', rX + 30, y0 + 20);
+    ctx.fillText('(No features needed)', rX + 30, y0 + 42);
     ctx.fillStyle = '#2a4a6a';
     ctx.fillRect(rX + 20, y0 + 80, boxW - 40, 60);
-    ctx.fillStyle = '#88ccff';
-    ctx.fillText('Formula: Score(u,i) = Σ sim(u,u\') * r(u\',i)', rX + 30, y0 + 100);
-    ctx.fillText('u\' = similar users', rX + 30, y0 + 120);
+    ctx.fillStyle = '#58d68d';
+    ctx.fillText('Score = sum sim(u,u\') * r(u\',i)', rX + 30, y0 + 100);
+    ctx.fillText('u\' = similar users', rX + 30, y0 + 122);
     const coverage = Math.max(5, dataPoints * 3);
-    ctx.fillStyle = '#ff6b9d';
+    ctx.fillStyle = '#58d68d';
     ctx.fillRect(rX + 20, y0 + 160, Math.min(coverage, 300), 20);
     ctx.fillStyle = '#fff';
-    ctx.font = '9px monospace';
+    ctx.font = '15px monospace';
     ctx.textAlign = 'center';
     ctx.fillText('Coverage: ' + coverage.toFixed(0) + '%', rX + 170, y0 + 175);
   } else {
     ctx.fillStyle = '#1a4a6a';
     ctx.fillRect(rX + 20, y0, boxW - 40, 60);
-    ctx.fillStyle = '#88ccff';
-    ctx.font = '10px monospace';
+    ctx.fillStyle = '#f0b27a';
+    ctx.font = '15px monospace';
     ctx.textAlign = 'left';
-    ctx.fillText('Blend content + collaborative signals', rX + 30, y0 + 20);
-    ctx.fillText('(Best of both worlds)', rX + 30, y0 + 40);
+    ctx.fillText('Blend content + collaborative', rX + 30, y0 + 20);
+    ctx.fillText('(Best of both worlds)', rX + 30, y0 + 42);
     ctx.fillStyle = '#2a4a6a';
     ctx.fillRect(rX + 20, y0 + 80, boxW - 40, 60);
-    ctx.fillStyle = '#88ccff';
-    ctx.fillText('Score = α·(content) + (1-α)·(collab)', rX + 30, y0 + 100);
-    ctx.fillText('α ≈ 0.3-0.7 depending on use case', rX + 30, y0 + 120);
+    ctx.fillStyle = '#f0b27a';
+    ctx.fillText('a*(content) + (1-a)*(collab)', rX + 30, y0 + 100);
+    ctx.fillText('a = 0.3-0.7 by use case', rX + 30, y0 + 122);
     const coverage = Math.max(65, dataPoints * 4);
-    ctx.fillStyle = '#ff6b9d';
+    ctx.fillStyle = '#f0b27a';
     ctx.fillRect(rX + 20, y0 + 160, Math.min(coverage, 300), 20);
     ctx.fillStyle = '#fff';
-    ctx.font = '9px monospace';
+    ctx.font = '15px monospace';
     ctx.textAlign = 'center';
     ctx.fillText('Coverage: ' + Math.min(coverage, 100).toFixed(0) + '%', rX + 170, y0 + 175);
   }
@@ -1043,74 +1090,154 @@ function drawWideDeep() {
   document.getElementById('wdFeaturesVal').textContent = numFeatures;
   ctx.fillStyle = '#0d0d1a';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Title
   ctx.fillStyle = '#ff9ff3';
-  ctx.font = 'bold 16px monospace';
+  ctx.font = 'bold 17px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('Wide & Deep Architecture', canvas.width / 2, 30);
-  const featureWidth = 40;
+  ctx.fillText('Wide & Deep Architecture', canvas.width / 2, 28);
+
+  // Input features
   const featureY = 60;
-  ctx.fillStyle = '#888';
-  ctx.font = 'bold 11px monospace';
-  ctx.fillText('Input Features (' + numFeatures + ')', canvas.width / 2, featureY - 10);
-  for (let i = 0; i < Math.min(numFeatures, 30); i++) {
-    const x = 100 + (i % 15) * 30;
-    const y = featureY + Math.floor(i / 15) * 40;
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = 'bold 15px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Input Features (' + numFeatures + ')', canvas.width / 2, featureY - 5);
+  for (let i = 0; i < Math.min(numFeatures, 20); i++) {
+    const x = 130 + (i % 10) * 75;
+    const y = featureY + 5 + Math.floor(i / 10) * 35;
     ctx.fillStyle = '#2a4a6a';
-    ctx.fillRect(x, y, 25, 25);
-    ctx.fillStyle = '#88ccff';
-    ctx.font = '8px monospace';
+    ctx.fillRect(x, y, 65, 25);
+    ctx.fillStyle = '#5dade2';
+    ctx.font = '13px monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('f' + i, x + 12, y + 12);
+    ctx.fillText('f' + i, x + 32, y + 12);
   }
-  const wideY = 200;
-  const deepY = 200;
-  const splitX = 150;
-  ctx.fillStyle = '#ff6b9d';
-  ctx.font = 'bold 12px monospace';
-  ctx.textAlign = 'left';
-  ctx.fillText('WIDE (Memorization)', splitX, wideY - 10);
-  ctx.fillStyle = '#1a3a5a';
-  ctx.fillRect(splitX, wideY, 300, 120);
-  ctx.fillStyle = '#88ccff';
-  ctx.font = '10px monospace';
+
+  // Arrows from features down to both paths
+  const splitY = 155;
+  ctx.strokeStyle = '#ff9ff366';
+  ctx.lineWidth = 1;
+  // Left arrow to Wide
+  ctx.beginPath();
+  ctx.moveTo(300, splitY);
+  ctx.lineTo(300, splitY + 20);
+  ctx.stroke();
+  // Right arrow to Deep
+  ctx.beginPath();
+  ctx.moveTo(700, splitY);
+  ctx.lineTo(700, splitY + 20);
+  ctx.stroke();
+
+  // Wide path
+  const wideY = 185;
+  const wideX = 80;
+  const pathW = 340;
+  const pathH = 180;
+
+  // Wide box
+  ctx.fillStyle = '#1a2a3a';
+  ctx.fillRect(wideX, wideY, pathW, pathH);
+  ctx.strokeStyle = '#ec7063';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(wideX, wideY, pathW, pathH);
+
+  ctx.fillStyle = '#ec7063';
+  ctx.font = 'bold 17px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('Cross-Product Features', splitX + 150, wideY + 20);
-  ctx.fillText('(Hand-crafted feature crosses)', splitX + 150, wideY + 35);
-  ctx.fillText('Linear Regression/Logistic', splitX + 150, wideY + 50);
-  ctx.fillText('Output: w · x', splitX + 150, wideY + 70);
-  ctx.fillStyle = '#c06c84';
-  ctx.font = 'bold 12px monospace';
-  ctx.textAlign = 'right';
-  ctx.fillText('DEEP (Generalization)', splitX + 450, deepY - 10);
-  ctx.fillStyle = '#1a3a5a';
-  ctx.fillRect(splitX + 320, deepY, 300, 120);
-  ctx.fillStyle = '#88ccff';
-  ctx.font = '10px monospace';
+  ctx.fillText('WIDE PATH', wideX + pathW/2, wideY + 25);
+  ctx.fillStyle = '#f7dc6f';
+  ctx.font = 'bold 15px monospace';
+  ctx.fillText('Memorization', wideX + pathW/2, wideY + 48);
+
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px monospace';
+  ctx.fillText('Cross-Product Features', wideX + pathW/2, wideY + 75);
+  ctx.fillText('(user_id x item_id)', wideX + pathW/2, wideY + 95);
+  ctx.fillText('Linear Model: y = w . x', wideX + pathW/2, wideY + 120);
+  ctx.fillStyle = '#ec7063';
+  ctx.font = '15px monospace';
+  ctx.fillText('Remembers exact patterns', wideX + pathW/2, wideY + 150);
+
+  // Deep path
+  const deepX = 580;
+  ctx.fillStyle = '#1a2a3a';
+  ctx.fillRect(deepX, wideY, pathW, pathH);
+  ctx.strokeStyle = '#5dade2';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(deepX, wideY, pathW, pathH);
+
+  ctx.fillStyle = '#5dade2';
+  ctx.font = 'bold 17px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('Embeddings → Dense Layers', splitX + 470, deepY + 20);
-  ctx.fillText('(Automatic feature learning)', splitX + 470, deepY + 35);
-  ctx.fillText('ReLU activations', splitX + 470, deepY + 50);
-  ctx.fillText('Output: MLP(embeddings)', splitX + 470, deepY + 70);
-  const bottomY = 380;
-  ctx.fillStyle = '#2a2a4a';
-  ctx.fillRect(200, bottomY - 30, 600, 50);
-  ctx.fillStyle = '#ff9ff3';
-  ctx.font = 'bold 11px monospace';
-  ctx.textAlign = 'center';
-  ctx.fillText('Joint Output: logit = α·wide_logit + (1-α)·deep_logit', canvas.width / 2, bottomY);
-  ctx.fillText('Training Loss: sigmoid cross-entropy', canvas.width / 2, bottomY + 20);
-  ctx.fillStyle = '#ff9ff3';
-  ctx.strokeStyle = '#ff9ff3';
+  ctx.fillText('DEEP PATH', deepX + pathW/2, wideY + 25);
+  ctx.fillStyle = '#f7dc6f';
+  ctx.font = 'bold 15px monospace';
+  ctx.fillText('Generalization', deepX + pathW/2, wideY + 48);
+
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px monospace';
+  ctx.fillText('Embeddings + Dense Layers', deepX + pathW/2, wideY + 75);
+  ctx.fillText('(Automatic feature learning)', deepX + pathW/2, wideY + 95);
+  ctx.fillText('MLP + ReLU activations', deepX + pathW/2, wideY + 120);
+  ctx.fillStyle = '#5dade2';
+  ctx.font = '15px monospace';
+  ctx.fillText('Learns new patterns', deepX + pathW/2, wideY + 150);
+
+  // Draw DNN layers inside deep path
+  const layerColors = ['#2a4a6a', '#2a5a7a', '#2a6a8a'];
+  for (let l = 0; l < 3; l++) {
+    const lx = deepX + 250 + l * 25;
+    const ly = wideY + 60;
+    ctx.fillStyle = layerColors[l];
+    ctx.fillRect(lx, ly, 18, 100);
+    ctx.fillStyle = '#5dade2';
+    ctx.font = '13px monospace';
+    ctx.save();
+    ctx.translate(lx + 9, ly + 50);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center';
+    ctx.fillText('L' + (l+1), 0, 5);
+    ctx.restore();
+  }
+
+  // Arrows converging to output
+  const bottomY = wideY + pathH + 30;
+  ctx.strokeStyle = '#ec7063';
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(splitX + 150, wideY + 120);
-  ctx.lineTo(canvas.width / 2 - 100, bottomY - 30);
+  ctx.moveTo(wideX + pathW/2, wideY + pathH);
+  ctx.lineTo(canvas.width / 2, bottomY);
   ctx.stroke();
+
+  ctx.strokeStyle = '#5dade2';
   ctx.beginPath();
-  ctx.moveTo(splitX + 470, deepY + 120);
-  ctx.lineTo(canvas.width / 2 + 100, bottomY - 30);
+  ctx.moveTo(deepX + pathW/2, wideY + pathH);
+  ctx.lineTo(canvas.width / 2, bottomY);
   ctx.stroke();
+
+  // Joint output box
+  ctx.fillStyle = '#2a2a4a';
+  ctx.fillRect(200, bottomY, 600, 55);
+  ctx.strokeStyle = '#ff9ff3';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(200, bottomY, 600, 55);
+  ctx.fillStyle = '#ff9ff3';
+  ctx.font = 'bold 15px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Combined Output: sigmoid(a*wide + (1-a)*deep)', canvas.width / 2, bottomY + 22);
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px monospace';
+  ctx.fillText('Joint training with cross-entropy loss', canvas.width / 2, bottomY + 42);
+
+  // Explanation at bottom
+  const explY = bottomY + 70;
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Wide = fast lookup of known combos | Deep = learns unseen feature interactions', canvas.width / 2, explY);
+
   document.getElementById('wdMetrics').textContent = `Features: ${numFeatures} | Wide params: ${numFeatures * (numFeatures - 1) / 2} | Deep params: ~50k`;
 }
 
@@ -1122,73 +1249,136 @@ function drawDCN() {
   document.getElementById('dcnDepthVal').textContent = depth;
   ctx.fillStyle = '#0d0d1a';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Title with acronym spelled out
   ctx.fillStyle = '#ff9ff3';
-  ctx.font = 'bold 16px monospace';
+  ctx.font = 'bold 17px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('DCN: Deep & Cross Network', canvas.width / 2, 30);
-  const inputX = 50;
-  const inputY = 60;
-  ctx.fillStyle = '#888';
-  ctx.font = 'bold 11px monospace';
-  ctx.fillText('Input Embeddings', inputX + 100, inputY - 10);
+  ctx.fillText('Deep & Cross Network (DCN)', canvas.width / 2, 28);
+
+  // Input embeddings
+  const inputX = 200;
+  const inputY = 55;
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = 'bold 15px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Input Embeddings', inputX + 150, inputY - 8);
   ctx.fillStyle = '#2a4a6a';
-  ctx.fillRect(inputX, inputY, 200, 40);
-  ctx.fillStyle = '#88ccff';
-  ctx.font = '10px monospace';
+  ctx.fillRect(inputX, inputY, 300, 40);
+  ctx.fillStyle = '#5dade2';
+  ctx.font = '15px monospace';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('x0 ∈ ℝ^d', inputX + 100, inputY + 20);
+  ctx.fillText('x0 (feature vector)', inputX + 150, inputY + 20);
+
+  // Arrows from input to both paths
+  ctx.strokeStyle = '#ff9ff366';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(inputX + 75, inputY + 40);
+  ctx.lineTo(180, 140);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(inputX + 225, inputY + 40);
+  ctx.lineTo(620, 140);
+  ctx.stroke();
+
   const crossX = 50;
-  const deepX = 450;
+  const deepX = 530;
   const startY = 150;
-  const layerHeight = 70;
-  ctx.fillStyle = '#ff6b9d';
-  ctx.font = 'bold 11px monospace';
-  ctx.textAlign = 'left';
-  ctx.fillText('Cross Layers', crossX, startY - 20);
-  ctx.fillStyle = '#a23b72';
-  ctx.font = 'bold 11px monospace';
-  ctx.textAlign = 'left';
-  ctx.fillText('Deep Layers', deepX, startY - 20);
+  const layerHeight = 65;
+  const crossW = 250;
+  const deepW = 250;
+
+  // Cross Network header
+  ctx.fillStyle = '#ec7063';
+  ctx.font = 'bold 17px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('CROSS NETWORK', crossX + crossW/2, startY - 18);
+
+  // Deep Network header
+  ctx.fillStyle = '#5dade2';
+  ctx.font = 'bold 17px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('DEEP NETWORK', deepX + deepW/2, startY - 18);
+
   for (let l = 0; l < depth; l++) {
     const y = startY + l * layerHeight;
-    ctx.fillStyle = '#1a3a5a';
-    ctx.fillRect(crossX, y, 160, 55);
-    ctx.fillStyle = '#88ccff';
-    ctx.font = '9px monospace';
+
+    // Cross layer
+    ctx.fillStyle = '#2a1a1a';
+    ctx.fillRect(crossX, y, crossW, 50);
+    ctx.strokeStyle = '#ec7063';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(crossX, y, crossW, 50);
+    ctx.fillStyle = '#ec7063';
+    ctx.font = '15px monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(`x${l+1} = x0 ⊙ (w_l · x_l) + x_l`, crossX + 80, y + 15);
-    ctx.fillText(`(Cross Layer ${l+1})`, crossX + 80, y + 35);
-    ctx.fillStyle = '#1a3a5a';
-    ctx.fillRect(deepX, y, 160, 55);
-    ctx.fillStyle = '#88ccff';
-    ctx.font = '9px monospace';
+    ctx.fillText(`Cross Layer ${l+1}`, crossX + crossW/2, y + 15);
+    ctx.fillStyle = '#b0b0c0';
+    ctx.font = '13px monospace';
+    ctx.fillText(`x${l+1} = x0*(w${l+1}.x${l}) + x${l}`, crossX + crossW/2, y + 38);
+
+    // Deep layer
+    ctx.fillStyle = '#1a1a3a';
+    ctx.fillRect(deepX, y, deepW, 50);
+    ctx.strokeStyle = '#5dade2';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(deepX, y, deepW, 50);
+    ctx.fillStyle = '#5dade2';
+    ctx.font = '15px monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(`h${l+1} = ReLU(W_l · h_l + b_l)`, deepX + 80, y + 15);
-    ctx.fillText(`(Deep Layer ${l+1})`, deepX + 80, y + 35);
+    ctx.fillText(`Deep Layer ${l+1}`, deepX + deepW/2, y + 15);
+    ctx.fillStyle = '#b0b0c0';
+    ctx.font = '13px monospace';
+    ctx.fillText(`h${l+1} = ReLU(W${l+1}*h${l} + b${l+1})`, deepX + deepW/2, y + 38);
+
+    // Arrows between layers
     if (l > 0) {
-      ctx.strokeStyle = '#ff9ff344';
-      ctx.lineWidth = 1;
+      ctx.strokeStyle = '#ec706366';
+      ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(crossX + 80, y - layerHeight + 55);
-      ctx.lineTo(crossX + 80, y);
+      ctx.moveTo(crossX + crossW/2, y - layerHeight + 50);
+      ctx.lineTo(crossX + crossW/2, y);
       ctx.stroke();
+      ctx.strokeStyle = '#5dade266';
       ctx.beginPath();
-      ctx.moveTo(deepX + 80, y - layerHeight + 55);
-      ctx.lineTo(deepX + 80, y);
+      ctx.moveTo(deepX + deepW/2, y - layerHeight + 50);
+      ctx.lineTo(deepX + deepW/2, y);
       ctx.stroke();
     }
   }
-  const bottomY = startY + depth * layerHeight + 20;
+
+  // Concatenate & Output
+  const bottomY = startY + depth * layerHeight + 15;
   ctx.fillStyle = '#2a2a4a';
-  ctx.fillRect(150, bottomY, 700, 50);
+  ctx.fillRect(100, bottomY, 800, 55);
+  ctx.strokeStyle = '#ff9ff3';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(100, bottomY, 800, 55);
   ctx.fillStyle = '#ff9ff3';
-  ctx.font = 'bold 11px monospace';
+  ctx.font = 'bold 15px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('Concatenate & Output: [x_final, h_final] → MLP → logit', canvas.width / 2, bottomY + 15);
-  ctx.fillText('Explicit polynomial feature crosses of order ' + (depth + 1), canvas.width / 2, bottomY + 33);
+  ctx.fillText('Concatenate: [cross_out, deep_out] -> MLP -> prediction', canvas.width / 2, bottomY + 18);
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px monospace';
+  ctx.fillText('Polynomial feature crosses of order ' + (depth + 1) + ' with O(d) params/layer', canvas.width / 2, bottomY + 40);
+
+  // Arrows down to output
+  ctx.strokeStyle = '#ec706366';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(crossX + crossW/2, startY + (depth-1) * layerHeight + 50);
+  ctx.lineTo(canvas.width/2 - 100, bottomY);
+  ctx.stroke();
+  ctx.strokeStyle = '#5dade266';
+  ctx.beginPath();
+  ctx.moveTo(deepX + deepW/2, startY + (depth-1) * layerHeight + 50);
+  ctx.lineTo(canvas.width/2 + 100, bottomY);
+  ctx.stroke();
+
   document.getElementById('dcnMetrics').textContent = `Cross Layers: ${depth} | Feature Interaction Order: ${depth + 1}`;
 }
 
@@ -1201,75 +1391,80 @@ function drawDIN() {
   ctx.fillStyle = '#0d0d1a';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = '#ff9ff3';
-  ctx.font = 'bold 16px monospace';
+  ctx.font = 'bold 17px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('DIN: Deep Interest Network with Attention', canvas.width / 2, 30);
+  ctx.fillText('DIN: Deep Interest Network with Attention', canvas.width / 2, 28);
   const histX = 50;
   const histY = 70;
-  ctx.fillStyle = '#888';
-  ctx.font = 'bold 11px monospace';
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = 'bold 15px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('User Behavior History', histX, histY - 10);
-  const itemW = 50;
+  ctx.fillText('User Behavior History', histX, histY - 8);
+  const itemW = 55;
   const itemH = 40;
   for (let i = 0; i < Math.min(seqLen, 15); i++) {
-    const x = histX + i * 55;
+    const x = histX + i * 58;
     const y = histY;
     ctx.fillStyle = '#2a4a6a';
     ctx.fillRect(x, y, itemW, itemH);
-    ctx.fillStyle = '#88ccff';
-    ctx.font = '8px monospace';
+    ctx.fillStyle = '#5dade2';
+    ctx.font = '13px monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('item_' + i, x + itemW / 2, y + itemH / 2);
   }
   if (seqLen > 15) {
-    ctx.fillStyle = '#888';
-    ctx.font = '10px monospace';
-    ctx.fillText('... (' + (seqLen - 15) + ' more)', histX + 15 * 55, histY + 20);
+    ctx.fillStyle = '#b0b0c0';
+    ctx.font = '15px monospace';
+    ctx.fillText('... (' + (seqLen - 15) + ' more)', histX + 15 * 58, histY + 20);
   }
-  const candY = 150;
-  ctx.fillStyle = '#888';
-  ctx.font = 'bold 11px monospace';
+  const candY = 140;
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = 'bold 15px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('Candidate Item (query)', histX, candY - 10);
-  ctx.fillStyle = '#c06c84';
+  ctx.fillText('Candidate Item (query)', histX, candY - 8);
+  ctx.fillStyle = '#ec7063';
   ctx.fillRect(histX, candY, itemW, itemH);
   ctx.fillStyle = '#fff';
-  ctx.font = '8px monospace';
+  ctx.font = '13px monospace';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText('item_c', histX + itemW / 2, candY + itemH / 2);
-  const attentionY = 250;
-  ctx.fillStyle = '#888';
-  ctx.font = 'bold 11px monospace';
+  const attentionY = 230;
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = 'bold 15px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('Attention Scores & Weights', histX, attentionY - 10);
+  ctx.fillText('Attention Scores & Weights', histX, attentionY - 8);
   const numToShow = Math.min(seqLen, 12);
   for (let i = 0; i < numToShow; i++) {
-    const x = histX + i * 60;
+    const x = histX + i * 68;
     const y = attentionY;
     const score = Math.sin(i * 0.5) * 0.5 + 0.5;
-    const barH = score * 40;
+    const barH = score * 50;
     ctx.fillStyle = '#1a3a5a';
-    ctx.fillRect(x, y + 40 - barH, 50, barH);
+    ctx.fillRect(x, y + 50 - barH, 58, barH);
     ctx.strokeStyle = '#ff9ff3';
     ctx.lineWidth = 1;
-    ctx.strokeRect(x, y, 50, 40);
+    ctx.strokeRect(x, y, 58, 50);
     ctx.fillStyle = '#ff9ff3';
-    ctx.font = '7px monospace';
+    ctx.font = '13px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(score.toFixed(2), x + 25, y + 50);
+    ctx.fillText(score.toFixed(2), x + 29, y + 62);
   }
   const finalY = 360;
   ctx.fillStyle = '#2a2a4a';
-  ctx.fillRect(100, finalY, 800, 80);
+  ctx.fillRect(60, finalY, 880, 90);
+  ctx.strokeStyle = '#ff9ff3';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(60, finalY, 880, 90);
   ctx.fillStyle = '#ff9ff3';
-  ctx.font = 'bold 11px monospace';
+  ctx.font = 'bold 15px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('Interest Representation: I = Σ α_i · embed(item_i)', 500, finalY + 15);
-  ctx.fillText('Final Score: MLP([I, embed(item_c), features]) → CTR/CVR prediction', 500, finalY + 40);
-  ctx.fillText('Recency & Relevance bias automatically learned via attention', 500, finalY + 60);
+  ctx.fillText('Interest: I = sum( a_i * embed(item_i) )', 500, finalY + 20);
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px monospace';
+  ctx.fillText('Final: MLP([I, embed(item_c), features]) -> CTR/CVR', 500, finalY + 48);
+  ctx.fillText('Recency & relevance bias learned via attention', 500, finalY + 72);
   document.getElementById('dinMetrics').textContent = `History Length: ${seqLen} | Attention Heads: 4 (typical)`;
 }
 
@@ -1282,76 +1477,99 @@ function drawPipeline() {
   ctx.fillStyle = '#0d0d1a';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = '#ff9ff3';
-  ctx.font = 'bold 16px monospace';
+  ctx.font = 'bold 17px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('3-Stage Recommendation Pipeline', canvas.width / 2, 30);
+  ctx.fillText('3-Stage Recommendation Pipeline (Funnel)', canvas.width / 2, 28);
+
   const stages = [
-    { title: 'Candidate Generation', y: 80, pool: poolSize + 'M items', output: '~1000', model: 'Collab/ANN', latency: '50-200ms' },
-    { title: 'Ranking', y: 80, pool: '1000 items', output: '~100', model: 'DIN/Wide&Deep', latency: '100-300ms' },
-    { title: 'Re-ranking', y: 80, pool: '100 items', output: '10-50', model: 'Business Rules', latency: '50-100ms' }
+    { title: 'Candidate Generation', pool: poolSize + 'M items', output: '~1000', model: 'ANN/CF', latency: '50-200ms', color: '#5dade2', desc: ['HIGH RECALL focus', 'Fast, simple models', 'Broad net: don\'t miss', 'relevant items'] },
+    { title: 'Ranking', pool: '1000 items', output: '~100', model: 'DIN/Wide&Deep', latency: '100-300ms', color: '#58d68d', desc: ['HIGH PRECISION focus', 'Complex deep models', 'Fine-grained scoring', 'of candidates'] },
+    { title: 'Re-ranking', pool: '100 items', output: '10-50', model: 'Business Rules', latency: '50-100ms', color: '#f0b27a', desc: ['BUSINESS LOGIC', 'Diversity filters', 'Freshness boost', 'Ad slots, CTR cutoff'] }
   ];
-  const stageW = 320;
-  const stageH = 300;
-  const stageX = [50, 380, 710];
+
+  // Draw funnel shape
+  const funnelTop = 55;
+  const stageH = 110;
+  const gap = 15;
+
   stages.forEach((stage, idx) => {
-    const x = stageX[idx];
+    const y = funnelTop + idx * (stageH + gap);
+    // Narrowing funnel widths
+    const widths = [950, 700, 450];
+    const w = widths[idx];
+    const x = (canvas.width - w) / 2;
+
+    // Stage box
     ctx.fillStyle = '#1a1a2a';
-    ctx.fillRect(x, stage.y, stageW, stageH);
-    ctx.fillStyle = '#ff9ff3';
-    ctx.font = 'bold 12px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('Stage ' + (idx + 1) + ': ' + stage.title, x + stageW / 2, stage.y + 25);
-    ctx.fillStyle = '#888';
-    ctx.font = '10px monospace';
-    ctx.textAlign = 'left';
-    const textX = x + 15;
-    ctx.fillText('Input Pool: ' + stage.pool, textX, stage.y + 55);
-    ctx.fillText('Output: ' + stage.output, textX, stage.y + 80);
-    ctx.fillText('Model: ' + stage.model, textX, stage.y + 105);
-    ctx.fillText('Latency: ' + stage.latency, textX, stage.y + 130);
-    ctx.fillStyle = '#2a4a6a';
-    ctx.fillRect(x + 15, stage.y + 160, stageW - 30, 100);
-    ctx.fillStyle = '#88ccff';
-    ctx.font = '9px monospace';
+    ctx.fillRect(x, y, w, stageH);
+    ctx.strokeStyle = stage.color;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x, y, w, stageH);
+
+    // Stage number circle
+    ctx.fillStyle = stage.color;
+    ctx.beginPath();
+    ctx.arc(x + 30, y + 25, 15, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#0d0d1a';
+    ctx.font = 'bold 17px monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    if (idx === 0) {
-      ctx.fillText('Use simple, fast models', x + stageW / 2, stage.y + 190);
-      ctx.fillText('Recall important', x + stageW / 2, stage.y + 210);
-      ctx.fillText('Precision less critical', x + stageW / 2, stage.y + 230);
-    } else if (idx === 1) {
-      ctx.fillText('Run expensive models', x + stageW / 2, stage.y + 190);
-      ctx.fillText('Deep learning OK here', x + stageW / 2, stage.y + 210);
-      ctx.fillText('Ranking precision key', x + stageW / 2, stage.y + 230);
-    } else {
-      ctx.fillText('Apply business logic', x + stageW / 2, stage.y + 190);
-      ctx.fillText('Diversity constraints', x + stageW / 2, stage.y + 210);
-      ctx.fillText('Freshness/ads/CTR cutoff', x + stageW / 2, stage.y + 230);
+    ctx.fillText(idx + 1, x + 30, y + 25);
+
+    // Stage title
+    ctx.fillStyle = stage.color;
+    ctx.font = 'bold 17px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('Stage ' + (idx + 1) + ': ' + stage.title, x + 55, y + 28);
+
+    // Stats
+    ctx.fillStyle = '#b0b0c0';
+    ctx.font = '15px monospace';
+    ctx.textAlign = 'left';
+    const statsX = x + 55;
+    ctx.fillText('In: ' + stage.pool + ' -> Out: ' + stage.output, statsX, y + 52);
+    ctx.fillText('Model: ' + stage.model + ' | Latency: ' + stage.latency, statsX, y + 72);
+
+    // Description on the right
+    ctx.fillStyle = stage.color;
+    ctx.font = 'bold 15px monospace';
+    ctx.textAlign = 'right';
+    const descX = x + w - 20;
+    ctx.fillText(stage.desc[0], descX, y + 28);
+    ctx.fillStyle = '#b0b0c0';
+    ctx.font = '15px monospace';
+    for (let d = 1; d < stage.desc.length; d++) {
+      ctx.fillText(stage.desc[d], descX, y + 28 + d * 20);
     }
+
+    // Arrow between stages
     if (idx < 2) {
       ctx.strokeStyle = '#ff9ff3';
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(x + stageW, stage.y + 230);
-      ctx.lineTo(x + stageW + 20, stage.y + 230);
+      ctx.moveTo(canvas.width / 2, y + stageH);
+      ctx.lineTo(canvas.width / 2, y + stageH + gap);
       ctx.stroke();
       ctx.fillStyle = '#ff9ff3';
       ctx.beginPath();
-      ctx.moveTo(x + stageW + 20, stage.y + 230);
-      ctx.lineTo(x + stageW + 15, stage.y + 225);
-      ctx.lineTo(x + stageW + 15, stage.y + 235);
+      ctx.moveTo(canvas.width / 2, y + stageH + gap);
+      ctx.lineTo(canvas.width / 2 - 5, y + stageH + gap - 8);
+      ctx.lineTo(canvas.width / 2 + 5, y + stageH + gap - 8);
       ctx.closePath();
       ctx.fill();
     }
   });
-  const bottomY = 430;
+
+  // Total latency bar at bottom
+  const bottomY = funnelTop + 3 * (stageH + gap) + 5;
   ctx.fillStyle = '#2a2a4a';
-  ctx.fillRect(100, bottomY, 900, 50);
+  ctx.fillRect(150, bottomY, 800, 40);
   ctx.fillStyle = '#ff9ff3';
-  ctx.font = '10px monospace';
+  ctx.font = 'bold 15px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('Total P99 Latency: ~500ms | Tradeoff: accuracy vs serving latency at each stage', 550, bottomY + 18);
-  ctx.fillText('Different serving paths: online (real-time) vs batch (pre-computed)', 550, bottomY + 35);
+  ctx.fillText('Total P99 Latency: ~500ms | Trade: accuracy vs latency at each stage', 550, bottomY + 23);
+
   document.getElementById('pipelineMetrics').textContent = `Candidate Pool: ${poolSize}M | Total Latency: ~500ms`;
 }
 
@@ -1363,76 +1581,132 @@ function drawSASRec() {
   document.getElementById('sasrecSeqLenVal').textContent = seqLen;
   ctx.fillStyle = '#0d0d1a';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Title with full name
   ctx.fillStyle = '#ff9ff3';
-  ctx.font = 'bold 16px monospace';
+  ctx.font = 'bold 17px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('SASRec: Self-Attention Sequential Recommendation', canvas.width / 2, 30);
-  const seqX = 80;
-  const seqY = 80;
-  ctx.fillStyle = '#888';
-  ctx.font = 'bold 11px monospace';
+  ctx.fillText('SASRec: Self-Attentive Sequential Recommendation', canvas.width / 2, 25);
+
+  const seqX = 50;
+  const seqY = 60;
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = 'bold 15px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('User Action Sequence', seqX, seqY - 10);
-  const itemW = 50;
-  const itemH = 40;
-  const numToShow = Math.min(seqLen, 12);
+  ctx.fillText('User Action Sequence', seqX, seqY - 5);
+
+  const numToShow = Math.min(seqLen, 10);
+  const itemW = 70;
+  const itemH = 36;
+  const itemGap = 8;
+
   for (let i = 0; i < numToShow; i++) {
-    const x = seqX + i * 60;
-    const y = seqY;
+    const x = seqX + i * (itemW + itemGap);
+    const y = seqY + 5;
     const colorIntensity = i / numToShow;
-    ctx.fillStyle = `rgba(192, 108, 132, ${0.3 + colorIntensity * 0.4})`;
+    ctx.fillStyle = `rgba(93, 173, 226, ${0.3 + colorIntensity * 0.5})`;
     ctx.fillRect(x, y, itemW, itemH);
+    ctx.strokeStyle = '#5dade2';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x, y, itemW, itemH);
     ctx.fillStyle = '#fff';
-    ctx.font = '8px monospace';
+    ctx.font = '13px monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('i_' + i, x + itemW / 2, y + itemH / 2);
   }
-  if (seqLen > 12) {
-    ctx.fillStyle = '#888';
-    ctx.font = '9px monospace';
-    ctx.fillText('... (' + (seqLen - 12) + ' more)', seqX + 12 * 60, seqY + 20);
+  if (seqLen > 10) {
+    ctx.fillStyle = '#b0b0c0';
+    ctx.font = '15px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('... +' + (seqLen - 10) + ' more', seqX + 10 * (itemW + itemGap), seqY + 23);
   }
-  const attY = 160;
-  ctx.fillStyle = '#888';
-  ctx.font = 'bold 11px monospace';
+
+  // Self-attention heatmap
+  const attY = 120;
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = 'bold 15px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('Self-Attention Heatmap (last position attends to history)', seqX, attY - 10);
-  const heatW = Math.min(seqLen, 15) * 40;
-  for (let t = 0; t < Math.min(seqLen, 15); t++) {
+  ctx.fillText('Self-Attention Heatmap (causal mask)', seqX, attY - 5);
+
+  const heatSize = Math.min(numToShow, 8);
+  const cellW = 38;
+  const cellH = 28;
+
+  // Column headers
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '13px monospace';
+  ctx.textAlign = 'center';
+  for (let s = 0; s < heatSize; s++) {
+    ctx.fillText('i_' + s, seqX + s * cellW + cellW/2, attY + 8);
+  }
+
+  for (let t = 0; t < heatSize; t++) {
+    // Row label
+    ctx.fillStyle = '#b0b0c0';
+    ctx.font = '13px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText('i_' + t, seqX - 5, attY + 22 + t * cellH + cellH/2);
+
     for (let s = 0; s <= t; s++) {
-      const x = seqX + s * 40;
-      const y = attY + t * 30;
+      const x = seqX + s * cellW;
+      const y = attY + 18 + t * cellH;
       const attnScore = Math.exp(-(t - s) * 0.3);
-      const intensity = Math.floor(attnScore * 255);
       ctx.fillStyle = `rgba(255, 159, 243, ${attnScore})`;
-      ctx.fillRect(x, y, 35, 25);
+      ctx.fillRect(x, y, cellW - 2, cellH - 2);
       ctx.strokeStyle = '#2a2a4a';
       ctx.lineWidth = 1;
-      ctx.strokeRect(x, y, 35, 25);
+      ctx.strokeRect(x, y, cellW - 2, cellH - 2);
+      // Show score in cell
+      ctx.fillStyle = attnScore > 0.5 ? '#0d0d1a' : '#b0b0c0';
+      ctx.font = '13px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(attnScore.toFixed(1), x + cellW/2 - 1, y + cellH/2 - 1);
     }
   }
-  const predY = 290;
-  ctx.fillStyle = '#888';
-  ctx.font = 'bold 11px monospace';
+
+  // Prediction section
+  const rightX = 420;
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = 'bold 15px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('Prediction: Next Item Candidate Scores', seqX, predY - 10);
+  ctx.fillText('Next Item Prediction', rightX, attY - 5);
+
   const topCandidates = 5;
   for (let i = 0; i < topCandidates; i++) {
-    const x = seqX + i * 150;
-    const y = predY + 30;
-    const score = Math.random();
-    const barW = score * 80;
+    const x = rightX;
+    const y = attY + 15 + i * 45;
+    const score = (1 - i * 0.15 + Math.sin(i) * 0.05);
+    const barW = Math.max(20, score * 200);
+
     ctx.fillStyle = '#1a3a5a';
-    ctx.fillRect(x, y + 30 - barW, 90, barW);
-    ctx.strokeStyle = '#ff9ff3';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(x, y, 90, 30);
-    ctx.fillStyle = '#ff9ff3';
-    ctx.font = '9px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('item_' + i + ': ' + score.toFixed(2), x + 45, y + 45);
+    ctx.fillRect(x, y, 250, 35);
+    ctx.fillStyle = '#bb8fce';
+    ctx.fillRect(x, y, Math.min(barW, 250), 35);
+
+    ctx.fillStyle = '#fff';
+    ctx.font = '15px monospace';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('cand_' + i + ': ' + score.toFixed(2), x + 10, y + 17);
   }
+
+  // Architecture summary at bottom
+  const botY = 470;
+  ctx.fillStyle = '#2a2a4a';
+  ctx.fillRect(50, botY, 900, 55);
+  ctx.strokeStyle = '#ff9ff3';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(50, botY, 900, 55);
+  ctx.fillStyle = '#ff9ff3';
+  ctx.font = 'bold 15px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Attention(Q,K,V) = softmax(QK^T / sqrt(d)) * V', 500, botY + 18);
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px monospace';
+  ctx.fillText('Causal mask: each position attends only to prior positions', 500, botY + 40);
+
   document.getElementById('sasrecMetrics').textContent = `Sequence Length: ${seqLen} | Predicted: item_${Math.floor(Math.random() * 100)} | Confidence: ${(Math.random() * 0.4 + 0.5).toFixed(2)}`;
 }
 
@@ -1444,97 +1718,174 @@ function drawMMOE() {
   document.getElementById('mmoeExpertsVal').textContent = numExperts;
   ctx.fillStyle = '#0d0d1a';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Title with full name
   ctx.fillStyle = '#ff9ff3';
-  ctx.font = 'bold 16px monospace';
+  ctx.font = 'bold 17px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('MMOE: Multi-gate Mixture of Experts', canvas.width / 2, 30);
-  const inputX = 50;
-  const inputY = 70;
-  ctx.fillStyle = '#888';
-  ctx.font = 'bold 11px monospace';
-  ctx.textAlign = 'left';
-  ctx.fillText('Shared Input Features', inputX, inputY - 10);
+  ctx.fillText('Multi-gate Mixture of Experts (MMOE)', canvas.width / 2, 25);
+
+  // Input features
+  const inputX = 350;
+  const inputY = 50;
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = 'bold 15px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Shared Input Features', inputX + 150, inputY - 5);
   ctx.fillStyle = '#2a4a6a';
-  ctx.fillRect(inputX, inputY, 180, 50);
-  ctx.fillStyle = '#88ccff';
-  ctx.font = '10px monospace';
+  ctx.fillRect(inputX, inputY, 300, 40);
+  ctx.strokeStyle = '#5dade2';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(inputX, inputY, 300, 40);
+  ctx.fillStyle = '#5dade2';
+  ctx.font = '15px monospace';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('User & Item Features', inputX + 90, inputY + 25);
-  const expertsY = 180;
-  ctx.fillStyle = '#888';
-  ctx.font = 'bold 11px monospace';
+  ctx.fillText('User & Item Features', inputX + 150, inputY + 20);
+
+  // Expert network boxes
+  const expertsY = 130;
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = 'bold 15px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText(numExperts + ' Shared Experts', canvas.width / 2, expertsY - 10);
-  const expertW = 70;
-  const expertH = 60;
-  for (let e = 0; e < numExperts; e++) {
-    const x = 80 + e * (expertW + 10);
-    ctx.fillStyle = '#1a3a5a';
+  ctx.fillText(numExperts + ' Shared Expert Networks', canvas.width / 2, expertsY - 8);
+
+  const maxExperts = Math.min(numExperts, 8);
+  const expertW = Math.min(100, (canvas.width - 100) / maxExperts - 10);
+  const expertH = 55;
+  const expertColors = ['#5dade2', '#58d68d', '#f0b27a', '#bb8fce', '#ec7063', '#f7dc6f', '#5dade2', '#58d68d'];
+
+  const totalExpertWidth = maxExperts * (expertW + 10) - 10;
+  const expertStartX = (canvas.width - totalExpertWidth) / 2;
+
+  for (let e = 0; e < maxExperts; e++) {
+    const x = expertStartX + e * (expertW + 10);
+    ctx.fillStyle = '#1a2a3a';
     ctx.fillRect(x, expertsY, expertW, expertH);
-    ctx.fillStyle = '#88ccff';
-    ctx.font = '9px monospace';
+    ctx.strokeStyle = expertColors[e % expertColors.length];
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x, expertsY, expertW, expertH);
+    ctx.fillStyle = expertColors[e % expertColors.length];
+    ctx.font = 'bold 15px monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('Expert', x + expertW / 2, expertsY + 20);
-    ctx.fillText(e + 1, x + expertW / 2, expertsY + 40);
-    ctx.strokeStyle = '#ff9ff344';
+    ctx.fillText('Expert', x + expertW / 2, expertsY + 18);
+    ctx.fillText('' + (e + 1), x + expertW / 2, expertsY + 38);
+
+    // Connection from input
+    ctx.strokeStyle = '#5dade244';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(135, inputY + 50);
+    ctx.moveTo(inputX + 150, inputY + 40);
     ctx.lineTo(x + expertW / 2, expertsY);
     ctx.stroke();
   }
-  const tasksY = 320;
-  const tasks = ['CTR', 'CVR', 'Watch Time'];
-  const taskColors = ['#ff6b9d', '#c06c84', '#a23b72'];
-  const taskX = [150, 400, 650];
-  ctx.fillStyle = '#888';
-  ctx.font = 'bold 11px monospace';
-  ctx.textAlign = 'left';
-  ctx.fillText('Per-Task Gating Networks', 50, tasksY - 10);
+  if (numExperts > maxExperts) {
+    ctx.fillStyle = '#b0b0c0';
+    ctx.font = '15px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('(+' + (numExperts - maxExperts) + ' more)', canvas.width / 2, expertsY + expertH + 15);
+  }
+
+  // Task-specific gating and tower sections
+  const tasksY = 250;
+  const tasks = ['CTR (Click)', 'CVR (Convert)', 'Watch Time'];
+  const taskColors = ['#ec7063', '#58d68d', '#f7dc6f'];
+  const taskW = 280;
+  const taskH = 170;
+  const taskGap = 30;
+  const totalTaskW = 3 * taskW + 2 * taskGap;
+  const taskStartX = (canvas.width - totalTaskW) / 2;
+
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = 'bold 15px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Per-Task Gating Networks & Towers', canvas.width / 2, tasksY - 8);
+
   tasks.forEach((task, idx) => {
-    const x = taskX[idx];
+    const x = taskStartX + idx * (taskW + taskGap);
+
+    // Task box
     ctx.fillStyle = '#1a1a2a';
-    ctx.fillRect(x, tasksY, 200, 180);
+    ctx.fillRect(x, tasksY, taskW, taskH);
+    ctx.strokeStyle = taskColors[idx];
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x, tasksY, taskW, taskH);
+
+    // Task title
     ctx.fillStyle = taskColors[idx];
-    ctx.font = 'bold 11px monospace';
+    ctx.font = 'bold 15px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(task + ' Task Gate', x + 100, tasksY + 25);
-    ctx.fillStyle = '#2a4a6a';
-    ctx.fillRect(x + 20, tasksY + 40, 160, 50);
-    ctx.fillStyle = '#88ccff';
-    ctx.font = '9px monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('Gate Softmax', x + 100, tasksY + 55);
-    ctx.fillText('(weights experts)', x + 100, tasksY + 70);
-    ctx.fillStyle = '#2a4a6a';
-    ctx.fillRect(x + 20, tasksY + 100, 160, 50);
-    ctx.fillStyle = '#88ccff';
-    ctx.font = '9px monospace';
+    ctx.fillText(task, x + taskW/2, tasksY + 22);
+
+    // Gate
+    ctx.fillStyle = '#2a2a4a';
+    ctx.fillRect(x + 15, tasksY + 38, taskW - 30, 40);
+    ctx.strokeStyle = taskColors[idx] + '88';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x + 15, tasksY + 38, taskW - 30, 40);
+    ctx.fillStyle = taskColors[idx];
+    ctx.font = '15px monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('Weighted Experts', x + 100, tasksY + 115);
-    ctx.fillText('Task Output', x + 100, tasksY + 130);
-    for (let e = 0; e < Math.min(numExperts, 4); e++) {
-      ctx.strokeStyle = '#ff9ff344';
+    ctx.fillText('Gate: softmax(W*feat)', x + taskW/2, tasksY + 52);
+    ctx.fillStyle = '#b0b0c0';
+    ctx.font = '13px monospace';
+    ctx.fillText('selects experts', x + taskW/2, tasksY + 68);
+
+    // Tower output
+    ctx.fillStyle = '#2a2a4a';
+    ctx.fillRect(x + 15, tasksY + 90, taskW - 30, 40);
+    ctx.strokeStyle = taskColors[idx] + '88';
+    ctx.strokeRect(x + 15, tasksY + 90, taskW - 30, 40);
+    ctx.fillStyle = taskColors[idx];
+    ctx.font = '15px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Weighted Expert Sum', x + taskW/2, tasksY + 103);
+    ctx.fillStyle = '#b0b0c0';
+    ctx.font = '13px monospace';
+    ctx.fillText('-> Task Tower -> Output', x + taskW/2, tasksY + 120);
+
+    // Expert utilization bars
+    ctx.fillStyle = '#b0b0c0';
+    ctx.font = '13px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('Expert weights:', x + taskW/2, tasksY + 148);
+
+    const barStart = x + 20;
+    const barW = (taskW - 50) / Math.min(numExperts, 6);
+    for (let e = 0; e < Math.min(numExperts, 6); e++) {
+      const weight = Math.random() * 0.5 + 0.1;
+      const bx = barStart + e * barW;
+      ctx.fillStyle = expertColors[e % expertColors.length] + '88';
+      ctx.fillRect(bx, tasksY + 155, barW - 2, Math.max(2, weight * 15));
+    }
+
+    // Connections from experts
+    for (let e = 0; e < Math.min(maxExperts, 4); e++) {
+      const ex = expertStartX + e * (expertW + 10) + expertW / 2;
+      ctx.strokeStyle = taskColors[idx] + '33';
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(80 + e * (expertW + 10) + expertW / 2, expertsY + expertH);
-      ctx.lineTo(x + 100, tasksY + 40);
+      ctx.moveTo(ex, expertsY + expertH);
+      ctx.lineTo(x + taskW/2, tasksY);
       ctx.stroke();
     }
   });
-  const bottomY = 540;
+
+  // Loss function at bottom
+  const bottomY = tasksY + taskH + 20;
   ctx.fillStyle = '#2a2a4a';
-  ctx.fillRect(80, bottomY - 30, 900, 50);
+  ctx.fillRect(80, bottomY, 890, 40);
+  ctx.strokeStyle = '#ff9ff3';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(80, bottomY, 890, 40);
   ctx.fillStyle = '#ff9ff3';
-  ctx.font = '10px monospace';
+  ctx.font = '15px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('Loss = α·L_ctr + β·L_cvr + γ·L_watch_time | Shared experts reduce overfitting', 530, bottomY + 5);
-  ctx.fillText('Each task learns which experts to emphasize via gating', 530, bottomY + 25);
-  document.getElementById('mmoeMetrics').textContent = `Experts: ${numExperts} | Tasks: 3 | Shared Knowledge`;
+  ctx.fillText('Joint Loss = a*L_ctr + b*L_cvr + c*L_watch | Shared experts improve all tasks', 525, bottomY + 23);
+  document.getElementById('mmoeMetrics').textContent = `Experts: ${numExperts} | Tasks: 3 (CTR, CVR, Watch Time) | Shared Knowledge`;
 }
 
 // ============ LTR ============
@@ -1547,118 +1898,180 @@ function drawLTR() {
   document.getElementById('ltrDocsVal').textContent = numDocs;
   ctx.fillStyle = '#0d0d1a';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Title with full name
   ctx.fillStyle = '#ff9ff3';
-  ctx.font = 'bold 16px monospace';
+  ctx.font = 'bold 17px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('Learning to Rank: Loss Function Formulations', canvas.width / 2, 30);
+  ctx.fillText('Learning to Rank (LTR): Loss Functions', canvas.width / 2, 28);
+
   const mode = ltrData.mode || 'pairwise';
   const startX = 80;
+
   if (mode === 'pointwise') {
-    ctx.fillStyle = '#888';
-    ctx.font = 'bold 11px monospace';
+    ctx.fillStyle = '#5dade2';
+    ctx.font = 'bold 17px monospace';
     ctx.textAlign = 'left';
-    ctx.fillText('POINTWISE: Predict relevance score per document', startX, 70);
-    const docY = 110;
+    ctx.fillText('POINTWISE: Predict relevance per document', startX, 65);
+
+    ctx.fillStyle = '#b0b0c0';
+    ctx.font = '15px monospace';
+    ctx.fillText('Each doc scored independently (classification/regression)', startX, 90);
+
+    const docY = 115;
     for (let i = 0; i < Math.min(numDocs, 10); i++) {
-      const x = startX + i * 80;
+      const x = startX + i * 95;
       ctx.fillStyle = '#1a1a2a';
-      ctx.fillRect(x, docY, 70, 60);
-      ctx.fillStyle = '#88ccff';
-      ctx.font = '9px monospace';
+      ctx.fillRect(x, docY, 82, 70);
+      ctx.strokeStyle = '#5dade2';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x, docY, 82, 70);
+      ctx.fillStyle = '#5dade2';
+      ctx.font = '15px monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('Doc ' + i, x + 35, docY + 15);
+      ctx.fillText('Doc ' + i, x + 41, docY + 18);
       const score = Math.random();
-      ctx.fillStyle = '#ff9ff3';
-      ctx.fillText('Score: ' + score.toFixed(2), x + 35, docY + 35);
-      ctx.fillText('Label: ' + Math.floor(score * 3), x + 35, docY + 50);
+      ctx.fillStyle = '#f0b27a';
+      ctx.fillText(score.toFixed(2), x + 41, docY + 40);
+      ctx.fillStyle = '#b0b0c0';
+      ctx.font = '13px monospace';
+      ctx.fillText('Rel=' + Math.floor(score * 3), x + 41, docY + 58);
     }
-    ctx.fillStyle = '#888';
-    ctx.font = '10px monospace';
+
+    ctx.fillStyle = '#ec7063';
+    ctx.font = 'bold 15px monospace';
     ctx.textAlign = 'left';
-    ctx.fillText('Loss = Σ (y_i - score_i)^2 (regression)', startX, 250);
+    ctx.fillText('Loss = sum( (y_i - score_i)^2 )', startX, 250);
+    ctx.fillStyle = '#b0b0c0';
+    ctx.font = '15px monospace';
     ctx.fillText('Problem: Ignores ranking order. Only cares about absolute scores.', startX, 280);
+    ctx.fillText('Simple but suboptimal for ranking tasks.', startX, 305);
   } else if (mode === 'pairwise') {
-    ctx.fillStyle = '#888';
-    ctx.font = 'bold 11px monospace';
+    ctx.fillStyle = '#58d68d';
+    ctx.font = 'bold 17px monospace';
     ctx.textAlign = 'left';
-    ctx.fillText('PAIRWISE: Minimize inversions. If doc_i > doc_j, rank i before j.', startX, 70);
-    ctx.fillStyle = '#888';
-    ctx.font = '10px monospace';
-    const pairY = 110;
-    const pairShowN = Math.min(numDocs, 6);
-    for (let i = 0; i < pairShowN - 1; i++) {
-      const x = startX + i * 120;
-      const y = pairY + Math.floor(i / 4) * 100;
+    ctx.fillText('PAIRWISE: Learn relative order (doc_i > doc_j)', startX, 65);
+
+    ctx.fillStyle = '#b0b0c0';
+    ctx.font = '15px monospace';
+    ctx.fillText('Minimize inversions: if doc_i is more relevant, rank it higher', startX, 90);
+
+    const pairY = 120;
+    const pairShowN = Math.min(numDocs, 5);
+    for (let i = 0; i < pairShowN; i++) {
+      const x = startX + i * 180;
+      const y = pairY;
+
+      // Left doc
       ctx.fillStyle = '#1a1a2a';
-      ctx.fillRect(x, y, 60, 40);
-      ctx.fillStyle = '#88ccff';
-      ctx.font = '9px monospace';
+      ctx.fillRect(x, y, 70, 50);
+      ctx.strokeStyle = '#58d68d';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x, y, 70, 50);
+      ctx.fillStyle = '#58d68d';
+      ctx.font = '15px monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('Doc ' + i, x + 30, y + 20);
-      ctx.strokeStyle = '#c06c84';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(x + 60, y + 20);
-      ctx.lineTo(x + 80, y + 20);
-      ctx.stroke();
-      ctx.fillStyle = '#c06c84';
-      ctx.beginPath();
-      ctx.moveTo(x + 80, y + 20);
-      ctx.lineTo(x + 75, y + 15);
-      ctx.lineTo(x + 75, y + 25);
-      ctx.closePath();
-      ctx.fill();
-      ctx.fillStyle = '#1a1a2a';
-      ctx.fillRect(x + 85, y, 60, 40);
-      ctx.fillStyle = '#88ccff';
-      ctx.font = '9px monospace';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('Doc ' + (i + 1), x + 115, y + 20);
+      ctx.fillText('Doc ' + (i*2), x + 35, y + 16);
+      ctx.fillStyle = '#b0b0c0';
+      ctx.font = '13px monospace';
+      ctx.fillText('Rel=2', x + 35, y + 38);
+
+      if (i < pairShowN - 1 || true) {
+        // Arrow
+        ctx.strokeStyle = '#ec7063';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x + 70, y + 25);
+        ctx.lineTo(x + 95, y + 25);
+        ctx.stroke();
+        ctx.fillStyle = '#ec7063';
+        ctx.font = '15px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('>', x + 82, y + 22);
+
+        // Right doc
+        ctx.fillStyle = '#1a1a2a';
+        ctx.fillRect(x + 95, y, 70, 50);
+        ctx.strokeStyle = '#ec7063';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x + 95, y, 70, 50);
+        ctx.fillStyle = '#ec7063';
+        ctx.font = '15px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('Doc ' + (i*2+1), x + 130, y + 16);
+        ctx.fillStyle = '#b0b0c0';
+        ctx.font = '13px monospace';
+        ctx.fillText('Rel=0', x + 130, y + 38);
+      }
     }
-    ctx.fillStyle = '#888';
-    ctx.font = '10px monospace';
+
+    ctx.fillStyle = '#f0b27a';
+    ctx.font = 'bold 15px monospace';
     ctx.textAlign = 'left';
-    ctx.fillText('Loss = log(1 + exp(-σ(s_i - s_j))) for each pair', startX, 320);
-    ctx.fillText('Advantage: Focuses on ranking order. Efficient for large doc sets.', startX, 350);
+    ctx.fillText('Loss = log(1 + exp(-s*(s_i - s_j))) per pair', startX, 260);
+    ctx.fillStyle = '#b0b0c0';
+    ctx.font = '15px monospace';
+    ctx.fillText('Advantage: Captures ranking order. O(n^2) pairs per query.', startX, 290);
+    ctx.fillText('RankNet / LambdaRank use this formulation.', startX, 315);
   } else {
-    ctx.fillStyle = '#888';
-    ctx.font = 'bold 11px monospace';
+    ctx.fillStyle = '#bb8fce';
+    ctx.font = 'bold 17px monospace';
     ctx.textAlign = 'left';
-    ctx.fillText('LISTWISE: Directly optimize ranking metrics (NDCG, MRR).', startX, 70);
-    ctx.fillStyle = '#888';
-    ctx.font = '10px monospace';
-    const rankY = 110;
+    ctx.fillText('LISTWISE: Optimize full ranking (NDCG/MRR)', startX, 65);
+
+    ctx.fillStyle = '#b0b0c0';
+    ctx.font = '15px monospace';
+    ctx.fillText('Directly optimize ranking metric over entire list', startX, 90);
+
+    const rankY = 115;
     const rankN = Math.min(numDocs, 8);
     for (let i = 0; i < rankN; i++) {
-      const x = startX + (i % 8) * 100;
-      const y = rankY + Math.floor(i / 8) * 80;
-      const relevance = Math.floor(Math.random() * 3);
-      ctx.fillStyle = relevance === 2 ? '#1a4a6a' : relevance === 1 ? '#1a2a4a' : '#2a1a1a';
-      ctx.fillRect(x, y, 85, 50);
-      ctx.fillStyle = '#88ccff';
-      ctx.font = '9px monospace';
+      const x = startX + i * 115;
+      const y = rankY;
+      const relevance = Math.max(0, 3 - i);
+      const relColors = ['#2a1a1a', '#2a3a1a', '#1a3a4a', '#1a4a6a'];
+      ctx.fillStyle = relColors[Math.min(relevance, 3)];
+      ctx.fillRect(x, y, 100, 60);
+      ctx.strokeStyle = '#bb8fce';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x, y, 100, 60);
+      ctx.fillStyle = '#bb8fce';
+      ctx.font = '15px monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('Rank ' + (i + 1), x + 42, y + 15);
-      ctx.fillText('Doc, Rel=' + relevance, x + 42, y + 35);
+      ctx.fillText('Rank ' + (i + 1), x + 50, y + 18);
+      ctx.fillStyle = '#b0b0c0';
+      ctx.font = '15px monospace';
+      ctx.fillText('Rel=' + relevance, x + 50, y + 42);
     }
-    ctx.fillStyle = '#888';
-    ctx.font = '10px monospace';
+
+    ctx.fillStyle = '#f7dc6f';
+    ctx.font = 'bold 15px monospace';
     ctx.textAlign = 'left';
-    ctx.fillText('Loss = -NDCG or -MRR (direct metric optimization)', startX, 320);
-    ctx.fillText('Advantage: Best for ranking. Most computationally expensive.', startX, 350);
+    ctx.fillText('Loss = -NDCG or -MRR (direct metric optimization)', startX, 250);
+    ctx.fillStyle = '#b0b0c0';
+    ctx.font = '15px monospace';
+    ctx.fillText('Best quality but most expensive. LambdaMART combines pairwise + listwise.', startX, 280);
+    ctx.fillText('Production: XGBoost/LightGBM with rank:ndcg objective.', startX, 305);
   }
+
+  // Bottom comparison bar
   const bottomY = 410;
   ctx.fillStyle = '#2a2a4a';
-  ctx.fillRect(80, bottomY, 950, 60);
+  ctx.fillRect(80, bottomY, 950, 65);
+  ctx.strokeStyle = '#ff9ff3';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(80, bottomY, 950, 65);
   ctx.fillStyle = '#ff9ff3';
-  ctx.font = '10px monospace';
+  ctx.font = 'bold 15px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('Production Use: LambdaMART (pairwise + listwise) or XGBoost + NDCG rank:pairwise', 555, bottomY + 18);
-  ctx.fillText('Tradeoff: Listwise > Pairwise > Pointwise in quality; Pointwise > Pairwise > Listwise in speed', 555, bottomY + 40);
+  ctx.fillText('LambdaMART: pairwise gradients weighted by NDCG improvement', 555, bottomY + 20);
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px monospace';
+  ctx.fillText('Quality: Listwise > Pairwise > Pointwise | Speed: Pointwise > Pairwise > Listwise', 555, bottomY + 45);
   document.getElementById('ltrMetrics').textContent = `Mode: ${mode.charAt(0).toUpperCase() + mode.slice(1)} | Docs: ${numDocs}`;
 }
 
@@ -1683,109 +2096,138 @@ function drawAds() {
   ctx.fillStyle = '#0d0d1a';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = '#ff9ff3';
-  ctx.font = 'bold 16px monospace';
+  ctx.font = 'bold 17px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('Ads & Monetization', canvas.width / 2, 30);
+  ctx.fillText('Ads & Monetization', canvas.width / 2, 28);
   if (mode === 'auction') {
-    ctx.fillStyle = '#888';
-    ctx.font = 'bold 11px monospace';
+    ctx.fillStyle = '#b0b0c0';
+    ctx.font = 'bold 15px monospace';
     ctx.textAlign = 'left';
-    ctx.fillText('Ad Auction Ranking Equation', 80, 70);
-    ctx.fillStyle = '#888';
-    ctx.font = '11px monospace';
+    ctx.fillText('Ad Auction Ranking Equation', 80, 60);
+    ctx.fillStyle = '#f0b27a';
+    ctx.font = '15px monospace';
     ctx.textAlign = 'left';
-    ctx.fillText('Rank = bid × pCTR × quality_score', 80, 110);
-    const adY = 160;
+    ctx.fillText('Rank = bid x pCTR x quality_score', 80, 85);
+    const adY = 120;
     const ads = [
       { bid: 2.5, ctr: 0.05, quality: 0.9, ad: 'Ad 1: Shoes' },
       { bid: 1.8, ctr: 0.08, quality: 0.85, ad: 'Ad 2: Socks' },
       { bid: 3.0, ctr: 0.03, quality: 0.7, ad: 'Ad 3: Hats' }
     ];
     ads.forEach((ad, idx) => {
-      const x = 80 + idx * 300;
+      const x = 80 + idx * 310;
       const score = ad.bid * ad.ctr * ad.quality;
       ctx.fillStyle = '#1a1a2a';
-      ctx.fillRect(x, adY, 260, 260);
-      ctx.fillStyle = '#ff9ff3';
-      ctx.font = 'bold 10px monospace';
+      ctx.fillRect(x, adY, 280, 280);
+      ctx.strokeStyle = ['#5dade2', '#58d68d', '#f0b27a'][idx];
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x, adY, 280, 280);
+      ctx.fillStyle = ['#5dade2', '#58d68d', '#f0b27a'][idx];
+      ctx.font = 'bold 15px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText('Rank ' + (idx + 1) + ': ' + ad.ad, x + 130, adY + 25);
-      ctx.fillStyle = '#88ccff';
-      ctx.font = '10px monospace';
+      ctx.fillText(ad.ad, x + 140, adY + 25);
+      ctx.fillStyle = '#b0b0c0';
+      ctx.font = '15px monospace';
       ctx.textAlign = 'left';
       const textX = x + 15;
       ctx.fillText('Bid: $' + ad.bid.toFixed(2), textX, adY + 60);
-      ctx.fillText('pCTR (model): ' + ad.ctr.toFixed(3), textX, adY + 90);
-      ctx.fillText('Quality Score: ' + ad.quality.toFixed(2), textX, adY + 120);
-      ctx.fillStyle = '#c06c84';
-      ctx.font = 'bold 10px monospace';
-      ctx.fillText('Rank Score: ' + score.toFixed(3), textX, adY + 160);
+      ctx.fillText('pCTR: ' + ad.ctr.toFixed(3), textX, adY + 85);
+      ctx.fillText('Quality: ' + ad.quality.toFixed(2), textX, adY + 110);
+
+      ctx.fillStyle = '#ec7063';
+      ctx.font = 'bold 15px monospace';
+      ctx.fillText('Rank Score: ' + score.toFixed(3), textX, adY + 150);
+
       const cpc = ad.bid / ad.ctr / ad.quality;
-      ctx.fillStyle = '#ff6b9d';
-      ctx.font = 'bold 10px monospace';
-      ctx.fillText('CPC: $' + cpc.toFixed(2), textX, adY + 190);
-      ctx.fillText('(Lower cost = higher quality!)', textX, adY + 220);
+      ctx.fillStyle = '#f7dc6f';
+      ctx.font = '15px monospace';
+      ctx.fillText('CPC: $' + cpc.toFixed(2), textX, adY + 180);
+      ctx.fillStyle = '#b0b0c0';
+      ctx.fillText('Lower cost = higher quality', textX, adY + 210);
     });
   } else {
-    ctx.fillStyle = '#888';
-    ctx.font = 'bold 11px monospace';
+    ctx.fillStyle = '#b0b0c0';
+    ctx.font = 'bold 15px monospace';
     ctx.textAlign = 'left';
-    ctx.fillText('Attribution Models: Credit Assignment', 80, 70);
+    ctx.fillText('Attribution Models: Credit Assignment', 80, 60);
     const journey = [
       { name: 'Email Ad', type: 'touch' },
       { name: 'Search Click', type: 'touch' },
       { name: 'Site Visit', type: 'touch' },
       { name: 'Conversion', type: 'convert' }
     ];
-    const journeyY = 120;
+    const journeyY = 100;
     journey.forEach((touch, idx) => {
-      const x = 80 + idx * 200;
+      const x = 80 + idx * 230;
       const isConvert = touch.type === 'convert';
-      ctx.fillStyle = isConvert ? '#c06c84' : '#2a4a6a';
-      ctx.fillRect(x, journeyY, 160, 50);
+      ctx.fillStyle = isConvert ? '#ec7063' : '#2a4a6a';
+      ctx.fillRect(x, journeyY, 190, 50);
+      ctx.strokeStyle = isConvert ? '#ec7063' : '#5dade2';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x, journeyY, 190, 50);
       ctx.fillStyle = '#fff';
-      ctx.font = '10px monospace';
+      ctx.font = '15px monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(touch.name, x + 80, journeyY + 25);
+      ctx.fillText(touch.name, x + 95, journeyY + 25);
       if (idx < journey.length - 1) {
         ctx.strokeStyle = '#ff9ff3';
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.moveTo(x + 160, journeyY + 25);
-        ctx.lineTo(x + 200, journeyY + 25);
+        ctx.moveTo(x + 190, journeyY + 25);
+        ctx.lineTo(x + 230, journeyY + 25);
         ctx.stroke();
+        ctx.fillStyle = '#ff9ff3';
+        ctx.beginPath();
+        ctx.moveTo(x + 230, journeyY + 25);
+        ctx.lineTo(x + 222, journeyY + 20);
+        ctx.lineTo(x + 222, journeyY + 30);
+        ctx.closePath();
+        ctx.fill();
       }
     });
-    const attribY = 230;
-    ctx.fillStyle = '#888';
-    ctx.font = 'bold 10px monospace';
+
+    const attribY = 190;
+    ctx.fillStyle = '#f0b27a';
+    ctx.font = 'bold 15px monospace';
     ctx.textAlign = 'left';
-    ctx.fillText('Total Conversion: $100', 80, attribY);
+    ctx.fillText('Total Conversion Value: $100', 80, attribY);
+
     const models = [
-      { name: 'Last-Click', credits: [0, 0, 100, 0] },
-      { name: 'Multi-Touch (Linear)', credits: [33, 33, 34, 0] },
-      { name: 'Time-Decay (recent weights)', credits: [15, 25, 60, 0] },
-      { name: 'Shapley Value', credits: [25, 30, 35, 0] }
+      { name: 'Last-Click', credits: [0, 0, 100, 0], color: '#ec7063' },
+      { name: 'Multi-Touch (Linear)', credits: [33, 33, 34, 0], color: '#58d68d' },
+      { name: 'Time-Decay', credits: [15, 25, 60, 0], color: '#5dade2' },
+      { name: 'Shapley Value', credits: [25, 30, 35, 0], color: '#bb8fce' }
     ];
-    const modelY = 280;
+    const modelY = 220;
     models.forEach((model, idx) => {
-      const x = 80 + (idx % 2) * 500;
-      const y = modelY + Math.floor(idx / 2) * 120;
+      const x = 80 + (idx % 2) * 480;
+      const y = modelY + Math.floor(idx / 2) * 130;
       ctx.fillStyle = '#1a1a2a';
-      ctx.fillRect(x, y, 420, 100);
-      ctx.fillStyle = '#ff9ff3';
-      ctx.font = '10px monospace';
+      ctx.fillRect(x, y, 440, 110);
+      ctx.strokeStyle = model.color;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x, y, 440, 110);
+      ctx.fillStyle = model.color;
+      ctx.font = 'bold 15px monospace';
       ctx.textAlign = 'left';
-      ctx.fillText(model.name, x + 15, y + 25);
+      ctx.fillText(model.name, x + 15, y + 22);
       let creditStr = '';
-      journey.slice(0, 3).forEach((_, i) => {
-        creditStr += '$' + model.credits[i].toFixed(0) + ' ';
+      journey.slice(0, 3).forEach((touch, i) => {
+        creditStr += touch.name + ': $' + model.credits[i].toFixed(0) + '  ';
       });
-      ctx.fillStyle = '#88ccff';
-      ctx.font = '9px monospace';
-      ctx.fillText('Credit: ' + creditStr, x + 15, y + 50);
-      ctx.fillText('→ bid adjustment & model retraining changes', x + 15, y + 75);
+      ctx.fillStyle = '#b0b0c0';
+      ctx.font = '15px monospace';
+      ctx.fillText(creditStr, x + 15, y + 50);
+      ctx.fillText('-> Adjusts bid allocation & model retraining', x + 15, y + 78);
+
+      // Credit visualization bars
+      const barX = x + 320;
+      for (let c = 0; c < 3; c++) {
+        const barH = Math.max(2, model.credits[c] * 0.8);
+        ctx.fillStyle = model.color + '88';
+        ctx.fillRect(barX + c * 35, y + 90 - barH, 25, barH);
+      }
     });
   }
   document.getElementById('adsMetrics').textContent = `Mode: ${mode === 'auction' ? 'Auction' : 'Attribution'} | Revenue Impact: --`;
@@ -1810,13 +2252,13 @@ function drawDenseRetrieval() {
   ctx.fillStyle = '#0d0d1a';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = '#ff9ff3';
-  ctx.font = 'bold 16px monospace';
+  ctx.font = 'bold 17px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('Dense Retrieval: Three Approaches', canvas.width / 2, 30);
+  ctx.fillText('Dense Retrieval: Three Approaches', canvas.width / 2, 28);
   const methods = [
-    { name: 'Bi-encoder', desc: 'Query & docs encoded\nindependently', latency: '1ms', quality: 'Medium', color: '#ff6b9d' },
-    { name: 'Cross-encoder', desc: 'Query & doc together\nfull interaction', latency: '500ms', quality: 'High', color: '#c06c84' },
-    { name: 'ColBERT', desc: 'Per-token interactions\nlate late interaction', latency: '50ms', quality: 'High', color: '#a23b72' }
+    { name: 'Bi-encoder', desc: 'Query & docs encoded independently', latency: '1ms', quality: 'Medium', color: '#5dade2' },
+    { name: 'Cross-encoder', desc: 'Query & doc jointly, full interaction', latency: '500ms', quality: 'High', color: '#ec7063' },
+    { name: 'ColBERT', desc: 'Per-token late interaction', latency: '50ms', quality: 'High', color: '#58d68d' }
   ];
   const boxW = 330;
   const boxH = 400;
@@ -1824,75 +2266,86 @@ function drawDenseRetrieval() {
   methods.forEach((method, idx) => {
     const x = boxX[idx];
     ctx.fillStyle = '#1a1a2a';
-    ctx.fillRect(x, 80, boxW, boxH);
+    ctx.fillRect(x, 50, boxW, boxH);
+    ctx.strokeStyle = method.color;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x, 50, boxW, boxH);
     ctx.fillStyle = method.color;
-    ctx.font = 'bold 12px monospace';
+    ctx.font = 'bold 17px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(method.name, x + boxW / 2, 110);
-    ctx.fillStyle = '#88ccff';
-    ctx.font = '9px monospace';
+    ctx.fillText(method.name, x + boxW / 2, 80);
+    ctx.fillStyle = '#b0b0c0';
+    ctx.font = '15px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(method.desc, x + boxW / 2, 145);
+    ctx.fillText(method.desc, x + boxW / 2, 105);
+
+    // Architecture box
     ctx.fillStyle = '#2a4a6a';
-    ctx.fillRect(x + 15, 180, boxW - 30, 80);
-    ctx.fillStyle = '#88ccff';
-    ctx.font = '9px monospace';
+    ctx.fillRect(x + 15, 130, boxW - 30, 80);
+    ctx.fillStyle = '#b0b0c0';
+    ctx.font = '15px monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     if (idx === 0) {
-      ctx.fillText('query_emb = BERT(query)', x + boxW / 2, 200);
-      ctx.fillText('doc_emb = BERT(doc)', x + boxW / 2, 218);
-      ctx.fillText('score = cos(query_emb, doc_emb)', x + boxW / 2, 236);
+      ctx.fillText('q_emb = BERT(query)', x + boxW / 2, 152);
+      ctx.fillText('d_emb = BERT(doc)', x + boxW / 2, 172);
+      ctx.fillText('score = cos(q, d)', x + boxW / 2, 192);
     } else if (idx === 1) {
-      ctx.fillText('score = BERT([query, doc])', x + boxW / 2, 200);
-      ctx.fillText('Full attention between', x + boxW / 2, 218);
-      ctx.fillText('query and doc tokens', x + boxW / 2, 236);
+      ctx.fillText('score = BERT([q, d])', x + boxW / 2, 152);
+      ctx.fillText('Full attention between', x + boxW / 2, 172);
+      ctx.fillText('query and doc tokens', x + boxW / 2, 192);
     } else {
-      ctx.fillText('query_tok = BERT(query) per token', x + boxW / 2, 200);
-      ctx.fillText('doc_tok = BERT(doc) per token', x + boxW / 2, 218);
-      ctx.fillText('score = max_q(max_d(cos(...)))', x + boxW / 2, 236);
+      ctx.fillText('q_tok = BERT(q) tokens', x + boxW / 2, 152);
+      ctx.fillText('d_tok = BERT(d) tokens', x + boxW / 2, 172);
+      ctx.fillText('score = MaxSim(q,d)', x + boxW / 2, 192);
     }
+
+    // Latency
     ctx.fillStyle = '#2a4a6a';
-    ctx.fillRect(x + 15, 280, boxW - 30, 30);
-    ctx.fillStyle = '#ff9ff3';
-    ctx.font = '9px monospace';
+    ctx.fillRect(x + 15, 225, boxW - 30, 35);
+    ctx.fillStyle = method.color;
+    ctx.font = 'bold 15px monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('Latency: ' + method.latency, x + boxW / 2, 295);
+    ctx.fillText('Latency: ' + method.latency, x + boxW / 2, 242);
+
+    // Quality
     ctx.fillStyle = '#2a4a6a';
-    ctx.fillRect(x + 15, 320, boxW - 30, 30);
-    ctx.fillStyle = '#ff9ff3';
-    ctx.font = '9px monospace';
+    ctx.fillRect(x + 15, 270, boxW - 30, 35);
+    ctx.fillStyle = method.color;
+    ctx.font = 'bold 15px monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('Quality: ' + method.quality, x + boxW / 2, 335);
+    ctx.fillText('Quality: ' + method.quality, x + boxW / 2, 287);
+
+    // Use cases
     ctx.fillStyle = '#2a4a6a';
-    ctx.fillRect(x + 15, 360, boxW - 30, 100);
-    ctx.fillStyle = '#88ccff';
-    ctx.font = '8px monospace';
+    ctx.fillRect(x + 15, 320, boxW - 30, 110);
+    ctx.fillStyle = '#b0b0c0';
+    ctx.font = '15px monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     if (idx === 0) {
-      ctx.fillText('ANN search: 1M docs in 1ms', x + boxW / 2, 375);
-      ctx.fillText('Good for candidate gen', x + boxW / 2, 388);
-      ctx.fillText('Limited fine-grained match', x + boxW / 2, 401);
+      ctx.fillText('ANN: 1M docs in 1ms', x + boxW / 2, 340);
+      ctx.fillText('Great for candidate gen', x + boxW / 2, 360);
+      ctx.fillText('Limited fine match', x + boxW / 2, 380);
     } else if (idx === 1) {
-      ctx.fillText('Precise relevance matching', x + boxW / 2, 375);
-      ctx.fillText('Too slow for large pools', x + boxW / 2, 388);
-      ctx.fillText('Use post-ranking (100 docs)', x + boxW / 2, 401);
+      ctx.fillText('Precise relevance', x + boxW / 2, 340);
+      ctx.fillText('Too slow for large pools', x + boxW / 2, 360);
+      ctx.fillText('Use for top-100 rerank', x + boxW / 2, 380);
     } else {
-      ctx.fillText('Best tradeoff: speed + quality', x + boxW / 2, 375);
-      ctx.fillText('Token-level fine-grained match', x + boxW / 2, 388);
-      ctx.fillText('Scalable ranking of 1k docs', x + boxW / 2, 401);
+      ctx.fillText('Speed + quality tradeoff', x + boxW / 2, 340);
+      ctx.fillText('Token-level matching', x + boxW / 2, 360);
+      ctx.fillText('Scalable for 1k docs', x + boxW / 2, 380);
     }
   });
-  const bottomY = 530;
+  const bottomY = 470;
   ctx.fillStyle = '#2a2a4a';
-  ctx.fillRect(80, bottomY - 20, 950, 40);
+  ctx.fillRect(80, bottomY, 950, 35);
   ctx.fillStyle = '#ff9ff3';
-  ctx.font = '10px monospace';
+  ctx.font = '15px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('Hybrid Search: BM25 (lexical) + Dense scores (fusion) for best of both worlds', 555, bottomY);
+  ctx.fillText('Hybrid: BM25 (lexical) + Dense (semantic) fusion for best results', 555, bottomY + 20);
   document.getElementById('denseMetrics').textContent = `Candidates: ${candStr} | Bi-encoder: 1ms | ColBERT: 50ms | Cross-encoder: 500ms`;
 }
 

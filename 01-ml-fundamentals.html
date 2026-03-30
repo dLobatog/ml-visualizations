@@ -35,8 +35,8 @@
   .insight-box strong { color: #64ffda; font-size: 1.05em; }
   .insight-box .formula { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 12px 18px; margin: 12px 0; font-family: 'Courier New', monospace; color: #e8e8ff; font-size: 1.05em; text-align: center; letter-spacing: 0.5px; line-height: 1.9; }
   .insight-box .formula .highlight { color: #64ffda; font-weight: bold; }
-  .insight-box .key-point { display: flex; gap: 8px; margin: 8px 0; padding: 4px 0; }
-  .insight-box .key-point .label { color: #64ffda; font-weight: 600; white-space: nowrap; min-width: 90px; }
+  .insight-box .key-point { display: flex; flex-wrap: wrap; gap: 4px 8px; margin: 8px 0; padding: 4px 0; align-items: baseline; }
+  .insight-box .key-point .label { color: #64ffda; font-weight: 600; min-width: 160px; flex-shrink: 0; }
   .insight-box .key-point .desc { color: #ddd; }
   .insight-box .interview-tip { background: rgba(100, 255, 100, 0.05); border: 1px solid rgba(100, 255, 100, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #b0ffb0; font-size: 0.93em; line-height: 1.6; }
   .insight-box .interview-tip::before { content: '\1F4A1  Interview Tip: '; font-weight: 700; color: #7fff7f; }
@@ -176,7 +176,7 @@
 
 <!-- 3. MLE vs MAP -->
 <div class="viz-section">
-  <h2>MLE vs MAP: Coin Flips</h2>
+  <h2>MLE (Maximum Likelihood Estimation) vs MAP (Maximum A Posteriori): Coin Flips</h2>
   <p class="subtitle">Start with "Number of Coin Flips" = 5, set "Prior Strength" high (80). Move the flips slider to 100 — watch the posterior (red) peak move toward the likelihood peak. As data grows, the prior pulls less.</p>
   <div class="viz-canvas">
     <canvas id="mleCanvas" width="800" height="400"></canvas>
@@ -232,7 +232,7 @@
 
 <!-- 4. CENTRAL LIMIT THEOREM -->
 <div class="viz-section">
-  <h2>Central Limit Theorem</h2>
+  <h2>CLT (Central Limit Theorem)</h2>
   <p class="subtitle">Set "Sample Size per Mean" to 1 and click Animate — the histogram is jagged and skewed. Now increase it to 30 and animate again — the histogram becomes smooth and bell-shaped. This magic happens regardless of the underlying distribution shape.</p>
   <div class="viz-canvas">
     <canvas id="cltCanvas" width="800" height="400"></canvas>
@@ -323,7 +323,7 @@
 
 <!-- 6. KL DIVERGENCE -->
 <div class="viz-section">
-  <h2>KL Divergence: Asymmetry</h2>
+  <h2>KL (Kullback-Leibler) Divergence: Asymmetry</h2>
   <p class="subtitle">Set p to a narrow peak and drag q far away — watch KL(p||q) spike (forward KL penalizes missing where p is high). Now drag q to cover q's entire range at lower height — reverse KL(q||p) rises instead (mode-matching vs mass-covering).</p>
   <div class="viz-canvas">
     <canvas id="klCanvas" width="800" height="400"></canvas>
@@ -468,7 +468,7 @@
 
 <!-- 9. SVD VISUALIZATION -->
 <div class="viz-section">
-  <h2>SVD & Rank-k Approximation</h2>
+  <h2>SVD (Singular Value Decomposition) & Rank-k Approximation</h2>
   <p class="subtitle">Start with "Rank k" at 1 — the image is a blur. Increase to 5, 10, 20 — details progressively emerge. Watch how much information the top few components capture. This is why PCA and low-rank methods work in high-dimensional data.</p>
   <div class="viz-canvas">
     <canvas id="svdCanvas" width="800" height="400"></canvas>
@@ -919,7 +919,7 @@
     </div>
     <div class="control-group">
       <label>Max Logit Magnitude</label>
-      <input type="range" id="nsMag" min="1" max="1000" step="10" value="100">
+      <input type="range" id="nsMag" min="1" max="1000" step="1" value="500">
       <div class="value" id="nsMagVal">100</div>
     </div>
   </div>
@@ -979,7 +979,7 @@ function drawBayes() {
   const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
 
   // Draw axes
-  ctx.strokeStyle = '#333';
+  ctx.strokeStyle = '#888';
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(pad.l, pad.t);
@@ -988,8 +988,8 @@ function drawBayes() {
   ctx.stroke();
 
   // Labels
-  ctx.fillStyle = '#888';
-  ctx.font = '13px Inter, sans-serif';
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px Inter, sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText('Prior vs Posterior →', W/2, H - 10);
   ctx.save();
@@ -1011,8 +1011,8 @@ function drawBayes() {
   ctx.lineWidth = 2;
   ctx.strokeRect(priorX - barW/2, H - pad.b - priorH, barW, priorH);
 
-  ctx.fillStyle = '#7c4dff';
-  ctx.font = '12px monospace';
+  ctx.fillStyle = '#9b7aff';
+  ctx.font = '15px monospace';
   ctx.textAlign = 'center';
   ctx.fillText((prior * 100).toFixed(1) + '%', priorX, H - pad.b + 20);
   ctx.fillText('Prior', priorX, pad.t + 15);
@@ -1032,16 +1032,16 @@ function drawBayes() {
   // Surprise annotation
   if (prior < 0.05 && posterior < 0.6) {
     ctx.fillStyle = '#ff6b6b';
-    ctx.font = 'bold 14px Inter';
+    ctx.font = 'bold 17px Inter';
     ctx.textAlign = 'left';
     ctx.fillText('SURPRISE!', postX + 50, H/2);
-    ctx.font = '11px Inter';
+    ctx.font = '15px Inter';
     ctx.fillText('Even accurate tests still leave high uncertainty', postX + 50, H/2 + 20);
   }
 
   // Formula at bottom
-  ctx.fillStyle = '#aaa';
-  ctx.font = '11px monospace';
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px monospace';
   ctx.textAlign = 'left';
   ctx.fillText('P(D|+) = P(+|D) * P(D) / P(+) = ' + (sensitivity.toFixed(2)) + ' * ' + (prior.toFixed(4)) + ' / ' + (p_positive.toFixed(4)), pad.l, H - 8);
 }
@@ -1066,13 +1066,15 @@ function drawDist() {
   const W = canvas.width, H = canvas.height;
   const paramVal = parseInt(document.getElementById('distParam').value) / 100;
 
-  ctx.clearRect(0, 0, W, H);
+  // Fill background
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, W, H);
 
-  const pad = { l: 60, r: 40, t: 30, b: 50 };
+  const pad = { l: 70, r: 40, t: 40, b: 60 };
   const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
 
   // Draw axes
-  ctx.strokeStyle = '#333';
+  ctx.strokeStyle = '#888';
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(pad.l, pad.t);
@@ -1080,10 +1082,17 @@ function drawDist() {
   ctx.lineTo(W - pad.r, H - pad.b);
   ctx.stroke();
 
-  ctx.fillStyle = '#888';
-  ctx.font = '12px Inter';
+  // Axis labels
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px Inter';
   ctx.textAlign = 'center';
-  ctx.fillText('x →', W/2, H - 8);
+  ctx.fillText('x', W/2, H - 12);
+  ctx.save();
+  ctx.translate(15, H/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.textAlign = 'center';
+  ctx.fillText('Probability / Density', 0, 0);
+  ctx.restore();
 
   let data = [], mean = 0, variance = 0, info = '';
 
@@ -1104,7 +1113,7 @@ function drawDist() {
       ctx.strokeStyle = '#64ffda';
       ctx.lineWidth = 1.5;
       ctx.strokeRect(x - w/2, y, w, data[i] * ph);
-      ctx.fillStyle = '#aaa';
+      ctx.fillStyle = '#b0b0c0';
       ctx.textAlign = 'center';
       ctx.fillText(i, x, H - pad.b + 15);
     }
@@ -1188,20 +1197,32 @@ function drawDist() {
     }
     ctx.stroke();
   } else if (distType === 'beta') {
-    const alpha = paramVal * 15 + 0.5;
-    const beta = paramVal * 15 + 0.5;
+    // Map slider so alpha increases (0.5 to 15) and beta decreases (15 to 0.5) for interesting asymmetric shapes
+    const alpha = paramVal * 14.5 + 0.5;
+    const beta = (1 - paramVal) * 14.5 + 0.5;
     mean = alpha / (alpha + beta);
     variance = alpha * beta / ((alpha + beta) * (alpha + beta) * (alpha + beta + 1));
     info = `Beta: α=${alpha.toFixed(2)}, β=${beta.toFixed(2)}, E[X]=${mean.toFixed(3)}, Var=${variance.toFixed(3)}`;
+
+    // Compute max density for scaling
+    let maxDensity = 0;
+    for (let i = 0; i <= 100; i++) {
+      const x = i / 100;
+      if (x > 0 && x < 1) {
+        const density = Math.pow(x, alpha - 1) * Math.pow(1 - x, beta - 1) / betaFunction(alpha, beta);
+        maxDensity = Math.max(maxDensity, density);
+      }
+    }
+    const betaScale = Math.max(0.1, 0.85 * ph / maxDensity);
 
     ctx.strokeStyle = '#64ffda';
     ctx.lineWidth = 2.5;
     ctx.beginPath();
     for (let i = 0; i <= 100; i++) {
       const x = i / 100;
-      const density = Math.pow(x, alpha - 1) * Math.pow(1 - x, beta - 1) / betaFunction(alpha, beta);
+      const density = x > 0 && x < 1 ? Math.pow(x, alpha - 1) * Math.pow(1 - x, beta - 1) / betaFunction(alpha, beta) : 0;
       const px = pad.l + x * pw;
-      const py = H - pad.b - Math.min(density * ph / 4, ph);
+      const py = H - pad.b - density * betaScale;
       if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
     }
     ctx.stroke();
@@ -1250,17 +1271,19 @@ function drawMLE() {
   document.getElementById('mleNVal').textContent = n;
   document.getElementById('mlePriorVal').textContent = priorStrength;
 
-  ctx.clearRect(0, 0, W, H);
+  // Fill background
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, W, H);
 
   // Assume 70% heads in data
   const heads = Math.round(n * 0.7);
   const mleTheta = heads / n;
 
-  const pad = { l: 50, r: 40, t: 30, b: 50 };
+  const pad = { l: 60, r: 40, t: 40, b: 60 };
   const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
 
   // Draw axes
-  ctx.strokeStyle = '#333';
+  ctx.strokeStyle = '#888';
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(pad.l, pad.t);
@@ -1268,76 +1291,114 @@ function drawMLE() {
   ctx.lineTo(W - pad.r, H - pad.b);
   ctx.stroke();
 
-  ctx.fillStyle = '#888';
-  ctx.font = '12px Inter';
+  // Axis labels
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px Inter';
   ctx.textAlign = 'center';
-  ctx.fillText('θ (probability heads) →', W/2, H - 8);
+  ctx.fillText('θ (Probability of Heads)', W/2, H - 12);
+  ctx.save();
+  ctx.translate(15, H/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.textAlign = 'center';
+  ctx.fillText('Probability Density', 0, 0);
+  ctx.restore();
 
-  // Prior (uniform or Beta)
+  // Compute max values for INDEPENDENT scaling of each curve
+  let maxLikelihood = 0, maxPrior = 0, maxPosterior = 0;
+  for (let i = 1; i <= 99; i++) {
+    const theta = i / 100;
+    const priorAlpha = priorStrength / 10;
+    const priorBeta = priorStrength / 10;
+    const bfVal = betaFunction(priorAlpha, priorBeta);
+    if (!isFinite(bfVal) || bfVal === 0) continue;
+    const priorDensity = Math.pow(theta, priorAlpha - 1) * Math.pow(1 - theta, priorBeta - 1) / bfVal;
+    const likelihood = Math.pow(theta, heads) * Math.pow(1 - theta, n - heads);
+    const posterior = priorDensity * likelihood;
+    if (isFinite(priorDensity)) maxPrior = Math.max(maxPrior, priorDensity);
+    if (isFinite(likelihood)) maxLikelihood = Math.max(maxLikelihood, likelihood);
+    if (isFinite(posterior)) maxPosterior = Math.max(maxPosterior, posterior);
+  }
+
+  // Each curve gets its own scale so all three are visible
+  const scalePrior = maxPrior > 0 ? 0.7 * ph / maxPrior : 1;
+  const scaleLikelihood = maxLikelihood > 0 ? 0.7 * ph / maxLikelihood : 1;
+  const scalePosterior = maxPosterior > 0 ? 0.7 * ph / maxPosterior : 1;
+
+  // Prior (Beta distribution)
   ctx.strokeStyle = '#64ffda';
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 2.5;
   ctx.beginPath();
   for (let i = 0; i <= 100; i++) {
-    const theta = i / 100;
-    const priorDensity = Math.pow(theta, priorStrength/10 - 1) * Math.pow(1 - theta, priorStrength/10 - 1) / betaFunction(priorStrength/10, priorStrength/10);
-    const x = pad.l + theta * pw;
-    const y = H - pad.b - priorDensity * ph / 3;
+    const theta = Math.max(0.005, Math.min(0.995, i / 100));
+    const priorAlpha = priorStrength / 10;
+    const priorBeta = priorStrength / 10;
+    const bfVal = betaFunction(priorAlpha, priorBeta);
+    const priorDensity = bfVal > 0 ? Math.pow(theta, priorAlpha - 1) * Math.pow(1 - theta, priorBeta - 1) / bfVal : 0;
+    const x = pad.l + (i / 100) * pw;
+    const y = H - pad.b - (isFinite(priorDensity) ? priorDensity : 0) * scalePrior;
     if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
   }
   ctx.stroke();
   ctx.fillStyle = '#64ffda';
-  ctx.font = '11px Inter';
+  ctx.font = '15px Inter';
   ctx.textAlign = 'left';
-  ctx.fillText('Prior', pad.l + 10, pad.t + 15);
+  ctx.fillText('Prior (Beta dist.)', pad.l + 12, pad.t + 20);
 
   // Likelihood
   ctx.strokeStyle = '#ff6b6b';
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 2.5;
   ctx.beginPath();
   for (let i = 0; i <= 100; i++) {
-    const theta = i / 100;
+    const theta = Math.max(0.005, Math.min(0.995, i / 100));
     const likelihood = Math.pow(theta, heads) * Math.pow(1 - theta, n - heads);
-    const x = pad.l + theta * pw;
-    const y = H - pad.b - likelihood * ph / 0.3;
+    const x = pad.l + (i / 100) * pw;
+    const y = H - pad.b - (isFinite(likelihood) ? likelihood : 0) * scaleLikelihood;
     if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
   }
   ctx.stroke();
   ctx.fillStyle = '#ff6b6b';
-  ctx.fillText('Likelihood', pad.l + 80, pad.t + 15);
+  ctx.font = '15px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText('Likelihood', pad.l + 12, pad.t + 40);
 
   // Posterior (MAP)
   ctx.strokeStyle = '#4ecdc4';
-  ctx.lineWidth = 2.5;
+  ctx.lineWidth = 3;
   ctx.beginPath();
   for (let i = 0; i <= 100; i++) {
-    const theta = i / 100;
-    const prior = Math.pow(theta, priorStrength/10 - 1) * Math.pow(1 - theta, priorStrength/10 - 1) / betaFunction(priorStrength/10, priorStrength/10);
+    const theta = Math.max(0.005, Math.min(0.995, i / 100));
+    const priorAlpha = priorStrength / 10;
+    const priorBeta = priorStrength / 10;
+    const bfVal = betaFunction(priorAlpha, priorBeta);
+    const prior = bfVal > 0 ? Math.pow(theta, priorAlpha - 1) * Math.pow(1 - theta, priorBeta - 1) / bfVal : 0;
     const likelihood = Math.pow(theta, heads) * Math.pow(1 - theta, n - heads);
     const posterior = prior * likelihood;
-    const x = pad.l + theta * pw;
-    const y = H - pad.b - posterior * ph / 0.3;
+    const x = pad.l + (i / 100) * pw;
+    const y = H - pad.b - (isFinite(posterior) ? posterior : 0) * scalePosterior;
     if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
   }
   ctx.stroke();
   ctx.fillStyle = '#4ecdc4';
-  ctx.fillText('Posterior (MAP)', pad.l + 180, pad.t + 15);
+  ctx.font = '15px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText('Posterior (MAP) = Prior x Likelihood', pad.l + 12, pad.t + 60);
 
   // Mark MLE
   const mleX = pad.l + mleTheta * pw;
-  ctx.strokeStyle = '#ff6b6b';
-  ctx.lineWidth = 1.5;
-  ctx.setLineDash([3, 3]);
+  ctx.strokeStyle = '#ffd93d';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([5, 5]);
   ctx.beginPath();
   ctx.moveTo(mleX, pad.t);
   ctx.lineTo(mleX, H - pad.b);
   ctx.stroke();
   ctx.setLineDash([]);
 
-  // Info
-  ctx.fillStyle = '#aaa';
-  ctx.font = '11px monospace';
+  // Info text
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '15px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText(`Data: ${heads}/${n} heads  |  MLE θ = ${mleTheta.toFixed(3)}  |  Observed ${heads} heads in ${n} flips`, pad.l, H - 12);
+  ctx.fillText(`Data: ${heads}/${n} heads  |  MLE (Max Likelihood) θ = ${mleTheta.toFixed(3)}`, pad.l, H - 18);
 }
 
 // ==================== CENTRAL LIMIT THEOREM ====================
@@ -1369,7 +1430,7 @@ function drawCLT() {
   const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
 
   // Draw axes
-  ctx.strokeStyle = '#333';
+  ctx.strokeStyle = '#888';
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(pad.l, pad.t);
@@ -1411,8 +1472,8 @@ function drawCLT() {
   }
   ctx.stroke();
 
-  ctx.fillStyle = '#aaa';
-  ctx.font = '11px Inter';
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px Inter';
   ctx.textAlign = 'left';
   ctx.fillText(`n=${n} per mean, ${numSamples} samples  |  Mean of means: ${meanOfMeans.toFixed(3)}  |  Std: ${stdOfMeans.toFixed(3)}`, pad.l, H - 12);
 }
@@ -1449,7 +1510,7 @@ function drawEntropy() {
   const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
 
   // Draw axes
-  ctx.strokeStyle = '#333';
+  ctx.strokeStyle = '#888';
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(pad.l, pad.t);
@@ -1457,8 +1518,8 @@ function drawEntropy() {
   ctx.lineTo(W - pad.r, H - pad.b);
   ctx.stroke();
 
-  ctx.fillStyle = '#888';
-  ctx.font = '12px Inter';
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px Inter';
   ctx.textAlign = 'center';
   ctx.fillText('p (probability) →', W/2, H - 8);
 
@@ -1475,7 +1536,7 @@ function drawEntropy() {
   }
   ctx.stroke();
   ctx.fillStyle = '#64ffda';
-  ctx.font = '11px Inter';
+  ctx.font = '15px Inter';
   ctx.textAlign = 'left';
   ctx.fillText('H(p)', pad.l + 10, pad.t + 15);
 
@@ -1508,8 +1569,8 @@ function drawEntropy() {
     if (i === 1) ctx.moveTo(x, y); else ctx.lineTo(x, y);
   }
   ctx.stroke();
-  ctx.fillStyle = '#7c4dff';
-  ctx.fillText('KL(p||q)', pad.l + 150, pad.t + 15);
+  ctx.fillStyle = '#9b7aff';
+  ctx.fillText('KL (Kullback-Leibler) (p||q)', pad.l + 150, pad.t + 15);
 
   // Mark current p
   const entropy_p = p === 0 || p === 1 ? 0 : -(p * Math.log2(p) + (1 - p) * Math.log2(1 - p));
@@ -1520,10 +1581,10 @@ function drawEntropy() {
   ctx.fillStyle = '#64ffda44';
   ctx.fillRect(markX - 2, pad.t, 4, ph);
 
-  ctx.fillStyle = '#aaa';
-  ctx.font = '11px monospace';
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText(`H(p)=${entropy_p.toFixed(3)}  H(p,q)=${ce_p.toFixed(3)}  KL=${kl_p.toFixed(3)}`, pad.l, H - 12);
+  ctx.fillText(`H(p)=${entropy_p.toFixed(3)}  H(p,q)=${ce_p.toFixed(3)}  KL (Kullback-Leibler)=${kl_p.toFixed(3)}`, pad.l, H - 12);
 }
 
 // ==================== KL DIVERGENCE ====================
@@ -1544,7 +1605,7 @@ function drawKL() {
   const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
 
   // Draw axes
-  ctx.strokeStyle = '#333';
+  ctx.strokeStyle = '#888';
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(pad.l, pad.t);
@@ -1552,8 +1613,8 @@ function drawKL() {
   ctx.lineTo(W - pad.r, H - pad.b);
   ctx.stroke();
 
-  ctx.fillStyle = '#888';
-  ctx.font = '12px Inter';
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px Inter';
   ctx.textAlign = 'center';
   ctx.fillText('x →', W/2, H - 8);
 
@@ -1588,7 +1649,7 @@ function drawKL() {
   ctx.stroke();
 
   ctx.fillStyle = '#64ffda';
-  ctx.font = '11px Inter';
+  ctx.font = '15px Inter';
   ctx.textAlign = 'left';
   ctx.fillText('P (True Dist)', pad.l + 10, pad.t + 15);
 
@@ -1606,10 +1667,10 @@ function drawKL() {
     if (qv > 1e-10 && pv > 1e-10) klRev += qv * Math.log(qv / pv) * dx;
   }
 
-  ctx.fillStyle = '#aaa';
-  ctx.font = '12px monospace';
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText(`KL(P||Q) = ${klFwd.toFixed(3)} (forward, mode-covering)  |  KL(Q||P) = ${klRev.toFixed(3)} (reverse, mode-seeking)`, pad.l, H - 12);
+  ctx.fillText(`KL(P||Q) = ${klFwd.toFixed(3)} (forward, mode-covering)  |  KL(Q||P) = ${klRev.toFixed(3)} (reverse, mode-seeking)  [KL = Kullback-Leibler]`, pad.l, H - 12);
 }
 
 // ==================== GRADIENT DESCENT VARIANTS ====================
@@ -1871,7 +1932,7 @@ function drawSVD() {
   const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
 
   // Draw axes
-  ctx.strokeStyle = '#333';
+  ctx.strokeStyle = '#888';
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(pad.l, pad.t);
@@ -1879,8 +1940,8 @@ function drawSVD() {
   ctx.lineTo(W - pad.r, H - pad.b);
   ctx.stroke();
 
-  ctx.fillStyle = '#888';
-  ctx.font = '12px Inter';
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px Inter';
   ctx.textAlign = 'center';
   ctx.fillText('Component Index →', W/2, H - 8);
 
@@ -1917,8 +1978,8 @@ function drawSVD() {
   }
   const reconstruction_quality = variance_kept / variance_total;
 
-  ctx.fillStyle = '#aaa';
-  ctx.font = '11px monospace';
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px monospace';
   ctx.textAlign = 'left';
   ctx.fillText(`Rank ${k} / ${maxRank}: ${(reconstruction_quality * 100).toFixed(1)}% variance  |  Compression: ${(k / maxRank * 100).toFixed(1)}% parameters`, pad.l, H - 35);
 
@@ -1947,7 +2008,7 @@ function drawEigen() {
   const scale = 60;
 
   // Draw axes
-  ctx.strokeStyle = '#333';
+  ctx.strokeStyle = '#888';
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(0, cy); ctx.lineTo(W, cy);
@@ -1986,7 +2047,7 @@ function drawEigen() {
   ctx.stroke();
 
   ctx.fillStyle = '#ff6b6b';
-  ctx.font = '11px Inter';
+  ctx.font = '15px Inter';
   ctx.fillText(`λ₁=${lambda1.toFixed(2)}`, cx + ev1x + 5, cy + ev1y - 5);
 
   // Eigenvector 2: (1/sqrt(2), -1/sqrt(2)) scaled by lambda2
@@ -1999,12 +2060,12 @@ function drawEigen() {
   ctx.lineTo(cx + ev2x, cy + ev2y);
   ctx.stroke();
 
-  ctx.fillStyle = '#7c4dff';
+  ctx.fillStyle = '#9b7aff';
   ctx.fillText(`λ₂=${lambda2.toFixed(2)}`, cx + ev2x + 5, cy + ev2y + 15);
 
   // Legend
   ctx.fillStyle = '#64ffda';
-  ctx.font = '11px Inter';
+  ctx.font = '15px Inter';
   ctx.fillText('Original Basis', cx - scale - 50, cy - scale - 50);
   ctx.fillText('A = [[' + a00.toFixed(1) + ', ' + a01.toFixed(1) + '], [' + a01.toFixed(1) + ', ' + a00.toFixed(1) + ']]', 10, 20);
 }
@@ -2017,13 +2078,14 @@ function drawBV() {
   const complexity = parseInt(document.getElementById('bvComplexity').value);
   document.getElementById('bvComplexityVal').textContent = complexity;
 
-  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, W, H);
 
-  const pad = { l: 60, r: 30, t: 30, b: 50 };
+  const pad = { l: 70, r: 40, t: 40, b: 60 };
   const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
 
   // Draw axes
-  ctx.strokeStyle = '#333';
+  ctx.strokeStyle = '#888';
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(pad.l, pad.t);
@@ -2031,22 +2093,23 @@ function drawBV() {
   ctx.lineTo(W - pad.r, H - pad.b);
   ctx.stroke();
 
-  // Labels
-  ctx.fillStyle = '#888';
-  ctx.font = '13px Inter, sans-serif';
+  // Axis labels
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px Inter, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('Model Complexity →', W/2, H - 10);
+  ctx.fillText('Model Complexity →', W/2, H - 12);
   ctx.save();
-  ctx.translate(18, H/2);
+  ctx.translate(15, H/2);
   ctx.rotate(-Math.PI/2);
-  ctx.fillText('Error →', 0, 0);
+  ctx.textAlign = 'center';
+  ctx.fillText('Error', 0, 0);
   ctx.restore();
 
   // Tick labels
-  ctx.font = '11px monospace';
+  ctx.font = '15px monospace';
   for (let i = 1; i <= 15; i += 2) {
     const x = pad.l + (i - 1) / 14 * pw;
-    ctx.fillStyle = '#555';
+    ctx.fillStyle = '#b0b0c0';
     ctx.fillText(i, x, H - pad.b + 18);
   }
 
@@ -2057,8 +2120,8 @@ function drawBV() {
   for (let i = 0; i < points; i++) {
     const t = i / (points - 1);
     const x = 1 + t * 14;
-    const bias2 = 0.8 * Math.exp(-0.35 * x) + 0.02;
-    const variance = 0.01 * Math.exp(0.28 * x) * (1 - Math.exp(-0.5 * x));
+    const bias2 = 0.8 * Math.exp(-0.25 * x) + 0.02;
+    const variance = 0.005 * Math.exp(0.32 * x) * (1 - Math.exp(-0.8 * x));
     const noise = 0.05;
     biasData.push({ x, y: bias2 });
     varData.push({ x, y: variance });
@@ -2095,8 +2158,8 @@ function drawBV() {
 
   // Current complexity marker
   const cx = pad.l + (complexity - 1) / 14 * pw;
-  const bias2c = 0.8 * Math.exp(-0.35 * complexity) + 0.02;
-  const varc = 0.01 * Math.exp(0.28 * complexity) * (1 - Math.exp(-0.5 * complexity));
+  const bias2c = 0.8 * Math.exp(-0.25 * complexity) + 0.02;
+  const varc = 0.005 * Math.exp(0.32 * complexity) * (1 - Math.exp(-0.8 * complexity));
   const totalc = bias2c + varc + 0.05;
   const cy = H - pad.b - totalc / 1.0 * ph;
 
@@ -2121,29 +2184,54 @@ function drawBV() {
   ctx.fill();
 
   // Labels for underfitting/overfitting
-  ctx.font = '12px Inter, sans-serif';
+  ctx.font = '15px Inter, sans-serif';
   ctx.fillStyle = '#ff6b6b88';
   ctx.textAlign = 'left';
-  ctx.fillText('Underfitting →', pad.l + 10, pad.t + 20);
+  ctx.fillText('Underfitting →', pad.l + 12, pad.t + 22);
   ctx.textAlign = 'right';
   ctx.fillStyle = '#4ecdc488';
-  ctx.fillText('← Overfitting', W - pad.r - 10, pad.t + 20);
+  ctx.fillText('← Overfitting', W - pad.r - 12, pad.t + 22);
 
-  // Optimal zone
-  const optX = 4;
-  const optPx = pad.l + (optX - 1) / 14 * pw;
-  ctx.fillStyle = '#64ffda33';
-  ctx.fillRect(optPx - 20, pad.t, 40, ph);
-  ctx.fillStyle = '#64ffda88';
-  ctx.font = '11px Inter, sans-serif';
+  // Find actual minimum of total error curve
+  let minError = totalData[0].y;
+  let optimalComplexity = 1;
+  for (let i = 0; i < totalData.length; i++) {
+    if (totalData[i].y < minError) {
+      minError = totalData[i].y;
+      optimalComplexity = totalData[i].x;
+    }
+  }
+
+  // Draw sweet spot at actual minimum
+  const optPx = pad.l + (optimalComplexity - 1) / 14 * pw;
+  const optY = H - pad.b - minError * ph;
+
+  // Highlight zone around optimum
+  ctx.fillStyle = '#64ffda22';
+  ctx.fillRect(optPx - 25, pad.t, 50, ph);
+
+  // Marker circle at actual minimum
+  ctx.fillStyle = '#ffd93d';
+  ctx.beginPath();
+  ctx.arc(optPx, optY, 6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#0d0d1a';
+  ctx.beginPath();
+  ctx.arc(optPx, optY, 2, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#64ffda';
+  ctx.font = '15px Inter, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('Sweet Spot', optPx, pad.t + 35);
+  ctx.fillText('Sweet Spot', optPx, pad.t + 28);
+  ctx.font = '15px monospace';
+  ctx.fillText(`C=${optimalComplexity.toFixed(1)}`, optPx, pad.t + 45);
 
   // Error readout
-  ctx.fillStyle = '#fff';
-  ctx.font = '12px monospace';
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '15px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText(`Bias² = ${bias2c.toFixed(3)}  |  Variance = ${varc.toFixed(3)}  |  Total = ${totalc.toFixed(3)}`, pad.l + 10, pad.t + 55);
+  ctx.fillText(`Bias² = ${bias2c.toFixed(3)}  |  Variance = ${varc.toFixed(3)}  |  Total = ${totalc.toFixed(3)}`, pad.l + 12, pad.t + 62);
 }
 
 let bvAnimFrame;
@@ -2184,15 +2272,15 @@ function drawReg() {
   const scale = 80;
 
   // Draw axes
-  ctx.strokeStyle = '#333';
+  ctx.strokeStyle = '#888';
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(0, cy); ctx.lineTo(W, cy);
   ctx.moveTo(cx, 0); ctx.lineTo(cx, H);
   ctx.stroke();
 
-  ctx.fillStyle = '#666';
-  ctx.font = '13px Inter';
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px Inter';
   ctx.textAlign = 'center';
   ctx.fillText('w₁', W - 20, cy - 10);
   ctx.fillText('w₂', cx + 15, 18);
@@ -2220,7 +2308,7 @@ function drawReg() {
   ctx.arc(cx + wStarX * scale, cy - wStarY * scale, 5, 0, Math.PI * 2);
   ctx.fill();
   ctx.fillStyle = '#ffd93d';
-  ctx.font = '11px Inter';
+  ctx.font = '15px Inter';
   ctx.fillText('w*', cx + wStarX * scale, cy - wStarY * scale - 12);
 
   function drawConstraint(type, color, r) {
@@ -2277,7 +2365,7 @@ function drawReg() {
     ctx.arc(cx + sx * scale, cy - sy * scale, 6, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#ff6b6b';
-    ctx.font = '11px Inter';
+    ctx.font = '15px Inter';
     ctx.textAlign = 'left';
     ctx.fillText(`L1: (${sx.toFixed(2)}, ${sy.toFixed(2)})`, cx + sx * scale + 10, cy - sy * scale + 4);
   }
@@ -2290,7 +2378,7 @@ function drawReg() {
     ctx.arc(cx + sx * scale, cy - sy * scale, 6, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#4ecdc4';
-    ctx.font = '11px Inter';
+    ctx.font = '15px Inter';
     ctx.textAlign = 'left';
     ctx.fillText(`L2: (${sx.toFixed(2)}, ${sy.toFixed(2)})`, cx + sx * scale + 10, cy - sy * scale - 10);
   }
@@ -2401,16 +2489,16 @@ function drawCV() {
   const rowH = (H - pad.t - pad.b) / K;
   const barW = (W - pad.l - pad.r);
 
-  ctx.fillStyle = '#888';
-  ctx.font = '13px Inter';
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px Inter';
   ctx.textAlign = 'center';
   ctx.fillText('Data samples →', W / 2, 22);
 
   for (let fold = 0; fold < K; fold++) {
     const y = pad.t + fold * rowH;
 
-    ctx.fillStyle = '#aaa';
-    ctx.font = '12px Inter';
+    ctx.fillStyle = '#b0b0c0';
+    ctx.font = '15px Inter';
     ctx.textAlign = 'right';
     ctx.fillText(`Fold ${fold + 1}`, pad.l - 10, y + rowH / 2 + 4);
 
@@ -2436,7 +2524,7 @@ function drawCV() {
 
       if (rowH > 25) {
         ctx.fillStyle = isActive ? '#fff' : '#ffffff88';
-        ctx.font = '10px monospace';
+        ctx.font = '15px monospace';
         ctx.textAlign = 'center';
         ctx.fillText(isVal ? 'VAL' : 'TRAIN', x + 1 + w / 2, y + rowH / 2 + 3);
       }
@@ -2445,7 +2533,7 @@ function drawCV() {
     if (fold === cvHighlight) {
       const acc = (85 + Math.random() * 10).toFixed(1);
       ctx.fillStyle = '#64ffda';
-      ctx.font = '11px monospace';
+      ctx.font = '15px monospace';
       ctx.textAlign = 'left';
       ctx.fillText(`acc: ${acc}%`, W - pad.r + 5, y + rowH / 2 + 4);
     }
@@ -2487,7 +2575,7 @@ function drawGBT() {
   const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
 
   // Draw axes
-  ctx.strokeStyle = '#333';
+  ctx.strokeStyle = '#888';
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(pad.l, pad.t);
@@ -2495,8 +2583,8 @@ function drawGBT() {
   ctx.lineTo(W - pad.r, H - pad.b);
   ctx.stroke();
 
-  ctx.fillStyle = '#888';
-  ctx.font = '12px Inter';
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px Inter';
   ctx.textAlign = 'center';
   ctx.fillText('x →', W/2, H - 8);
   ctx.save();
@@ -2519,7 +2607,7 @@ function drawGBT() {
   ctx.stroke();
 
   ctx.fillStyle = '#ff6b6b';
-  ctx.font = '11px Inter';
+  ctx.font = '15px Inter';
   ctx.fillText('True', pad.l + 10, pad.t + 15);
 
   // Ensemble prediction (step function, improves with more trees)
@@ -2543,8 +2631,8 @@ function drawGBT() {
   ctx.fillStyle = '#64ffda';
   ctx.fillText('Prediction', pad.l + 80, pad.t + 15);
 
-  ctx.fillStyle = '#aaa';
-  ctx.font = '11px monospace';
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px monospace';
   ctx.textAlign = 'left';
   ctx.fillText(`${numTrees} trees: MSE ≈ ${(0.05 / (1 + numTrees * 0.05)).toFixed(3)}`, pad.l, H - 12);
 }
@@ -2670,25 +2758,25 @@ function drawHT() {
   ctx.setLineDash([]);
 
   // Labels
-  ctx.font = 'bold 14px Arial';
+  ctx.font = 'bold 17px Arial';
   ctx.fillStyle = '#64ffda';
   ctx.fillText('H\u2080: \u03BC = 0', toX(0) - 30, pad.t - 10);
   ctx.fillStyle = '#ff6b6b';
   ctx.fillText('H\u2081: \u03BC = ' + effect.toFixed(1), toX(effect) - 30, pad.t - 10);
   ctx.fillStyle = '#ffd93d';
-  ctx.font = '12px Arial';
+  ctx.font = '15px Arial';
   ctx.fillText('Critical value', toX(criticalValue) + 5, pad.t + 15);
 
   // Power estimate
   const zPower = (effect - criticalValue) / se;
   const power = 0.5 * (1 + erf(zPower / Math.sqrt(2)));
   ctx.fillStyle = '#e0e0e0';
-  ctx.font = 'bold 13px Arial';
+  ctx.font = 'bold 17px Arial';
   ctx.fillText('Power: ' + (power * 100).toFixed(1) + '%', w - 150, pad.t + 20);
   ctx.fillText('\u03B2 (Type II): ' + ((1 - power) * 100).toFixed(1) + '%', w - 150, pad.t + 40);
 
   // Axis
-  ctx.strokeStyle = '#444';
+  ctx.strokeStyle = '#888';
   ctx.beginPath();
   ctx.moveTo(pad.l, pad.t + ph);
   ctx.lineTo(pad.l + pw, pad.t + ph);
@@ -2723,7 +2811,7 @@ function drawMC() {
   const sx = 40, sy = 30;
 
   // Draw square and circle
-  ctx.strokeStyle = '#444';
+  ctx.strokeStyle = '#888';
   ctx.strokeRect(sx, sy, squareSize, squareSize);
   ctx.beginPath();
   ctx.arc(sx + squareSize / 2, sy + squareSize / 2, squareSize / 2, 0, Math.PI * 2);
@@ -2740,7 +2828,7 @@ function drawMC() {
 
   // Convergence chart on right
   const cx = w / 2 + 20, cy = sy, cw = w / 2 - 60, ch = squareSize;
-  ctx.strokeStyle = '#333';
+  ctx.strokeStyle = '#888';
   ctx.strokeRect(cx, cy, cw, ch);
 
   // True pi line
@@ -2753,7 +2841,7 @@ function drawMC() {
   ctx.stroke();
   ctx.setLineDash([]);
   ctx.fillStyle = '#ffd93d';
-  ctx.font = '11px Arial';
+  ctx.font = '15px Arial';
   ctx.fillText('\u03C0/4 = 0.785...', cx + cw - 80, piY - 5);
 
   // Draw convergence
@@ -2772,8 +2860,8 @@ function drawMC() {
   }
 
   // Labels
-  ctx.fillStyle = '#888';
-  ctx.font = '12px Arial';
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px Arial';
   ctx.fillText('Unit Square + Circle', sx, sy + squareSize + 20);
   ctx.fillText('Convergence of ratio', cx, cy + ch + 20);
 
@@ -2832,59 +2920,70 @@ function drawNS() {
 
   // Left: Naive
   ctx.fillStyle = naiveOverflow ? '#ff6b6b' : '#64ffda';
-  ctx.font = 'bold 14px Arial';
-  ctx.fillText('Naive Softmax' + (naiveOverflow ? ' (OVERFLOW!)' : ''), pad.l, pad.t - 15);
+  ctx.font = 'bold 16px Arial';
+  ctx.textAlign = 'left';
+  ctx.fillText('Naive Softmax' + (naiveOverflow ? ' (OVERFLOW!)' : ''), pad.l, pad.t - 10);
 
   const barW = halfW / logits.length - 8;
   for (let i = 0; i < logits.length; i++) {
     const x = pad.l + i * (barW + 8);
     const prob = naiveOverflow ? (i === 4 ? 1 : 0) : naiveProbs[i]; // Show what overflow looks like
-    const barH = prob * (h - pad.t - pad.b - 30);
+    const barH = prob * (h - pad.t - pad.b - 40);
     ctx.fillStyle = naiveOverflow ? '#ff6b6b55' : '#64ffda55';
     ctx.fillRect(x, h - pad.b - barH, barW, barH);
     ctx.strokeStyle = naiveOverflow ? '#ff6b6b' : '#64ffda';
+    ctx.lineWidth = 2;
     ctx.strokeRect(x, h - pad.b - barH, barW, barH);
-    ctx.fillStyle = '#888';
-    ctx.font = '10px Arial';
-    ctx.fillText(labels[i], x, h - pad.b + 15);
+    ctx.fillStyle = '#b0b0c0';
+    ctx.font = '15px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(labels[i], x + barW/2, h - pad.b + 18);
     ctx.fillStyle = naiveOverflow ? '#ff6b6b' : '#64ffda';
-    ctx.font = '11px monospace';
-    ctx.fillText(naiveOverflow ? (isFinite(naiveExps[i]) ? naiveProbs[i].toFixed(3) : 'NaN/Inf') : naiveProbs[i].toFixed(3), x, h - pad.b - barH - 5);
+    ctx.font = '15px monospace';
+    ctx.fillText(naiveOverflow ? (isFinite(naiveExps[i]) ? naiveProbs[i].toFixed(3) : 'NaN/Inf') : naiveProbs[i].toFixed(3), x + barW/2, h - pad.b - barH - 8);
   }
 
   if (naiveOverflow) {
     ctx.fillStyle = '#ff6b6b';
-    ctx.font = 'bold 12px Arial';
-    ctx.fillText('exp(' + (0.8 * mag / temp).toFixed(0) + ') = Infinity!', pad.l, pad.t + 20);
+    ctx.font = 'bold 17px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText('exp(' + (0.8 * mag / temp).toFixed(0) + ') = Infinity!', pad.l, pad.t + 25);
   }
 
   // Right: Stable
   const offsetX = pad.l + halfW + 40;
   ctx.fillStyle = '#64ffda';
-  ctx.font = 'bold 14px Arial';
-  ctx.fillText('Stable Softmax (max-subtracted)', offsetX, pad.t - 15);
+  ctx.font = 'bold 16px Arial';
+  ctx.textAlign = 'left';
+  ctx.fillText('Stable Softmax', offsetX, pad.t - 10);
+  ctx.font = '15px Arial';
+  ctx.fillStyle = '#b0b0c0';
+  ctx.fillText('(log-sum-exp trick)', offsetX, pad.t + 6);
 
   for (let i = 0; i < logits.length; i++) {
     const x = offsetX + i * (barW + 8);
-    const barH = stableProbs[i] * (h - pad.t - pad.b - 30);
+    const barH = stableProbs[i] * (h - pad.t - pad.b - 40);
     ctx.fillStyle = '#7c4dff55';
     ctx.fillRect(x, h - pad.b - barH, barW, barH);
     ctx.strokeStyle = '#7c4dff';
+    ctx.lineWidth = 2;
     ctx.strokeRect(x, h - pad.b - barH, barW, barH);
-    ctx.fillStyle = '#888';
-    ctx.font = '10px Arial';
-    ctx.fillText(labels[i], x, h - pad.b + 15);
-    ctx.fillStyle = '#7c4dff';
-    ctx.font = '11px monospace';
-    ctx.fillText(stableProbs[i].toFixed(3), x, h - pad.b - barH - 5);
+    ctx.fillStyle = '#b0b0c0';
+    ctx.font = '15px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(labels[i], x + barW/2, h - pad.b + 18);
+    ctx.fillStyle = '#9b7aff';
+    ctx.font = '15px monospace';
+    ctx.fillText(stableProbs[i].toFixed(3), x + barW/2, h - pad.b - barH - 8);
   }
 
-  ctx.fillStyle = '#7c4dff';
-  ctx.font = '12px Arial';
-  ctx.fillText('max = ' + maxLogit.toFixed(1) + ', exp(' + ((0.8 * mag - maxLogit) / temp).toFixed(1) + ') = ' + stableExps[4].toFixed(4), offsetX, pad.t + 20);
+  ctx.fillStyle = '#9b7aff';
+  ctx.font = '15px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('max=' + maxLogit.toFixed(0) + ',  exp((' + (0.8 * mag).toFixed(0) + '-' + maxLogit.toFixed(0) + ')/' + temp.toFixed(1) + ')=' + stableExps[4].toFixed(3), offsetX, pad.t + 25);
 
   // Divider
-  ctx.strokeStyle = '#333';
+  ctx.strokeStyle = '#888';
   ctx.setLineDash([3, 3]);
   ctx.beginPath();
   ctx.moveTo(pad.l + halfW + 20, pad.t - 20);

@@ -9,11 +9,11 @@
   body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #0a0a0f; color: #e0e0e0; line-height: 1.6; }
   .header { background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%); padding: 40px; text-align: center; border-bottom: 1px solid #2a2a4a; }
   .header h1 { font-size: 2.2em; background: linear-gradient(90deg, #4ecdc4, #44bd32); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
-  .header p { color: #888; font-size: 1.1em; }
+  .header p { color: #b0b0c0; font-size: 1.1em; }
   .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
   .viz-section { background: #12121f; border: 1px solid #2a2a4a; border-radius: 16px; padding: 32px; margin-bottom: 40px; }
   .viz-section h2 { font-size: 1.5em; color: #4ecdc4; margin-bottom: 8px; }
-  .viz-section .subtitle { color: #888; margin-bottom: 24px; font-size: 0.95em; }
+  .viz-section .subtitle { color: #b0b0c0; margin-bottom: 24px; font-size: 0.95em; }
   canvas { display: block; background: #0d0d1a; border-radius: 12px; margin-bottom: 16px; }
   .controls { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; align-items: center; }
   .control-group { display: flex; flex-direction: column; gap: 4px; }
@@ -31,8 +31,8 @@
   .insight-box strong { color: #4ecdc4; font-size: 1.05em; }
   .insight-box .formula { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 12px 18px; margin: 12px 0; font-family: 'Courier New', monospace; color: #e8e8ff; font-size: 1.05em; text-align: center; letter-spacing: 0.5px; line-height: 1.9; }
   .insight-box .formula .highlight { color: #4ecdc4; font-weight: bold; }
-  .insight-box .key-point { display: flex; gap: 8px; margin: 8px 0; padding: 4px 0; }
-  .insight-box .key-point .label { color: #4ecdc4; font-weight: 600; white-space: nowrap; min-width: 90px; }
+  .insight-box .key-point { display: flex; flex-wrap: wrap; gap: 4px 8px; margin: 8px 0; padding: 4px 0; align-items: baseline; }
+  .insight-box .key-point .label { color: #4ecdc4; font-weight: 600; min-width: 160px; flex-shrink: 0; }
   .insight-box .key-point .desc { color: #ddd; }
   .insight-box .interview-tip { background: rgba(100, 255, 100, 0.05); border: 1px solid rgba(100, 255, 100, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #b0ffb0; font-size: 0.93em; line-height: 1.6; }
   .insight-box .interview-tip::before { content: '\1F4A1  Interview Tip: '; font-weight: 700; color: #7fff7f; }
@@ -59,7 +59,7 @@
 <div class="viz-section">
   <h2>Tokenization: Byte Pair Encoding (BPE)</h2>
   <p class="subtitle">Click 'Next Merge' repeatedly and watch vocabulary grow from characters to common subwords. Notice how frequent patterns like 'the', 'ing', 'tion' emerge early—that's BPE finding the most common byte pairs. Adjust Target Vocab Size to see how final vocabulary changes.</p>
-  <canvas id="bpeCanvas" width="900" height="480"></canvas>
+  <canvas id="bpeCanvas" width="900" height="540"></canvas>
   <div class="controls">
     <button class="btn" id="bpePlayBtn" onclick="toggleBPE()">▶ Next Merge</button>
     <button class="btn" onclick="resetBPE()">↺ Reset</button>
@@ -86,7 +86,7 @@
 <div class="viz-section">
   <h2>Self-Attention: Q, K, V Computation</h2>
   <p class="subtitle">Click different tokens (try 'cat' vs 'the') to see what they attend to in the sentence. Watch which tokens light up—notice how 'cat' attends to nearby content words. Now drag the Temperature slider from left to right: at low temps, attention focuses sharply on one token; at high temps, it spreads evenly. This shows how temperature controls attention concentration.</p>
-  <canvas id="attnCanvas" width="900" height="500"></canvas>
+  <canvas id="attnCanvas" width="900" height="560"></canvas>
   <div class="controls">
     <div class="control-group">
       <label>Temperature (softmax scaling)</label>
@@ -141,7 +141,7 @@
 <div class="viz-section">
   <h2>Multi-Head Attention</h2>
   <p class="subtitle">Adjust the Number of Heads slider from 1 to 8. Watch the visualization change to show more parallel attention patterns. With 1 head, you see one attention pattern. With 8 heads, you see 8 different perspectives simultaneously—some focus on syntax, others on word relationships. Compare the patterns at 1 head vs 8 heads.</p>
-  <canvas id="mhaCanvas" width="900" height="380"></canvas>
+  <canvas id="mhaCanvas" width="900" height="420"></canvas>
   <div class="controls">
     <div class="control-group">
       <label>Number of Heads</label>
@@ -228,7 +228,7 @@
 <div class="viz-section">
   <h2>KV-Cache: Efficient Autoregressive Inference</h2>
   <p class="subtitle">Click 'Generate Next Token' and watch the KV-cache expand. Notice how the cache stores computed keys and values from all previous tokens. Toggle 'Without Cache' to see the full recomputation—watch how much slower it becomes. This shows why caching is critical for inference speed.</p>
-  <canvas id="kvCanvas" width="900" height="360"></canvas>
+  <canvas id="kvCanvas" width="900" height="440"></canvas>
   <div class="controls">
     <button class="btn" id="kvPlayBtn" onclick="toggleKV()">▶ Generate Token</button>
     <button class="btn" onclick="resetKV()">↺ Reset</button>
@@ -271,7 +271,7 @@
 <div class="viz-section">
   <h2>Transformer Block Architecture</h2>
   <p class="subtitle">Click 'Step Through' to follow data flow through each sub-layer. Watch the signal pass through LayerNorm → Attention → residual add, then LayerNorm → FFN → residual add. Toggle the 'Visualize Residuals' checkbox to highlight skip connections. These shortcuts are why deep Transformers can train effectively.</p>
-  <canvas id="blockCanvas" width="900" height="480"></canvas>
+  <canvas id="blockCanvas" width="900" height="560"></canvas>
   <div class="controls">
     <div class="tab-bar">
       <button class="btn active" id="blockPre" onclick="setBlockType('pre')">Pre-Norm (GPT-2+, LLaMA)</button>
@@ -309,7 +309,7 @@
   <p class="subtitle">Click the three tabs: 'Full Fine-Tune', 'LoRA', 'QLoRA'. For each, watch the parameter count and memory usage. LoRA adds only ~2% of parameters but achieves 90%+ of full tuning performance. QLoRA shrinks memory further with 4-bit quantization. Compare the memory cost vs accuracy tradeoff.</p>
   <div class="multi-canvas">
     <div>
-      <canvas id="loraCanvas" width="420" height="400"></canvas>
+      <canvas id="loraCanvas" width="440" height="440"></canvas>
       <div class="controls">
         <div class="control-group">
           <label>LoRA Rank (r)</label>
@@ -319,7 +319,7 @@
       </div>
     </div>
     <div>
-      <canvas id="peftCompareCanvas" width="420" height="400"></canvas>
+      <canvas id="peftCompareCanvas" width="440" height="460"></canvas>
     </div>
   </div>
   <div class="insight-box">
@@ -351,7 +351,7 @@
 <div class="viz-section">
   <h2>RLHF & Alignment Pipeline</h2>
   <p class="subtitle">Click 'Play Pipeline' to animate through Pretrained → SFT (Supervised Fine-Tune) → Reward Model → PPO. Watch how each stage refines the model. Then click 'Compare: DPO' to see Direct Preference Optimization—a simpler pipeline. Notice how DPO skips the reward model step, making training faster.</p>
-  <canvas id="rlhfCanvas" width="900" height="450"></canvas>
+  <canvas id="rlhfCanvas" width="900" height="480"></canvas>
   <div class="controls">
     <div class="tab-bar">
       <button class="btn active" id="rlhfPPO" onclick="setRLHFType('ppo')">PPO (Classic)</button>
@@ -424,7 +424,7 @@
 <div class="viz-section">
   <h2>Serving: Continuous Batching & Paged Attention (vLLM)</h2>
   <p class="subtitle">Toggle between 'Traditional Batching' and 'Continuous Batching'. Watch how continuous batching removes completed sequences mid-batch and adds new ones—no idle waiting. Then view 'PagedAttention' to see how variable-length blocks replace fixed allocations. Compare throughput: traditional batching often leaves GPUs 30% idle.</p>
-  <canvas id="continuousBatchCanvas" width="900" height="420"></canvas>
+  <canvas id="continuousBatchCanvas" width="900" height="480"></canvas>
   <div class="insight-box">
     <strong>Key Insight:</strong> Scaling laws govern how model performance improves with more parameters, data, and compute.
     <div class="formula">Loss(N) ≈ a / N^α  (model size scaling)</div>
@@ -465,7 +465,7 @@
 <div class="viz-section">
   <h2>RAG: Retrieval-Augmented Generation</h2>
   <p class="subtitle">Click 'Step Through RAG' to walk through each stage. At the Retrieve step, toggle between Chunking Strategy (Fixed vs Semantic vs Recursive) and watch how chunk boundaries change. Fixed = dumb boundaries, Semantic = respects meaning, Recursive = hierarchical. See how Semantic chunking retrieves more relevant context than Fixed.</p>
-  <canvas id="ragPipelineCanvas" width="900" height="450"></canvas>
+  <canvas id="ragPipelineCanvas" width="900" height="490"></canvas>
   <div class="controls">
     <div class="tab-bar">
       <button class="btn active" id="ragFixed" onclick="setRAGStrategy('fixed')">Fixed (512 tokens)</button>
@@ -545,25 +545,40 @@
 </div>
 
 <script>
-// ==================== TOKENIZATION: BPE ====================
+// ==================== TOKENIZATION: BPE (Byte Pair Encoding) ====================
 let bpeState = {
   text: "the quick brown fox jumps",
   mergeIdx: 0,
   maxMerges: 0,
-  vocab: []
+  vocab: [],
+  mergePairs: [],
+  mergeCounts: []
 };
 
 function initBPE() {
   const target = parseInt(document.getElementById('bpeTarget').value);
-  const text = "the quick brown fox jumps";
-  const tokens = text.split('').map(c => c === ' ' ? '▁' : c);
   bpeState.vocab = [];
   bpeState.mergeIdx = 0;
   bpeState.maxMerges = target - 256;
+
+  // Pre-compute deterministic merge pairs and counts
+  const allPairs = ['th', 'he', 'e▁', '▁q', 'qu', 'ui', 'ic', 'ck', 'k▁', 'br',
+                    'ow', 'wn', 'n▁', '▁f', 'fo', 'ox', 'x▁', '▁j', 'ju', 'um',
+                    'mp', 'ps', 'the', 'qu', 'ick', 'bro', 'own', 'fox', 'jum', 'mps'];
+  bpeState.mergePairs = [];
+  bpeState.mergeCounts = [];
+  for (let i = 0; i < bpeState.maxMerges + 5; i++) {
+    bpeState.mergePairs.push(allPairs[i % allPairs.length]);
+    bpeState.mergeCounts.push(Math.max(5, 50 - i * 2));
+  }
   drawBPE();
 }
 
 function toggleBPE() {
+  // Re-sync maxMerges from the slider every time
+  const target = parseInt(document.getElementById('bpeTarget').value);
+  bpeState.maxMerges = target - 256;
+
   if (bpeState.mergeIdx < bpeState.maxMerges) {
     bpeState.mergeIdx++;
     drawBPE();
@@ -573,6 +588,8 @@ function toggleBPE() {
 function resetBPE() {
   bpeState.mergeIdx = 0;
   bpeState.vocab = [];
+  const target = parseInt(document.getElementById('bpeTarget').value);
+  bpeState.maxMerges = target - 256;
   drawBPE();
 }
 
@@ -586,107 +603,126 @@ function drawBPE() {
 
   const target = parseInt(document.getElementById('bpeTarget').value);
   const maxMerges = target - 256;
+  bpeState.maxMerges = maxMerges;
   document.getElementById('bpeTargetVal').textContent = target;
 
   // Title
   ctx.fillStyle = '#4ecdc4';
-  ctx.font = 'bold 16px Inter';
+  ctx.font = 'bold 17px Inter';
   ctx.textAlign = 'left';
-  ctx.fillText('BPE Tokenization Process', 40, 40);
+  ctx.fillText('Byte Pair Encoding (BPE) Tokenization Process', 40, 40);
 
   // Input text
-  ctx.fillStyle = '#888';
-  ctx.font = '14px Inter';
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px Inter';
   ctx.fillText('Input text:', 40, 80);
 
   const text = "the quick brown fox";
   const chars = text.split('').map(c => c === ' ' ? '▁' : c);
   let x = 160;
-  ctx.font = '12px monospace';
+  ctx.font = '15px monospace';
   ctx.fillStyle = '#4ecdc4';
   for (let i = 0; i < chars.length; i++) {
     ctx.fillText(chars[i], x, 80);
-    x += 20;
+    x += 22;
   }
 
   // Initial vocab (256 bytes)
-  ctx.fillStyle = '#888';
-  ctx.font = '13px Inter';
-  ctx.fillText('Initial vocabulary (256 bytes):', 40, 130);
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px Inter';
+  ctx.fillText('Initial vocabulary (256 bytes):', 40, 125);
 
-  ctx.fillStyle = '#666';
-  ctx.font = '12px monospace';
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px monospace';
   let vocabText = '';
   for (let i = 0; i < 16; i++) {
     vocabText += String.fromCharCode(32 + i) + ' ';
   }
-  ctx.fillText(vocabText, 60, 155);
-  ctx.fillText('... (256 total)', 60, 175);
+  ctx.fillText(vocabText, 60, 152);
+  ctx.fillText('... (256 total)', 60, 174);
 
   // Merge steps
-  ctx.fillStyle = '#888';
-  ctx.font = '13px Inter';
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px Inter';
   ctx.fillText('Merge steps:', 40, 210);
 
-  ctx.fillStyle = '#666';
-  ctx.font = '12px monospace';
-  const mergeY = 235;
+  const mergeY = 238;
   const stepsToShow = 10;
   for (let i = 0; i < Math.min(stepsToShow, bpeState.mergeIdx + 1); i++) {
-    const pairs = ['th', 'he', 'e▁', '▁q', 'qu', 'ui', 'ic', 'ck', 'k▁', 'br'];
-    const pair = pairs[i % pairs.length];
-    const count = Math.floor(50 - i * 3 + Math.random() * 10);
+    const pair = bpeState.mergePairs[i] || 'th';
+    const count = bpeState.mergeCounts[i] || 10;
     const isHighlighted = i === bpeState.mergeIdx;
-    ctx.fillStyle = isHighlighted ? '#4ecdc4' : '#666';
-    ctx.fillText(`${String(i + 1).padStart(3, ' ')}. Merge '${pair}' (${count} occurrences)`, 60, mergeY + i * 18);
+    ctx.fillStyle = isHighlighted ? '#4ecdc4' : '#b0b0c0';
+    ctx.font = isHighlighted ? 'bold 15px monospace' : '15px monospace';
+    ctx.fillText(`${String(i + 1).padStart(3, ' ')}. Merge '${pair}' (${count} occurrences)`, 60, mergeY + i * 22);
   }
 
   if (bpeState.mergeIdx < maxMerges) {
-    ctx.fillStyle = '#666';
-    ctx.font = '12px monospace';
-    ctx.fillText(`... (${maxMerges - bpeState.mergeIdx - 1} more merges)`, 60, mergeY + stepsToShow * 18);
+    ctx.fillStyle = '#888';
+    ctx.font = '15px monospace';
+    ctx.fillText(`... (${maxMerges - bpeState.mergeIdx - 1} more merges to go)`, 60, mergeY + stepsToShow * 22 + 4);
   }
 
   // Vocab size progress
   const vocabSize = 256 + bpeState.mergeIdx;
-  ctx.fillStyle = '#888';
-  ctx.font = '13px Inter';
-  ctx.fillText('Current vocabulary size:', 40, 400);
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px Inter';
+  ctx.fillText('Current vocabulary size:', 40, 490);
 
-  ctx.font = '14px monospace';
+  ctx.font = '16px monospace';
   ctx.fillStyle = '#4ecdc4';
-  ctx.fillText(String(vocabSize), 280, 400);
+  ctx.fillText(String(vocabSize) + ' / ' + target, 280, 490);
 
   // Progress bar
   const barW = 300;
   const barX = 40;
-  const barY = 425;
+  const barY = 505;
   ctx.fillStyle = '#2a2a4a';
   ctx.fillRect(barX, barY, barW, 20);
+  const progress = maxMerges > 0 ? bpeState.mergeIdx / maxMerges : 0;
   ctx.fillStyle = '#4ecdc4';
-  ctx.fillRect(barX, barY, (bpeState.mergeIdx / maxMerges) * barW, 20);
+  ctx.fillRect(barX, barY, progress * barW, 20);
   ctx.strokeStyle = '#4ecdc4';
   ctx.lineWidth = 1;
   ctx.strokeRect(barX, barY, barW, 20);
 
-  ctx.fillStyle = '#888';
-  ctx.font = '12px Inter';
-  ctx.textAlign = 'center';
-  ctx.fillText(`${Math.round((bpeState.mergeIdx / maxMerges) * 100)}%`, barX + barW / 2, barY + 35);
-
-  // Token example after merges
-  ctx.fillStyle = '#888';
+  ctx.fillStyle = '#b0b0c0';
   ctx.font = '13px Inter';
-  ctx.textAlign = 'left';
-  ctx.fillText('Example encoding after merges:', 40, 470);
+  ctx.textAlign = 'center';
+  ctx.fillText(`${Math.round(progress * 100)}%`, barX + barW / 2, barY + 35);
 
-  ctx.font = '12px monospace';
+  // Token example after merges - show progression
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px Inter';
+  ctx.textAlign = 'left';
+
+  // Right side: example tokens at current merge step
+  const exampleY = 250;
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px Inter';
+  ctx.fillText('Current tokenization:', 500, 210);
+
+  ctx.font = '15px monospace';
   ctx.fillStyle = '#44bd32';
-  const example = ['th', 'e', '▁q', 'ui', 'ck'];
-  let ex = 280;
-  for (let i = 0; i < example.length; i++) {
-    ctx.fillText(`[${example[i]}]`, ex, 470);
-    ex += 60;
+  // Show token decomposition that evolves with merges
+  const exampleStages = [
+    ['t','h','e','▁','q','u','i','c','k'],
+    ['th','e','▁','q','u','i','c','k'],
+    ['th','e','▁','qu','i','c','k'],
+    ['the','▁','qu','i','ck'],
+    ['the','▁','qu','ick'],
+    ['the','▁','quick']
+  ];
+  const stageIdx = Math.min(bpeState.mergeIdx, exampleStages.length - 1);
+  const currentTokens = exampleStages[stageIdx];
+  let ex = 500;
+  let ey = 238;
+  for (let i = 0; i < currentTokens.length; i++) {
+    const tok = `[${currentTokens[i]}]`;
+    const tw = ctx.measureText(tok).width;
+    if (ex + tw > W - 20) { ex = 500; ey += 24; }
+    ctx.fillText(tok, ex, ey);
+    ex += tw + 8;
   }
 }
 
@@ -743,9 +779,15 @@ function drawAttn() {
   }
   const weights = softmax(scores);
 
-  const tokY = 60, matY = 140, scoreY = 320, outputY = 440;
-  const tokSpacing = 100;
-  const startX = 120;
+  // Section title
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '17px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText('Self-Attention: Query (Q), Key (K), Value (V) Computation', 40, 30);
+
+  const tokY = 65, matY = 150;
+  const tokSpacing = 115;
+  const startX = 130;
 
   // Draw tokens
   ctx.font = '16px Inter';
@@ -755,15 +797,15 @@ function drawAttn() {
     const isFocused = i === attnFocus;
 
     ctx.fillStyle = isFocused ? '#4ecdc4' : '#2a2a4a';
-    ctx.strokeStyle = isFocused ? '#4ecdc4' : '#444';
+    ctx.strokeStyle = isFocused ? '#4ecdc4' : '#999';
     ctx.lineWidth = isFocused ? 2 : 1;
     ctx.beginPath();
-    ctx.roundRect(x - 30, tokY - 15, 60, 30, 6);
+    ctx.roundRect(x - 35, tokY - 16, 70, 32, 6);
     ctx.fill();
     ctx.stroke();
 
     ctx.fillStyle = isFocused ? '#000' : '#ccc';
-    ctx.fillText(tokens[i], x, tokY + 5);
+    ctx.fillText(tokens[i], x, tokY + 6);
   }
 
   // Attention beams
@@ -775,33 +817,35 @@ function drawAttn() {
     ctx.strokeStyle = `rgba(78,205,196,${w})`;
     ctx.lineWidth = w * 8 + 0.5;
     ctx.beginPath();
-    ctx.moveTo(x1, tokY + 20);
-    ctx.quadraticCurveTo((x1 + x2) / 2, tokY + 60 + Math.abs(x1 - x2) * 0.3, x2, tokY + 20);
+    ctx.moveTo(x1, tokY + 22);
+    ctx.quadraticCurveTo((x1 + x2) / 2, tokY + 60 + Math.abs(x1 - x2) * 0.25, x2, tokY + 22);
     ctx.stroke();
 
-    ctx.fillStyle = w > 0.1 ? '#4ecdc4' : '#555';
-    ctx.font = '11px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText(w.toFixed(3), x2, tokY + 40 + (j % 2) * 14);
+    if (w > 0.15) {
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '13px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(w.toFixed(3), x2, tokY + 45 + (j % 2) * 20);
+    }
   }
 
-  // Heatmap
-  const heatX = 40, heatY = matY + 40;
-  const cellSize = 52;
+  // Heatmap - use smaller cells and offset to the left
+  const heatX = 50, heatY = matY + 30;
+  const cellSize = 48;
 
-  ctx.fillStyle = '#888';
-  ctx.font = '12px Inter';
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '15px Inter';
   ctx.textAlign = 'center';
-  ctx.fillText('Attention Weights Matrix', heatX + N * cellSize / 2, heatY - 10);
+  ctx.fillText('Attention Weights Matrix (Causal Masked)', heatX + N * cellSize / 2, heatY - 22);
 
   for (let i = 0; i < N; i++) {
-    ctx.fillStyle = i === attnFocus ? '#4ecdc4' : '#666';
-    ctx.font = '10px Inter';
+    ctx.fillStyle = i === attnFocus ? '#4ecdc4' : '#b0b0c0';
+    ctx.font = '13px Inter';
     ctx.textAlign = 'right';
-    ctx.fillText(tokens[i], heatX - 4, heatY + i * cellSize + cellSize / 2 + 3);
+    ctx.fillText(tokens[i], heatX - 8, heatY + i * cellSize + cellSize / 2 + 5);
 
     ctx.textAlign = 'center';
-    ctx.fillText(tokens[i], heatX + i * cellSize + cellSize / 2, heatY - 2);
+    ctx.fillText(tokens[i], heatX + i * cellSize + cellSize / 2, heatY - 8);
 
     const qi = Q[i];
     const rowScores = [];
@@ -834,27 +878,38 @@ function drawAttn() {
         ctx.strokeRect(x, y, cellSize - 1, cellSize - 1);
       }
 
-      ctx.fillStyle = masked ? '#333' : (w > 0.3 ? '#000' : '#ccc');
-      ctx.font = '10px monospace';
+      ctx.fillStyle = masked ? '#888' : (w > 0.3 ? '#000000' : '#ffffff');
+      ctx.font = '13px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText(masked ? '—' : w.toFixed(2), x + cellSize / 2, y + cellSize / 2 + 3);
+      ctx.fillText(masked ? '--' : w.toFixed(2), x + cellSize / 2, y + cellSize / 2 + 5);
     }
   }
 
-  ctx.fillStyle = '#666';
-  ctx.font = '11px Inter';
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px Inter';
   ctx.textAlign = 'center';
-  ctx.fillText('Query ↓', heatX - 30, heatY + N * cellSize / 2);
-  ctx.fillText('Key →', heatX + N * cellSize / 2, heatY + N * cellSize + 16);
+  ctx.fillText('Query', heatX - 35, heatY + N * cellSize / 2);
+  ctx.fillText('Key', heatX + N * cellSize / 2, heatY + N * cellSize + 22);
 
-  // Formula
-  ctx.fillStyle = '#888';
-  ctx.font = '12px monospace';
+  // Formula section - right side
+  const formulaX = heatX + N * cellSize + 40;
+  const formulaY = heatY + 10;
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '15px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('Attention(Q,K,V) = softmax(QKᵀ/√dₖ) · V', 40, outputY);
+  ctx.fillText('Attention(Q,K,V)', formulaX, formulaY);
+  ctx.fillText('  = softmax(QK^T / sqrt(d_k)) * V', formulaX, formulaY + 24);
+
   ctx.fillStyle = '#4ecdc4';
-  ctx.fillText(`√dₖ = √${dk} = ${Math.sqrt(dk).toFixed(2)}`, 40, outputY + 20);
-  ctx.fillText(`temp = ${temp.toFixed(1)}  (÷ by this too)`, 40, outputY + 40);
+  ctx.font = '15px monospace';
+  ctx.fillText(`sqrt(d_k) = sqrt(${dk}) = ${Math.sqrt(dk).toFixed(2)}`, formulaX, formulaY + 60);
+  ctx.fillText(`Temperature: ${temp.toFixed(1)}`, formulaX, formulaY + 84);
+
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px Inter';
+  ctx.fillText('Q = Query ("what am I looking for?")', formulaX, formulaY + 120);
+  ctx.fillText('K = Key ("what do I represent?")', formulaX, formulaY + 144);
+  ctx.fillText('V = Value ("what info to extract?")', formulaX, formulaY + 168);
 }
 
 // ==================== MULTI-HEAD ATTENTION ====================
@@ -872,22 +927,22 @@ function drawMHA() {
 
   const headColors = ['#ff6b6b', '#4ecdc4', '#ffd93d', '#7c4dff', '#ff9ff3', '#54a0ff', '#5f27cd', '#01a3a4'];
   const startX = 100;
-  const headY = 100;
+  const headY = 110;
 
-  ctx.fillStyle = '#888';
-  ctx.font = '14px Inter';
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '16px Inter';
   ctx.textAlign = 'center';
-  ctx.fillText('Input Embedding (d_model = 512)', W / 2, 30);
+  ctx.fillText('Input Embedding (d_model = 512)', W / 2, 34);
 
   ctx.fillStyle = '#2a2a4a';
-  ctx.fillRect(startX, 40, W - 2 * startX, 25);
+  ctx.fillRect(startX, 44, W - 2 * startX, 25);
   ctx.strokeStyle = '#4ecdc4';
   ctx.lineWidth = 1;
-  ctx.strokeRect(startX, 40, W - 2 * startX, 25);
+  ctx.strokeRect(startX, 44, W - 2 * startX, 25);
 
-  ctx.fillStyle = '#666';
-  ctx.font = '12px Inter';
-  ctx.fillText(`Split into ${numHeads} heads  (d_k = ${Math.floor(512 / numHeads)} per head)`, W / 2, 85);
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px Inter';
+  ctx.fillText(`Split into ${numHeads} heads (d_k = ${Math.floor(512 / numHeads)} per head)`, W / 2, 92);
 
   const headW = (W - 2 * startX) / numHeads - 4;
 
@@ -897,7 +952,7 @@ function drawMHA() {
     ctx.strokeStyle = headColors[h] + '44';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(x + headW / 2, 65);
+    ctx.moveTo(x + headW / 2, 70);
     ctx.lineTo(x + headW / 2, headY);
     ctx.stroke();
 
@@ -905,18 +960,18 @@ function drawMHA() {
     ctx.strokeStyle = headColors[h];
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.roundRect(x, headY, headW, 140, 8);
+    ctx.roundRect(x, headY, headW, 150, 8);
     ctx.fill();
     ctx.stroke();
 
     ctx.fillStyle = headColors[h];
-    ctx.font = '12px Inter';
+    ctx.font = '15px Inter';
     ctx.textAlign = 'center';
-    ctx.fillText(`Head ${h + 1}`, x + headW / 2, headY + 20);
+    ctx.fillText(`Head ${h + 1}`, x + headW / 2, headY + 22);
 
     const miniSize = Math.min(headW - 10, 60);
     const miniX = x + (headW - miniSize) / 2;
-    const miniY = headY + 30;
+    const miniY = headY + 34;
     const cells = 4;
     const cellSize = miniSize / cells;
 
@@ -933,23 +988,22 @@ function drawMHA() {
   }
 
   // Output
-  ctx.fillStyle = '#666';
-  ctx.font = '12px Inter';
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '15px Inter';
   ctx.textAlign = 'center';
-  ctx.fillText('Concatenate → Linear → Output (d_model = 512)', W / 2, headY + 180);
+  ctx.fillText('Concatenate all heads, then Linear projection to Output (d_model = 512)', W / 2, headY + 190);
 
   ctx.fillStyle = '#2a2a4a';
-  ctx.fillRect(startX, headY + 195, W - 2 * startX, 25);
+  ctx.fillRect(startX, headY + 205, W - 2 * startX, 25);
   ctx.strokeStyle = '#4ecdc4';
   ctx.lineWidth = 1;
-  ctx.strokeRect(startX, headY + 195, W - 2 * startX, 25);
+  ctx.strokeRect(startX, headY + 205, W - 2 * startX, 25);
 
   // Efficiency note
-  ctx.fillStyle = '#888';
-  ctx.font = '11px Inter';
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px Inter';
   ctx.textAlign = 'left';
-  ctx.fillText(`Total params: Q,K,V projections = 3 × d_model²`, 40, H - 30);
-  ctx.fillText(`Output projection = d_model²  (1 layer) × 32 layers = 13B params for 7B model`, 40, H - 10);
+  ctx.fillText(`Total params per layer: Q, K, V projections = 3 * d_model^2 + output projection = d_model^2`, 50, H - 30);
 }
 
 // ==================== POSITIONAL ENCODING ====================
@@ -974,7 +1028,7 @@ function drawPos() {
   ctx.fillStyle = '#0d0d1a';
   ctx.fillRect(0, 0, W, H);
 
-  ctx.fillStyle = '#888';
+  ctx.fillStyle = '#b0b0c0';
   ctx.font = '13px Inter';
   ctx.textAlign = 'left';
   ctx.fillText('Position encoding heatmap (freq vs position)', 40, 30);
@@ -1004,7 +1058,7 @@ function drawPos() {
   }
 
   // Axes
-  ctx.strokeStyle = '#444';
+  ctx.strokeStyle = '#888';
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(heatX, heatY);
@@ -1013,23 +1067,24 @@ function drawPos() {
   ctx.stroke();
 
   // Labels
-  ctx.fillStyle = '#666';
-  ctx.font = '11px Inter';
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px Inter';
   ctx.textAlign = 'center';
-  ctx.fillText('Position (token index)', heatX + maxPos * cellSize / 2, heatY + freqs * cellSize + 20);
+  ctx.fillText('Position (token index)', heatX + maxPos * cellSize / 2, heatY + freqs * cellSize + 24);
   ctx.textAlign = 'right';
   ctx.fillText('Freq', heatX - 5, heatY + freqs * cellSize / 2);
 
   // Formula
-  ctx.fillStyle = '#888';
-  ctx.font = '12px monospace';
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px monospace';
   ctx.textAlign = 'left';
   if (posType === 'sinusoidal') {
     ctx.fillText('PE(pos, 2i) = sin(pos / 10000^(2i/d))', 40, H - 50);
     ctx.fillText('PE(pos, 2i+1) = cos(pos / 10000^(2i/d))', 40, H - 25);
   } else {
-    ctx.fillText('RoPE: Rotate Q, K by position angle θ = pos / 10000^(2i/d)', 40, H - 50);
-    ctx.fillText('Attention depends on relative position m - n', 40, H - 25);
+    ctx.fillText('RoPE (Rotary Position Embedding):', 40, H - 70);
+    ctx.fillText('Rotate Q, K by angle theta = pos / 10000^(2i/d)', 40, H - 45);
+    ctx.fillText('Attention depends on relative position m - n', 40, H - 20);
   }
 }
 
@@ -1059,115 +1114,165 @@ function drawKV() {
   const step = kvState.step;
 
   // Title
-  ctx.fillStyle = '#4ecdc4';
-  ctx.font = 'bold 14px Inter';
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 17px Inter';
   ctx.textAlign = 'left';
-  ctx.fillText('KV-Cache during autoregressive generation', 40, 35);
+  ctx.fillText('KV-Cache (Key-Value Cache): Efficient Autoregressive Inference', 40, 30);
 
-  // Timeline
-  const timelineY = 65;
+  // Step-by-step timeline
+  const timelineY = 70;
   const tokenW = 60;
-  const spacing = tokenW + 15;
+  const spacing = tokenW + 14;
 
-  ctx.font = '12px Inter';
-  ctx.fillStyle = '#888';
+  ctx.font = '15px Inter';
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'left';
+  ctx.fillText('Generation Progress:', 40, timelineY - 15);
+
   for (let i = 0; i < kvTokens.length; i++) {
     const x = 60 + i * spacing;
     const isGenerated = i < step;
     const isGenerating = i === step;
 
+    // Token box
     ctx.fillStyle = isGenerating ? '#4ecdc4' : (isGenerated ? '#44bd32' : '#2a2a4a');
-    ctx.strokeStyle = isGenerating ? '#4ecdc4' : '#444';
-    ctx.lineWidth = isGenerating ? 2 : 1;
+    ctx.strokeStyle = isGenerating ? '#4ecdc4' : (isGenerated ? '#44bd32' : '#888');
+    ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.roundRect(x, timelineY, tokenW, 35, 4);
     ctx.fill();
     ctx.stroke();
 
-    ctx.fillStyle = isGenerating ? '#000' : (isGenerated ? '#000' : '#aaa');
-    ctx.font = 'bold 12px Inter';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 15px Inter';
     ctx.textAlign = 'center';
-    ctx.fillText(kvTokens[i], x + tokenW / 2, timelineY + 22);
+    ctx.fillText(kvTokens[i], x + tokenW / 2, timelineY + 23);
   }
 
-  // KV-Cache visualization
-  const cacheY = 140;
-  ctx.fillStyle = '#888';
-  ctx.font = '13px Inter';
+  // Cache state visualization
+  const cacheStartY = 140;
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 15px Inter';
   ctx.textAlign = 'left';
-  ctx.fillText('KV-Cache (stored from previous tokens):', 40, cacheY);
+  ctx.fillText('Key-Value (KV) Cache State (grows with each token generated):', 40, cacheStartY);
 
-  // Show cache state
-  const cacheBoxX = 60;
-  const cacheBoxY = cacheY + 20;
-  const cacheBoxW = 200;
-  const cacheBoxH = 180;
+  // Draw cache boxes for each step -- cached (green) vs fresh (cyan)
+  const boxW = 100;
+  const boxH = 55;
+  const boxSpacing = 14;
+  const boxStartX = 60;
+  const boxY = cacheStartY + 28;
 
-  ctx.fillStyle = '#1a1a3e';
-  ctx.strokeStyle = '#4ecdc4';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.roundRect(cacheBoxX, cacheBoxY, cacheBoxW, cacheBoxH, 8);
-  ctx.fill();
-  ctx.stroke();
+  for (let s = 0; s <= Math.min(step, 5); s++) {
+    const x = boxStartX + s * (boxW + boxSpacing);
 
-  ctx.fillStyle = '#4ecdc4';
-  ctx.font = '11px monospace';
-  ctx.textAlign = 'left';
-  const lines = [];
-  lines.push('K: [batch, seq_len, heads, d_k]');
-  lines.push(`  shape: [1, ${step}, 8, 64]`);
-  lines.push(`  size: ${step * 8 * 64 * 2} bytes (fp16)`);
-  lines.push('');
-  lines.push('V: [batch, seq_len, heads, d_v]');
-  lines.push(`  shape: [1, ${step}, 8, 64]`);
-  lines.push(`  size: ${step * 8 * 64 * 2} bytes (fp16)`);
-  lines.push('');
-  lines.push(`Total cached: ${step * 8 * 64 * 2 * 2 / 1024} KB`);
+    // Cached portion
+    const cachedH = s > 0 ? 28 : 0;
+    if (cachedH > 0) {
+      ctx.fillStyle = '#44bd3233';
+      ctx.strokeStyle = '#44bd32';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.roundRect(x, boxY, boxW, cachedH, [6, 6, 0, 0]);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#44bd32';
+      ctx.font = '13px Inter';
+      ctx.textAlign = 'center';
+      ctx.fillText(`Cached 0-${s - 1}`, x + boxW / 2, boxY + 18);
+    }
 
-  for (let i = 0; i < lines.length; i++) {
-    ctx.fillText(lines[i], cacheBoxX + 10, cacheBoxY + 15 + i * 16);
+    // Fresh computation portion
+    ctx.fillStyle = '#4ecdc433';
+    ctx.strokeStyle = '#4ecdc4';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.roundRect(x, boxY + cachedH, boxW, boxH - cachedH, cachedH > 0 ? [0, 0, 6, 6] : 6);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#4ecdc4';
+    ctx.font = '13px Inter';
+    ctx.textAlign = 'center';
+    ctx.fillText(`New: ${s}`, x + boxW / 2, boxY + cachedH + (boxH - cachedH) / 2 + 5);
+
+    // Step label
+    ctx.fillStyle = '#b0b0c0';
+    ctx.font = '13px Inter';
+    ctx.fillText(`Step ${s + 1}`, x + boxW / 2, boxY + boxH + 16);
   }
 
-  // Computation comparison
-  ctx.fillStyle = '#888';
-  ctx.font = '13px Inter';
+  // Cache computation explanation
+  const explainY = boxY + boxH + 44;
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px Inter';
   ctx.textAlign = 'left';
-  ctx.fillText('Without KV-Cache:', 350, cacheY);
 
-  const noCache = `O(step²) computations
-Every token computes:
-Q @ K[:all] @ V[:all]
-Total: 1+4+9+16+...+${step * step}`;
+  const stepLabels = [
+    `Step 1: Compute K,V for token 0 (initial input). Cache them.`,
+    `Step 2: Reuse cached K,V from step 1. Only compute new K,V for token 1. Append.`,
+    `Step 3: Reuse cached K,V (steps 1-2). Only compute new K,V for token 2. Append.`
+  ];
+
+  let labelY = explainY;
+  for (let i = 0; i < Math.min(3, step + 1); i++) {
+    if (i < stepLabels.length) {
+      ctx.fillStyle = i < step ? '#44bd32' : '#b0b0c0';
+      ctx.font = i < step ? 'bold 15px Inter' : '15px Inter';
+      ctx.fillText(stepLabels[i], 50, labelY);
+      labelY += 24;
+    }
+  }
+
+  // Memory comparison on the right
+  const compX = W - 380;
+  const compY = 140;
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 15px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText('Without Cache (naive):', compX, compY);
 
   ctx.fillStyle = '#ff6b6b';
-  ctx.font = '11px monospace';
-  const lines2 = noCache.split('\n');
-  for (let i = 0; i < lines2.length; i++) {
-    ctx.fillText(lines2[i], 360, cacheY + 20 + i * 16);
+  ctx.font = '15px Inter';
+  const noCacheLines = [
+    `Recomputes ALL past K,V each step`,
+    `Total: 1+2+...+n = O(n^2) operations`
+  ];
+  let y = compY + 22;
+  for (let i = 0; i < noCacheLines.length; i++) {
+    ctx.fillText(noCacheLines[i], compX + 10, y);
+    y += 20;
   }
 
-  ctx.fillStyle = '#888';
-  ctx.font = '13px Inter';
-  ctx.fillText('With KV-Cache:', 350, 280);
-
-  const withCache = `O(step) computations
-Reuse K, V from cache:
-Only compute new Q
-Total: ${step} × O(1)`;
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 15px Inter';
+  ctx.fillText('With KV Cache (efficient):', compX, y + 18);
 
   ctx.fillStyle = '#44bd32';
-  ctx.font = '11px monospace';
-  const lines3 = withCache.split('\n');
-  for (let i = 0; i < lines3.length; i++) {
-    ctx.fillText(lines3[i], 360, 300 + i * 16);
+  ctx.font = '15px Inter';
+  const cacheLines = [
+    `Only compute new token's K,V each step`,
+    `Total: n * O(1) = O(n) operations`
+  ];
+  y += 40;
+  for (let i = 0; i < cacheLines.length; i++) {
+    ctx.fillText(cacheLines[i], compX + 10, y);
+    y += 20;
   }
 
-  // Speedup
-  ctx.fillStyle = '#888';
-  ctx.font = '12px Inter';
+  // Memory cost note
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px Inter';
+  ctx.fillText(`Cache memory: 2 * n_layers * d_model * seq_len`, compX + 10, y + 18);
+  ctx.fillText(`(per token: ~1MB for a 7B model)`, compX + 10, y + 40);
+
+  // Speedup bar at bottom
+  const speedupY = H - 30;
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '15px Inter';
   ctx.textAlign = 'left';
-  ctx.fillText(`Speedup at step ${step}: ${(step * step / step).toFixed(1)}x`, 40, H - 20);
+  const speedupFactor = step > 0 ? step : 1;
+  ctx.fillText(`At step ${step}: KV cache makes inference ${speedupFactor}x faster`, 40, speedupY);
 }
 
 // ==================== TRANSFORMER BLOCK ====================
@@ -1190,140 +1295,154 @@ function drawBlock() {
   ctx.fillRect(0, 0, W, H);
 
   const isPre = blockType === 'pre';
-  const boxX = 100, boxY = 80, boxW = 700, boxH = 340;
 
-  // Main box
-  ctx.fillStyle = '#1a1a3e';
-  ctx.strokeStyle = '#4ecdc4';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.roundRect(boxX, boxY, boxW, boxH, 12);
-  ctx.fill();
-  ctx.stroke();
+  // Title
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 15px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText(`Transformer ${isPre ? 'Pre' : 'Post'}-Norm Block Architecture`, W / 2, 30);
 
+  // Input label
   ctx.fillStyle = '#4ecdc4';
-  ctx.font = 'bold 14px Inter';
+  ctx.font = 'bold 13px Inter';
   ctx.textAlign = 'center';
-  ctx.fillText(`Transformer ${isPre ? 'Pre' : 'Post'}-Norm Block`, W / 2, 60);
+  ctx.fillText('Input: x', W / 2, 60);
 
-  // Input
-  ctx.fillStyle = '#888';
-  ctx.font = '11px Inter';
-  ctx.textAlign = 'center';
-  ctx.fillText('x (input)', W / 2, boxY - 20);
-
-  // Draw blocks
-  const yStart = boxY + 30;
-  const blockH = 50;
-  const blockW = 120;
-  const spacing = 30;
-  let y = yStart;
+  // Draw blocks in a vertical stack
+  const blockW = 240;
+  const blockH = 45;
+  const spacing = 18;
+  const blockX = W / 2 - blockW / 2;
+  let y = 85;
 
   if (isPre) {
     // Pre-Norm: Norm -> Attn -> Add -> Norm -> FFN -> Add
     const blocks = [
-      { label: 'LayerNorm', color: '#ff6b6b' },
-      { label: 'Self-Attn', color: '#4ecdc4' },
-      { label: '+ Residual', color: '#888' },
-      { label: 'LayerNorm', color: '#ff6b6b' },
-      { label: 'FFN (4x)', color: '#ffd93d' },
-      { label: '+ Residual', color: '#888' }
+      { label: 'Layer Normalization (Norm)', subtitle: 'Normalize input', color: '#ff6b6b' },
+      { label: 'Multi-Head Self-Attention', subtitle: 'Compute Q, K, V and attend', color: '#4ecdc4' },
+      { label: 'Residual Add (x + Attention)', subtitle: 'Skip connection', color: '#7c7c9c' },
+      { label: 'Layer Normalization (Norm)', subtitle: 'Normalize for Feed-Forward', color: '#ff6b6b' },
+      { label: 'Feed-Forward Network (FFN)', subtitle: 'Two linear layers with GELU', color: '#ffd93d' },
+      { label: 'Residual Add (x + FFN)', subtitle: 'Final skip connection', color: '#7c7c9c' }
     ];
 
     for (let i = 0; i < blocks.length; i++) {
       const block = blocks[i];
-      const x = boxX + 60;
 
-      ctx.fillStyle = block.color + (block.label.includes('Residual') ? '22' : '33');
+      // Draw box
+      ctx.fillStyle = block.color + '22';
       ctx.strokeStyle = block.color;
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.roundRect(x, y, blockW, blockH, 6);
+      ctx.roundRect(blockX, y, blockW, blockH, 6);
       ctx.fill();
       ctx.stroke();
 
-      ctx.fillStyle = '#fff';
-      ctx.font = '11px Inter';
+      // Draw label
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 13px Inter';
       ctx.textAlign = 'center';
-      ctx.fillText(block.label, x + blockW / 2, y + blockH / 2 + 3);
+      ctx.fillText(block.label, W / 2, y + 18);
 
+      // Draw subtitle
+      ctx.fillStyle = '#b0b0c0';
+      ctx.font = '11px Inter';
+      ctx.fillText(block.subtitle, W / 2, y + 34);
+
+      // Draw arrow
       if (i < blocks.length - 1) {
-        ctx.strokeStyle = '#444';
+        ctx.strokeStyle = '#4ecdc4';
+        ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.moveTo(x + blockW / 2, y + blockH);
-        ctx.lineTo(x + blockW / 2, y + blockH + spacing);
+        ctx.moveTo(W / 2, y + blockH);
+        ctx.lineTo(W / 2, y + blockH + spacing);
         ctx.stroke();
+
+        // Arrow head
+        ctx.fillStyle = '#4ecdc4';
+        ctx.beginPath();
+        ctx.moveTo(W / 2, y + blockH + spacing + 4);
+        ctx.lineTo(W / 2 - 4, y + blockH + spacing - 2);
+        ctx.lineTo(W / 2 + 4, y + blockH + spacing - 2);
+        ctx.fill();
       }
 
       y += blockH + spacing;
     }
 
-    // Labels
-    ctx.fillStyle = '#666';
-    ctx.font = '10px Inter';
+    // Pre-Norm note
+    ctx.fillStyle = '#44bd32';
+    ctx.font = '11px Inter';
     ctx.textAlign = 'left';
-    ctx.fillText('Normalized inputs →', boxX + blockW + 80, yStart + 25);
-    ctx.fillText('more stable training', boxX + blockW + 80, yStart + 40);
-    ctx.fillText('no lr warmup needed', boxX + blockW + 80, yStart + 55);
+    ctx.fillText('Pre-Norm advantage: More stable training, no learning rate warmup needed', 40, y + 10);
+
   } else {
     // Post-Norm: Attn -> Norm -> Add -> FFN -> Norm -> Add
     const blocks = [
-      { label: 'Self-Attn', color: '#4ecdc4' },
-      { label: 'LayerNorm', color: '#ff6b6b' },
-      { label: '+ Residual', color: '#888' },
-      { label: 'FFN (4x)', color: '#ffd93d' },
-      { label: 'LayerNorm', color: '#ff6b6b' },
-      { label: '+ Residual', color: '#888' }
+      { label: 'Multi-Head Self-Attention', subtitle: 'Compute Q, K, V and attend', color: '#4ecdc4' },
+      { label: 'Layer Normalization (Norm)', subtitle: 'Normalize attention output', color: '#ff6b6b' },
+      { label: 'Residual Add (x + Attention)', subtitle: 'Skip connection', color: '#7c7c9c' },
+      { label: 'Feed-Forward Network (FFN)', subtitle: 'Two linear layers with GELU', color: '#ffd93d' },
+      { label: 'Layer Normalization (Norm)', subtitle: 'Normalize for next block', color: '#ff6b6b' },
+      { label: 'Residual Add (x + FFN)', subtitle: 'Final skip connection', color: '#7c7c9c' }
     ];
 
     for (let i = 0; i < blocks.length; i++) {
       const block = blocks[i];
-      const x = boxX + 60;
 
-      ctx.fillStyle = block.color + (block.label.includes('Residual') ? '22' : '33');
+      // Draw box
+      ctx.fillStyle = block.color + '22';
       ctx.strokeStyle = block.color;
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.roundRect(x, y, blockW, blockH, 6);
+      ctx.roundRect(blockX, y, blockW, blockH, 6);
       ctx.fill();
       ctx.stroke();
 
-      ctx.fillStyle = '#fff';
-      ctx.font = '11px Inter';
+      // Draw label
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 13px Inter';
       ctx.textAlign = 'center';
-      ctx.fillText(block.label, x + blockW / 2, y + blockH / 2 + 3);
+      ctx.fillText(block.label, W / 2, y + 18);
 
+      // Draw subtitle
+      ctx.fillStyle = '#b0b0c0';
+      ctx.font = '11px Inter';
+      ctx.fillText(block.subtitle, W / 2, y + 34);
+
+      // Draw arrow
       if (i < blocks.length - 1) {
-        ctx.strokeStyle = '#444';
+        ctx.strokeStyle = '#4ecdc4';
+        ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.moveTo(x + blockW / 2, y + blockH);
-        ctx.lineTo(x + blockW / 2, y + blockH + spacing);
+        ctx.moveTo(W / 2, y + blockH);
+        ctx.lineTo(W / 2, y + blockH + spacing);
         ctx.stroke();
+
+        // Arrow head
+        ctx.fillStyle = '#4ecdc4';
+        ctx.beginPath();
+        ctx.moveTo(W / 2, y + blockH + spacing + 4);
+        ctx.lineTo(W / 2 - 4, y + blockH + spacing - 2);
+        ctx.lineTo(W / 2 + 4, y + blockH + spacing - 2);
+        ctx.fill();
       }
 
       y += blockH + spacing;
     }
 
-    ctx.fillStyle = '#666';
-    ctx.font = '10px Inter';
+    // Post-Norm note
+    ctx.fillStyle = '#ff6b6b';
+    ctx.font = '11px Inter';
     ctx.textAlign = 'left';
-    ctx.fillText('Original paper', boxX + blockW + 80, yStart + 25);
-    ctx.fillText('less stable (needs warmup)', boxX + blockW + 80, yStart + 40);
-    ctx.fillText('potentially better perf', boxX + blockW + 80, yStart + 55);
+    ctx.fillText('Post-Norm (original paper): Less stable, requires learning rate warmup', 40, y + 10);
   }
 
-  // Output
-  ctx.fillStyle = '#888';
-  ctx.font = '11px Inter';
+  // Output label
+  ctx.fillStyle = '#4ecdc4';
+  ctx.font = 'bold 13px Inter';
   ctx.textAlign = 'center';
-  ctx.fillText('y (output)', W / 2, boxY + boxH + 40);
-
-  // FFN detail
-  ctx.fillStyle = '#666';
-  ctx.font = '11px monospace';
-  ctx.textAlign = 'left';
-  ctx.fillText('FFN detail: W₂·GELU(W₁·x)', 40, H - 25);
-  ctx.fillText('W₁ ∈ ℝ^(d×4d),  W₂ ∈ ℝ^(4d×d)', 40, H - 10);
+  ctx.fillText('Output: y', W / 2, y + 50);
 }
 
 // ==================== LoRA & PEFT ====================
@@ -1349,7 +1468,7 @@ function drawLoRA() {
   ctx.fillText('LoRA: Frozen + Low-Rank Adapter', W / 2, 25);
 
   // W (frozen)
-  ctx.fillStyle = '#666';
+  ctx.fillStyle = '#b0b0c0';
   ctx.font = '11px Inter';
   ctx.textAlign = 'left';
   ctx.fillText('W (frozen)', 30, y1 + 25);
@@ -1360,13 +1479,13 @@ function drawLoRA() {
   ctx.fillRect(30, y1, 60, 60);
   ctx.strokeRect(30, y1, 60, 60);
 
-  ctx.fillStyle = '#666';
+  ctx.fillStyle = '#b0b0c0';
   ctx.font = '10px monospace';
   ctx.textAlign = 'center';
   ctx.fillText(`${d}×${d}`, 60, y1 + 35);
 
   // B matrix
-  ctx.fillStyle = '#666';
+  ctx.fillStyle = '#b0b0c0';
   ctx.font = '11px Inter';
   ctx.textAlign = 'left';
   ctx.fillText('B (trainable)', 120, y1 + 25);
@@ -1383,7 +1502,7 @@ function drawLoRA() {
   ctx.fillText(`${r}×${d}`, 140, y1 + 33);
 
   // A matrix
-  ctx.fillStyle = '#666';
+  ctx.fillStyle = '#b0b0c0';
   ctx.font = '11px Inter';
   ctx.textAlign = 'left';
   ctx.fillText('A (trainable)', 180, y1 + 25);
@@ -1400,13 +1519,13 @@ function drawLoRA() {
   ctx.fillText(`${d}×${r}`, 195, y1 + 33);
 
   // Addition
-  ctx.fillStyle = '#888';
+  ctx.fillStyle = '#b0b0c0';
   ctx.font = '14px Inter';
   ctx.textAlign = 'center';
   ctx.fillText('+', 245, y1 + 35);
 
   // Result
-  ctx.fillStyle = '#666';
+  ctx.fillStyle = '#b0b0c0';
   ctx.font = '11px Inter';
   ctx.textAlign = 'left';
   ctx.fillText('W + BA', 280, y1 + 25);
@@ -1423,7 +1542,7 @@ function drawLoRA() {
   ctx.fillText(`${d}×${d}`, 310, y1 + 35);
 
   // Parameter comparison
-  ctx.fillStyle = '#888';
+  ctx.fillStyle = '#b0b0c0';
   ctx.font = '11px Inter';
   ctx.textAlign = 'left';
   ctx.fillText('Parameter count:', 30, y2 + 20);
@@ -1438,11 +1557,11 @@ function drawLoRA() {
   ctx.fillText(`Savings: ${(100 * (1 - ratio)).toFixed(1)}%`, 30, y2 + 90);
 
   // Rank effect
-  ctx.fillStyle = '#888';
+  ctx.fillStyle = '#b0b0c0';
   ctx.font = '11px Inter';
   ctx.fillText('LoRA rank effect:', 30, y2 + 130);
 
-  ctx.fillStyle = '#666';
+  ctx.fillStyle = '#b0b0c0';
   ctx.font = '9px monospace';
   for (let i = 1; i <= 5; i++) {
     const rVal = i * 16;
@@ -1462,74 +1581,108 @@ function drawPEFTCompare() {
   ctx.fillRect(0, 0, W, H);
 
   const methods = [
-    { name: 'Full FT', params: 100, vram: 100, speed: 1.0, color: '#ff6b6b' },
-    { name: 'LoRA (r=8)', params: 3, vram: 80, speed: 0.95, color: '#4ecdc4' },
-    { name: 'QLoRA (r=8)', params: 3, vram: 10, speed: 0.92, color: '#44bd32' },
-    { name: 'Prefix', params: 2, vram: 85, speed: 0.90, color: '#ffd93d' }
+    { fullName: 'Full Fine-Tuning', shortName: 'Full FT', params: 100, vram: 100, speed: 1.0, color: '#ff6b6b' },
+    { fullName: 'LoRA (Low-Rank Adaptation)', shortName: 'LoRA (r=8)', params: 3, vram: 80, speed: 0.95, color: '#4ecdc4' },
+    { fullName: 'QLoRA (Quantized LoRA)', shortName: 'QLoRA (r=8)', params: 3, vram: 10, speed: 0.92, color: '#44bd32' },
+    { fullName: 'Prefix Tuning', shortName: 'Prefix', params: 2, vram: 85, speed: 0.90, color: '#ffd93d' }
   ];
 
-  ctx.fillStyle = '#4ecdc4';
-  ctx.font = 'bold 13px Inter';
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 15px Inter';
   ctx.textAlign = 'center';
-  ctx.fillText('PEFT Methods Comparison', W / 2, 25);
+  ctx.fillText('Parameter-Efficient Fine-Tuning (PEFT) Methods Comparison', W / 2, 30);
 
-  // Chart
-  const chartX = 30, chartY = 50;
-  const chartW = 360, chartH = 240;
+  // Comparison chart
+  const chartX = 40, chartY = 70;
+  const chartW = 320, chartH = 200;
 
-  ctx.strokeStyle = '#444';
-  ctx.lineWidth = 1;
+  // Y-axis
+  ctx.strokeStyle = '#4ecdc4';
+  ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(chartX + 40, chartY);
   ctx.lineTo(chartX + 40, chartY + chartH);
   ctx.lineTo(chartX + chartW, chartY + chartH);
   ctx.stroke();
 
-  ctx.fillStyle = '#666';
-  ctx.font = '10px Inter';
+  // Y-axis labels
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '11px Inter';
   ctx.textAlign = 'right';
-  ctx.fillText('100%', chartX + 35, chartY + 5);
-  ctx.textAlign = 'center';
-  ctx.fillText('0%', chartX + 40, chartY + chartH + 12);
+  ctx.fillText('100%', chartX + 35, chartY + 8);
+  ctx.fillText('50%', chartX + 35, chartY + chartH / 2 + 5);
+  ctx.fillText('0%', chartX + 35, chartY + chartH + 5);
 
-  // Bars
-  const barW = 70;
-  const groupSpacing = 100;
+  // Y-axis grid lines
+  ctx.strokeStyle = '#2a2a4a';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath();
+  ctx.moveTo(chartX + 40, chartY + chartH / 2);
+  ctx.lineTo(chartX + chartW, chartY + chartH / 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Draw bars for each method
+  const barW = 55;
+  const groupSpacing = 90;
   for (let i = 0; i < methods.length; i++) {
     const x = chartX + 50 + i * groupSpacing;
     const m = methods[i];
 
-    // Params bar
+    // Params bar (solid)
     const h1 = (m.params / 100) * chartH;
     ctx.fillStyle = m.color;
-    ctx.fillRect(x, chartY + chartH - h1, barW / 2 - 4, h1);
+    ctx.fillRect(x, chartY + chartH - h1, barW / 2 - 3, h1);
 
-    // VRAM bar (stacked)
-    ctx.fillStyle = m.color + '66';
+    // VRAM bar (lighter)
+    ctx.fillStyle = m.color + '44';
     const h2 = (m.vram / 100) * chartH;
-    ctx.fillRect(x + barW / 2, chartY + chartH - h2, barW / 2 - 4, h2);
+    ctx.fillRect(x + barW / 2 + 1, chartY + chartH - h2, barW / 2 - 3, h2);
 
-    ctx.fillStyle = '#888';
-    ctx.font = '10px Inter';
+    // Method name (full)
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 11px Inter';
     ctx.textAlign = 'center';
-    ctx.fillText(m.name, x + barW / 2, chartY + chartH + 20);
-    ctx.fillText(`${m.params}%`, x + barW / 4, chartY + chartH - (m.params / 100) * chartH / 2);
+    ctx.fillText(m.fullName, x + barW / 2, chartY + chartH + 25);
+
+    // Param percentage
+    ctx.fillStyle = m.color;
+    ctx.font = 'bold 10px Inter';
+    ctx.fillText(`${m.params}%`, x + barW / 4, chartY + chartH - h1 / 2);
   }
 
-  ctx.fillStyle = '#888';
-  ctx.font = '9px Inter';
+  // Legend
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '11px Inter';
   ctx.textAlign = 'left';
-  ctx.fillText('Solid: Trainable params | Faded: VRAM during training', chartX + 50, 310);
+  ctx.fillText('Solid bars: Trainable parameters | Lighter bars: GPU memory during training', 50, chartY + chartH + 65);
 
-  // Speed notes
-  ctx.fillStyle = '#666';
-  ctx.font = '10px monospace';
-  ctx.textAlign = 'left';
-  let y = 340;
+  // Speed comparison section
+  const speedY = chartY + chartH + 100;
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 13px Inter';
+  ctx.fillText('Training Speed Comparison:', 40, speedY);
+
+  ctx.font = '11px Inter';
+  let y = speedY + 25;
   for (let i = 0; i < methods.length; i++) {
-    ctx.fillStyle = methods[i].color;
-    ctx.fillText(`${methods[i].name}: ${(methods[i].speed * 100).toFixed(0)}% speed`, 30, y);
-    y += 18;
+    const m = methods[i];
+    ctx.fillStyle = m.color;
+    ctx.font = 'bold 12px Inter';
+    ctx.fillText(m.shortName, 50, y);
+
+    ctx.fillStyle = m.color + '44';
+    ctx.fillRect(160, y - 10, 180, 14);
+    ctx.fillStyle = m.color;
+    const barLength = m.speed * 180;
+    ctx.fillRect(160, y - 10, barLength, 14);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '10px Inter';
+    ctx.fillText(`${(m.speed * 100).toFixed(0)}%`, 350, y);
+
+    y += 22;
   }
 }
 
@@ -1591,14 +1744,14 @@ function drawRLHF() {
         ctx.lineTo(stages[i + 1].x, stages[i + 1].x === 440 ? y + 40 : y + 40);
         ctx.stroke();
 
-        ctx.fillStyle = '#666';
+        ctx.fillStyle = '#b0b0c0';
         ctx.font = '10px Inter';
         ctx.textAlign = 'center';
       }
     }
 
     // Models used
-    ctx.fillStyle = '#888';
+    ctx.fillStyle = '#b0b0c0';
     ctx.font = '12px Inter';
     ctx.textAlign = 'left';
     ctx.fillText('Models in PPO:', 50, 220);
@@ -1610,18 +1763,18 @@ function drawRLHF() {
       'Value (V): predicts reward, for advantage estimation'
     ];
 
-    ctx.fillStyle = '#666';
+    ctx.fillStyle = '#b0b0c0';
     ctx.font = '11px Inter';
     for (let i = 0; i < models.length; i++) {
       ctx.fillText(`• ${models[i]}`, 60, 245 + i * 22);
     }
 
     // Loss function
-    ctx.fillStyle = '#888';
+    ctx.fillStyle = '#b0b0c0';
     ctx.font = '12px Inter';
     ctx.fillText('PPO Loss:', 50, 360);
 
-    ctx.fillStyle = '#666';
+    ctx.fillStyle = '#b0b0c0';
     ctx.font = '10px monospace';
     ctx.fillText('L = E[r(x,y) - β·KL(π||π_ref)] - λ·L_value', 60, 380);
     ctx.fillText('r(x,y) = reward from reward model', 60, 397);
@@ -1668,7 +1821,7 @@ function drawRLHF() {
     }
 
     // Advantages
-    ctx.fillStyle = '#888';
+    ctx.fillStyle = '#b0b0c0';
     ctx.font = '12px Inter';
     ctx.textAlign = 'left';
     ctx.fillText('DPO Advantages vs PPO:', 50, 220);
@@ -1687,11 +1840,11 @@ function drawRLHF() {
     }
 
     // Loss function
-    ctx.fillStyle = '#888';
+    ctx.fillStyle = '#b0b0c0';
     ctx.font = '12px Inter';
     ctx.fillText('DPO Loss:', 50, 360);
 
-    ctx.fillStyle = '#666';
+    ctx.fillStyle = '#b0b0c0';
     ctx.font = '10px monospace';
     ctx.fillText('L = -log(σ(β·[log π(y_w|x) - log π(y_l|x)]))', 60, 380);
     ctx.fillText('y_w = preferred response, y_l = dispreferred', 60, 397);
@@ -1732,7 +1885,7 @@ function drawSpeculative() {
   ctx.font = '10px monospace';
   ctx.fillText('[The] → [cat] → [sat] → [on] → [the]', 30, y1 + 40);
 
-  ctx.fillStyle = '#888';
+  ctx.fillStyle = '#b0b0c0';
   ctx.font = '9px Inter';
   ctx.fillText('generates k tokens in parallel', 30, y1 + 55);
 
@@ -1753,7 +1906,7 @@ function drawSpeculative() {
   ctx.fillText('verifies in parallel: accept [cat], [sat], reject [on]', 30, y1 + 125);
 
   // Speedup
-  ctx.fillStyle = '#888';
+  ctx.fillStyle = '#b0b0c0';
   ctx.font = '11px Inter';
   ctx.textAlign = 'left';
   ctx.fillText('Result:', 20, y1 + 165);
@@ -1763,7 +1916,7 @@ function drawSpeculative() {
   ctx.fillText('2-3x speedup with <1% quality loss', 80, y1 + 165);
 
   // Typical config
-  ctx.fillStyle = '#666';
+  ctx.fillStyle = '#b0b0c0';
   ctx.font = '9px monospace';
   ctx.textAlign = 'left';
   ctx.fillText('draft_size: 1B, k: 4', 20, H - 60);
@@ -1804,7 +1957,7 @@ function drawQuantization() {
     ctx.textAlign = 'left';
     ctx.fillText(fmt.name, x, y);
 
-    ctx.fillStyle = '#666';
+    ctx.fillStyle = '#b0b0c0';
     ctx.font = '9px Inter';
     ctx.fillText(`${fmt.bits} bits/${fmt.bytes} bytes`, x, y + 15);
 
@@ -1820,7 +1973,7 @@ function drawQuantization() {
       ctx.lineWidth = 1;
       ctx.fillRect(x, bitY, bitW, bitH);
       ctx.strokeRect(x, bitY, bitW, bitH);
-      ctx.fillStyle = '#000';
+      ctx.fillStyle = '#0a0a0f';
       ctx.font = '8px Inter';
       ctx.textAlign = 'center';
       ctx.fillText('S', x + bitW / 2, bitY + 12);
@@ -1828,7 +1981,7 @@ function drawQuantization() {
       ctx.fillStyle = '#ff8a80';
       ctx.fillRect(x + bitW, bitY, 90, bitH);
       ctx.strokeRect(x + bitW, bitY, 90, bitH);
-      ctx.fillStyle = '#000';
+      ctx.fillStyle = '#0a0a0f';
       ctx.fillText('Exponent (8)', x + bitW + 45, bitY + 12);
 
       ctx.fillStyle = '#ffb74d';
@@ -1842,7 +1995,7 @@ function drawQuantization() {
       ctx.strokeStyle = '#666';
       ctx.lineWidth = 1;
       ctx.strokeRect(x, bitY, bitW, bitH);
-      ctx.fillStyle = '#000';
+      ctx.fillStyle = '#0a0a0f';
       ctx.font = '8px Inter';
       ctx.textAlign = 'center';
       ctx.fillText('S', x + bitW / 2, bitY + 12);
@@ -1858,14 +2011,14 @@ function drawQuantization() {
       ctx.strokeStyle = '#666';
       ctx.lineWidth = 1;
       ctx.strokeRect(x, bitY, 50, bitH);
-      ctx.fillStyle = '#000';
+      ctx.fillStyle = '#0a0a0f';
       ctx.font = '8px Inter';
       ctx.textAlign = 'center';
       ctx.fillText('4 bits', x + 25, bitY + 12);
     }
 
     // Memory savings
-    ctx.fillStyle = '#666';
+    ctx.fillStyle = '#b0b0c0';
     ctx.font = '9px Inter';
     ctx.textAlign = 'left';
     const savings = (1 - fmt.bytes / 4) * 100;
@@ -1875,12 +2028,12 @@ function drawQuantization() {
   }
 
   // Per-tensor quantization
-  ctx.fillStyle = '#888';
+  ctx.fillStyle = '#b0b0c0';
   ctx.font = '11px Inter';
   ctx.textAlign = 'left';
   ctx.fillText('Quantization method:', 30, 160);
 
-  ctx.fillStyle = '#666';
+  ctx.fillStyle = '#b0b0c0';
   ctx.font = '10px Inter';
   const methods = [
     'Symmetric: scale = (max - min) / (2^b - 1)',
@@ -1894,11 +2047,11 @@ function drawQuantization() {
   }
 
   // Calibration
-  ctx.fillStyle = '#888';
+  ctx.fillStyle = '#b0b0c0';
   ctx.font = '11px Inter';
   ctx.fillText('Calibration:', 30, 280);
 
-  ctx.fillStyle = '#666';
+  ctx.fillStyle = '#b0b0c0';
   ctx.font = '9px Inter';
   ctx.fillText('• Static: compute scale on calibration set', 40, 297);
   ctx.fillText('• Dynamic: compute scale at inference time', 40, 312);
@@ -1916,130 +2069,161 @@ function drawContinuousBatch() {
   ctx.fillStyle = '#0d0d1a';
   ctx.fillRect(0, 0, W, H);
 
-  const y1 = 50;
+  // Title
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 15px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText('Continuous Batching: How Requests are Scheduled', W / 2, 30);
 
-  // Static batching
-  ctx.fillStyle = '#ff6b6b';
-  ctx.font = 'bold 12px Inter';
+  // ===== STATIC BATCHING SECTION =====
+  const y1 = 65;
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 13px Inter';
   ctx.textAlign = 'left';
-  ctx.fillText('Static Batching (traditional):', 40, y1);
+  ctx.fillText('Traditional Static Batching: Wait for All Requests to Complete', 40, y1);
 
-  const reqW = 100, reqH = 40;
-  const staticReqs = [
-    { name: 'Req 1 (fast, 10 tokens)', time: 10 },
-    { name: 'Req 2 (slow, 50 tokens)', time: 50 },
-    { name: 'Req 3 (med, 25 tokens)', time: 25 }
+  const staticStartY = y1 + 30;
+  const reqColors = ['#ff6b6b', '#4ecdc4', '#ffd93d'];
+  const requests = [
+    { name: 'Request 1', tokens: 10, color: '#ff6b6b' },
+    { name: 'Request 2', tokens: 50, color: '#4ecdc4' },
+    { name: 'Request 3', tokens: 25, color: '#ffd93d' }
   ];
 
-  const x1 = 60;
-  const timelineY = y1 + 35;
+  // Draw each request timeline
+  for (let i = 0; i < requests.length; i++) {
+    const r = requests[i];
+    const y = staticStartY + i * 50;
 
-  for (let i = 0; i < staticReqs.length; i++) {
-    const r = staticReqs[i];
-    ctx.fillStyle = '#ff6b6b' + '33';
-    ctx.strokeStyle = '#ff6b6b';
-    ctx.lineWidth = 1.5;
-    ctx.fillRect(x1, timelineY + i * 45, r.time * 2, reqH);
-    ctx.strokeRect(x1, timelineY + i * 45, r.time * 2, reqH);
-
-    ctx.fillStyle = '#fff';
-    ctx.font = '10px Inter';
+    // Request label
+    ctx.fillStyle = '#b0b0c0';
+    ctx.font = '12px Inter';
     ctx.textAlign = 'left';
-    ctx.fillText(r.name, x1 + 5, timelineY + i * 45 + 25);
+    ctx.fillText(r.name, 40, y + 20);
+
+    // Request bar (showing tokens to generate)
+    const barLength = r.tokens * 2;
+    ctx.fillStyle = r.color + '33';
+    ctx.strokeStyle = r.color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(180, y + 5, barLength, 30, 4);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 11px Inter';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${r.tokens} tokens`, 180 + barLength / 2, y + 25);
   }
 
-  // Idle time marker
-  ctx.strokeStyle = '#ff6b6b' + '66';
+  // Mark the idle time
+  const idleX = 180 + requests[1].tokens * 2;
+  ctx.strokeStyle = '#ff6b6b';
   ctx.lineWidth = 2;
-  ctx.setLineDash([5, 5]);
+  ctx.setLineDash([4, 4]);
   ctx.beginPath();
-  ctx.moveTo(x1 + 50 * 2, timelineY - 10);
-  ctx.lineTo(x1 + 50 * 2, timelineY + 3 * 45);
+  ctx.moveTo(idleX, staticStartY);
+  ctx.lineTo(idleX, staticStartY + 150);
   ctx.stroke();
   ctx.setLineDash([]);
 
   ctx.fillStyle = '#ff6b6b';
-  ctx.font = '9px Inter';
+  ctx.font = 'bold 11px Inter';
   ctx.textAlign = 'center';
-  ctx.fillText('GPU idle', x1 + 50 * 2, timelineY - 25);
+  ctx.fillText('GPU idle waiting', idleX, staticStartY - 10);
 
-  // Total time
-  ctx.fillStyle = '#666';
-  ctx.font = '10px Inter';
+  // Static batching summary
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '11px Inter';
   ctx.textAlign = 'left';
-  ctx.fillText('Total: 50 steps (waits for slowest)', 40, timelineY + 165);
+  ctx.fillText('Problem: All requests must finish before removing from batch', 40, staticStartY + 160);
+  ctx.fillText('Total time: 50 steps (slowest request determines wait time)', 40, staticStartY + 178);
 
-  // Continuous batching
-  const y2 = timelineY + 200;
-  ctx.fillStyle = '#44bd32';
-  ctx.font = 'bold 12px Inter';
-  ctx.fillText('Continuous Batching (vLLM, TGI):', 40, y2);
+  // ===== CONTINUOUS BATCHING SECTION =====
+  const y2 = staticStartY + 220;
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 13px Inter';
+  ctx.fillText('Continuous Batching: Replace Completed Requests Immediately', 40, y2);
 
-  const batchReqs = [
-    { name: 'Req 1', steps: 10 },
-    { name: 'Req 2', steps: 50 },
-    { name: 'Req 3', steps: 25 }
-  ];
+  const contStartY = y2 + 30;
 
-  const y3 = y2 + 35;
-  const timeSlots = 20;
-  const slotW = 12;
-
-  ctx.fillStyle = '#666';
-  ctx.font = '9px Inter';
+  // Timeline view
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '11px Inter';
   ctx.textAlign = 'left';
-  ctx.fillText('Step 1-10:', 50, y3);
-  ctx.fillText('Step 11-25:', 50, y3 + 45);
-  ctx.fillText('Step 26-50:', 50, y3 + 90);
+  ctx.fillText('Steps 1-10 (all 3 requests):', 40, contStartY);
 
-  // Timeline for continuous
-  const xc = 130;
-
-  // Steps 1-10: all three
-  ctx.fillStyle = '#ff6b6b' + '33';
-  ctx.strokeStyle = '#ff6b6b';
-  ctx.lineWidth = 1;
+  // Draw compact timeline
+  let boxX = 300;
   for (let i = 0; i < 10; i++) {
-    ctx.strokeRect(xc + i * slotW, y3, slotW, 15);
+    ctx.fillStyle = '#ff6b6b44';
+    ctx.strokeStyle = '#ff6b6b';
+    ctx.lineWidth = 1;
+    ctx.fillRect(boxX + i * 12, contStartY - 15, 10, 25);
+    ctx.strokeRect(boxX + i * 12, contStartY - 15, 10, 25);
   }
-  ctx.fillText('[1, 2, 3]', xc + 50, y3 + 25);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 11px Inter';
+  ctx.fillText('[Req1, Req2, Req3]', boxX + 60, contStartY + 8);
 
-  // Steps 11-25: 2, 3
-  ctx.fillStyle = '#4ecdc4' + '33';
-  ctx.strokeStyle = '#4ecdc4';
+  // Steps 11-25
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '11px Inter';
+  ctx.fillText('Steps 11-25 (Req1 done; add new request):', 40, contStartY + 50);
+
+  boxX = 300;
   for (let i = 0; i < 15; i++) {
-    ctx.strokeRect(xc + i * slotW, y3 + 45, slotW, 15);
+    ctx.fillStyle = '#4ecdc444';
+    ctx.strokeStyle = '#4ecdc4';
+    ctx.lineWidth = 1;
+    ctx.fillRect(boxX + i * 12, contStartY + 35, 10, 25);
+    ctx.strokeRect(boxX + i * 12, contStartY + 35, 10, 25);
   }
-  ctx.fillText('[2, 3] + NEW REQ', xc + 50, y3 + 75);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 11px Inter';
+  ctx.fillText('[Req2, Req3, Req4 (new)]', boxX + 60, contStartY + 58);
 
-  // Steps 26-50: 2
-  ctx.fillStyle = '#44bd32' + '33';
-  ctx.strokeStyle = '#44bd32';
+  // Steps 26-50
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '11px Inter';
+  ctx.fillText('Steps 26-50 (Req2 & 3 done; continue with new):', 40, contStartY + 100);
+
+  boxX = 300;
   for (let i = 0; i < 25; i++) {
-    ctx.strokeRect(xc + i * slotW, y3 + 90, slotW, 15);
+    ctx.fillStyle = '#ffd93d44';
+    ctx.strokeStyle = '#ffd93d';
+    ctx.lineWidth = 1;
+    ctx.fillRect(boxX + i * 6, contStartY + 85, 4, 25);
+    ctx.strokeRect(boxX + i * 6, contStartY + 85, 4, 25);
   }
-  ctx.fillText('[2]', xc + 50, y3 + 120);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 11px Inter';
+  ctx.fillText('[Req4, ...]', boxX + 60, contStartY + 108);
 
-  ctx.fillStyle = '#666';
-  ctx.font = '10px Inter';
-  ctx.fillText('Total: 50 steps (constant GPU utilization)', 40, y3 + 145);
+  // Continuous batching benefits
+  ctx.fillStyle = '#44bd32';
+  ctx.font = '11px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText('Benefit: Requests complete immediately and are replaced', 40, contStartY + 150);
+  ctx.fillText('Total time: Still 50 steps but GPU stays fully utilized (no idle)', 40, contStartY + 168);
 
-  // Paged Attention
-  ctx.fillStyle = '#888';
-  ctx.font = '12px Inter';
-  ctx.fillText('PagedAttention (vLLM):', 40, y3 + 185);
+  // PagedAttention note at bottom
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 12px Inter';
+  ctx.fillText('PagedAttention (vLLM optimization):', 40, contStartY + 210);
 
-  ctx.fillStyle = '#666';
-  ctx.font = '9px Inter';
+  ctx.fillStyle = '#b0b0c0';
+  ctx.font = '11px Inter';
   const notes = [
-    '• Virtualizes KV-cache like OS virtual memory',
-    '• Allocates 16KB blocks on-demand',
-    '• Eliminates memory fragmentation',
-    '• 15-20x throughput increase vs naive batching'
+    'Virtualizes Key-Value cache like OS virtual memory',
+    'Allocates 16KB blocks on-demand for cache',
+    'Eliminates memory fragmentation between requests',
+    'Combined with continuous batching: 10-20x throughput vs static batching'
   ];
 
   for (let i = 0; i < notes.length; i++) {
-    ctx.fillText(notes[i], 50, y3 + 205 + i * 14);
+    ctx.fillText(notes[i], 50, contStartY + 230 + i * 18);
   }
 }
 
@@ -2117,7 +2301,7 @@ function drawRAG() {
 
   // Chunking strategies
   const stratY = 180;
-  ctx.fillStyle = '#888';
+  ctx.fillStyle = '#b0b0c0';
   ctx.font = '12px Inter';
   ctx.textAlign = 'left';
   ctx.fillText('Chunking Strategy:', 40, stratY);
@@ -2151,18 +2335,18 @@ function drawRAG() {
   ctx.font = 'bold 11px Inter';
   ctx.fillText(strat.name, 40, stratY + 25);
 
-  ctx.fillStyle = '#666';
+  ctx.fillStyle = '#b0b0c0';
   ctx.font = '10px Inter';
   ctx.fillText(strat.desc, 40, stratY + 45);
   ctx.fillText(`✓ ${strat.pros}`, 40, stratY + 65);
   ctx.fillText(`✗ ${strat.cons}`, 40, stratY + 82);
 
   // Vector DB example
-  ctx.fillStyle = '#888';
+  ctx.fillStyle = '#b0b0c0';
   ctx.font = '12px Inter';
   ctx.fillText('Vector Database (Retrieval):', 420, stratY);
 
-  ctx.fillStyle = '#666';
+  ctx.fillStyle = '#b0b0c0';
   ctx.font = '10px Inter';
   const dbInfo = [
     '• Embed all chunks with dense encoder',
@@ -2177,7 +2361,7 @@ function drawRAG() {
   }
 
   // Benefits
-  ctx.fillStyle = '#888';
+  ctx.fillStyle = '#b0b0c0';
   ctx.font = '12px Inter';
   ctx.fillText('RAG Benefits:', 40, 370);
 
@@ -2221,7 +2405,7 @@ function drawHNSW() {
     const y = startY + layer * (layerH + 15);
     const numNodes = Math.max(3, 8 - layer * 2);
 
-    ctx.fillStyle = '#666';
+    ctx.fillStyle = '#b0b0c0';
     ctx.font = '10px Inter';
     ctx.textAlign = 'left';
     ctx.fillText(`Layer ${layer}`, 15, y + 20);
@@ -2265,7 +2449,7 @@ function drawHNSW() {
   ctx.textAlign = 'left';
   ctx.fillText('Query starts at top (yellow)', 15, startY + layers * (layerH + 15) + 20);
 
-  ctx.fillStyle = '#888';
+  ctx.fillStyle = '#b0b0c0';
   ctx.font = '9px Inter';
   const info = [
     `• Start: top layer (${Math.max(1, 8 - (layers - 1) * 2)} nodes)`,
@@ -2325,19 +2509,19 @@ function drawRetrievalStats() {
     ctx.textAlign = 'left';
     ctx.fillText(m.name, 10, y + barH / 2 + 4);
 
-    ctx.fillStyle = '#666';
+    ctx.fillStyle = '#b0b0c0';
     ctx.font = '10px monospace';
     ctx.textAlign = 'right';
     ctx.fillText(`${m.time}ms`, startX + w + 10, y + barH / 2 + 4);
   }
 
   // Legend
-  ctx.fillStyle = '#888';
+  ctx.fillStyle = '#b0b0c0';
   ctx.font = '11px Inter';
   ctx.textAlign = 'left';
   ctx.fillText('For 10M vectors (1B corpus):', 10, 200);
 
-  ctx.fillStyle = '#666';
+  ctx.fillStyle = '#b0b0c0';
   ctx.font = '9px Inter';
   const legend = [
     'Brute: check all 10M vectors',
@@ -2351,11 +2535,11 @@ function drawRetrievalStats() {
   }
 
   // Memory
-  ctx.fillStyle = '#888';
+  ctx.fillStyle = '#b0b0c0';
   ctx.font = '11px Inter';
   ctx.fillText('Memory per 1B vectors:', 10, 310);
 
-  ctx.fillStyle = '#666';
+  ctx.fillStyle = '#b0b0c0';
   ctx.font = '9px Inter';
   const memory = [
     'FP32:       4 GB (baseline)',

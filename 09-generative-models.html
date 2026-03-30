@@ -252,7 +252,7 @@
 <body>
     <div class="header">
         <h1>🧬 Generative Models</h1>
-        <p>VAE, Diffusion, GAN, Flow models, Latent Diffusion, VQ-VAE, and Transformer architectures</p>
+        <p>VAE (Variational Autoencoder), Diffusion (DDPM - Denoising Diffusion Probabilistic Models), GAN (Generative Adversarial Network), Flow models, Latent Diffusion, VQ-VAE (Vector Quantized VAE), and Transformer architectures</p>
     </div>
 
     <div class="container">
@@ -300,6 +300,7 @@
                         <button onclick="trainVAE()">Train Step</button>
                     </div>
 
+                </div>
                     <div class="insight-box">
                         <h3>Interview Tips: β-VAE</h3>
                         <p><strong>What it is:</strong> VAE with weighted KL divergence. Higher β = more disentanglement, lower reconstruction. Trade-off is explicit and unavoidable.</p>
@@ -337,7 +338,6 @@
                             <span class="desc">Start β=1, tune for your task. Use KL annealing. Evaluate disentanglement via downstream classification, not visual inspection. Gaussian prior for smooth interpolation.</span>
                         </div>
                     </div>
-                </div>
             </div>
         </div>
 
@@ -389,6 +389,7 @@
                         <button onclick="resetDiffusion()">Reset</button>
                     </div>
 
+                </div>
                     <div class="insight-box">
                         <h3>Interview Tips: Diffusion Models</h3>
                         <p><strong>What it is:</strong> Learn to reverse noise addition. Forward adds noise T steps: x_t = √ᾱ_t·x_0 + √(1-ᾱ_t)·ε. Reverse: x_t → x_{t-1} iteratively. Stable vs GANs. High quality samples.</p>
@@ -435,7 +436,6 @@
                             <span class="desc">Classifier-free guidance common for control but can be unstable. Fine-tuning via inpainting/text-to-image needs specific procedures.</span>
                         </div>
                     </div>
-                </div>
             </div>
         </div>
 
@@ -463,7 +463,77 @@
                             <div class="stat-value" id="ganModeValue">100%</div>
                         </div>
                     </div>
+                </div>
+                <div class="controls">
+                    <div class="control-group">
+                        <label class="control-label">Training Mode</label>
+                        <div class="button-group">
+                            <button id="normalModeBtn" class="active" onclick="setGANMode('normal')">Normal</button>
+                            <button id="collapseModeBtn" onclick="setGANMode('collapse')">Mode Collapse</button>
+                        </div>
+                        <div class="info-text">Toggle between training scenarios</div>
+                    </div>
 
+                    <div class="control-group">
+                        <label class="control-label">Training Iterations</label>
+                        <input type="range" id="ganIterations" min="0" max="500" step="10" value="0">
+                        <div class="control-value">Iter: <span id="ganIterValue">0</span></div>
+                    </div>
+
+                    <div class="button-group">
+                        <button onclick="trainGANStep()">Train Step</button>
+                        <button onclick="resetGAN()">Reset</button>
+                    </div>
+
+                </div>
+                    <div class="insight-box">
+                        <h3>Interview Tips: GANs</h3>
+                        <p><strong>What it is:</strong> Generator G: z→fake. Discriminator D: real vs fake. Min-max game. Nash Eq = D can't distinguish. Fast sampling. Hard to train.</p>
+
+                        <div class="formula">min_G max_D E[log D(x)] - E[log(1-D(G(z)))]  =  -2log(2) - 2·JS(p_data || p_gen)</div>
+                        <div class="key-point"><span class="label">min_G max_D:</span><span class="desc">Min-max game: Generator G minimizes, Discriminator D maximizes (adversarial objectives)</span></div>
+                        <div class="key-point"><span class="label">D(x):</span><span class="desc">Discriminator output for real data x; probability [0, 1] that input is real; ideally D(x) → 1</span></div>
+                        <div class="key-point"><span class="label">E[log D(x)]:</span><span class="desc">Expected log-likelihood of real data; D wants to maximize (output → 1), G indifferent</span></div>
+                        <div class="key-point"><span class="label">G(z):</span><span class="desc">Generator output; generates fake sample from random noise z ~ N(0, I); ideally indistinguishable from real</span></div>
+                        <div class="key-point"><span class="label">D(G(z)):</span><span class="desc">Discriminator output for fake data; probability that generated sample is real; ideally D(G(z)) → 0</span></div>
+                        <div class="key-point"><span class="label">E[log(1-D(G(z)))]:</span><span class="desc">D wants to maximize (detect fakes), G wants to minimize (fool D); when D(G(z)) → 1, this term → 0</span></div>
+                        <div class="key-point"><span class="label">JS(p_data || p_gen):</span><span class="desc">Jensen-Shannon divergence between real and generated distributions; at Nash equilibrium = 0 (distributions match)</span></div>
+                        <div class="key-point"><span class="label">-2log(2) ≈ -1.39:</span><span class="desc">Constant in GAN objective; Nash equilibrium value when JS divergence = 0</span></div>
+                        <div class="formula">Wasserstein GAN: min_G max_D E[D(x)] - E[D(G(z))] s.t. ||D||_L ≤ 1  →  better gradients</div>
+                        <div class="key-point"><span class="label">E[D(x)] - E[D(G(z))]:</span><span class="desc">Wasserstein distance (critic network, not probability); measures distribution distance directly</span></div>
+                        <div class="key-point"><span class="label">D (Critic):</span><span class="desc">No sigmoid; outputs real-valued score; higher for real data, lower for fake; 1-Lipschitz constraint ensures smooth gradients</span></div>
+                        <div class="key-point"><span class="label">||D||_L ≤ 1:</span><span class="desc">Lipschitz constraint; 1-Lipschitz ensures gradients well-behaved (≤1 everywhere); prevents vanishing/exploding gradients</span></div>
+                        <div class="key-point"><span class="label">Practical enforcement:</span><span class="desc">Weight clipping (clip weights to [-c, c]) or gradient penalty (adds regularization term); gradient penalty preferred</span></div>
+
+                        <div class="mnemonic">Generator wants D to say "real". Discriminator wants to separate. If training converges = Nash Eq = D output 1/2 everywhere (can't distinguish).</div>
+
+                        <hr class="divider">
+
+                        <div class="key-point">
+                            <span class="label">Mode collapse:</span>
+                            <span class="desc">Generator learns 1-few modes, ignores diversity. D overfits to G. Solutions: minibatch discrimination, unrolled D, diversity-promoting losses.</span>
+                        </div>
+
+                        <div class="interview-tip">Vanishing gradients: D confident (output 0 or 1) = small gradients = training stalls. Use Wasserstein loss or Lipschitz constraint (spectral norm).</div>
+                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Standard GAN (BCE loss) vanishes gradients when D confidence = 0 or 1. Wasserstein GAN (WGAN) = Earth-Mover distance, smoother gradients. Toggle on canvas: watch vanilla GAN mode coverage collapse while WGAN stays stable. Spectral normalization enforces 1-Lipschitz discriminator.</div>
+
+                        <div class="interview-tip">Training instability: G/D learning rates must be tuned together. No guarantee of Nash convergence (may cycle/diverge). Different archs need different schedules.</div>
+                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set Generator LR=0.0002, Discriminator LR=0.0004 (typical). Balance is critical: if G too fast, D can't keep up (mode collapse). If D too fast, G starves (vanishing gradients). Use spectral norm, instance norm, gradient penalties to stabilize. Monitor loss ratio.</div>
+
+                        <hr class="divider">
+
+                        <div class="key-point">
+                            <span class="label">Production rule:</span>
+                            <span class="desc">Wasserstein + gradient penalty or spectral norm. Progressive training (4×4 → 8×8...). Monitor FID. Separate BN for G/D. Use self-attention, residual.</span>
+                        </div>
+
+                        <div class="key-point">
+                            <span class="label">Trade-off:</span>
+                            <span class="desc">Fast sampling (<0.1 sec vs diffusion 1+ sec). Hard to train, lower quality. Use when realtime critical. StyleGAN SOTA faces. Diffusion dominates text-to-image now.</span>
+                        </div>
+                    </div>
+            </div>
+        </div>
 
         <!-- Classifier-Free Guidance -->
         <div class="section">
@@ -481,6 +551,7 @@
                         <div class="info-text">0 = unconditional, 1 = conditional only, >1 = amplified</div>
                     </div>
                     <button onclick="drawCFG()">Update</button>
+                </div>
                     <div class="insight-box">
                         <h3>How It Works: Classifier-Free Guidance</h3>
                         <p><strong>What it is:</strong> Steer generation without separate classifier. Reweight conditional vs unconditional predictions. w=0 (unconditional), w=1 (conditional), w>1 (amplify condition). Enables text-to-image control.</p>
@@ -525,7 +596,6 @@
                             <span class="desc">Photorealistic: w=7-12. Artistic: w=4-8. One-dimensional control; multidimensional requires other methods.</span>
                         </div>
                     </div>
-                </div>
             </div>
         </div>
 
@@ -545,6 +615,7 @@
                         <div class="info-text">More steps = better quality, slower. 20-100 typical.</div>
                     </div>
                     <button onclick="drawLatentDiff()">Animate</button>
+                </div>
                     <div class="insight-box">
                         <h3>Pipeline: Encode → Diffuse → Decode</h3>
                         <p><strong>What it is:</strong> Diffuse in compressed latent space not pixels. 3-stage: (1) VAE encode x→z (8-16x spatial reduction), (2) diffuse in z, (3) VAE decode z→x̂. 10-50x speedup vs pixel-diffusion, quality maintained.</p>
@@ -588,7 +659,6 @@
                             <span class="desc">20-50 latent steps ≈ 100-200 pixel steps. DDIM 15-30 steps acceptable quality. Batch in latent: 40-100x faster vs pixel-diffusion.</span>
                         </div>
                     </div>
-                </div>
             </div>
         </div>
 
@@ -613,6 +683,7 @@
                         <div class="control-value">D = <span id="embeddingDimValue">64</span> dim</div>
                     </div>
                     <button onclick="drawVQVAE()">Update</button>
+                    </div>
                     <div class="insight-box">
                         <h3>Discrete Latent Space: VQ-VAE</h3>
                         <p><strong>What it is:</strong> Replace continuous Gaussian z with discrete tokens via codebook quantization. Enables Transformer-based autoregressive generation. Two-stage: (1) tokenize via VQ-VAE, (2) autoregressive language model on tokens.</p>
@@ -661,10 +732,8 @@
                             <span class="desc">Lightweight (int32 tokens). Flexible (swap tokenizer or LM independently). Slow generation (hundreds forward passes for HW tokens). Uses Transformer scaling laws.</span>
                         </div>
                     </div>
-                    </div>
                 </div>
             </div>
-        </div>
 
         <!-- U-Net vs DiT -->
         <div class="section">
@@ -683,6 +752,7 @@
                         </div>
                     </div>
                     <button onclick="drawArchitecture()">Update</button>
+                    </div>
                     <div class="insight-box">
                         <h3>U-Net vs Diffusion Transformer (DiT)</h3>
                         <p><strong>U-Net:</strong> Conv encoder-decoder + skip connections. Local inductive bias (spatial structure). Time via FiLM, condition via cross-attention. Fast, proven, ~0.5-1 sec for 512×512.</p>
@@ -722,83 +792,9 @@
                             <span class="desc">U-Net = proven, fast, efficient current resolutions. DiT = future-proof, scales better, requires more engineering. Conditioning: FiLM good U-Net, cross-attention better DiT.</span>
                         </div>
                     </div>
-                    </div>
                 </div>
             </div>
-        </div>
 
-
-                </div>
-                <div class="controls">
-                    <div class="control-group">
-                        <label class="control-label">Training Mode</label>
-                        <div class="button-group">
-                            <button id="normalModeBtn" class="active" onclick="setGANMode('normal')">Normal</button>
-                            <button id="collapseModeBtn" onclick="setGANMode('collapse')">Mode Collapse</button>
-                        </div>
-                        <div class="info-text">Toggle between training scenarios</div>
-                    </div>
-
-                    <div class="control-group">
-                        <label class="control-label">Training Iterations</label>
-                        <input type="range" id="ganIterations" min="0" max="500" step="10" value="0">
-                        <div class="control-value">Iter: <span id="ganIterValue">0</span></div>
-                    </div>
-
-                    <div class="button-group">
-                        <button onclick="trainGANStep()">Train Step</button>
-                        <button onclick="resetGAN()">Reset</button>
-                    </div>
-
-                    <div class="insight-box">
-                        <h3>Interview Tips: GANs</h3>
-                        <p><strong>What it is:</strong> Generator G: z→fake. Discriminator D: real vs fake. Min-max game. Nash Eq = D can't distinguish. Fast sampling. Hard to train.</p>
-
-                        <div class="formula">min_G max_D E[log D(x)] - E[log(1-D(G(z)))]  =  -2log(2) - 2·JS(p_data || p_gen)</div>
-                        <div class="key-point"><span class="label">min_G max_D:</span><span class="desc">Min-max game: Generator G minimizes, Discriminator D maximizes (adversarial objectives)</span></div>
-                        <div class="key-point"><span class="label">D(x):</span><span class="desc">Discriminator output for real data x; probability [0, 1] that input is real; ideally D(x) → 1</span></div>
-                        <div class="key-point"><span class="label">E[log D(x)]:</span><span class="desc">Expected log-likelihood of real data; D wants to maximize (output → 1), G indifferent</span></div>
-                        <div class="key-point"><span class="label">G(z):</span><span class="desc">Generator output; generates fake sample from random noise z ~ N(0, I); ideally indistinguishable from real</span></div>
-                        <div class="key-point"><span class="label">D(G(z)):</span><span class="desc">Discriminator output for fake data; probability that generated sample is real; ideally D(G(z)) → 0</span></div>
-                        <div class="key-point"><span class="label">E[log(1-D(G(z)))]:</span><span class="desc">D wants to maximize (detect fakes), G wants to minimize (fool D); when D(G(z)) → 1, this term → 0</span></div>
-                        <div class="key-point"><span class="label">JS(p_data || p_gen):</span><span class="desc">Jensen-Shannon divergence between real and generated distributions; at Nash equilibrium = 0 (distributions match)</span></div>
-                        <div class="key-point"><span class="label">-2log(2) ≈ -1.39:</span><span class="desc">Constant in GAN objective; Nash equilibrium value when JS divergence = 0</span></div>
-                        <div class="formula">Wasserstein GAN: min_G max_D E[D(x)] - E[D(G(z))] s.t. ||D||_L ≤ 1  →  better gradients</div>
-                        <div class="key-point"><span class="label">E[D(x)] - E[D(G(z))]:</span><span class="desc">Wasserstein distance (critic network, not probability); measures distribution distance directly</span></div>
-                        <div class="key-point"><span class="label">D (Critic):</span><span class="desc">No sigmoid; outputs real-valued score; higher for real data, lower for fake; 1-Lipschitz constraint ensures smooth gradients</span></div>
-                        <div class="key-point"><span class="label">||D||_L ≤ 1:</span><span class="desc">Lipschitz constraint; 1-Lipschitz ensures gradients well-behaved (≤1 everywhere); prevents vanishing/exploding gradients</span></div>
-                        <div class="key-point"><span class="label">Practical enforcement:</span><span class="desc">Weight clipping (clip weights to [-c, c]) or gradient penalty (adds regularization term); gradient penalty preferred</span></div>
-
-                        <div class="mnemonic">Generator wants D to say "real". Discriminator wants to separate. If training converges = Nash Eq = D output 1/2 everywhere (can't distinguish).</div>
-
-                        <hr class="divider">
-
-                        <div class="key-point">
-                            <span class="label">Mode collapse:</span>
-                            <span class="desc">Generator learns 1-few modes, ignores diversity. D overfits to G. Solutions: minibatch discrimination, unrolled D, diversity-promoting losses.</span>
-                        </div>
-
-                        <div class="interview-tip">Vanishing gradients: D confident (output 0 or 1) = small gradients = training stalls. Use Wasserstein loss or Lipschitz constraint (spectral norm).</div>
-                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Standard GAN (BCE loss) vanishes gradients when D confidence = 0 or 1. Wasserstein GAN (WGAN) = Earth-Mover distance, smoother gradients. Toggle on canvas: watch vanilla GAN mode coverage collapse while WGAN stays stable. Spectral normalization enforces 1-Lipschitz discriminator.</div>
-
-                        <div class="interview-tip">Training instability: G/D learning rates must be tuned together. No guarantee of Nash convergence (may cycle/diverge). Different archs need different schedules.</div>
-                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set Generator LR=0.0002, Discriminator LR=0.0004 (typical). Balance is critical: if G too fast, D can't keep up (mode collapse). If D too fast, G starves (vanishing gradients). Use spectral norm, instance norm, gradient penalties to stabilize. Monitor loss ratio.</div>
-
-                        <hr class="divider">
-
-                        <div class="key-point">
-                            <span class="label">Production rule:</span>
-                            <span class="desc">Wasserstein + gradient penalty or spectral norm. Progressive training (4×4 → 8×8...). Monitor FID. Separate BN for G/D. Use self-attention, residual.</span>
-                        </div>
-
-                        <div class="key-point">
-                            <span class="label">Trade-off:</span>
-                            <span class="desc">Fast sampling (<0.1 sec vs diffusion 1+ sec). Hard to train, lower quality. Use when realtime critical. StyleGAN SOTA faces. Diffusion dominates text-to-image now.</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
         <!-- Flow Models Section -->
         <div class="section">
@@ -848,6 +844,7 @@
                         <button onclick="resetFlow()">Reset</button>
                     </div>
 
+            </div>
                     <div class="insight-box">
                         <h3>Interview Tips: Flow Models</h3>
                         <p><strong>What it is:</strong> Invertible transformations z→x via coupling layers. Exact likelihood (no lower bound like VAE). Sample z~N(0,I), compute x=f(z). Bidirectional generation.</p>
@@ -903,8 +900,10 @@
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
+
+    </div>
+
+    </div>
     </div>
 
     <script>
@@ -939,7 +938,7 @@
 
             // Encoder section
             ctx.fillStyle = '#e056fd';
-            ctx.font = 'bold 12px Arial';
+            ctx.font = 'bold 17px Arial';
             ctx.fillText('ENCODER', 20, 25);
 
             // Input samples
@@ -961,12 +960,13 @@
             ctx.lineTo(220, 70);
             ctx.stroke();
             ctx.fillStyle = '#e056fd';
+            ctx.font = '15px Arial';
             ctx.fillText('μ,σ', 200, 60);
 
             // Latent space
             ctx.fillStyle = '#e056fd';
-            ctx.font = 'bold 12px Arial';
-            ctx.fillText('LATENT SPACE', 240, 25);
+            ctx.font = 'bold 17px Arial';
+            ctx.fillText('LATENT SPACE', 230, 25);
 
             // Draw 2D latent visualization
             const latentCx = 310;
@@ -1003,9 +1003,9 @@
             ctx.lineWidth = 2;
             ctx.strokeRect(latentCx - latentSize - 2, latentCy - latentSize - 2,
                           latentSize * 2 + 4, latentSize * 2 + 4);
-            ctx.fillStyle = 'rgba(255, 100, 100, 0.7)';
-            ctx.font = '10px Arial';
-            ctx.fillText('KL Regularization', latentCx - 40, latentCy + latentSize + 15);
+            ctx.fillStyle = 'rgba(255, 130, 130, 0.9)';
+            ctx.font = '13px Arial';
+            ctx.fillText('KL Regularization', latentCx - 45, latentCy + latentSize + 18);
 
             // Decoder arrow
             ctx.strokeStyle = '#e056fd';
@@ -1017,8 +1017,8 @@
 
             // Decoder section
             ctx.fillStyle = '#e056fd';
-            ctx.font = 'bold 12px Arial';
-            ctx.fillText('DECODER', 430, 25);
+            ctx.font = 'bold 17px Arial';
+            ctx.fillText('DECODER', 425, 25);
 
             // Reconstructed samples
             ctx.fillStyle = '#40ff80';
@@ -1046,13 +1046,13 @@
             ctx.lineWidth = 1;
             ctx.strokeRect(20, 240, 440, 20);
             ctx.fillStyle = '#0a0a0f';
-            ctx.font = 'bold 11px Arial';
-            ctx.fillText(`Reconstruction Quality: ${Math.round(vaeState.quality)}%`, 180, 254);
+            ctx.font = 'bold 15px Arial';
+            ctx.fillText(`Reconstruction Quality: ${Math.round(vaeState.quality)}%`, 150, 255);
 
-            // ELBO formula
+            // ELBO (Evidence Lower Bound) formula
             ctx.fillStyle = '#b0b0c0';
-            ctx.font = '11px monospace';
-            ctx.fillText('ELBO = E[log p(x|z)] - β·KL(q(z|x)||p(z))', 20, 285);
+            ctx.font = '15px monospace';
+            ctx.fillText('ELBO = E[log p(x|z)] - β·KL(q(z|x)||p(z))', 20, 288);
         }
 
         function trainVAE() {
@@ -1113,9 +1113,9 @@
 
             // Title
             ctx.fillStyle = '#e056fd';
-            ctx.font = 'bold 12px Arial';
+            ctx.font = 'bold 17px Arial';
             ctx.fillText('FORWARD PROCESS (Add Noise)', 20, 25);
-            ctx.fillText('REVERSE PROCESS (Denoise)', 20, 160);
+            ctx.fillText('REVERSE PROCESS (Denoise)', 20, 163);
 
             // Forward process visualization
             const gridSize = 8;
@@ -1157,7 +1157,7 @@
 
             // Labels and arrows
             ctx.fillStyle = '#e056fd';
-            ctx.font = '11px Arial';
+            ctx.font = '15px Arial';
             ctx.fillText('t=0', 40, startY + gridSize * cellSize + 20);
             ctx.fillText(`t=${t}`, 40 + gridSize * cellSize / 2, startY + gridSize * cellSize + 20);
 
@@ -1169,6 +1169,7 @@
             ctx.lineTo(startX + 180, startY + gridSize * cellSize + 30);
             ctx.stroke();
             ctx.fillStyle = '#e056fd';
+            ctx.font = '15px Arial';
             ctx.fillText('Add Noise (Forward)', 190, startY + gridSize * cellSize + 35);
 
             // Reverse process (mirror visualization)
@@ -1203,7 +1204,7 @@
             }
 
             ctx.fillStyle = '#e056fd';
-            ctx.font = '11px Arial';
+            ctx.font = '15px Arial';
             ctx.fillText(`t=${t}`, revStartX, revStartY + gridSize * cellSize + 20);
             ctx.fillText('t=0 (Clean)', revStartX + gridSize * cellSize / 2, revStartY + gridSize * cellSize + 20);
 
@@ -1215,8 +1216,8 @@
             ctx.strokeRect(20, 270, 440, 60);
 
             ctx.fillStyle = '#e056fd';
-            ctx.font = '11px Arial';
-            ctx.fillText('Noise Schedule (α)', 30, 285);
+            ctx.font = '15px Arial';
+            ctx.fillText('Noise Schedule (α)', 30, 288);
 
             // Draw schedule curve
             ctx.strokeStyle = '#ff6600';
@@ -1301,8 +1302,8 @@
 
             // Title
             ctx.fillStyle = '#e056fd';
-            ctx.font = 'bold 12px Arial';
-            ctx.fillText('GAN Min-Max Game', 20, 25);
+            ctx.font = 'bold 17px Arial';
+            ctx.fillText('GAN (Generative Adversarial Network) Min-Max Game', 20, 25);
 
             // Mode collapse visualization
             const modeAreaX = 40;
@@ -1315,8 +1316,8 @@
             ctx.strokeRect(modeAreaX, modeAreaY, modeAreaW, modeAreaH);
 
             // Real data modes
-            ctx.fillStyle = '#4080ff';
-            ctx.font = '11px Arial';
+            ctx.fillStyle = '#5dade2';
+            ctx.font = '15px Arial';
             ctx.fillText('Real Modes', modeAreaX + 5, modeAreaY - 10);
             for (let mode of ganState.modes) {
                 ctx.fillStyle = 'rgba(64, 128, 255, 0.3)';
@@ -1329,8 +1330,8 @@
             }
 
             // Generated samples
-            ctx.fillStyle = '#ff6600';
-            ctx.font = '11px Arial';
+            ctx.fillStyle = '#f0b27a';
+            ctx.font = '15px Arial';
             ctx.fillText('Generated', modeAreaX + modeAreaW + 20, modeAreaY - 10);
 
             const activeModes = ganState.modes.filter(m => m.active);
@@ -1384,7 +1385,7 @@
             ctx.strokeRect(graphX, graphY, graphW, graphH);
 
             ctx.fillStyle = '#e056fd';
-            ctx.font = '11px Arial';
+            ctx.font = '15px Arial';
             ctx.fillText('Loss Curves', graphX + 10, graphY - 10);
 
             // Grid
@@ -1432,16 +1433,16 @@
             }
 
             // Legend
-            ctx.fillStyle = '#40ff80';
-            ctx.fillRect(graphX + 10, graphY + graphH + 10, 8, 8);
-            ctx.fillStyle = '#40ff80';
-            ctx.font = '10px Arial';
-            ctx.fillText('Gen', graphX + 22, graphY + graphH + 17);
+            ctx.fillStyle = '#58d68d';
+            ctx.fillRect(graphX + 10, graphY + graphH + 10, 10, 10);
+            ctx.fillStyle = '#58d68d';
+            ctx.font = '13px Arial';
+            ctx.fillText('Generator', graphX + 24, graphY + graphH + 20);
 
-            ctx.fillStyle = '#ff4080';
-            ctx.fillRect(graphX + 80, graphY + graphH + 10, 8, 8);
-            ctx.fillStyle = '#ff4080';
-            ctx.fillText('Disc', graphX + 92, graphY + graphH + 17);
+            ctx.fillStyle = '#ec7063';
+            ctx.fillRect(graphX + 100, graphY + graphH + 10, 10, 10);
+            ctx.fillStyle = '#ec7063';
+            ctx.fillText('Discriminator', graphX + 114, graphY + graphH + 20);
 
             // Stats
             document.getElementById('ganGenLossValue').textContent = ganState.genLoss.toFixed(2);
@@ -1510,14 +1511,14 @@
 
             // Title
             ctx.fillStyle = '#e056fd';
-            ctx.font = 'bold 12px Arial';
-            ctx.fillText('Normalizing Flow: Z → f₁ → f₂ → ... → X', 20, 25);
+            ctx.font = 'bold 17px Arial';
+            ctx.fillText('Normalizing Flow: Z -> f1 -> f2 -> ... -> X', 20, 25);
 
             // Source distribution (Gaussian)
             const sourceX = 50;
             const sourceY = 80;
-            ctx.fillStyle = '#4080ff';
-            ctx.font = '11px Arial';
+            ctx.fillStyle = '#5dade2';
+            ctx.font = '15px Arial';
             ctx.fillText('Z ~ N(0, I)', sourceX, sourceY - 10);
 
             // Draw Gaussian samples
@@ -1552,7 +1553,7 @@
                 ctx.stroke();
 
                 ctx.fillStyle = '#e056fd';
-                ctx.font = '10px Arial';
+                ctx.font = '13px Arial';
                 let transformName = 'f';
                 if (flowState.type === 'linear') transformName = 'Affine';
                 else if (flowState.type === 'sigmoid') transformName = 'Sigmoid';
@@ -1599,8 +1600,8 @@
 
             // Final distribution
             const finalX = sourceX + (numLayers + 1) * layerSpacing;
-            ctx.fillStyle = '#40ff80';
-            ctx.font = '11px Arial';
+            ctx.fillStyle = '#58d68d';
+            ctx.font = '15px Arial';
             ctx.fillText('X ~ p(x)', finalX - 20, sourceY - 10);
 
             // Draw final samples with distortion
@@ -1635,12 +1636,12 @@
             ctx.strokeRect(20, 270, 440, 60);
 
             ctx.fillStyle = '#e056fd';
-            ctx.font = 'bold 11px monospace';
-            ctx.fillText('log p(x) = log p(z) - Σ log|det(∂f_i/∂x_{i-1})|', 30, 290);
+            ctx.font = 'bold 15px monospace';
+            ctx.fillText('log p(x) = log p(z) - Sum log|det(df_i/dx_{i-1})|', 30, 292);
 
             ctx.fillStyle = '#b0b0c0';
-            ctx.font = '10px monospace';
-            ctx.fillText(`log|det(J)| = ${flowState.determinant.toFixed(3)}    Likelihood = ${flowState.likelihood.toFixed(2)}`, 30, 310);
+            ctx.font = '13px monospace';
+            ctx.fillText(`log|det(J)| = ${flowState.determinant.toFixed(3)}    Likelihood = ${flowState.likelihood.toFixed(2)}`, 30, 315);
 
             // Update determinant based on transformations
             flowState.determinant = Math.exp(-numLayers * 0.2);
@@ -1741,8 +1742,8 @@
             cfgCtx.fillRect(0, 0, cfgCanvas.width, cfgCanvas.height);
 
             cfgCtx.fillStyle = '#e056fd';
-            cfgCtx.font = 'bold 13px Arial';
-            cfgCtx.fillText('Guidance Scale Effect: w = ' + w.toFixed(1), 20, 25);
+            cfgCtx.font = 'bold 17px Arial';
+            cfgCtx.fillText('CFG (Classifier-Free Guidance) Scale Effect: w = ' + w.toFixed(1), 20, 25);
 
             const pad = 40;
             const graphW = cfgCanvas.width - pad * 2;
@@ -1772,7 +1773,7 @@
             cfgCtx.fill();
 
             // Axes
-            cfgCtx.strokeStyle = '#444';
+            cfgCtx.strokeStyle = '#888';
             cfgCtx.lineWidth = 1;
             cfgCtx.beginPath();
             cfgCtx.moveTo(pad, cfgCanvas.height - 60);
@@ -1782,10 +1783,10 @@
             cfgCtx.stroke();
 
             // Labels
-            cfgCtx.fillStyle = '#888';
-            cfgCtx.font = '10px Arial';
+            cfgCtx.fillStyle = '#b0b0c0';
+            cfgCtx.font = '15px Arial';
             cfgCtx.textAlign = 'center';
-            cfgCtx.fillText('Guidance Scale (w)', cfgCanvas.width / 2, cfgCanvas.height - 10);
+            cfgCtx.fillText('Guidance Scale (w)', cfgCanvas.width / 2, cfgCanvas.height - 8);
             cfgCtx.save();
             cfgCtx.translate(15, cfgCanvas.height / 2);
             cfgCtx.rotate(-Math.PI / 2);
@@ -1800,10 +1801,10 @@
             cfgCtx.fillStyle = '#ff6b6b33';
             cfgCtx.fillRect(pad + graphW * 0.5, pad + 20, graphW * 0.5, graphH);
 
-            cfgCtx.fillStyle = '#888';
-            cfgCtx.font = '9px Arial';
-            cfgCtx.fillText('w<1', pad + 5, pad + 15);
-            cfgCtx.fillText('1-10 (optimal)', pad + graphW * 0.2, pad + 15);
+            cfgCtx.fillStyle = '#b0b0c0';
+            cfgCtx.font = '13px Arial';
+            cfgCtx.fillText('w<1', pad + 10, pad + 15);
+            cfgCtx.fillText('1-10 (optimal)', pad + graphW * 0.25, pad + 15);
             cfgCtx.fillText('w>10 (artifacts)', pad + graphW * 0.7, pad + 15);
         }
         drawCFG();
@@ -1822,7 +1823,7 @@
             latentDiffCtx.fillRect(0, 0, latentDiffCanvas.width, latentDiffCanvas.height);
 
             latentDiffCtx.fillStyle = '#e056fd';
-            latentDiffCtx.font = 'bold 13px Arial';
+            latentDiffCtx.font = 'bold 17px Arial';
             latentDiffCtx.fillText('Latent Diffusion Pipeline', 20, 25);
 
             const stages = [
@@ -1843,12 +1844,12 @@
                 latentDiffCtx.strokeRect(stage.x, y, stage.w, 60);
 
                 latentDiffCtx.fillStyle = stage.color;
-                latentDiffCtx.font = '10px Arial';
+                latentDiffCtx.font = '13px Arial';
                 latentDiffCtx.textAlign = 'center';
                 latentDiffCtx.fillText(stage.name, stage.x + stage.w / 2, y + 35);
 
                 if (i < stages.length - 1) {
-                    latentDiffCtx.strokeStyle = '#888';
+                    latentDiffCtx.strokeStyle = '#999';
                     latentDiffCtx.lineWidth = 1;
                     latentDiffCtx.beginPath();
                     latentDiffCtx.moveTo(stage.x + stage.w, y + 30);
@@ -1857,10 +1858,11 @@
                 }
             });
 
-            latentDiffCtx.fillStyle = '#888';
-            latentDiffCtx.font = '11px Arial';
+            latentDiffCtx.fillStyle = '#b0b0c0';
+            latentDiffCtx.font = '15px Arial';
+            latentDiffCtx.textAlign = 'left';
             latentDiffCtx.fillText('Speed-up: 10-50x faster than pixel-space diffusion', 20, 200);
-            latentDiffCtx.fillText('Quality: Minimal loss vs pixel-space (VAE ensures good reconstruction)', 20, 220);
+            latentDiffCtx.fillText('Quality: Minimal loss vs pixel-space (VAE ensures good reconstruction)', 20, 225);
         }
         drawLatentDiff();
 
@@ -1885,12 +1887,12 @@
             vqvaeCtx.fillRect(0, 0, vqvaeCanvas.width, vqvaeCanvas.height);
 
             vqvaeCtx.fillStyle = '#e056fd';
-            vqvaeCtx.font = 'bold 13px Arial';
+            vqvaeCtx.font = 'bold 17px Arial';
             vqvaeCtx.fillText('VQ-VAE: Discrete Latent Quantization', 20, 25);
 
-            vqvaeCtx.fillStyle = '#888';
-            vqvaeCtx.font = '11px Arial';
-            vqvaeCtx.fillText('Input x → Encoder → z (continuous) → Quantize → Codebook lookup → Decoder → x̂', 20, 50);
+            vqvaeCtx.fillStyle = '#b0b0c0';
+            vqvaeCtx.font = '15px Arial';
+            vqvaeCtx.fillText('Input x -> Encoder -> z (cont.) -> Quantize -> Codebook -> Decoder -> x_hat', 20, 50);
 
             const boxW = 70, boxH = 50;
             let x = 30;
@@ -1909,23 +1911,23 @@
                 vqvaeCtx.strokeRect(x, y, boxW, boxH);
 
                 vqvaeCtx.fillStyle = box.color;
-                vqvaeCtx.font = '10px Arial';
+                vqvaeCtx.font = '15px Arial';
                 vqvaeCtx.textAlign = 'center';
-                vqvaeCtx.fillText(box.label, x + boxW / 2, y + boxH / 2);
+                vqvaeCtx.fillText(box.label, x + boxW / 2, y + boxH / 2 + 4);
 
                 x += boxW + 30;
             });
 
-            vqvaeCtx.fillStyle = '#ffd93d';
-            vqvaeCtx.font = '10px monospace';
+            vqvaeCtx.fillStyle = '#f7dc6f';
+            vqvaeCtx.font = '13px monospace';
             vqvaeCtx.textAlign = 'left';
-            vqvaeCtx.fillText('Codebook E ∈ ℝ^(K×D): K=' + K + ' codes, D=' + D + 'D embeddings', 30, 170);
-            vqvaeCtx.fillText('Quantization: z_q = E[ argmin_k ||z - e_k|| ]', 30, 190);
-            vqvaeCtx.fillText('Discrete tokens enable sequence modeling (Transformers).', 30, 210);
+            vqvaeCtx.fillText('Codebook E: K=' + K + ' codes, D=' + D + ' dim embeddings', 30, 170);
+            vqvaeCtx.fillText('Quantization: z_q = E[ argmin_k ||z - e_k|| ]', 30, 192);
+            vqvaeCtx.fillText('Discrete tokens enable sequence modeling (Transformers).', 30, 214);
 
-            vqvaeCtx.fillStyle = '#a0a0b0';
-            vqvaeCtx.font = '10px Arial';
-            vqvaeCtx.fillText('Used in: Dall-E, MuseNet, VQGAN. Trade-off: quantization loss vs discrete structure.', 30, 240);
+            vqvaeCtx.fillStyle = '#b0b0c0';
+            vqvaeCtx.font = '13px Arial';
+            vqvaeCtx.fillText('Used in: DALL-E, MuseNet, VQGAN. Trade-off: quantization loss vs discrete structure.', 30, 244);
         }
         drawVQVAE();
 
@@ -1948,8 +1950,8 @@
             architectureCtx.fillRect(0, 0, architectureCanvas.width, architectureCanvas.height);
 
             architectureCtx.fillStyle = '#e056fd';
-            architectureCtx.font = 'bold 13px Arial';
-            architectureCtx.fillText(archType === 'unet' ? 'U-Net (CNN-based)' : 'DiT (Transformer-based)', 20, 25);
+            architectureCtx.font = 'bold 17px Arial';
+            architectureCtx.fillText(archType === 'unet' ? 'U-Net (CNN-based)' : 'DiT (Diffusion Transformer)', 20, 25);
 
             if (archType === 'unet') {
                 // U-Net structure
@@ -2009,7 +2011,7 @@
                     architectureCtx.strokeStyle = '#7c4dff';
                     architectureCtx.strokeRect(30, y, 200, 30);
 
-                    architectureCtx.fillStyle = '#7c4dff';
+                    architectureCtx.fillStyle = '#9b7aff';
                     architectureCtx.font = '10px Arial';
                     architectureCtx.textAlign = 'center';
                     architectureCtx.fillText('Transformer Block ' + (i+1), 130, y + 18);
