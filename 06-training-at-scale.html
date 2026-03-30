@@ -315,6 +315,11 @@
   .quiz-actions { text-align: center; margin-top: 20px; }
   .quiz-actions button { padding: 10px 24px; margin: 0 8px; border-radius: 8px; border: 1px solid #01a3a4; background: transparent; color: #01a3a4; cursor: pointer; font-size: 1em; }
   .quiz-actions button:hover { background: rgba(255,255,255,0.05); }
+  .quiz-topic { margin-bottom: 30px; }
+  .quiz-topic-header { display:flex; justify-content:space-between; align-items:center; padding:16px 20px; background:#1a1a2e; border:1px solid #2a2a4a; border-radius:10px; cursor:pointer; margin-bottom:12px; }
+  .quiz-topic-header h3 { color:#01a3a4; margin:0; font-size:1.15em; }
+  .quiz-topic-score { color:#888; font-size:0.95em; }
+  .quiz-explanation { margin-top:12px; padding:14px 18px; border-radius:8px; font-size:0.93em; line-height:1.6; border-left:4px solid #2ecc71; background:rgba(46,204,113,0.08); color:#b0ffb0; }
 </style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -1995,7 +2000,7 @@
 <div id="quizSection" style="display:none">
   <div class="quiz-container">
     <h2 style="text-align:center; color:#01a3a4; margin-bottom:10px;">Training at Scale Quiz</h2>
-    <div class="quiz-score">Score: <span id="quizScore">0</span> / <span id="quizTotal">8</span></div>
+    <div class="quiz-score">Score: <span id="quizScore">0</span> / <span id="quizTotal">40</span></div>
     <div id="quizQuestions"></div>
     <div class="quiz-actions">
       <button onclick="resetQuiz()">Reset Quiz</button>
@@ -2007,52 +2012,149 @@
 <script>
 (function() {
   const quizData = [
-    { q: "Q1: What does data parallelism in distributed training do?", options: ["Splits the model across GPUs", "Replicates the model on each GPU and splits the data batch", "Trains different models on different data", "Reduces the learning rate"], answer: 1 },
-    { q: "Q2: What is gradient accumulation used for?", options: ["Making gradients larger", "Simulating larger batch sizes when GPU memory is limited", "Reducing training time", "Eliminating the need for a learning rate"], answer: 1 },
-    { q: "Q3: In LoRA (Low-Rank Adaptation), what is the rank r?", options: ["The number of layers", "The dimensionality of the low-rank matrices \u2014 smaller r = fewer trainable params", "The learning rate", "The batch size"], answer: 1 },
-    { q: "Q4: What is mixed precision training?", options: ["Using different models", "Using FP16 for forward/backward pass and FP32 for weight updates to save memory and speed up training", "Training with different datasets", "Using different optimizers"], answer: 1 },
-    { q: "Q5: What problem does ZeRO (Zero Redundancy Optimizer) solve?", options: ["Slow data loading", "Memory redundancy \u2014 partitions optimizer states, gradients, and parameters across GPUs", "Slow convergence", "Data preprocessing"], answer: 1 },
-    { q: "Q6: What is the purpose of learning rate warmup?", options: ["To use a constant learning rate", "Gradually increasing LR from near-zero to prevent training instability in early steps", "To cool down the GPU", "To reduce the dataset size"], answer: 1 },
-    { q: "Q7: What is checkpoint memory in training?", options: ["Saving model weights to disk", "The memory used to store activations during forward pass for use in backward pass; gradient checkpointing trades compute for memory", "The amount of RAM", "The model size"], answer: 1 },
-    { q: "Q8: What does continuous batching optimize in LLM serving?", options: ["Training speed", "GPU utilization \u2014 new requests fill slots freed by completed requests instead of waiting for the whole batch", "Model accuracy", "Data storage"], answer: 1 }
+    {
+      topic: "Data Parallelism vs Model Parallelism",
+      questions: [
+        { q: "In data parallelism, each GPU holds a full copy of the model. What must happen after each backward pass?", options: ["Gradients are discarded", "Gradients are averaged (all-reduced) across all GPUs before the weight update", "Each GPU updates independently with its own gradients", "Only the master GPU computes gradients"], correct: 1, explanation: "All-reduce synchronizes gradients across GPUs so every replica applies the same averaged update, keeping model copies consistent." },
+        { q: "When is model parallelism (splitting a model across GPUs) preferred over data parallelism?", options: ["When the dataset is very large", "When a single model is too large to fit in one GPU's memory", "When training is too fast", "When you have only one GPU"], correct: 1, explanation: "Model parallelism is necessary when model parameters, activations, or optimizer states exceed a single GPU's memory capacity." },
+        { q: "In pipeline parallelism, a model is split into stages across GPUs. What is the 'bubble' problem?", options: ["Memory overflow on one GPU", "Idle time on GPUs waiting for forward/backward passes from other stages", "Network bandwidth saturation", "Gradient explosion between stages"], correct: 1, explanation: "Pipeline bubbles are periods where some GPUs sit idle because they are waiting for activations (forward) or gradients (backward) from other stages. Micro-batching reduces this." },
+        { q: "You have 8 GPUs, each with 40GB memory. Your model requires 30GB for parameters alone. Which parallelism strategy lets you use all 8 GPUs effectively?", options: ["Data parallelism only", "Model parallelism only", "A hybrid: model parallelism across pairs of GPUs + data parallelism across pairs", "You cannot train this model on these GPUs"], correct: 2, explanation: "The model fits on 2 GPUs via model parallelism (30GB split across 2x40GB). Then 4 such pairs can run data parallelism for throughput, combining both strategies." },
+        { q: "Compared to data parallelism, what is the main communication overhead in tensor (intra-layer) model parallelism?", options: ["Gradient all-reduce once per step", "Frequent all-reduce of activations within every layer's forward and backward pass", "Sending the full model to each GPU every step", "No communication overhead"], correct: 1, explanation: "Tensor parallelism splits individual layers across GPUs, requiring activation synchronization within each layer during both forward and backward passes, making communication very frequent." }
+      ]
+    },
+    {
+      topic: "Learning Rate Schedules",
+      questions: [
+        { q: "What is the purpose of learning rate warmup at the start of training?", options: ["To speed up the first epoch", "To prevent large, destabilizing parameter updates when gradients are noisy early in training", "To reduce memory usage", "To initialize the optimizer state"], correct: 1, explanation: "Early in training, gradients can be large and unreliable. Warmup gradually increases the LR so the model does not make excessively large updates before finding a stable optimization region." },
+        { q: "In cosine annealing, the learning rate follows a cosine curve from peak to near-zero. Why is this often preferred over step decay?", options: ["It is faster to compute", "It provides smoother transitions, avoiding abrupt loss spikes at step boundaries", "It always achieves lower final loss", "It uses less memory"], correct: 1, explanation: "Cosine annealing smoothly reduces the LR, avoiding the sudden jumps that step decay introduces, which can temporarily destabilize training." },
+        { q: "A team trains a large language model and finds that training loss spikes around step 5000, then recovers. Which schedule modification could help prevent this?", options: ["Removing warmup entirely", "Using a longer warmup period and/or reducing the peak learning rate", "Switching to a constant learning rate", "Doubling the batch size at step 5000"], correct: 1, explanation: "Loss spikes often indicate the LR is too high for the optimization landscape at that point. Longer warmup and a lower peak LR help the model settle into a stable region before aggressive updates." },
+        { q: "What does the 'one-cycle' learning rate policy do?", options: ["Trains for exactly one epoch", "Ramps LR up to a max, then anneals it down, completing one full cycle during training", "Uses a fixed LR for one cycle then stops", "Randomly samples learning rates"], correct: 1, explanation: "The one-cycle policy (by Leslie Smith) warms up to a peak LR, then decays. This acts as a form of regularization and often allows training with higher peak LRs for faster convergence." },
+        { q: "You are fine-tuning a pretrained model on a small dataset. Which learning rate strategy is most appropriate?", options: ["A large constant learning rate matching pretraining", "A small learning rate with minimal or no warmup, and cosine decay", "No learning rate schedule at all", "An increasing learning rate throughout training"], correct: 1, explanation: "Fine-tuning requires a small LR to avoid destroying pretrained representations. Cosine decay gently reduces it further. Little warmup is needed since the model is already in a good region." }
+      ]
+    },
+    {
+      topic: "Mixed Precision Training",
+      questions: [
+        { q: "In mixed precision training, which operations are typically kept in FP32 (full precision)?", options: ["Matrix multiplications", "Weight updates and loss accumulation", "Convolution operations", "Activation functions"], correct: 1, explanation: "Weight updates require FP32 to maintain precision when adding small gradient updates to large weight values. FP16 does not have enough mantissa bits for this accurately." },
+        { q: "What is 'loss scaling' in mixed precision training, and why is it needed?", options: ["Scaling the dataset size", "Multiplying the loss by a large factor before backward pass to prevent FP16 gradient underflow, then unscaling before the update", "Normalizing the loss to be between 0 and 1", "Reducing the loss to speed up training"], correct: 1, explanation: "FP16 has a limited range. Small gradients can underflow to zero. Loss scaling shifts gradients into FP16's representable range during backward pass, then unscales before the FP32 weight update." },
+        { q: "A model trains correctly in FP32 but produces NaN losses when switched to FP16. What is the most likely cause?", options: ["The model is too large", "Overflow: some intermediate values exceed FP16's max range (~65504)", "The dataset has missing values", "The optimizer is incompatible"], correct: 1, explanation: "FP16 has a max value of ~65504. Large activations or loss values can overflow to infinity/NaN. Dynamic loss scaling and careful architecture design help mitigate this." },
+        { q: "How much memory does mixed precision training typically save compared to pure FP32?", options: ["No savings", "Roughly 30-40% memory savings for activations and gradients", "Exactly 50% on everything", "90% savings"], correct: 1, explanation: "Activations and gradients stored in FP16 are half the size, but master weights remain FP32. Net savings are typically 30-40%, not a full 50%, because of the FP32 master copy." },
+        { q: "BF16 (bfloat16) has gained popularity over FP16 for training. What is BF16's key advantage?", options: ["Higher precision in the mantissa", "Same exponent range as FP32 (8 bits), greatly reducing overflow/underflow without loss scaling", "Faster computation on all hardware", "Smaller memory footprint than FP16"], correct: 1, explanation: "BF16 uses 8 exponent bits like FP32, so it can represent the same range of values. This eliminates most overflow/underflow issues, removing the need for loss scaling in many cases." }
+      ]
+    },
+    {
+      topic: "Gradient Accumulation",
+      questions: [
+        { q: "A researcher wants an effective batch size of 256 but can only fit 32 samples per GPU. How many accumulation steps are needed on a single GPU?", options: ["2", "4", "8", "16"], correct: 2, explanation: "256 / 32 = 8 accumulation steps. Each micro-batch of 32 computes gradients that are summed over 8 steps before a single optimizer update." },
+        { q: "What happens to gradient values during accumulation steps before the optimizer update?", options: ["They are discarded after each micro-batch", "They are summed (or averaged) across micro-batches without updating weights", "They are clipped to zero", "They replace the previous micro-batch's gradients"], correct: 1, explanation: "Gradients from each micro-batch forward-backward pass are accumulated (summed or averaged) in place. The optimizer step only runs after all accumulation steps complete." },
+        { q: "Why must you be careful with batch normalization when using gradient accumulation?", options: ["BatchNorm does not use gradients", "BatchNorm statistics are computed per micro-batch, not the effective batch, potentially making them noisy", "BatchNorm requires FP32 precision", "BatchNorm is incompatible with accumulation"], correct: 1, explanation: "BatchNorm computes mean and variance from each micro-batch independently. With small micro-batches, these statistics are noisy and do not reflect the full effective batch, potentially hurting performance." },
+        { q: "When combining gradient accumulation with distributed data parallelism, when should the all-reduce communication happen?", options: ["After every micro-batch", "Only after the final accumulation step, before the optimizer update", "Before the forward pass", "All-reduce is not needed with accumulation"], correct: 1, explanation: "Synchronizing gradients after every micro-batch wastes bandwidth. The efficient approach is to accumulate locally and only all-reduce once before the optimizer step." },
+        { q: "Gradient accumulation effectively simulates a larger batch size. However, the training dynamics are not perfectly identical to actually using the larger batch. Why?", options: ["The learning rate is different", "Stochastic effects differ: each micro-batch sees different data, and operations like dropout sample independently per micro-batch", "The model architecture changes", "Gradient accumulation uses more memory"], correct: 1, explanation: "With a true large batch, dropout masks and data augmentation are sampled once for the full batch. With accumulation, each micro-batch gets independent stochastic samples, creating slightly different regularization dynamics." }
+      ]
+    },
+    {
+      topic: "ZeRO Optimization Stages",
+      questions: [
+        { q: "What does ZeRO Stage 1 partition across GPUs?", options: ["Model parameters", "Gradients", "Optimizer states (e.g., Adam's momentum and variance)", "Activations"], correct: 2, explanation: "ZeRO Stage 1 partitions only optimizer states. Since Adam stores 2 states per parameter (momentum + variance), this alone can reduce memory by up to ~4x for the optimizer component." },
+        { q: "ZeRO Stage 2 adds gradient partitioning on top of Stage 1. What communication is required during the backward pass?", options: ["No communication", "Reduce-scatter: each GPU receives and reduces only the gradient shard it is responsible for", "All-gather of all parameters", "Broadcasting from master GPU"], correct: 1, explanation: "With gradient partitioning, each GPU only needs the gradient shard corresponding to its optimizer state partition. Reduce-scatter efficiently distributes and reduces gradients in one operation." },
+        { q: "ZeRO Stage 3 partitions parameters in addition to optimizer states and gradients. What is the tradeoff?", options: ["Less memory but more communication: parameters must be all-gathered before each forward/backward layer computation", "More memory but faster training", "No tradeoff; it is strictly better", "It only works with small models"], correct: 0, explanation: "Stage 3 achieves maximum memory savings by partitioning everything, but requires all-gathering parameters before each layer's computation and releasing them after, increasing communication volume." },
+        { q: "A team uses ZeRO Stage 3 with 64 GPUs to train a 30B parameter model. Each GPU only stores 1/64th of the parameters. What happens if one GPU fails mid-training?", options: ["Training continues without that GPU's shard", "Training crashes because each GPU's parameter shard is unique and essential; checkpointing is critical", "The other GPUs automatically reconstruct the lost shard", "Only the last micro-batch is lost"], correct: 1, explanation: "In ZeRO Stage 3, each GPU holds a unique shard. Losing any GPU means losing part of the model state. Regular distributed checkpointing is essential for fault tolerance." },
+        { q: "How does ZeRO-Offload extend ZeRO to enable training larger models on fewer GPUs?", options: ["It uses model pruning", "It offloads optimizer states and optionally gradients to CPU RAM, using CPU compute for the optimizer step", "It compresses the model to fit in GPU memory", "It uses disk storage for activations"], correct: 1, explanation: "ZeRO-Offload leverages the much larger CPU RAM by moving optimizer states (and optionally computations) to CPU, allowing training of models that would otherwise exceed GPU memory." }
+      ]
+    },
+    {
+      topic: "Activation Checkpointing",
+      questions: [
+        { q: "What does activation checkpointing (gradient checkpointing) trade?", options: ["Accuracy for speed", "Memory for compute: it discards intermediate activations and recomputes them during the backward pass", "Disk space for memory", "Communication for computation"], correct: 1, explanation: "Instead of storing all intermediate activations for backpropagation, checkpointing saves only selected ones and recomputes the rest, reducing memory at the cost of ~30% extra compute." },
+        { q: "In a 100-layer transformer, if you checkpoint every 10th layer, approximately how much activation memory do you save?", options: ["10%", "50%", "Roughly 90%: you store 10 checkpoints instead of 100 layers of activations", "100%"], correct: 2, explanation: "You only store activations at 10 checkpoint boundaries. Between checkpoints, activations are recomputed during backward. This reduces activation memory by roughly 10x." },
+        { q: "Why is activation checkpointing especially important for training large language models?", options: ["LLMs have very few parameters", "LLM activations grow with sequence length, and long sequences can make activation memory dominate total memory usage", "LLMs do not use backpropagation", "LLMs only run on CPUs"], correct: 1, explanation: "Activation memory scales with sequence length and hidden size. For large models with long sequences, activations can consume more memory than model parameters, making checkpointing essential." },
+        { q: "A team enables activation checkpointing and finds that training throughput drops by 33%. Is this expected?", options: ["No, checkpointing should have no impact on speed", "Yes, this is in the typical range: the extra recomputation adds roughly one additional forward pass worth of compute", "No, the drop should be much larger", "This indicates a bug in the implementation"], correct: 1, explanation: "Activation checkpointing approximately adds one extra forward pass of compute (recomputing activations during backward). Since a training step is roughly 1 forward + 1 backward (2x forward cost), adding 1x gives ~33% overhead." },
+        { q: "Selective activation checkpointing only checkpoints certain layers or operations. Which operations are the best candidates for checkpointing?", options: ["Operations with the smallest activations", "Operations with large activation tensors but cheap recomputation (e.g., attention layers)", "Only the first and last layers", "Operations that do not require gradients"], correct: 1, explanation: "The ideal checkpoint targets are operations that produce large activation tensors (high memory) but are relatively cheap to recompute, maximizing memory savings per unit of extra compute." }
+      ]
+    },
+    {
+      topic: "Training Monitoring & Debugging",
+      questions: [
+        { q: "During training, you observe that the loss decreases for 1000 steps, then suddenly spikes to NaN. What should you check first?", options: ["The dataset size", "The learning rate (too high), gradient norms (exploding gradients), and whether any input data contains anomalies", "The number of GPUs", "The model's final layer only"], correct: 1, explanation: "NaN loss typically results from numerical instability: an LR that is too high, exploding gradients, or corrupt data. Logging gradient norms and checking for extreme input values are the first diagnostic steps." },
+        { q: "What does a flat training loss curve (no improvement) for many steps typically indicate?", options: ["The model is perfectly converged", "The learning rate may be too low, the model may be too small for the task, or there is a data pipeline bug feeding constant/repeated data", "Training is working correctly", "The batch size is too large"], correct: 1, explanation: "No loss improvement suggests the model is not learning. Common causes include an LR too small to escape the initial region, insufficient model capacity, or a data loading bug." },
+        { q: "You notice the training loss is much lower than the validation loss and the gap is widening. What is happening?", options: ["The model is underfitting", "The model is overfitting: it memorizes training data but does not generalize", "The data is corrupted", "The validation set is too large"], correct: 1, explanation: "A growing gap between train and validation loss is the hallmark of overfitting. Remedies include more data, stronger regularization, data augmentation, or a smaller model." },
+        { q: "A training run on 32 GPUs achieves only 50% of the expected throughput compared to a single-GPU baseline scaled linearly. What metrics would you investigate?", options: ["Only the learning rate schedule", "GPU utilization, communication overhead (all-reduce time), data loading bottlenecks, and pipeline bubble time", "The model's accuracy", "The validation loss"], correct: 1, explanation: "Poor scaling efficiency points to communication overhead, GPU idle time, or data loading stalls. Profiling tools (e.g., PyTorch profiler, NCCL logs) reveal where time is spent." },
+        { q: "Your training loss oscillates wildly without converging. Gradient norms are consistently above 100. Which two interventions are most likely to help?", options: ["Increase the learning rate and batch size", "Apply gradient clipping and reduce the learning rate", "Remove all regularization", "Switch from Adam to plain SGD without momentum"], correct: 1, explanation: "Large gradient norms cause unstable updates. Gradient clipping caps the norm to a safe threshold, and reducing the LR decreases step sizes, both stabilizing the optimization trajectory." }
+      ]
+    },
+    {
+      topic: "Hardware Awareness & Roofline Model",
+      questions: [
+        { q: "The roofline model plots performance (FLOPS) against operational intensity (FLOPS/byte). What does it mean when a workload falls in the 'memory-bound' region?", options: ["The GPU has insufficient memory", "The workload cannot fully utilize compute because it is bottlenecked by memory bandwidth", "The model is too large", "The workload needs more CPUs"], correct: 1, explanation: "In the memory-bound region, the ratio of computation to data movement is low, so the GPU spends more time waiting for data from memory than computing. Increasing arithmetic intensity helps." },
+        { q: "An A100 GPU has ~2TB/s memory bandwidth and ~312 TFLOPS FP16 peak. What is the arithmetic intensity threshold (FLOPS/byte) where a workload transitions from memory-bound to compute-bound?", options: ["About 6 FLOPS/byte", "About 156 FLOPS/byte", "About 312 FLOPS/byte", "About 1 FLOP/byte"], correct: 1, explanation: "The ridge point is peak FLOPS / bandwidth = 312 TFLOPS / 2 TB/s = 156 FLOPS/byte. Workloads below this ratio are memory-bound; above it, they are compute-bound." },
+        { q: "Why does increasing batch size generally improve GPU utilization during training?", options: ["It reduces the number of epochs", "Larger batches increase the arithmetic intensity of matrix operations, moving the workload toward the compute-bound regime", "It reduces gradient noise", "It decreases memory usage"], correct: 1, explanation: "Larger batch sizes mean larger matrix multiplications, which have higher arithmetic intensity (more FLOPS per byte transferred) and better utilize the GPU's compute units." },
+        { q: "NVLink provides ~600 GB/s bidirectional bandwidth between GPUs, while PCIe 4.0 provides ~32 GB/s. For which parallelism strategy does this difference matter most?", options: ["Data parallelism with large models", "Tensor parallelism, where GPUs must exchange activations within every layer", "Pipeline parallelism with large micro-batches", "No parallelism strategy is affected"], correct: 1, explanation: "Tensor parallelism requires frequent, latency-sensitive communication within each layer. The ~20x bandwidth advantage of NVLink over PCIe is critical for keeping GPUs from stalling between layer operations." },
+        { q: "You are choosing between two GPU configurations: 4x A100-80GB or 8x A100-40GB for training a 25B parameter model. Both have the same total memory. Which factor most influences the decision?", options: ["The number of GPUs is always better", "Inter-GPU communication topology and bandwidth: 8 GPUs need more partitioning and communication, but offer more aggregate compute", "Only the total memory matters", "The 4-GPU setup is always better"], correct: 1, explanation: "With 8 GPUs, you need finer partitioning and more inter-GPU communication. If the GPUs have fast NVLink interconnects, 8x40GB may offer higher throughput. If communication is slow, 4x80GB with less partitioning may win." }
+      ]
+    }
   ];
 
   let score = 0;
-  let answered = 0;
+  let totalQuestions = quizData.reduce((sum, t) => sum + t.questions.length, 0);
+  const topicScores = {};
 
   function buildQuiz() {
     const container = document.getElementById('quizQuestions');
     container.innerHTML = '';
-    score = 0; answered = 0;
+    score = 0;
     document.getElementById('quizScore').textContent = '0';
-    quizData.forEach((item, qi) => {
-      const div = document.createElement('div');
-      div.className = 'quiz-question';
-      div.innerHTML = '<h3>' + item.q + '</h3>';
-      item.options.forEach((opt, oi) => {
-        const btn = document.createElement('button');
-        btn.className = 'quiz-option';
-        btn.textContent = String.fromCharCode(65 + oi) + ') ' + opt;
-        btn.onclick = function() { handleAnswer(qi, oi, div); };
-        div.appendChild(btn);
+    document.getElementById('quizTotal').textContent = totalQuestions;
+    quizData.forEach((topic, ti) => {
+      topicScores[ti] = { correct: 0, answered: 0, total: topic.questions.length };
+      const topicDiv = document.createElement('div');
+      topicDiv.className = 'quiz-topic';
+      const header = document.createElement('div');
+      header.className = 'quiz-topic-header';
+      header.innerHTML = '<h3>' + topic.topic + '</h3><span class="quiz-topic-score" id="topicScore' + ti + '">0 / ' + topic.questions.length + '</span>';
+      header.onclick = function() {
+        const body = topicDiv.querySelector('.quiz-topic-body');
+        body.style.display = body.style.display === 'none' ? 'block' : 'none';
+      };
+      topicDiv.appendChild(header);
+      const body = document.createElement('div');
+      body.className = 'quiz-topic-body';
+      topic.questions.forEach((item, qi) => {
+        const div = document.createElement('div');
+        div.className = 'quiz-question';
+        div.innerHTML = '<h3>Q' + (qi + 1) + ': ' + item.q + '</h3>';
+        item.options.forEach((opt, oi) => {
+          const btn = document.createElement('button');
+          btn.className = 'quiz-option';
+          btn.textContent = String.fromCharCode(65 + oi) + ') ' + opt;
+          btn.onclick = function() { handleAnswer(ti, qi, oi, div, item); };
+          div.appendChild(btn);
+        });
+        body.appendChild(div);
       });
-      container.appendChild(div);
+      topicDiv.appendChild(body);
+      container.appendChild(topicDiv);
     });
   }
 
-  function handleAnswer(qi, oi, div) {
+  function handleAnswer(ti, qi, oi, div, item) {
     const buttons = div.querySelectorAll('.quiz-option');
     if (buttons[0].disabled) return;
     buttons.forEach(b => b.disabled = true);
-    if (oi === quizData[qi].answer) {
+    if (oi === item.correct) {
       buttons[oi].classList.add('correct');
       score++;
+      topicScores[ti].correct++;
     } else {
       buttons[oi].classList.add('wrong');
-      buttons[quizData[qi].answer].classList.add('reveal');
+      buttons[item.correct].classList.add('reveal');
     }
-    answered++;
+    topicScores[ti].answered++;
     document.getElementById('quizScore').textContent = score;
+    document.getElementById('topicScore' + ti).textContent = topicScores[ti].correct + ' / ' + topicScores[ti].total;
+    const expl = document.createElement('div');
+    expl.className = 'quiz-explanation';
+    expl.textContent = item.explanation;
+    div.appendChild(expl);
   }
 
   window.resetQuiz = buildQuiz;

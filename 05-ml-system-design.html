@@ -344,6 +344,11 @@
   .quiz-actions { text-align: center; margin-top: 20px; }
   .quiz-actions button { padding: 10px 24px; margin: 0 8px; border-radius: 8px; border: 1px solid #54a0ff; background: transparent; color: #54a0ff; cursor: pointer; font-size: 1em; }
   .quiz-actions button:hover { background: rgba(255,255,255,0.05); }
+  .quiz-topic { margin-bottom: 30px; }
+  .quiz-topic-header { display:flex; justify-content:space-between; align-items:center; padding:16px 20px; background:#1a1a2e; border:1px solid #2a2a4a; border-radius:10px; cursor:pointer; margin-bottom:12px; }
+  .quiz-topic-header h3 { color:#54a0ff; margin:0; font-size:1.15em; }
+  .quiz-topic-score { color:#888; font-size:0.95em; }
+  .quiz-explanation { margin-top:12px; padding:14px 18px; border-radius:8px; font-size:0.93em; line-height:1.6; border-left:4px solid #2ecc71; background:rgba(46,204,113,0.08); color:#b0ffb0; }
 </style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -1599,7 +1604,7 @@
 <div id="quizSection" style="display:none">
   <div class="quiz-container">
     <h2 style="text-align:center; color:#54a0ff; margin-bottom:10px;">ML System Design Quiz</h2>
-    <div class="quiz-score">Score: <span id="quizScore">0</span> / <span id="quizTotal">7</span></div>
+    <div class="quiz-score">Score: <span id="quizScore">0</span> / <span id="quizTotal">25</span></div>
     <div id="quizQuestions"></div>
     <div class="quiz-actions">
       <button onclick="resetQuiz()">Reset Quiz</button>
@@ -1611,51 +1616,119 @@
 <script>
 (function() {
   const quizData = [
-    { q: "Q1: What is the primary purpose of A/B testing in ML systems?", options: ["To train models faster", "To measure the causal impact of changes on user metrics", "To debug code", "To reduce latency"], answer: 1 },
-    { q: "Q2: What is model serving latency most affected by?", options: ["Training data size", "Model complexity, batch size, and infrastructure", "Number of features only", "Programming language"], answer: 1 },
-    { q: "Q3: What is a canary deployment?", options: ["Deploying to all users at once", "Gradually rolling out to a small % of traffic to detect issues", "Rolling back a deployment", "Testing in staging only"], answer: 1 },
-    { q: "Q4: What does online/real-time feature computation enable?", options: ["Faster training", "Using the freshest signals (e.g., recent clicks) at inference time", "Reducing model size", "Eliminating the need for a feature store"], answer: 1 },
-    { q: "Q5: What is the shadow mode deployment pattern?", options: ["Running the new model in production handling real traffic", "Running the new model alongside the old one, logging predictions but not serving them to users", "Training a model in the dark", "Deploying without monitoring"], answer: 1 },
-    { q: "Q6: Why is monitoring model performance in production critical?", options: ["To impress stakeholders", "To detect data drift, feature drift, and model degradation over time", "To reduce cloud costs", "To speed up training"], answer: 1 },
-    { q: "Q7: What is the typical architecture for a large-scale recommendation system?", options: ["Single model for everything", "Multi-stage: candidate generation \u2192 ranking \u2192 re-ranking", "One nearest-neighbor lookup", "Manual curation"], answer: 1 }
+    {
+      topic: "ML Pipeline Architecture",
+      questions: [
+        { q: "Your team ingests raw clickstream data, applies feature transforms, trains a model, and deploys it weekly. Which component is responsible for ensuring the transforms applied during training match those at serving time?", options: ["The model registry", "The feature store / shared transformation layer", "The orchestrator (e.g., Airflow)", "The monitoring dashboard"], correct: 1, explanation: "A shared feature store or transformation layer guarantees that the same code path produces features for both training and inference, preventing train-serve skew." },
+        { q: "In an ML pipeline, what is the primary role of an orchestrator like Airflow or Kubeflow Pipelines?", options: ["Serve predictions to end users", "Schedule, sequence, and retry pipeline steps with dependency management", "Store trained model artifacts", "Perform real-time feature lookups"], correct: 1, explanation: "Orchestrators manage DAGs of tasks, handling scheduling, retries, and dependencies so pipeline steps execute in the correct order." },
+        { q: "A data scientist notices that a model performs well offline but poorly online. Which pipeline issue is most likely?", options: ["The model is too large", "Train-serve skew: features computed differently in training vs serving", "The orchestrator has too many retries", "The model registry is outdated"], correct: 1, explanation: "Train-serve skew is the most common cause of offline-online performance gaps. Different feature computation paths introduce subtle data differences." },
+        { q: "You are designing a pipeline for a fraud detection system that needs to incorporate real-time transaction velocity. Where should this feature be computed?", options: ["In a nightly batch ETL job", "In a streaming feature pipeline that updates a low-latency store", "Directly inside the model at prediction time", "In the data warehouse after transactions are settled"], correct: 1, explanation: "Real-time features like transaction velocity require a streaming pipeline that continuously updates a low-latency store (e.g., Redis), so serving can read fresh values." },
+        { q: "Your ML pipeline uses separate codebases for batch feature generation and online feature serving. A new engineer adds a feature to the batch pipeline but forgets the online one. What architectural pattern best prevents this?", options: ["Adding more unit tests to both codebases", "Using a unified feature definition framework that generates both batch and online code", "Deploying models more frequently", "Adding a manual review checklist"], correct: 1, explanation: "A unified feature definition (e.g., Feast, Tecton) ensures a single source of truth for feature logic, automatically generating consistent batch and online implementations." }
+      ]
+    },
+    {
+      topic: "A/B Testing & Statistical Significance",
+      questions: [
+        { q: "An A/B test shows the treatment group has a 2% higher conversion rate with p-value 0.03. What does this p-value mean?", options: ["There is a 3% chance the treatment is worse", "If there were truly no difference, there is a 3% probability of seeing a result this extreme or more", "The treatment is 97% likely to be better", "3% of users were unaffected"], correct: 1, explanation: "The p-value is the probability of observing the data (or more extreme) under the null hypothesis of no difference. It does not directly state the probability of the treatment being better." },
+        { q: "What is the main risk of checking A/B test results daily and stopping early when you see significance?", options: ["You waste compute resources", "You inflate the false positive rate due to multiple comparisons (peeking problem)", "You reduce statistical power", "The users notice the experiment"], correct: 1, explanation: "Repeated peeking inflates Type I error because each check is an additional opportunity to falsely declare significance. Sequential testing methods or predetermined sample sizes address this." },
+        { q: "Your A/B test for a new ML ranking model uses click-through rate (CTR) as the primary metric. After two weeks, CTR is up 5% (p=0.01) but revenue per session is down 3% (p=0.04). What should you do?", options: ["Ship it since CTR is the primary metric and is significant", "Investigate why the metrics diverge before making a decision", "Run the test longer until revenue is not significant", "Discard the test and start over"], correct: 1, explanation: "Diverging metrics suggest the model may be optimizing for clicks at the expense of purchase quality. Understanding the mechanism is essential before launching." },
+        { q: "What is a common method to handle network effects (interference between users) in A/B testing at scale?", options: ["Use a larger sample size", "Use cluster-based randomization (e.g., randomize by geographic region)", "Increase the test duration", "Use a higher significance threshold"], correct: 1, explanation: "When users influence each other (e.g., social networks, marketplaces), cluster randomization assigns entire groups to treatment or control, reducing interference between conditions." },
+        { q: "You run an A/B test with 10,000 users per group. The observed lift is 0.5% with p=0.45. Your PM asks if the model is truly no better. What is the most accurate response?", options: ["The model has zero effect", "We failed to detect a meaningful effect; the test may be underpowered for small lifts", "The model is exactly 0.5% better", "We should switch to a one-sided test to get significance"], correct: 1, explanation: "Failing to reject the null does not prove zero effect. The test may lack power to detect small effects. A power analysis can determine the minimum detectable effect for the given sample size." }
+      ]
+    },
+    {
+      topic: "Feature Store Architecture",
+      questions: [
+        { q: "What are the two primary serving modes a feature store must support?", options: ["SQL and NoSQL", "Batch (offline) retrieval for training and low-latency (online) retrieval for serving", "Read and write", "Synchronous and asynchronous training"], correct: 1, explanation: "A feature store provides bulk historical reads for training data generation and millisecond-latency point lookups for real-time inference." },
+        { q: "A feature store maintains both an offline store (e.g., data lake) and an online store (e.g., Redis). What is the purpose of the materialization process?", options: ["To compress features for storage", "To sync computed feature values from the offline store into the online store", "To delete stale features", "To version control feature definitions"], correct: 1, explanation: "Materialization moves pre-computed feature values from the batch/offline layer to the online store so they are available at low latency during inference." },
+        { q: "Your team has 200 features across 15 models. Without a feature store, what problem typically becomes unmanageable?", options: ["Models train too slowly", "Feature duplication, inconsistent definitions, and lack of discoverability across teams", "GPUs run out of memory", "A/B tests become invalid"], correct: 1, explanation: "Without centralized feature management, teams re-implement the same features differently, leading to duplication, inconsistency, and wasted engineering effort." },
+        { q: "You need to serve a feature that computes 'number of purchases in the last 30 minutes' for a real-time fraud model. Which feature store pattern handles this?", options: ["A nightly batch materialization job", "A streaming ingestion pipeline that continuously updates a windowed aggregation in the online store", "A request-time SQL query to the data warehouse", "A pre-computed static lookup table"], correct: 1, explanation: "Windowed aggregations over short time horizons require streaming pipelines (e.g., Flink, Spark Streaming) that push updates to the online store in near real-time." },
+        { q: "Feature stores often support 'point-in-time joins.' Why is this important for training data generation?", options: ["It makes queries faster", "It prevents data leakage by ensuring each training example only uses features available at the time of the event", "It reduces storage costs", "It enables real-time serving"], correct: 1, explanation: "Point-in-time joins ensure that when building training sets, you only join feature values that were actually available at the time of each label event, preventing future data from leaking into training." }
+      ]
+    },
+    {
+      topic: "Online vs Batch Serving",
+      questions: [
+        { q: "When is batch (offline) prediction preferred over online (real-time) prediction?", options: ["When predictions need to be personalized", "When the prediction set is known in advance and latency is not critical (e.g., nightly recommendations)", "When the model is small", "When the feature store is unavailable"], correct: 1, explanation: "Batch prediction is ideal when you can pre-compute predictions for a known set of entities ahead of time, avoiding the complexity and cost of real-time infrastructure." },
+        { q: "An e-commerce site pre-computes product recommendations nightly. A user adds a new item to their cart, but recommendations do not update. What serving pattern would fix this?", options: ["Increasing the batch job frequency to hourly", "Adding a real-time re-ranking layer that adjusts pre-computed candidates based on the live session", "Using a larger model", "Caching the batch predictions more aggressively"], correct: 1, explanation: "A hybrid approach uses batch-computed candidates as a base, then applies a lightweight online re-ranker that incorporates real-time signals like the current session." },
+        { q: "What is the primary advantage of online serving over batch serving?", options: ["Lower infrastructure cost", "Ability to use the freshest features and context at prediction time", "Simpler architecture", "Higher throughput"], correct: 1, explanation: "Online serving computes predictions on demand using the latest available features and request context, enabling more relevant and timely results." },
+        { q: "Your batch prediction job for 100M users takes 8 hours. The business wants predictions refreshed every hour. What is the most scalable approach?", options: ["Buy faster hardware", "Switch to online serving for all users", "Use incremental batch: only re-predict for users whose features changed since the last run", "Reduce the model size until it runs in 1 hour"], correct: 2, explanation: "Incremental batch processing re-computes predictions only for entities with changed features, dramatically reducing computation time while maintaining freshness." },
+        { q: "A serving system uses a canary deployment to roll out a new model. During the canary phase, 5% of traffic goes to the new model. What metric would trigger an automatic rollback?", options: ["Training loss of the new model increases", "A statistically significant degradation in a key online metric (e.g., conversion rate, latency p99)", "The model file size exceeds a threshold", "The canary has been running for more than 24 hours"], correct: 1, explanation: "Automated rollback should trigger on online business or system health metrics that indicate degradation, such as drops in conversion rate or spikes in latency percentiles." }
+      ]
+    },
+    {
+      topic: "Model Monitoring & Data Drift",
+      questions: [
+        { q: "What is the difference between data drift and concept drift?", options: ["They are the same thing", "Data drift is a change in input feature distributions; concept drift is a change in the relationship between features and the target", "Data drift affects labels; concept drift affects features", "Data drift is faster than concept drift"], correct: 1, explanation: "Data drift (covariate shift) means P(X) changes while P(Y|X) stays the same. Concept drift means P(Y|X) itself changes, even if feature distributions remain stable." },
+        { q: "Which statistical test is commonly used to detect drift in a continuous feature distribution?", options: ["Chi-squared test", "Kolmogorov-Smirnov (KS) test", "Fisher's exact test", "McNemar's test"], correct: 1, explanation: "The KS test compares two distributions by measuring the maximum difference between their cumulative distribution functions, making it suitable for detecting shifts in continuous features." },
+        { q: "Your model's accuracy has been declining gradually over three months, but input feature distributions appear stable. What type of drift is most likely?", options: ["Data drift", "Concept drift", "Label drift", "Schema drift"], correct: 1, explanation: "Stable feature distributions with declining performance indicates concept drift: the underlying relationship between features and the target has shifted (e.g., user preferences changed)." },
+        { q: "You deploy a monitoring system that alerts when the Population Stability Index (PSI) of any feature exceeds 0.2. What does a PSI > 0.2 indicate?", options: ["The feature is unimportant", "A significant distributional shift that likely requires investigation or model retraining", "The model is overfitting", "The feature should be removed"], correct: 1, explanation: "PSI > 0.2 is a widely used threshold indicating a significant distribution change. Values between 0.1-0.2 suggest moderate shift, and below 0.1 is considered stable." },
+        { q: "Your production model serves predictions for a global user base. After a new product launch in Japan, the model's error rate spikes for Japanese users but remains stable elsewhere. What monitoring approach would have caught this earliest?", options: ["Global accuracy tracking", "Segment-level monitoring that tracks performance by region, user cohort, or other slices", "Checking training data for duplicates", "Increasing the global alert threshold"], correct: 1, explanation: "Segment-level or sliced monitoring detects localized degradations that are hidden in global aggregates. Monitoring by region, device, user type, etc. catches issues that affect specific subpopulations." }
+      ]
+    }
   ];
 
   let score = 0;
-  let answered = 0;
+  let totalQuestions = quizData.reduce((sum, t) => sum + t.questions.length, 0);
+  const topicScores = {};
 
   function buildQuiz() {
     const container = document.getElementById('quizQuestions');
     container.innerHTML = '';
-    score = 0; answered = 0;
+    score = 0;
     document.getElementById('quizScore').textContent = '0';
-    quizData.forEach((item, qi) => {
-      const div = document.createElement('div');
-      div.className = 'quiz-question';
-      div.innerHTML = '<h3>' + item.q + '</h3>';
-      item.options.forEach((opt, oi) => {
-        const btn = document.createElement('button');
-        btn.className = 'quiz-option';
-        btn.textContent = String.fromCharCode(65 + oi) + ') ' + opt;
-        btn.onclick = function() { handleAnswer(qi, oi, div); };
-        div.appendChild(btn);
+    document.getElementById('quizTotal').textContent = totalQuestions;
+    quizData.forEach((topic, ti) => {
+      topicScores[ti] = { correct: 0, answered: 0, total: topic.questions.length };
+      const topicDiv = document.createElement('div');
+      topicDiv.className = 'quiz-topic';
+      const header = document.createElement('div');
+      header.className = 'quiz-topic-header';
+      header.innerHTML = '<h3>' + topic.topic + '</h3><span class="quiz-topic-score" id="topicScore' + ti + '">0 / ' + topic.questions.length + '</span>';
+      header.onclick = function() {
+        const body = topicDiv.querySelector('.quiz-topic-body');
+        body.style.display = body.style.display === 'none' ? 'block' : 'none';
+      };
+      topicDiv.appendChild(header);
+      const body = document.createElement('div');
+      body.className = 'quiz-topic-body';
+      topic.questions.forEach((item, qi) => {
+        const div = document.createElement('div');
+        div.className = 'quiz-question';
+        div.innerHTML = '<h3>Q' + (qi + 1) + ': ' + item.q + '</h3>';
+        item.options.forEach((opt, oi) => {
+          const btn = document.createElement('button');
+          btn.className = 'quiz-option';
+          btn.textContent = String.fromCharCode(65 + oi) + ') ' + opt;
+          btn.onclick = function() { handleAnswer(ti, qi, oi, div, item); };
+          div.appendChild(btn);
+        });
+        body.appendChild(div);
       });
-      container.appendChild(div);
+      topicDiv.appendChild(body);
+      container.appendChild(topicDiv);
     });
   }
 
-  function handleAnswer(qi, oi, div) {
+  function handleAnswer(ti, qi, oi, div, item) {
     const buttons = div.querySelectorAll('.quiz-option');
     if (buttons[0].disabled) return;
     buttons.forEach(b => b.disabled = true);
-    if (oi === quizData[qi].answer) {
+    if (oi === item.correct) {
       buttons[oi].classList.add('correct');
       score++;
+      topicScores[ti].correct++;
     } else {
       buttons[oi].classList.add('wrong');
-      buttons[quizData[qi].answer].classList.add('reveal');
+      buttons[item.correct].classList.add('reveal');
     }
-    answered++;
+    topicScores[ti].answered++;
     document.getElementById('quizScore').textContent = score;
+    document.getElementById('topicScore' + ti).textContent = topicScores[ti].correct + ' / ' + topicScores[ti].total;
+    const expl = document.createElement('div');
+    expl.className = 'quiz-explanation';
+    expl.textContent = item.explanation;
+    div.appendChild(expl);
   }
 
   window.resetQuiz = buildQuiz;

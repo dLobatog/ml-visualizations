@@ -266,6 +266,12 @@
     #quizToggle:hover { transform: scale(1.05); }
     #quizSection { background: #12121f; border-top: 2px solid #5f27cd; padding: 40px 20px; margin-top: 40px; }
     .quiz-container { max-width: 900px; margin: 0 auto; }
+    .quiz-topic { margin-bottom: 30px; }
+    .quiz-topic-header { display:flex; justify-content:space-between; align-items:center; padding:16px 20px; background:#1a1a2e; border:1px solid #2a2a4a; border-radius:10px; cursor:pointer; margin-bottom:12px; }
+    .quiz-topic-header h3 { color:#5f27cd; margin:0; font-size:1.15em; }
+    .quiz-topic-score { color:#888; font-size:0.95em; }
+    .quiz-topic-body { display:none; padding: 0 4px; }
+    .quiz-topic.open .quiz-topic-body { display:block; }
     .quiz-question { background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 12px; padding: 24px; margin-bottom: 20px; }
     .quiz-question h3 { color: #5f27cd; margin-bottom: 16px; font-size: 1.1em; }
     .quiz-option { display: block; width: 100%; padding: 12px 16px; margin: 8px 0; background: #0d0d1a; border: 1px solid #2a2a4a; border-radius: 8px; color: #e0e0e0; cursor: pointer; text-align: left; font-size: 0.95em; transition: all 0.2s; }
@@ -274,6 +280,8 @@
     .quiz-option.wrong { background: #3a1a1a; border-color: #e74c3c; color: #e74c3c; }
     .quiz-option.reveal { border-color: #2ecc71; color: #2ecc71; }
     .quiz-option:disabled { cursor: default; }
+    .quiz-explanation { margin-top:12px; padding:14px 18px; border-radius:8px; font-size:0.93em; line-height:1.6; border-left:4px solid #2ecc71; background:rgba(46,204,113,0.08); color:#b0ffb0; }
+    .quiz-explanation.wrong-exp { border-left-color: #e74c3c; background:rgba(231,76,60,0.08); color:#ffb0b0; }
     .quiz-score { text-align: center; font-size: 1.5em; color: #5f27cd; margin-bottom: 30px; }
     .quiz-actions { text-align: center; margin-top: 20px; }
     .quiz-actions button { padding: 10px 24px; margin: 0 8px; border-radius: 8px; border: 1px solid #5f27cd; background: transparent; color: #5f27cd; cursor: pointer; font-size: 1em; }
@@ -1968,72 +1976,148 @@
 
     <script>
     (function() {
-        var quizQuestions = [
-            {q: "What is the main purpose of feature scaling (normalization/standardization)?", options: ["To add more features", "To ensure features contribute equally and gradient descent converges faster", "To reduce the dataset size", "To remove outliers"], answer: 1},
-            {q: "What is one-hot encoding used for?", options: ["Scaling numeric features", "Converting categorical variables into binary vectors", "Reducing dimensionality", "Handling missing values"], answer: 1},
-            {q: "What problem does target encoding solve compared to one-hot encoding?", options: ["It's faster", "It handles high-cardinality categoricals without exploding dimensionality", "It works better with images", "It requires no training data"], answer: 1},
-            {q: "What is SMOTE used for?", options: ["Feature selection", "Generating synthetic minority class samples to handle class imbalance", "Data compression", "Missing value imputation"], answer: 1},
-            {q: "What is data leakage?", options: ["When data is lost", "When information from the test/future data leaks into training, causing overly optimistic metrics", "When features are missing", "When the model is too small"], answer: 1},
-            {q: "Why are lag features useful in time series?", options: ["They reduce noise", "They capture temporal dependencies by using previous time step values as features", "They remove trends", "They normalize the data"], answer: 1},
-            {q: "What is the purpose of feature hashing (hashing trick)?", options: ["Encrypting features", "Mapping high-dimensional sparse features to a fixed-size vector without a dictionary", "Removing duplicate features", "Sorting features"], answer: 1},
-            {q: "When should you use robust scaling (using median/IQR) instead of standard scaling?", options: ["Always", "When the data contains significant outliers", "When features are binary", "When the dataset is small"], answer: 1}
+        var quizTopics = [
+            { name: "Feature Scaling & Normalization", questions: [
+                {q: "You have two features: age (0-100) and income (0-1,000,000). You train an unregularized linear regression. What happens?", options: ["The model fails to converge", "Income dominates due to its larger scale, making the age coefficient tiny", "Both features contribute equally regardless of scale", "The model automatically normalizes them"], answer: 1, explanation: "Without scaling, features with larger magnitudes dominate the learned weights. Regularized models are even more affected since penalties treat all coefficients equally regardless of feature scale."},
+                {q: "After applying Z-score standardization, what are the resulting mean and standard deviation of each feature?", options: ["Mean=0, Std=1", "Mean=0.5, Std=0.5", "Mean=1, Std=0", "It depends on the original distribution"], answer: 0, explanation: "Z-score standardization subtracts the mean and divides by the standard deviation, producing features with mean=0 and std=1 by definition."},
+                {q: "You apply Min-Max scaling to training data, then a test sample has a value above the training max. What happens?", options: ["The value is clipped to 1.0", "The scaled value exceeds 1.0, falling outside [0,1]", "Min-Max scaling automatically adjusts", "The test sample is discarded"], answer: 1, explanation: "Min-Max scaling uses the training set's min and max. Test values outside that range will scale outside [0,1]. This is why robust scaling or clipping may be preferred when outliers or distribution shift is expected."},
+                {q: "Your dataset has extreme outliers in a feature. Which scaling method is most appropriate?", options: ["Min-Max scaling", "Z-score standardization", "Robust scaling using median and IQR", "No scaling needed"], answer: 2, explanation: "Robust scaling uses the median and interquartile range (IQR), which are not affected by outliers. Min-Max and Z-score both use statistics (min/max, mean/std) that are sensitive to extreme values."},
+                {q: "A data scientist applies log transformation to a right-skewed feature before feeding it to a Gaussian Naive Bayes model. Why is this beneficial?", options: ["It removes missing values", "It makes the feature distribution closer to Gaussian, matching the model's assumption", "It reduces the number of features", "Log transform is always required for Naive Bayes"], answer: 1, explanation: "Gaussian Naive Bayes assumes features follow a normal distribution. Log-transforming right-skewed data compresses the long tail, making the distribution more symmetric and better aligned with the model's assumptions."}
+            ]},
+            { name: "Feature Encoding", questions: [
+                {q: "You one-hot encode a 'city' feature with 10,000 unique values. What is the main problem?", options: ["The model runs faster", "It creates a 10,000-dimensional sparse vector per sample, causing memory issues and overfitting risk", "One-hot encoding cannot handle strings", "It reduces dimensionality"], answer: 1, explanation: "One-hot encoding creates one binary column per category. With high-cardinality features, this explodes dimensionality, wastes memory on sparse matrices, and can cause overfitting due to the curse of dimensionality."},
+                {q: "What is the key risk of target encoding a categorical feature?", options: ["It produces too many columns", "It can leak target information, causing overfitting especially on rare categories", "It cannot handle missing categories", "It only works for binary targets"], answer: 1, explanation: "Target encoding replaces categories with their mean target value. Rare categories get noisy estimates that memorize the target. Using regularization or fold-based encoding mitigates this leakage."},
+                {q: "You have an ordinal feature: education level (High School, Bachelor's, Master's, PhD). Which encoding preserves the ordering?", options: ["One-hot encoding", "Integer/ordinal encoding mapping them to 0, 1, 2, 3", "Binary encoding", "Frequency encoding"], answer: 1, explanation: "Ordinal encoding maps categories to ordered integers, preserving the natural ranking. One-hot encoding discards this ordering by treating each level as independent."},
+                {q: "A feature 'user_id' has 1 million unique values and you need a fixed-size representation. Which approach works best?", options: ["One-hot encoding", "Label encoding", "Feature hashing (hashing trick)", "Dropping the feature"], answer: 2, explanation: "Feature hashing maps any number of categories to a fixed-size vector using a hash function. It avoids maintaining a dictionary and handles unseen categories, though collisions are possible."},
+                {q: "You train a model with one-hot encoded 'day_of_week'. The model cannot learn that Sunday and Monday are adjacent. What encoding fixes this?", options: ["Label encoding (0-6)", "Cyclical encoding using sin/cos transformations", "Binary encoding", "Target encoding"], answer: 1, explanation: "Cyclical encoding maps periodic features using sin(2*pi*x/period) and cos(2*pi*x/period), so Sunday (6) and Monday (0) become numerically close. Plain label encoding makes them maximally distant."}
+            ]},
+            { name: "Handling Missing Data", questions: [
+                {q: "You have a medical dataset where lab test results are missing because the doctor didn't order the test. This missingness is:", options: ["Missing Completely At Random (MCAR)", "Missing At Random (MAR)", "Missing Not At Random (MNAR)", "Not actually missing data"], answer: 2, explanation: "This is MNAR because the missingness depends on unobserved factors (the doctor's judgment about whether the test was needed, possibly related to the patient's condition). The probability of being missing depends on the unobserved value itself."},
+                {q: "You impute missing values in a feature with the mean. When can this be harmful?", options: ["When the dataset is large", "When the data is not MCAR, distorting the true distribution and reducing variance", "When using tree-based models", "Mean imputation is always safe"], answer: 1, explanation: "Mean imputation pulls values toward the center, artificially reducing variance and potentially biasing relationships. If missingness is informative (MNAR), it also destroys the signal carried by the missingness pattern."},
+                {q: "A colleague imputes missing values using the entire dataset (train + test) before splitting. What is wrong?", options: ["Nothing, this is standard practice", "This causes data leakage because test set statistics influence training imputation", "The imputation will be less accurate", "It only matters for deep learning"], answer: 1, explanation: "Computing imputation statistics (mean, median) on the combined dataset leaks test information into training. Imputation should be fit on training data only, then applied to test data."},
+                {q: "Which model family handles missing values natively without imputation?", options: ["Linear regression", "Logistic regression", "Gradient-boosted trees (e.g., XGBoost, LightGBM)", "Neural networks"], answer: 2, explanation: "XGBoost and LightGBM can learn optimal split directions for missing values during training. They assign missing values to whichever branch minimizes the loss, eliminating the need for imputation."},
+                {q: "You have a feature with 60% missing values. A junior analyst suggests dropping it. When might keeping it still be valuable?", options: ["Never, 60% missing is too much", "When the missingness pattern itself is predictive, or the observed values are highly informative", "Only if you can impute all values", "Only for unsupervised learning"], answer: 1, explanation: "Even heavily missing features can be useful. Adding a binary 'is_missing' indicator captures the missingness signal. The observed values, if strongly predictive, can still help. The decision depends on why the data is missing and how informative it is."}
+            ]},
+            { name: "Class Imbalance", questions: [
+                {q: "You train a fraud detection model on a dataset with 0.1% fraud. It achieves 99.9% accuracy. Is this model good?", options: ["Yes, 99.9% accuracy is excellent", "No, it likely predicts 'not fraud' for everything, achieving high accuracy by ignoring the minority class", "It depends on the architecture", "Accuracy above 99% is always reliable"], answer: 1, explanation: "With 99.9% negatives, a model predicting all-negative gets 99.9% accuracy while catching zero fraud. Metrics like precision, recall, F1, and AUPRC are far more informative for imbalanced problems."},
+                {q: "SMOTE generates synthetic minority samples. How does it work?", options: ["It duplicates existing minority samples", "It interpolates between a minority sample and its k-nearest minority neighbors in feature space", "It generates samples from a Gaussian distribution", "It undersamples the majority class"], answer: 1, explanation: "SMOTE picks a minority sample, finds its k-nearest minority neighbors, and creates a new synthetic point along the line segment connecting them. This produces more diverse samples than simple duplication."},
+                {q: "You apply SMOTE to your full dataset before cross-validation. What is the issue?", options: ["No issue, this is correct", "Synthetic samples from the validation fold's neighbors leak into training, inflating performance estimates", "SMOTE should only be used with test data", "Cross-validation doesn't work with SMOTE"], answer: 1, explanation: "SMOTE must be applied inside each cross-validation fold, only to the training portion. Applying it before splitting means synthetic samples based on validation data appear in training, causing data leakage and optimistic estimates."},
+                {q: "Instead of resampling, you adjust the loss function for class imbalance. Which approach is this?", options: ["Data augmentation", "Cost-sensitive learning, using class weights inversely proportional to frequency", "Feature engineering", "Transfer learning"], answer: 1, explanation: "Cost-sensitive learning assigns higher misclassification penalties to minority classes. This avoids changing the data distribution while making the model pay more attention to rare classes during optimization."},
+                {q: "You have a 100:1 class imbalance. You apply random undersampling to balance classes. What is the main drawback?", options: ["It's too slow", "You discard up to 99% of majority samples, losing potentially valuable information", "It creates synthetic samples", "Undersampling always improves performance"], answer: 1, explanation: "Random undersampling achieves balance by throwing away majority data. With extreme imbalance, you lose almost all majority samples, reducing the model's ability to learn the majority class boundary well. Informed undersampling (e.g., Tomek links) or ensemble methods can help."}
+            ]},
+            { name: "Train/Validation/Test Split", questions: [
+                {q: "Why do we need a separate test set if we already tune hyperparameters on a validation set?", options: ["We don't, validation is enough", "The validation set's performance is biased upward because we optimized against it; the test set gives an unbiased estimate", "The test set is just for documentation", "Only for deep learning models"], answer: 1, explanation: "Repeatedly evaluating and selecting models based on validation performance implicitly overfits to the validation set. The held-out test set, never used for any decision, provides a truly unbiased performance estimate."},
+                {q: "You have time-series sales data. You randomly shuffle and split 80/10/10. What is wrong?", options: ["Nothing, random splits are universal", "Random splitting ignores temporal order, causing future data to leak into training", "The split ratio should be 70/15/15", "Time series data cannot be split"], answer: 1, explanation: "Time-series data must be split chronologically: train on past, validate on near-future, test on further future. Random splitting lets the model see future patterns during training, giving unrealistically good performance."},
+                {q: "What is the main advantage of k-fold cross-validation over a single train/validation split?", options: ["It's faster", "Every sample serves as both training and validation data, giving a more reliable and lower-variance performance estimate", "It eliminates the need for a test set", "It works only for small datasets"], answer: 1, explanation: "K-fold CV uses all data for both training and evaluation across k iterations, reducing variance of the performance estimate. A single split can be unlucky, especially with small or unbalanced datasets."},
+                {q: "You perform 5-fold CV and report the mean accuracy. Why should you also report standard deviation?", options: ["Standard deviation is not useful", "It shows how stable the model is across folds, indicating whether performance depends on the specific data split", "It's required by all journals", "Only for regression tasks"], answer: 1, explanation: "High standard deviation across folds suggests the model is sensitive to which data it trains on, hinting at instability, insufficient data, or high variance. Reporting only the mean hides this important information."},
+                {q: "Stratified splitting is critical when:", options: ["The dataset is very large", "The target variable has imbalanced classes, so each split must preserve the original class distribution", "Features are continuous", "You are using unsupervised learning"], answer: 1, explanation: "Stratified splitting ensures each fold or split has roughly the same class proportions as the full dataset. Without it, a small fold might have zero minority samples, making training and evaluation unreliable."}
+            ]},
+            { name: "Data Leakage", questions: [
+                {q: "You build a hospital readmission model and include 'discharge_summary_sentiment' as a feature. It has perfect predictive power. Why should you be suspicious?", options: ["Perfect features are always good", "The discharge summary is written after the outcome is known, so it encodes the target rather than predicting it", "Sentiment analysis is unreliable", "Hospitals don't write discharge summaries"], answer: 1, explanation: "Features created after the prediction point often encode the outcome. A doctor writing 'patient deteriorated rapidly' in the discharge note is recording what happened, not a predictive signal available at prediction time."},
+                {q: "You normalize features using the full dataset's statistics, then split into train/test. Is this leakage?", options: ["No, normalization is just preprocessing", "Yes, test set statistics influenced the training data's scaling, leaking future information", "Only if you use Z-score, not Min-Max", "Only for deep learning"], answer: 1, explanation: "Any preprocessing that uses test set statistics (mean, std, min, max) before splitting contaminates training data. Always fit preprocessing on training data only, then transform test data using those training-derived parameters."},
+                {q: "Your model achieves 99% AUC in development but 65% in production. Which is the most likely cause?", options: ["The production hardware is slower", "Data leakage during development inflated metrics; production data lacks the leaked signal", "The model needs more epochs", "Production users behave identically to training users"], answer: 1, explanation: "A large gap between development and production performance is the hallmark of data leakage. The leaked feature or information present during training is unavailable in real-time production, collapsing performance."},
+                {q: "You use future values of a time-series feature (e.g., next month's stock price) as input to predict this month's return. This is:", options: ["Feature engineering", "Look-ahead bias, a form of temporal data leakage", "Lag feature creation", "Standard practice in finance"], answer: 1, explanation: "Look-ahead bias occurs when features include information from the future relative to the prediction timestamp. In production, future values are unavailable, so the model's real performance would be much worse."},
+                {q: "You train a model to detect duplicates. You split data randomly, but some duplicate pairs end up in both train and test. What type of leakage is this?", options: ["Target leakage", "Group leakage: related samples appear in both splits, allowing the model to memorize rather than generalize", "Feature leakage", "No leakage occurred"], answer: 1, explanation: "When related data points (same patient, same document, same entity) appear in both train and test, the model can exploit this overlap. Group-aware splitting ensures all samples from the same group stay in the same split."}
+            ]},
+            { name: "Data Augmentation", questions: [
+                {q: "You flip and rotate images for augmentation in a digit recognition task. Flipping '6' produces '9'. What should you do?", options: ["Flip all digits equally", "Apply augmentations that respect the task semantics - avoid flips that change the label meaning", "Never use augmentation for digits", "Change the labels after augmentation"], answer: 1, explanation: "Augmentations must preserve label correctness. Vertical flips turn 6 into 9 (different label), so they should be excluded or label-aware. Always verify that augmentations don't create contradictory training signals."},
+                {q: "What is Mixup augmentation?", options: ["Mixing different datasets", "Creating new samples by taking weighted linear combinations of pairs of inputs and their labels", "Mixing feature columns randomly", "Combining train and test sets"], answer: 1, explanation: "Mixup creates virtual training examples by blending two samples: x_new = lambda*x_i + (1-lambda)*x_j, and similarly for labels. This encourages linear behavior between samples, acting as a regularizer."},
+                {q: "You apply heavy augmentation (aggressive crops, color jitter, blur) to a small medical imaging dataset. Validation loss is high. What is likely happening?", options: ["The model is underfitting because augmentations are too aggressive, making training examples too different from real data", "The model is overfitting", "Augmentation always helps", "The learning rate is too high"], answer: 0, explanation: "Overly aggressive augmentation can make training data unrecognizable or unrealistic, preventing the model from learning useful patterns. The augmentation intensity should match the natural variation expected in production data."},
+                {q: "For NLP tasks, which is a valid text augmentation technique?", options: ["Rotating sentences", "Back-translation: translating to another language and back to generate paraphrases", "Applying Gaussian blur to text", "Cropping sentences to fixed length"], answer: 1, explanation: "Back-translation generates natural paraphrases by translating text to a foreign language and back. Other NLP augmentations include synonym replacement, random insertion/deletion, and contextual word replacement using language models."},
+                {q: "CutMix augmentation cuts a rectangular patch from one image and pastes it onto another, adjusting labels proportionally. Why does this outperform simple Cutout?", options: ["It's faster", "CutMix preserves all pixel information across the batch and provides a richer training signal by combining two classes", "It uses less memory", "Cutout is deprecated"], answer: 1, explanation: "Cutout just removes a patch (replacing with zeros), wasting pixels. CutMix replaces the removed region with content from another image and mixes the labels proportionally, so no information is lost and the model learns from the combined context."}
+            ]},
+            { name: "Temporal Features", questions: [
+                {q: "You create a 'rolling 7-day average' feature for daily sales prediction. What must you be careful about?", options: ["The window size", "Ensuring the rolling window only uses past data and does not include the current or future day being predicted", "The data type", "Rolling averages are always safe"], answer: 1, explanation: "Including the target day or future days in the rolling window is look-ahead bias. The window must only cover past observations available at prediction time."},
+                {q: "Why are lag features (e.g., value at t-1, t-7) useful in time series models?", options: ["They reduce the feature count", "They explicitly provide the model with prior time-step values, capturing autocorrelation and seasonal patterns", "They eliminate the need for a time column", "They only work with ARIMA"], answer: 1, explanation: "Lag features encode temporal dependencies directly as input columns. A lag-7 feature for daily data captures weekly seasonality, while lag-1 captures short-term autocorrelation. Any model can use them, not just time-series-specific ones."},
+                {q: "You extract 'hour_of_day' as a feature (0-23). A linear model treats hour 23 and hour 0 as very different. How do you fix this?", options: ["Use one-hot encoding for hours", "Apply cyclical encoding: sin(2*pi*hour/24) and cos(2*pi*hour/24)", "Drop the hour feature", "Use hour squared"], answer: 1, explanation: "Cyclical encoding maps periodic features onto a circle using sine and cosine. Hour 23 and hour 0 become numerically close, reflecting their true temporal proximity. One-hot works but creates 24 sparse features."},
+                {q: "You build a feature 'days_since_last_purchase' for customer churn prediction. A new customer has no prior purchase. How should you handle this?", options: ["Set it to 0", "Use a special sentinel value or create an additional binary indicator 'has_previous_purchase'", "Drop new customers from the dataset", "Set it to the maximum value"], answer: 1, explanation: "Setting to 0 implies they just purchased (misleading). A sentinel value (e.g., -1) combined with a binary flag lets the model distinguish 'no history' from 'recent purchase' without introducing false signals."},
+                {q: "You compute features using an expanding window (all data up to time t). Compared to a fixed rolling window, what is the tradeoff?", options: ["Expanding windows are always better", "Expanding windows use more history giving stable estimates, but may be slow to adapt to recent distribution shifts", "Fixed windows are always better", "There is no difference"], answer: 1, explanation: "Expanding windows incorporate all available history, producing stable statistics but diluting recent trends. Fixed rolling windows adapt faster to distribution shifts but have higher variance. The choice depends on how stationary your data is."}
+            ]},
+            { name: "Weak Supervision", questions: [
+                {q: "What is the core idea behind Snorkel-style weak supervision?", options: ["Manually labeling all data", "Using multiple noisy labeling functions and combining their votes to produce probabilistic training labels", "Training without any labels", "Using pre-trained models only"], answer: 1, explanation: "Weak supervision uses programmatic labeling functions (heuristics, patterns, knowledge bases) that are noisy individually. A label model estimates their accuracies and correlations to produce consensus probabilistic labels."},
+                {q: "A labeling function covers only 5% of the dataset but has 95% accuracy on those samples. Is it useful?", options: ["No, 5% coverage is too low", "Yes, it provides high-quality signal for a subset; the label model can combine it with broader but noisier functions", "Only if it covers at least 50%", "Coverage doesn't matter"], answer: 1, explanation: "In weak supervision, diverse labeling functions complement each other. A high-precision, low-coverage function provides reliable anchoring for samples it covers, while broader functions fill in the gaps. The label model optimally combines them."},
+                {q: "Two labeling functions always agree. How does this affect the label model?", options: ["It doubles the signal strength", "The label model cannot distinguish them as independent sources, providing no more information than a single function", "It improves accuracy linearly", "Agreement is always beneficial"], answer: 1, explanation: "Perfectly correlated labeling functions are redundant. The label model relies on conditional independence assumptions; identical functions provide no additional evidence. Diverse, complementary functions are more valuable than agreeing ones."},
+                {q: "You train a discriminative model on Snorkel's probabilistic labels. Why not just use the label model's predictions directly?", options: ["The label model is always wrong", "The end model generalizes beyond the labeling functions by learning feature patterns, covering samples that no labeling function addresses", "It's just for speed", "The label model cannot make predictions"], answer: 1, explanation: "Labeling functions only fire on samples matching their rules. The end model (e.g., a neural network) learns continuous feature representations and generalizes to samples where no labeling function applies, achieving better coverage and often better accuracy."},
+                {q: "Your labeling functions produce conflicting labels for 30% of data points. Should you discard these conflicting samples?", options: ["Yes, conflicting samples are noise", "No, the label model is designed to resolve conflicts by modeling each function's accuracy and producing a best-guess probabilistic label", "Only keep samples with unanimous agreement", "Discard the worst labeling function"], answer: 1, explanation: "Conflict resolution is the label model's primary job. It estimates each function's accuracy and correlation structure, then outputs probabilistic labels reflecting the uncertainty. Discarding conflicting samples would waste valuable data and bias the dataset."}
+            ]}
         ];
-        var quizAnswered = 0;
-        var quizCorrect = 0;
-        var totalQuestions = quizQuestions.length;
 
-        function shuffleOptions(q) {
-            var indices = q.options.map(function(_, i) { return i; });
-            for (var i = indices.length - 1; i > 0; i--) {
+        var totalQuestions = 0;
+        quizTopics.forEach(function(t) { totalQuestions += t.questions.length; });
+        var quizCorrect = 0;
+        var quizAnswered = 0;
+        var topicScores = {};
+
+        function shuffleArray(arr) {
+            for (var i = arr.length - 1; i > 0; i--) {
                 var j = Math.floor(Math.random() * (i + 1));
-                var tmp = indices[i]; indices[i] = indices[j]; indices[j] = tmp;
+                var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
             }
-            return indices;
+            return arr;
         }
 
         function buildQuiz() {
             var container = document.getElementById('quizQuestions');
             container.innerHTML = '';
-            quizAnswered = 0;
             quizCorrect = 0;
+            quizAnswered = 0;
+            topicScores = {};
             updateScore();
-            quizQuestions.forEach(function(q, qi) {
-                var div = document.createElement('div');
-                div.className = 'quiz-question';
-                div.setAttribute('data-answered', 'false');
-                var h3 = document.createElement('h3');
-                h3.textContent = 'Q' + (qi + 1) + ': ' + q.q;
-                div.appendChild(h3);
-                var shuffled = shuffleOptions(q);
-                shuffled.forEach(function(origIdx) {
-                    var btn = document.createElement('button');
-                    btn.className = 'quiz-option';
-                    btn.textContent = q.options[origIdx];
-                    btn.setAttribute('data-correct', origIdx === q.answer ? 'true' : 'false');
-                    btn.onclick = function() { handleAnswer(this, div, origIdx === q.answer); };
-                    div.appendChild(btn);
+            var qNum = 1;
+            quizTopics.forEach(function(topic, ti) {
+                topicScores[ti] = {correct: 0, answered: 0, total: topic.questions.length};
+                var topicDiv = document.createElement('div');
+                topicDiv.className = 'quiz-topic';
+                topicDiv.id = 'topic-' + ti;
+                var header = document.createElement('div');
+                header.className = 'quiz-topic-header';
+                header.innerHTML = '<h3>' + topic.name + '</h3><span class="quiz-topic-score" id="topicScore-' + ti + '">0 / ' + topic.questions.length + '</span>';
+                header.onclick = function() { topicDiv.classList.toggle('open'); };
+                topicDiv.appendChild(header);
+                var body = document.createElement('div');
+                body.className = 'quiz-topic-body';
+                topic.questions.forEach(function(q, qi) {
+                    var div = document.createElement('div');
+                    div.className = 'quiz-question';
+                    div.setAttribute('data-answered', 'false');
+                    var h3 = document.createElement('h3');
+                    h3.textContent = 'Q' + qNum + ': ' + q.q;
+                    div.appendChild(h3);
+                    var indices = q.options.map(function(_, i) { return i; });
+                    shuffleArray(indices);
+                    indices.forEach(function(origIdx) {
+                        var btn = document.createElement('button');
+                        btn.className = 'quiz-option';
+                        btn.textContent = q.options[origIdx];
+                        btn.setAttribute('data-correct', origIdx === q.answer ? 'true' : 'false');
+                        btn.onclick = function() { handleAnswer(this, div, origIdx === q.answer, q.explanation, ti); };
+                        div.appendChild(btn);
+                    });
+                    body.appendChild(div);
+                    qNum++;
                 });
-                container.appendChild(div);
+                topicDiv.appendChild(body);
+                container.appendChild(topicDiv);
             });
         }
 
-        function handleAnswer(btn, questionDiv, isCorrect) {
+        function handleAnswer(btn, questionDiv, isCorrect, explanation, topicIdx) {
             if (questionDiv.getAttribute('data-answered') === 'true') return;
             questionDiv.setAttribute('data-answered', 'true');
             var buttons = questionDiv.querySelectorAll('.quiz-option');
             buttons.forEach(function(b) {
                 b.disabled = true;
-                if (b.getAttribute('data-correct') === 'true') {
-                    b.classList.add(b === btn ? 'correct' : 'reveal');
-                }
+                if (b.getAttribute('data-correct') === 'true') b.classList.add(b === btn ? 'correct' : 'reveal');
             });
-            if (isCorrect) {
-                btn.classList.add('correct');
-                quizCorrect++;
-            } else {
-                btn.classList.add('wrong');
-            }
+            if (isCorrect) { btn.classList.add('correct'); quizCorrect++; topicScores[topicIdx].correct++; }
+            else { btn.classList.add('wrong'); }
             quizAnswered++;
+            topicScores[topicIdx].answered++;
+            var expDiv = document.createElement('div');
+            expDiv.className = 'quiz-explanation' + (isCorrect ? '' : ' wrong-exp');
+            expDiv.textContent = explanation;
+            questionDiv.appendChild(expDiv);
+            document.getElementById('topicScore-' + topicIdx).textContent = topicScores[topicIdx].correct + ' / ' + topicScores[topicIdx].total;
             updateScore();
         }
 
@@ -2046,17 +2130,10 @@
             if (section.style.display === 'none') {
                 section.style.display = 'block';
                 section.scrollIntoView({ behavior: 'smooth' });
-                if (!document.getElementById('quizQuestions').hasChildNodes()) {
-                    buildQuiz();
-                }
-            } else {
-                section.style.display = 'none';
-            }
+                if (!document.getElementById('quizQuestions').hasChildNodes()) buildQuiz();
+            } else { section.style.display = 'none'; }
         };
-
-        window.resetQuiz = function() {
-            buildQuiz();
-        };
+        window.resetQuiz = function() { buildQuiz(); };
     })();
     </script>
 </body>

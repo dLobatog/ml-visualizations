@@ -1812,12 +1812,26 @@ drawScaling();
 " onmouseover="this.style.background='#ff6b6b22'" onmouseout="this.style.background='#12121f'">&#129504; Quiz Mode</button>
 
 <!-- Quiz Section -->
+<style>
+.quiz-topic { margin-bottom: 30px; }
+.quiz-topic-header { display:flex; justify-content:space-between; align-items:center; padding:16px 20px; background:#1a1a2e; border:1px solid #2a2a4a; border-radius:10px; cursor:pointer; margin-bottom:12px; transition:background 0.2s; }
+.quiz-topic-header:hover { background:#1f1f38; }
+.quiz-topic-header h3 { color:#ff6b6b; margin:0; font-size:1.15em; }
+.quiz-topic-score { color:#888; font-size:0.95em; }
+.quiz-topic-chevron { color:#ff6b6b; font-size:1.2em; transition:transform 0.3s; }
+.quiz-topic-chevron.open { transform:rotate(180deg); }
+.quiz-topic-body { display:none; }
+.quiz-topic-body.open { display:block; }
+.quiz-explanation { margin-top:12px; padding:14px 18px; border-radius:8px; font-size:0.93em; line-height:1.6; border-left:4px solid #2ecc71; background:rgba(46,204,113,0.08); color:#b0ffb0; }
+.quiz-explanation.wrong { border-left-color:#e74c3c; background:rgba(231,76,60,0.08); color:#ffb0b0; }
+</style>
+
 <div id="quizSection" style="display:none">
   <div style="max-width:1200px; margin:0 auto; padding:40px 20px 60px;">
     <div style="background:#12121f; border:1px solid #2a2a4a; border-radius:16px; padding:32px;">
       <h2 style="font-size:1.5em; color:#ff6b6b; margin-bottom:8px; text-align:center;">Deep Learning Foundations Quiz</h2>
-      <p style="color:#888; text-align:center; margin-bottom:24px;">Test your understanding — click an answer to check it.</p>
-      <p id="quizScore" style="color:#ff6b6b; font-size:1.2em; font-weight:700; text-align:center; margin-bottom:24px;">Score: 0 / 8</p>
+      <p style="color:#888; text-align:center; margin-bottom:24px;">8 topics, 40 questions. Click a topic to expand. Test your understanding!</p>
+      <p id="quizScore" style="color:#ff6b6b; font-size:1.2em; font-weight:700; text-align:center; margin-bottom:24px;">Score: 0 / 40</p>
 
       <div id="quizQuestions"></div>
 
@@ -1832,114 +1846,244 @@ drawScaling();
 <script>
 (function() {
   const quizData = [
-    {
-      q: "Q1: Why are activation functions necessary in neural networks?",
-      options: [
-        "To speed up training",
-        "To introduce non-linearity, enabling learning of complex patterns",
-        "To reduce the number of parameters",
-        "To normalize the output"
-      ],
-      correct: 1
-    },
-    {
-      q: "Q2: What is the \u201cdying ReLU\u201d problem?",
-      options: [
-        "ReLU outputs become too large",
-        "Neurons with negative inputs always output 0 and stop learning",
-        "ReLU causes exploding gradients",
-        "ReLU is computationally expensive"
-      ],
-      correct: 1
-    },
-    {
-      q: "Q3: During backpropagation, gradients are computed using:",
-      options: [
-        "Random sampling",
-        "The chain rule of calculus",
-        "Genetic algorithms",
-        "Brute force search"
-      ],
-      correct: 1
-    },
-    {
-      q: "Q4: What causes the vanishing gradient problem in deep networks?",
-      options: [
-        "Using ReLU activation",
-        "Multiplying many small gradients (<1) through layers",
-        "Using too large a learning rate",
-        "Having too few parameters"
-      ],
-      correct: 1
-    },
-    {
-      q: "Q5: In a convolutional layer, what does a filter/kernel detect?",
-      options: [
-        "The total brightness of an image",
-        "Local spatial patterns like edges or textures",
-        "The size of the input",
-        "The number of channels"
-      ],
-      correct: 1
-    },
-    {
-      q: "Q6: What is the purpose of Batch Normalization?",
-      options: [
-        "To increase batch size",
-        "To normalize layer inputs, stabilizing and accelerating training",
-        "To reduce the number of layers",
-        "To eliminate the need for activation functions"
-      ],
-      correct: 1
-    },
-    {
-      q: "Q7: Which RNN variant uses forget, input, and output gates to control information flow?",
-      options: [
-        "Vanilla RNN",
-        "GRU (Gated Recurrent Unit)",
-        "LSTM (Long Short-Term Memory)",
-        "Transformer"
-      ],
-      correct: 2
-    },
-    {
-      q: "Q8: What is the key advantage of residual connections (skip connections)?",
-      options: [
-        "They reduce model size",
-        "They allow gradients to flow directly through skip paths, enabling deeper networks",
-        "They eliminate the need for backpropagation",
-        "They make the network fully linear"
-      ],
-      correct: 1
-    }
+    { topic: "Neural Network: Forward & Backward Pass", questions: [
+      { q: "During the forward pass, what is the primary operation performed at each neuron before the activation function?",
+        options: ["A) Compute the element-wise maximum of inputs", "B) Compute a weighted sum of inputs plus a bias term", "C) Normalize the inputs to zero mean", "D) Apply dropout to the inputs"],
+        correct: 1,
+        explanation: "Each neuron computes z = Wx + b (weighted sum plus bias), then passes z through an activation function. Option A describes max-pooling, not a neuron. Option C describes normalization, a separate technique. Option D describes a regularization method applied during training, not the core neuron operation." },
+      { q: "In backpropagation, gradients are propagated from the loss to earlier layers using:",
+        options: ["A) The transpose of the weight matrices and the chain rule", "B) A separate forward pass with inverted weights", "C) Random perturbation of each weight to estimate gradients", "D) Genetic crossover between weight vectors"],
+        correct: 0,
+        explanation: "Backpropagation applies the chain rule of calculus, multiplying local gradients by upstream gradients, and uses the transpose of weight matrices to route gradients to the correct input dimensions. Option B is not how backprop works. Option C describes numerical gradient estimation, which is far too slow for practical use. Option D is an evolutionary method unrelated to gradient-based learning." },
+      { q: "What happens if you accidentally zero out all biases AND use a symmetric weight initialization (all weights identical) in a fully connected network?",
+        options: ["A) Training proceeds normally since the optimizer will break symmetry", "B) All neurons in the same layer compute identical outputs and receive identical gradient updates forever", "C) The network will converge faster due to parameter sharing", "D) Only the first layer is affected; deeper layers will diverge"],
+        correct: 1,
+        explanation: "With identical weights and zero biases, every neuron in a layer produces the same output and receives the same gradient, so they update identically and never differentiate. This is the symmetry-breaking problem. Standard optimizers like SGD cannot break this symmetry on their own (A is wrong). It does not speed convergence (C) and affects all layers, not just the first (D)." },
+      { q: "A network has 3 hidden layers with weight matrices W1, W2, W3. During backpropagation, the gradient of the loss with respect to W1 involves:",
+        options: ["A) Only the local gradient at layer 1", "B) The product of local gradients through layers 3, 2, and 1 via the chain rule", "C) The sum of gradients from all three layers", "D) Only the gradient from the output layer directly"],
+        correct: 1,
+        explanation: "By the chain rule, dL/dW1 = (dL/da3)(da3/da2)(da2/da1)(da1/dW1), requiring multiplication of local gradients through all downstream layers. It is not just the local gradient (A), not a sum (C), and not just the output gradient without intermediaries (D)." },
+      { q: "During training, a practitioner notices that the loss decreases on the training set but the gradient norms at the first layer are 1000x smaller than at the last layer. What is the most likely issue and a reasonable fix?",
+        options: ["A) Exploding gradients; apply gradient clipping", "B) Vanishing gradients; switch to ReLU activations or add residual connections", "C) Overfitting; add more dropout", "D) Underfitting; increase the learning rate"],
+        correct: 1,
+        explanation: "Gradients being much smaller in early layers is the hallmark of vanishing gradients. ReLU has a constant gradient of 1 for positive inputs (avoiding the squashing of sigmoid/tanh), and residual connections provide shortcut paths for gradient flow. Exploding gradients (A) would show the opposite pattern. The issue is not overfitting (C) or underfitting (D) but rather poor gradient flow." }
+    ]},
+    { topic: "Activation Functions", questions: [
+      { q: "Why does the sigmoid activation function cause problems in deep networks compared to ReLU?",
+        options: ["A) Sigmoid is more computationally expensive to evaluate", "B) Sigmoid saturates at 0 and 1, producing near-zero gradients that vanish through layers", "C) Sigmoid outputs are always negative", "D) Sigmoid cannot represent probabilities"],
+        correct: 1,
+        explanation: "When sigmoid outputs are near 0 or 1, the local gradient is close to zero. Multiplying many such small gradients through layers causes vanishing gradients. While sigmoid is slightly more expensive than ReLU (A), that is not the primary concern. Sigmoid outputs are in (0,1), never negative (C). Sigmoid is actually commonly used for probabilities (D), just not as a hidden-layer activation in deep nets." },
+      { q: "What is the 'dying ReLU' problem, and which activation function was specifically designed to address it?",
+        options: ["A) ReLU outputs grow unbounded; ELU caps the maximum output", "B) Neurons receiving only negative inputs have zero gradient permanently; Leaky ReLU allows a small gradient for negative inputs", "C) ReLU is not differentiable at zero; Softplus provides a smooth approximation", "D) ReLU causes exploding gradients; SELU self-normalizes to prevent them"],
+        correct: 1,
+        explanation: "When a ReLU neuron's input is always negative (e.g., due to a large negative bias), its output is always 0 and its gradient is always 0, so it can never recover. Leaky ReLU fixes this by outputting a small negative slope (e.g., 0.01x) for negative inputs, ensuring gradients always flow. ReLU outputs growing unbounded (A) is a separate concern. Non-differentiability at zero (C) is handled in practice by defining the gradient as 0 or 1 at that point. SELU (D) does self-normalize but was designed for that property, not specifically the dying ReLU issue." },
+      { q: "The GELU activation function, used in BERT and GPT, can be described as:",
+        options: ["A) A hard threshold at zero, identical to ReLU", "B) x multiplied by the cumulative distribution function of the standard normal distribution", "C) A piecewise linear function with two slopes", "D) The natural logarithm of 1 + e^x"],
+        correct: 1,
+        explanation: "GELU is defined as x * P(X <= x) where X ~ N(0,1), meaning it smoothly gates the input by how likely it is to be positive under a Gaussian. Option A describes ReLU. Option C describes Leaky ReLU. Option D describes Softplus." },
+      { q: "In a classification network's output layer, you switch from softmax to sigmoid on each output neuron. What changes?",
+        options: ["A) Nothing changes; they are equivalent for classification", "B) The outputs no longer sum to 1, enabling multi-label classification where multiple classes can be active simultaneously", "C) The model can no longer be trained with gradient descent", "D) The model becomes a regression model"],
+        correct: 1,
+        explanation: "Softmax enforces that outputs sum to 1 (mutually exclusive classes). Independent sigmoids allow each output to be in (0,1) independently, which is exactly what you need for multi-label classification. They are not equivalent (A). Gradient descent still works fine with sigmoid outputs and binary cross-entropy loss (C). The model still performs classification, not regression (D)." },
+      { q: "A practitioner uses tanh activation throughout a 50-layer network with no residual connections and observes that the network fails to train. They switch all activations to ReLU but the network still barely learns. What is the most likely remaining issue?",
+        options: ["A) ReLU cannot work in networks deeper than 20 layers", "B) Without residual connections, even ReLU suffers from degradation in very deep networks because the optimization landscape becomes too difficult", "C) The learning rate is too high", "D) ReLU networks require batch normalization to function at all"],
+        correct: 1,
+        explanation: "The degradation problem, identified in the ResNet paper, shows that very deep plain networks (even with ReLU) become harder to optimize as depth increases, not due to vanishing gradients but due to the difficulty of learning identity mappings. Residual connections solve this by providing an easy path for identity. ReLU can work in deep networks with proper architecture (A is wrong). While learning rate (C) and batch norm (D) matter, the core issue at 50 layers without skip connections is the degradation problem." }
+    ]},
+    { topic: "Vanishing & Exploding Gradients", questions: [
+      { q: "In a 100-layer network using sigmoid activations, the maximum gradient of sigmoid is 0.25. What happens to a gradient signal as it propagates from layer 100 to layer 1?",
+        options: ["A) It stays roughly the same magnitude", "B) It is multiplied by at most 0.25 at each layer, shrinking by a factor of roughly 0.25^99", "C) It doubles at each layer", "D) It oscillates between positive and negative values"],
+        correct: 1,
+        explanation: "The chain rule multiplies local gradients at each layer. Since sigmoid's maximum derivative is 0.25, the gradient is multiplied by at most 0.25 per layer. Over 99 such multiplications, it shrinks to approximately 0.25^99, an astronomically small number. This makes early layers essentially untrainable. It does not stay constant (A), grow (C), or oscillate (D)." },
+      { q: "Which of the following is NOT a valid strategy for mitigating vanishing gradients?",
+        options: ["A) Using ReLU-family activations", "B) Adding residual/skip connections", "C) Increasing the learning rate to compensate for small gradients", "D) Proper weight initialization (e.g., He or Xavier)"],
+        correct: 2,
+        explanation: "Simply increasing the learning rate does not fix vanishing gradients and can cause instability or divergence since the gradient magnitudes vary wildly across layers. ReLU (A) avoids the saturating gradient problem. Skip connections (B) provide alternative gradient pathways. Proper initialization (D) ensures gradients start at reasonable magnitudes." },
+      { q: "Exploding gradients are particularly common in which architecture, and what is the standard immediate remedy?",
+        options: ["A) Convolutional networks; use max pooling", "B) Recurrent neural networks; apply gradient clipping", "C) Autoencoders; use tied weights", "D) GANs; use spectral normalization"],
+        correct: 1,
+        explanation: "In RNNs, the same weight matrix is applied at each time step. If its largest eigenvalue exceeds 1, gradients grow exponentially over long sequences. Gradient clipping caps the gradient norm to prevent this. While CNNs (A) can have gradient issues, max pooling is not a gradient fix. Tied weights (C) are an autoencoder design choice. Spectral normalization (D) is used in GANs for stability but addresses a different problem." },
+      { q: "Xavier/Glorot initialization sets weights from a distribution with variance 2/(fan_in + fan_out). What is the goal of this specific variance?",
+        options: ["A) To maximize the initial loss for faster learning", "B) To keep the variance of activations and gradients approximately constant across layers during the initial forward and backward passes", "C) To ensure all weights are positive", "D) To make the weight matrix orthogonal"],
+        correct: 1,
+        explanation: "Xavier initialization is derived by requiring that the variance of outputs equals the variance of inputs at each layer (and similarly for gradients). This prevents signals from shrinking or exploding as they pass through layers. It does not aim to maximize loss (A), restrict sign (C), or produce orthogonal matrices (D)." },
+      { q: "A team trains a Transformer with 96 layers and observes that loss occasionally spikes to NaN during training. Gradient norms before the spike show values exceeding 10^4. Which combination of techniques would best address this?",
+        options: ["A) Gradient clipping + learning rate warmup + pre-layer normalization", "B) Larger batch size + dropout + weight decay", "C) Switching to sigmoid activations + smaller model", "D) Removing attention layers + using only feed-forward layers"],
+        correct: 0,
+        explanation: "NaN loss from massive gradient norms indicates exploding gradients. Gradient clipping directly bounds the gradient magnitude. Learning rate warmup prevents large early updates when the model is far from any reasonable solution. Pre-layer normalization (LayerNorm before attention/FFN) stabilizes the gradient flow in deep Transformers. Larger batch size (B) does not fix exploding gradients. Sigmoid (C) would introduce vanishing gradients. Removing attention (D) eliminates the Transformer's core mechanism." }
+    ]},
+    { topic: "Convolution Operation", questions: [
+      { q: "A 3x3 convolution kernel is applied to a 32x32 single-channel image with no padding and stride 1. What is the output size?",
+        options: ["A) 32x32", "B) 30x30", "C) 31x31", "D) 34x34"],
+        correct: 1,
+        explanation: "With no padding and stride 1, the output size is (input - kernel + 1) = (32 - 3 + 1) = 30, giving 30x30. Same padding would preserve 32x32 (A). 31x31 (C) and 34x34 (D) do not match any valid formula." },
+      { q: "In a depthwise separable convolution (as used in MobileNet), what is the key computational advantage over a standard convolution?",
+        options: ["A) It uses larger kernels for better accuracy", "B) It factors the convolution into a depthwise (per-channel) and pointwise (1x1) step, drastically reducing multiply-add operations", "C) It eliminates the need for activation functions", "D) It processes all channels simultaneously with a single large kernel"],
+        correct: 1,
+        explanation: "Standard convolution applies each filter across all input channels simultaneously (cost ~ K*K*C_in*C_out). Depthwise separable convolution first applies one filter per channel (K*K*C_in), then mixes channels with 1x1 convolutions (C_in*C_out), reducing computation by roughly a factor of K*K. It does not use larger kernels (A), does not remove activations (C), and the whole point is to NOT process all channels with one kernel (D)." },
+      { q: "What is the purpose of dilated (atrous) convolutions?",
+        options: ["A) To reduce the number of parameters compared to standard convolutions", "B) To increase the receptive field without increasing kernel size or losing resolution", "C) To apply convolution only to the edges of the input", "D) To convert 2D convolutions into 1D operations"],
+        correct: 1,
+        explanation: "Dilated convolutions insert gaps between kernel elements, allowing a 3x3 kernel with dilation rate 2 to cover a 5x5 area. This expands the receptive field without adding parameters or requiring pooling (which loses resolution). Parameter count stays the same as a standard kernel (A is wrong). It applies to the full spatial extent (C is wrong). It remains a 2D operation (D is wrong)." },
+      { q: "A convolutional layer has 64 filters of size 3x3 applied to an input with 128 channels. How many learnable parameters does this layer have (including bias)?",
+        options: ["A) 3 x 3 x 128 x 64 + 64 = 73,792", "B) 3 x 3 x 64 + 64 = 640", "C) 128 x 64 = 8,192", "D) 3 x 3 x 128 + 64 = 1,216"],
+        correct: 0,
+        explanation: "Each of the 64 filters has size 3x3x128 (kernel height x width x input channels), giving 3*3*128 = 1,152 weights per filter. With 64 filters: 1,152 * 64 = 73,728 weights, plus 64 biases = 73,792 total. Option B forgets the input channels. Option C ignores the kernel spatial dimensions. Option D uses only one filter." },
+      { q: "You apply a 5x5 convolution with stride 2 and padding 2 to a 224x224x3 input using 32 filters. What is the output shape?",
+        options: ["A) 224x224x32", "B) 112x112x32", "C) 110x110x32", "D) 56x56x32"],
+        correct: 1,
+        explanation: "Output size = floor((224 + 2*2 - 5)/2) + 1 = floor(223/2) + 1 = 111 + 1 = 112. The depth is 32 (the number of filters). So the output is 112x112x32. Option A would require stride 1 with same padding. Options C and D use incorrect formulas." }
+    ]},
+    { topic: "Normalization: Batch vs Layer vs RMS", questions: [
+      { q: "Batch Normalization computes statistics (mean and variance) over which dimension(s)?",
+        options: ["A) Over each individual sample independently", "B) Over the batch dimension (and spatial dimensions if applicable) for each channel", "C) Over the feature/channel dimension for each sample", "D) Over the entire dataset at once"],
+        correct: 1,
+        explanation: "Batch Norm computes the mean and variance for each channel across all samples in the mini-batch (and across spatial positions in CNNs). This is what makes it depend on batch size. Option A describes Instance Normalization. Option C describes Layer Normalization. Option D would be dataset normalization, not a layer operation." },
+      { q: "Why does Batch Normalization behave differently during training vs inference?",
+        options: ["A) It uses a different activation function at inference", "B) During training it uses mini-batch statistics, but at inference it uses running averages computed during training because single samples lack meaningful batch statistics", "C) It doubles the learning rate during inference", "D) It is completely disabled during inference"],
+        correct: 1,
+        explanation: "A single test sample cannot provide meaningful batch statistics, so BN maintains exponential moving averages of mean and variance computed during training. At inference, these running statistics replace mini-batch statistics. It does not change activation functions (A), learning rates (C), or get disabled (D) -- the normalization still applies using stored statistics." },
+      { q: "Layer Normalization is preferred over Batch Normalization in Transformers primarily because:",
+        options: ["A) Layer Norm is more computationally efficient", "B) Layer Norm normalizes over the feature dimension per sample, making it independent of batch size and consistent across variable-length sequences", "C) Layer Norm always produces better accuracy", "D) Batch Norm cannot be implemented in PyTorch for sequence models"],
+        correct: 1,
+        explanation: "In Transformers processing variable-length sequences, Batch Norm would compute statistics across the batch for each position, which is problematic when sequences have different lengths and batch sizes vary. Layer Norm normalizes over the hidden dimension for each token independently, avoiding these issues. Computational cost (A) is similar. Layer Norm does not universally beat Batch Norm in accuracy (C). PyTorch can implement Batch Norm for sequences (D), it just works poorly." },
+      { q: "RMS Normalization (RMSNorm), used in LLaMA and other modern LLMs, differs from standard Layer Normalization by:",
+        options: ["A) Adding a learned bias term", "B) Normalizing by the root mean square of activations instead of re-centering to zero mean, removing the mean-subtraction step", "C) Computing statistics over the batch dimension", "D) Using a fixed normalization constant instead of learned parameters"],
+        correct: 1,
+        explanation: "RMSNorm simplifies LayerNorm by dropping the mean-centering step and dividing only by the RMS (root mean square) of the activations. Empirically this works as well as full LayerNorm while being faster since it avoids computing the mean. RMSNorm typically has no bias (A is backwards). It still normalizes over features, not batch (C). It still has a learned scale parameter (D is wrong)." },
+      { q: "A practitioner switches from Batch Norm to Layer Norm in a CNN image classifier and observes a significant drop in validation accuracy. What is the most plausible explanation?",
+        options: ["A) Layer Norm has a bug in all deep learning frameworks", "B) In CNNs, Batch Norm's cross-sample statistics act as a regularizer and capture useful channel-wise information that Layer Norm misses by normalizing across channels within each sample", "C) Layer Norm is incompatible with convolution operations", "D) The learning rate needs to be exactly doubled when using Layer Norm"],
+        correct: 1,
+        explanation: "Batch Norm's inter-sample statistics provide an implicit regularization effect, and normalizing per-channel across a batch preserves the relative scale differences between channels that can be important in vision tasks. Layer Norm normalizes across all channels within a single sample, potentially removing useful channel-specific magnitude information. It is not a framework bug (A), Layer Norm can technically be used with convolutions (C), and there is no specific LR multiplier rule (D)." }
+    ]},
+    { topic: "RNN/LSTM/GRU", questions: [
+      { q: "What is the fundamental problem with vanilla RNNs when processing long sequences?",
+        options: ["A) They have too many parameters for long sequences", "B) The repeated multiplication of the same weight matrix at each time step causes gradients to either vanish or explode, preventing learning of long-range dependencies", "C) They can only process fixed-length inputs", "D) They cannot handle numerical inputs, only text"],
+        correct: 1,
+        explanation: "At each time step, the gradient is multiplied by the recurrent weight matrix. Over T steps, this becomes W^T, which either vanishes (if eigenvalues < 1) or explodes (if eigenvalues > 1). This makes it nearly impossible to learn dependencies spanning many time steps. Vanilla RNNs actually have fewer parameters than LSTMs (A is wrong). They handle variable-length sequences (C). They process any numerical input (D)." },
+      { q: "In an LSTM, what is the role of the forget gate?",
+        options: ["A) To decide which information to discard from the cell state by outputting values between 0 and 1 for each element", "B) To reset all memory at every time step", "C) To prevent the network from overfitting", "D) To normalize the hidden state"],
+        correct: 0,
+        explanation: "The forget gate f_t = sigmoid(W_f * [h_{t-1}, x_t] + b_f) outputs a value between 0 and 1 for each element of the cell state, controlling how much of the previous cell state to retain. Values near 0 mean 'forget this', near 1 means 'keep this'. It does not reset all memory (B), has nothing to do with overfitting (C), or normalization (D)." },
+      { q: "How does GRU differ from LSTM in terms of architecture?",
+        options: ["A) GRU has more gates and a separate cell state, making it more powerful", "B) GRU combines the forget and input gates into a single update gate and merges the cell state with the hidden state, using fewer parameters", "C) GRU removes all gating mechanisms for simplicity", "D) GRU adds an extra attention gate on top of LSTM gates"],
+        correct: 1,
+        explanation: "GRU simplifies LSTM by using only two gates (reset and update) instead of three, and by not maintaining a separate cell state. The update gate controls both what to forget and what to add (combining LSTM's forget and input gates). This gives fewer parameters while often achieving comparable performance. GRU has fewer gates (A is wrong), still uses gating (C), and does not use attention (D)." },
+      { q: "You are training an LSTM on sequences of length 500 and notice the cell state values grow monotonically over time steps, eventually causing numerical overflow. What is the most likely cause?",
+        options: ["A) The learning rate is too small", "B) The forget gate biases are initialized too high, keeping the forget gate near 1 and never discarding old information while continuously adding new information", "C) The embedding dimension is too small", "D) The sequences need to be reversed"],
+        correct: 1,
+        explanation: "If the forget gate is always near 1 (e.g., from high bias initialization), the cell state retains everything and the input gate keeps adding more, causing unbounded growth. The recommended practice is to initialize forget gate bias to 1-2 to encourage remembering, but not so high that the gate saturates at 1.0 permanently. Learning rate (A), embedding size (C), and sequence order (D) would not cause monotonic cell state growth." },
+      { q: "Despite LSTMs solving the vanishing gradient problem better than vanilla RNNs, Transformers have largely replaced them for sequence modeling. What is the primary computational reason?",
+        options: ["A) Transformers use fewer total parameters", "B) Transformers process all positions in parallel via self-attention, while LSTMs must process tokens sequentially, making LSTMs much slower to train on modern GPU hardware", "C) LSTMs cannot model any long-range dependencies", "D) Transformers do not require any training data"],
+        correct: 1,
+        explanation: "LSTMs process one token at a time (h_t depends on h_{t-1}), creating a sequential bottleneck that cannot be parallelized. Transformers compute attention over all positions simultaneously, fully utilizing GPU parallelism. This makes training dramatically faster. Transformers often have more parameters (A is wrong). LSTMs can model long-range dependencies, just less effectively (C). Both require training data (D)." }
+    ]},
+    { topic: "Flash Attention", questions: [
+      { q: "Standard self-attention has O(n^2) memory complexity with respect to sequence length n. What causes this?",
+        options: ["A) Storing the n x n attention weight matrix in GPU global memory", "B) The size of the query and key vectors", "C) The number of attention heads", "D) The embedding dimension"],
+        correct: 0,
+        explanation: "Standard attention computes an n x n matrix of attention scores (Q * K^T), which must be fully materialized in memory for the softmax and subsequent multiplication with V. For long sequences (e.g., n=8192), this matrix alone requires n^2 * sizeof(float) bytes. The query/key vectors (B) are O(n*d). Number of heads (C) is a constant multiplier. Embedding dimension (D) contributes linearly." },
+      { q: "Flash Attention achieves its speedup primarily through:",
+        options: ["A) Using a mathematically different approximation of attention", "B) Tiling the computation to keep data in fast GPU SRAM and minimizing reads/writes to slow GPU HBM (high-bandwidth memory)", "C) Reducing the number of attention heads", "D) Skipping the softmax computation entirely"],
+        correct: 1,
+        explanation: "Flash Attention computes exact attention (not an approximation) by processing blocks/tiles that fit in SRAM, computing partial softmax results that are combined using the online softmax trick. This avoids materializing the full n x n matrix in slow HBM. It is exact, not approximate (A). It does not change the number of heads (C) or skip softmax (D)." },
+      { q: "The 'online softmax' trick used in Flash Attention allows computing softmax without:",
+        options: ["A) Using exponential functions", "B) Knowing the maximum value across all elements in advance by incrementally updating the normalization statistics as new blocks are processed", "C) Any numerical precision", "D) A normalization denominator"],
+        correct: 1,
+        explanation: "Standard softmax requires two passes: one to find the max (for numerical stability) and one to compute exp and sum. The online softmax trick processes elements in a single streaming pass by maintaining and correcting running statistics (current max and running sum) as each new block arrives. It still uses exponentials (A), maintains precision (C), and computes a denominator (D)." },
+      { q: "Flash Attention 2 improved upon Flash Attention 1 primarily by:",
+        options: ["A) Using a completely different algorithm", "B) Better partitioning work between GPU thread blocks and reducing non-matrix-multiplication FLOPs to better utilize tensor cores", "C) Switching from CUDA to CPU computation", "D) Removing the tiling approach entirely"],
+        correct: 1,
+        explanation: "Flash Attention 2 keeps the same algorithmic approach but optimizes the GPU implementation: it parallelizes over the sequence length dimension (not just batch and heads), reduces non-matmul FLOPs in the inner loop, and better maps work to the GPU's thread block hierarchy. This achieves closer to peak GPU throughput. It is not a new algorithm (A), still runs on GPU (C), and still uses tiling (D)." },
+      { q: "A researcher wants to fine-tune a model with 128K context length. Without Flash Attention, standard attention on a single A100 (80GB) would require approximately 128K^2 * 2 bytes ~ 32GB just for the attention matrix of ONE layer and ONE head. With Flash Attention, what is the approximate memory requirement for the attention computation?",
+        options: ["A) Still 32GB; Flash Attention only speeds computation, not memory", "B) O(n) memory, roughly proportional to sequence length times the SRAM block size, typically a few megabytes regardless of sequence length", "C) O(n * log(n)) memory", "D) Zero memory; Flash Attention stores nothing"],
+        correct: 1,
+        explanation: "Flash Attention never materializes the full n x n attention matrix. Instead, it only holds small tiles (block_size x block_size) in SRAM at a time, and the output accumulator of size n x d in HBM. The memory for the attention computation itself is O(n) rather than O(n^2). Option A is wrong because memory reduction is Flash Attention's main benefit. O(n log n) (C) applies to some sparse attention methods, not Flash Attention. It does store intermediate results in SRAM (D)." }
+    ]},
+    { topic: "Scaling Laws", questions: [
+      { q: "The Chinchilla scaling law (Hoffmann et al., 2022) primarily showed that:",
+        options: ["A) Larger models always perform better regardless of data", "B) For a fixed compute budget, model size and training data should be scaled roughly equally, and most large models at the time were significantly undertrained", "C) Training data does not matter if the model is large enough", "D) Smaller models are always more efficient"],
+        correct: 1,
+        explanation: "Chinchilla demonstrated that compute-optimal training requires roughly equal scaling of parameters and tokens (approximately N tokens ~ 20 * N parameters). Previous models like Gopher used enormous parameter counts with relatively little data, wasting compute. Neither 'more parameters always wins' (A) nor 'data doesn't matter' (C) is correct. Smaller models are not always more efficient (D); it depends on the compute budget." },
+      { q: "According to neural scaling laws, model performance (loss) typically follows which relationship with compute/data/parameters?",
+        options: ["A) Linear decrease: L = a - b*N", "B) A power law: L = a * N^(-b) + L_irreducible, where N is the scaling variable", "C) Exponential decay: L = a * e^(-bN)", "D) A step function with sudden phase transitions"],
+        correct: 1,
+        explanation: "Kaplan et al. and subsequent work showed that loss follows smooth power laws when plotted against model size, dataset size, or compute on log-log scales. There is an irreducible loss representing the entropy of the data. It is not linear (A), not exponential (C), and while phase transitions exist for specific capabilities, the overall loss curve is smooth (D)." },
+      { q: "A company has a fixed compute budget of C FLOPs. According to scaling laws, they should:",
+        options: ["A) Build the largest possible model and train for 1 epoch", "B) Build a small model and train for many epochs on massive data", "C) Find the compute-optimal allocation between model size and training tokens that minimizes loss for budget C", "D) Split the budget equally between pretraining and fine-tuning"],
+        correct: 2,
+        explanation: "Scaling laws provide a principled way to allocate a compute budget between model size (N) and data (D), since C is approximately proportional to 6*N*D. The optimal allocation minimizes loss for that budget. Just maximizing model size (A) wastes compute on an undertrained model. Just maximizing data (B) wastes compute on an underpowered model. The pretraining/fine-tuning split (D) is a separate decision not directly governed by these scaling laws." },
+      { q: "Why are scaling laws practically important for organizations building large language models?",
+        options: ["A) They eliminate the need for hyperparameter tuning", "B) They allow predicting the performance of a large expensive model by training smaller cheaper models and extrapolating the power-law trend", "C) They guarantee the model will achieve superhuman performance", "D) They make training free"],
+        correct: 1,
+        explanation: "The smoothness and predictability of scaling laws means you can train models across several orders of magnitude of compute (cheaply) and extrapolate to predict how a much larger model will perform before committing the resources. This is enormously valuable for planning. They do not eliminate hyperparameter tuning (A), guarantee specific performance levels (C), or reduce cost to zero (D)." },
+      { q: "Recent findings suggest that scaling laws may not capture everything about model capability. Which phenomenon challenges a purely smooth scaling-law view of model improvement?",
+        options: ["A) All metrics always improve smoothly and predictably", "B) Emergent abilities: certain capabilities (like chain-of-thought reasoning) appear to suddenly emerge at specific model scales rather than improving gradually", "C) Larger models always have lower loss on every individual example", "D) Power law relationships break down below 1 billion parameters"],
+        correct: 1,
+        explanation: "While overall loss follows smooth power laws, specific capabilities (like arithmetic, multi-step reasoning) can appear to transition sharply from near-zero to high performance at particular scales. This 'emergence' means loss alone does not predict when specific skills appear. Not all metrics improve smoothly (A is wrong). Individual examples can still be mishandled by larger models (C). Power laws hold across many scales (D)." }
+    ]}
   ];
 
   const labels = ["A", "B", "C", "D"];
+  const totalQuestions = quizData.reduce(function(sum, t) { return sum + t.questions.length; }, 0);
   let score = 0;
-  let answered = new Array(quizData.length).fill(false);
+  let answered = {};
+  let topicScores = {};
+
+  quizData.forEach(function(_, ti) { topicScores[ti] = 0; });
 
   function buildQuiz() {
     const container = document.getElementById("quizQuestions");
     container.innerHTML = "";
-    quizData.forEach(function(item, qi) {
-      const qDiv = document.createElement("div");
-      qDiv.style.cssText = "background:#0d0d1a; border:1px solid #2a2a4a; border-radius:12px; padding:20px; margin-bottom:16px;";
-      qDiv.id = "quiz-q-" + qi;
 
-      let html = '<p style="color:#e0e0e0; font-weight:600; margin-bottom:12px;">' + item.q + '</p>';
-      item.options.forEach(function(opt, oi) {
-        html += '<div class="quiz-opt" data-qi="' + qi + '" data-oi="' + oi + '" style="'
-          + 'padding:10px 16px; margin-bottom:8px; border:1px solid #2a2a4a; border-radius:8px;'
-          + 'cursor:pointer; color:#ccc; transition:all 0.2s; font-size:0.95em;'
-          + '" onmouseover="if(!this.dataset.locked)this.style.background=\'#1a1a3e\'"'
-          + ' onmouseout="if(!this.dataset.locked)this.style.background=\'transparent\'"'
-          + '><strong style="color:#ff6b6b;">' + labels[oi] + ')</strong> ' + opt + '</div>';
+    quizData.forEach(function(topic, ti) {
+      const topicDiv = document.createElement("div");
+      topicDiv.className = "quiz-topic";
+
+      const header = document.createElement("div");
+      header.className = "quiz-topic-header";
+      header.innerHTML = '<h3>' + topic.topic + '</h3><div style="display:flex;align-items:center;gap:12px;"><span class="quiz-topic-score" id="topic-score-' + ti + '">0 / ' + topic.questions.length + '</span><span class="quiz-topic-chevron" id="topic-chevron-' + ti + '">&#9660;</span></div>';
+      header.addEventListener("click", function() {
+        var body = document.getElementById("topic-body-" + ti);
+        var chevron = document.getElementById("topic-chevron-" + ti);
+        if (body.classList.contains("open")) {
+          body.classList.remove("open");
+          chevron.classList.remove("open");
+        } else {
+          body.classList.add("open");
+          chevron.classList.add("open");
+        }
       });
-      qDiv.innerHTML = html;
-      container.appendChild(qDiv);
+
+      const body = document.createElement("div");
+      body.className = "quiz-topic-body";
+      body.id = "topic-body-" + ti;
+
+      topic.questions.forEach(function(item, qi) {
+        const globalIdx = ti + "-" + qi;
+        const qDiv = document.createElement("div");
+        qDiv.style.cssText = "background:#0d0d1a; border:1px solid #2a2a4a; border-radius:12px; padding:20px; margin-bottom:16px;";
+        qDiv.id = "quiz-q-" + globalIdx;
+
+        let html = '<p style="color:#e0e0e0; font-weight:600; margin-bottom:12px;">Q' + (qi + 1) + ': ' + item.q + '</p>';
+        item.options.forEach(function(opt, oi) {
+          html += '<div class="quiz-opt" data-ti="' + ti + '" data-qi="' + qi + '" data-oi="' + oi + '" style="'
+            + 'padding:10px 16px; margin-bottom:8px; border:1px solid #2a2a4a; border-radius:8px;'
+            + 'cursor:pointer; color:#ccc; transition:all 0.2s; font-size:0.95em;'
+            + '" onmouseover="if(!this.dataset.locked)this.style.background=\'#1a1a3e\'"'
+            + ' onmouseout="if(!this.dataset.locked)this.style.background=\'transparent\'"'
+            + '>' + opt + '</div>';
+        });
+        html += '<div id="quiz-expl-' + globalIdx + '"></div>';
+        qDiv.innerHTML = html;
+        body.appendChild(qDiv);
+      });
+
+      topicDiv.appendChild(header);
+      topicDiv.appendChild(body);
+      container.appendChild(topicDiv);
     });
 
-    // attach click handlers
     document.querySelectorAll(".quiz-opt").forEach(function(el) {
       el.addEventListener("click", function() {
         handleAnswer(this);
@@ -1948,41 +2092,52 @@ drawScaling();
   }
 
   function handleAnswer(el) {
+    const ti = parseInt(el.dataset.ti);
     const qi = parseInt(el.dataset.qi);
     const oi = parseInt(el.dataset.oi);
-    if (answered[qi]) return;
-    answered[qi] = true;
+    const globalIdx = ti + "-" + qi;
 
-    const qDiv = document.getElementById("quiz-q-" + qi);
+    if (answered[globalIdx]) return;
+    answered[globalIdx] = true;
+
+    const qDiv = document.getElementById("quiz-q-" + globalIdx);
     const opts = qDiv.querySelectorAll(".quiz-opt");
+    const item = quizData[ti].questions[qi];
 
     opts.forEach(function(o) {
       o.dataset.locked = "true";
       o.style.cursor = "default";
     });
 
-    if (oi === quizData[qi].correct) {
+    const explDiv = document.getElementById("quiz-expl-" + globalIdx);
+    const isCorrect = oi === item.correct;
+
+    if (isCorrect) {
       el.style.background = "#2ecc71";
       el.style.color = "#fff";
       el.style.borderColor = "#2ecc71";
       score++;
+      topicScores[ti]++;
+      explDiv.innerHTML = '<div class="quiz-explanation">' + item.explanation + '</div>';
     } else {
       el.style.background = "#e74c3c";
       el.style.color = "#fff";
       el.style.borderColor = "#e74c3c";
-      // reveal correct
-      opts[quizData[qi].correct].style.background = "#2ecc71";
-      opts[quizData[qi].correct].style.color = "#fff";
-      opts[quizData[qi].correct].style.borderColor = "#2ecc71";
+      opts[item.correct].style.background = "#2ecc71";
+      opts[item.correct].style.color = "#fff";
+      opts[item.correct].style.borderColor = "#2ecc71";
+      explDiv.innerHTML = '<div class="quiz-explanation wrong">' + item.explanation + '</div>';
     }
 
-    document.getElementById("quizScore").textContent = "Score: " + score + " / 8";
+    document.getElementById("quizScore").textContent = "Score: " + score + " / " + totalQuestions;
+    document.getElementById("topic-score-" + ti).textContent = topicScores[ti] + " / " + quizData[ti].questions.length;
   }
 
   window.resetQuiz = function() {
     score = 0;
-    answered = new Array(quizData.length).fill(false);
-    document.getElementById("quizScore").textContent = "Score: 0 / 8";
+    answered = {};
+    quizData.forEach(function(_, ti) { topicScores[ti] = 0; });
+    document.getElementById("quizScore").textContent = "Score: 0 / " + totalQuestions;
     buildQuiz();
   };
 

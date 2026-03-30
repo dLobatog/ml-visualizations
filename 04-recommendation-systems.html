@@ -2396,9 +2396,10 @@ window.addEventListener('load', () => {
 
 <!-- Quiz Panel -->
 <div id="quizSection" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:999; background:rgba(0,0,0,0.7); overflow-y:auto;">
-  <div style="max-width:800px; margin:80px auto 40px; background:#12121f; border-radius:16px; padding:40px; border:1px solid rgba(255,159,243,0.2); box-shadow:0 8px 32px rgba(0,0,0,0.5);">
-    <h2 style="color:#ff9ff3; text-align:center; margin:0 0 10px; font-size:28px;">Recommendation Systems Quiz</h2>
-    <p id="quizScore" style="text-align:center; color:#ccc; font-size:16px; margin-bottom:30px;">Score: 0 / 10</p>
+  <div style="max-width:860px; margin:60px auto 40px; background:#12121f; border-radius:16px; padding:40px; border:1px solid rgba(255,159,243,0.2); box-shadow:0 8px 32px rgba(0,0,0,0.5);">
+    <h2 style="color:#ff9ff3; text-align:center; margin:0 0 6px; font-size:28px;">Recommendation Systems Quiz</h2>
+    <p style="text-align:center; color:#888; font-size:14px; margin-bottom:6px;">13 topics &middot; 65 questions &middot; 2 easy / 2 medium / 1 hard per topic</p>
+    <p id="quizScore" style="text-align:center; color:#ccc; font-size:16px; margin-bottom:20px;">Total Score: 0 / 65</p>
     <div id="quizQuestions"></div>
     <div style="text-align:center; margin-top:30px;">
       <button onclick="resetQuiz()" style="background:#ff9ff3; color:#0a0a0f; border:none; padding:10px 24px; border-radius:20px; font-size:15px; font-weight:700; cursor:pointer; margin:0 8px;">Reset</button>
@@ -2409,39 +2410,184 @@ window.addEventListener('load', () => {
 
 <script>
 (function() {
-  const quizData = [
-    { q: "In collaborative filtering with matrix factorization, what is being decomposed?", options: ["The feature matrix", "The user-item interaction matrix into user and item latent factor matrices", "The neural network weights", "The loss function"], correct: 1 },
-    { q: "What problem does the Two-Tower architecture solve efficiently?", options: ["Training speed", "Retrieval at scale — precompute embeddings for fast approximate nearest neighbor search", "Cold start", "Feature engineering"], correct: 1 },
-    { q: "What does HNSW (Hierarchical Navigable Small World) provide?", options: ["Exact nearest neighbor search", "Approximate nearest neighbor search with logarithmic query time", "Dimensionality reduction", "Feature selection"], correct: 1 },
-    { q: "In the Wide & Deep architecture, what does the \"Wide\" component capture?", options: ["Complex nonlinear patterns", "Memorization of specific feature interactions/cross-products", "User embeddings", "Sequential patterns"], correct: 1 },
-    { q: "What is the cold start problem in recommendation systems?", options: ["The system runs too slowly", "Inability to make good recommendations for new users/items with no interaction history", "The model overfits", "Too many features"], correct: 1 },
-    { q: "In MMOE (Multi-gate Mixture of Experts), what do the gating networks do?", options: ["Filter out bad recommendations", "Learn task-specific weighted combinations of shared expert outputs", "Reduce model size", "Encode user features"], correct: 1 },
-    { q: "What is the key idea behind DCN (Deep & Cross Network)?", options: ["Using only deep layers", "Explicitly learning bounded-degree feature crosses through cross layers", "Combining CNN and RNN", "Using attention only"], correct: 1 },
-    { q: "In Learning to Rank (LTR), what does a pairwise approach optimize?", options: ["Individual document relevance scores", "The relative ordering between pairs of documents", "The absolute position of each document", "Click-through rate directly"], correct: 1 },
-    { q: "What does a feature store provide in a recommendation system?", options: ["Model training code", "Centralized, consistent feature computation and serving for both training and inference", "A/B testing framework", "User interface components"], correct: 1 },
-    { q: "In SASRec (Self-Attentive Sequential Recommendation), why is self-attention used?", options: ["To reduce model parameters", "To capture long-range dependencies in user interaction sequences", "To generate item descriptions", "To perform matrix factorization"], correct: 1 }
+  const topics = [
+    {
+      name: "Collaborative Filtering: Matrix Factorization",
+      questions: [
+        { q: "What does matrix factorization decompose in collaborative filtering?", options: ["The feature importance vector", "The user-item interaction matrix into latent factor matrices", "The gradient descent path", "The activation function outputs"], correct: 1, explanation: "Matrix factorization decomposes the sparse user-item rating matrix R into two lower-rank matrices (user factors U and item factors V) such that R is approximately U times V-transpose." },
+        { q: "A recommendation system using SVD with k=5 latent factors on 10M users and 500K items stores how many parameters (ignoring biases)?", options: ["50M + 2.5M = 52.5M", "10M x 500K = 5 trillion", "5 x 5 = 25", "10M x 5 + 500K x 5 = 52.5M"], correct: 3, explanation: "Each user gets a k-dimensional vector (10M x 5) and each item gets a k-dimensional vector (500K x 5), totaling 52.5M parameters -- far smaller than storing the full 5 trillion-entry matrix." },
+        { q: "Why is Alternating Least Squares (ALS) preferred over SGD for implicit feedback matrix factorization?", options: ["ALS always converges faster", "ALS can treat all unobserved entries as negative examples efficiently using mathematical tricks", "ALS does not need a learning rate", "ALS produces sparser embeddings"], correct: 1, explanation: "With implicit feedback, every unobserved entry is a weak negative signal. ALS can incorporate all zeros efficiently via algebraic reformulation, whereas SGD would need to sample negatives." },
+        { q: "You train a matrix factorization model and training RMSE keeps dropping but validation RMSE starts rising at k=30. What should you do?", options: ["Increase k further to improve accuracy", "Add more training data only", "Reduce k or add L2 regularization to the latent factors", "Switch to a non-parametric model"], correct: 2, explanation: "Rising validation error with falling training error is classic overfitting. Reducing k (model capacity) or adding L2 regularization on U and V penalizes large factor values and improves generalization." },
+        { q: "What is the fundamental limitation of pure matrix factorization that neural collaborative filtering attempts to address?", options: ["MF cannot handle large datasets", "MF only captures linear interactions between user and item latent factors via dot product", "MF requires explicit ratings", "MF cannot be parallelized"], correct: 1, explanation: "The dot product in MF is a linear interaction. Neural collaborative filtering replaces it with a neural network that can learn arbitrary nonlinear user-item interaction functions from the latent factors." }
+      ]
+    },
+    {
+      name: "Two-Tower Embedding Model",
+      questions: [
+        { q: "What are the two 'towers' in a Two-Tower recommendation model?", options: ["An encoder and a decoder", "A user tower and an item tower that independently produce embeddings", "A training tower and an inference tower", "A feature tower and a label tower"], correct: 1, explanation: "The two-tower model has separate neural networks -- one encodes user features into an embedding, the other encodes item features. Relevance is computed via dot product or cosine similarity of the two embeddings." },
+        { q: "Why is the Two-Tower architecture efficient at serving time?", options: ["It uses fewer parameters than other models", "Item embeddings can be precomputed offline and retrieved via approximate nearest neighbor search", "It does not require GPUs", "It avoids embedding lookups"], correct: 1, explanation: "Since item and user towers are independent, all item embeddings can be precomputed and indexed. At serving time, only the user embedding needs to be computed, then ANN search finds the top-k items in milliseconds." },
+        { q: "A Two-Tower model retrieves the top-1000 candidates from 100M items in under 10ms. Which technology most likely enables this?", options: ["Brute-force dot product on CPU", "HNSW or ScaNN approximate nearest neighbor index over item embeddings", "SQL database with B-tree index", "MapReduce batch processing"], correct: 1, explanation: "Approximate nearest neighbor libraries like HNSW or ScaNN build graph/tree indices over the item embedding space, enabling sub-linear retrieval time -- typically O(log n) -- even over hundreds of millions of items." },
+        { q: "What is a key drawback of the Two-Tower architecture compared to cross-attention models?", options: ["It cannot scale to large item catalogs", "It cannot model fine-grained interactions between user and item features since they only interact via dot product", "It requires more training data", "It is slower at inference"], correct: 1, explanation: "Because user and item features are encoded independently before the dot product, the model cannot capture feature-level cross-interactions (e.g., 'this user likes red shoes specifically'). Cross-attention models can but are much slower." },
+        { q: "You notice your Two-Tower model performs well on popular items but poorly on tail items. Which training strategy would most directly help?", options: ["Increase the embedding dimension", "Use in-batch negatives with log-Q correction to counteract popularity bias", "Add more layers to both towers", "Switch to a single-tower model"], correct: 1, explanation: "In-batch negatives oversample popular items as negatives. Log-Q correction adjusts the sampling probability, effectively down-weighting popular negatives and giving tail items a fairer gradient signal during training." }
+      ]
+    },
+    {
+      name: "Item Embedding Space",
+      questions: [
+        { q: "What does proximity in an item embedding space represent?", options: ["Items have similar prices", "Items are semantically or behaviorally similar based on user interactions or content features", "Items were added to the catalog at the same time", "Items share the same category label"], correct: 1, explanation: "Items close together in the embedding space share latent properties learned from user co-interaction patterns or content similarity, meaning users who like one tend to like the other." },
+        { q: "Which method can generate item embeddings from user interaction sequences without explicit ratings?", options: ["PCA on the item feature matrix", "Word2Vec-style skip-gram on sequences of user interactions (e.g., Item2Vec)", "K-means clustering", "Manual feature engineering"], correct: 1, explanation: "Item2Vec treats user interaction sequences like sentences and items like words, applying skip-gram to learn embeddings where co-occurring items in user sessions are embedded nearby." },
+        { q: "Your item embedding visualization shows a tight cluster of niche horror novels far from mainstream fiction. A new horror novel is added with only metadata features. Where will it likely be embedded?", options: ["At the origin (zero vector)", "Near the mainstream fiction cluster", "Near the niche horror cluster if content features are used, or randomly if only collaborative signals exist", "Exactly on top of the most popular horror novel"], correct: 2, explanation: "With content features (genre, description), the new item can be placed near similar horror novels. Without content features (pure collaborative filtering), there are no interaction signals yet, so placement is essentially random -- the cold start problem." },
+        { q: "What is a key benefit of learning a shared embedding space for users and items?", options: ["It reduces storage costs to zero", "User-item relevance can be computed as a simple distance or dot product in the shared space", "It eliminates the need for negative sampling", "It guarantees embeddings are interpretable"], correct: 1, explanation: "When users and items live in the same vector space, recommendation becomes a nearest-neighbor problem: find items closest to the user's embedding, enabling fast retrieval via ANN indices." },
+        { q: "You discover that item embeddings trained with collaborative filtering cluster primarily by popularity rather than by genre or style. What is the most likely cause and fix?", options: ["The embedding dimension is too high; reduce it", "Popular items dominate the training signal; apply inverse propensity weighting or popularity-based negative sampling", "The learning rate is too low", "The item catalog is too small"], correct: 1, explanation: "Popular items appear in many more training pairs, causing the loss to over-optimize for them. Inverse propensity weighting or sampling corrections reduce the influence of popular items, letting the model capture finer-grained semantic structure." }
+      ]
+    },
+    {
+      name: "Cold Start Problem",
+      questions: [
+        { q: "What is the cold start problem in recommendation systems?", options: ["Models take too long to train initially", "New users or items have insufficient interaction history for collaborative filtering to work", "The server needs time to warm up", "Users do not engage with recommendations"], correct: 1, explanation: "Cold start occurs when a new user or item enters the system with little or no interaction data. Collaborative filtering relies on past interactions, so it cannot generate meaningful recommendations without them." },
+        { q: "Which approach best addresses item cold start?", options: ["Using only collaborative filtering", "Incorporating content-based features (text, images, metadata) alongside collaborative signals", "Deleting items with few interactions", "Waiting until enough users interact with the item"], correct: 1, explanation: "Content-based features (title, description, images, category) provide signal even with zero interactions. Hybrid models that blend collaborative and content signals can recommend new items immediately based on their attributes." },
+        { q: "A music streaming service launches in a new country with zero listening history. Which strategy provides the best initial recommendations?", options: ["Show a blank page until data accumulates", "Use a popularity-based fallback combined with onboarding preference surveys and cross-market transfer learning", "Randomly shuffle the entire catalog", "Only recommend the globally most popular songs"], correct: 1, explanation: "Combining popularity baselines, explicit preference elicitation (surveys), and transfer learning from similar markets provides multiple signal sources to bootstrap recommendations before local collaborative data exists." },
+        { q: "Why does a bandit-based exploration strategy help with cold start for new items?", options: ["It reduces serving latency", "It systematically allocates exposure to new items to gather interaction data while balancing exploitation of known-good items", "It eliminates the need for embeddings", "It increases the catalog size"], correct: 1, explanation: "Multi-armed bandit approaches (like Thompson sampling or epsilon-greedy) explore uncertain new items to quickly collect feedback while still showing high-confidence recommendations, efficiently resolving cold start." },
+        { q: "Your hybrid model uses a gating mechanism to blend collaborative and content signals. During cold start (zero interactions), the gate should ideally do what?", options: ["Output 0.5 for equal blending", "Route fully to the content tower since collaborative signals are pure noise with no interactions", "Route fully to the collaborative tower", "Shut down both towers and return random results"], correct: 1, explanation: "With zero interactions, the collaborative embedding is uninformative (random initialization). The gate should learn to rely entirely on content features for cold items, gradually shifting toward collaborative signals as interactions accumulate." }
+      ]
+    },
+    {
+      name: "Wide & Deep Architecture",
+      questions: [
+        { q: "What does the 'Wide' component of Wide & Deep capture?", options: ["Deep semantic representations", "Memorization of specific feature co-occurrences through cross-product transformations", "Sequential user behavior", "Image features from items"], correct: 1, explanation: "The wide component is a linear model over raw and cross-product features. It memorizes specific feature combinations (e.g., 'user installed app X AND was shown app Y') that historically led to conversions." },
+        { q: "What does the 'Deep' component contribute that the Wide part cannot?", options: ["Faster training", "Generalization to unseen feature combinations through learned dense embeddings", "Exact memorization of training data", "Explicit feature crosses"], correct: 1, explanation: "The deep component maps sparse features into dense embeddings and passes them through hidden layers, enabling generalization to feature combinations never seen in training through the learned distributed representations." },
+        { q: "Google's original Wide & Deep paper was applied to which product?", options: ["YouTube recommendations", "Google Play app store recommendations", "Gmail spam filtering", "Google Search ranking"], correct: 1, explanation: "The Wide & Deep paper by Cheng et al. (2016) was designed for and deployed on the Google Play store, improving app recommendation by balancing memorization (wide) with generalization (deep)." },
+        { q: "A Wide & Deep model shows high accuracy on frequent user-item pairs but poor generalization on rare ones. Which component is likely over-relied upon?", options: ["The deep component", "The wide component, because it memorizes specific feature crosses that are only effective for frequently seen patterns", "The embedding layer", "The output sigmoid"], correct: 1, explanation: "The wide component excels at memorizing frequent patterns but cannot generalize. If the model over-relies on it, rare combinations get poor predictions. The fix is to increase deep component capacity or adjust the joint training balance." },
+        { q: "In Wide & Deep, why is joint training preferred over ensemble (separate training)?", options: ["Joint training is faster", "Joint training allows the wide and deep components to complement each other -- wide only needs to memorize what deep misses, and vice versa", "Ensemble requires more memory", "Joint training uses fewer features"], correct: 1, explanation: "In joint training, gradients flow through both components simultaneously, so the wide part learns to memorize residual patterns the deep part cannot generalize, and the deep part focuses on generalizable representations. An ensemble would redundantly learn the same patterns." }
+      ]
+    },
+    {
+      name: "DCN (Deep & Cross Network)",
+      questions: [
+        { q: "What is the key innovation of the Cross Network in DCN?", options: ["It uses attention mechanisms", "It explicitly and automatically learns feature interactions of bounded degree at each layer", "It replaces the deep network entirely", "It performs dimensionality reduction"], correct: 1, explanation: "Each cross layer applies x0 * (xL^T * w) + b + xL, explicitly creating feature interactions. Layer L captures up to (L+1)-degree interactions, automating what would otherwise require manual feature engineering." },
+        { q: "How does DCN differ from Wide & Deep in handling feature crosses?", options: ["DCN does not use feature crosses", "DCN learns crosses automatically through parameterized cross layers, while Wide & Deep requires manually engineered cross-product features for the wide component", "DCN only works with dense features", "There is no meaningful difference"], correct: 1, explanation: "Wide & Deep needs a human to specify which feature crosses to include in the wide part. DCN's cross layers learn which interactions matter automatically, making it more scalable when the feature space is large." },
+        { q: "In DCN-v2, what improvement was made over the original DCN?", options: ["Removed the deep network", "Replaced the vector-based cross layer weight with a full matrix, enabling richer feature interaction modeling", "Added recurrent layers", "Switched to tree-based models"], correct: 1, explanation: "DCN-v2 uses a weight matrix W (instead of a vector w) in the cross layer, increasing expressiveness. It also introduced a mixture-of-experts variant where multiple cross experts are combined, improving accuracy on large-scale tasks." },
+        { q: "You are building a click prediction model with 500 sparse features. Your Deep-only model plateaus at AUC 0.78. Adding a Cross Network would most likely help if:", options: ["The features are already heavily preprocessed", "There are important multiplicative interactions between sparse features that the deep layers struggle to learn implicitly", "The dataset is very small", "All features are continuous"], correct: 1, explanation: "Deep networks can theoretically learn any interaction but often struggle with explicit multiplicative crosses between sparse features. The cross network captures these directly and is especially beneficial for high-dimensional sparse input." },
+        { q: "A DCN with 3 cross layers captures up to degree-4 feature interactions. If you need to capture a known 6th-degree interaction but adding more cross layers hurts generalization, what is a practical solution?", options: ["Use 6 cross layers regardless of generalization", "Add the specific high-degree cross as a manual feature in a parallel wide component alongside a shallower cross network", "Remove the cross network entirely", "Increase the embedding dimension"], correct: 1, explanation: "Hybrid approaches work well: use the cross network for automatic low-to-medium degree interactions and manually engineer the specific known high-degree cross as an additional wide feature, combining the benefits of both approaches while controlling model complexity." }
+      ]
+    },
+    {
+      name: "DIN: Deep Interest Network",
+      questions: [
+        { q: "What problem does DIN (Deep Interest Network) solve that standard deep models miss?", options: ["It handles cold start users", "It dynamically activates different parts of user history based on the candidate item using attention", "It speeds up training by 10x", "It eliminates the need for embeddings"], correct: 1, explanation: "Standard models use a fixed user representation regardless of the candidate item. DIN applies an attention mechanism over the user's behavior history, weighting past interactions by their relevance to the specific candidate being scored." },
+        { q: "In DIN, what determines the attention weight for each historical item?", options: ["The item's popularity", "The similarity between the historical item embedding and the candidate item embedding", "The recency of the interaction", "A random sampling process"], correct: 1, explanation: "DIN computes attention weights by feeding the historical item embedding and the candidate item embedding into a local activation unit (a small MLP), producing a relevance score that determines how much each past interaction contributes." },
+        { q: "A user has browsed 200 items in the past month. When scoring a candidate running shoe, DIN assigns high attention to 5 past running shoe views and low attention to 195 unrelated views. Why is this more effective than average pooling?", options: ["It is computationally cheaper", "Average pooling dilutes the relevant signal from 5 running shoes across 195 irrelevant items, while DIN focuses on the pertinent subset", "Average pooling cannot handle variable-length sequences", "DIN uses a larger embedding dimension"], correct: 1, explanation: "Average pooling gives equal weight to all 200 items, drowning the running shoe signal. DIN's attention amplifies the 5 relevant interactions, producing a user representation that is specifically informative for the running shoe candidate." },
+        { q: "DIN introduces a 'dice' activation function. What does it do differently from PReLU?", options: ["It is always zero for negative inputs", "It adapts its rectification point based on the input data distribution (mean and variance), acting as a data-dependent PReLU", "It outputs only binary values", "It is identical to ReLU"], correct: 1, explanation: "Dice normalizes the input using its mean and variance (like batch norm), then applies a smooth gating. This makes the activation threshold adapt to the data distribution rather than being fixed at zero, improving training on industrial recommendation data." },
+        { q: "You deploy DIN in production but user histories average 2000 items, causing latency issues. Which optimization best preserves DIN's benefits while reducing cost?", options: ["Truncate to the most recent 50 items only", "Apply a two-stage approach: use lightweight pre-filtering (e.g., same category) to select a relevant subset of history, then run full DIN attention on that subset", "Remove the attention mechanism entirely", "Cache attention weights from yesterday"], correct: 1, explanation: "Pre-filtering history to a relevant subset (e.g., items in the same category or with high content similarity to the candidate) preserves the adaptive attention benefit while reducing the attention computation from O(2000) to O(50-100), keeping latency manageable." }
+      ]
+    },
+    {
+      name: "Full Recommendation Pipeline: 3-Stage Funnel",
+      questions: [
+        { q: "What are the three stages of a typical recommendation funnel?", options: ["Training, validation, testing", "Candidate retrieval, scoring/ranking, re-ranking (with business rules and diversity)", "Embedding, clustering, classification", "Feature engineering, model training, deployment"], correct: 1, explanation: "The funnel narrows from millions of items to hundreds (retrieval), then scores and ranks them (ranking), then applies business logic, diversity, and freshness constraints (re-ranking) to produce the final slate." },
+        { q: "Why does the retrieval stage use simpler models than the ranking stage?", options: ["Simpler models are more accurate", "Retrieval must evaluate millions of items in milliseconds, requiring lightweight models (e.g., dot product with ANN), while ranking only scores hundreds of candidates with expensive models", "There is no difference in model complexity", "Retrieval does not use any model"], correct: 1, explanation: "Retrieval faces a latency budget of ~10ms over millions of items, necessitating fast operations like embedding dot products. Ranking only processes hundreds of items and can afford complex models with cross-features, attention, and deep networks." },
+        { q: "Your 3-stage pipeline retrieves 500 candidates, ranks them, then re-ranks. Users complain recommendations are repetitive. Which stage should you primarily adjust?", options: ["Retrieval -- fetch more diverse candidates", "Re-ranking -- add diversity constraints like MMR (Maximal Marginal Relevance) to penalize redundancy in the final slate", "Ranking -- retrain the ranking model", "Remove the re-ranking stage"], correct: 1, explanation: "Repetitiveness is a slate-level problem best addressed in re-ranking. MMR or DPP (Determinantal Point Processes) can diversify the final list by penalizing items too similar to already-selected ones, balancing relevance with diversity." },
+        { q: "In a production system, the retrieval stage often uses multiple retrieval sources. Why?", options: ["To increase latency", "Different sources capture different relevance signals (collaborative, content, trending, geographic) ensuring good coverage and reducing retrieval blind spots", "It is required by regulation", "A single source is always sufficient"], correct: 1, explanation: "Multiple retrieval channels (collaborative filtering, content-based, popularity, trending, geographic) each capture different aspects of relevance. Merging their candidate sets gives the ranker a more complete and diverse pool to score." },
+        { q: "The ranking model at a large-scale platform uses 500+ features and takes 5ms per item. With 1000 candidates and a 50ms total latency budget, what architectural solution enables this?", options: ["Simply reduce features to 50", "Use a lightweight pre-scoring model to prune 1000 candidates to ~200, then apply the full ranking model only to those 200", "Increase the latency budget to 5 seconds", "Score items asynchronously after the page loads"], correct: 1, explanation: "A two-pass ranking approach uses a fast 'pre-ranker' (e.g., a small GBDT or shallow network) to prune to ~200 candidates, then applies the expensive full model. This fits within budget: ~5ms pre-rank + 200 x 0.25ms = ~55ms total." }
+      ]
+    },
+    {
+      name: "SASRec (Self-Attentive Sequential Recommendation)",
+      questions: [
+        { q: "What type of user signal does SASRec primarily model?", options: ["Demographic features", "The sequential order of user interactions over time using self-attention", "Social network connections", "Explicit star ratings"], correct: 1, explanation: "SASRec treats the user's interaction history as an ordered sequence and applies a Transformer-style self-attention mechanism to capture temporal patterns and long-range dependencies in how user interests evolve." },
+        { q: "Why does SASRec use causal (left-to-right) masking in its self-attention?", options: ["To reduce computation", "To prevent information leakage from future interactions when predicting the next item", "To handle variable sequence lengths", "To improve embedding quality"], correct: 1, explanation: "Since SASRec predicts the next item given previous ones, it must not attend to future items. Causal masking ensures position t only attends to positions 1 through t, maintaining the autoregressive property needed for sequential prediction." },
+        { q: "Compared to RNN-based sequential models (like GRU4Rec), what advantage does SASRec's self-attention offer?", options: ["Lower memory usage", "Direct access to any position in the sequence without the information bottleneck of recurrent hidden states, enabling better long-range dependency modeling", "SASRec does not need embeddings", "SASRec works without training data"], correct: 1, explanation: "RNNs compress all history into a fixed-size hidden state, causing information loss for long sequences. Self-attention lets each position directly attend to every previous position, preserving long-range signals without bottlenecking through sequential state updates." },
+        { q: "You implement SASRec and find it performs well on users with 50+ interactions but poorly on users with 3-5 interactions. What is the most likely issue?", options: ["The model has too few parameters", "Self-attention needs sufficient sequence length to learn meaningful patterns; short sequences provide sparse attention signals, so you should add content features or fall back to non-sequential models for short-history users", "The learning rate is too high", "The item catalog is too small"], correct: 1, explanation: "Self-attention derives power from relating multiple positions. With only 3-5 items, there are too few interactions for the attention mechanism to identify meaningful patterns. Augmenting with side features or using a hybrid approach helps short-sequence users." },
+        { q: "SASRec uses learned positional embeddings. If you replaced them with sinusoidal positional encodings (as in the original Transformer), what would you likely observe?", options: ["Dramatic accuracy improvement", "Similar performance on short sequences but potentially worse on long sequences because learned embeddings can adapt to the specific distribution of sequence lengths in recommendation data", "Complete model failure", "Faster training but identical accuracy"], correct: 1, explanation: "Sinusoidal encodings work well in NLP but recommendation sequences have different positional patterns (e.g., recency effects). Learned embeddings can capture domain-specific position importance. The difference is often small on short sequences but can matter for long interaction histories." }
+      ]
+    },
+    {
+      name: "MMOE (Multi-gate Mixture of Experts)",
+      questions: [
+        { q: "What problem does MMOE solve in multi-task recommendation models?", options: ["Feature sparsity", "Negative transfer between tasks by allowing each task to selectively combine shared expert outputs via task-specific gating networks", "Cold start for new users", "Computational efficiency"], correct: 1, explanation: "When tasks conflict (e.g., optimizing clicks vs. purchases), shared-bottom models suffer negative transfer. MMOE gives each task its own gating network to weight the shared experts differently, reducing task interference." },
+        { q: "In MMOE, what does each gating network output?", options: ["A binary mask", "A softmax-weighted combination over the expert outputs, representing how much each expert contributes to that specific task", "Gradient scaling factors", "Feature importance scores"], correct: 1, explanation: "Each gate takes the input features and produces a softmax distribution over experts. This distribution is used to compute a weighted sum of expert outputs, creating a task-specific representation from the shared expert pool." },
+        { q: "You have 3 tasks: click prediction, add-to-cart prediction, and purchase prediction. Click and purchase gradients often conflict. How does MMOE help compared to a shared-bottom architecture?", options: ["MMOE uses separate models for each task", "MMOE lets the click gate rely on different experts than the purchase gate, so conflicting gradients update different expert weights rather than fighting over the same shared layers", "MMOE reduces the number of parameters", "MMOE trains each task sequentially"], correct: 1, explanation: "With shared-bottom, conflicting click and purchase gradients directly interfere in the same layers. MMOE's gates learn to route click prediction primarily through experts A and B, and purchase primarily through B and C, reducing direct gradient conflict." },
+        { q: "What happens if all gate networks in MMOE learn to assign 100% weight to the same single expert?", options: ["Optimal performance", "MMOE degenerates into a shared-bottom model, losing its multi-expert benefit and indicating the expert specialization failed", "The model cannot converge", "Each task gets a unique representation"], correct: 1, explanation: "If all gates converge on the same expert, the architecture effectively becomes shared-bottom with unused expert capacity. This suggests tasks are not conflicting (no benefit from MMOE) or the experts need better initialization/regularization to specialize." },
+        { q: "You extend MMOE to PLE (Progressive Layered Extraction). What key architectural change does PLE introduce?", options: ["Removing the gating networks", "Adding task-specific expert networks alongside shared experts, and stacking multiple extraction layers with progressive refinement", "Using only a single expert", "Replacing softmax gates with hard routing"], correct: 1, explanation: "PLE adds dedicated task-specific experts (not just shared ones) and stacks multiple extraction levels where each level's gates combine both shared and task-specific expert outputs from the previous level, progressively separating task-specific representations." }
+      ]
+    },
+    {
+      name: "Learning to Rank",
+      questions: [
+        { q: "What is the key difference between pointwise, pairwise, and listwise learning-to-rank approaches?", options: ["They use different features", "Pointwise predicts individual relevance scores, pairwise optimizes relative ordering of document pairs, and listwise directly optimizes list-level metrics like NDCG", "They only differ in training speed", "There is no practical difference"], correct: 1, explanation: "Pointwise treats ranking as regression/classification per item. Pairwise (e.g., RankNet, LambdaMART) optimizes pairwise orderings. Listwise (e.g., LambdaRank, ListNet) directly optimizes the full ranked list, best aligning with actual ranking metrics." },
+        { q: "Why is NDCG a commonly used ranking metric rather than simple accuracy?", options: ["NDCG is easier to compute", "NDCG accounts for both relevance grades and position, penalizing relevant items ranked lower through logarithmic position discounting", "NDCG works only for binary relevance", "NDCG does not require ground truth labels"], correct: 1, explanation: "NDCG uses the DCG formula sum(2^rel - 1) / log2(i+1) normalized by the ideal ranking, capturing that a relevant item at position 1 is far more valuable than the same item at position 10, and handling graded (non-binary) relevance." },
+        { q: "LambdaMART is widely used in production search ranking. What makes it effective?", options: ["It is a deep learning model", "It combines gradient-boosted trees with lambda gradients that directly approximate changes in NDCG, optimizing ranking quality without needing NDCG to be differentiable", "It only requires 10 trees", "It does not need relevance labels"], correct: 1, explanation: "NDCG is non-differentiable due to sorting. LambdaMART sidesteps this by computing lambda gradients -- the implicit gradients that would arise if NDCG were smooth -- and uses them to train gradient-boosted decision trees, giving both ranking-awareness and the power of tree ensembles." },
+        { q: "Your LTR model achieves high NDCG offline but users report poor search quality. Which issue is most likely?", options: ["The NDCG computation is wrong", "Position bias in training data: clicks on higher-ranked items are over-represented, so the model learns to replicate the existing ranking rather than true relevance", "The model needs more trees", "Users prefer random results"], correct: 1, explanation: "Users click more on higher-ranked items regardless of relevance (position bias). Training on raw click data teaches the model to reproduce the existing ranking. Inverse propensity weighting or unbiased LTR methods correct for this confound." },
+        { q: "You need to rank results considering both relevance and freshness. Your LTR model has a freshness feature but still buries timely content. What approach best addresses this without separate heuristic boosting?", options: ["Add 100 more freshness features", "Train with a multi-objective loss that includes a freshness-aware component, or use a freshness-weighted label that blends relevance and timeliness in the training signal", "Remove the freshness feature and post-process", "Only show content from the last 24 hours"], correct: 1, explanation: "Incorporating freshness into the training label (e.g., decaying relevance for stale content) or adding an explicit freshness objective lets the model learn the relevance-freshness tradeoff end-to-end, rather than relying on fragile post-hoc boosting rules." }
+      ]
+    },
+    {
+      name: "Ads & Monetization: Auction & Attribution",
+      questions: [
+        { q: "In a second-price auction for ad slots, how much does the winning advertiser pay?", options: ["Their own bid amount", "The second-highest bid (plus a small increment), not their own bid", "A fixed price set by the platform", "The average of all bids"], correct: 1, explanation: "In a second-price (Vickrey) auction, the winner pays the second-highest bid plus a minimal increment. This incentivizes truthful bidding -- advertisers should bid their true value since they will never pay more than the next competitor's bid." },
+        { q: "What does eCPM (effective cost per mille) represent in ad ranking?", options: ["The advertiser's budget", "The expected revenue per 1000 impressions, calculated as bid multiplied by predicted click-through rate (and possibly conversion rate)", "The click-through rate alone", "The total campaign spend"], correct: 1, explanation: "eCPM = bid x pCTR (x pCVR for CPA campaigns) x 1000. It normalizes different bid types (CPM, CPC, CPA) into a single revenue metric, allowing the platform to rank ads by expected revenue regardless of pricing model." },
+        { q: "An ad platform switches from last-click attribution to a data-driven multi-touch attribution model. What changes?", options: ["Total conversions increase", "Credit for conversions is distributed across multiple touchpoints in the user journey rather than giving 100% credit to the final click before conversion", "Ad prices decrease", "Fewer ads are shown"], correct: 1, explanation: "Last-click gives all credit to the final touchpoint, undervaluing awareness ads. Multi-touch attribution uses statistical modeling to assign fractional credit to each interaction along the conversion path, better reflecting each ad's true contribution." },
+        { q: "A Generalized Second Price (GSP) auction is used for search ads. Why is it not fully incentive-compatible unlike a true VCG auction?", options: ["GSP always charges too much", "In GSP, each slot's winner pays the next bidder's bid, but this does not guarantee truthful bidding is a dominant strategy -- advertisers may benefit from strategic bid shading", "GSP and VCG are identical", "GSP does not consider ad quality"], correct: 1, explanation: "VCG charges each winner the externality they impose on others, making truthful bidding dominant. GSP charges based on the next bid below, which can incentivize strategic underbidding. In practice, GSP reaches an equilibrium close to VCG but bidding strategies differ." },
+        { q: "Your ad platform's revenue dropped 10% after improving the click prediction model's accuracy. What counterintuitive dynamic could explain this?", options: ["Better predictions always increase revenue", "The improved model more accurately predicts low CTR for some ads, reducing their eCPM and winning fewer auctions. Advertisers with previously over-predicted CTR lose impressions and may reduce spend, while the ecosystem has not yet re-equilibrated", "The model is buggy", "Users started using ad blockers"], correct: 1, explanation: "A more accurate pCTR model corrects overestimation for some ads, lowering their effective bids. These advertisers get fewer impressions and may reduce budgets. Revenue temporarily drops until advertisers adjust bids to the new, more accurate landscape -- a well-known phenomenon in ad systems." }
+      ]
+    },
+    {
+      name: "Dense Retrieval: Bi-encoder vs Cross-encoder vs ColBERT",
+      questions: [
+        { q: "What is the fundamental difference between a bi-encoder and a cross-encoder?", options: ["Bi-encoders are always more accurate", "A bi-encoder encodes query and document independently then compares via dot product, while a cross-encoder processes query and document jointly with full cross-attention", "Cross-encoders cannot use transformers", "They are the same architecture"], correct: 1, explanation: "Bi-encoders produce separate embeddings for query and document, enabling precomputation. Cross-encoders concatenate query and document as input to a single transformer, allowing token-level cross-attention but requiring inference for every query-document pair." },
+        { q: "Why are bi-encoders preferred for retrieval over cross-encoders despite lower accuracy?", options: ["They use less memory", "Document embeddings can be precomputed and indexed, making retrieval sub-linear via ANN search, while cross-encoders must score every document at query time", "They are easier to train", "Cross-encoders cannot handle long documents"], correct: 1, explanation: "Bi-encoders allow offline indexing of all document embeddings. At query time, only the query needs encoding, then ANN retrieval finds top-k in milliseconds. Cross-encoders must process each query-document pair, making exhaustive search over millions of documents infeasible." },
+        { q: "What is ColBERT's key innovation compared to standard bi-encoders?", options: ["It uses a larger model", "It retains token-level embeddings for both query and document and computes relevance via late interaction (MaxSim), preserving fine-grained matching while allowing document pre-computation", "It uses keyword matching", "It averages all token embeddings into one vector"], correct: 1, explanation: "ColBERT stores per-token embeddings for documents (not just one vector). At query time, it computes MaxSim: for each query token, find the maximum cosine similarity across all document tokens, then sum. This captures token-level matching while still precomputing document representations." },
+        { q: "You implement a retrieval pipeline and find the bi-encoder misses relevant documents that contain paraphrases of query terms. What is the most effective fix?", options: ["Add more layers to the bi-encoder", "Use hard negative mining during training -- train on documents that are lexically different but semantically relevant, and ones that are lexically similar but irrelevant", "Switch entirely to BM25", "Increase the embedding dimension to 2048"], correct: 1, explanation: "Hard negative mining exposes the model to challenging examples: semantically similar but lexically different (teaches paraphrase understanding) and lexically similar but irrelevant (teaches discrimination). This directly addresses the failure to match paraphrased content." },
+        { q: "Your system uses a bi-encoder for retrieval and a cross-encoder for re-ranking. The cross-encoder re-ranks 1000 documents per query, taking 800ms. How would you architect ColBERT as a middle ground?", options: ["Replace both stages with ColBERT", "Use the bi-encoder to retrieve 1000 candidates, then use ColBERT's late interaction (MaxSim with precomputed document token embeddings) to re-rank them in ~50-100ms, either replacing or preceding the cross-encoder on a smaller set", "Use ColBERT only for indexing", "Run the cross-encoder on GPU to solve latency"], correct: 1, explanation: "ColBERT's MaxSim over precomputed token embeddings is much faster than cross-encoder inference (~10-50x) while being more accurate than bi-encoder dot product. Inserting it as a mid-stage re-ranker filters 1000 to ~100 candidates cheaply, then optionally a cross-encoder scores just those 100." }
+      ]
+    }
   ];
 
+  // Flatten questions and track topic boundaries
+  const quizData = [];
+  const topicOffsets = [];
+  topics.forEach(function(topic, ti) {
+    topicOffsets.push({ name: topic.name, start: quizData.length, count: topic.questions.length });
+    topic.questions.forEach(function(q) {
+      quizData.push({ q: q.q, options: q.options, correct: q.correct, explanation: q.explanation, topic: ti });
+    });
+  });
+
   let score = 0;
+  let topicScores = new Array(topics.length).fill(0);
   let answered = new Array(quizData.length).fill(false);
 
   const container = document.getElementById('quizQuestions');
 
   function renderQuiz() {
     container.innerHTML = '';
-    quizData.forEach(function(item, qi) {
-      const qDiv = document.createElement('div');
-      qDiv.style.cssText = 'background:#0a0a0f; border-radius:12px; padding:20px; margin-bottom:16px; border:1px solid #222;';
-      qDiv.id = 'quiz-q-' + qi;
+    let globalIdx = 0;
 
-      let html = '<p style="color:#e0e0e0; font-weight:600; margin:0 0 12px; font-size:15px;">Q' + (qi + 1) + ': ' + item.q + '</p>';
-      const labels = ['A', 'B', 'C', 'D'];
-      item.options.forEach(function(opt, oi) {
-        html += '<div class="quiz-option" data-qi="' + qi + '" data-oi="' + oi + '" style="padding:10px 14px; margin:6px 0; border-radius:8px; border:1px solid #333; color:#ccc; cursor:pointer; transition:background 0.2s, border-color 0.2s; font-size:14px;">' + labels[oi] + ') ' + opt + '</div>';
+    topics.forEach(function(topic, ti) {
+      // Topic header
+      const topicHeader = document.createElement('div');
+      topicHeader.style.cssText = 'background:linear-gradient(135deg,#1a1a3e,#151530); border-left:4px solid #ff9ff3; border-radius:0 12px 12px 0; padding:14px 20px; margin:28px 0 14px; display:flex; justify-content:space-between; align-items:center;';
+      if (ti === 0) topicHeader.style.marginTop = '0';
+      topicHeader.innerHTML = '<span style="color:#ff9ff3; font-weight:700; font-size:16px;">' + (ti + 1) + '. ' + topic.name + '</span><span id="topicScore-' + ti + '" style="color:#888; font-size:14px; font-family:monospace;">0 / ' + topic.questions.length + '</span>';
+      container.appendChild(topicHeader);
+
+      topic.questions.forEach(function(item, qi) {
+        const absIdx = topicOffsets[ti].start + qi;
+        const qDiv = document.createElement('div');
+        qDiv.style.cssText = 'background:#0a0a0f; border-radius:12px; padding:20px; margin-bottom:12px; border:1px solid #222;';
+        qDiv.id = 'quiz-q-' + absIdx;
+
+        const labels = ['A', 'B', 'C', 'D'];
+        let html = '<p style="color:#e0e0e0; font-weight:600; margin:0 0 12px; font-size:15px;">Q' + (absIdx + 1) + ': ' + item.q + '</p>';
+        item.options.forEach(function(opt, oi) {
+          html += '<div class="quiz-option" data-qi="' + absIdx + '" data-oi="' + oi + '" style="padding:10px 14px; margin:6px 0; border-radius:8px; border:1px solid #333; color:#ccc; cursor:pointer; transition:background 0.2s, border-color 0.2s; font-size:14px;">' + labels[oi] + ') ' + opt + '</div>';
+        });
+        html += '<p class="quiz-feedback" id="feedback-' + absIdx + '" style="margin:8px 0 0; font-size:13px; font-weight:600; display:none;"></p>';
+        html += '<p class="quiz-explanation" id="explanation-' + absIdx + '" style="margin:6px 0 0; font-size:13px; color:#aaa; display:none; line-height:1.5;"></p>';
+        qDiv.innerHTML = html;
+        container.appendChild(qDiv);
+        globalIdx++;
       });
-      html += '<p class="quiz-feedback" id="feedback-' + qi + '" style="margin:8px 0 0; font-size:13px; font-weight:600; display:none;"></p>';
-      qDiv.innerHTML = html;
-      container.appendChild(qDiv);
     });
 
     // Attach click handlers
@@ -2468,9 +2614,11 @@ window.addEventListener('load', () => {
 
     const isCorrect = oi === quizData[qi].correct;
     const feedback = document.getElementById('feedback-' + qi);
+    const explanation = document.getElementById('explanation-' + qi);
     feedback.style.display = 'block';
+    explanation.style.display = 'block';
+    explanation.textContent = quizData[qi].explanation;
 
-    // Disable hover on all options for this question
     const allOpts = document.querySelectorAll('.quiz-option[data-qi="' + qi + '"]');
     allOpts.forEach(function(o) {
       o.style.cursor = 'default';
@@ -2483,6 +2631,7 @@ window.addEventListener('load', () => {
 
     if (isCorrect) {
       score++;
+      topicScores[quizData[qi].topic]++;
       feedback.textContent = 'Correct!';
       feedback.style.color = '#2ecc71';
     } else {
@@ -2493,7 +2642,11 @@ window.addEventListener('load', () => {
       feedback.style.color = '#e74c3c';
     }
 
-    document.getElementById('quizScore').textContent = 'Score: ' + score + ' / ' + quizData.length;
+    // Update scores
+    document.getElementById('quizScore').textContent = 'Total Score: ' + score + ' / ' + quizData.length;
+    const ti = quizData[qi].topic;
+    document.getElementById('topicScore-' + ti).textContent = topicScores[ti] + ' / ' + topics[ti].questions.length;
+    document.getElementById('topicScore-' + ti).style.color = topicScores[ti] === topics[ti].questions.length ? '#2ecc71' : '#ff9ff3';
   }
 
   window.toggleQuiz = function() {
@@ -2503,8 +2656,9 @@ window.addEventListener('load', () => {
 
   window.resetQuiz = function() {
     score = 0;
+    topicScores = new Array(topics.length).fill(0);
     answered = new Array(quizData.length).fill(false);
-    document.getElementById('quizScore').textContent = 'Score: 0 / ' + quizData.length;
+    document.getElementById('quizScore').textContent = 'Total Score: 0 / ' + quizData.length;
     renderQuiz();
   };
 

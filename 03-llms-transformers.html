@@ -2600,5 +2600,697 @@ window.addEventListener('resize', () => {
 });
 </script>
 
+<div id="quizSection" style="display:none;">
+<style>
+  #quizSection {
+    background: #0a0a0f;
+    border-top: 2px solid #4ecdc4;
+    padding: 40px 20px 60px;
+  }
+  #quizSection .quiz-container {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  #quizSection .quiz-header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  #quizSection .quiz-header h2 {
+    font-size: 2em;
+    background: linear-gradient(90deg, #4ecdc4, #7c4dff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 12px;
+  }
+  #quizSection .quiz-score {
+    font-size: 1.3em;
+    color: #4ecdc4;
+    font-family: monospace;
+    margin-bottom: 16px;
+  }
+  #quizSection .quiz-controls {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 24px;
+  }
+  #quizSection .quiz-btn {
+    padding: 10px 24px;
+    border: 1px solid #4ecdc4;
+    background: transparent;
+    color: #4ecdc4;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.95em;
+    transition: all 0.2s;
+  }
+  #quizSection .quiz-btn:hover {
+    background: rgba(78,205,196,0.1);
+  }
+  #quizSection .quiz-topic {
+    margin-bottom: 40px;
+  }
+  #quizSection .quiz-topic-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #4ecdc4;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+  }
+  #quizSection .quiz-topic-header h3 {
+    font-size: 1.3em;
+    color: #4ecdc4;
+    margin: 0;
+  }
+  #quizSection .quiz-topic-score {
+    font-size: 1em;
+    color: #888;
+    font-family: monospace;
+  }
+  #quizSection .question-card {
+    background: #12121f;
+    border: 1px solid #2a2a4a;
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+  #quizSection .question-card .q-number {
+    color: #4ecdc4;
+    font-size: 0.85em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+  #quizSection .question-card .q-text {
+    font-size: 1.1em;
+    color: #e0e0e0;
+    margin-bottom: 20px;
+    line-height: 1.6;
+  }
+  #quizSection .option-btn {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 14px 18px;
+    margin-bottom: 10px;
+    background: #0d0d1a;
+    border: 1px solid #2a2a4a;
+    border-radius: 10px;
+    color: #ccc;
+    font-size: 1em;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  #quizSection .option-btn:hover:not(.disabled) {
+    border-color: #4ecdc4;
+    background: rgba(78,205,196,0.05);
+  }
+  #quizSection .option-btn.correct {
+    background: rgba(46,204,113,0.2);
+    border-color: #2ecc71;
+    color: #fff;
+  }
+  #quizSection .option-btn.wrong {
+    background: rgba(231,76,60,0.2);
+    border-color: #e74c3c;
+    color: #e74c3c;
+  }
+  #quizSection .option-btn.show-correct {
+    border-color: #2ecc71;
+    color: #2ecc71;
+  }
+  #quizSection .option-btn.disabled {
+    cursor: default;
+    opacity: 0.7;
+  }
+  #quizSection .quiz-explanation {
+    margin-top: 12px;
+    padding: 14px 18px;
+    border-radius: 10px;
+    font-size: 0.95em;
+    line-height: 1.5;
+    color: #b0f5e8;
+    background: rgba(46,204,113,0.1);
+    border: 1px solid rgba(46,204,113,0.3);
+    display: none;
+  }
+  #quizSection .quiz-explanation.wrong {
+    color: #f5b0b0;
+    background: rgba(231,76,60,0.1);
+    border: 1px solid rgba(231,76,60,0.3);
+  }
+  #quizSection .quiz-explanation.visible {
+    display: block;
+  }
+</style>
+
+<div class="quiz-container">
+  <div class="quiz-header">
+    <h2>LLMs &amp; Transformers Quiz</h2>
+    <div class="quiz-score" id="quizScore">Score: 0 / 60</div>
+    <div class="quiz-controls">
+      <button class="quiz-btn" onclick="resetQuiz()">Reset Quiz</button>
+      <button class="quiz-btn" onclick="toggleQuiz()">Hide Quiz</button>
+    </div>
+  </div>
+  <div id="quizQuestions"></div>
+</div>
+</div>
+
+<script>
+(function() {
+  const quizData = [
+    {
+      topic: "Tokenization: BPE",
+      questions: [
+        {
+          q: "You run BPE on a corpus and notice the vocabulary keeps growing. What determines when BPE stops merging?",
+          options: ["When no byte-pairs co-occur more than once", "When a predefined vocabulary size limit is reached", "When all words are single tokens", "When the compression ratio stops improving"],
+          correct: 1,
+          explanation: "BPE stops when the vocabulary reaches a preset target size (e.g., 32K or 50K tokens). Each merge step creates one new token, so the number of merges equals vocab_size minus the base character set."
+        },
+        {
+          q: "A rare technical term like 'deserialization' is fed to a BPE tokenizer. What is most likely to happen?",
+          options: ["It will be a single token since it is a valid English word", "It will be split into familiar subword pieces like 'de', 'serial', 'ization'", "It will be encoded as individual characters", "The tokenizer will return an unknown token"],
+          correct: 1,
+          explanation: "BPE decomposes unknown or rare words into the longest matching subword units learned during training. Common morphemes like 'de-', 'serial', and '-ization' are typically in the vocabulary."
+        },
+        {
+          q: "Which statement best describes why BPE is preferred over word-level tokenization for LLMs?",
+          options: ["BPE produces shorter sequences for all inputs", "BPE eliminates the out-of-vocabulary problem while keeping vocabulary size manageable", "BPE assigns meaning to each token during tokenization", "BPE guarantees every token maps to a real word"],
+          correct: 1,
+          explanation: "BPE can represent any input by falling back to character-level splits, so there are no OOV tokens. Meanwhile the vocabulary stays fixed-size, unlike open-ended word-level dictionaries."
+        },
+        {
+          q: "If you double the BPE vocabulary size from 32K to 64K, what trade-off should you expect?",
+          options: ["Sequences get shorter but the embedding matrix doubles in parameters", "Training becomes faster with no downsides", "The model can no longer handle unseen words", "Tokenization speed doubles"],
+          correct: 0,
+          explanation: "A larger vocabulary means more common words and phrases become single tokens (shorter sequences), but the embedding table grows linearly with vocab size, adding significant parameters."
+        },
+        {
+          q: "You are building a multilingual model and notice that BPE assigns far more tokens per word in Korean than English. What would most effectively reduce this disparity?",
+          options: ["Increasing the context window size", "Training a separate BPE model per language", "Increasing the proportion of Korean text in the BPE training corpus", "Using a smaller vocabulary size"],
+          correct: 2,
+          explanation: "BPE merges are frequency-driven. If Korean is underrepresented in training, its character pairs are merged less often, causing excessive fragmentation. Rebalancing the corpus allocates more vocabulary capacity to Korean subwords."
+        }
+      ]
+    },
+    {
+      topic: "Self-Attention: Q, K, V",
+      questions: [
+        {
+          q: "In self-attention, what do the Query and Key vectors determine together?",
+          options: ["The content that will be output for each position", "How much attention each position pays to every other position", "The gradient flow direction during backpropagation", "The positional ordering of the sequence"],
+          correct: 1,
+          explanation: "The dot product of Query and Key vectors produces attention scores that determine how strongly each position attends to every other position. The Value vectors then carry the actual content that gets aggregated."
+        },
+        {
+          q: "Why are attention scores divided by the square root of the key dimension (sqrt(d_k))?",
+          options: ["To ensure the output sums to one", "To prevent dot products from growing too large, which would push softmax into regions with tiny gradients", "To normalize the Value vectors", "To reduce memory usage during inference"],
+          correct: 1,
+          explanation: "When d_k is large, dot products can become very large in magnitude, causing softmax to produce near-one-hot distributions. Dividing by sqrt(d_k) keeps gradients healthy by preventing saturation."
+        },
+        {
+          q: "What would happen if you used the same learned projection for Q, K, and V (i.e., W_Q = W_K = W_V)?",
+          options: ["The model would produce identical outputs regardless of input", "The model would lose the ability to learn asymmetric attention patterns where how a token is queried differs from how it serves as context", "Training would fail due to gradient explosion", "There would be no change in model capability"],
+          correct: 1,
+          explanation: "Separate projections let a token play different roles as a query vs. a key vs. a value. Tying them forces symmetric attention and removes the flexibility to learn that 'what I look for' can differ from 'what I advertise.'"
+        },
+        {
+          q: "In a causal (decoder-only) transformer, how is self-attention modified?",
+          options: ["Query vectors are set to zero for future positions", "A mask sets attention scores to negative infinity for positions ahead of the current token before softmax", "Value vectors for future tokens are zeroed out after softmax", "The Key matrix is made lower-triangular"],
+          correct: 1,
+          explanation: "A causal mask fills upper-triangular entries of the attention score matrix with -infinity before softmax, ensuring each token can only attend to itself and previous tokens. This preserves autoregressive generation."
+        },
+        {
+          q: "Self-attention has O(n^2) complexity in sequence length. If you double the context window from 4K to 8K tokens, by roughly how much does the attention computation increase?",
+          options: ["2x", "4x", "8x", "16x"],
+          correct: 1,
+          explanation: "Since attention is quadratic in sequence length, doubling n multiplies computation by 2^2 = 4. This is why long-context models need efficient attention variants or hardware optimizations."
+        }
+      ]
+    },
+    {
+      topic: "Multi-Head Attention",
+      questions: [
+        {
+          q: "What is the primary benefit of using multiple attention heads instead of a single head with the same total dimension?",
+          options: ["It reduces the total number of parameters", "It allows the model to jointly attend to information from different representation subspaces", "It makes the model easier to parallelize", "It eliminates the need for residual connections"],
+          correct: 1,
+          explanation: "Each head can learn to focus on different types of relationships (e.g., syntactic dependencies, semantic similarity, positional patterns). A single large head would collapse these into one attention distribution."
+        },
+        {
+          q: "A transformer has d_model=1024 and 16 attention heads. What is the dimension of Q, K, and V per head?",
+          options: ["1024", "64", "16", "256"],
+          correct: 1,
+          explanation: "The model dimension is split equally across heads: d_k = d_model / num_heads = 1024 / 16 = 64. Each head operates on a 64-dimensional subspace independently."
+        },
+        {
+          q: "After all heads compute their outputs, what operation combines them?",
+          options: ["Element-wise addition", "Averaging across heads", "Concatenation followed by a linear projection", "Max pooling across heads"],
+          correct: 2,
+          explanation: "The outputs of all heads are concatenated along the feature dimension (producing a d_model-sized vector) and then projected through W_O, a learned linear layer, allowing the model to mix information across heads."
+        },
+        {
+          q: "Research has shown that some attention heads can be pruned without significant loss. What does this suggest about multi-head attention?",
+          options: ["All heads learn identical patterns, so most are redundant", "The model develops some redundancy, and different heads vary in importance for downstream tasks", "Multi-head attention is unnecessary and should be replaced", "Heads only matter during training, not inference"],
+          correct: 1,
+          explanation: "Pruning studies reveal that heads vary widely in importance. Some learn critical patterns while others are partially redundant. This insight motivates structured pruning methods that remove less important heads to speed up inference."
+        },
+        {
+          q: "If you wanted to add a new type of attention pattern (e.g., attending only to entities) to a pretrained model without retraining, which approach is most feasible?",
+          options: ["Replace all attention heads with the new pattern", "Add additional heads with frozen original weights and train only the new heads on a small dataset", "Change the attention mask at inference time with no additional training", "Increase d_model to accommodate the new pattern"],
+          correct: 1,
+          explanation: "Adding new heads (or adapter heads) while keeping original weights frozen is a parameter-efficient way to inject new attention behaviors. This follows the adapter paradigm and avoids catastrophic forgetting."
+        }
+      ]
+    },
+    {
+      topic: "Positional Encodings: Sinusoidal & RoPE",
+      questions: [
+        {
+          q: "Why do transformers need positional encodings at all?",
+          options: ["To help the model count the number of tokens", "Because self-attention is permutation-equivariant and has no inherent notion of token order", "To reduce the computational cost of attention", "To normalize input embeddings"],
+          correct: 1,
+          explanation: "Without positional information, a transformer would produce the same output for 'dog bites man' and 'man bites dog.' Self-attention treats its input as an unordered set, so positions must be explicitly encoded."
+        },
+        {
+          q: "In sinusoidal positional encodings, different dimensions use different frequencies. What does this design enable?",
+          options: ["Faster training convergence", "The model can learn to attend to relative positions because the encoding of position p+k can be expressed as a linear function of position p", "It guarantees unique encodings for up to a billion positions", "It eliminates the need for layer normalization"],
+          correct: 1,
+          explanation: "The key insight of sinusoidal encodings is that PE(pos+k) can be written as a linear transformation of PE(pos) for any fixed offset k. This makes it easy for the model to learn relative positional relationships."
+        },
+        {
+          q: "How does RoPE (Rotary Position Embedding) differ from additive sinusoidal encodings?",
+          options: ["RoPE adds position information to the output after attention", "RoPE applies rotation matrices to Q and K vectors so that their dot product naturally encodes relative position", "RoPE uses learned embeddings instead of fixed formulas", "RoPE only works with decoder-only models"],
+          correct: 1,
+          explanation: "RoPE rotates Q and K by position-dependent angles. When you dot-product a rotated Q at position m with a rotated K at position n, the result depends only on (m-n), elegantly encoding relative position without adding anything to the embeddings."
+        },
+        {
+          q: "A model trained with RoPE on 4K-length sequences needs to handle 16K tokens at inference. What is the most likely problem?",
+          options: ["The model will crash due to index overflow", "Attention scores for distant tokens will degrade because the model never saw those rotation angles during training", "RoPE automatically generalizes to any length with no issues", "The KV cache will become corrupted"],
+          correct: 1,
+          explanation: "RoPE's rotation angles at unseen positions extrapolate poorly. Techniques like NTK-aware scaling, YaRN, or positional interpolation adjust the frequency base to help the model generalize to longer sequences."
+        },
+        {
+          q: "If you replaced all positional encodings with a simple integer position ID embedding table of size 2048, what fundamental limitation would the model have?",
+          options: ["It could not distinguish between positions within the 2048 window", "It could never process sequences longer than 2048 tokens", "It would require more parameters than sinusoidal encodings", "Training would be unstable due to gradient issues"],
+          correct: 1,
+          explanation: "A lookup table of fixed size has no representation for positions beyond its range. Sinusoidal and RoPE encodings, being defined by continuous functions, can at least compute values for any position, enabling length extrapolation techniques."
+        }
+      ]
+    },
+    {
+      topic: "KV-Cache",
+      questions: [
+        {
+          q: "During autoregressive generation, why does caching Key and Value tensors speed up inference?",
+          options: ["It avoids recomputing the Query projection for past tokens", "It avoids recomputing K and V for all previous tokens at every decoding step, reducing redundant work from O(n^2) per step to O(n)", "It compresses the model weights", "It enables batch processing of tokens"],
+          correct: 1,
+          explanation: "Without KV-cache, generating each new token would require running all previous tokens through the attention layers again. The cache stores previously computed K and V, so only the new token's Q, K, V need to be computed."
+        },
+        {
+          q: "A 70B parameter model with 80 layers and d_model=8192 generates sequences of length 4096 in FP16. Approximately how much memory does the KV-cache require per sequence?",
+          options: ["Around 5 MB", "Around 5 GB", "Around 50 GB", "Around 500 MB"],
+          correct: 1,
+          explanation: "KV-cache per sequence = 2 (K+V) x num_layers x seq_len x d_model x 2 bytes = 2 x 80 x 4096 x 8192 x 2 bytes ~ 10.7 GB. With GQA (grouped-query attention) reducing KV heads, ~5GB is a realistic figure for modern 70B models."
+        },
+        {
+          q: "What is the main memory access pattern problem with KV-cache during generation?",
+          options: ["It requires random reads across the entire cache", "Each decoding step reads the full cache but writes only one new entry, making it memory-bandwidth bound rather than compute-bound", "The cache must be stored on CPU memory", "It conflicts with gradient checkpointing"],
+          correct: 1,
+          explanation: "Token-by-token generation is bottlenecked by memory bandwidth. Each step reads the entire KV-cache to compute attention but does very little arithmetic per byte loaded, resulting in poor hardware utilization."
+        },
+        {
+          q: "Grouped-Query Attention (GQA) reduces KV-cache size by:",
+          options: ["Sharing Key and Value heads across multiple Query heads", "Compressing the cache with quantization", "Only caching every other layer", "Reducing the model dimension"],
+          correct: 0,
+          explanation: "GQA assigns multiple query heads to share a single KV head. For example, if 8 query heads share 1 KV head, the KV-cache shrinks by 8x compared to standard multi-head attention, with minimal quality loss."
+        },
+        {
+          q: "If the KV-cache fills up during generation and you cannot allocate more memory, what strategy allows generation to continue?",
+          options: ["Restart generation from scratch with a shorter prompt", "Use a sliding window approach that evicts the oldest cache entries while keeping a set of initial tokens", "Switch to a smaller model automatically", "Reduce the batch size to 0"],
+          correct: 1,
+          explanation: "Sliding window attention (used in Mistral, for example) keeps only the most recent W positions in the cache plus a few initial tokens. This bounds memory usage while preserving local context and anchoring on the prompt."
+        }
+      ]
+    },
+    {
+      topic: "Transformer Block Architecture",
+      questions: [
+        {
+          q: "In a standard transformer block, what is the order of operations in the 'pre-norm' variant?",
+          options: ["Attention -> Add -> LayerNorm -> FFN -> Add -> LayerNorm", "LayerNorm -> Attention -> Add -> LayerNorm -> FFN -> Add", "Attention -> LayerNorm -> Add -> FFN -> LayerNorm -> Add", "Add -> Attention -> LayerNorm -> Add -> FFN -> LayerNorm"],
+          correct: 1,
+          explanation: "Pre-norm applies LayerNorm before each sub-layer (attention and FFN), with residual connections adding the sub-layer output to its input. This improves training stability for deep models compared to post-norm."
+        },
+        {
+          q: "The feed-forward network in each transformer block typically expands the dimension by 4x then contracts it back. Why?",
+          options: ["To match the number of attention heads", "To create a higher-dimensional space where the model can apply nonlinear transformations before projecting back, increasing representational capacity", "To reduce overfitting through a bottleneck", "To ensure the output has the same dimension as the input"],
+          correct: 1,
+          explanation: "The expansion to 4*d_model with a nonlinear activation creates a richer feature space for element-wise transformations. This is where much of the model's factual knowledge is believed to be stored."
+        },
+        {
+          q: "What would happen if you removed all residual connections from a 96-layer transformer?",
+          options: ["Training would be slightly slower but still converge", "The model would likely fail to train due to vanishing gradients, since the signal must pass through 96 sequential nonlinear transformations", "The model would train faster without the skip connections", "Only the first few layers would learn anything"],
+          correct: 1,
+          explanation: "Residual connections create a direct gradient path from output to input. Without them, gradients must flow through dozens of nonlinear layers, causing them to vanish. This is why residual connections are essential for deep transformers."
+        },
+        {
+          q: "Modern LLMs like LLaMA use SwiGLU instead of ReLU in the FFN. What advantage does SwiGLU provide?",
+          options: ["It uses fewer parameters", "It enables the model to learn which parts of the input to gate through, providing smoother and more expressive transformations than ReLU", "It eliminates the need for LayerNorm", "It makes the FFN invertible"],
+          correct: 1,
+          explanation: "SwiGLU combines a Swish activation with a gating mechanism, allowing the network to smoothly control information flow. Empirically it improves model quality for the same compute budget compared to ReLU or GELU."
+        },
+        {
+          q: "A decoder-only transformer with 32 layers processes a 2048-token sequence. How many times does each token's representation get updated via residual additions?",
+          options: ["32 times", "64 times (once per attention and once per FFN in each layer)", "2048 times", "1 time"],
+          correct: 1,
+          explanation: "Each of the 32 layers contains two residual additions: one after attention and one after the FFN. So the representation is refined 32 x 2 = 64 times as it flows through the network."
+        }
+      ]
+    },
+    {
+      topic: "Fine-Tuning & Parameter-Efficient Methods (LoRA, etc.)",
+      questions: [
+        {
+          q: "LoRA adds low-rank matrices A and B to pretrained weight W. During inference, what is the effective weight?",
+          options: ["W + A", "W + B", "W + A * B (where A is d x r and B is r x d, with r << d)", "A * W * B"],
+          correct: 2,
+          explanation: "LoRA decomposes the weight update as delta_W = A * B where A is (d x r) and B is (r x d). At inference, these can be merged into W_new = W + A*B with zero additional latency."
+        },
+        {
+          q: "Why does LoRA typically target only the attention projection matrices (W_Q, W_V) rather than all weights?",
+          options: ["Other weights are not differentiable", "Attention projections are where most task-specific adaptation happens, and targeting fewer matrices reduces trainable parameters while retaining most of the benefit", "FFN weights cannot accept low-rank updates", "It is a hardware limitation"],
+          correct: 1,
+          explanation: "Empirically, adapting attention projections captures most task-specific behavior. Adding LoRA to all weight matrices yields diminishing returns relative to the added parameter count, though some implementations do target all linear layers."
+        },
+        {
+          q: "You fine-tune a model with LoRA rank r=8 on a small dataset. The model overfits. What should you try first?",
+          options: ["Increase the rank to r=64 for more capacity", "Decrease the rank to r=4 or add dropout to the LoRA layers", "Remove LoRA and do full fine-tuning instead", "Increase the learning rate"],
+          correct: 1,
+          explanation: "Overfitting with LoRA suggests the adaptation has too much capacity relative to the data. Reducing rank limits the expressiveness of the update, and LoRA dropout regularizes by randomly zeroing adaptation paths."
+        },
+        {
+          q: "What is the key difference between LoRA and full fine-tuning in terms of what gets stored per task?",
+          options: ["Full fine-tuning stores gradients; LoRA stores activations", "Full fine-tuning saves a complete copy of all model weights per task; LoRA saves only the small A and B matrices (often <1% of parameters)", "There is no difference in storage", "LoRA requires storing the optimizer states for all parameters"],
+          correct: 1,
+          explanation: "For a 70B model, full fine-tuning stores ~140GB per task (FP16), while LoRA adapters might be only 100-500MB. This makes LoRA practical for serving many task-specific variants from a single base model."
+        },
+        {
+          q: "QLoRA combines quantization with LoRA. If the base model is quantized to 4-bit but LoRA adapters are in FP16, how does backpropagation work through the quantized weights?",
+          options: ["Gradients are also quantized to 4-bit", "The quantized weights are dequantized to FP16 on-the-fly during the forward pass, and gradients flow only through the LoRA parameters in FP16", "Backpropagation is skipped for quantized layers", "A separate FP16 copy of all weights is maintained"],
+          correct: 1,
+          explanation: "QLoRA dequantizes the frozen base weights to FP16 during computation but only computes and stores gradients for the small LoRA parameters in FP16. The base weights are never updated, so their 4-bit storage is sufficient."
+        }
+      ]
+    },
+    {
+      topic: "RLHF & Alignment Pipeline",
+      questions: [
+        {
+          q: "What are the three main stages of the RLHF pipeline in order?",
+          options: ["Pretraining -> Reward Modeling -> RL fine-tuning (PPO)", "Supervised Fine-Tuning (SFT) -> Reward Model training from human comparisons -> RL fine-tuning (PPO)", "Data collection -> Pretraining -> RLHF", "Reward Modeling -> SFT -> DPO"],
+          correct: 1,
+          explanation: "After pretraining, the model is first fine-tuned on curated demonstrations (SFT), then a reward model is trained on human preference comparisons, and finally the policy is optimized with PPO against that reward model."
+        },
+        {
+          q: "Why does RLHF include a KL divergence penalty between the RL-tuned policy and the SFT model?",
+          options: ["To speed up training convergence", "To prevent the model from drifting too far from the SFT model, which would cause reward hacking and degenerate outputs", "To ensure the model generates longer responses", "To reduce the memory footprint of training"],
+          correct: 1,
+          explanation: "Without the KL penalty, the model might exploit quirks in the reward model rather than genuinely improving. The penalty keeps the policy close to the SFT baseline, balancing reward optimization with output quality."
+        },
+        {
+          q: "DPO (Direct Preference Optimization) eliminates one major component of the RLHF pipeline. Which one?",
+          options: ["The supervised fine-tuning stage", "The explicit reward model and RL training loop", "The human preference data collection", "The pretraining stage"],
+          correct: 1,
+          explanation: "DPO reparameterizes the RLHF objective to directly optimize the policy on preference pairs without training a separate reward model or running PPO. This simplifies the pipeline while achieving comparable results."
+        },
+        {
+          q: "A reward model consistently gives high scores to verbose, hedge-filled responses. What alignment failure does this illustrate?",
+          options: ["Mode collapse", "Reward hacking due to the reward model learning superficial features (length, hedging) as proxies for quality", "Underfitting of the policy model", "Catastrophic forgetting"],
+          correct: 1,
+          explanation: "This is a classic reward hacking scenario. The reward model has learned that longer, more cautious responses correlate with human preferences in the training data, and the policy exploits this shortcut rather than being genuinely helpful."
+        },
+        {
+          q: "Constitutional AI (CAI) modifies the RLHF pipeline by replacing some human feedback with:",
+          options: ["Randomly generated preferences", "AI-generated critiques and revisions guided by a set of written principles, which are then used to train the preference model", "Automated unit tests on model outputs", "Larger training datasets"],
+          correct: 1,
+          explanation: "CAI uses the model itself to critique and revise its outputs based on a constitution (set of principles). These AI-generated preferences supplement or replace human comparisons, enabling scalable alignment oversight."
+        }
+      ]
+    },
+    {
+      topic: "Inference Optimization: Speculative Decoding & Quantization",
+      questions: [
+        {
+          q: "How does speculative decoding speed up inference without changing the output distribution?",
+          options: ["It uses a smaller model to skip attention layers in the large model", "A fast draft model proposes multiple tokens, and the large model verifies them in a single parallel forward pass, accepting correct ones", "It batches multiple user requests together", "It reduces model precision to INT8"],
+          correct: 1,
+          explanation: "The draft model generates a sequence of candidate tokens cheaply. The target model then evaluates all candidates in one pass (which is parallel, unlike autoregressive generation). Accepted tokens are provably sampled from the target distribution."
+        },
+        {
+          q: "Speculative decoding is most effective when:",
+          options: ["The draft model is as large as the target model", "The draft model has a high acceptance rate, meaning it closely matches the target model's distribution for the given input", "The sequence length is very short", "The model is running on CPU"],
+          correct: 1,
+          explanation: "Speedup depends on the acceptance rate. If the draft model's predictions rarely match the target, most speculated tokens are rejected and the overhead of running both models wastes time. High acceptance rates yield 2-3x speedup."
+        },
+        {
+          q: "When quantizing a model from FP16 to INT4, what is the most common source of quality degradation?",
+          options: ["Loss of sign information", "Outlier activations in certain channels that get clipped or distorted when mapped to a low-bit range", "Incorrect rounding of bias terms", "Reduction in the number of attention heads"],
+          correct: 1,
+          explanation: "Some channels have activation values orders of magnitude larger than others. When squeezed into 4-bit range, either the outliers get clipped (losing important signals) or normal values lose precision. Techniques like SmoothQuant address this."
+        },
+        {
+          q: "GPTQ and AWQ are both weight-only quantization methods. What is the key difference?",
+          options: ["GPTQ is faster at inference; AWQ is faster at quantization", "GPTQ minimizes layer-wise reconstruction error using calibration data; AWQ identifies and protects salient weight channels that disproportionately affect quality", "GPTQ works only on encoder models; AWQ works only on decoders", "They produce identical results"],
+          correct: 1,
+          explanation: "GPTQ uses a second-order method (approximate Hessian) to find optimal quantization per-layer. AWQ observes that a small fraction of weights (corresponding to high-magnitude activation channels) are critical and applies per-channel scaling to protect them."
+        },
+        {
+          q: "You quantize a 70B model to INT4 and notice that math reasoning tasks degrade significantly while summarization is unaffected. What explains this?",
+          options: ["Quantization randomly corrupts different tasks each time", "Precise numerical computations require fine-grained weight distinctions that are lost at low bit-widths, while summarization relies on broader patterns that survive quantization", "The tokenizer is incompatible with INT4", "Summarization does not use the FFN layers"],
+          correct: 1,
+          explanation: "Math reasoning depends on precise compositional computations across many layers, where small weight errors accumulate. Summarization relies on high-level pattern matching and extraction, which is more robust to quantization noise."
+        }
+      ]
+    },
+    {
+      topic: "Serving: Continuous Batching & Paged Attention",
+      questions: [
+        {
+          q: "What problem does continuous batching solve compared to static batching?",
+          options: ["It reduces the model size", "It eliminates GPU idle time caused by waiting for the longest sequence in a batch to finish before starting new requests", "It removes the need for a KV-cache", "It makes quantization unnecessary"],
+          correct: 1,
+          explanation: "In static batching, short-finished requests waste GPU cycles while the longest request completes. Continuous batching inserts new requests into freed slots immediately, keeping GPU utilization high."
+        },
+        {
+          q: "In a static batch of 8 requests, the shortest generates 10 tokens and the longest generates 500. What is the approximate GPU utilization waste?",
+          options: ["No waste", "Roughly 60-70%, since most sequences finish early but the GPU processes padding until the longest finishes", "Exactly 50%", "Less than 10%"],
+          correct: 1,
+          explanation: "Most requests finish far before 500 tokens. Without continuous batching, their slots run padded (wasted) computation. If the average is ~150 tokens, about 70% of the total compute goes to padding."
+        },
+        {
+          q: "PagedAttention (used in vLLM) manages KV-cache memory by:",
+          options: ["Compressing the cache with lossy algorithms", "Dividing the KV-cache into fixed-size blocks allocated on demand, like virtual memory pages, eliminating fragmentation from pre-allocation", "Storing the cache on disk and loading it as needed", "Reducing the number of attention layers"],
+          correct: 1,
+          explanation: "Traditional KV-cache pre-allocates max_seq_len memory per request, wasting space for short sequences. PagedAttention allocates small blocks as the sequence grows, achieving near-zero memory waste and enabling higher throughput."
+        },
+        {
+          q: "A serving system uses prefix caching. When would this provide the biggest speedup?",
+          options: ["When each request has a completely unique prompt", "When many requests share the same system prompt or few-shot examples, so their KV-cache entries can be computed once and reused", "When the model has very few layers", "When requests are very short (under 10 tokens)"],
+          correct: 1,
+          explanation: "Prefix caching stores KV-cache entries for common prompt prefixes. If 1000 requests share a 2000-token system prompt, computing it once and reusing the cache saves massive redundant computation."
+        },
+        {
+          q: "You are designing a serving system and must choose between maximizing throughput and minimizing latency. Which configuration favors throughput?",
+          options: ["Small batch sizes with continuous batching", "Large batch sizes with continuous batching, aggressive request packing, and accepting higher per-request latency", "No batching, process one request at a time", "Using CPU instead of GPU"],
+          correct: 1,
+          explanation: "Throughput is maximized by keeping the GPU saturated with large batches. Continuous batching + large batch size means more tokens processed per second, but individual requests wait longer in the queue and share compute resources."
+        }
+      ]
+    },
+    {
+      topic: "RAG: Retrieval-Augmented Generation",
+      questions: [
+        {
+          q: "What fundamental limitation of LLMs does RAG address?",
+          options: ["LLMs cannot generate grammatically correct text", "LLMs have a fixed knowledge cutoff and can hallucinate facts not in their training data; RAG grounds answers in retrieved documents", "LLMs cannot process long inputs", "LLMs cannot follow instructions"],
+          correct: 1,
+          explanation: "RAG combines retrieval (finding relevant documents from an external knowledge base) with generation, allowing the model to base its answers on up-to-date, verifiable information rather than relying solely on parametric memory."
+        },
+        {
+          q: "In a RAG pipeline, you embed a query and retrieve the top-5 most similar chunks. The model still halluceinates. What is the most likely cause?",
+          options: ["The embedding model is too large", "The retrieved chunks are semantically similar to the query but do not actually contain the answer, and the model fills the gap with fabricated information", "RAG always prevents hallucination", "The chunk size is too small"],
+          correct: 1,
+          explanation: "Semantic similarity does not guarantee relevance. Retrieved chunks might discuss related topics without containing the specific answer. The model, seeing plausible-looking context, may confidently generate a wrong answer based on partial information."
+        },
+        {
+          q: "You are building a RAG system for a legal corpus. Documents are 50 pages long. What chunking strategy would work best?",
+          options: ["Embed entire documents as single vectors", "Use overlapping chunks of 500-1000 tokens with section-aware splitting that respects paragraph and section boundaries", "Use individual sentences as chunks", "Random 100-token chunks with no overlap"],
+          correct: 1,
+          explanation: "Too-large chunks dilute the specific information; too-small chunks lose context. Overlapping chunks with section-aware boundaries preserve semantic coherence while keeping each chunk focused enough for precise retrieval."
+        },
+        {
+          q: "Hybrid search in RAG combines dense retrieval with BM25 keyword search. When does this outperform dense retrieval alone?",
+          options: ["When queries contain exact technical terms, product IDs, or proper nouns that dense embeddings may not capture precisely", "When the knowledge base is very small", "When using a larger LLM", "Hybrid search is always worse due to added complexity"],
+          correct: 0,
+          explanation: "Dense retrieval excels at semantic matching but can miss exact keyword matches (e.g., error codes, part numbers). BM25 catches these lexical matches. Combining both covers semantic and lexical relevance, improving recall."
+        },
+        {
+          q: "You add a reranker after initial retrieval in your RAG pipeline. What trade-off are you making?",
+          options: ["Better retrieval quality at the cost of increased latency, since the reranker (typically a cross-encoder) scores each query-document pair individually", "Faster retrieval but lower quality", "More memory usage but no latency change", "The reranker replaces the embedding model entirely"],
+          correct: 0,
+          explanation: "A cross-encoder reranker attends to the full query-document pair jointly, producing more accurate relevance scores than bi-encoder similarity. But it must process each pair separately, adding latency proportional to the number of candidates."
+        }
+      ]
+    },
+    {
+      topic: "Vector Database & HNSW Indexing",
+      questions: [
+        {
+          q: "What is the main advantage of HNSW (Hierarchical Navigable Small World) over brute-force nearest neighbor search?",
+          options: ["HNSW always returns the exact nearest neighbor", "HNSW provides approximate nearest neighbor search in O(log n) time instead of O(n), making it practical for millions of vectors", "HNSW uses less memory than storing raw vectors", "HNSW works only with binary vectors"],
+          correct: 1,
+          explanation: "HNSW builds a multi-layer graph where higher layers connect distant nodes and lower layers connect nearby ones. Search starts at the top layer and greedily descends, achieving logarithmic query time at the cost of being approximate."
+        },
+        {
+          q: "The HNSW parameter 'ef_construction' controls the size of the dynamic candidate list during index building. What happens if you set it too low?",
+          options: ["The index builds faster but has lower recall because fewer candidates are considered when connecting new nodes", "The index becomes exact instead of approximate", "Memory usage increases dramatically", "Query latency decreases"],
+          correct: 0,
+          explanation: "A low ef_construction means the algorithm explores fewer candidates when inserting each node, resulting in suboptimal graph connections. This speeds up indexing but degrades search quality (recall). Higher values build better graphs at the cost of slower indexing."
+        },
+        {
+          q: "You have 10 million 768-dimensional vectors in FP32. Approximately how much memory does the raw vector data alone require?",
+          options: ["About 3 GB", "About 30 GB", "About 300 MB", "About 300 GB"],
+          correct: 1,
+          explanation: "10M vectors x 768 dimensions x 4 bytes (FP32) = 30.72 GB. This is just the raw vector data; the HNSW graph index adds additional memory overhead for the graph structure and neighbor lists."
+        },
+        {
+          q: "Product Quantization (PQ) reduces memory usage for vector search. What is the core idea?",
+          options: ["Rounding all vector values to integers", "Splitting each vector into subvectors and replacing each subvector with the ID of its nearest centroid from a learned codebook", "Removing the least important dimensions", "Storing vectors on disk instead of memory"],
+          correct: 1,
+          explanation: "PQ divides each vector into M subvectors and quantizes each to the nearest centroid in a small codebook (e.g., 256 centroids = 1 byte per subvector). A 768-dim vector split into 96 subvectors becomes just 96 bytes instead of 3072 bytes."
+        },
+        {
+          q: "Your vector database returns slightly different results for the same query run twice. What is the most likely explanation?",
+          options: ["The database is corrupted", "HNSW is non-deterministic: concurrent updates or randomized entry points can cause the greedy search to follow different paths, returning different approximate neighbors", "The embedding model is non-deterministic", "Network latency is causing packet loss"],
+          correct: 1,
+          explanation: "HNSW search involves greedy traversal that can be affected by random entry point selection and concurrent graph modifications. Since results are approximate anyway, slight variation between runs is expected behavior, not a bug."
+        }
+      ]
+    }
+  ];
+
+  const labels = ['A', 'B', 'C', 'D'];
+  let score = 0;
+  let totalQuestions = 0;
+  let topicScores = {};
+
+  quizData.forEach(function(t) {
+    totalQuestions += t.questions.length;
+    topicScores[t.topic] = { correct: 0, total: t.questions.length };
+  });
+
+  let answered = {};
+
+  function renderQuiz() {
+    const container = document.getElementById('quizQuestions');
+    container.innerHTML = '';
+    let globalIdx = 0;
+
+    quizData.forEach(function(topicObj, ti) {
+      const topicDiv = document.createElement('div');
+      topicDiv.className = 'quiz-topic';
+
+      const header = document.createElement('div');
+      header.className = 'quiz-topic-header';
+      header.innerHTML = '<h3>' + topicObj.topic + '</h3>' +
+        '<span class="quiz-topic-score" id="topicScore' + ti + '">0 / ' + topicObj.questions.length + '</span>';
+      topicDiv.appendChild(header);
+
+      topicObj.questions.forEach(function(qObj, qi) {
+        const qid = 't' + ti + 'q' + qi;
+        const card = document.createElement('div');
+        card.className = 'question-card';
+        card.innerHTML = '<div class="q-number">Question ' + (globalIdx + 1) + ' of ' + totalQuestions + '</div>' +
+          '<div class="q-text">' + qObj.q + '</div>';
+
+        qObj.options.forEach(function(opt, oi) {
+          const btn = document.createElement('button');
+          btn.className = 'option-btn';
+          btn.id = qid + 'o' + oi;
+          btn.textContent = labels[oi] + ') ' + opt;
+          btn.onclick = function() { selectAnswer(ti, qi, oi, qid); };
+          card.appendChild(btn);
+        });
+
+        const explDiv = document.createElement('div');
+        explDiv.className = 'quiz-explanation';
+        explDiv.id = qid + 'expl';
+        explDiv.textContent = qObj.explanation;
+        card.appendChild(explDiv);
+
+        topicDiv.appendChild(card);
+        globalIdx++;
+      });
+
+      container.appendChild(topicDiv);
+    });
+  }
+
+  function selectAnswer(ti, qi, oi, qid) {
+    if (answered[qid]) return;
+    answered[qid] = true;
+
+    const qObj = quizData[ti].questions[qi];
+    const selected = document.getElementById(qid + 'o' + oi);
+    const explDiv = document.getElementById(qid + 'expl');
+
+    if (oi === qObj.correct) {
+      selected.classList.add('correct');
+      score++;
+      topicScores[quizData[ti].topic].correct++;
+      explDiv.classList.add('visible');
+    } else {
+      selected.classList.add('wrong');
+      document.getElementById(qid + 'o' + qObj.correct).classList.add('show-correct');
+      explDiv.classList.add('wrong', 'visible');
+    }
+
+    for (var i = 0; i < qObj.options.length; i++) {
+      document.getElementById(qid + 'o' + i).classList.add('disabled');
+    }
+
+    document.getElementById('quizScore').textContent = 'Score: ' + score + ' / ' + totalQuestions;
+    document.getElementById('topicScore' + ti).textContent = topicScores[quizData[ti].topic].correct + ' / ' + topicScores[quizData[ti].topic].total;
+  }
+
+  window.resetQuiz = function() {
+    score = 0;
+    answered = {};
+    quizData.forEach(function(t) {
+      topicScores[t.topic].correct = 0;
+    });
+    document.getElementById('quizScore').textContent = 'Score: 0 / ' + totalQuestions;
+    renderQuiz();
+  };
+
+  window.toggleQuiz = function() {
+    const section = document.getElementById('quizSection');
+    if (section.style.display === 'none') {
+      section.style.display = 'block';
+      section.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      section.style.display = 'none';
+    }
+  };
+
+  renderQuiz();
+})();
+</script>
+
 </body>
 </html>

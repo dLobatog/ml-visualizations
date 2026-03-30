@@ -2531,5 +2531,114 @@
         });
         drawLoRA(4);
     </script>
+
+    <!-- Quiz Toggle Button -->
+    <button id="quizToggle" onclick="toggleQuiz()">&#129504; Quiz Mode</button>
+
+    <!-- Quiz Section -->
+    <div id="quizSection" style="display:none">
+        <div class="quiz-container">
+            <h2 style="text-align:center; color:#e0e0e0; margin-bottom:10px;">Specialized Topics Quiz</h2>
+            <div class="quiz-score" id="quizScore"></div>
+            <div id="quizQuestions"></div>
+            <div class="quiz-actions">
+                <button onclick="resetQuiz()">Reset Quiz</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        var quizQuestions = [
+            {q: "What is federated learning?", options: ["Training on a single server", "Training models across decentralized devices without sharing raw data", "Training with multiple GPUs on one machine", "Transfer learning between tasks"], answer: 1},
+            {q: "What is knowledge distillation?", options: ["Data compression", "Training a smaller \"student\" model to mimic a larger \"teacher\" model's predictions", "Feature selection", "Hyperparameter tuning"], answer: 1},
+            {q: "What is the purpose of quantization in model deployment?", options: ["Increasing precision", "Reducing model size and inference latency by using lower-precision numbers (e.g., INT8)", "Adding more layers", "Data augmentation"], answer: 1},
+            {q: "What is a mixture of experts (MoE) architecture?", options: ["An ensemble of separate models", "A model with multiple sub-networks (experts) where a router selects which experts process each input", "A voting classifier", "A stack of transformers"], answer: 1},
+            {q: "What is contrastive learning?", options: ["Supervised classification", "Learning representations by pulling similar pairs closer and pushing dissimilar pairs apart in embedding space", "Generative modeling", "Reinforcement learning"], answer: 1},
+            {q: "What is the lottery ticket hypothesis?", options: ["Random models work best", "Dense networks contain sparse subnetworks (\"winning tickets\") that can match full network performance when trained in isolation", "Larger models always win", "Pruning never works"], answer: 1},
+            {q: "What is multi-modal learning?", options: ["Using multiple GPUs", "Learning from and connecting multiple data types (text, images, audio) in a shared representation space", "Training multiple models", "Using multiple loss functions"], answer: 1},
+            {q: "What is the key idea behind neural architecture search (NAS)?", options: ["Manual architecture design", "Automatically searching for optimal network architectures using optimization algorithms", "Using pre-trained models only", "Random architecture selection"], answer: 1}
+        ];
+        var quizAnswered = 0;
+        var quizCorrect = 0;
+        var totalQuestions = quizQuestions.length;
+
+        function shuffleOptions(q) {
+            var indices = q.options.map(function(_, i) { return i; });
+            for (var i = indices.length - 1; i > 0; i--) {
+                var j = Math.floor(Math.random() * (i + 1));
+                var tmp = indices[i]; indices[i] = indices[j]; indices[j] = tmp;
+            }
+            return indices;
+        }
+
+        function buildQuiz() {
+            var container = document.getElementById('quizQuestions');
+            container.innerHTML = '';
+            quizAnswered = 0;
+            quizCorrect = 0;
+            updateScore();
+            quizQuestions.forEach(function(q, qi) {
+                var div = document.createElement('div');
+                div.className = 'quiz-question';
+                div.setAttribute('data-answered', 'false');
+                var h3 = document.createElement('h3');
+                h3.textContent = 'Q' + (qi + 1) + ': ' + q.q;
+                div.appendChild(h3);
+                var shuffled = shuffleOptions(q);
+                shuffled.forEach(function(origIdx) {
+                    var btn = document.createElement('button');
+                    btn.className = 'quiz-option';
+                    btn.textContent = q.options[origIdx];
+                    btn.setAttribute('data-correct', origIdx === q.answer ? 'true' : 'false');
+                    btn.onclick = function() { handleAnswer(this, div, origIdx === q.answer); };
+                    div.appendChild(btn);
+                });
+                container.appendChild(div);
+            });
+        }
+
+        function handleAnswer(btn, questionDiv, isCorrect) {
+            if (questionDiv.getAttribute('data-answered') === 'true') return;
+            questionDiv.setAttribute('data-answered', 'true');
+            var buttons = questionDiv.querySelectorAll('.quiz-option');
+            buttons.forEach(function(b) {
+                b.disabled = true;
+                if (b.getAttribute('data-correct') === 'true') {
+                    b.classList.add(b === btn ? 'correct' : 'reveal');
+                }
+            });
+            if (isCorrect) {
+                btn.classList.add('correct');
+                quizCorrect++;
+            } else {
+                btn.classList.add('wrong');
+            }
+            quizAnswered++;
+            updateScore();
+        }
+
+        function updateScore() {
+            document.getElementById('quizScore').textContent = 'Score: ' + quizCorrect + ' / ' + totalQuestions + (quizAnswered === totalQuestions ? ' — Quiz Complete!' : '');
+        }
+
+        window.toggleQuiz = function() {
+            var section = document.getElementById('quizSection');
+            if (section.style.display === 'none') {
+                section.style.display = 'block';
+                section.scrollIntoView({ behavior: 'smooth' });
+                if (!document.getElementById('quizQuestions').hasChildNodes()) {
+                    buildQuiz();
+                }
+            } else {
+                section.style.display = 'none';
+            }
+        };
+
+        window.resetQuiz = function() {
+            buildQuiz();
+        };
+    })();
+    </script>
 </body>
 </html>

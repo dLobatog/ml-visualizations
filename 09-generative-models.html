@@ -255,6 +255,12 @@
     #quizToggle:hover { transform: scale(1.05); }
     #quizSection { background: #12121f; border-top: 2px solid #e056fd; padding: 40px 20px; margin-top: 40px; }
     .quiz-container { max-width: 900px; margin: 0 auto; }
+    .quiz-topic { margin-bottom: 30px; }
+    .quiz-topic-header { display:flex; justify-content:space-between; align-items:center; padding:16px 20px; background:#1a1a2e; border:1px solid #2a2a4a; border-radius:10px; cursor:pointer; margin-bottom:12px; }
+    .quiz-topic-header h3 { color:#e056fd; margin:0; font-size:1.15em; }
+    .quiz-topic-score { color:#888; font-size:0.95em; }
+    .quiz-topic-body { display:none; padding: 0 4px; }
+    .quiz-topic.open .quiz-topic-body { display:block; }
     .quiz-question { background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 12px; padding: 24px; margin-bottom: 20px; }
     .quiz-question h3 { color: #e056fd; margin-bottom: 16px; font-size: 1.1em; }
     .quiz-option { display: block; width: 100%; padding: 12px 16px; margin: 8px 0; background: #0d0d1a; border: 1px solid #2a2a4a; border-radius: 8px; color: #e0e0e0; cursor: pointer; text-align: left; font-size: 0.95em; transition: all 0.2s; }
@@ -263,6 +269,8 @@
     .quiz-option.wrong { background: #3a1a1a; border-color: #e74c3c; color: #e74c3c; }
     .quiz-option.reveal { border-color: #2ecc71; color: #2ecc71; }
     .quiz-option:disabled { cursor: default; }
+    .quiz-explanation { margin-top:12px; padding:14px 18px; border-radius:8px; font-size:0.93em; line-height:1.6; border-left:4px solid #2ecc71; background:rgba(46,204,113,0.08); color:#b0ffb0; }
+    .quiz-explanation.wrong-exp { border-left-color: #e74c3c; background:rgba(231,76,60,0.08); color:#ffb0b0; }
     .quiz-score { text-align: center; font-size: 1.5em; color: #e056fd; margin-bottom: 30px; }
     .quiz-actions { text-align: center; margin-top: 20px; }
     .quiz-actions button { padding: 10px 24px; margin: 0 8px; border-radius: 8px; border: 1px solid #e056fd; background: transparent; color: #e056fd; cursor: pointer; font-size: 1em; }
@@ -2069,72 +2077,141 @@
 
     <script>
     (function() {
-        var quizQuestions = [
-            {q: "What is the ELBO (Evidence Lower Bound) in a VAE?", options: ["The exact likelihood", "A lower bound on log p(x), consisting of reconstruction loss minus KL divergence", "The encoder loss only", "The discriminator score"], answer: 1},
-            {q: "In a diffusion model, what does the reverse process learn?", options: ["To add noise", "To gradually denoise, predicting and removing noise at each timestep", "To encode images", "To discriminate real from fake"], answer: 1},
-            {q: "What is the purpose of the KL divergence term in VAE loss?", options: ["To improve image quality", "To regularize the latent space toward a prior distribution (e.g., standard Gaussian)", "To speed up training", "To reduce model size"], answer: 1},
-            {q: "What advantage do diffusion models have over GANs?", options: ["They're faster", "Stable training (no mode collapse) and better coverage of the data distribution", "Smaller model size", "They don't need GPUs"], answer: 1},
-            {q: "In a VQ-VAE, what is the codebook?", options: ["The encoder architecture", "A discrete set of learnable embedding vectors that quantize the latent space", "The decoder weights", "The training data"], answer: 1},
-            {q: "What does classifier-free guidance (CFG) do in diffusion models?", options: ["Removes the classifier", "Interpolates between conditional and unconditional predictions to strengthen conditioning", "Adds a classifier", "Reduces sampling steps"], answer: 1},
-            {q: "What is \"posterior collapse\" in VAEs?", options: ["The decoder fails", "The encoder is ignored \u2014 the KL term dominates, and the latent code becomes uninformative", "The model explodes", "Training diverges"], answer: 1},
-            {q: "What is the key idea behind normalizing flows?", options: ["Normalizing the input data", "Using invertible transformations with tractable Jacobian determinants for exact likelihood", "Using normalization layers", "Flowing data through convolutions"], answer: 1}
+        var quizTopics = [
+            { name: "VAE (Variational Autoencoder)", questions: [
+                {q: "A VAE's encoder outputs two vectors: means and log-variances. Why log-variances instead of variances directly?", options: ["It's computationally cheaper", "Log-variances can be any real number, making unconstrained optimization easier while ensuring variances stay positive after exponentiation", "It improves image quality", "It's required by the KL formula"], answer: 1, explanation: "Variances must be positive, but neural networks output unconstrained reals. Predicting log-variance and exponentiating guarantees positivity without needing constrained optimization."},
+                {q: "What does the reparameterization trick enable in VAE training?", options: ["Faster inference", "Backpropagation through the stochastic sampling step by expressing z = mu + sigma * epsilon where epsilon ~ N(0,1)", "Better image resolution", "Reducing the latent dimension"], answer: 1, explanation: "Sampling z ~ N(mu, sigma) is not differentiable w.r.t. mu and sigma. The trick moves randomness to an external epsilon, making z a deterministic function of the parameters, enabling gradient flow."},
+                {q: "Your VAE generates blurry images. What is the most likely architectural cause?", options: ["The latent space is too large", "The decoder uses an MSE reconstruction loss, which averages over modes and produces blurry outputs", "The KL weight is too low", "The encoder is too deep"], answer: 1, explanation: "MSE loss penalizes pixel-level differences, causing the decoder to hedge by averaging plausible outputs, resulting in blurriness. Perceptual losses or adversarial losses (VAE-GAN) produce sharper results."},
+                {q: "What is posterior collapse in a VAE, and when does it happen?", options: ["The encoder network crashes", "The decoder becomes so powerful it ignores z, causing the KL term to push q(z|x) to match the prior exactly, making the latent code uninformative", "The loss becomes NaN", "The training data runs out"], answer: 1, explanation: "With a powerful autoregressive decoder, the model can reconstruct well without using z. The KL term then drives the posterior to the prior, and z carries no information. KL annealing and weaker decoders help prevent this."},
+                {q: "You want to interpolate between two face images using a VAE. You encode both, linearly interpolate their latent vectors, and decode. Why does this work?", options: ["VAEs memorize training data", "The KL regularization encourages a smooth, continuous latent space where nearby points decode to semantically similar outputs", "Linear interpolation always works in any space", "The decoder is linear"], answer: 1, explanation: "The KL divergence term pushes the latent distribution toward a smooth Gaussian prior, filling gaps and preventing isolated clusters. This continuity means linear paths in latent space traverse meaningful semantic transitions."}
+            ]},
+            { name: "Diffusion Models", questions: [
+                {q: "In DDPM, the forward process adds Gaussian noise over T steps. What does the model learn to predict during training?", options: ["The original clean image", "The noise epsilon added at each step, so it can reverse the corruption", "The next noisy image", "The diffusion schedule"], answer: 1, explanation: "The network is trained to predict the noise epsilon that was added to create the noisy version. At inference, it iteratively subtracts the predicted noise to denoise from pure noise back to a clean sample."},
+                {q: "Why do diffusion models typically require many sampling steps (e.g., 1000), and how is this addressed?", options: ["They need 1000 steps minimum to work", "The reverse process is a long Markov chain; DDIM and distillation techniques allow fewer steps by taking larger denoising jumps", "More steps always means better quality", "It cannot be addressed"], answer: 1, explanation: "Each step makes a small denoising correction. DDIM reformulates sampling as a deterministic ODE allowing larger steps, and consistency/progressive distillation can reduce to 1-4 steps with minimal quality loss."},
+                {q: "A diffusion model trained on 256x256 images is asked to generate 512x512 images. What happens?", options: ["It works perfectly", "It produces artifacts or incoherent structures because the model was trained on a specific resolution's noise schedule and spatial patterns", "It generates at 256x256 regardless", "It automatically upscales"], answer: 1, explanation: "Diffusion models learn denoising patterns specific to their training resolution. Different resolutions change the effective noise levels and spatial frequencies. Techniques like multi-resolution training or cascaded models handle varying resolutions."},
+                {q: "What is the noise schedule in diffusion models, and why does it matter?", options: ["It determines the training batch size", "It defines how quickly noise is added across timesteps, controlling the difficulty curve of the denoising task", "It schedules GPU usage", "It only affects inference speed"], answer: 1, explanation: "The noise schedule (linear, cosine, etc.) determines beta_t values controlling noise addition rate. A poor schedule can waste timesteps on too-easy or too-hard denoising regions. Cosine schedules distribute difficulty more evenly than linear ones."},
+                {q: "You want a diffusion model to generate images conditioned on text. During training, you randomly drop the text condition 10% of the time. Why?", options: ["To save memory", "This enables classifier-free guidance at inference by training both conditional and unconditional generation in a single model", "Text conditioning is unreliable", "It prevents overfitting to text"], answer: 1, explanation: "Randomly dropping conditions trains the model to handle both conditional and unconditional denoising. At inference, classifier-free guidance interpolates between both predictions, amplifying the conditioning signal without needing a separate classifier."}
+            ]},
+            { name: "GAN Training Dynamics", questions: [
+                {q: "Your GAN's generator only produces one type of face (e.g., always a blonde woman). What problem is this?", options: ["Discriminator collapse", "Mode collapse: the generator found a single mode that fools the discriminator and ignores the rest of the data distribution", "Overfitting", "Underfitting"], answer: 1, explanation: "Mode collapse occurs when the generator maps many latent codes to the same or similar outputs. It 'cheats' by producing one convincing sample type rather than covering the full diversity of the training distribution."},
+                {q: "The discriminator loss drops to zero early in training. Is this a good sign?", options: ["Yes, the discriminator is well-trained", "No, it means the discriminator is too strong and the generator receives near-zero gradients, stalling learning", "It means training is complete", "Only bad for the generator"], answer: 1, explanation: "A perfect discriminator provides vanishing gradients to the generator (the log(1-D(G(z))) gradient approaches zero). The generator cannot improve. Techniques like label smoothing, gradient penalty, or architectural parity help maintain balance."},
+                {q: "Wasserstein GAN (WGAN) replaces the standard GAN loss. What is the key theoretical motivation?", options: ["It's computationally cheaper", "The Wasserstein distance provides meaningful gradients even when distributions don't overlap, unlike JS divergence which saturates", "It removes the discriminator", "It uses reinforcement learning"], answer: 1, explanation: "Standard GAN loss uses JS divergence, which becomes constant when the generator and real distributions don't overlap (common early in training). Wasserstein distance always provides a useful gradient signal proportional to the actual distance between distributions."},
+                {q: "In progressive GAN training, you start generating 4x4 images and gradually increase resolution. Why does this help?", options: ["It's faster on small GPUs", "Starting with low resolution stabilizes early training by learning coarse structure first, then progressively refining fine details", "Higher resolution is unnecessary", "It's only for face generation"], answer: 1, explanation: "Low-resolution generation is an easier task, allowing stable initial training. Each resolution increase adds detail incrementally, preventing the model from having to learn all frequency components simultaneously, which often causes instability."},
+                {q: "You apply spectral normalization to the discriminator. What does this achieve?", options: ["It speeds up training 10x", "It constrains the Lipschitz constant of the discriminator by normalizing weight matrices by their spectral norm, stabilizing training", "It normalizes the input images", "It adds noise to gradients"], answer: 1, explanation: "Spectral normalization divides each weight matrix by its largest singular value, bounding the discriminator's Lipschitz constant. This prevents the discriminator from becoming too sharp/confident, maintaining useful gradient flow to the generator."}
+            ]},
+            { name: "Flow-Based Models", questions: [
+                {q: "What is the key constraint on transformations in normalizing flows?", options: ["They must be linear", "They must be invertible with tractable Jacobian determinants to enable exact likelihood computation", "They must be non-differentiable", "They must reduce dimensionality"], answer: 1, explanation: "Flows compute exact log-likelihood using the change-of-variables formula, which requires inverting the transformation and computing its Jacobian determinant. Invertibility ensures nothing is lost, and tractable Jacobians keep computation feasible."},
+                {q: "Compared to VAEs and GANs, what unique advantage do flow models offer?", options: ["Better image quality", "Exact log-likelihood computation, enabling principled model comparison and density estimation", "Faster training", "Smaller model size"], answer: 1, explanation: "Flow models compute exact log p(x) via the change-of-variables formula, unlike VAEs (lower bound only) or GANs (no density estimate at all). This makes them ideal for tasks requiring calibrated probability estimates."},
+                {q: "In a coupling layer (e.g., RealNVP), the input is split into two halves. Why?", options: ["To reduce computation by half", "One half stays unchanged and parameterizes the transformation of the other half, ensuring invertibility while allowing complex transformations", "To process stereo images", "Splitting is optional"], answer: 1, explanation: "By keeping one half fixed and using it to parameterize an arbitrary transformation on the other half, invertibility is guaranteed (just reverse the transformation). The parameterizing network itself doesn't need to be invertible."},
+                {q: "Glow uses 1x1 invertible convolutions. What problem does this solve compared to simply alternating which dimensions are split?", options: ["It's faster", "It provides a learned, general permutation of channels between coupling layers, improving expressiveness beyond fixed alternating splits", "It reduces memory usage", "1x1 convolutions are standard in all models"], answer: 1, explanation: "Fixed alternating splits limit which dimensions interact. A learned 1x1 invertible convolution acts as a generalized channel permutation, ensuring all dimensions can influence each other across layers, improving the flow's expressiveness."},
+                {q: "Flow models tend to produce lower-quality images than GANs or diffusion models for the same parameter count. What is the fundamental reason?", options: ["They train slower", "The invertibility constraint limits architectural choices, preventing information-discarding operations like pooling that help learn hierarchical features", "They use too much memory", "The loss function is wrong"], answer: 1, explanation: "Invertibility requires preserving all dimensions throughout the network, preventing compression, pooling, or dimension reduction. This architectural constraint limits the model's ability to learn efficient hierarchical representations compared to unconstrained architectures."}
+            ]},
+            { name: "Classifier-Free Guidance", questions: [
+                {q: "In classifier-free guidance, what formula is used to compute the guided prediction?", options: ["Just the conditional prediction", "Guided = unconditional + scale * (conditional - unconditional), amplifying the conditional signal", "The average of conditional and unconditional", "Conditional minus unconditional"], answer: 1, explanation: "CFG computes: eps_guided = eps_uncond + w * (eps_cond - eps_uncond), where w > 1 amplifies the difference between conditional and unconditional predictions, steering generation more strongly toward the condition."},
+                {q: "You increase the CFG scale from 7.5 to 20. What do you expect?", options: ["Better quality in every way", "Images more closely match the prompt but with reduced diversity and potential artifacts like oversaturation", "No visible change", "The model generates faster"], answer: 1, explanation: "Higher guidance scale pushes the model harder toward the condition, improving text-image alignment but at the cost of diversity, naturalness, and image quality. Very high values produce oversaturated, artifact-heavy images."},
+                {q: "Why is classifier-free guidance preferred over classifier guidance in practice?", options: ["It's mathematically simpler", "It doesn't require training a separate noise-aware classifier and works with any conditioning type", "Classifier guidance was never effective", "It produces identical results"], answer: 1, explanation: "Classifier guidance requires a separately trained classifier that works on noisy intermediate images at all noise levels. Classifier-free guidance integrates guidance into the diffusion model itself by jointly training conditional and unconditional denoising."},
+                {q: "During CFG training, the text condition is dropped with probability p (e.g., 10%). What happens if p is too high (e.g., 90%)?", options: ["Better unconditional generation", "The model sees too few conditioned examples, weakening its ability to follow text prompts and making guidance less effective", "Training converges faster", "No impact"], answer: 1, explanation: "If the model rarely sees the condition during training, it cannot learn strong conditional behavior. The difference between conditional and unconditional predictions becomes small, making guidance ineffective. Typical dropout rates are 5-20%."},
+                {q: "You apply CFG to a text-to-audio diffusion model. The guidance scale that works for images (7.5) produces distorted audio. Why?", options: ["Audio models are broken", "Different modalities have different sensitivity to guidance scale; audio's temporal structure amplifies artifacts from over-guidance", "CFG only works for images", "The scale should always be 7.5"], answer: 1, explanation: "Optimal guidance scale depends on the modality, model architecture, and conditioning strength. Audio has strict temporal coherence requirements, making it more sensitive to the distribution distortion that high guidance causes. Each domain needs its own tuning."}
+            ]},
+            { name: "Latent Diffusion & Stable Diffusion", questions: [
+                {q: "Stable Diffusion runs diffusion in latent space rather than pixel space. What is the main practical benefit?", options: ["Better image quality", "Drastically reduced computation: the latent space is 48-64x smaller spatially, making training and inference much faster", "It eliminates the need for text encoders", "Latent space is easier to understand"], answer: 1, explanation: "A pre-trained autoencoder compresses images (e.g., 512x512x3) to a much smaller latent (e.g., 64x64x4). Running diffusion in this compressed space reduces memory and compute by orders of magnitude while preserving perceptual quality."},
+                {q: "Stable Diffusion uses a frozen CLIP text encoder. Why frozen instead of fine-tuning it end-to-end?", options: ["Fine-tuning is impossible", "A frozen encoder provides stable, pre-learned text representations that prevent catastrophic forgetting and reduce training cost", "CLIP is perfect and needs no changes", "It trains faster by exactly 2x"], answer: 1, explanation: "CLIP was trained on billions of image-text pairs, learning rich cross-modal representations. Freezing it preserves this knowledge, stabilizes training, and saves significant GPU memory since the text encoder gradients don't need to be computed."},
+                {q: "The VAE decoder in Stable Diffusion occasionally produces checkerboard artifacts. What causes this?", options: ["Bad training data", "Transposed convolutions in the decoder can cause uneven overlap patterns, creating periodic checkerboard artifacts", "The latent space is too small", "CLIP encoding errors"], answer: 1, explanation: "Transposed convolutions (deconvolutions) with certain stride/kernel combinations create uneven coverage of output pixels, producing checkerboard patterns. Using resize-convolution or careful stride/kernel matching mitigates this."},
+                {q: "You fine-tune Stable Diffusion on 20 images of your dog using DreamBooth. What prevents the model from forgetting how to generate other subjects?", options: ["The small dataset prevents forgetting", "A prior preservation loss generates and trains on class-generic images alongside the subject-specific ones", "Fine-tuning never causes forgetting", "CLIP prevents it"], answer: 1, explanation: "DreamBooth uses prior preservation: it generates images using the original model for the general class (e.g., 'dog') and includes them in training. This regularizes the model to retain general knowledge while learning the specific subject."},
+                {q: "Stable Diffusion XL (SDXL) uses two text encoders (CLIP ViT-L and OpenCLIP ViT-bigG). Why use two?", options: ["Redundancy for reliability", "Each encoder captures different semantic granularities, and their concatenated embeddings provide richer conditioning information", "One is for English, one for other languages", "The second encoder is unused"], answer: 1, explanation: "Different CLIP models have different training data and architecture scales, capturing complementary aspects of text semantics. Concatenating both encoders' outputs gives the diffusion model a richer, more nuanced understanding of the text prompt."}
+            ]},
+            { name: "VQ-VAE", questions: [
+                {q: "How does VQ-VAE differ from a standard VAE in its latent representation?", options: ["It uses a larger latent space", "VQ-VAE uses discrete latent codes selected from a learned codebook, while VAE uses continuous Gaussian latents", "VQ-VAE has no encoder", "There is no difference"], answer: 1, explanation: "VQ-VAE quantizes encoder outputs by snapping each latent vector to its nearest codebook entry. This discrete bottleneck avoids posterior collapse and enables modeling with discrete priors (e.g., autoregressive transformers)."},
+                {q: "The VQ-VAE training loss has three terms. Besides reconstruction loss, what are the other two?", options: ["KL divergence and entropy", "Codebook loss (moving codebook entries toward encoder outputs) and commitment loss (encouraging encoder outputs to stay close to codebook entries)", "Discriminator loss and perceptual loss", "L1 loss and L2 loss"], answer: 1, explanation: "The codebook loss updates the codebook vectors toward the encoder outputs (or uses EMA updates). The commitment loss penalizes the encoder for producing outputs far from codebook entries, preventing the encoder from fluctuating too much."},
+                {q: "Your VQ-VAE's codebook has 512 entries, but only 30 are being used during training. What is this problem called?", options: ["Mode collapse", "Codebook collapse (index collapse): most codes go unused, reducing the effective capacity of the discrete bottleneck", "Overfitting", "Posterior collapse"], answer: 1, explanation: "Codebook collapse occurs when the encoder maps most inputs to a few codebook entries, leaving others unused. Solutions include codebook resetting, EMA updates, higher commitment loss, or codebook-splitting techniques."},
+                {q: "VQ-VAE-2 uses a hierarchical structure with two levels of codebooks. Why?", options: ["To double the codebook size", "The top level captures global structure and the bottom level captures local details, enabling higher-fidelity reconstruction", "Two codebooks train faster", "It's required for audio generation"], answer: 1, explanation: "The hierarchical design factorizes the representation: the top-level codes capture coarse, global features (layout, pose) while the bottom-level codes add fine details (textures, edges). This enables much higher quality reconstructions."},
+                {q: "After training a VQ-VAE, you want to generate new images. What additional model do you need to train?", options: ["A GAN discriminator", "A prior model (e.g., autoregressive transformer or diffusion model) over the discrete codebook indices", "A new encoder", "No additional model needed"], answer: 1, explanation: "The VQ-VAE only learns to encode and decode. To generate new images, you need a separate model that learns the distribution over codebook index sequences. An autoregressive transformer models this sequence and generates new valid code patterns."}
+            ]},
+            { name: "U-Net vs DiT Architecture", questions: [
+                {q: "The U-Net in Stable Diffusion uses skip connections between encoder and decoder layers. What is their purpose?", options: ["To speed up inference", "They pass fine-grained spatial details from the encoder to the decoder, preventing loss of high-frequency information through the bottleneck", "To reduce model size", "Skip connections are decorative"], answer: 1, explanation: "The U-Net bottleneck compresses spatial information. Skip connections directly transfer multi-scale features from encoder to decoder layers at matching resolutions, preserving spatial details that would otherwise be lost through compression."},
+                {q: "DiT (Diffusion Transformer) replaces the U-Net with a transformer. What is the key architectural difference in how it processes spatial information?", options: ["It uses larger convolutions", "DiT treats image patches as tokens (like ViT) and uses self-attention for global spatial reasoning instead of hierarchical convolutions", "It doesn't process spatial information", "DiT uses RNNs instead"], answer: 1, explanation: "DiT patchifies the latent image into a sequence of tokens and processes them with transformer blocks. Self-attention gives every patch global context from the start, unlike U-Net where global information only exists at the bottleneck."},
+                {q: "How does DiT incorporate the diffusion timestep and class conditioning?", options: ["Through input concatenation only", "Using adaptive layer normalization (adaLN) that modulates features via scale and shift parameters predicted from timestep and class embeddings", "It doesn't use conditioning", "Through a separate network"], answer: 1, explanation: "AdaLN-Zero conditions each transformer block by predicting scale, shift, and gate parameters from the timestep/class embedding. This modulates the feature transformations throughout the network, providing fine-grained conditioning control."},
+                {q: "U-Net uses different resolutions at each level (e.g., 64x64, 32x32, 16x16). DiT operates at a single resolution. Which handles high-resolution generation more efficiently?", options: ["They're identical in efficiency", "U-Net is more efficient because its multi-scale design processes most computation at lower resolutions, while DiT's self-attention is quadratic in the number of patches", "DiT is always more efficient", "Neither can handle high resolution"], answer: 1, explanation: "U-Net's hierarchical design means the expensive middle layers operate on downsampled features. DiT's full self-attention over all patches at the original resolution scales quadratically, making it more expensive for large images without optimizations like windowed attention."},
+                {q: "Recent results show DiT scaling better than U-Net for diffusion models. What property of transformers drives this?", options: ["Convolutions cannot scale", "Transformers exhibit predictable scaling laws: performance improves smoothly with model size, data, and compute, following well-characterized power laws", "DiT uses fewer parameters", "It's purely due to hardware optimization"], answer: 1, explanation: "Transformers demonstrate remarkably predictable scaling behavior across domains. Increasing DiT parameters reliably improves generation quality, following smooth scaling curves. U-Nets have less predictable scaling due to their more complex, hand-designed multi-scale architecture."}
+            ]}
         ];
-        var quizAnswered = 0;
-        var quizCorrect = 0;
-        var totalQuestions = quizQuestions.length;
 
-        function shuffleOptions(q) {
-            var indices = q.options.map(function(_, i) { return i; });
-            for (var i = indices.length - 1; i > 0; i--) {
+        var totalQuestions = 0;
+        quizTopics.forEach(function(t) { totalQuestions += t.questions.length; });
+        var quizCorrect = 0;
+        var quizAnswered = 0;
+        var topicScores = {};
+
+        function shuffleArray(arr) {
+            for (var i = arr.length - 1; i > 0; i--) {
                 var j = Math.floor(Math.random() * (i + 1));
-                var tmp = indices[i]; indices[i] = indices[j]; indices[j] = tmp;
+                var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
             }
-            return indices;
+            return arr;
         }
 
         function buildQuiz() {
             var container = document.getElementById('quizQuestions');
             container.innerHTML = '';
-            quizAnswered = 0;
             quizCorrect = 0;
+            quizAnswered = 0;
+            topicScores = {};
             updateScore();
-            quizQuestions.forEach(function(q, qi) {
-                var div = document.createElement('div');
-                div.className = 'quiz-question';
-                div.setAttribute('data-answered', 'false');
-                var h3 = document.createElement('h3');
-                h3.textContent = 'Q' + (qi + 1) + ': ' + q.q;
-                div.appendChild(h3);
-                var shuffled = shuffleOptions(q);
-                shuffled.forEach(function(origIdx) {
-                    var btn = document.createElement('button');
-                    btn.className = 'quiz-option';
-                    btn.textContent = q.options[origIdx];
-                    btn.setAttribute('data-correct', origIdx === q.answer ? 'true' : 'false');
-                    btn.onclick = function() { handleAnswer(this, div, origIdx === q.answer); };
-                    div.appendChild(btn);
+            var qNum = 1;
+            quizTopics.forEach(function(topic, ti) {
+                topicScores[ti] = {correct: 0, answered: 0, total: topic.questions.length};
+                var topicDiv = document.createElement('div');
+                topicDiv.className = 'quiz-topic';
+                topicDiv.id = 'topic-' + ti;
+                var header = document.createElement('div');
+                header.className = 'quiz-topic-header';
+                header.innerHTML = '<h3>' + topic.name + '</h3><span class="quiz-topic-score" id="topicScore-' + ti + '">0 / ' + topic.questions.length + '</span>';
+                header.onclick = function() { topicDiv.classList.toggle('open'); };
+                topicDiv.appendChild(header);
+                var body = document.createElement('div');
+                body.className = 'quiz-topic-body';
+                topic.questions.forEach(function(q, qi) {
+                    var div = document.createElement('div');
+                    div.className = 'quiz-question';
+                    div.setAttribute('data-answered', 'false');
+                    var h3 = document.createElement('h3');
+                    h3.textContent = 'Q' + qNum + ': ' + q.q;
+                    div.appendChild(h3);
+                    var indices = q.options.map(function(_, i) { return i; });
+                    shuffleArray(indices);
+                    indices.forEach(function(origIdx) {
+                        var btn = document.createElement('button');
+                        btn.className = 'quiz-option';
+                        btn.textContent = q.options[origIdx];
+                        btn.setAttribute('data-correct', origIdx === q.answer ? 'true' : 'false');
+                        btn.onclick = function() { handleAnswer(this, div, origIdx === q.answer, q.explanation, ti); };
+                        div.appendChild(btn);
+                    });
+                    body.appendChild(div);
+                    qNum++;
                 });
-                container.appendChild(div);
+                topicDiv.appendChild(body);
+                container.appendChild(topicDiv);
             });
         }
 
-        function handleAnswer(btn, questionDiv, isCorrect) {
+        function handleAnswer(btn, questionDiv, isCorrect, explanation, topicIdx) {
             if (questionDiv.getAttribute('data-answered') === 'true') return;
             questionDiv.setAttribute('data-answered', 'true');
             var buttons = questionDiv.querySelectorAll('.quiz-option');
             buttons.forEach(function(b) {
                 b.disabled = true;
-                if (b.getAttribute('data-correct') === 'true') {
-                    b.classList.add(b === btn ? 'correct' : 'reveal');
-                }
+                if (b.getAttribute('data-correct') === 'true') b.classList.add(b === btn ? 'correct' : 'reveal');
             });
-            if (isCorrect) {
-                btn.classList.add('correct');
-                quizCorrect++;
-            } else {
-                btn.classList.add('wrong');
-            }
+            if (isCorrect) { btn.classList.add('correct'); quizCorrect++; topicScores[topicIdx].correct++; }
+            else { btn.classList.add('wrong'); }
             quizAnswered++;
+            topicScores[topicIdx].answered++;
+            var expDiv = document.createElement('div');
+            expDiv.className = 'quiz-explanation' + (isCorrect ? '' : ' wrong-exp');
+            expDiv.textContent = explanation;
+            questionDiv.appendChild(expDiv);
+            document.getElementById('topicScore-' + topicIdx).textContent = topicScores[topicIdx].correct + ' / ' + topicScores[topicIdx].total;
             updateScore();
         }
 
@@ -2147,17 +2224,10 @@
             if (section.style.display === 'none') {
                 section.style.display = 'block';
                 section.scrollIntoView({ behavior: 'smooth' });
-                if (!document.getElementById('quizQuestions').hasChildNodes()) {
-                    buildQuiz();
-                }
-            } else {
-                section.style.display = 'none';
-            }
+                if (!document.getElementById('quizQuestions').hasChildNodes()) buildQuiz();
+            } else { section.style.display = 'none'; }
         };
-
-        window.resetQuiz = function() {
-            buildQuiz();
-        };
+        window.resetQuiz = function() { buildQuiz(); };
     })();
     </script>
 </body>
