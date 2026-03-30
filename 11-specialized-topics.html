@@ -266,13 +266,13 @@
                 <div class="formula">$$\mathcal{L}_{\text{CLIP}} = -\log\frac{\exp(\text{sim}(I,T)/\tau)}{\sum_j \exp(\text{sim}(I,T_j)/\tau)}$$</div>
                 <div class="key-point"><span class="label">L_CLIP:</span><span class="desc">Contrastive loss; negative log-likelihood of matching image-text pair among negatives</span></div>
                 <div class="key-point"><span class="label">\(\text{sim}(I,T)\):</span><span class="desc">Cosine similarity between image embedding \(I\) and text embedding \(T\); \(\in [-1, 1]\)</span></div>
-                <div class="key-point"><span class="label">\(\tau\):</span><span class="desc">Temperature parameter \(> 0\); controls softmax sharpness. Lower τ = sharper (harder negs), higher τ = softer. Typical: 0.07</span></div>
+                <div class="key-point"><span class="label">\(\tau\):</span><span class="desc">Temperature parameter \(> 0\); controls softmax sharpness. Lower \(\tau\) = sharper (harder negs), higher \(\tau\) = softer. Typical: 0.07</span></div>
                 <div class="key-point"><span class="label">Σ_j:</span><span class="desc">Sum over all N text embeddings in batch (1 positive + N-1 negatives)</span></div>
                 <div class="key-point"><span class="label">\(\exp(\text{sim}(\cdot)/\tau)\):</span><span class="desc">Numerator: similarity of positive pair, temperature-scaled</span></div>
                 <div class="key-point"><span class="label">\(\sum_j \exp(\text{sim}(I,T_j)/\tau)\):</span><span class="desc">Denominator: sum of all (positive + negatives), forms softmax partition function</span></div>
                 <div class="key-point"><span class="label">Architecture:</span><span class="desc">Image encoder (CNN/ViT) and text encoder (Transformer) produce same-dim embeddings for cosine similarity</span></div>
                 <div class="key-point"><span class="label">InfoNCE Loss:</span><span class="desc">N image-text pairs; each image's matched text is positive, N-1 others are negatives</span></div>
-                <div class="key-point"><span class="label">Temperature τ:</span><span class="desc">Controls distribution sharpness; higher τ makes hard negatives easier to distinguish</span></div>
+                <div class="key-point"><span class="label">Temperature \(\tau\):</span><span class="desc">Controls distribution sharpness; higher \(\tau\) makes hard negatives easier to distinguish</span></div>
                 <hr class="divider">
                 <div class="interview-tip">Why does CLIP work zero-shot? Text embeddings naturally encode semantic information about classes—classifier emerges without seeing those classes during training.</div>
                 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Give CLIP a class it never saw (e.g., "zebra" if trained on birds). It classifies zero-shot because text encoder learns semantic features. Temperature τ controls confidence—low τ = sharp predictions, high τ = uncertain. Typical τ=0.07.</div>
@@ -412,7 +412,7 @@
                 <div class="key-point"><span class="label">L:</span><span class="desc">NT-Xent (Normalized Temperature-scaled Cross-Entropy) loss</span></div>
                 <div class="key-point"><span class="label">z_i, z_j:</span><span class="desc">Normalized embeddings (after projection) from two augmented views of same image (positive pair)</span></div>
                 <div class="key-point"><span class="label">\(\text{sim}(z_i, z_j)\):</span><span class="desc">Cosine similarity between \(z_i\) and \(z_j\); \(\in [-1, 1]\), higher for similar views</span></div>
-                <div class="key-point"><span class="label">\(\tau\):</span><span class="desc">Temperature \(\in (0, \infty)\); controls softmax sharpness. Typical: 0.07. Lower τ = harder negative mining</span></div>
+                <div class="key-point"><span class="label">\(\tau\):</span><span class="desc">Temperature \(\in (0, \infty)\); controls softmax sharpness. Typical: 0.07. Lower \(\tau\) = harder negative mining</span></div>
                 <div class="key-point"><span class="label">Σ_k:</span><span class="desc">Sum over all 2N embeddings in batch (z_i paired with z_j positive + 2N-2 negatives from other images)</span></div>
                 <div class="key-point"><span class="label">Algorithm:</span><span class="desc">Image → 2 augmentations → shared encoder → projection head → contrastive loss</span></div>
                 <div class="key-point"><span class="label">Positive Pair:</span><span class="desc">Two views of same image (should be close); batch provides negatives</span></div>
@@ -432,7 +432,7 @@
                 <div class="opt-desc">Training only; discarded at inference (use encoder embeddings)</div>
                 </div>
                 <div class="option">
-                <div class="opt-title">Temperature τ</div>
+                <div class="opt-title">Temperature \(\tau\)</div>
                 <div class="opt-desc">Lower (≈0.07) makes loss sharper; controls distribution</div>
                 </div>
                 </div>
@@ -521,7 +521,7 @@
                 <p style="margin: 8px 0; font-size: 0.93em;">[ ]_sg = stop-gradient; teacher updated by EMA, not gradients</p>
                 <div class="key-point"><span class="label">BYOL Architecture:</span><span class="desc">Student (gradient updates) + Teacher (EMA); stop-gradient through teacher prevents collapse</span></div>
                 <div class="key-point"><span class="label">DINO (ViT):</span><span class="desc">Student learns to match teacher via cross-entropy; centering + sharpening prevent collapse</span></div>
-                <div class="key-point"><span class="label">Asymmetric Temps:</span><span class="desc">DINO: student τ_s=0.1, teacher τ_t=0.04 (inverted); sharpens teacher outputs</span></div>
+                <div class="key-point"><span class="label">Asymmetric Temps:</span><span class="desc">DINO: student \(\tau_s=0.1\), teacher \(\tau_t=0.04\) (inverted); sharpens teacher outputs</span></div>
                 <hr class="divider">
                 <div class="comparison">
                 <div class="option">
@@ -566,14 +566,14 @@
                 <h3>SHAP: SHapley Additive exPlanations</h3>
                 <p><strong>Core Idea:</strong> Use game theory (Shapley values) to assign each feature its contribution to prediction. Shapley value = average marginal contribution across all possible coalitions of features.</p>
                 <div class="formula">$$\phi_i(f, x) = \sum_{S \subseteq F \setminus \{i\}} \frac{|S|!\,(|F|-|S|-1)!}{|F|!} \cdot (f(S \cup \{i\}) - f(S))$$</div>
-                <div class="key-point"><span class="label">φ_i(f,x):</span><span class="desc">Shapley value for feature i on sample x; contribution of i to prediction f(x)</span></div>
+                <div class="key-point"><span class="label">\(\phi_i(f,x)\):</span><span class="desc">Shapley value for feature i on sample x; contribution of i to prediction f(x)</span></div>
                 <div class="key-point"><span class="label">f:</span><span class="desc">Model/function being explained; outputs scalar prediction</span></div>
                 <div class="key-point"><span class="label">F:</span><span class="desc">Full set of all features; |F| = number of features</span></div>
                 <div class="key-point"><span class="label">S⊆F\{i}:</span><span class="desc">Subset of features excluding i; averages over all possible coalitions</span></div>
                 <div class="key-point"><span class="label">f(S∪{i}) - f(S):</span><span class="desc">Marginal contribution of feature i when added to coalition S</span></div>
                 <div class="key-point"><span class="label">|S|!(|F|-|S|-1)! / |F|!:</span><span class="desc">Coalition weight; ensures each ordering weighted equally. Normalized by factorial terms</span></div>
-                <p style="margin: 8px 0; font-size: 0.93em;">Accounts for ALL possible orderings/coalitions; φ_i = marginal contribution of feature i</p>
-                <div class="key-point"><span class="label">Interpretation:</span><span class="desc">f(x) = E[f(X)] + Σ φ_i(x); φ_i > 0 pushes prediction higher, φ_i < 0 pushes lower</span></div>
+                <p style="margin: 8px 0; font-size: 0.93em;">Accounts for ALL possible orderings/coalitions; \(\phi_i\) = marginal contribution of feature \(i\)</p>
+                <div class="key-point"><span class="label">Interpretation:</span><span class="desc">\(f(x) = \mathbb{E}[f(X)] + \sum \phi_i(x)\); \(\phi_i > 0\) pushes prediction higher, \(\phi_i < 0\) pushes lower</span></div>
                 <div class="key-point"><span class="label">Computational Cost:</span><span class="desc">Exact = \(2^{|F|}\) subsets (exponential); TreeSHAP (poly); KernelSHAP (any model, regression)</span></div>
                 <div class="key-point"><span class="label">KernelSHAP:</span><span class="desc">Generate binary feature masks, fit weighted linear regression with normalized weights</span></div>
                 <hr class="divider">
@@ -628,7 +628,7 @@
                 <div class="key-point"><span class="label">weight_j:</span><span class="desc">Proximity weight for sample j; higher for samples near x (example). Computed via exponential kernel</span></div>
                 <div class="key-point"><span class="label">f(x_j):</span><span class="desc">Prediction from complex model on perturbed sample j</span></div>
                 <div class="key-point"><span class="label">w_0 + Σ_i w_i · x_j^i:</span><span class="desc">Prediction from linear approximation; simple interpretable model</span></div>
-                <div class="key-point"><span class="label">\(\lambda\|w\|\):</span><span class="desc">Regularization term (L1 or L2); \(\lambda \geq 0\) controls sparsity. Larger λ = simpler model</span></div>
+                <div class="key-point"><span class="label">\(\lambda\|w\|\):</span><span class="desc">Regularization term (L1 or L2); \(\lambda \geq 0\) controls sparsity. Larger \(\lambda\) = simpler model</span></div>
                 <div class="key-point"><span class="label">Σ_j:</span><span class="desc">Sum over perturbed samples in local neighborhood (typically 100-1000 samples)</span></div>
                 <p style="margin: 8px 0; font-size: 0.93em;">Weighted regression with proximity weights; L1/L2 encourages sparse solutions</p>
                 <div class="key-point"><span class="label">Algorithm:</span><span class="desc">Perturb features randomly → get predictions → fit weighted linear regression → interpret coefficients</span></div>

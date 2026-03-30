@@ -410,7 +410,7 @@
                         <div class="key-point"><span class="label">(1-ᾱ_t)I:</span><span class="desc">Noise variance (covariance matrix); noise increases over time as ᾱ_t decreases</span></div>
                         <div class="key-point"><span class="label">\(\epsilon \sim \mathcal{N}(0,I)\):</span><span class="desc">Standard Gaussian noise used in forward process; mean 0, variance 1</span></div>
                         <div class="formula">$$\mathcal{L} = \|\epsilon_\theta(x_t, t) - \epsilon\|^2 \;\rightarrow\; \text{predict added noise at step } t$$</div>
-                        <div class="key-point"><span class="label">\(\epsilon_\theta(x_t, t)\):</span><span class="desc">Neural network prediction of noise at step t given noisy input x_t; outputs estimated noise ε̂</span></div>
+                        <div class="key-point"><span class="label">\(\epsilon_\theta(x_t, t)\):</span><span class="desc">Neural network prediction of noise at step t given noisy input x_t; outputs estimated noise \(\hat{\epsilon}\)</span></div>
                         <div class="key-point"><span class="label">\(\epsilon\):</span><span class="desc">Ground truth noise that was added in forward process; sampled fresh for each training example</span></div>
                         <div class="key-point"><span class="label">\(\|\cdot\|^2\):</span><span class="desc">Mean squared error (L2 loss); measures pixel-level reconstruction error between predicted and actual noise</span></div>
                         <div class="key-point"><span class="label">\(\theta\):</span><span class="desc">Neural network parameters (typically UNet or transformer); learned during training</span></div>
@@ -706,10 +706,10 @@
                         <div class="key-point"><span class="label">x:</span><span class="desc">Original input</span></div>
                         <div class="key-point"><span class="label">dec():</span><span class="desc">Decoder network that reconstructs x̂ from latent representation</span></div>
                         <div class="key-point"><span class="label">\(\beta_1\|z - \text{sg}[e_k]\|^2\):</span><span class="desc">Codebook loss; moves codebook entries e_k toward encoder outputs z; sg[] = stop-gradient (no backprop to encoder)</span></div>
-                        <div class="key-point"><span class="label">\(\beta_1\):</span><span class="desc">Weight for codebook loss term; typically β₁=0.99; prevents codebook collapse</span></div>
+                        <div class="key-point"><span class="label">\(\beta_1\):</span><span class="desc">Weight for codebook loss term; typically \(\beta_1=0.99\); prevents codebook collapse</span></div>
                         <div class="key-point"><span class="label">sg[] (stop-gradient):</span><span class="desc">Detaches gradients; prevents backpropagation through this term; critical for stable training</span></div>
                         <div class="key-point"><span class="label">\(\beta_2\|\text{sg}[z] - e_k\|^2\):</span><span class="desc">Encoder commitment loss; pulls encoder outputs z toward selected codebook entries; sg[z] prevents codebook gradient</span></div>
-                        <div class="key-point"><span class="label">\(\beta_2\):</span><span class="desc">Weight for commitment loss; typically β₂=0.25; balances learning speed of encoder vs codebook</span></div>
+                        <div class="key-point"><span class="label">\(\beta_2\):</span><span class="desc">Weight for commitment loss; typically \(\beta_2=0.25\); balances learning speed of encoder vs codebook</span></div>
 
                         <div class="mnemonic">Discrete tokens = H×W grid of K-way choices. Transformers better at scaling than diffusion on tokens. Used in DALL-E, Jukebox.</div>
 
@@ -868,9 +868,9 @@
                         <div class="key-point"><span class="label">z = [z_1, z_2]:</span><span class="desc">Latent split into two parts; z_1 kept fixed, z_2 transformed conditioned on z_1</span></div>
                         <div class="key-point"><span class="label">\(T_\theta(z_1)\):</span><span class="desc">Transform (scale) network; outputs multiplicative factor for z_2; depends on z_1, no gradients through z_2</span></div>
                         <div class="key-point"><span class="label">\(S_\theta(z_1)\):</span><span class="desc">Shift (translation) network; outputs additive bias for z_2; depends on z_1</span></div>
-                        <div class="key-point"><span class="label">\(z'_2 = T_\theta(z_1) \cdot z_2 + S_\theta(z_1)\):</span><span class="desc">Affine transformation of z_2 conditioned on z_1; invertible via z_2 = (z'_2 - S_θ(z_1)) / T_θ(z_1)</span></div>
+                        <div class="key-point"><span class="label">\(z'_2 = T_\theta(z_1) \cdot z_2 + S_\theta(z_1)\):</span><span class="desc">Affine transformation of z_2 conditioned on z_1; invertible via \(z_2 = (z'_2 - S_\theta(z_1)) / T_\theta(z_1)\)</span></div>
                         <div class="key-point"><span class="label">Jacobian triangular:</span><span class="desc">Because z_1 → z'_1 identity (no change), z_2 → z'_2 affine; results in triangular Jacobian matrix</span></div>
-                        <div class="key-point"><span class="label">|det| = product diagonal:</span><span class="desc">For triangular matrix, determinant = product of diagonal elements; diagonal = [1, 1, ..., 1, T_θ(z_1)] = T_θ(z_1)</span></div>
+                        <div class="key-point"><span class="label">\(|\det| = \prod\) diagonal:</span><span class="desc">For triangular matrix, determinant = product of diagonal elements; diagonal = \([1, 1, \ldots, 1, T_\theta(z_1)] = T_\theta(z_1)\)</span></div>
                         <div class="key-point"><span class="label">\(O(d)\) complexity:</span><span class="desc">Computing determinant = O(d) vs \(O(d^3)\) for general Jacobian; huge speedup enables efficient exact likelihood</span></div>
 
                         <div class="mnemonic">Invertibility constraint = exact likelihood but architectures restrictive. Triangular Jacobian = O(d) not O(d³) det. Bidirectional: encode x→z, modify, decode z→x.</div>
