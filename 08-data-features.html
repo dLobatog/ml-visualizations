@@ -936,7 +936,7 @@
                 </div>
 
                 <div class="interview-tip">Include target lag-1 as feature? Yes if available at train. Production: use \(X_{t-1}\) predict \(Y_t\) (not \(Y_{t-1}\), which unavailable).</div>
-                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Build a time-series model: use X_{t-1} to predict Y_t (previous input predicts current target). Never use Y_{t-1} as input—it's unavailable at deployment. Lag-1 often most predictive; higher lags add noise.</div>
+                <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Build a time-series model: use X(t-1) to predict Y(t) (previous input predicts current target). Never use Y(t-1) as input—it's unavailable at deployment. Lag-1 often most predictive; higher lags add noise.</div>
             </div>
         </div>
 
@@ -1444,22 +1444,25 @@
             ctx2.fillText(`${Math.round(adjustedData.adjustedMajority)}`, chartLeft + 10, chartTop + barHeight1 - 10);
             ctx2.fillText(`${Math.round(adjustedData.adjustedMinority)}`, chartLeft + 70, chartTop + barHeight1 - 10);
 
-            const precision = (adjustedData.adjustedMinority / (adjustedData.adjustedMinority + 20)).toFixed(2);
-            const recall = (adjustedData.adjustedMinority / (adjustedData.adjustedMinority + 5)).toFixed(2);
-            const f1 = (2 * (precision * recall) / (precision + recall)).toFixed(2);
+            const precision = adjustedData.adjustedMinority / (adjustedData.adjustedMinority + 20);
+            const recall = adjustedData.adjustedMinority / (adjustedData.adjustedMinority + 5);
+            const f1 = (precision + recall) > 0 ? 2 * precision * recall / (precision + recall) : 0;
+            const precisionStr = precision.toFixed(2);
+            const recallStr = recall.toFixed(2);
+            const f1Str = f1.toFixed(2);
 
             statsDiv.innerHTML = `
                 <div class="stat-box">
                     <div class="stat-label">Precision</div>
-                    <div class="stat-value">${precision}</div>
+                    <div class="stat-value">${precisionStr}</div>
                 </div>
                 <div class="stat-box">
                     <div class="stat-label">Recall</div>
-                    <div class="stat-value">${recall}</div>
+                    <div class="stat-value">${recallStr}</div>
                 </div>
                 <div class="stat-box">
                     <div class="stat-label">F1-Score</div>
-                    <div class="stat-value">${f1}</div>
+                    <div class="stat-value">${f1Str}</div>
                 </div>
                 <div class="stat-box">
                     <div class="stat-label">Class Ratio</div>
@@ -1520,7 +1523,7 @@
 
                 ctx.fillStyle = '#f39c12';
                 ctx.fillRect(startX + (trainSize / n) * barWidth, y, (valSize / n) * barWidth, barHeight);
-                ctx.fillText('Validation (Recent)', startX + (trainSize / n) * barWidth + 10, y + barHeight + 20);
+                ctx.fillText('Validation (Recent)', startX + (trainSize / n) * barWidth + 10, y + barHeight + 38);
 
                 ctx.fillStyle = '#e74c3c';
                 ctx.fillRect(startX + ((trainSize + valSize) / n) * barWidth, y, (testSize / n) * barWidth, barHeight);
@@ -1532,7 +1535,7 @@
 
                 ctx.fillStyle = '#f39c12';
                 ctx.fillRect(startX + (trainSize / n) * barWidth, y, (valSize / n) * barWidth, barHeight);
-                ctx.fillText(`Validation (20%, ${valSize})`, startX + (trainSize / n) * barWidth + 10, y + barHeight + 20);
+                ctx.fillText(`Validation (20%, ${valSize})`, startX + (trainSize / n) * barWidth + 10, y + barHeight + 38);
 
                 ctx.fillStyle = '#e74c3c';
                 ctx.fillRect(startX + ((trainSize + valSize) / n) * barWidth, y, (testSize / n) * barWidth, barHeight);
@@ -1717,19 +1720,67 @@
                 let y = 70;
                 augmentations.forEach((aug, i) => {
                     augmentationCtx.fillStyle = i < 3 ? '#5f27cd33' : '#7c3ff033';
-                    augmentationCtx.fillRect(50, y, 300, 25);
+                    augmentationCtx.fillRect(50, y, 250, 25);
                     augmentationCtx.strokeStyle = '#5f27cd';
-                    augmentationCtx.strokeRect(50, y, 300, 25);
+                    augmentationCtx.strokeRect(50, y, 250, 25);
 
                     augmentationCtx.fillStyle = '#a070e8';
                     augmentationCtx.font = '15px Arial';
-                    augmentationCtx.fillText(aug + ': ' + intensity + '% intensity', 60, y + 17);
+                    augmentationCtx.fillText(aug + ': ' + intensity + '%', 60, y + 17);
                     y += 38;
                 });
 
+                // Draw visual preview on right side
+                const previewX = 340;
+                const previewY = 70;
+                const boxSize = 80;
+
+                // Original image placeholder
+                augmentationCtx.strokeStyle = '#5f27cd';
+                augmentationCtx.lineWidth = 2;
+                augmentationCtx.strokeRect(previewX, previewY, boxSize, boxSize);
+                augmentationCtx.fillStyle = '#5f27cd33';
+                augmentationCtx.fillRect(previewX, previewY, boxSize, boxSize);
                 augmentationCtx.fillStyle = '#b0b0c0';
-                augmentationCtx.font = '15px Arial';
-                augmentationCtx.fillText('Effect: Each image gets a random transformation. Prevents overfitting to exact pixels.', 50, 290);
+                augmentationCtx.font = '12px Arial';
+                augmentationCtx.textAlign = 'center';
+                augmentationCtx.fillText('Original', previewX + boxSize / 2, previewY + boxSize + 15);
+
+                // Arrow
+                augmentationCtx.strokeStyle = '#a070e8';
+                augmentationCtx.beginPath();
+                augmentationCtx.moveTo(previewX + boxSize + 10, previewY + boxSize / 2);
+                augmentationCtx.lineTo(previewX + boxSize + 40, previewY + boxSize / 2);
+                augmentationCtx.stroke();
+                augmentationCtx.beginPath();
+                augmentationCtx.moveTo(previewX + boxSize + 35, previewY + boxSize / 2 - 5);
+                augmentationCtx.lineTo(previewX + boxSize + 40, previewY + boxSize / 2);
+                augmentationCtx.lineTo(previewX + boxSize + 35, previewY + boxSize / 2 + 5);
+                augmentationCtx.stroke();
+
+                // Augmented image placeholder
+                const augX = previewX + boxSize + 50;
+                augmentationCtx.strokeStyle = '#a070e8';
+                augmentationCtx.strokeRect(augX, previewY, boxSize, boxSize);
+                augmentationCtx.fillStyle = '#7c3ff033';
+                augmentationCtx.fillRect(augX, previewY, boxSize, boxSize);
+                augmentationCtx.fillStyle = '#a070e8';
+                augmentationCtx.font = '11px Arial';
+                augmentationCtx.fillText('Augmented', augX + boxSize / 2, previewY + boxSize + 15);
+                augmentationCtx.font = '10px Arial';
+                augmentationCtx.fillText('(' + intensity + '% intensity)', augX + boxSize / 2, previewY + boxSize + 28);
+
+                // Dataset size info
+                augmentationCtx.textAlign = 'left';
+                augmentationCtx.fillStyle = '#b0b0c0';
+                augmentationCtx.font = '13px Arial';
+                augmentationCtx.fillText('Dataset: N images -> N x (1 + k) augmented', previewX, previewY + boxSize + 55);
+                augmentationCtx.fillText('k = number of augmentations applied', previewX, previewY + boxSize + 73);
+
+                augmentationCtx.fillStyle = '#b0b0c0';
+                augmentationCtx.font = '13px Arial';
+                augmentationCtx.textAlign = 'left';
+                augmentationCtx.fillText('Effect: Random transforms prevent overfitting to exact pixels.', 50, 285);
             } else if (augType === 'text') {
                 const augmentations = [
                     'Back-translation: EN → FR → EN',
@@ -1904,7 +1955,7 @@
                 weakSupervisionCtx.strokeRect(50, y, 200, 20);
 
                 // Simulate accuracy
-                const accuracy = 0.5 + (Math.random() * 0.3 + lfAccuracy * 0.5);
+                const accuracy = Math.min(0.99, 0.5 + (Math.random() * 0.2 + lfAccuracy * 0.3));
                 const correct = Math.round(100 * accuracy);
 
                 weakSupervisionCtx.fillStyle = '#a070e8';
@@ -1918,7 +1969,7 @@
                 weakSupervisionCtx.textAlign = 'center';
                 weakSupervisionCtx.fillStyle = '#e0e0e0';
                 weakSupervisionCtx.font = 'bold 10px Arial';
-                weakSupervisionCtx.fillText(accurate > 0.5 ? '1' : '0', 280, y + 14);
+                weakSupervisionCtx.fillText(accuracy > 0.5 ? '1' : '0', 280, y + 14);
 
                 y += 25;
             }

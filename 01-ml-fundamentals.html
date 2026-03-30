@@ -102,7 +102,7 @@
   <h2>Bayes Theorem: Disease Testing</h2>
   <p class="subtitle">Drag the "Prior P(disease)" slider from 1% to 10% to see the base rate effect. Then set it back to 1% and move "Sensitivity" down to 80% — watch how the posterior probability drops dramatically. This is why rare disease tests can give surprising results.</p>
   <div class="viz-canvas">
-    <canvas id="bayesCanvas" width="800" height="400"></canvas>
+    <canvas id="bayesCanvas" width="800" height="470"></canvas>
   </div>
   <div class="controls">
     <div class="control-group">
@@ -216,7 +216,7 @@
   <h2>MLE (Maximum Likelihood Estimation) vs MAP (Maximum A Posteriori): Coin Flips</h2>
   <p class="subtitle">Start with "Number of Coin Flips" = 5, set "Prior Strength" high (80). Move the flips slider to 100 — watch the posterior (red) peak move toward the likelihood peak. As data grows, the prior pulls less.</p>
   <div class="viz-canvas">
-    <canvas id="mleCanvas" width="800" height="400"></canvas>
+    <canvas id="mleCanvas" width="800" height="440"></canvas>
   </div>
   <div class="controls">
     <div class="control-group">
@@ -315,7 +315,7 @@
   <h2>Entropy & Cross-Entropy</h2>
   <p class="subtitle">Drag the "True Distribution p" slider to 0.01 and 0.99 to see entropy plummet (outcomes become predictable). Set p=0.5 for maximum entropy. Now drag "Approximation q" away from p — the red cross-entropy curve rises above green entropy. The gap is KL divergence.</p>
   <div class="viz-canvas">
-    <canvas id="entropyCanvas" width="800" height="400"></canvas>
+    <canvas id="entropyCanvas" width="800" height="440"></canvas>
   </div>
   <div class="controls">
     <div class="control-group">
@@ -363,7 +363,7 @@
   <h2>KL (Kullback-Leibler) Divergence: Asymmetry</h2>
   <p class="subtitle">Set p to a narrow peak and drag q far away — watch KL(p||q) spike (forward KL penalizes missing where p is high). Now drag q to cover q's entire range at lower height — reverse KL(q||p) rises instead (mode-matching vs mass-covering).</p>
   <div class="viz-canvas">
-    <canvas id="klCanvas" width="800" height="400"></canvas>
+    <canvas id="klCanvas" width="1000" height="400"></canvas>
   </div>
   <div class="controls">
     <div class="control-group">
@@ -1012,7 +1012,7 @@ function drawBayes() {
   const p_positive = p_pos_given_disease * prior + p_pos_given_no_disease * (1 - prior);
   const posterior = (p_pos_given_disease * prior) / p_positive;
 
-  const pad = { l: 60, r: 30, t: 30, b: 50 };
+  const pad = { l: 60, r: 30, t: 30, b: 80 };
   const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
 
   // Draw axes
@@ -1435,7 +1435,7 @@ function drawMLE() {
   ctx.fillStyle = '#ffffff';
   ctx.font = '15px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText(`Data: ${heads}/${n} heads  |  MLE (Max Likelihood) θ = ${mleTheta.toFixed(3)}`, pad.l, H - 18);
+  ctx.fillText(`Data: ${heads}/${n} heads  |  MLE (Max Likelihood) θ = ${mleTheta.toFixed(3)}`, pad.l, H - 38);
 }
 
 // ==================== CENTRAL LIMIT THEOREM ====================
@@ -1621,7 +1621,7 @@ function drawEntropy() {
   ctx.fillStyle = '#b0b0c0';
   ctx.font = '15px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText(`H(p)=${entropy_p.toFixed(3)}  H(p,q)=${ce_p.toFixed(3)}  KL (Kullback-Leibler)=${kl_p.toFixed(3)}`, pad.l, H - 12);
+  ctx.fillText(`H(p)=${entropy_p.toFixed(3)}  H(p,q)=${ce_p.toFixed(3)}  KL=${kl_p.toFixed(3)}`, pad.l, H - 30);
 }
 
 // ==================== KL DIVERGENCE ====================
@@ -1707,7 +1707,7 @@ function drawKL() {
   ctx.fillStyle = '#b0b0c0';
   ctx.font = '15px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText(`KL(P||Q) = ${klFwd.toFixed(3)} (forward, mode-covering)  |  KL(Q||P) = ${klRev.toFixed(3)} (reverse, mode-seeking)  [KL = Kullback-Leibler]`, pad.l, H - 12);
+  ctx.fillText(`KL(P||Q) = ${klFwd.toFixed(3)} (fwd, mode-covering)  |  KL(Q||P) = ${klRev.toFixed(3)} (rev, mode-seeking)`, pad.l, H - 12);
 }
 
 // ==================== GRADIENT DESCENT VARIANTS ====================
@@ -1751,7 +1751,7 @@ function drawGDV() {
 
   ctx.clearRect(0, 0, W, H);
 
-  // Contour background
+  // Contour background - brighter heatmap
   const range = 4;
   for (let px = 0; px < W; px += 3) {
     for (let py = 0; py < H; py += 3) {
@@ -1759,13 +1759,47 @@ function drawGDV() {
       const y = (py / H - 0.5) * 2 * range;
       const z = lossFunc(x, y);
       const intensity = Math.min(1, z / 10);
-      const r = Math.floor(10 + intensity * 30);
-      const g = Math.floor(10 + intensity * 15);
-      const b = Math.floor(26 + intensity * 50);
+      const r = Math.floor(15 + intensity * 120);
+      const g = Math.floor(10 + (1 - intensity) * 80);
+      const b = Math.floor(50 + (1 - intensity) * 120);
       ctx.fillStyle = `rgb(${r},${g},${b})`;
       ctx.fillRect(px, py, 3, 3);
     }
   }
+
+  // Draw contour lines
+  const contourLevels = [0.5, 1, 2, 3, 5, 7, 10];
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+  ctx.lineWidth = 1;
+  for (const level of contourLevels) {
+    for (let px = 1; px < W - 1; px += 3) {
+      for (let py = 1; py < H - 1; py += 3) {
+        const x = (px / W - 0.5) * 2 * range;
+        const y = (py / H - 0.5) * 2 * range;
+        const z = lossFunc(x, y);
+        const dx = ((px + 1) / W - 0.5) * 2 * range;
+        const dy = ((py + 1) / H - 0.5) * 2 * range;
+        const zr = lossFunc(dx, y);
+        const zd = lossFunc(x, dy);
+        if ((z - level) * (zr - level) < 0 || (z - level) * (zd - level) < 0) {
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+          ctx.fillRect(px, py, 2, 2);
+        }
+      }
+    }
+  }
+
+  // Labels
+  ctx.fillStyle = '#ff6b6b';
+  ctx.font = 'bold 13px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText('SGD', 10, 20);
+  ctx.fillStyle = '#4ecdc4';
+  ctx.fillText('Momentum', 10, 36);
+  ctx.fillStyle = '#ffd93d';
+  ctx.fillText('Adam', 10, 52);
+  ctx.fillStyle = '#64ffda';
+  ctx.fillText('★ Minimum', 10, 68);
 
   // Draw paths
   function drawPath(path, color) {
@@ -1868,7 +1902,7 @@ function drawLR() {
 
   ctx.clearRect(0, 0, W, H);
 
-  // Contour
+  // Contour - brighter heatmap
   const range = 4;
   for (let px = 0; px < W; px += 3) {
     for (let py = 0; py < H; py += 3) {
@@ -1876,13 +1910,43 @@ function drawLR() {
       const y = (py / H - 0.5) * 2 * range;
       const z = lossFunc(x, y);
       const intensity = Math.min(1, z / 10);
-      const r = Math.floor(10 + intensity * 30);
-      const g = Math.floor(10 + intensity * 15);
-      const b = Math.floor(26 + intensity * 50);
+      const r = Math.floor(15 + intensity * 120);
+      const g = Math.floor(10 + (1 - intensity) * 80);
+      const b = Math.floor(50 + (1 - intensity) * 120);
       ctx.fillStyle = `rgb(${r},${g},${b})`;
       ctx.fillRect(px, py, 3, 3);
     }
   }
+
+  // Draw contour lines
+  const contourLevels = [0.5, 1, 2, 3, 5, 7, 10];
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+  ctx.lineWidth = 1;
+  for (const level of contourLevels) {
+    for (let px = 1; px < W - 1; px += 3) {
+      for (let py = 1; py < H - 1; py += 3) {
+        const x = (px / W - 0.5) * 2 * range;
+        const y = (py / H - 0.5) * 2 * range;
+        const z = lossFunc(x, y);
+        const dx = ((px + 1) / W - 0.5) * 2 * range;
+        const dy = ((py + 1) / H - 0.5) * 2 * range;
+        const zr = lossFunc(dx, y);
+        const zd = lossFunc(x, dy);
+        if ((z - level) * (zr - level) < 0 || (z - level) * (zd - level) < 0) {
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+          ctx.fillRect(px, py, 2, 2);
+        }
+      }
+    }
+  }
+
+  // Label
+  ctx.fillStyle = '#ff6b6b';
+  ctx.font = 'bold 13px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText('Gradient Descent Path', 10, 20);
+  ctx.fillStyle = '#64ffda';
+  ctx.fillText('★ Minimum', 10, 36);
 
   // Draw path
   if (lrPath.length > 1) {

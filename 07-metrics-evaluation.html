@@ -815,28 +815,39 @@
 
         function generateROCData() {
             const n = 1000;
-            let tp = 0, fp = 0;
+            // Generate fixed samples with correlated scores
+            const samples = [];
+            for (let i = 0; i < n; i++) {
+                const isPositive = Math.random() < 0.3;
+                // Positive samples get higher scores on average
+                const score = isPositive
+                    ? Math.min(1, Math.max(0, 0.7 + (Math.random() - 0.5) * 0.5))
+                    : Math.min(1, Math.max(0, 0.3 + (Math.random() - 0.5) * 0.5));
+                samples.push({ score, isPositive });
+            }
+
+            const totalPositives = samples.filter(s => s.isPositive).length;
+            const totalNegatives = n - totalPositives;
             const data = [];
 
             for (let t = 100; t >= 0; t--) {
                 const threshold = t / 100;
-                tp = 0; fp = 0;
+                let tp = 0, fp = 0;
 
-                for (let i = 0; i < n; i++) {
-                    const score = Math.random();
-                    const isPositive = Math.random() < 0.3;
-
-                    if (score >= threshold) {
-                        if (isPositive) tp++;
+                for (const s of samples) {
+                    if (s.score >= threshold) {
+                        if (s.isPositive) tp++;
                         else fp++;
                     }
                 }
 
-                const tpr = tp / (n * 0.3);
-                const fpr = fp / (n * 0.7);
+                const tpr = totalPositives > 0 ? tp / totalPositives : 0;
+                const fpr = totalNegatives > 0 ? fp / totalNegatives : 0;
                 data.push({ threshold, tpr: Math.min(tpr, 1), fpr: Math.min(fpr, 1) });
             }
 
+            // Sort by FPR ascending for smooth curve and correct AUC
+            data.sort((a, b) => a.fpr - b.fpr);
             return data;
         }
 
@@ -941,10 +952,10 @@
             rocCtx.arc(px, py, 8, 0, 2 * Math.PI);
             rocCtx.fill();
 
-            // Calculate AUC (trapezoid rule)
+            // Calculate AUC (trapezoid rule, data sorted by FPR ascending)
             let auc = 0;
             for (let i = 1; i < rocData.length; i++) {
-                const dx = rocData[i - 1].fpr - rocData[i].fpr;
+                const dx = rocData[i].fpr - rocData[i - 1].fpr;
                 const avgTpr = (rocData[i - 1].tpr + rocData[i].tpr) / 2;
                 auc += dx * avgTpr;
             }
@@ -964,21 +975,28 @@
 
         function generatePRData() {
             const n = 1000;
+            // Generate fixed samples with correlated scores
+            const samples = [];
+            for (let i = 0; i < n; i++) {
+                const isPositive = Math.random() < 0.2;
+                const score = isPositive
+                    ? Math.min(1, Math.max(0, 0.7 + (Math.random() - 0.5) * 0.5))
+                    : Math.min(1, Math.max(0, 0.3 + (Math.random() - 0.5) * 0.5));
+                samples.push({ score, isPositive });
+            }
+
             const data = [];
 
             for (let t = 100; t >= 0; t--) {
                 const threshold = t / 100;
                 let tp = 0, fp = 0, fn = 0;
 
-                for (let i = 0; i < n; i++) {
-                    const score = Math.random();
-                    const isPositive = Math.random() < 0.2;
-
-                    if (score >= threshold) {
-                        if (isPositive) tp++;
+                for (const s of samples) {
+                    if (s.score >= threshold) {
+                        if (s.isPositive) tp++;
                         else fp++;
                     } else {
-                        if (isPositive) fn++;
+                        if (s.isPositive) fn++;
                     }
                 }
 
@@ -987,6 +1005,8 @@
                 data.push({ threshold, precision, recall });
             }
 
+            // Sort by recall ascending for smooth curve
+            data.sort((a, b) => a.recall - b.recall);
             return data;
         }
 
@@ -1117,7 +1137,7 @@
             }
 
             const cellSize = 80;
-            const startX = 60;
+            const startX = 100;
             const startY = 60;
             const padding = 20;
 
@@ -1222,8 +1242,9 @@
             calCtx.textAlign = 'center';
             calCtx.fillText('Predicted Probability', calCanvas.width / 2, calCanvas.height - 10);
             calCtx.save();
-            calCtx.translate(13, calCanvas.height / 2);
+            calCtx.translate(18, calCanvas.height / 2);
             calCtx.rotate(-Math.PI / 2);
+            calCtx.font = '13px sans-serif';
             calCtx.fillText('Actual Frequency (Accuracy)', 0, 0);
             calCtx.restore();
 

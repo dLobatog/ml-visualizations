@@ -73,7 +73,7 @@
   <h2>Collaborative Filtering: Matrix Factorization</h2>
   <p class="subtitle">Slide k (latent dimensions) from 1 to 50. Watch the reconstruction of the rating matrix improve—at k=1, barely captures patterns; at k=50, reconstructs almost perfectly. Notice the rmse metric: higher k = better reconstruction. But too high k risks overfitting. Find the sweet spot around k=10–20.</p>
   <div class="viz-canvas">
-    <canvas id="mfCanvas" width="900" height="500"></canvas>
+    <canvas id="mfCanvas" width="1200" height="500"></canvas>
   </div>
   <div class="controls">
     <div class="control-group">
@@ -611,6 +611,7 @@ function drawMatrixFactorization() {
   const m = mfData.R.length;
   const n = mfData.R[0].length;
   const cellSize = 30;
+  const uVtCellSize = 46;
   const spacing = 100;
   ctx.fillStyle = '#ff9ff3';
   ctx.font = 'bold 17px monospace';
@@ -648,38 +649,38 @@ function drawMatrixFactorization() {
   ctx.fillStyle = '#ff9ff3';
   ctx.font = 'bold 15px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText(`U (${m}x${k})`, uX + (cellSize * k) / 2 - 5, 30);
+  ctx.fillText(`U (${m}x${k})`, uX + (uVtCellSize * k) / 2 - 5, 30);
   for (let i = 0; i < Math.min(m, 6); i++) {
     for (let j = 0; j < k; j++) {
-      const x = uX + j * cellSize;
+      const x = uX + j * uVtCellSize;
       const y = 50 + i * cellSize;
       const val = (Math.sin(i * 0.5 + j * 0.7) * 0.5 + 0.5).toFixed(2);
       ctx.fillStyle = '#1a4a6a';
-      ctx.fillRect(x, y, cellSize - 2, cellSize - 2);
+      ctx.fillRect(x, y, uVtCellSize - 2, cellSize - 2);
       ctx.fillStyle = '#88ccff';
       ctx.font = '13px monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(val, x + cellSize/2 - 1, y + cellSize/2);
+      ctx.fillText(val, x + uVtCellSize/2 - 1, y + cellSize/2);
     }
   }
-  const vX = uX + (cellSize * k) + 40;
+  const vX = uX + (uVtCellSize * k) + 40;
   ctx.fillStyle = '#ff9ff3';
   ctx.font = 'bold 15px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText(`Vt (${k}x${n})`, vX + (cellSize * Math.min(n, 8)) / 2 - 5, 30);
+  ctx.fillText(`Vt (${k}x${n})`, vX + (uVtCellSize * Math.min(n, 8)) / 2 - 5, 30);
   for (let i = 0; i < k; i++) {
     for (let j = 0; j < Math.min(n, 8); j++) {
-      const x = vX + j * cellSize;
+      const x = vX + j * uVtCellSize;
       const y = 50 + i * cellSize;
       const val = (Math.cos(i * 0.3 + j * 0.6) * 0.5 + 0.5).toFixed(2);
       ctx.fillStyle = '#1a4a6a';
-      ctx.fillRect(x, y, cellSize - 2, cellSize - 2);
+      ctx.fillRect(x, y, uVtCellSize - 2, cellSize - 2);
       ctx.fillStyle = '#88ccff';
       ctx.font = '13px monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(val, x + cellSize/2 - 1, y + cellSize/2);
+      ctx.fillText(val, x + uVtCellSize/2 - 1, y + cellSize/2);
     }
   }
   let totalError = 0, count = 0;
@@ -1167,34 +1168,36 @@ function drawWideDeep() {
   ctx.fillText('Remembers exact patterns', wideX + pathW/2, wideY + 150);
 
   // Deep path
-  const deepX = 580;
+  const deepX = 560;
+  const deepW = 380;
   ctx.fillStyle = '#1a2a3a';
-  ctx.fillRect(deepX, wideY, pathW, pathH);
+  ctx.fillRect(deepX, wideY, deepW, pathH);
   ctx.strokeStyle = '#5dade2';
   ctx.lineWidth = 2;
-  ctx.strokeRect(deepX, wideY, pathW, pathH);
+  ctx.strokeRect(deepX, wideY, deepW, pathH);
 
+  const deepTextCenter = deepX + deepW/2 - 30;
   ctx.fillStyle = '#5dade2';
   ctx.font = 'bold 17px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('DEEP PATH', deepX + pathW/2, wideY + 25);
+  ctx.fillText('DEEP PATH', deepTextCenter, wideY + 25);
   ctx.fillStyle = '#f7dc6f';
   ctx.font = 'bold 15px monospace';
-  ctx.fillText('Generalization', deepX + pathW/2, wideY + 48);
+  ctx.fillText('Generalization', deepTextCenter, wideY + 48);
 
   ctx.fillStyle = '#b0b0c0';
-  ctx.font = '15px monospace';
-  ctx.fillText('Embeddings + Dense Layers', deepX + pathW/2, wideY + 75);
-  ctx.fillText('(Automatic feature learning)', deepX + pathW/2, wideY + 95);
-  ctx.fillText('MLP + ReLU activations', deepX + pathW/2, wideY + 120);
+  ctx.font = '14px monospace';
+  ctx.fillText('Embeddings + Dense Layers', deepTextCenter, wideY + 75);
+  ctx.fillText('(Auto feature learning)', deepTextCenter, wideY + 95);
+  ctx.fillText('MLP + ReLU activations', deepTextCenter, wideY + 120);
   ctx.fillStyle = '#5dade2';
-  ctx.font = '15px monospace';
-  ctx.fillText('Learns new patterns', deepX + pathW/2, wideY + 150);
+  ctx.font = '14px monospace';
+  ctx.fillText('Learns new patterns', deepTextCenter, wideY + 150);
 
   // Draw DNN layers inside deep path
   const layerColors = ['#2a4a6a', '#2a5a7a', '#2a6a8a'];
   for (let l = 0; l < 3; l++) {
-    const lx = deepX + 250 + l * 25;
+    const lx = deepX + 280 + l * 25;
     const ly = wideY + 60;
     ctx.fillStyle = layerColors[l];
     ctx.fillRect(lx, ly, 18, 100);
@@ -1219,7 +1222,7 @@ function drawWideDeep() {
 
   ctx.strokeStyle = '#5dade2';
   ctx.beginPath();
-  ctx.moveTo(deepX + pathW/2, wideY + pathH);
+  ctx.moveTo(deepX + deepW/2, wideY + pathH);
   ctx.lineTo(canvas.width / 2, bottomY);
   ctx.stroke();
 
@@ -1531,11 +1534,12 @@ function drawPipeline() {
 
     // Stats
     ctx.fillStyle = '#b0b0c0';
-    ctx.font = '15px monospace';
+    ctx.font = '13px monospace';
     ctx.textAlign = 'left';
     const statsX = x + 55;
-    ctx.fillText('In: ' + stage.pool + ' -> Out: ' + stage.output, statsX, y + 52);
-    ctx.fillText('Model: ' + stage.model + ' | Latency: ' + stage.latency, statsX, y + 72);
+    ctx.fillText('In: ' + stage.pool + ' -> Out: ' + stage.output, statsX, y + 50);
+    ctx.fillText('Model: ' + stage.model, statsX, y + 68);
+    ctx.fillText('Latency: ' + stage.latency, statsX, y + 86);
 
     // Description on the right
     ctx.fillStyle = stage.color;
