@@ -1,0 +1,1907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ML Interview Prep: Data & Features</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #0a0a0f;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 2px solid #5f27cd;
+            padding-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            color: #5f27cd;
+        }
+
+        .subtitle {
+            font-size: 1.1em;
+            color: #a0a0b0;
+        }
+
+        .section {
+            background-color: #12121f;
+            border-left: 4px solid #5f27cd;
+            padding: 30px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+            transition: transform 0.3s ease;
+        }
+
+        .section:hover {
+            transform: translateX(5px);
+        }
+
+        .section h2 {
+            color: #5f27cd;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        button {
+            background-color: #5f27cd;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.95em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #7c3ff0;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(95, 39, 205, 0.4);
+        }
+
+        button.active {
+            background-color: #7c3ff0;
+            box-shadow: 0 0 15px rgba(95, 39, 205, 0.6);
+        }
+
+        input[type="range"] {
+            width: 200px;
+            cursor: pointer;
+            accent-color: #5f27cd;
+        }
+
+        select {
+            background-color: #1a1a28;
+            color: #e0e0e0;
+            border: 2px solid #5f27cd;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.95em;
+        }
+
+        canvas {
+            background-color: #0f0f1a;
+            border-radius: 8px;
+            display: block;
+            margin: 20px auto;
+            border: 1px solid #2a2a38;
+        }
+
+      
+      
+        .flex-container {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .canvas-wrapper {
+            flex: 1;
+            min-width: 400px;
+        }
+
+        .info-section {
+            background-color: #1a1a28;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #5f27cd;
+            margin-top: 15px;
+        }
+
+        .matrix-table {
+            background-color: #1a1a28;
+            margin-top: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+        }
+
+        th, td {
+            padding: 10px;
+            border: 1px solid #2a2a38;
+            text-align: center;
+        }
+
+        th {
+            background-color: #5f27cd;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background-color: #0f0f1a;
+        }
+
+        tr:hover {
+            background-color: #1f1f2f;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .stat-box {
+            background-color: #1a1a28;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            border: 1px solid #2a2a38;
+        }
+
+        .stat-label {
+            color: #a0a0b0;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            color: #5f27cd;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .strategy-description {
+            background-color: #1a1a28;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #5f27cd;
+        }
+
+        .legend {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin: 15px 0;
+            font-size: 0.95em;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #5f27cd;
+            color: #a0a0b0;
+        }
+    
+  .insight-box { background: linear-gradient(135deg, #1a1a3e 0%, #151530 100%); border-left: 4px solid #5f27cd; padding: 20px 24px; margin-top: 20px; border-radius: 0 12px 12px 0; font-size: 0.92em; color: #ccc; line-height: 1.8; }
+  .insight-box strong { color: #5f27cd; font-size: 1.05em; }
+  .insight-box .formula { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 12px 18px; margin: 12px 0; font-family: 'Courier New', monospace; color: #e8e8ff; font-size: 1.05em; text-align: center; letter-spacing: 0.5px; line-height: 1.9; }
+  .insight-box .formula .highlight { color: #5f27cd; font-weight: bold; }
+  .insight-box .key-point { display: flex; gap: 8px; margin: 8px 0; padding: 4px 0; }
+  .insight-box .key-point .label { color: #5f27cd; font-weight: 600; white-space: nowrap; min-width: 90px; }
+  .insight-box .key-point .desc { color: #ddd; }
+  .insight-box .interview-tip { background: rgba(100, 255, 100, 0.05); border: 1px solid rgba(100, 255, 100, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #b0ffb0; font-size: 0.93em; line-height: 1.6; }
+  .insight-box .interview-tip::before { content: '\1F4A1  Interview Tip: '; font-weight: 700; color: #7fff7f; }
+  .insight-box .mnemonic { background: rgba(255, 150, 255, 0.05); border: 1px solid rgba(255, 150, 255, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #ffb0ff; font-size: 0.93em; line-height: 1.6; }
+  .insight-box .mnemonic::before { content: '\1F9E0  Remember: '; font-weight: 700; color: #ff7fff; }
+  .insight-box .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+  .insight-box .comparison .option { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 10px 14px; }
+  .insight-box .comparison .option .opt-title { color: #5f27cd; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
+  .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
+  .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
+
+</style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>8. Data & Features</h1>
+            <p class="subtitle">Data Preprocessing, Feature Engineering, Augmentation & Weak Supervision</p>
+        </header>
+
+        <!-- Section 1: Feature Scaling & Normalization -->
+        <div class="section">
+            <h2>1. Feature Scaling & Normalization</h2>
+            <p>Different scaling methods have significant impacts on model training, especially for distance-based algorithms and neural networks.</p>
+
+            <div class="controls">
+                <div class="control-group">
+                    <label>Method:</label>
+                    <button class="method-btn active" data-method="original">Original</button>
+                    <button class="method-btn" data-method="zscore">Z-Score</button>
+                    <button class="method-btn" data-method="minmax">Min-Max</button>
+                    <button class="method-btn" data-method="logtransform">Log Transform</button>
+                </div>
+            </div>
+
+            <div class="flex-container">
+                <div class="canvas-wrapper">
+                    <canvas id="scalingCanvas" width="500" height="350"></canvas>
+                </div>
+                <div class="canvas-wrapper">
+                    <canvas id="scalingCompareCanvas" width="500" height="350"></canvas>
+                </div>
+            </div>
+
+            <div class="stats" id="scalingStats"></div>
+
+            <div class="insight-box">
+                <h4>Interview Tips: Feature Standardization and Scaling</h4>
+                <p><strong>What it is:</strong> Rescales numeric features to common scale. Critical for linear models, distance-based algorithms, regularization. Different methods for different data distributions.</p>
+
+                <div class="formula">Z-Score: z = (x - mean) / std_dev  →  mean=0, std=1</div>
+                <div class="key-point"><span class="label">x:</span><span class="desc">Original feature value</span></div>
+                <div class="key-point"><span class="label">mean:</span><span class="desc">Sample mean of the feature; computed on training data only</span></div>
+                <div class="key-point"><span class="label">std_dev:</span><span class="desc">Sample standard deviation; computed on training data only</span></div>
+                <div class="key-point"><span class="label">z:</span><span class="desc">Standardized value with mean=0, std_dev=1; allows all features comparable</span></div>
+                <div class="formula">Min-Max: x_scaled = (x - min) / (max - min)  →  range [0,1]</div>
+                <div class="key-point"><span class="label">x:</span><span class="desc">Original feature value</span></div>
+                <div class="key-point"><span class="label">min:</span><span class="desc">Minimum value in training data</span></div>
+                <div class="key-point"><span class="label">max:</span><span class="desc">Maximum value in training data</span></div>
+                <div class="key-point"><span class="label">x_scaled:</span><span class="desc">Scaled value, always ∈ [0, 1]; sensitive to outliers if min/max based on outliers</span></div>
+                <div class="formula">Robust: x_scaled = (x - median) / IQR  →  outlier-resistant</div>
+                <div class="key-point"><span class="label">x:</span><span class="desc">Original feature value</span></div>
+                <div class="key-point"><span class="label">median:</span><span class="desc">50th percentile of training data; unaffected by extreme outliers</span></div>
+                <div class="key-point"><span class="label">IQR (Interquartile Range):</span><span class="desc">Q3 - Q1 (75th percentile - 25th percentile); insensitive to outliers</span></div>
+                <div class="key-point"><span class="label">x_scaled:</span><span class="desc">Scaled value; robust to outliers; different range than [0,1] (depends on data distribution)</span></div>
+
+                <div class="mnemonic">Z-Score puts all features on common scale. Salary (high variance) won't dominate age (low variance) in L2 regularization.</div>
+
+                <hr class="divider">
+
+                <div class="key-point">
+                    <span class="label">Best for:</span>
+                    <span class="desc"><strong>Z-Score</strong> = linear models, DNNs, distance-based (KNN, K-means). <strong>Min-Max</strong> = bounded features, probabilities. <strong>Robust</strong> = outliers present.</span>
+                </div>
+
+                <div class="interview-tip">Do tree-based models need scaling? No. Decision trees invariant to scaling. Standardization unnecessary and wastes compute.</div>
+
+                <div class="interview-tip">Should I standardize before or after train/test split? Always AFTER. Fit mean/std on train only, apply to test. Prevents data leakage.</div>
+
+                <hr class="divider">
+
+                <div class="key-point">
+                    <span class="label">Log transform:</span>
+                    <span class="desc">For right-skewed distributions (income, traffic). Use log(x+1) to handle zeros. Normalizes variance.</span>
+                </div>
+
+                <div class="key-point">
+                    <span class="label">Production rule:</span>
+                    <span class="desc">Store scaler params (mean/std) versioned with model. At inference, use EXACT same params. Drift >5% in stats = retrain scaler.</span>
+                </div>
+
+                <div class="interview-tip">Non-normal data? Use robust scaling (median/IQR) or power transform (Yeo-Johnson, Box-Cox) before standardization.</div>
+            </div>
+        </div>
+
+        <!-- Section 2: Feature Encoding -->
+        <div class="section">
+            <h2>2. Feature Encoding</h2>
+            <p>Categorical variables require encoding before model training. Different techniques suit different scenarios.</p>
+
+            <div class="controls">
+                <div class="control-group">
+                    <label>Encoding Method:</label>
+                    <button class="encoding-btn active" data-encoding="onehot">One-Hot</button>
+                    <button class="encoding-btn" data-encoding="label">Label</button>
+                    <button class="encoding-btn" data-encoding="target">Target</button>
+                </div>
+            </div>
+
+            <div class="info-section" id="encodingInfo"></div>
+            <div class="matrix-table" id="encodingTable"></div>
+
+            <div class="insight-box">
+                <h4>Interview Tips: Feature Encoding for Categorical Variables</h4>
+                <p><strong>What it is:</strong> Converts categorical variables to numeric for ML. Three main methods: one-hot (binary indicators), label (integers), target (mean encoding).</p>
+
+                <div class="formula">One-Hot: d categories → d-1 binary columns (reference category dropped)</div>
+                <div class="key-point"><span class="label">d:</span><span class="desc">Number of unique categories/classes in the categorical variable</span></div>
+                <div class="key-point"><span class="label">d-1:</span><span class="desc">Number of binary columns created; one category chosen as reference (usually most frequent or first alphabetically)</span></div>
+                <div class="key-point"><span class="label">Binary columns:</span><span class="desc">Each column ∈ {0, 1}; value=1 if sample belongs to that category, 0 otherwise; reference category = all zeros</span></div>
+                <div class="formula">Target Encoding: category → mean(y | category) = proportion of positives</div>
+                <div class="key-point"><span class="label">category:</span><span class="desc">A unique value in the categorical feature (e.g., "red" in color feature)</span></div>
+                <div class="key-point"><span class="label">y:</span><span class="desc">Target variable; for binary classification, y ∈ {0, 1}</span></div>
+                <div class="key-point"><span class="label">mean(y | category):</span><span class="desc">Average of target values for all samples with this category; represents probability of positive class</span></div>
+                <div class="key-point"><span class="label">Target Encoding Range:</span><span class="desc">∈ [0, 1] for binary classification; captures class imbalance per category</span></div>
+
+                <div class="mnemonic">One-hot: [red, blue, green] → columns [red, blue] (green=reference=[0,0]). Prevents dummy variable trap (multicollinearity).</div>
+
+                <hr class="divider">
+
+                <div class="comparison">
+                    <div class="option">
+                        <div class="opt-title">One-Hot</div>
+                        <div class="opt-desc">Binary features, [0,1] range, no ordering. Best for: linear models, DNNs. Bad for: high cardinality (explosion).</div>
+                    </div>
+                    <div class="option">
+                        <div class="opt-title">Label</div>
+                        <div class="opt-desc">Integers 1,2,3… Introduces artificial ordering. Only for tree models. Avoid elsewhere.</div>
+                    </div>
+                </div>
+
+                <div class="comparison">
+                    <div class="option">
+                        <div class="opt-title">Target Encoding</div>
+                        <div class="opt-desc">Category → mean target. Powerful but risks overfitting. Needs cross-validation. Leaks target info.</div>
+                    </div>
+                    <div class="option">
+                        <div class="opt-title">Embeddings</div>
+                        <div class="opt-desc">Learn low-rank dense vectors. For very high cardinality (millions of values). Replaces one-hot.</div>
+                    </div>
+                </div>
+
+                <hr class="divider">
+
+                <div class="interview-tip">Why drop one column in one-hot? All d columns sum to 1 (perfect multicollinearity). Drop one → preserves info + maintains rank.</div>
+
+                <div class="interview-tip">High-cardinality features (millions of values)? Don't one-hot—causes sparsity + memory bloat. Use target encoding or embeddings instead.</div>
+
+                <div class="key-point">
+                    <span class="label">Unseen categories:</span>
+                    <span class="desc">Map to "unknown" column, or use smoothed target encoding (blend with global mean). Trees: map to most frequent training category.</span>
+                </div>
+
+                <div class="key-point">
+                    <span class="label">Production rule:</span>
+                    <span class="desc">Store encoder versioned with model. Fit on train only (no leakage). Monitor cardinality for new categories. Switching encoding types mid-deployment breaks consistency.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 3: Handling Missing Data -->
+        <div class="section">
+            <h2>3. Handling Missing Data</h2>
+            <p>Missing values must be handled strategically. Different imputation methods suit different data patterns.</p>
+
+            <div class="controls">
+                <div class="control-group">
+                    <label>Imputation Strategy:</label>
+                    <button class="imputation-btn active" data-imputation="original">Original (Missing)</button>
+                    <button class="imputation-btn" data-imputation="mean">Mean</button>
+                    <button class="imputation-btn" data-imputation="median">Median</button>
+                    <button class="imputation-btn" data-imputation="forward">Forward Fill</button>
+                    <button class="imputation-btn" data-imputation="knn">KNN</button>
+                </div>
+            </div>
+
+            <div class="flex-container">
+                <div class="canvas-wrapper">
+                    <canvas id="missingDataCanvas" width="500" height="350"></canvas>
+                </div>
+                <div class="canvas-wrapper">
+                    <canvas id="missingDistributionCanvas" width="500" height="350"></canvas>
+                </div>
+            </div>
+
+            <div class="strategy-description" id="missingInfo"></div>
+
+            <div class="insight-box">
+                <h4>Interview Tips: Handling Missing Data</h4>
+                <p><strong>What it is:</strong> Choice of imputation depends critically on missingness mechanism. Three types: MCAR (random), MAR (depends on observed), MNAR (depends on unobserved value).</p>
+
+                <div class="mnemonic"><strong>MCAR</strong> = no info in absence | <strong>MAR</strong> = missingness correlated with observed features | <strong>MNAR</strong> = missingness reveals info about missing value (e.g., high earners hide income)</div>
+
+                <hr class="divider">
+
+                <div class="comparison">
+                    <div class="option">
+                        <div class="opt-title">Mean/Median</div>
+                        <div class="opt-desc">Fast. Unbiased only for MCAR. Underestimates variance. Use for MCAR, low % missing.</div>
+                    </div>
+                    <div class="option">
+                        <div class="opt-title">KNN Imputation</div>
+                        <div class="opt-desc">Borrows from k nearest neighbors. Handles MAR. Slow in high dimensions (curse of dimensionality).</div>
+                    </div>
+                </div>
+
+                <div class="comparison">
+                    <div class="option">
+                        <div class="opt-title">Model-based</div>
+                        <div class="opt-desc">Fit regression X_obs → X_miss. Powerful for MAR. Assumes model captures true relationship.</div>
+                    </div>
+                    <div class="option">
+                        <div class="opt-title">Multiple Imputation</div>
+                        <div class="opt-desc">Create m imputed datasets, pool results. Preserves uncertainty. Expensive compute.</div>
+                    </div>
+                </div>
+
+                <div class="interview-tip">Can I just delete missing rows? Only if MCAR AND <5% missing. Deleting MAR/MNAR rows biases estimates.</div>
+
+                <div class="interview-tip">What if data is MNAR? Create binary missing indicator feature (is_missing=1/0). Then impute. Lets model learn missingness is predictive.</div>
+
+                <hr class="divider">
+
+                <div class="key-point">
+                    <span class="label">Impute when:</span>
+                    <span class="desc">After train/test split. Fit imputation on train only. Never fit on full dataset (leakage of test info).</span>
+                </div>
+
+                <div class="key-point">
+                    <span class="label">Time-series trap:</span>
+                    <span class="desc">Forward fill creates dependence (violates i.i.d.). Fill before train/test split, never cross boundary. Use interpolation instead.</span>
+                </div>
+
+                <div class="key-point">
+                    <span class="label">Production rule:</span>
+                    <span class="desc">Document strategy & % missing per feature. Monitor missingness drift. Features >50% missing = unreliable imputation, consider dropping.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 4: Class Imbalance -->
+        <div class="section">
+            <h2>4. Class Imbalance</h2>
+            <p>Imbalanced classes distort model training and evaluation. Multiple strategies exist to handle this.</p>
+
+            <div class="controls">
+                <div class="control-group">
+                    <label>Imbalance Ratio: <span id="ratioDisplay">1:10</span></label>
+                    <input type="range" id="imbalanceRatio" min="1" max="100" value="10" step="5">
+                </div>
+                <div class="control-group">
+                    <label>Technique:</label>
+                    <button class="imbalance-btn active" data-imbalance="none">None</button>
+                    <button class="imbalance-btn" data-imbalance="oversampling">SMOTE</button>
+                    <button class="imbalance-btn" data-imbalance="undersampling">Undersampling</button>
+                    <button class="imbalance-btn" data-imbalance="weighting">Class Weight</button>
+                </div>
+            </div>
+
+            <div class="flex-container">
+                <div class="canvas-wrapper">
+                    <canvas id="imbalanceCanvas" width="500" height="350"></canvas>
+                </div>
+                <div class="canvas-wrapper">
+                    <canvas id="imbalanceResultCanvas" width="500" height="350"></canvas>
+                </div>
+            </div>
+
+            <div class="stats" id="imbalanceStats"></div>
+
+            <div class="insight-box">
+                <h4>Interview Tips: Class Imbalance Handling</h4>
+                <p><strong>What it is:</strong> Minority class rare (e.g., 1% fraud, 0.1% disease). Algorithms optimize accuracy, which is trivial: "always predict negative" = 99% accuracy but zero recall on minority. Need special strategies: resampling, weighting, thresholding, different metrics.</p>
+
+                <div class="formula">SMOTE: synthetic_sample = sample_i + λ·(neighbor_j - sample_i), where λ ∈ [0,1] random</div>
+                <div class="key-point"><span class="label">sample_i:</span><span class="desc">A randomly selected minority class sample (the one to interpolate from)</span></div>
+                <div class="key-point"><span class="label">neighbor_j:</span><span class="desc">One of the k nearest neighbors of sample_i in feature space (typically k=5), also minority class</span></div>
+                <div class="key-point"><span class="label">λ:</span><span class="desc">Random interpolation weight, λ ∈ [0, 1] uniform; different value sampled for each synthetic sample</span></div>
+                <div class="key-point"><span class="label">synthetic_sample:</span><span class="desc">New artificial minority sample created by linear interpolation; lies between sample_i and neighbor_j</span></div>
+                <div class="formula">Cost-sensitive: loss = w_minority · L(y_neg|y_true_pos) + w_majority · L(y_pos|y_true_neg)</div>
+                <div class="key-point"><span class="label">w_minority:</span><span class="desc">Class weight for minority class; typically > 1.0 to penalize minority errors more; often inversely proportional to class frequency</span></div>
+                <div class="key-point"><span class="label">w_majority:</span><span class="desc">Class weight for majority class; typically < 1.0; often set to balance total weighted samples across classes</span></div>
+                <div class="key-point"><span class="label">L(y_neg|y_true_pos):</span><span class="desc">Loss for predicting negative when true label is positive (false negative); penalized by w_minority</span></div>
+                <div class="key-point"><span class="label">L(y_pos|y_true_neg):</span><span class="desc">Loss for predicting positive when true label is negative (false positive); penalized by w_majority</span></div>
+
+                <div class="mnemonic">Never use accuracy for imbalanced data. Always F1 (harmonic mean), AUC-PR (focuses on minority), or recall (catch positives).</div>
+
+                <hr class="divider">
+
+                <div class="comparison">
+                    <div class="option">
+                        <div class="opt-title">Oversampling</div>
+                        <div class="opt-desc">Duplicate minority samples. Simple, risks overfitting. Use only if data is small.</div>
+                    </div>
+                    <div class="option">
+                        <div class="opt-title">SMOTE</div>
+                        <div class="opt-desc">Synthesize new samples (interpolate neighbors). Better than duplicates. Less effective in high dimensions.</div>
+                    </div>
+                </div>
+
+                <div class="comparison">
+                    <div class="option">
+                        <div class="opt-title">Undersampling</div>
+                        <div class="opt-desc">Remove majority samples. Fast, loses data. For large datasets only.</div>
+                    </div>
+                    <div class="option">
+                        <div class="opt-title">Cost-sensitive</div>
+                        <div class="opt-desc">Higher penalty for minority errors. Efficient, no data loss. Equivalent to oversampling mathematically.</div>
+                    </div>
+                </div>
+
+                <hr class="divider">
+
+                <div class="interview-tip">Oversample before or after train/test split? ALWAYS AFTER. Before = leakage (duplicate in both sets inflates metrics).</div>
+
+                <div class="interview-tip">SMOTE in high dimensions? Curse of dimensionality—distances meaningless, synthetic samples off manifold. Use feature selection first.</div>
+
+                <div class="key-point">
+                    <span class="label">Threshold tuning:</span>
+                    <span class="desc">Instead of P(y=1) > 0.5, use P(y=1) > 0.3 to raise recall. Trade precision for recall based on business cost.</span>
+                </div>
+
+                <div class="key-point">
+                    <span class="label">Production rule:</span>
+                    <span class="desc">Monitor minority class recall separately from accuracy. Use stratified split/K-fold. Document imbalance ratio. Choose class weights based on BUSINESS cost, not frequency.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 5: Train/Validation/Test Split -->
+        <div class="section">
+            <h2>5. Train/Validation/Test Split Strategies</h2>
+            <p>Different split strategies suit different data types and problems.</p>
+
+            <div class="controls">
+                <div class="control-group">
+                    <label>Split Strategy:</label>
+                    <button class="split-btn active" data-split="random">Random Split</button>
+                    <button class="split-btn" data-split="timebased">Time-Based</button>
+                    <button class="split-btn" data-split="stratified">Stratified</button>
+                    <button class="split-btn" data-split="kfold">K-Fold CV</button>
+                </div>
+            </div>
+
+            <canvas id="splitCanvas" width="800" height="400"></canvas>
+
+            <div class="strategy-description" id="splitInfo"></div>
+
+            <div class="insight-box">
+                <h4>Interview Tips: Train/Validation/Test Split Strategies</h4>
+                <p><strong>What it is:</strong> Train = fit params. Validation = tune hyperparameters. Test = final eval, touch only once. Split strategy depends on data type (i.i.d. vs time-series vs imbalanced).</p>
+
+                <div class="comparison">
+                    <div class="option">
+                        <div class="opt-title">Random Split</div>
+                        <div class="opt-desc">70/15/15 or 60/20/20. For i.i.d. data. Assumes independent samples. Unbiased but high variance on small data.</div>
+                    </div>
+                    <div class="option">
+                        <div class="opt-title">Time-Based Split</div>
+                        <div class="opt-desc">Train before t, val [t, t+Δ], test after t+Δ. For time-series. No temporal leakage. Realistic deployment sim.</div>
+                    </div>
+                </div>
+
+                <div class="comparison">
+                    <div class="option">
+                        <div class="opt-title">Stratified Split</div>
+                        <div class="opt-desc">Maintain class proportions in each fold. For imbalanced data. Avoids high-variance estimates.</div>
+                    </div>
+                    <div class="option">
+                        <div class="opt-title">K-Fold CV</div>
+                        <div class="opt-desc">k=5 or 10. Partition into k subsets, train k-1, test 1, average. Reduces variance, expensive compute.</div>
+                    </div>
+                </div>
+
+                <hr class="divider">
+
+                <div class="interview-tip">Report validation or test performance? Test only. Validation is for dev; test is for stakeholders. Reporting validation = optimistic bias (you picked best on val).</div>
+
+                <div class="interview-tip">Why not reuse same validation split? You implicitly overfit to it via hyperparameter selection. Use multiple splits or nested CV.</div>
+
+                <div class="interview-tip">Why time-based split for time-series? Adjacent points correlated (non-i.i.d.). Random split mixes past/future = temporal leakage. Time-based respects causality.</div>
+
+                <hr class="divider">
+
+                <div class="key-point">
+                    <span class="label">Critical rule:</span>
+                    <span class="desc">Fit preprocessing (scaler, encoder) on TRAIN only. Apply to val/test using train params. Prevents leakage.</span>
+                </div>
+
+                <div class="key-point">
+                    <span class="label">Production rule:</span>
+                    <span class="desc">Never touch test set during dev. Document which samples in which set. For limited data: use nested CV (outer=eval, inner=tuning).</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Leakage -->
+        <div class="section">
+            <h2>6. Data Leakage</h2>
+            <div style="display:flex;flex-wrap:wrap;gap:15px;align-items:flex-start;">
+                <div style="flex:1;min-width:300px;">
+                    <canvas id="leakageCanvas" width="600" height="300" style="width:100%;background:#0f0f1a;border-radius:6px;"></canvas>
+                </div>
+                <div style="width:240px;">
+                    <div class="control-group">
+                        <div class="control-label">Leakage Type</div>
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                            <button class="leakage-btn active" data-leakage="none" style="padding:5px 10px;background:#5f27cd33;border:1px solid #5f27cd;color:#5f27cd;border-radius:4px;cursor:pointer;font-size:12px;">Clean</button>
+                            <button class="leakage-btn" data-leakage="train-test" style="padding:5px 10px;background:#1e1e2e;border:1px solid #333;color:#aaa;border-radius:4px;cursor:pointer;font-size:12px;">Train-Test</button>
+                            <button class="leakage-btn" data-leakage="temporal" style="padding:5px 10px;background:#1e1e2e;border:1px solid #333;color:#aaa;border-radius:4px;cursor:pointer;font-size:12px;">Temporal</button>
+                            <button class="leakage-btn" data-leakage="feature" style="padding:5px 10px;background:#1e1e2e;border:1px solid #333;color:#aaa;border-radius:4px;cursor:pointer;font-size:12px;">Feature</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="insight-box">
+                <h4>Interview Tips: Data Leakage</h4>
+                <p><strong>What it is:</strong> Test info used in training → optimistic offline metrics, terrible online. Model has 95% test accuracy but 40% production (massive gap). Leakage breaks independence assumption.</p>
+
+                <div class="mnemonic">Classic signs: 95% offline but 40% online. Large train-test gap. Feature works offline but not online. Check preprocessing, timestamps, feature definitions.</div>
+
+                <hr class="divider">
+
+                <div class="comparison">
+                    <div class="option">
+                        <div class="opt-title">Train-Test Contamination</div>
+                        <div class="opt-desc">Fit scaler on FULL data (before split), then apply to train/val/test. Test data influenced scaler fit = leakage. Fix: fit on train only.</div>
+                    </div>
+                    <div class="option">
+                        <div class="opt-title">Temporal Leakage</div>
+                        <div class="opt-desc">Use future data to predict past (e.g., next month sales). Random split mixes past/future. Use time-based split to detect.</div>
+                    </div>
+                </div>
+
+                <div class="comparison">
+                    <div class="option">
+                        <div class="opt-title">Feature Leakage</div>
+                        <div class="opt-desc">Feature depends on target or only available at train time. E.g., "is_fraud_detected" to predict fraud, or customer ID encoding behavior.</div>
+                    </div>
+                    <div class="option">
+                        <div class="opt-title">Domain Leakage</div>
+                        <div class="opt-desc">Proxy variables (e.g., collection date) only available at training. Correlates with outcome due to distribution shift.</div>
+                    </div>
+                </div>
+
+                <hr class="divider">
+
+                <div class="interview-tip">Using month M to predict month M+1 = valid. Using month M to predict month M where M ∈ test = temporal leakage.</div>
+
+                <div class="interview-tip">Can I detect leakage from train/test gap? No, unreliable. Large gaps suggest it, but can be subtle. Audit pipeline, check timestamps, verify features.</div>
+
+                <div class="key-point">
+                    <span class="label">Leakage sources:</span>
+                    <span class="desc">Customer ID (encodes history). Aggregation including sample itself. Derived features including target. Feature selection on full data.</span>
+                </div>
+
+                <div class="key-point">
+                    <span class="label">Prevention:</span>
+                    <span class="desc">Clear data pipeline with explicit train/val/test. Version control. Unit tests: verify no timestamp overlap, preprocessing on train only, test features inference-only.</span>
+                </div>
+
+                <div class="interview-tip">Offline-online gap >5% = likely leakage. For temporal data: ALWAYS time-based split, verify timestamps ascending order.</div>
+            </div>
+        </div>
+
+        <!-- Data Augmentation -->
+        <div class="section">
+            <h2>7. Data Augmentation</h2>
+            <div style="display:flex;flex-wrap:wrap;gap:15px;align-items:flex-start;">
+                <div style="flex:1;min-width:300px;">
+                    <canvas id="augmentationCanvas" width="600" height="300" style="width:100%;background:#0f0f1a;border-radius:6px;"></canvas>
+                </div>
+                <div style="width:240px;">
+                    <div class="control-group">
+                        <div class="control-label">Augmentation Type</div>
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                            <button class="aug-btn active" data-aug="image" style="padding:5px 10px;background:#5f27cd33;border:1px solid #5f27cd;color:#5f27cd;border-radius:4px;cursor:pointer;font-size:12px;">Image</button>
+                            <button class="aug-btn" data-aug="text" style="padding:5px 10px;background:#1e1e2e;border:1px solid #333;color:#aaa;border-radius:4px;cursor:pointer;font-size:12px;">Text</button>
+                            <button class="aug-btn" data-aug="mixup" style="padding:5px 10px;background:#1e1e2e;border:1px solid #333;color:#aaa;border-radius:4px;cursor:pointer;font-size:12px;">MixUp</button>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <div class="control-label">Intensity</div>
+                        <input type="range" id="augIntensity" min="10" max="100" step="10" value="50">
+                        <div class="slider-value" id="augIntensityVal">50%</div>
+                    </div>
+                </div>
+            </div>
+            <div class="insight-box">
+                <h4>Interview Tips: Data Augmentation</h4>
+                <p><strong>What it is:</strong> Generate new training samples from existing via transformations preserving label. Cheap way to increase training size. Only for training, not test/inference.</p>
+
+                <div class="formula">MixUp: x_aug = λ·x_i + (1-λ)·x_j, y_aug = λ·y_i + (1-λ)·y_j, where λ ~ Beta(α,α)</div>
+                <div class="key-point"><span class="label">x_i, x_j:</span><span class="desc">Two randomly sampled training examples (e.g., images or feature vectors); can have same or different classes</span></div>
+                <div class="key-point"><span class="label">λ:</span><span class="desc">Mixing weight sampled from Beta(α, α); α typically 1.0; λ ∈ [0, 1] controls the blend ratio</span></div>
+                <div class="key-point"><span class="label">x_aug:</span><span class="desc">Augmented feature; linear combination of two samples; new synthetic example</span></div>
+                <div class="key-point"><span class="label">y_i, y_j:</span><span class="desc">Target labels (0 or 1 for binary, or class indices for multiclass)</span></div>
+                <div class="key-point"><span class="label">y_aug:</span><span class="desc">Mixed target label; soft target ∈ [0, 1]; represents uncertain/interpolated label between two classes</span></div>
+                <div class="key-point"><span class="label">Beta(α, α):</span><span class="desc">Symmetric Beta distribution; α=1 gives uniform [0,1], α>1 concentrates near 0.5 (balanced mixing)</span></div>
+                <div class="formula">CutMix: patch one image with region from another; aggressive + label-preserving</div>
+                <div class="key-point"><span class="label">CutMix mechanism:</span><span class="desc">Cuts a random rectangular patch from one image, pastes it into another image at a random location</span></div>
+                <div class="key-point"><span class="label">Label handling:</span><span class="desc">Label proportional to patch area ratio; if 30% of image from class A, label = 0.3·y_A + 0.7·y_B (soft label)</span></div>
+
+                <div class="mnemonic">Images: rotate, flip, crop, color jitter. Text: back-translate, synonym replace. Tabular: SMOTE better. Augment train only, never test.</div>
+
+                <hr class="divider">
+
+                <div class="comparison">
+                    <div class="option">
+                        <div class="opt-title">Geometric (Images)</div>
+                        <div class="opt-desc">Rotate, translate, scale, shear, flip, crop. Preserves label if realistic (horiz flip yes, vert flip no for faces).</div>
+                    </div>
+                    <div class="option">
+                        <div class="opt-title">Color (Images)</div>
+                        <div class="opt-desc">Brightness, contrast, saturation, hue jitter in HSV. RandAugment auto-selects random ops.</div>
+                    </div>
+                </div>
+
+                <div class="comparison">
+                    <div class="option">
+                        <div class="opt-title">Text</div>
+                        <div class="opt-desc">Back-translation (lang→lang), synonym replace, deletion, insertion. Creates paraphrases.</div>
+                    </div>
+                    <div class="option">
+                        <div class="opt-title">Tabular</div>
+                        <div class="opt-desc">Hard to design, risks violating constraints. Use SMOTE instead for imbalance.</div>
+                    </div>
+                </div>
+
+                <hr class="divider">
+
+                <div class="interview-tip">Augment test set? No—test must be fixed, representative of deployment. Augmenting test inflates estimates.</div>
+
+                <div class="interview-tip">Augmentation strength = hyperparameter. Too weak = no benefit. Too strong = distort labels (180° rotation changes 6→9). Cross-validate.</div>
+
+                <div class="key-point">
+                    <span class="label">Production rule:</span>
+                    <span class="desc">Augment train only, never inference. Set random seed for reproducibility. Document strength. Changes to augmentation = model change. For medical: validate with domain experts.</span>
+                </div>
+
+                <div class="key-point">
+                    <span class="label">Complementary to:</span>
+                    <span class="desc">Regularization (both reduce overfitting). Transfer learning (augmented pre-training helps). Can target minority class for imbalance.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Temporal Features -->
+        <div class="section">
+            <h2>8. Temporal Features</h2>
+            <div style="display:flex;flex-wrap:wrap;gap:15px;align-items:flex-start;">
+                <div style="flex:1;min-width:300px;">
+                    <canvas id="temporalCanvas" width="600" height="300" style="width:100%;background:#0f0f1a;border-radius:6px;"></canvas>
+                </div>
+                <div style="width:240px;">
+                    <div class="control-group">
+                        <div class="control-label">Feature Type</div>
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                            <button class="temporal-btn active" data-temporal="cyclical" style="padding:5px 10px;background:#5f27cd33;border:1px solid #5f27cd;color:#5f27cd;border-radius:4px;cursor:pointer;font-size:12px;">Cyclical</button>
+                            <button class="temporal-btn" data-temporal="lag" style="padding:5px 10px;background:#1e1e2e;border:1px solid #333;color:#aaa;border-radius:4px;cursor:pointer;font-size:12px;">Lag</button>
+                            <button class="temporal-btn" data-temporal="rolling" style="padding:5px 10px;background:#1e1e2e;border:1px solid #333;color:#aaa;border-radius:4px;cursor:pointer;font-size:12px;">Rolling</button>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <div class="control-label">Period</div>
+                        <input type="range" id="temporalPeriod" min="6" max="48" step="6" value="24">
+                        <div class="slider-value" id="temporalPeriodVal">24 hours</div>
+                    </div>
+                </div>
+            </div>
+            <div class="insight-box">
+                <h4>Interview Tips: Temporal Features and Time-Series Representation</h4>
+                <p><strong>What it is:</strong> Encode time-indexed data into ML-friendly features. Adjacent time steps correlated (non-i.i.d.). Need cyclical, lag, rolling features. Avoid lookahead bias.</p>
+
+                <div class="formula">Cyclical: hour_sin = sin(2π·hour/24), hour_cos = cos(2π·hour/24)  →  circularity preserved</div>
+                <div class="key-point"><span class="label">hour:</span><span class="desc">Hour-of-day value, ∈ {0, 1, ..., 23}</span></div>
+                <div class="key-point"><span class="label">2π:</span><span class="desc">Full circle in radians; maps period to complete rotation</span></div>
+                <div class="key-point"><span class="label">hour/24:</span><span class="desc">Normalized hour to [0, 1) fraction of day</span></div>
+                <div class="key-point"><span class="label">hour_sin:</span><span class="desc">Sine component ∈ [-1, 1]; represents y-coordinate on unit circle</span></div>
+                <div class="key-point"><span class="label">hour_cos:</span><span class="desc">Cosine component ∈ [-1, 1]; represents x-coordinate on unit circle; together preserve circularity (hour 23 ≈ hour 0)</span></div>
+                <div class="formula">Lag features: X_{t-1}, X_{t-2}, ..., X_{t-k} as features  |  Rolling MA_t = mean(X_{t-6}...X_t)</div>
+                <div class="key-point"><span class="label">X_t:</span><span class="desc">Feature value at current time step t</span></div>
+                <div class="key-point"><span class="label">X_{t-i}:</span><span class="desc">Feature value i steps in the past (lag i); i ∈ {1, 2, ..., k}</span></div>
+                <div class="key-point"><span class="label">k:</span><span class="desc">Maximum lag; number of past time steps to use as features; chosen via ACF plots or domain knowledge</span></div>
+                <div class="key-point"><span class="label">Rolling MA_t:</span><span class="desc">Moving average at time t computed over last L time steps (e.g., L=6); smooths noise, captures trend</span></div>
+                <div class="key-point"><span class="label">L:</span><span class="desc">Window size for rolling statistic; L=24 for daily seasonality (hourly data), L=168 for weekly (hourly data)</span></div>
+
+                <div class="mnemonic">Hour 23 close to hour 0 (one-hot fails). Use sin/cos. Lag-24 = 1 day seasonality, lag-168 = 1 week (for hourly data).</div>
+
+                <hr class="divider">
+
+                <div class="comparison">
+                    <div class="option">
+                        <div class="opt-title">Cyclical Features</div>
+                        <div class="opt-desc">Hour, day-of-week, month (periodic). Use sin/cos encoding, NOT one-hot. Preserves circularity (23→0 nearby).</div>
+                    </div>
+                    <div class="option">
+                        <div class="opt-title">Lag Features</div>
+                        <div class="opt-desc">Past values X_{t-k}. Capture autoregressive patterns. Use ACF plots to find significant lags. Too many = noise.</div>
+                    </div>
+                </div>
+
+                <div class="comparison">
+                    <div class="option">
+                        <div class="opt-title">Rolling Statistics</div>
+                        <div class="opt-desc">Moving average (smooth), std (volatility), sum (accumulation). Capture trend + seasonality.</div>
+                    </div>
+                    <div class="option">
+                        <div class="opt-title">Date Features</div>
+                        <div class="opt-desc">day_of_week, is_weekend, is_holiday, month, quarter. Domain effects (sales↑ weekends, ↓ holidays).</div>
+                    </div>
+                </div>
+
+                <hr class="divider">
+
+                <div class="interview-tip">One-hot hour-of-day? Creates 24 sparse columns, treats 23 far from 0 (wrong). Sin/cos naturally wraps circle.</div>
+
+                <div class="interview-tip">Rolling average lookahead bias? Only if include future samples. Lag-based (past k) = safe. Centered (past+future) = lookahead.</div>
+
+                <div class="key-point">
+                    <span class="label">Production rule:</span>
+                    <span class="desc">NEVER shuffle time-series. Use time-based split mandatory. Compute rolling stats on train only (no leakage). At inference: ensure sufficient historical data for lags.</span>
+                </div>
+
+                <div class="key-point">
+                    <span class="label">Stationarity:</span>
+                    <span class="desc">If non-stationary (trend), difference: X_t - X_{t-1}. For seasonality: X_t - X_{t-s}. Many models assume stationarity.</span>
+                </div>
+
+                <div class="interview-tip">Include target lag-1 as feature? Yes if available at train. Production: use X_{t-1} predict Y_t (not Y_{t-1}, which unavailable).</div>
+            </div>
+        </div>
+
+        <!-- Weak Supervision -->
+        <div class="section">
+            <h2>9. Weak Supervision</h2>
+            <div style="display:flex;flex-wrap:wrap;gap:15px;align-items:flex-start;">
+                <div style="flex:1;min-width:300px;">
+                    <canvas id="weakSupervisionCanvas" width="600" height="300" style="width:100%;background:#0f0f1a;border-radius:6px;"></canvas>
+                </div>
+                <div style="width:240px;">
+                    <div class="control-group">
+                        <div class="control-label"># Labeling Functions</div>
+                        <input type="range" id="lfCount" min="2" max="10" step="1" value="5">
+                        <div class="slider-value" id="lfCountVal">5</div>
+                    </div>
+                    <div class="control-group">
+                        <div class="control-label">Average Accuracy</div>
+                        <input type="range" id="lfAccuracy" min="50" max="95" step="5" value="70">
+                        <div class="slider-value" id="lfAccuracyVal">70%</div>
+                    </div>
+                </div>
+            </div>
+            <div class="insight-box">
+                <h4>Interview Tips: Weak Supervision and Programmatic Labeling</h4>
+                <p><strong>What it is:</strong> Label data via noisy heuristics (labeling functions) instead of manual annotation. Trade annotation cost (low) for label quality (imperfect). Snorkel learns LF accuracies, downweights bad ones.</p>
+
+                <div class="mnemonic">Labeling function = heuristic rule mapping sample → label (or abstain). Snorkel combines multiple LFs via label model learning P(Y | LF outputs).</div>
+
+                <hr class="divider">
+
+                <div class="key-point">
+                    <span class="label">Label model learning:</span>
+                    <span class="desc">Learns (1) accuracy of each LF, (2) correlations between LFs. Outputs P(Y | L_1, ..., L_k). High-confidence samples become train data.</span>
+                </div>
+
+                <div class="key-point">
+                    <span class="label">LF requirements:</span>
+                    <span class="desc">Better than random (>50% accuracy). Independent errors ideal. Abstain on uncertain samples. 3-10 well-designed LFs typical. Diminishing returns >20.</span>
+                </div>
+
+                <hr class="divider">
+
+                <div class="interview-tip">Can weak supervision replace manual labeling? Dramatically reduces burden but not entirely. Need small labeled dev set for LF accuracy estimation. Shines at 1000s-millions unlabeled samples.</div>
+
+                <div class="interview-tip">Bad LF (40% accuracy)? Snorkel learns to ignore it automatically. LFs can be arbitrary accuracy—learns to upweight good, downweight bad.</div>
+
+                <div class="interview-tip">Label leakage trap: if LF uses info unavailable at inference, downstream model fails in production. E.g., use "fraud" keyword to label but keyword only post-hoc.</div>
+
+                <hr class="divider">
+
+                <div class="key-point">
+                    <span class="label">Design process:</span>
+                    <span class="desc">Domain experts → heuristics. Small LF set, measure accuracy on dev set. Combine + estimate label model. Train downstream. Iterate.</span>
+                </div>
+
+                <div class="key-point">
+                    <span class="label">Production rule:</span>
+                    <span class="desc">Document + version control LFs (changing 1 LF = model change). Monitor coverage (if LF labels 1%, contributes little). Retrain when new LFs/data.</span>
+                </div>
+
+                <div class="key-point">
+                    <span class="label">Complementary to:</span>
+                    <span class="desc">Active learning (selective human labeling). Semi-supervised (Snorkel seeds unlabeled). Multi-task (shared robust representations). Pre-training (more robust to noise).</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Interactive visualization for ML interview preparation | Data & Features</p>
+        </div>
+    </div>
+
+    <script>
+        // ============ DATA GENERATION ============
+        function generateSkewedData(n = 1000) {
+            const data = [];
+            for (let i = 0; i < n; i++) {
+                data.push(Math.pow(Math.random(), 2) * 100);
+            }
+            return data;
+        }
+
+        function applyZScore(data) {
+            const mean = data.reduce((a, b) => a + b) / data.length;
+            const std = Math.sqrt(data.reduce((sq, n) => sq + Math.pow(n - mean, 2), 0) / data.length);
+            return data.map(x => (x - mean) / std);
+        }
+
+        function applyMinMax(data) {
+            const min = Math.min(...data);
+            const max = Math.max(...data);
+            return data.map(x => (x - min) / (max - min));
+        }
+
+        function applyLogTransform(data) {
+            return data.map(x => Math.log(x + 1));
+        }
+
+        // ============ CANVAS UTILITIES ============
+        function drawHistogram(canvas, data, title, color = '#5f27cd', xLabel = 'Value', yLabel = 'Frequency') {
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+
+            ctx.fillStyle = '#0f0f1a';
+            ctx.fillRect(0, 0, width, height);
+
+            // Draw title
+            ctx.fillStyle = '#5f27cd';
+            ctx.font = 'bold 16px Arial';
+            ctx.fillText(title, 20, 25);
+
+            // Calculate histogram
+            const bins = 30;
+            const min = Math.min(...data);
+            const max = Math.max(...data);
+            const binWidth = (max - min) / bins;
+            const histogram = new Array(bins).fill(0);
+
+            data.forEach(x => {
+                const binIndex = Math.floor((x - min) / binWidth);
+                if (binIndex < bins) histogram[binIndex]++;
+            });
+
+            const maxFreq = Math.max(...histogram);
+
+            // Draw bars
+            const chartLeft = 50;
+            const chartRight = width - 30;
+            const chartTop = 40;
+            const chartBottom = height - 40;
+            const chartWidth = chartRight - chartLeft;
+            const chartHeight = chartBottom - chartTop;
+
+            ctx.strokeStyle = '#2a2a38';
+            ctx.beginPath();
+            ctx.moveTo(chartLeft, chartTop);
+            ctx.lineTo(chartLeft, chartBottom);
+            ctx.lineTo(chartRight, chartBottom);
+            ctx.stroke();
+
+            const barWidth = chartWidth / bins;
+            histogram.forEach((freq, i) => {
+                const barHeight = (freq / maxFreq) * chartHeight;
+                ctx.fillStyle = color;
+                ctx.globalAlpha = 0.8;
+                ctx.fillRect(chartLeft + i * barWidth, chartBottom - barHeight, barWidth - 1, barHeight);
+                ctx.globalAlpha = 1.0;
+            });
+
+            // Labels
+            ctx.fillStyle = '#a0a0b0';
+            ctx.font = '12px Arial';
+            ctx.fillText(xLabel, chartLeft + chartWidth / 2 - 20, height - 5);
+            ctx.fillText('Count', 5, chartTop + 30);
+        }
+
+        // ============ SECTION 1: FEATURE SCALING ============
+        const originalData = generateSkewedData();
+        let currentScalingMethod = 'original';
+
+        const methodBtns = document.querySelectorAll('.method-btn');
+        methodBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                methodBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentScalingMethod = btn.dataset.method;
+                updateScalingVisualization();
+            });
+        });
+
+        function updateScalingVisualization() {
+            const canvas1 = document.getElementById('scalingCanvas');
+            const canvas2 = document.getElementById('scalingCompareCanvas');
+            const statsDiv = document.getElementById('scalingStats');
+
+            let scaledData = originalData;
+            let methodName = 'Original';
+
+            switch(currentScalingMethod) {
+                case 'zscore':
+                    scaledData = applyZScore(originalData);
+                    methodName = 'Z-Score Standardization';
+                    break;
+                case 'minmax':
+                    scaledData = applyMinMax(originalData);
+                    methodName = 'Min-Max Scaling';
+                    break;
+                case 'logtransform':
+                    scaledData = applyLogTransform(originalData);
+                    methodName = 'Log Transform';
+                    break;
+            }
+
+            drawHistogram(canvas1, originalData, 'Original Distribution (Skewed)', '#e74c3c');
+            drawHistogram(canvas2, scaledData, methodName, '#5f27cd');
+
+            const mean = scaledData.reduce((a, b) => a + b) / scaledData.length;
+            const std = Math.sqrt(scaledData.reduce((sq, n) => sq + Math.pow(n - mean, 2), 0) / scaledData.length);
+            const min = Math.min(...scaledData);
+            const max = Math.max(...scaledData);
+
+            statsDiv.innerHTML = `
+                <div class="stat-box">
+                    <div class="stat-label">Mean</div>
+                    <div class="stat-value">${mean.toFixed(3)}</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Std Dev</div>
+                    <div class="stat-value">${std.toFixed(3)}</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Min</div>
+                    <div class="stat-value">${min.toFixed(3)}</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Max</div>
+                    <div class="stat-value">${max.toFixed(3)}</div>
+                </div>
+            `;
+        }
+
+        // ============ SECTION 2: FEATURE ENCODING ============
+        const categories = ['Red', 'Blue', 'Green', 'Yellow', 'Purple'];
+        const categoryData = [15, 28, 12, 20, 25];
+        const targetMeans = [0.65, 0.72, 0.58, 0.75, 0.68];
+        let currentEncoding = 'onehot';
+
+        const encodingBtns = document.querySelectorAll('.encoding-btn');
+        encodingBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                encodingBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentEncoding = btn.dataset.encoding;
+                updateEncodingVisualization();
+            });
+        });
+
+        function updateEncodingVisualization() {
+            const infoDiv = document.getElementById('encodingInfo');
+            const tableDiv = document.getElementById('encodingTable');
+
+            let html = '';
+            let tableHtml = '<table><tr><th>Index</th>';
+
+            if (currentEncoding === 'onehot') {
+                infoDiv.innerHTML = `<strong>One-Hot Encoding:</strong> Each category becomes a binary column.
+                Use for tree-based and linear models with unordered categories. Creates (n_categories - 1) or n_categories columns depending on drop strategy.`;
+
+                categories.forEach(cat => {
+                    tableHtml += `<th>${cat}</th>`;
+                });
+                tableHtml += '</tr>';
+
+                const n = 10;
+                for (let i = 0; i < n; i++) {
+                    tableHtml += `<tr><td>${i}</td>`;
+                    categories.forEach((cat, idx) => {
+                        tableHtml += `<td>${i % categories.length === idx ? '1' : '0'}</td>`;
+                    });
+                    tableHtml += '</tr>';
+                }
+            } else if (currentEncoding === 'label') {
+                infoDiv.innerHTML = `<strong>Label Encoding:</strong> Assigns integer values (0, 1, 2, ...) to categories.
+                Use only with tree-based models. Introduces artificial ordering—avoid with linear models.`;
+
+                tableHtml += `<th>Label Value</th></tr>`;
+                const n = 10;
+                for (let i = 0; i < n; i++) {
+                    tableHtml += `<tr><td>${i}</td><td>${i % categories.length}</td></tr>`;
+                }
+            } else if (currentEncoding === 'target') {
+                infoDiv.innerHTML = `<strong>Target Encoding (Mean Encoding):</strong> Replace category with mean target value.
+                Powerful but risks overfitting. Requires cross-validation and regularization. Use for high-cardinality features.`;
+
+                tableHtml += `<th>Target Value</th></tr>`;
+                const n = 10;
+                for (let i = 0; i < n; i++) {
+                    tableHtml += `<tr><td>${i}</td><td>${targetMeans[i % categories.length].toFixed(2)}</td></tr>`;
+                }
+            }
+
+            tableHtml += '</table>';
+            tableDiv.innerHTML = tableHtml;
+        }
+
+        // ============ SECTION 3: MISSING DATA ============
+        let baseData = [];
+        let missingMask = [];
+        let currentImputation = 'original';
+
+        function initMissingData() {
+            baseData = [];
+            missingMask = [];
+            for (let i = 0; i < 100; i++) {
+                baseData.push(20 + Math.random() * 30);
+                missingMask.push(Math.random() < 0.2);
+            }
+        }
+
+        initMissingData();
+
+        function getImputedData() {
+            let imputed = [...baseData];
+
+            if (currentImputation === 'original') {
+                return imputed.filter((_, i) => !missingMask[i]);
+            } else if (currentImputation === 'mean') {
+                const mean = baseData.reduce((a, b) => a + b) / baseData.length;
+                imputed = imputed.map((x, i) => missingMask[i] ? mean : x);
+            } else if (currentImputation === 'median') {
+                const sorted = [...baseData].sort((a, b) => a - b);
+                const median = sorted[Math.floor(sorted.length / 2)];
+                imputed = imputed.map((x, i) => missingMask[i] ? median : x);
+            } else if (currentImputation === 'forward') {
+                for (let i = 0; i < imputed.length; i++) {
+                    if (missingMask[i] && i > 0) {
+                        imputed[i] = imputed[i - 1];
+                    }
+                }
+            } else if (currentImputation === 'knn') {
+                for (let i = 0; i < imputed.length; i++) {
+                    if (missingMask[i]) {
+                        const neighbors = [];
+                        for (let j = 0; j < imputed.length; j++) {
+                            if (!missingMask[j]) {
+                                neighbors.push(imputed[j]);
+                            }
+                        }
+                        neighbors.sort((a, b) => a - b);
+                        imputed[i] = neighbors[Math.floor(neighbors.length / 2)];
+                    }
+                }
+            }
+
+            return imputed;
+        }
+
+        const imputationBtns = document.querySelectorAll('.imputation-btn');
+        imputationBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                imputationBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentImputation = btn.dataset.imputation;
+                updateMissingDataVisualization();
+            });
+        });
+
+        function updateMissingDataVisualization() {
+            const canvas1 = document.getElementById('missingDataCanvas');
+            const canvas2 = document.getElementById('missingDistributionCanvas');
+            const infoDiv = document.getElementById('missingInfo');
+
+            const ctx1 = canvas1.getContext('2d');
+            const ctx2 = canvas2.getContext('2d');
+
+            // Draw missing data pattern
+            ctx1.fillStyle = '#0f0f1a';
+            ctx1.fillRect(0, 0, canvas1.width, canvas1.height);
+
+            ctx1.fillStyle = '#5f27cd';
+            ctx1.font = 'bold 16px Arial';
+            ctx1.fillText('Data Pattern (20% Missing)', 20, 25);
+
+            const cellSize = 15;
+            const cols = 10;
+            let missing = 0, present = 0;
+
+            for (let i = 0; i < baseData.length; i++) {
+                const x = 30 + (i % cols) * (cellSize + 3);
+                const y = 50 + Math.floor(i / cols) * (cellSize + 3);
+
+                if (missingMask[i]) {
+                    ctx1.fillStyle = '#e74c3c';
+                    missing++;
+                } else {
+                    ctx1.fillStyle = '#27ae60';
+                    present++;
+                }
+                ctx1.fillRect(x, y, cellSize, cellSize);
+            }
+
+            ctx1.fillStyle = '#a0a0b0';
+            ctx1.font = '12px Arial';
+            ctx1.fillText(`Present: ${present} | Missing: ${missing}`, 30, canvas1.height - 15);
+
+            // Draw distribution after imputation
+            const imputed = getImputedData();
+            drawHistogram(canvas2, imputed, `Distribution After ${currentImputation.charAt(0).toUpperCase() + currentImputation.slice(1)}`, '#5f27cd');
+
+            const strategies = {
+                'original': 'Removed missing values entirely (listwise deletion). Loses data. Assume MCAR.',
+                'mean': 'Replaced missing with feature mean. Fast but ignores correlations. Works for MCAR with small percentage.',
+                'median': 'Replaced missing with feature median. More robust to outliers than mean. Good baseline.',
+                'forward': 'Filled forward last known value. Best for time series with temporal continuity.',
+                'knn': 'Used k-nearest neighbors values. Preserves local structure. More complex but powerful.'
+            };
+
+            infoDiv.innerHTML = `<strong>${currentImputation.toUpperCase()}:</strong> ${strategies[currentImputation]}`;
+        }
+
+        // ============ SECTION 4: CLASS IMBALANCE ============
+        const imbalanceSlider = document.getElementById('imbalanceRatio');
+        const ratioDisplay = document.getElementById('ratioDisplay');
+        let currentImbalanceRatio = 10;
+        let currentImbalanceTechnique = 'none';
+
+        imbalanceSlider.addEventListener('input', (e) => {
+            currentImbalanceRatio = parseInt(e.target.value);
+            ratioDisplay.textContent = `1:${currentImbalanceRatio}`;
+            updateImbalanceVisualization();
+        });
+
+        const imbalanceBtns = document.querySelectorAll('.imbalance-btn');
+        imbalanceBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                imbalanceBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentImbalanceTechnique = btn.dataset.imbalance;
+                updateImbalanceVisualization();
+            });
+        });
+
+        function generateImbalancedData(ratio) {
+            const minority = 100;
+            const majority = minority * ratio;
+            return {
+                minority: minority,
+                majority: majority
+            };
+        }
+
+        function applyImbalanceTechnique(data, technique) {
+            const { minority, majority } = data;
+
+            if (technique === 'none') {
+                return { minority, majority, adjustedMinority: minority, adjustedMajority: majority };
+            } else if (technique === 'oversampling') {
+                return { minority, majority, adjustedMinority: majority, adjustedMajority: majority };
+            } else if (technique === 'undersampling') {
+                return { minority, majority, adjustedMinority: minority, adjustedMajority: minority };
+            } else if (technique === 'weighting') {
+                return { minority, majority, adjustedMinority: minority * 2, adjustedMajority: majority * 0.5 };
+            }
+        }
+
+        function updateImbalanceVisualization() {
+            const canvas1 = document.getElementById('imbalanceCanvas');
+            const canvas2 = document.getElementById('imbalanceResultCanvas');
+            const statsDiv = document.getElementById('imbalanceStats');
+
+            const originalData = generateImbalancedData(currentImbalanceRatio);
+            const adjustedData = applyImbalanceTechnique(originalData, currentImbalanceTechnique);
+
+            // Draw original
+            const ctx1 = canvas1.getContext('2d');
+            ctx1.fillStyle = '#0f0f1a';
+            ctx1.fillRect(0, 0, canvas1.width, canvas1.height);
+
+            ctx1.fillStyle = '#5f27cd';
+            ctx1.font = 'bold 14px Arial';
+            ctx1.fillText('Original Imbalance', 20, 25);
+
+            const barHeight1 = 200;
+            const barWidth = 40;
+            const chartLeft = 100;
+            const chartTop = 80;
+
+            ctx1.fillStyle = '#3498db';
+            ctx1.fillRect(chartLeft, chartTop + barHeight1 - (originalData.majority / (originalData.majority + originalData.minority)) * barHeight1, barWidth, (originalData.majority / (originalData.majority + originalData.minority)) * barHeight1);
+
+            ctx1.fillStyle = '#e74c3c';
+            ctx1.fillRect(chartLeft + 60, chartTop + barHeight1 - (originalData.minority / (originalData.majority + originalData.minority)) * barHeight1, barWidth, (originalData.minority / (originalData.majority + originalData.minority)) * barHeight1);
+
+            ctx1.fillStyle = '#a0a0b0';
+            ctx1.font = '12px Arial';
+            ctx1.fillText('Majority', chartLeft + 10, chartTop + barHeight1 + 20);
+            ctx1.fillText('Minority', chartLeft + 70, chartTop + barHeight1 + 20);
+            ctx1.fillText(`${originalData.majority}`, chartLeft + 10, chartTop + barHeight1 - 10);
+            ctx1.fillText(`${originalData.minority}`, chartLeft + 70, chartTop + barHeight1 - 10);
+
+            // Draw adjusted
+            const ctx2 = canvas2.getContext('2d');
+            ctx2.fillStyle = '#0f0f1a';
+            ctx2.fillRect(0, 0, canvas2.width, canvas2.height);
+
+            ctx2.fillStyle = '#5f27cd';
+            ctx2.font = 'bold 14px Arial';
+            ctx2.fillText(`After ${currentImbalanceTechnique.charAt(0).toUpperCase() + currentImbalanceTechnique.slice(1)}`, 20, 25);
+
+            ctx2.fillStyle = '#3498db';
+            ctx2.fillRect(chartLeft, chartTop + barHeight1 - (adjustedData.adjustedMajority / (adjustedData.adjustedMajority + adjustedData.adjustedMinority)) * barHeight1, barWidth, (adjustedData.adjustedMajority / (adjustedData.adjustedMajority + adjustedData.adjustedMinority)) * barHeight1);
+
+            ctx2.fillStyle = '#e74c3c';
+            ctx2.fillRect(chartLeft + 60, chartTop + barHeight1 - (adjustedData.adjustedMinority / (adjustedData.adjustedMajority + adjustedData.adjustedMinority)) * barHeight1, barWidth, (adjustedData.adjustedMinority / (adjustedData.adjustedMajority + adjustedData.adjustedMinority)) * barHeight1);
+
+            ctx2.fillStyle = '#a0a0b0';
+            ctx2.font = '12px Arial';
+            ctx2.fillText('Majority', chartLeft + 10, chartTop + barHeight1 + 20);
+            ctx2.fillText('Minority', chartLeft + 70, chartTop + barHeight1 + 20);
+            ctx2.fillText(`${Math.round(adjustedData.adjustedMajority)}`, chartLeft + 10, chartTop + barHeight1 - 10);
+            ctx2.fillText(`${Math.round(adjustedData.adjustedMinority)}`, chartLeft + 70, chartTop + barHeight1 - 10);
+
+            const precision = (adjustedData.adjustedMinority / (adjustedData.adjustedMinority + 20)).toFixed(2);
+            const recall = (adjustedData.adjustedMinority / (adjustedData.adjustedMinority + 5)).toFixed(2);
+            const f1 = (2 * (precision * recall) / (precision + recall)).toFixed(2);
+
+            statsDiv.innerHTML = `
+                <div class="stat-box">
+                    <div class="stat-label">Precision</div>
+                    <div class="stat-value">${precision}</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Recall</div>
+                    <div class="stat-value">${recall}</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">F1-Score</div>
+                    <div class="stat-value">${f1}</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Class Ratio</div>
+                    <div class="stat-value">${(adjustedData.adjustedMajority / adjustedData.adjustedMinority).toFixed(1)}</div>
+                </div>
+            `;
+        }
+
+        // ============ SECTION 5: TRAIN/TEST SPLIT ============
+        let currentSplitStrategy = 'random';
+
+        const splitBtns = document.querySelectorAll('.split-btn');
+        splitBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                splitBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentSplitStrategy = btn.dataset.split;
+                updateSplitVisualization();
+            });
+        });
+
+        function updateSplitVisualization() {
+            const canvas = document.getElementById('splitCanvas');
+            const ctx = canvas.getContext('2d');
+            const infoDiv = document.getElementById('splitInfo');
+
+            ctx.fillStyle = '#0f0f1a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = '#5f27cd';
+            ctx.font = 'bold 16px Arial';
+            ctx.fillText('Data Split Visualization (1000 samples)', 20, 30);
+
+            const barWidth = 600;
+            const barHeight = 60;
+            const startX = 100;
+            const startY = 80;
+
+            const splits = {
+                'random': { train: 0.6, val: 0.2, test: 0.2, desc: 'Random split best for i.i.d. data. Shuffle before splitting. No temporal ordering.' },
+                'timebased': { train: 0.5, val: 0.25, test: 0.25, isTemporal: true, desc: 'Time-based split for time series. Training on past, validation/test on future. Prevents lookahead bias.' },
+                'stratified': { train: 0.6, val: 0.2, test: 0.2, isStratified: true, desc: 'Stratified split maintains class distribution. Essential for imbalanced data.' },
+                'kfold': { train: 0.8, val: 0, test: 0.2, isKFold: true, desc: 'K-fold cross-validation: 80% train, 20% test, with k iterations. More robust estimates, slower.' }
+            };
+
+            const split = splits[currentSplitStrategy];
+            const n = 1000;
+            const trainSize = Math.floor(n * split.train);
+            const valSize = Math.floor(n * split.val);
+            const testSize = n - trainSize - valSize;
+
+            let y = startY;
+
+            if (currentSplitStrategy === 'timebased') {
+                ctx.fillStyle = '#3498db';
+                ctx.fillRect(startX, y, (trainSize / n) * barWidth, barHeight);
+                ctx.fillText('Train (Past)', startX + 10, y + barHeight + 20);
+
+                ctx.fillStyle = '#f39c12';
+                ctx.fillRect(startX + (trainSize / n) * barWidth, y, (valSize / n) * barWidth, barHeight);
+                ctx.fillText('Validation (Recent)', startX + (trainSize / n) * barWidth + 10, y + barHeight + 20);
+
+                ctx.fillStyle = '#e74c3c';
+                ctx.fillRect(startX + ((trainSize + valSize) / n) * barWidth, y, (testSize / n) * barWidth, barHeight);
+                ctx.fillText('Test (Future)', startX + ((trainSize + valSize) / n) * barWidth + 10, y + barHeight + 20);
+            } else if (currentSplitStrategy === 'stratified' || currentSplitStrategy === 'random') {
+                ctx.fillStyle = '#3498db';
+                ctx.fillRect(startX, y, (trainSize / n) * barWidth, barHeight);
+                ctx.fillText(`Train (60%, ${trainSize})`, startX + 10, y + barHeight + 20);
+
+                ctx.fillStyle = '#f39c12';
+                ctx.fillRect(startX + (trainSize / n) * barWidth, y, (valSize / n) * barWidth, barHeight);
+                ctx.fillText(`Validation (20%, ${valSize})`, startX + (trainSize / n) * barWidth + 10, y + barHeight + 20);
+
+                ctx.fillStyle = '#e74c3c';
+                ctx.fillRect(startX + ((trainSize + valSize) / n) * barWidth, y, (testSize / n) * barWidth, barHeight);
+                ctx.fillText(`Test (20%, ${testSize})`, startX + ((trainSize + valSize) / n) * barWidth + 10, y + barHeight + 20);
+            } else if (currentSplitStrategy === 'kfold') {
+                const k = 5;
+                const foldHeight = 40;
+                ctx.fillStyle = '#a0a0b0';
+                ctx.font = '12px Arial';
+                ctx.fillText('K-Fold Cross-Validation (k=5):', startX, y - 30);
+
+                for (let fold = 0; fold < k; fold++) {
+                    y = startY + fold * (foldHeight + 15);
+
+                    const trainWidth = (0.8 / k * 4) * barWidth;
+                    const testWidth = (0.2 / k) * barWidth;
+
+                    for (let i = 0; i < k; i++) {
+                        if (i === fold) {
+                            ctx.fillStyle = '#e74c3c';
+                            ctx.fillRect(startX + i * (barWidth / k), y, barWidth / k, foldHeight);
+                        } else {
+                            ctx.fillStyle = '#3498db';
+                            ctx.fillRect(startX + i * (barWidth / k), y, barWidth / k, foldHeight);
+                        }
+                    }
+                    ctx.fillStyle = '#a0a0b0';
+                    ctx.fillText(`Fold ${fold + 1}`, startX - 50, y + foldHeight / 2 + 5);
+                }
+
+                ctx.fillText('Blue = Train, Red = Test', startX, y + foldHeight + 40);
+            }
+
+            infoDiv.innerHTML = `<strong>${currentSplitStrategy.toUpperCase()}:</strong> ${split.desc}`;
+        }
+
+        // ============ INITIALIZATION ============
+        updateScalingVisualization();
+        updateEncodingVisualization();
+        updateMissingDataVisualization();
+        updateImbalanceVisualization();
+        updateSplitVisualization();
+    
+        
+        // ============ Data Leakage ============
+        let leakageType = 'none';
+        const leakageCanvas = document.getElementById('leakageCanvas');
+        const leakageCtx = leakageCanvas.getContext('2d');
+
+        document.querySelectorAll('.leakage-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.leakage-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                leakageType = e.target.dataset.leakage;
+                drawLeakage();
+            });
+        });
+
+        function drawLeakage() {
+            leakageCtx.fillStyle = '#0f0f17';
+            leakageCtx.fillRect(0, 0, leakageCanvas.width, leakageCanvas.height);
+
+            leakageCtx.fillStyle = '#5f27cd';
+            leakageCtx.font = 'bold 14px Arial';
+            leakageCtx.fillText(leakageType === 'none' ? 'Clean Split' : 
+                              leakageType === 'train-test' ? 'Train/Test Contamination' :
+                              leakageType === 'temporal' ? 'Temporal Leakage' :
+                              'Target Leakage', 40, 30);
+
+            const boxW = 150, boxH = 80;
+            const startX = 50, startY = 70;
+
+            // Draw data distributions
+            if (leakageType === 'none') {
+                // Clean split
+                leakageCtx.fillStyle = '#5f27cd33';
+                leakageCtx.fillRect(startX, startY, boxW, boxH);
+                leakageCtx.strokeStyle = '#5f27cd';
+                leakageCtx.strokeRect(startX, startY, boxW, boxH);
+                leakageCtx.fillStyle = '#5f27cd';
+                leakageCtx.font = '12px Arial';
+                leakageCtx.textAlign = 'center';
+                leakageCtx.fillText('Train', startX + boxW/2, startY + boxH/2 - 15);
+                leakageCtx.fillText('100 samples', startX + boxW/2, startY + boxH/2 + 15);
+
+                leakageCtx.fillStyle = '#a0a0b033';
+                leakageCtx.fillRect(startX + boxW + 50, startY, boxW, boxH);
+                leakageCtx.strokeStyle = '#a0a0b0';
+                leakageCtx.strokeRect(startX + boxW + 50, startY, boxW, boxH);
+                leakageCtx.fillStyle = '#a0a0b0';
+                leakageCtx.fillText('Test', startX + boxW + 50 + boxW/2, startY + boxH/2 - 15);
+                leakageCtx.fillText('20 samples', startX + boxW + 50 + boxW/2, startY + boxH/2 + 15);
+
+                leakageCtx.fillStyle = '#64ffda';
+                leakageCtx.font = '11px Arial';
+                leakageCtx.fillText('No overlap. Performance estimate: reliable.', 50, 200);
+            } else if (leakageType === 'train-test') {
+                leakageCtx.fillStyle = '#5f27cd33';
+                leakageCtx.fillRect(startX, startY, boxW, boxH);
+                leakageCtx.strokeStyle = '#5f27cd';
+                leakageCtx.lineWidth = 2;
+                leakageCtx.strokeRect(startX, startY, boxW, boxH);
+
+                leakageCtx.fillStyle = '#ff6b6b33';
+                leakageCtx.fillRect(startX + boxW + 50 - 40, startY, boxW, boxH);
+                leakageCtx.strokeStyle = '#ff6b6b';
+                leakageCtx.lineWidth = 2;
+                leakageCtx.strokeRect(startX + boxW + 50 - 40, startY, boxW, boxH);
+
+                leakageCtx.fillStyle = '#ff9800';
+                leakageCtx.fillRect(startX + boxW / 2, startY + 10, 50, 60);
+                leakageCtx.strokeStyle = '#ff6b6b';
+                leakageCtx.lineWidth = 2;
+                leakageCtx.strokeRect(startX + boxW / 2, startY + 10, 50, 60);
+
+                leakageCtx.fillStyle = '#5f27cd';
+                leakageCtx.font = '11px Arial';
+                leakageCtx.textAlign = 'center';
+                leakageCtx.fillText('Train', startX + boxW/2, startY + boxH + 20);
+                leakageCtx.fillStyle = '#ff6b6b';
+                leakageCtx.fillText('Test', startX + boxW + 50 - 40 + boxW/2, startY + boxH + 20);
+
+                leakageCtx.fillStyle = '#ff6b6b';
+                leakageCtx.font = '12px Arial';
+                leakageCtx.fillText('OVERLAP!', startX + boxW / 2 + 40, startY + 60);
+
+                leakageCtx.fillStyle = '#ff6b6b';
+                leakageCtx.font = '11px Arial';
+                leakageCtx.fillText('Same samples in both sets. Test accuracy inflated by 5-15%.', 50, 200);
+            } else if (leakageType === 'temporal') {
+                leakageCtx.fillStyle = '#666';
+                leakageCtx.font = '11px Arial';
+                const timeline = 'Jan Feb Mar | Apr May Jun (Train) | Jul Aug Sep (Test)';
+                leakageCtx.fillText('Timeline: ' + timeline, 50, 90);
+
+                leakageCtx.fillStyle = '#ff6b6b';
+                leakageCtx.fillText('WRONG: Using June data to predict July data!', 50, 140);
+                leakageCtx.fillText('RIGHT: Use Jan-May to predict Jun, then Jun-Aug to predict Sep.', 50, 165);
+
+                leakageCtx.fillStyle = '#a0a0b0';
+                leakageCtx.fillText('Issue: Models may overfit to seasonal patterns or trends that will not repeat.', 50, 200);
+            } else {
+                leakageCtx.fillStyle = '#666';
+                leakageCtx.font = '11px Arial';
+                leakageCtx.fillText('Example: Predicting medical outcome using "days_in_hospital"', 50, 90);
+                leakageCtx.fillText('But "days_in_hospital" is determined by the outcome!', 50, 115);
+                leakageCtx.fillText('At prediction time: you will not know this value yet.', 50, 140);
+
+                leakageCtx.fillStyle = '#ff6b6b';
+                leakageCtx.fillText('FIX: Remove variables that depend on target or are not available at prediction.', 50, 185);
+            }
+        }
+        drawLeakage();
+
+        // ============ Data Augmentation ============
+        let augType = 'image';
+        const augmentationCanvas = document.getElementById('augmentationCanvas');
+        const augmentationCtx = augmentationCanvas.getContext('2d');
+
+        document.querySelectorAll('.aug-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.aug-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                augType = e.target.dataset.aug;
+                drawAugmentation();
+            });
+        });
+
+        function drawAugmentation() {
+            const intensity = parseInt(document.getElementById('augIntensity').value);
+            document.getElementById('augIntensityVal').textContent = intensity + '%';
+
+            augmentationCtx.fillStyle = '#0f0f17';
+            augmentationCtx.fillRect(0, 0, augmentationCanvas.width, augmentationCanvas.height);
+
+            augmentationCtx.fillStyle = '#5f27cd';
+            augmentationCtx.font = 'bold 14px Arial';
+            augmentationCtx.fillText('Data Augmentation: ' + (augType === 'image' ? 'Image' : augType === 'text' ? 'Text' : 'MixUp/CutMix'), 40, 30);
+
+            if (augType === 'image') {
+                const augmentations = ['Crop', 'Flip', 'Rotate', 'Color Jitter', 'Gaussian Blur'];
+                let y = 70;
+                augmentations.forEach((aug, i) => {
+                    augmentationCtx.fillStyle = i < 3 ? '#5f27cd33' : '#7c3ff033';
+                    augmentationCtx.fillRect(50, y, 300, 25);
+                    augmentationCtx.strokeStyle = '#5f27cd';
+                    augmentationCtx.strokeRect(50, y, 300, 25);
+
+                    augmentationCtx.fillStyle = '#5f27cd';
+                    augmentationCtx.font = '11px Arial';
+                    augmentationCtx.fillText(aug + ': ' + intensity + '% intensity', 60, y + 16);
+                    y += 35;
+                });
+
+                augmentationCtx.fillStyle = '#a0a0b0';
+                augmentationCtx.font = '11px Arial';
+                augmentationCtx.fillText('Effect: Each image gets a random transformation. Prevents overfitting to exact pixels.', 50, 290);
+            } else if (augType === 'text') {
+                const augmentations = [
+                    'Back-translation: EN → FR → EN',
+                    'Synonym replacement: cat → feline',
+                    'Random insertion: [insert random word]',
+                    'Random deletion: [remove 15% of words]',
+                    'Random swap: [shuffle word order]'
+                ];
+                let y = 70;
+                augmentations.forEach((aug) => {
+                    augmentationCtx.fillStyle = '#5f27cd33';
+                    augmentationCtx.fillRect(50, y, 600, 25);
+                    augmentationCtx.strokeStyle = '#5f27cd';
+                    augmentationCtx.strokeRect(50, y, 600, 25);
+
+                    augmentationCtx.fillStyle = '#5f27cd';
+                    augmentationCtx.font = '11px Arial';
+                    augmentationCtx.fillText(aug, 60, y + 16);
+                    y += 35;
+                });
+            } else {
+                augmentationCtx.fillStyle = '#666';
+                augmentationCtx.font = '11px Arial';
+                augmentationCtx.fillText('MixUp: x_new = λx₁ + (1-λ)x₂,  y_new = λy₁ + (1-λ)y₂', 50, 80);
+                augmentationCtx.fillText('Effect: Smooth decision boundaries. Model learns convex combinations.', 50, 105);
+
+                augmentationCtx.fillText('CutMix: Copy patch from x₂ into x₁, scale label accordingly', 50, 160);
+                augmentationCtx.fillText('Effect: Encourages local feature learning. Better for vision.', 50, 185);
+
+                augmentationCtx.fillStyle = '#a0a0b0';
+                augmentationCtx.fillText('Both: Simple but effective. 1-2% accuracy improvement. Works best in high-data regime.', 50, 250);
+            }
+        }
+        drawAugmentation();
+
+        // ============ Temporal Features ============
+        let temporalType = 'cyclical';
+        const temporalCanvas = document.getElementById('temporalCanvas');
+        const temporalCtx = temporalCanvas.getContext('2d');
+
+        document.querySelectorAll('.temporal-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.temporal-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                temporalType = e.target.dataset.temporal;
+                drawTemporal();
+            });
+        });
+
+        document.getElementById('temporalPeriod').addEventListener('input', drawTemporal);
+
+        function drawTemporal() {
+            const period = parseInt(document.getElementById('temporalPeriod').value);
+            document.getElementById('temporalPeriodVal').textContent = period + ' hours';
+
+            temporalCtx.fillStyle = '#0f0f17';
+            temporalCtx.fillRect(0, 0, temporalCanvas.width, temporalCanvas.height);
+
+            temporalCtx.fillStyle = '#5f27cd';
+            temporalCtx.font = 'bold 14px Arial';
+            temporalCtx.fillText('Temporal Features: ' + (temporalType === 'cyclical' ? 'Cyclical Encoding' : temporalType === 'lag' ? 'Lag Features' : 'Rolling Statistics'), 40, 30);
+
+            if (temporalType === 'cyclical') {
+                temporalCtx.fillStyle = '#666';
+                temporalCtx.font = '11px monospace';
+                temporalCtx.fillText('sin(2π × hour / 24), cos(2π × hour / 24)', 50, 70);
+                temporalCtx.fillText('Result: 2D circle. Hour 0 ≈ Hour 23 (circular)', 50, 95);
+
+                const pad = { l: 100, r: 100, t: 120, b: 60 };
+                const centerX = (temporalCanvas.width - pad.l - pad.r) / 2 + pad.l;
+                const centerY = (temporalCanvas.height - pad.t - pad.b) / 2 + pad.t;
+                const radius = 70;
+
+                temporalCtx.strokeStyle = '#5f27cd';
+                temporalCtx.lineWidth = 1;
+                temporalCtx.beginPath();
+                temporalCtx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                temporalCtx.stroke();
+
+                temporalCtx.fillStyle = '#5f27cd88';
+                for (let h = 0; h < 24; h += 3) {
+                    const angle = (2 * Math.PI * h / 24) - Math.PI / 2;
+                    const x = centerX + radius * Math.cos(angle);
+                    const y = centerY + radius * Math.sin(angle);
+                    temporalCtx.beginPath();
+                    temporalCtx.arc(x, y, 4, 0, Math.PI * 2);
+                    temporalCtx.fill();
+                    temporalCtx.fillStyle = '#888';
+                    temporalCtx.font = '10px Arial';
+                    temporalCtx.fillText(h + 'h', x - 8, y + 12);
+                    temporalCtx.fillStyle = '#5f27cd88';
+                }
+            } else if (temporalType === 'lag') {
+                temporalCtx.fillStyle = '#666';
+                temporalCtx.font = '11px monospace';
+                temporalCtx.fillText('Features: y[t-1], y[t-2], y[t-3], ...', 50, 70);
+                temporalCtx.fillText('Each past timestep becomes a feature dimension', 50, 95);
+
+                let y = 140;
+                for (let lag = 1; lag <= 5; lag++) {
+                    temporalCtx.fillStyle = '#5f27cd33';
+                    temporalCtx.fillRect(50, y, 80, 20);
+                    temporalCtx.strokeStyle = '#5f27cd';
+                    temporalCtx.strokeRect(50, y, 80, 20);
+                    temporalCtx.fillStyle = '#5f27cd';
+                    temporalCtx.font = '10px Arial';
+                    temporalCtx.textAlign = 'center';
+                    temporalCtx.fillText('y[t-' + lag + ']', 90, y + 14);
+                    y += 25;
+                }
+
+                temporalCtx.fillStyle = '#a0a0b0';
+                temporalCtx.font = '11px Arial';
+                temporalCtx.textAlign = 'left';
+                temporalCtx.fillText('Captures autocorrelation. Works well with linear/tree models.', 50, 310);
+            } else {
+                temporalCtx.fillStyle = '#666';
+                temporalCtx.font = '11px monospace';
+                temporalCtx.fillText('Features: mean(y[t-N:t]), std(y[t-N:t]), max(y[t-N:t])', 50, 70);
+
+                let y = 120;
+                const stats = ['mean_7d', 'std_7d', 'max_7d', 'mean_30d', 'trend_7d'];
+                stats.forEach(stat => {
+                    temporalCtx.fillStyle = '#5f27cd33';
+                    temporalCtx.fillRect(50, y, 150, 22);
+                    temporalCtx.strokeStyle = '#5f27cd';
+                    temporalCtx.strokeRect(50, y, 150, 22);
+                    temporalCtx.fillStyle = '#5f27cd';
+                    temporalCtx.font = '10px Arial';
+                    temporalCtx.textAlign = 'center';
+                    temporalCtx.fillText(stat, 125, y + 14);
+                    y += 28;
+                });
+
+                temporalCtx.fillStyle = '#a0a0b0';
+                temporalCtx.font = '11px Arial';
+                temporalCtx.textAlign = 'left';
+                temporalCtx.fillText('Captures trends and volatility. Essential for financial/weather forecasting.', 50, 310);
+            }
+        }
+        drawTemporal();
+
+        // ============ Weak Supervision ============
+        const weakSupervisionCanvas = document.getElementById('weakSupervisionCanvas');
+        const weakSupervisionCtx = weakSupervisionCanvas.getContext('2d');
+
+        document.getElementById('lfCount').addEventListener('input', drawWeakSupervision);
+        document.getElementById('lfAccuracy').addEventListener('input', drawWeakSupervision);
+
+        function drawWeakSupervision() {
+            const lfCount = parseInt(document.getElementById('lfCount').value);
+            const lfAccuracy = parseInt(document.getElementById('lfAccuracy').value) / 100;
+            document.getElementById('lfCountVal').textContent = lfCount;
+            document.getElementById('lfAccuracyVal').textContent = (lfAccuracy * 100).toFixed(0) + '%';
+
+            weakSupervisionCtx.fillStyle = '#0f0f17';
+            weakSupervisionCtx.fillRect(0, 0, weakSupervisionCanvas.width, weakSupervisionCanvas.height);
+
+            weakSupervisionCtx.fillStyle = '#5f27cd';
+            weakSupervisionCtx.font = 'bold 14px Arial';
+            weakSupervisionCtx.fillText('Weak Supervision: Snorkel Framework', 40, 30);
+
+            weakSupervisionCtx.fillStyle = '#666';
+            weakSupervisionCtx.font = '11px Arial';
+            weakSupervisionCtx.fillText('(1) Write k heuristic labeling functions  (2) Aggregate votes  (3) Train on soft labels', 40, 55);
+
+            let y = 90;
+            for (let i = 0; i < lfCount; i++) {
+                weakSupervisionCtx.fillStyle = '#5f27cd33';
+                weakSupervisionCtx.fillRect(50, y, 200, 20);
+                weakSupervisionCtx.strokeStyle = '#5f27cd';
+                weakSupervisionCtx.strokeRect(50, y, 200, 20);
+
+                // Simulate accuracy
+                const accuracy = 0.5 + (Math.random() * 0.3 + lfAccuracy * 0.5);
+                const correct = Math.round(100 * accuracy);
+
+                weakSupervisionCtx.fillStyle = '#5f27cd';
+                weakSupervisionCtx.font = '10px Arial';
+                weakSupervisionCtx.textAlign = 'left';
+                weakSupervisionCtx.fillText('LF_' + (i+1) + ': ' + correct + '% accurate', 60, y + 14);
+
+                // Show vote
+                weakSupervisionCtx.fillStyle = accuracy > 0.5 ? '#64ffda88' : '#ff6b6b88';
+                weakSupervisionCtx.fillRect(270, y, 20, 20);
+                weakSupervisionCtx.textAlign = 'center';
+                weakSupervisionCtx.fillStyle = '#000';
+                weakSupervisionCtx.font = 'bold 10px Arial';
+                weakSupervisionCtx.fillText(accurate > 0.5 ? '1' : '0', 280, y + 14);
+
+                y += 25;
+            }
+
+            // Aggregation
+            weakSupervisionCtx.strokeStyle = '#ffd93d';
+            weakSupervisionCtx.lineWidth = 2;
+            weakSupervisionCtx.beginPath();
+            weakSupervisionCtx.moveTo(290, 100);
+            weakSupervisionCtx.lineTo(350, 100 + (lfCount * 25) / 2);
+            weakSupervisionCtx.stroke();
+
+            weakSupervisionCtx.fillStyle = '#ffd93d';
+            weakSupervisionCtx.font = 'bold 11px Arial';
+            weakSupervisionCtx.textAlign = 'center';
+            weakSupervisionCtx.fillText('Aggregate', 350, 100 + (lfCount * 25) / 2 - 10);
+            weakSupervisionCtx.font = '10px Arial';
+            weakSupervisionCtx.fillText('(majority vote)', 350, 100 + (lfCount * 25) / 2 + 5);
+
+            // Output
+            weakSupervisionCtx.fillStyle = '#4ecdc433';
+            weakSupervisionCtx.fillRect(380, 100 + (lfCount * 25) / 2 - 25, 150, 50);
+            weakSupervisionCtx.strokeStyle = '#4ecdc4';
+            weakSupervisionCtx.strokeRect(380, 100 + (lfCount * 25) / 2 - 25, 150, 50);
+            weakSupervisionCtx.fillStyle = '#4ecdc4';
+            weakSupervisionCtx.font = '10px Arial';
+            weakSupervisionCtx.textAlign = 'center';
+            weakSupervisionCtx.fillText('Soft Label', 455, 100 + (lfCount * 25) / 2 - 5);
+            weakSupervisionCtx.fillText('P(y=1)=' + (0.5 + lfAccuracy * 0.5).toFixed(2), 455, 100 + (lfCount * 25) / 2 + 10);
+
+            weakSupervisionCtx.fillStyle = '#a0a0b0';
+            weakSupervisionCtx.font = '11px Arial';
+            weakSupervisionCtx.textAlign = 'left';
+            weakSupervisionCtx.fillText('Benefit: 100-1000x faster than manual annotation. LFs can use external sources (regex, APIs, rules).', 50, y + 50);
+            weakSupervisionCtx.fillText('Limitation: LF quality/coverage matters. Typically used in training-data-rich companies.', 50, y + 75);
+        }
+        drawWeakSupervision();
+
+    </script>
+</body>
+</html>

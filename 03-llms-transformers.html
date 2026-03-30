@@ -1,0 +1,2413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3. LLMs & Transformers — Comprehensive Visualizations</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #0a0a0f; color: #e0e0e0; line-height: 1.6; }
+  .header { background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%); padding: 40px; text-align: center; border-bottom: 1px solid #2a2a4a; }
+  .header h1 { font-size: 2.2em; background: linear-gradient(90deg, #4ecdc4, #44bd32); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+  .header p { color: #888; font-size: 1.1em; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+  .viz-section { background: #12121f; border: 1px solid #2a2a4a; border-radius: 16px; padding: 32px; margin-bottom: 40px; }
+  .viz-section h2 { font-size: 1.5em; color: #4ecdc4; margin-bottom: 8px; }
+  .viz-section .subtitle { color: #888; margin-bottom: 24px; font-size: 0.95em; }
+  canvas { display: block; background: #0d0d1a; border-radius: 12px; margin-bottom: 16px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; align-items: center; }
+  .control-group { display: flex; flex-direction: column; gap: 4px; }
+  .control-group label { font-size: 0.85em; color: #aaa; }
+  .control-group input[type="range"] { width: 180px; accent-color: #4ecdc4; }
+  .control-group .value { font-size: 0.85em; color: #4ecdc4; font-family: monospace; }
+  .btn { padding: 8px 16px; border: 1px solid #4ecdc4; background: transparent; color: #4ecdc4; border-radius: 8px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
+  .btn:hover { background: #4ecdc422; }
+  .btn.active { background: #4ecdc433; }
+  .tab-bar { display: flex; gap: 8px; flex-wrap: wrap; }
+  .multi-canvas { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+  @media (max-width: 900px) { .multi-canvas { grid-template-columns: 1fr; } }
+
+  .insight-box { background: linear-gradient(135deg, #1a1a3e 0%, #151530 100%); border-left: 4px solid #4ecdc4; padding: 20px 24px; margin-top: 20px; border-radius: 0 12px 12px 0; font-size: 0.92em; color: #ccc; line-height: 1.8; }
+  .insight-box strong { color: #4ecdc4; font-size: 1.05em; }
+  .insight-box .formula { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 12px 18px; margin: 12px 0; font-family: 'Courier New', monospace; color: #e8e8ff; font-size: 1.05em; text-align: center; letter-spacing: 0.5px; line-height: 1.9; }
+  .insight-box .formula .highlight { color: #4ecdc4; font-weight: bold; }
+  .insight-box .key-point { display: flex; gap: 8px; margin: 8px 0; padding: 4px 0; }
+  .insight-box .key-point .label { color: #4ecdc4; font-weight: 600; white-space: nowrap; min-width: 90px; }
+  .insight-box .key-point .desc { color: #ddd; }
+  .insight-box .interview-tip { background: rgba(100, 255, 100, 0.05); border: 1px solid rgba(100, 255, 100, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #b0ffb0; font-size: 0.93em; line-height: 1.6; }
+  .insight-box .interview-tip::before { content: '\1F4A1  Interview Tip: '; font-weight: 700; color: #7fff7f; }
+  .insight-box .mnemonic { background: rgba(255, 150, 255, 0.05); border: 1px solid rgba(255, 150, 255, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #ffb0ff; font-size: 0.93em; line-height: 1.6; }
+  .insight-box .mnemonic::before { content: '\1F9E0  Remember: '; font-weight: 700; color: #ff7fff; }
+  .insight-box .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+  .insight-box .comparison .option { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 10px 14px; }
+  .insight-box .comparison .option .opt-title { color: #4ecdc4; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
+  .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
+  .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
+
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>3. Large Language Models & Transformers</h1>
+  <p>Complete deep dive: tokenization, architecture, fine-tuning, alignment, inference, retrieval</p>
+</div>
+
+<div class="container">
+
+<!-- ===== TOKENIZATION ===== -->
+<div class="viz-section">
+  <h2>Tokenization: Byte Pair Encoding (BPE)</h2>
+  <p class="subtitle">BPE iteratively merges the most frequent byte pairs into tokens. Watch the vocabulary grow and merges happen step by step.</p>
+  <canvas id="bpeCanvas" width="900" height="480"></canvas>
+  <div class="controls">
+    <button class="btn" id="bpePlayBtn" onclick="toggleBPE()">▶ Next Merge</button>
+    <button class="btn" onclick="resetBPE()">↺ Reset</button>
+    <div class="control-group">
+      <label>Target Vocab Size</label>
+      <input type="range" id="bpeTarget" min="50" max="256" value="100" oninput="drawBPE()">
+      <span class="value" id="bpeTargetVal">100</span>
+    </div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> The Transformer replaces RNNs with pure attention, enabling parallel training and longer dependencies.
+    <div class="key-point">
+      <span class="label">Key innovation:</span>
+      <span class="desc">Self-attention allows each position to directly attend to all other positions. No sequential dependency. Parallel training.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Architecture:</span>
+      <span class="desc">Encoder: multi-head self-attention + feed-forward. Decoder: masked self-attention + cross-attention + feed-forward. Stacked L times.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Positional encoding:</span>
+      <span class="desc">Add sinusoidal position embeddings to preserve order information. Attention is permutation-equivariant, needs position info.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Advantages over RNNs:</span>
+      <span class="desc">Parallelizable (all timesteps at once). Long-range dependencies (no vanishing gradient). Faster training.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Transformers dominate NLP now. Understand attention mechanism thoroughly. Trade-off: O(n²) memory vs parallelization benefit.</div>
+    <div class="mnemonic">Transformer = all-attention architecture. No recurrence. Parallel training. Position encodings + attention = sequence modeling.</div>
+  </div>
+  </div>
+
+<!-- ===== EXISTING: SELF-ATTENTION ===== -->
+<div class="viz-section">
+  <h2>Self-Attention: Q, K, V Computation</h2>
+  <p class="subtitle">Follow the full attention computation: input → Q,K,V projections → attention scores → softmax → weighted values → output. Click tokens to see what they attend to.</p>
+  <canvas id="attnCanvas" width="900" height="500"></canvas>
+  <div class="controls">
+    <div class="control-group">
+      <label>Temperature (softmax scaling)</label>
+      <input type="range" id="attnTemp" min="1" max="50" value="10" oninput="drawAttn()">
+      <span class="value" id="attnTempVal">1.0</span>
+    </div>
+    <div class="tab-bar">
+      <button class="btn active" id="attnTok0" onclick="setAttnFocus(0)">The</button>
+      <button class="btn" id="attnTok1" onclick="setAttnFocus(1)">cat</button>
+      <button class="btn" id="attnTok2" onclick="setAttnFocus(2)">sat</button>
+      <button class="btn" id="attnTok3" onclick="setAttnFocus(3)">on</button>
+      <button class="btn" id="attnTok4" onclick="setAttnFocus(4)">the</button>
+      <button class="btn" id="attnTok5" onclick="setAttnFocus(5)">mat</button>
+    </div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Self-attention is the core mechanism enabling Transformers to learn long-range dependencies.
+    <div class="formula">Self-Attention(Q,K,V) = softmax(QK^T/√d_k)V</div>
+    <div class="key-point"><span class="label">Q (Query):</span><span class="desc">Query matrix, shape (seq_len, d_k). "What am I looking for?" Learned projection of input.</span></div>
+    <div class="key-point"><span class="label">K (Key):</span><span class="desc">Key matrix, shape (seq_len, d_k). "What does each position represent?" Compared against queries to determine relevance.</span></div>
+    <div class="key-point"><span class="label">V (Value):</span><span class="desc">Value matrix, shape (seq_len, d_v). "What information to extract?" Weighted and aggregated based on attention scores.</span></div>
+    <div class="key-point"><span class="label">d_k:</span><span class="desc">Dimension of keys (usually 64). Affects scaling factor and model capacity.</span></div>
+    <div class="key-point"><span class="label">d_v:</span><span class="desc">Dimension of values (usually 64). Output dimension per head. Total output = num_heads × d_v.</span></div>
+    <div class="key-point"><span class="label">QK^T:</span><span class="desc">Attention logits, shape (seq_len, seq_len). Measures similarity between each query and all keys. Unnormalized scores.</span></div>
+    <div class="key-point"><span class="label">1/√d_k:</span><span class="desc">Scaling factor prevents attention weights from becoming too confident. Variance of QK^T is O(d_k), scaling keeps gradient O(1).</span></div>
+    <div class="key-point"><span class="label">softmax(...):</span><span class="desc">Converts scaled scores to probability distribution. Each row sums to 1. Determines how much each position attends to others.</span></div>
+    <div class="key-point"><span class="label">softmax(...) · V:</span><span class="desc">Weighted sum of values. Output shape: (seq_len, d_v). Each position gets weighted combination of all value vectors.</span></div>
+    <div class="key-point">
+      <span class="label">Process:</span>
+      <span class="desc">1. Project input to Q, K, V. 2. Compute attention weights: softmax(QK^T). 3. Weight values: apply weights to V. 4. Concatenate heads.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Multi-head attention:</span>
+      <span class="desc">h heads with different projections. Each head learns different attention patterns. Output: concat of all heads.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Scaling by √d_k:</span>
+      <span class="desc">Prevents softmax from becoming too peaked. Variance of QK^T is O(d_k), so scale gradients stay O(1).</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Masking in decoder:</span>
+      <span class="desc">Prevent attending to future tokens. Set attention weights to -∞ for future positions before softmax.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Why Q, K, V not just use input directly? Learned projections provide flexibility. Different heads can attend differently.</div>
+    <div class="mnemonic">Self-attention = compare all positions with each other. Learn what to pay attention to. Q asks, K answers, V provides info.</div>
+  </div>
+  </div>
+
+<!-- ===== EXISTING: MULTI-HEAD ATTENTION ===== -->
+<div class="viz-section">
+  <h2>Multi-Head Attention</h2>
+  <p class="subtitle">Each attention head learns different patterns. One head might focus on syntax, another on semantics, another on position.</p>
+  <canvas id="mhaCanvas" width="900" height="380"></canvas>
+  <div class="controls">
+    <div class="control-group">
+      <label>Number of Heads</label>
+      <input type="range" id="mhaHeads" min="1" max="8" value="4" oninput="drawMHA()">
+      <span class="value" id="mhaHeadsVal">4</span>
+    </div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Layer normalization and position-wise feed-forward networks stabilize Transformer training.
+    <div class="formula">LayerNorm(x) = γ · (x - μ) / √(σ² + ε) + β</div>
+    <div class="key-point"><span class="label">x:</span><span class="desc">Input to layer normalization. Shape: (batch_size, seq_len, hidden_dim) or (batch_size, hidden_dim)</span></div>
+    <div class="key-point"><span class="label">μ:</span><span class="desc">Mean of x computed per example (across the feature dimension). Shape: (batch_size, seq_len) or (batch_size,)</span></div>
+    <div class="key-point"><span class="label">σ²:</span><span class="desc">Variance of x per example (across features). Measures spread of activation values.</span></div>
+    <div class="key-point"><span class="label">ε:</span><span class="desc">Small constant (e.g., 1e-5 or 1e-6) for numerical stability. Prevents division by zero when variance is very small.</span></div>
+    <div class="key-point"><span class="label">(x - μ) / √(σ² + ε):</span><span class="desc">Standardization step. Shifts to mean 0, scales to variance 1. Normalizes across features for each example.</span></div>
+    <div class="key-point"><span class="label">γ (gamma):</span><span class="desc">Learnable scale parameter. Shape: (hidden_dim,). Allows network to scale normalized activations. Learned during training.</span></div>
+    <div class="key-point"><span class="label">β (beta):</span><span class="desc">Learnable shift parameter. Shape: (hidden_dim,). Allows network to shift normalized activations. Learned during training.</span></div>
+    <div class="key-point"><span class="label">γ · (...) + β:</span><span class="desc">Affine transformation. Restores model expressiveness after normalization. If γ=1, β=0 everywhere, recovers standard normalization.</span></div>
+    <div class="key-point">
+      <span class="label">Why layer norm (not batch norm):</span>
+      <span class="desc">Batch norm needs batch dimension. Transformers process variable-length sequences. LayerNorm normalizes per instance.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Position-wise FFN:</span>
+      <span class="desc">Applied to each position independently. Two linear layers with ReLU: FFN(x) = max(0, xW₁ + b₁)W₂ + b₂.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">FFN dimensions:</span>
+      <span class="desc">First layer expands (4x hidden size). Second layer projects back. Adds expressiveness. Most parameters in Transformers.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Residual connections:</span>
+      <span class="desc">Add input to output of each sublayer. Enables training of deep Transformers. Stabilizes gradients.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Transformer depth comes from stacking. Each layer adds computational power but also parameters and memory.</div>
+    <div class="mnemonic">LayerNorm normalizes each example independently. FFN expands then contracts. Residual connections = skip highways.</div>
+  </div>
+  </div>
+
+<!-- ===== EXISTING: POSITIONAL ENCODING ===== -->
+<div class="viz-section">
+  <h2>Positional Encodings: Sinusoidal & RoPE</h2>
+  <p class="subtitle">Transformers have no inherent position sense. Positional encodings inject position information via sinusoidal waves or rotations.</p>
+  <canvas id="posCanvas" width="900" height="380"></canvas>
+  <div class="controls">
+    <div class="tab-bar">
+      <button class="btn active" id="posSin" onclick="setPosType('sinusoidal')">Sinusoidal (Original)</button>
+      <button class="btn" id="posRope" onclick="setPosType('rope')">RoPE (LLaMA/GPT-NeoX)</button>
+    </div>
+    <div class="control-group">
+      <label>Max Position</label>
+      <input type="range" id="posMax" min="16" max="128" value="64" oninput="drawPos()">
+      <span class="value" id="posMaxVal">64</span>
+    </div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Tokenization and embedding convert discrete text into continuous vectors for neural processing.
+    <div class="key-point">
+      <span class="label">Tokenization:</span>
+      <span class="desc">Split text into tokens (words, subwords, or characters). Subword tokenization (BPE, WordPiece) balances vocabulary size vs sequence length.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Token embeddings:</span>
+      <span class="desc">Each token → learned embedding vector. Embedding matrix: vocab_size × d_model. Randomly initialized, learned during training.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Positional embeddings:</span>
+      <span class="desc">Add position information (sinusoidal or learned). Allows network to use word order. Token emb + position emb.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Special tokens:</span>
+      <span class="desc">[CLS] = classification (BERT). [SEP] = separator. [PAD] = padding. [UNK] = unknown word. Handle these during tokenization.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Subword tokenization is crucial for handling rare words and multilingual text. Understand vocab size trade-offs.</div>
+    <div class="mnemonic">Tokenization + embedding = convert text to dense vectors. Positions matter. Special tokens provide structure.</div>
+  </div>
+  </div>
+
+<!-- ===== EXISTING: KV-CACHE ===== -->
+<div class="viz-section">
+  <h2>KV-Cache: Efficient Autoregressive Inference</h2>
+  <p class="subtitle">During generation, cache K and V from previous tokens to avoid recomputation. Watch the cache grow as new tokens are generated.</p>
+  <canvas id="kvCanvas" width="900" height="360"></canvas>
+  <div class="controls">
+    <button class="btn" id="kvPlayBtn" onclick="toggleKV()">▶ Generate Token</button>
+    <button class="btn" onclick="resetKV()">↺ Reset</button>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Language model pretraining learns general linguistic patterns from large unlabeled text via next-token prediction.
+    <div class="formula">P(x_{t+1} | x_1, ..., x_t) = softmax(W · h_t + b)</div>
+    <div class="key-point"><span class="label">P(x_{t+1} | x_1, ..., x_t):</span><span class="desc">Conditional probability distribution over next token x_{t+1}, given all previous tokens. Output shape: (vocab_size,). Sum to 1.</span></div>
+    <div class="key-point"><span class="label">x_{t+1}:</span><span class="desc">Next token to predict. Element of vocabulary (0 to vocab_size-1). Loss = cross-entropy between true next token and this distribution.</span></div>
+    <div class="key-point"><span class="label">x_1, ..., x_t:</span><span class="desc">All previous tokens (context). Model processes entire sequence, attends to all previous positions via self-attention masks.</span></div>
+    <div class="key-point"><span class="label">h_t:</span><span class="desc">Hidden representation after processing sequence up to position t. Shape: (batch_size, hidden_dim). Contains context from all previous tokens.</span></div>
+    <div class="key-point"><span class="label">W:</span><span class="desc">Output projection matrix. Shape: (hidden_dim, vocab_size). Projects hidden state to logit space (unscaled scores for each token).</span></div>
+    <div class="key-point"><span class="label">b:</span><span class="desc">Output bias. Shape: (vocab_size,). Learned scalar offset per token.</span></div>
+    <div class="key-point"><span class="label">W · h_t + b:</span><span class="desc">Logits (unnormalized scores for each vocab token). Shape: (vocab_size,). No probability constraints yet.</span></div>
+    <div class="key-point"><span class="label">softmax(...):</span><span class="desc">Converts logits to valid probability distribution. Exponentiates, normalizes. Output: (vocab_size,) with elements in [0,1], sum=1.</span></div>
+    <div class="key-point">
+      <span class="label">Causal language modeling:</span>
+      <span class="desc">Predict next token given previous tokens. Masks future positions. Loss = cross-entropy on next token prediction.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Scale matters:</span>
+      <span class="desc">Larger models → better performance. 7B → 13B → 70B. More data helps too. Chinchilla scaling: match model size and data.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Emergent abilities:</span>
+      <span class="desc">Chain-of-thought reasoning, few-shot learning appear at scale. Model size threshold matters.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Compute-optimal training:</span>
+      <span class="desc">Optimal allocation: train to model convergence (2T tokens, where T = model parameters). LLaMA follows this principle.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Pretraining is expensive but transfer learning is powerful. Fine-tuning on specific task often very effective. Few-shot prompting often works!</div>
+    <div class="mnemonic">LM pretraining = predict next token from massive unlabeled text. Learns grammar, facts, reasoning. Scale → emergent abilities.</div>
+  </div>
+  </div>
+
+<!-- ===== EXISTING: TRANSFORMER BLOCK ===== -->
+<div class="viz-section">
+  <h2>Transformer Block Architecture</h2>
+  <p class="subtitle">The complete flow through a decoder block: LayerNorm → Attention → Residual → LayerNorm → FFN → Residual.</p>
+  <canvas id="blockCanvas" width="900" height="480"></canvas>
+  <div class="controls">
+    <div class="tab-bar">
+      <button class="btn active" id="blockPre" onclick="setBlockType('pre')">Pre-Norm (GPT-2+, LLaMA)</button>
+      <button class="btn" id="blockPost" onclick="setBlockType('post')">Post-Norm (Original)</button>
+    </div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Instruction tuning and RLHF align models with human preferences and make them helpful, harmless, honest.
+    <div class="key-point">
+      <span class="label">Instruction tuning:</span>
+      <span class="desc">Fine-tune pretrained LM on (instruction, response) pairs. Teaches model to follow directions. Simple but effective.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">RLHF (Reinforcement Learning from Human Feedback):</span>
+      <span class="desc">1. Collect human preference data (which output better?). 2. Train reward model. 3. Use RL to optimize policy (LM) against reward.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Reward model training:</span>
+      <span class="desc">Model learns to predict human preferences. Trained on paired outputs (better, worse). Loss = negative log likelihood of preference.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">RL loss:</span>
+      <span class="desc">PPO or similar policy gradient. Maximize: E[reward] - KL(π_new || π_old). KL term prevents diverging from pretrained model.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">RLHF is expensive (human feedback needed) but crucial for alignment. Alternative: DPO (direct preference optimization, no reward model).</div>
+    <div class="mnemonic">Instruction tuning = teach format. RLHF = optimize for human preferences. Alignment = make models helpful, safe, honest.</div>
+  </div>
+  </div>
+
+<!-- ===== NEW: FINE-TUNING & PEFT ===== -->
+<div class="viz-section">
+  <h2>Fine-Tuning & Parameter-Efficient Methods</h2>
+  <p class="subtitle">Compare full fine-tuning (train all params) vs LoRA (train low-rank adapters) vs QLoRA (4-bit quantization + LoRA).</p>
+  <div class="multi-canvas">
+    <div>
+      <canvas id="loraCanvas" width="420" height="400"></canvas>
+      <div class="controls">
+        <div class="control-group">
+          <label>LoRA Rank (r)</label>
+          <input type="range" id="loraRank" min="1" max="64" value="8" oninput="drawLoRA()">
+          <span class="value" id="loraRankVal">8</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <canvas id="peftCompareCanvas" width="420" height="400"></canvas>
+    </div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> In-context learning and prompt engineering guide LLMs to perform tasks without parameter updates.
+    <div class="key-point">
+      <span class="label">Few-shot prompting:</span>
+      <span class="desc">Include examples in context. Model learns from examples + pattern recognition. No gradient updates, just completion generation.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Chain-of-thought prompting:</span>
+      <span class="desc">"Let's think step by step". Show intermediate reasoning steps in examples. Model generates steps before final answer.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Prompt structure:</span>
+      <span class="desc">System message (role/instructions) + context/examples + query. Temperature (randomness) affects output diversity.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Why it works:</span>
+      <span class="desc">Pretraining on diverse data teaches patterns. Transformers learn what comes next. Context updates hidden state toward task.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">In-context learning is remarkable emergent ability of large models. Scaling laws: bigger models learn from fewer examples.</div>
+    <div class="mnemonic">In-context learning = pattern matching via sequence completion. No parameter update. Examples are powerful context.</div>
+  </div>
+  </div>
+
+<!-- ===== NEW: RLHF & ALIGNMENT ===== -->
+<div class="viz-section">
+  <h2>RLHF & Alignment Pipeline</h2>
+  <p class="subtitle">The full pipeline: Pretrained → SFT → Reward Model → PPO. Compare with simpler DPO (Direct Preference Optimization).</p>
+  <canvas id="rlhfCanvas" width="900" height="450"></canvas>
+  <div class="controls">
+    <div class="tab-bar">
+      <button class="btn active" id="rlhfPPO" onclick="setRLHFType('ppo')">PPO (Classic)</button>
+      <button class="btn" id="rlhfDPO" onclick="setRLHFType('dpo')">DPO (Direct)</button>
+    </div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Context window length limits what the model can attend to. Longer windows = more history but higher compute cost.
+    <div class="key-point">
+      <span class="label">Attention complexity:</span>
+      <span class="desc">Self-attention is O(n²) in sequence length. 4K context: manageable. 128K context: expensive. Trade-off everywhere.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Position interpolation:</span>
+      <span class="desc">Extend context during fine-tuning by interpolating position embeddings. Train on longer sequences. Works reasonably well.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Rotary embeddings (RoPE):</span>
+      <span class="desc">Modern position encoding that extrapolates better. Rotate query/key vectors by position-dependent angles.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Long context techniques:</span>
+      <span class="desc">Sparse attention patterns. Local + global attention. Linear attention approximations. Hierarchical attention.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Longer context important for long documents, conversations, code. But comes with memory cost. Understanding context window critical.</div>
+    <div class="mnemonic">Context window = how much history model sees. Longer = better for understanding long documents. O(n²) cost is limiting.</div>
+  </div>
+  </div>
+
+<!-- ===== NEW: INFERENCE & SERVING ===== -->
+<div class="viz-section">
+  <h2>Inference Optimization: Speculative Decoding & Quantization</h2>
+  <p class="subtitle">Speed up inference with draft models (speculative decoding) and reduce memory via quantization (FP32 → INT8 → INT4).</p>
+  <div class="multi-canvas">
+    <div>
+      <canvas id="speculativeCanvas" width="420" height="380"></canvas>
+    </div>
+    <div>
+      <canvas id="quantCanvas" width="420" height="380"></canvas>
+    </div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Quantization reduces model size and inference latency by using lower-precision numbers instead of float32.
+    <div class="key-point">
+      <span class="label">Precision levels:</span>
+      <span class="desc">float32 (32 bits). float16 (16 bits, 2x smaller). int8 (8 bits, 4x smaller). int4 (4 bits, 8x smaller).</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Quantization methods:</span>
+      <span class="desc">Post-training quantization: quantize after training. Quantization-aware training: simulate quantization during training.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Trade-offs:</span>
+      <span class="desc">int4: 8x smaller, but quality loss. int8: ~4x smaller, minimal loss. Depends on layer sensitivity.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Mixed precision:</span>
+      <span class="desc">Keep critical layers (embeddings, attention output) in higher precision. Quantize feed-forward networks heavily. Optimal quality/speed.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Quantization crucial for deployment on edge devices. int8 very practical. int4 requires careful tuning but very memory efficient.</div>
+    <div class="mnemonic">Quantization = smaller, faster, less accurate. int8 sweet spot: 4x smaller, minimal loss. int4 when size critical.</div>
+  </div>
+  </div>
+
+<!-- ===== NEW: CONTINUOUS BATCHING & PAGED ATTENTION ===== -->
+<div class="viz-section">
+  <h2>Serving: Continuous Batching & Paged Attention (vLLM)</h2>
+  <p class="subtitle">Traditional batching waits for all sequences to finish. Continuous batching removes completed sequences and adds new ones. PagedAttention stores KV-cache in variable-length blocks.</p>
+  <canvas id="continuousBatchCanvas" width="900" height="420"></canvas>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Scaling laws govern how model performance improves with more parameters, data, and compute.
+    <div class="formula">Loss(N) ≈ a / N^α  (model size scaling)</div>
+    <div class="key-point"><span class="label">Loss(N):</span><span class="desc">Test loss when training with N parameters. Lower = better performance. Asymptotically approaches optimal loss.</span></div>
+    <div class="key-point"><span class="label">N:</span><span class="desc">Number of model parameters (weights, biases). Measured in millions (M) or billions (B). Ranges from 1M to 400B+ for LLMs.</span></div>
+    <div class="key-point"><span class="label">a:</span><span class="desc">Scaling constant (empirical fit). Depends on task, data quality, architecture. Fitted from experimental data.</span></div>
+    <div class="key-point"><span class="label">α:</span><span class="desc">Scaling exponent for model size, typically 0.07-0.1. Log-log slope. α = 0.1 means 10x params → ~2x loss reduction.</span></div>
+    <div class="key-point"><span class="label">≈:</span><span class="desc">Approximation sign. Empirical power law, not exact theory. Holds across wide range of N (millions to hundreds of billions).</span></div>
+    <div class="formula">Loss(D) ≈ b / D^β  (data scaling)</div>
+    <div class="key-point"><span class="label">Loss(D):</span><span class="desc">Test loss when training with D tokens of data. Larger D → lower loss. Follows similar power law to model size.</span></div>
+    <div class="key-point"><span class="label">D:</span><span class="desc">Number of training tokens (data quantity). For 70B parameter model, optimal D ≈ 1.4 trillion tokens (Chinchilla scaling).</span></div>
+    <div class="key-point"><span class="label">b:</span><span class="desc">Scaling constant for data dimension. Empirically fitted. Typically larger coefficient than model scaling constant a.</span></div>
+    <div class="key-point"><span class="label">β:</span><span class="desc">Scaling exponent for data, typically 0.1-0.2. β = 0.15 means 10x more data → ~1.4x loss reduction. Slower than model scaling.</span></div>
+    <div class="key-point">
+      <span class="label">Observed exponents:</span>
+      <span class="desc">α ≈ 0.07-0.1 (model), β ≈ 0.1-0.2 (data). Both improve loss, but slowly (power law).</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Chinchilla/Compute optimal:</span>
+      <span class="desc">Optimal allocation: increase model and data together. ~20 tokens per parameter. Avoid: huge model on small data or vice versa.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Implications:</span>
+      <span class="desc">Performance improves continuously with scale. No ceiling expected. Bigger models generalize better despite more capacity.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Practical impact:</span>
+      <span class="desc">Predicting loss on held-out data. Choosing model size. Budget allocation (compute, parameters, data).</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Scaling laws are empirical (fit from data) not proven. But remarkably consistent across orders of magnitude. Useful for planning.</div>
+    <div class="mnemonic">Scaling laws = loss improves as power law with model/data size. Chinchilla = balance model and data. Bigger = better.</div>
+  </div>
+  </div>
+
+<!-- ===== NEW: RAG PIPELINE ===== -->
+<div class="viz-section">
+  <h2>RAG: Retrieval-Augmented Generation</h2>
+  <p class="subtitle">Query → Embed → Retrieve → Rerank → Augment Prompt → Generate. Compare chunking strategies: fixed, semantic, recursive.</p>
+  <canvas id="ragPipelineCanvas" width="900" height="450"></canvas>
+  <div class="controls">
+    <div class="tab-bar">
+      <button class="btn active" id="ragFixed" onclick="setRAGStrategy('fixed')">Fixed (512 tokens)</button>
+      <button class="btn" id="ragSemantic" onclick="setRAGStrategy('semantic')">Semantic Chunking</button>
+      <button class="btn" id="ragRecursive" onclick="setRAGStrategy('recursive')">Recursive</button>
+    </div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Knowledge distillation transfers knowledge from large teacher models to smaller student models.
+    <div class="key-point">
+      <span class="label">Goal:</span>
+      <span class="desc">Make smaller model mimic large model. Smaller = faster inference, deployable on edge devices.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">KD training:</span>
+      <span class="desc">Loss = α · cross_entropy(student, hard_labels) + (1-α) · KL(student_logits, teacher_logits). Soft targets from teacher.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Temperature scaling:</span>
+      <span class="desc">Higher temperature softens probability distributions. Makes soft targets more informative. Typical: T=4.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Results:</span>
+      <span class="desc">Student can match large part of teacher performance at much smaller size. 10x compression: ~5-10% quality loss.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Distillation effective for deployment. Student learns from teacher's mistakes too (soft probability targets reveal model uncertainty).</div>
+    <div class="mnemonic">Knowledge distillation = student learns from teacher. Soft targets more informative than hard labels. Trade: quality for size/speed.</div>
+  </div>
+  </div>
+
+<!-- ===== NEW: VECTOR DB & RETRIEVAL ===== -->
+<div class="viz-section">
+  <h2>Vector Database & HNSW Indexing</h2>
+  <p class="subtitle">Efficient nearest neighbor search with Hierarchical Navigable Small World (HNSW) graphs. Compare with brute-force search.</p>
+  <div class="multi-canvas">
+    <div>
+      <canvas id="hnsqCanvas" width="420" height="400"></canvas>
+      <div class="controls">
+        <div class="control-group">
+          <label>Number of Layers</label>
+          <input type="range" id="hnsqLayers" min="1" max="4" value="3" oninput="drawHNSW()">
+          <span class="value" id="hnsqLayersVal">3</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <canvas id="retrievalStatsCanvas" width="420" height="400"></canvas>
+    </div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Model merging and mixture of experts enable efficient scaling without increasing individual model size.
+    <div class="key-point">
+      <span class="label">Model merging:</span>
+      <span class="desc">Average weights of multiple models trained on different tasks. Single inference cost. Combines capabilities. Task vectors help alignment.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Mixture of Experts (MoE):</span>
+      <span class="desc">Sparse expert networks. Only few experts active per token. Routes tokens to experts via learned gating. Massive scale with reasonable compute.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">MoE benefits:</span>
+      <span class="desc">7B sparse MoE ≈ capability of dense 50B model. Load balancing critical (ensure all experts used).</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Trade-offs:</span>
+      <span class="desc">MoE: higher memory (all experts loaded), better scaling. Merging: simpler, but capacity limited by individual models.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">MoE prevalent in large models (Gemini, Mixtral). Gating network quality critical. Understand expert utilization monitoring.</div>
+    <div class="mnemonic">MoE = selective expert activation. Sparse = many parameters but low compute. Merging = simpler multi-capability scaling.</div>
+  </div>
+  </div>
+
+</div>
+
+<script>
+// ==================== TOKENIZATION: BPE ====================
+let bpeState = {
+  text: "the quick brown fox jumps",
+  mergeIdx: 0,
+  maxMerges: 0,
+  vocab: []
+};
+
+function initBPE() {
+  const target = parseInt(document.getElementById('bpeTarget').value);
+  const text = "the quick brown fox jumps";
+  const tokens = text.split('').map(c => c === ' ' ? '▁' : c);
+  bpeState.vocab = [];
+  bpeState.mergeIdx = 0;
+  bpeState.maxMerges = target - 256;
+  drawBPE();
+}
+
+function toggleBPE() {
+  if (bpeState.mergeIdx < bpeState.maxMerges) {
+    bpeState.mergeIdx++;
+    drawBPE();
+  }
+}
+
+function resetBPE() {
+  bpeState.mergeIdx = 0;
+  bpeState.vocab = [];
+  drawBPE();
+}
+
+function drawBPE() {
+  const canvas = document.getElementById('bpeCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, W, H);
+
+  const target = parseInt(document.getElementById('bpeTarget').value);
+  const maxMerges = target - 256;
+  document.getElementById('bpeTargetVal').textContent = target;
+
+  // Title
+  ctx.fillStyle = '#4ecdc4';
+  ctx.font = 'bold 16px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText('BPE Tokenization Process', 40, 40);
+
+  // Input text
+  ctx.fillStyle = '#888';
+  ctx.font = '14px Inter';
+  ctx.fillText('Input text:', 40, 80);
+
+  const text = "the quick brown fox";
+  const chars = text.split('').map(c => c === ' ' ? '▁' : c);
+  let x = 160;
+  ctx.font = '12px monospace';
+  ctx.fillStyle = '#4ecdc4';
+  for (let i = 0; i < chars.length; i++) {
+    ctx.fillText(chars[i], x, 80);
+    x += 20;
+  }
+
+  // Initial vocab (256 bytes)
+  ctx.fillStyle = '#888';
+  ctx.font = '13px Inter';
+  ctx.fillText('Initial vocabulary (256 bytes):', 40, 130);
+
+  ctx.fillStyle = '#666';
+  ctx.font = '12px monospace';
+  let vocabText = '';
+  for (let i = 0; i < 16; i++) {
+    vocabText += String.fromCharCode(32 + i) + ' ';
+  }
+  ctx.fillText(vocabText, 60, 155);
+  ctx.fillText('... (256 total)', 60, 175);
+
+  // Merge steps
+  ctx.fillStyle = '#888';
+  ctx.font = '13px Inter';
+  ctx.fillText('Merge steps:', 40, 210);
+
+  ctx.fillStyle = '#666';
+  ctx.font = '12px monospace';
+  const mergeY = 235;
+  const stepsToShow = 10;
+  for (let i = 0; i < Math.min(stepsToShow, bpeState.mergeIdx + 1); i++) {
+    const pairs = ['th', 'he', 'e▁', '▁q', 'qu', 'ui', 'ic', 'ck', 'k▁', 'br'];
+    const pair = pairs[i % pairs.length];
+    const count = Math.floor(50 - i * 3 + Math.random() * 10);
+    const isHighlighted = i === bpeState.mergeIdx;
+    ctx.fillStyle = isHighlighted ? '#4ecdc4' : '#666';
+    ctx.fillText(`${String(i + 1).padStart(3, ' ')}. Merge '${pair}' (${count} occurrences)`, 60, mergeY + i * 18);
+  }
+
+  if (bpeState.mergeIdx < maxMerges) {
+    ctx.fillStyle = '#666';
+    ctx.font = '12px monospace';
+    ctx.fillText(`... (${maxMerges - bpeState.mergeIdx - 1} more merges)`, 60, mergeY + stepsToShow * 18);
+  }
+
+  // Vocab size progress
+  const vocabSize = 256 + bpeState.mergeIdx;
+  ctx.fillStyle = '#888';
+  ctx.font = '13px Inter';
+  ctx.fillText('Current vocabulary size:', 40, 400);
+
+  ctx.font = '14px monospace';
+  ctx.fillStyle = '#4ecdc4';
+  ctx.fillText(String(vocabSize), 280, 400);
+
+  // Progress bar
+  const barW = 300;
+  const barX = 40;
+  const barY = 425;
+  ctx.fillStyle = '#2a2a4a';
+  ctx.fillRect(barX, barY, barW, 20);
+  ctx.fillStyle = '#4ecdc4';
+  ctx.fillRect(barX, barY, (bpeState.mergeIdx / maxMerges) * barW, 20);
+  ctx.strokeStyle = '#4ecdc4';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(barX, barY, barW, 20);
+
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText(`${Math.round((bpeState.mergeIdx / maxMerges) * 100)}%`, barX + barW / 2, barY + 35);
+
+  // Token example after merges
+  ctx.fillStyle = '#888';
+  ctx.font = '13px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText('Example encoding after merges:', 40, 470);
+
+  ctx.font = '12px monospace';
+  ctx.fillStyle = '#44bd32';
+  const example = ['th', 'e', '▁q', 'ui', 'ck'];
+  let ex = 280;
+  for (let i = 0; i < example.length; i++) {
+    ctx.fillText(`[${example[i]}]`, ex, 470);
+    ex += 60;
+  }
+}
+
+// ==================== SELF-ATTENTION ====================
+const tokens = ['The', 'cat', 'sat', 'on', 'the', 'mat'];
+const N = tokens.length;
+const dk = 4;
+let attnFocus = 0;
+const Q = [], K = [], V = [];
+
+function initAttn() {
+  const seed = [0.3, -0.5, 0.7, -0.2, 0.4, 0.1, -0.8, 0.6, 0.2, -0.3, 0.5, 0.9, -0.1, 0.4, -0.6, 0.3, 0.8, -0.4, 0.2, 0.7, -0.5, 0.1, 0.6, -0.9];
+  for (let i = 0; i < N; i++) {
+    Q.push(Array.from({length: dk}, (_, j) => seed[(i * dk + j) % seed.length] + Math.sin(i + j) * 0.3));
+    K.push(Array.from({length: dk}, (_, j) => seed[(i * dk + j + 7) % seed.length] + Math.cos(i + j) * 0.3));
+    V.push(Array.from({length: dk}, (_, j) => seed[(i * dk + j + 13) % seed.length] * 0.5));
+  }
+}
+
+function softmax(arr) {
+  const max = Math.max(...arr);
+  const exps = arr.map(x => Math.exp(x - max));
+  const sum = exps.reduce((a, b) => a + b);
+  return exps.map(x => x / sum);
+}
+
+function setAttnFocus(idx) {
+  attnFocus = idx;
+  for (let i = 0; i < N; i++) {
+    const btn = document.getElementById('attnTok' + i);
+    if (btn) btn.classList.toggle('active', i === idx);
+  }
+  drawAttn();
+}
+
+function drawAttn() {
+  const canvas = document.getElementById('attnCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const temp = parseInt(document.getElementById('attnTemp').value) / 10;
+  const tempEl = document.getElementById('attnTempVal');
+  if (tempEl) tempEl.textContent = temp.toFixed(1);
+
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, W, H);
+
+  const q = Q[attnFocus];
+  const scores = [];
+  for (let j = 0; j < N; j++) {
+    let dot = 0;
+    for (let d = 0; d < dk; d++) dot += q[d] * K[j][d];
+    scores.push(dot / (Math.sqrt(dk) * temp));
+  }
+  const weights = softmax(scores);
+
+  const tokY = 60, matY = 140, scoreY = 320, outputY = 440;
+  const tokSpacing = 100;
+  const startX = 120;
+
+  // Draw tokens
+  ctx.font = '16px Inter';
+  ctx.textAlign = 'center';
+  for (let i = 0; i < N; i++) {
+    const x = startX + i * tokSpacing;
+    const isFocused = i === attnFocus;
+
+    ctx.fillStyle = isFocused ? '#4ecdc4' : '#2a2a4a';
+    ctx.strokeStyle = isFocused ? '#4ecdc4' : '#444';
+    ctx.lineWidth = isFocused ? 2 : 1;
+    ctx.beginPath();
+    ctx.roundRect(x - 30, tokY - 15, 60, 30, 6);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = isFocused ? '#000' : '#ccc';
+    ctx.fillText(tokens[i], x, tokY + 5);
+  }
+
+  // Attention beams
+  for (let j = 0; j < N; j++) {
+    const x1 = startX + attnFocus * tokSpacing;
+    const x2 = startX + j * tokSpacing;
+    const w = weights[j];
+
+    ctx.strokeStyle = `rgba(78,205,196,${w})`;
+    ctx.lineWidth = w * 8 + 0.5;
+    ctx.beginPath();
+    ctx.moveTo(x1, tokY + 20);
+    ctx.quadraticCurveTo((x1 + x2) / 2, tokY + 60 + Math.abs(x1 - x2) * 0.3, x2, tokY + 20);
+    ctx.stroke();
+
+    ctx.fillStyle = w > 0.1 ? '#4ecdc4' : '#555';
+    ctx.font = '11px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(w.toFixed(3), x2, tokY + 40 + (j % 2) * 14);
+  }
+
+  // Heatmap
+  const heatX = 40, heatY = matY + 40;
+  const cellSize = 52;
+
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText('Attention Weights Matrix', heatX + N * cellSize / 2, heatY - 10);
+
+  for (let i = 0; i < N; i++) {
+    ctx.fillStyle = i === attnFocus ? '#4ecdc4' : '#666';
+    ctx.font = '10px Inter';
+    ctx.textAlign = 'right';
+    ctx.fillText(tokens[i], heatX - 4, heatY + i * cellSize + cellSize / 2 + 3);
+
+    ctx.textAlign = 'center';
+    ctx.fillText(tokens[i], heatX + i * cellSize + cellSize / 2, heatY - 2);
+
+    const qi = Q[i];
+    const rowScores = [];
+    for (let j = 0; j < N; j++) {
+      let dot = 0;
+      for (let d = 0; d < dk; d++) dot += qi[d] * K[j][d];
+      rowScores.push(dot / (Math.sqrt(dk) * temp));
+    }
+    const rowWeights = softmax(rowScores);
+
+    for (let j = 0; j < N; j++) {
+      const x = heatX + j * cellSize;
+      const y = heatY + i * cellSize;
+      const w = rowWeights[j];
+      const masked = j > i;
+
+      if (masked) {
+        ctx.fillStyle = '#1a1a2e';
+      } else {
+        const r = Math.floor(78 + w * 177);
+        const g = Math.floor(205 - w * 155);
+        const b = Math.floor(196 - w * 146);
+        ctx.fillStyle = `rgb(${r},${g},${b})`;
+      }
+      ctx.fillRect(x, y, cellSize - 1, cellSize - 1);
+
+      if (i === attnFocus) {
+        ctx.strokeStyle = '#4ecdc4';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x, y, cellSize - 1, cellSize - 1);
+      }
+
+      ctx.fillStyle = masked ? '#333' : (w > 0.3 ? '#000' : '#ccc');
+      ctx.font = '10px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(masked ? '—' : w.toFixed(2), x + cellSize / 2, y + cellSize / 2 + 3);
+    }
+  }
+
+  ctx.fillStyle = '#666';
+  ctx.font = '11px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText('Query ↓', heatX - 30, heatY + N * cellSize / 2);
+  ctx.fillText('Key →', heatX + N * cellSize / 2, heatY + N * cellSize + 16);
+
+  // Formula
+  ctx.fillStyle = '#888';
+  ctx.font = '12px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('Attention(Q,K,V) = softmax(QKᵀ/√dₖ) · V', 40, outputY);
+  ctx.fillStyle = '#4ecdc4';
+  ctx.fillText(`√dₖ = √${dk} = ${Math.sqrt(dk).toFixed(2)}`, 40, outputY + 20);
+  ctx.fillText(`temp = ${temp.toFixed(1)}  (÷ by this too)`, 40, outputY + 40);
+}
+
+// ==================== MULTI-HEAD ATTENTION ====================
+function drawMHA() {
+  const canvas = document.getElementById('mhaCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const numHeads = parseInt(document.getElementById('mhaHeads').value);
+  const el = document.getElementById('mhaHeadsVal');
+  if (el) el.textContent = numHeads;
+
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, W, H);
+
+  const headColors = ['#ff6b6b', '#4ecdc4', '#ffd93d', '#7c4dff', '#ff9ff3', '#54a0ff', '#5f27cd', '#01a3a4'];
+  const startX = 100;
+  const headY = 100;
+
+  ctx.fillStyle = '#888';
+  ctx.font = '14px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText('Input Embedding (d_model = 512)', W / 2, 30);
+
+  ctx.fillStyle = '#2a2a4a';
+  ctx.fillRect(startX, 40, W - 2 * startX, 25);
+  ctx.strokeStyle = '#4ecdc4';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(startX, 40, W - 2 * startX, 25);
+
+  ctx.fillStyle = '#666';
+  ctx.font = '12px Inter';
+  ctx.fillText(`Split into ${numHeads} heads  (d_k = ${Math.floor(512 / numHeads)} per head)`, W / 2, 85);
+
+  const headW = (W - 2 * startX) / numHeads - 4;
+
+  for (let h = 0; h < numHeads; h++) {
+    const x = startX + h * ((W - 2 * startX) / numHeads);
+
+    ctx.strokeStyle = headColors[h] + '44';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x + headW / 2, 65);
+    ctx.lineTo(x + headW / 2, headY);
+    ctx.stroke();
+
+    ctx.fillStyle = headColors[h] + '22';
+    ctx.strokeStyle = headColors[h];
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(x, headY, headW, 140, 8);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = headColors[h];
+    ctx.font = '12px Inter';
+    ctx.textAlign = 'center';
+    ctx.fillText(`Head ${h + 1}`, x + headW / 2, headY + 20);
+
+    const miniSize = Math.min(headW - 10, 60);
+    const miniX = x + (headW - miniSize) / 2;
+    const miniY = headY + 30;
+    const cells = 4;
+    const cellSize = miniSize / cells;
+
+    for (let i = 0; i < cells; i++) {
+      for (let j = 0; j < cells; j++) {
+        const val = Math.sin(h + i * j) * 0.5 + 0.5;
+        const r = Math.floor(78 + val * 177);
+        const g = Math.floor(205 - val * 155);
+        const b = Math.floor(196 - val * 146);
+        ctx.fillStyle = `rgb(${r},${g},${b})`;
+        ctx.fillRect(miniX + j * cellSize, miniY + i * cellSize, cellSize - 1, cellSize - 1);
+      }
+    }
+  }
+
+  // Output
+  ctx.fillStyle = '#666';
+  ctx.font = '12px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText('Concatenate → Linear → Output (d_model = 512)', W / 2, headY + 180);
+
+  ctx.fillStyle = '#2a2a4a';
+  ctx.fillRect(startX, headY + 195, W - 2 * startX, 25);
+  ctx.strokeStyle = '#4ecdc4';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(startX, headY + 195, W - 2 * startX, 25);
+
+  // Efficiency note
+  ctx.fillStyle = '#888';
+  ctx.font = '11px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText(`Total params: Q,K,V projections = 3 × d_model²`, 40, H - 30);
+  ctx.fillText(`Output projection = d_model²  (1 layer) × 32 layers = 13B params for 7B model`, 40, H - 10);
+}
+
+// ==================== POSITIONAL ENCODING ====================
+let posType = 'sinusoidal';
+
+function setPosType(type) {
+  posType = type;
+  document.getElementById('posSin').classList.toggle('active', type === 'sinusoidal');
+  document.getElementById('posRope').classList.toggle('active', type === 'rope');
+  drawPos();
+}
+
+function drawPos() {
+  const canvas = document.getElementById('posCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const maxPos = parseInt(document.getElementById('posMax').value);
+  const posEl = document.getElementById('posMaxVal');
+  if (posEl) posEl.textContent = maxPos;
+
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.fillStyle = '#888';
+  ctx.font = '13px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText('Position encoding heatmap (freq vs position)', 40, 30);
+
+  const heatX = 60, heatY = 50;
+  const cellSize = 5;
+  const freqs = 16;
+
+  for (let pos = 0; pos < maxPos; pos += 2) {
+    for (let freq = 0; freq < freqs; freq++) {
+      let val = 0;
+      if (posType === 'sinusoidal') {
+        const base = 10000 ** (2 * freq / 64);
+        val = Math.sin(pos / base) * 0.5 + 0.5;
+      } else {
+        const theta = 10000 ** (2 * freq / 64);
+        const angle = pos / theta;
+        val = Math.sin(angle * 2) * 0.5 + 0.5;
+      }
+
+      const r = Math.floor(78 + val * 177);
+      const g = Math.floor(205 - val * 155);
+      const b = Math.floor(196 - val * 146);
+      ctx.fillStyle = `rgb(${r},${g},${b})`;
+      ctx.fillRect(heatX + pos * cellSize, heatY + freq * cellSize, cellSize, cellSize);
+    }
+  }
+
+  // Axes
+  ctx.strokeStyle = '#444';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(heatX, heatY);
+  ctx.lineTo(heatX + maxPos * cellSize, heatY);
+  ctx.lineTo(heatX + maxPos * cellSize, heatY + freqs * cellSize);
+  ctx.stroke();
+
+  // Labels
+  ctx.fillStyle = '#666';
+  ctx.font = '11px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText('Position (token index)', heatX + maxPos * cellSize / 2, heatY + freqs * cellSize + 20);
+  ctx.textAlign = 'right';
+  ctx.fillText('Freq', heatX - 5, heatY + freqs * cellSize / 2);
+
+  // Formula
+  ctx.fillStyle = '#888';
+  ctx.font = '12px monospace';
+  ctx.textAlign = 'left';
+  if (posType === 'sinusoidal') {
+    ctx.fillText('PE(pos, 2i) = sin(pos / 10000^(2i/d))', 40, H - 50);
+    ctx.fillText('PE(pos, 2i+1) = cos(pos / 10000^(2i/d))', 40, H - 25);
+  } else {
+    ctx.fillText('RoPE: Rotate Q, K by position angle θ = pos / 10000^(2i/d)', 40, H - 50);
+    ctx.fillText('Attention depends on relative position m - n', 40, H - 25);
+  }
+}
+
+// ==================== KV-CACHE ====================
+let kvState = { step: 0, maxSteps: 6 };
+const kvTokens = ['The', 'cat', 'sat', 'on', 'the', 'mat'];
+
+function toggleKV() {
+  if (kvState.step < kvState.maxSteps) kvState.step++;
+  drawKV();
+}
+
+function resetKV() {
+  kvState.step = 0;
+  drawKV();
+}
+
+function drawKV() {
+  const canvas = document.getElementById('kvCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, W, H);
+
+  const step = kvState.step;
+
+  // Title
+  ctx.fillStyle = '#4ecdc4';
+  ctx.font = 'bold 14px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText('KV-Cache during autoregressive generation', 40, 35);
+
+  // Timeline
+  const timelineY = 65;
+  const tokenW = 60;
+  const spacing = tokenW + 15;
+
+  ctx.font = '12px Inter';
+  ctx.fillStyle = '#888';
+  for (let i = 0; i < kvTokens.length; i++) {
+    const x = 60 + i * spacing;
+    const isGenerated = i < step;
+    const isGenerating = i === step;
+
+    ctx.fillStyle = isGenerating ? '#4ecdc4' : (isGenerated ? '#44bd32' : '#2a2a4a');
+    ctx.strokeStyle = isGenerating ? '#4ecdc4' : '#444';
+    ctx.lineWidth = isGenerating ? 2 : 1;
+    ctx.beginPath();
+    ctx.roundRect(x, timelineY, tokenW, 35, 4);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = isGenerating ? '#000' : (isGenerated ? '#000' : '#aaa');
+    ctx.font = 'bold 12px Inter';
+    ctx.textAlign = 'center';
+    ctx.fillText(kvTokens[i], x + tokenW / 2, timelineY + 22);
+  }
+
+  // KV-Cache visualization
+  const cacheY = 140;
+  ctx.fillStyle = '#888';
+  ctx.font = '13px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText('KV-Cache (stored from previous tokens):', 40, cacheY);
+
+  // Show cache state
+  const cacheBoxX = 60;
+  const cacheBoxY = cacheY + 20;
+  const cacheBoxW = 200;
+  const cacheBoxH = 180;
+
+  ctx.fillStyle = '#1a1a3e';
+  ctx.strokeStyle = '#4ecdc4';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.roundRect(cacheBoxX, cacheBoxY, cacheBoxW, cacheBoxH, 8);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = '#4ecdc4';
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'left';
+  const lines = [];
+  lines.push('K: [batch, seq_len, heads, d_k]');
+  lines.push(`  shape: [1, ${step}, 8, 64]`);
+  lines.push(`  size: ${step * 8 * 64 * 2} bytes (fp16)`);
+  lines.push('');
+  lines.push('V: [batch, seq_len, heads, d_v]');
+  lines.push(`  shape: [1, ${step}, 8, 64]`);
+  lines.push(`  size: ${step * 8 * 64 * 2} bytes (fp16)`);
+  lines.push('');
+  lines.push(`Total cached: ${step * 8 * 64 * 2 * 2 / 1024} KB`);
+
+  for (let i = 0; i < lines.length; i++) {
+    ctx.fillText(lines[i], cacheBoxX + 10, cacheBoxY + 15 + i * 16);
+  }
+
+  // Computation comparison
+  ctx.fillStyle = '#888';
+  ctx.font = '13px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText('Without KV-Cache:', 350, cacheY);
+
+  const noCache = `O(step²) computations
+Every token computes:
+Q @ K[:all] @ V[:all]
+Total: 1+4+9+16+...+${step * step}`;
+
+  ctx.fillStyle = '#ff6b6b';
+  ctx.font = '11px monospace';
+  const lines2 = noCache.split('\n');
+  for (let i = 0; i < lines2.length; i++) {
+    ctx.fillText(lines2[i], 360, cacheY + 20 + i * 16);
+  }
+
+  ctx.fillStyle = '#888';
+  ctx.font = '13px Inter';
+  ctx.fillText('With KV-Cache:', 350, 280);
+
+  const withCache = `O(step) computations
+Reuse K, V from cache:
+Only compute new Q
+Total: ${step} × O(1)`;
+
+  ctx.fillStyle = '#44bd32';
+  ctx.font = '11px monospace';
+  const lines3 = withCache.split('\n');
+  for (let i = 0; i < lines3.length; i++) {
+    ctx.fillText(lines3[i], 360, 300 + i * 16);
+  }
+
+  // Speedup
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText(`Speedup at step ${step}: ${(step * step / step).toFixed(1)}x`, 40, H - 20);
+}
+
+// ==================== TRANSFORMER BLOCK ====================
+let blockType = 'pre';
+
+function setBlockType(type) {
+  blockType = type;
+  document.getElementById('blockPre').classList.toggle('active', type === 'pre');
+  document.getElementById('blockPost').classList.toggle('active', type === 'post');
+  drawBlock();
+}
+
+function drawBlock() {
+  const canvas = document.getElementById('blockCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, W, H);
+
+  const isPre = blockType === 'pre';
+  const boxX = 100, boxY = 80, boxW = 700, boxH = 340;
+
+  // Main box
+  ctx.fillStyle = '#1a1a3e';
+  ctx.strokeStyle = '#4ecdc4';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(boxX, boxY, boxW, boxH, 12);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = '#4ecdc4';
+  ctx.font = 'bold 14px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText(`Transformer ${isPre ? 'Pre' : 'Post'}-Norm Block`, W / 2, 60);
+
+  // Input
+  ctx.fillStyle = '#888';
+  ctx.font = '11px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText('x (input)', W / 2, boxY - 20);
+
+  // Draw blocks
+  const yStart = boxY + 30;
+  const blockH = 50;
+  const blockW = 120;
+  const spacing = 30;
+  let y = yStart;
+
+  if (isPre) {
+    // Pre-Norm: Norm -> Attn -> Add -> Norm -> FFN -> Add
+    const blocks = [
+      { label: 'LayerNorm', color: '#ff6b6b' },
+      { label: 'Self-Attn', color: '#4ecdc4' },
+      { label: '+ Residual', color: '#888' },
+      { label: 'LayerNorm', color: '#ff6b6b' },
+      { label: 'FFN (4x)', color: '#ffd93d' },
+      { label: '+ Residual', color: '#888' }
+    ];
+
+    for (let i = 0; i < blocks.length; i++) {
+      const block = blocks[i];
+      const x = boxX + 60;
+
+      ctx.fillStyle = block.color + (block.label.includes('Residual') ? '22' : '33');
+      ctx.strokeStyle = block.color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(x, y, blockW, blockH, 6);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#fff';
+      ctx.font = '11px Inter';
+      ctx.textAlign = 'center';
+      ctx.fillText(block.label, x + blockW / 2, y + blockH / 2 + 3);
+
+      if (i < blocks.length - 1) {
+        ctx.strokeStyle = '#444';
+        ctx.beginPath();
+        ctx.moveTo(x + blockW / 2, y + blockH);
+        ctx.lineTo(x + blockW / 2, y + blockH + spacing);
+        ctx.stroke();
+      }
+
+      y += blockH + spacing;
+    }
+
+    // Labels
+    ctx.fillStyle = '#666';
+    ctx.font = '10px Inter';
+    ctx.textAlign = 'left';
+    ctx.fillText('Normalized inputs →', boxX + blockW + 80, yStart + 25);
+    ctx.fillText('more stable training', boxX + blockW + 80, yStart + 40);
+    ctx.fillText('no lr warmup needed', boxX + blockW + 80, yStart + 55);
+  } else {
+    // Post-Norm: Attn -> Norm -> Add -> FFN -> Norm -> Add
+    const blocks = [
+      { label: 'Self-Attn', color: '#4ecdc4' },
+      { label: 'LayerNorm', color: '#ff6b6b' },
+      { label: '+ Residual', color: '#888' },
+      { label: 'FFN (4x)', color: '#ffd93d' },
+      { label: 'LayerNorm', color: '#ff6b6b' },
+      { label: '+ Residual', color: '#888' }
+    ];
+
+    for (let i = 0; i < blocks.length; i++) {
+      const block = blocks[i];
+      const x = boxX + 60;
+
+      ctx.fillStyle = block.color + (block.label.includes('Residual') ? '22' : '33');
+      ctx.strokeStyle = block.color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(x, y, blockW, blockH, 6);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#fff';
+      ctx.font = '11px Inter';
+      ctx.textAlign = 'center';
+      ctx.fillText(block.label, x + blockW / 2, y + blockH / 2 + 3);
+
+      if (i < blocks.length - 1) {
+        ctx.strokeStyle = '#444';
+        ctx.beginPath();
+        ctx.moveTo(x + blockW / 2, y + blockH);
+        ctx.lineTo(x + blockW / 2, y + blockH + spacing);
+        ctx.stroke();
+      }
+
+      y += blockH + spacing;
+    }
+
+    ctx.fillStyle = '#666';
+    ctx.font = '10px Inter';
+    ctx.textAlign = 'left';
+    ctx.fillText('Original paper', boxX + blockW + 80, yStart + 25);
+    ctx.fillText('less stable (needs warmup)', boxX + blockW + 80, yStart + 40);
+    ctx.fillText('potentially better perf', boxX + blockW + 80, yStart + 55);
+  }
+
+  // Output
+  ctx.fillStyle = '#888';
+  ctx.font = '11px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText('y (output)', W / 2, boxY + boxH + 40);
+
+  // FFN detail
+  ctx.fillStyle = '#666';
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('FFN detail: W₂·GELU(W₁·x)', 40, H - 25);
+  ctx.fillText('W₁ ∈ ℝ^(d×4d),  W₂ ∈ ℝ^(4d×d)', 40, H - 10);
+}
+
+// ==================== LoRA & PEFT ====================
+function drawLoRA() {
+  const canvas = document.getElementById('loraCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const r = parseInt(document.getElementById('loraRank').value);
+  document.getElementById('loraRankVal').textContent = r;
+
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, W, H);
+
+  const d = 128; // embedding dim
+  const y1 = 50;
+  const y2 = 150;
+
+  // Title
+  ctx.fillStyle = '#4ecdc4';
+  ctx.font = 'bold 13px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText('LoRA: Frozen + Low-Rank Adapter', W / 2, 25);
+
+  // W (frozen)
+  ctx.fillStyle = '#666';
+  ctx.font = '11px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText('W (frozen)', 30, y1 + 25);
+
+  ctx.fillStyle = '#2a2a4a';
+  ctx.strokeStyle = '#555';
+  ctx.lineWidth = 1;
+  ctx.fillRect(30, y1, 60, 60);
+  ctx.strokeRect(30, y1, 60, 60);
+
+  ctx.fillStyle = '#666';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(`${d}×${d}`, 60, y1 + 35);
+
+  // B matrix
+  ctx.fillStyle = '#666';
+  ctx.font = '11px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText('B (trainable)', 120, y1 + 25);
+
+  ctx.fillStyle = '#44bd32' + '33';
+  ctx.strokeStyle = '#44bd32';
+  ctx.lineWidth = 1.5;
+  ctx.fillRect(120, y1, 40, 60);
+  ctx.strokeRect(120, y1, 40, 60);
+
+  ctx.fillStyle = '#44bd32';
+  ctx.font = '9px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(`${r}×${d}`, 140, y1 + 33);
+
+  // A matrix
+  ctx.fillStyle = '#666';
+  ctx.font = '11px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText('A (trainable)', 180, y1 + 25);
+
+  ctx.fillStyle = '#44bd32' + '33';
+  ctx.strokeStyle = '#44bd32';
+  ctx.lineWidth = 1.5;
+  ctx.fillRect(180, y1, 30, 60);
+  ctx.strokeRect(180, y1, 30, 60);
+
+  ctx.fillStyle = '#44bd32';
+  ctx.font = '9px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(`${d}×${r}`, 195, y1 + 33);
+
+  // Addition
+  ctx.fillStyle = '#888';
+  ctx.font = '14px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText('+', 245, y1 + 35);
+
+  // Result
+  ctx.fillStyle = '#666';
+  ctx.font = '11px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText('W + BA', 280, y1 + 25);
+
+  ctx.fillStyle = '#4ecdc4' + '33';
+  ctx.strokeStyle = '#4ecdc4';
+  ctx.lineWidth = 1;
+  ctx.fillRect(280, y1, 60, 60);
+  ctx.strokeRect(280, y1, 60, 60);
+
+  ctx.fillStyle = '#4ecdc4';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(`${d}×${d}`, 310, y1 + 35);
+
+  // Parameter comparison
+  ctx.fillStyle = '#888';
+  ctx.font = '11px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText('Parameter count:', 30, y2 + 20);
+
+  ctx.fillStyle = '#ff6b6b';
+  ctx.font = '10px monospace';
+  ctx.fillText(`Full fine-tune: ${d * d} = ${d * d}`, 30, y2 + 45);
+  ctx.fillText(`LoRA:        2×${r}×${d} = ${2 * r * d}`, 30, y2 + 65);
+
+  const ratio = (2 * r * d) / (d * d);
+  ctx.fillStyle = '#44bd32';
+  ctx.fillText(`Savings: ${(100 * (1 - ratio)).toFixed(1)}%`, 30, y2 + 90);
+
+  // Rank effect
+  ctx.fillStyle = '#888';
+  ctx.font = '11px Inter';
+  ctx.fillText('LoRA rank effect:', 30, y2 + 130);
+
+  ctx.fillStyle = '#666';
+  ctx.font = '9px monospace';
+  for (let i = 1; i <= 5; i++) {
+    const rVal = i * 16;
+    const p = 2 * rVal * d;
+    const pct = (100 * p / (d * d)).toFixed(1);
+    ctx.fillText(`r=${rVal}: ${p} params (${pct}%)`, 30, y2 + 150 + i * 14);
+  }
+}
+
+function drawPEFTCompare() {
+  const canvas = document.getElementById('peftCompareCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, W, H);
+
+  const methods = [
+    { name: 'Full FT', params: 100, vram: 100, speed: 1.0, color: '#ff6b6b' },
+    { name: 'LoRA (r=8)', params: 3, vram: 80, speed: 0.95, color: '#4ecdc4' },
+    { name: 'QLoRA (r=8)', params: 3, vram: 10, speed: 0.92, color: '#44bd32' },
+    { name: 'Prefix', params: 2, vram: 85, speed: 0.90, color: '#ffd93d' }
+  ];
+
+  ctx.fillStyle = '#4ecdc4';
+  ctx.font = 'bold 13px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText('PEFT Methods Comparison', W / 2, 25);
+
+  // Chart
+  const chartX = 30, chartY = 50;
+  const chartW = 360, chartH = 240;
+
+  ctx.strokeStyle = '#444';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(chartX + 40, chartY);
+  ctx.lineTo(chartX + 40, chartY + chartH);
+  ctx.lineTo(chartX + chartW, chartY + chartH);
+  ctx.stroke();
+
+  ctx.fillStyle = '#666';
+  ctx.font = '10px Inter';
+  ctx.textAlign = 'right';
+  ctx.fillText('100%', chartX + 35, chartY + 5);
+  ctx.textAlign = 'center';
+  ctx.fillText('0%', chartX + 40, chartY + chartH + 12);
+
+  // Bars
+  const barW = 70;
+  const groupSpacing = 100;
+  for (let i = 0; i < methods.length; i++) {
+    const x = chartX + 50 + i * groupSpacing;
+    const m = methods[i];
+
+    // Params bar
+    const h1 = (m.params / 100) * chartH;
+    ctx.fillStyle = m.color;
+    ctx.fillRect(x, chartY + chartH - h1, barW / 2 - 4, h1);
+
+    // VRAM bar (stacked)
+    ctx.fillStyle = m.color + '66';
+    const h2 = (m.vram / 100) * chartH;
+    ctx.fillRect(x + barW / 2, chartY + chartH - h2, barW / 2 - 4, h2);
+
+    ctx.fillStyle = '#888';
+    ctx.font = '10px Inter';
+    ctx.textAlign = 'center';
+    ctx.fillText(m.name, x + barW / 2, chartY + chartH + 20);
+    ctx.fillText(`${m.params}%`, x + barW / 4, chartY + chartH - (m.params / 100) * chartH / 2);
+  }
+
+  ctx.fillStyle = '#888';
+  ctx.font = '9px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText('Solid: Trainable params | Faded: VRAM during training', chartX + 50, 310);
+
+  // Speed notes
+  ctx.fillStyle = '#666';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'left';
+  let y = 340;
+  for (let i = 0; i < methods.length; i++) {
+    ctx.fillStyle = methods[i].color;
+    ctx.fillText(`${methods[i].name}: ${(methods[i].speed * 100).toFixed(0)}% speed`, 30, y);
+    y += 18;
+  }
+}
+
+// ==================== RLHF ====================
+let rlhfType = 'ppo';
+
+function setRLHFType(type) {
+  rlhfType = type;
+  document.getElementById('rlhfPPO').classList.toggle('active', type === 'ppo');
+  document.getElementById('rlhfDPO').classList.toggle('active', type === 'dpo');
+  drawRLHF();
+}
+
+function drawRLHF() {
+  const canvas = document.getElementById('rlhfCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, W, H);
+
+  if (rlhfType === 'ppo') {
+    // PPO pipeline
+    ctx.fillStyle = '#4ecdc4';
+    ctx.font = 'bold 14px Inter';
+    ctx.textAlign = 'center';
+    ctx.fillText('PPO Pipeline (4 Models)', W / 2, 30);
+
+    const stages = [
+      { label: 'Pretrained\nLLM', x: 50, color: '#ff9ff3' },
+      { label: 'SFT on\nExamples', x: 180, color: '#54a0ff' },
+      { label: 'Reward\nModel', x: 310, color: '#ffd93d' },
+      { label: 'PPO\nOptimize', x: 440, color: '#4ecdc4' }
+    ];
+
+    for (let i = 0; i < stages.length; i++) {
+      const s = stages[i];
+      const y = 100;
+
+      ctx.fillStyle = s.color + '33';
+      ctx.strokeStyle = s.color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(s.x, y, 110, 80, 8);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#fff';
+      ctx.font = '11px Inter';
+      ctx.textAlign = 'center';
+      ctx.fillText(s.label, s.x + 55, y + 40);
+
+      if (i < stages.length - 1) {
+        ctx.strokeStyle = '#666';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(s.x + 110, y + 40);
+        ctx.lineTo(stages[i + 1].x, stages[i + 1].x === 440 ? y + 40 : y + 40);
+        ctx.stroke();
+
+        ctx.fillStyle = '#666';
+        ctx.font = '10px Inter';
+        ctx.textAlign = 'center';
+      }
+    }
+
+    // Models used
+    ctx.fillStyle = '#888';
+    ctx.font = '12px Inter';
+    ctx.textAlign = 'left';
+    ctx.fillText('Models in PPO:', 50, 220);
+
+    const models = [
+      'Policy (π): trained model being optimized',
+      'Reference (π_ref): copy of policy before PPO, for KL penalty',
+      'Reward (r): trained on preference data (chosen > rejected)',
+      'Value (V): predicts reward, for advantage estimation'
+    ];
+
+    ctx.fillStyle = '#666';
+    ctx.font = '11px Inter';
+    for (let i = 0; i < models.length; i++) {
+      ctx.fillText(`• ${models[i]}`, 60, 245 + i * 22);
+    }
+
+    // Loss function
+    ctx.fillStyle = '#888';
+    ctx.font = '12px Inter';
+    ctx.fillText('PPO Loss:', 50, 360);
+
+    ctx.fillStyle = '#666';
+    ctx.font = '10px monospace';
+    ctx.fillText('L = E[r(x,y) - β·KL(π||π_ref)] - λ·L_value', 60, 380);
+    ctx.fillText('r(x,y) = reward from reward model', 60, 397);
+    ctx.fillText('KL = Kullback-Leibler divergence penalty', 60, 414);
+
+  } else {
+    // DPO pipeline
+    ctx.fillStyle = '#4ecdc4';
+    ctx.font = 'bold 14px Inter';
+    ctx.textAlign = 'center';
+    ctx.fillText('DPO: Direct Preference Optimization', W / 2, 30);
+
+    const stages = [
+      { label: 'Pretrained\nLLM', x: 50, color: '#ff9ff3' },
+      { label: 'SFT on\nExamples', x: 220, color: '#54a0ff' },
+      { label: 'DPO\nDirect Training', x: 390, color: '#4ecdc4' }
+    ];
+
+    for (let i = 0; i < stages.length; i++) {
+      const s = stages[i];
+      const y = 100;
+
+      ctx.fillStyle = s.color + '33';
+      ctx.strokeStyle = s.color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(s.x, y, 140, 80, 8);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#fff';
+      ctx.font = '11px Inter';
+      ctx.textAlign = 'center';
+      ctx.fillText(s.label, s.x + 70, y + 40);
+
+      if (i < stages.length - 1) {
+        ctx.strokeStyle = '#666';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(s.x + 140, y + 40);
+        ctx.lineTo(stages[i + 1].x, y + 40);
+        ctx.stroke();
+      }
+    }
+
+    // Advantages
+    ctx.fillStyle = '#888';
+    ctx.font = '12px Inter';
+    ctx.textAlign = 'left';
+    ctx.fillText('DPO Advantages vs PPO:', 50, 220);
+
+    const advs = [
+      '✓ Only 1 model (no separate reward/reference/value)',
+      '✓ Simpler: direct preference learning without RL',
+      '✓ Faster training: single forward/backward pass',
+      '✓ Closed-form derivation: π ∝ π_ref^β · exp(r/β)'
+    ];
+
+    ctx.fillStyle = '#44bd32';
+    ctx.font = '11px Inter';
+    for (let i = 0; i < advs.length; i++) {
+      ctx.fillText(advs[i], 60, 245 + i * 22);
+    }
+
+    // Loss function
+    ctx.fillStyle = '#888';
+    ctx.font = '12px Inter';
+    ctx.fillText('DPO Loss:', 50, 360);
+
+    ctx.fillStyle = '#666';
+    ctx.font = '10px monospace';
+    ctx.fillText('L = -log(σ(β·[log π(y_w|x) - log π(y_l|x)]))', 60, 380);
+    ctx.fillText('y_w = preferred response, y_l = dispreferred', 60, 397);
+    ctx.fillText('σ = sigmoid, β = temperature parameter', 60, 414);
+  }
+}
+
+// ==================== SPECULATIVE DECODING ====================
+function drawSpeculative() {
+  const canvas = document.getElementById('speculativeCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.fillStyle = '#4ecdc4';
+  ctx.font = 'bold 12px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText('Speculative Decoding', W / 2, 20);
+
+  const y1 = 50;
+
+  // Draft model
+  ctx.fillStyle = '#44bd32';
+  ctx.font = '11px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText('Draft (small, fast):', 20, y1);
+
+  ctx.fillStyle = '#44bd32' + '33';
+  ctx.strokeStyle = '#44bd32';
+  ctx.lineWidth = 2;
+  ctx.fillRect(20, y1 + 10, 380, 50);
+  ctx.strokeRect(20, y1 + 10, 380, 50);
+
+  ctx.fillStyle = '#44bd32';
+  ctx.font = '10px monospace';
+  ctx.fillText('[The] → [cat] → [sat] → [on] → [the]', 30, y1 + 40);
+
+  ctx.fillStyle = '#888';
+  ctx.font = '9px Inter';
+  ctx.fillText('generates k tokens in parallel', 30, y1 + 55);
+
+  // Main model
+  ctx.fillStyle = '#4ecdc4';
+  ctx.font = '11px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText('Main (large, accurate):', 20, y1 + 85);
+
+  ctx.fillStyle = '#4ecdc4' + '33';
+  ctx.strokeStyle = '#4ecdc4';
+  ctx.lineWidth = 2;
+  ctx.fillRect(20, y1 + 95, 380, 50);
+  ctx.strokeRect(20, y1 + 95, 380, 50);
+
+  ctx.fillStyle = '#4ecdc4';
+  ctx.font = '10px monospace';
+  ctx.fillText('verifies in parallel: accept [cat], [sat], reject [on]', 30, y1 + 125);
+
+  // Speedup
+  ctx.fillStyle = '#888';
+  ctx.font = '11px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText('Result:', 20, y1 + 165);
+
+  ctx.fillStyle = '#ffd93d';
+  ctx.font = '10px Inter';
+  ctx.fillText('2-3x speedup with <1% quality loss', 80, y1 + 165);
+
+  // Typical config
+  ctx.fillStyle = '#666';
+  ctx.font = '9px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('draft_size: 1B, k: 4', 20, H - 60);
+  ctx.fillText('main_size: 7B, verify in parallel', 20, H - 45);
+  ctx.fillText('acceptance rate: ~95%', 20, H - 30);
+  ctx.fillText('used in vLLM, TensorRT-LLM', 20, H - 15);
+}
+
+// ==================== QUANTIZATION ====================
+function drawQuantization() {
+  const canvas = document.getElementById('quantCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.fillStyle = '#4ecdc4';
+  ctx.font = 'bold 12px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText('Quantization: Bit Depth Reduction', W / 2, 20);
+
+  const formats = [
+    { name: 'FP32', bits: 32, bytes: 4, color: '#ff6b6b', layout: [8, 23, 1] },
+    { name: 'INT8', bits: 8, bytes: 1, color: '#4ecdc4', layout: [1, 7, 0] },
+    { name: 'INT4', bits: 4, bytes: 0.5, color: '#44bd32', layout: [0, 4, 0] }
+  ];
+
+  let x = 30;
+  for (let i = 0; i < formats.length; i++) {
+    const fmt = formats[i];
+    const y = 60;
+
+    // Label
+    ctx.fillStyle = fmt.color;
+    ctx.font = 'bold 11px Inter';
+    ctx.textAlign = 'left';
+    ctx.fillText(fmt.name, x, y);
+
+    ctx.fillStyle = '#666';
+    ctx.font = '9px Inter';
+    ctx.fillText(`${fmt.bits} bits/${fmt.bytes} bytes`, x, y + 15);
+
+    // Bit layout
+    const bitY = y + 35;
+    const bitW = 12;
+    const bitH = 20;
+
+    if (fmt.name === 'FP32') {
+      // Sign | Exponent | Mantissa
+      ctx.fillStyle = '#ff6b6b';
+      ctx.strokeStyle = '#666';
+      ctx.lineWidth = 1;
+      ctx.fillRect(x, bitY, bitW, bitH);
+      ctx.strokeRect(x, bitY, bitW, bitH);
+      ctx.fillStyle = '#000';
+      ctx.font = '8px Inter';
+      ctx.textAlign = 'center';
+      ctx.fillText('S', x + bitW / 2, bitY + 12);
+
+      ctx.fillStyle = '#ff8a80';
+      ctx.fillRect(x + bitW, bitY, 90, bitH);
+      ctx.strokeRect(x + bitW, bitY, 90, bitH);
+      ctx.fillStyle = '#000';
+      ctx.fillText('Exponent (8)', x + bitW + 45, bitY + 12);
+
+      ctx.fillStyle = '#ffb74d';
+      ctx.fillRect(x + bitW + 90, bitY, 200, bitH);
+      ctx.strokeRect(x + bitW + 90, bitY, 200, bitH);
+      ctx.fillText('Mantissa (23)', x + bitW + 90 + 100, bitY + 12);
+    } else if (fmt.name === 'INT8') {
+      // Sign | 7 bits
+      ctx.fillStyle = '#4ecdc4';
+      ctx.fillRect(x, bitY, bitW, bitH);
+      ctx.strokeStyle = '#666';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x, bitY, bitW, bitH);
+      ctx.fillStyle = '#000';
+      ctx.font = '8px Inter';
+      ctx.textAlign = 'center';
+      ctx.fillText('S', x + bitW / 2, bitY + 12);
+
+      ctx.fillStyle = '#4ecdc4' + '77';
+      ctx.fillRect(x + bitW, bitY, 70, bitH);
+      ctx.strokeRect(x + bitW, bitY, 70, bitH);
+      ctx.fillText('Magnitude (7)', x + bitW + 35, bitY + 12);
+    } else {
+      // 4 bits
+      ctx.fillStyle = '#44bd32';
+      ctx.fillRect(x, bitY, 50, bitH);
+      ctx.strokeStyle = '#666';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x, bitY, 50, bitH);
+      ctx.fillStyle = '#000';
+      ctx.font = '8px Inter';
+      ctx.textAlign = 'center';
+      ctx.fillText('4 bits', x + 25, bitY + 12);
+    }
+
+    // Memory savings
+    ctx.fillStyle = '#666';
+    ctx.font = '9px Inter';
+    ctx.textAlign = 'left';
+    const savings = (1 - fmt.bytes / 4) * 100;
+    ctx.fillText(`-${savings.toFixed(0)}% memory`, x, bitY + 40);
+
+    x += 130;
+  }
+
+  // Per-tensor quantization
+  ctx.fillStyle = '#888';
+  ctx.font = '11px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText('Quantization method:', 30, 160);
+
+  ctx.fillStyle = '#666';
+  ctx.font = '10px Inter';
+  const methods = [
+    'Symmetric: scale = (max - min) / (2^b - 1)',
+    'Asymmetric: zero-point based',
+    'Per-channel: each output channel has own scale',
+    'Per-token: each activation has own scale (QLoRA)'
+  ];
+
+  for (let i = 0; i < methods.length; i++) {
+    ctx.fillText(`${i + 1}. ${methods[i]}`, 40, 180 + i * 16);
+  }
+
+  // Calibration
+  ctx.fillStyle = '#888';
+  ctx.font = '11px Inter';
+  ctx.fillText('Calibration:', 30, 280);
+
+  ctx.fillStyle = '#666';
+  ctx.font = '9px Inter';
+  ctx.fillText('• Static: compute scale on calibration set', 40, 297);
+  ctx.fillText('• Dynamic: compute scale at inference time', 40, 312);
+  ctx.fillText('• KL divergence between Q & FP32 is typically <1%', 40, 327);
+  ctx.fillText('• Used in TensorRT, ONNX Quantization, llm.int8()', 40, 342);
+}
+
+// ==================== CONTINUOUS BATCHING ====================
+function drawContinuousBatch() {
+  const canvas = document.getElementById('continuousBatchCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, W, H);
+
+  const y1 = 50;
+
+  // Static batching
+  ctx.fillStyle = '#ff6b6b';
+  ctx.font = 'bold 12px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText('Static Batching (traditional):', 40, y1);
+
+  const reqW = 100, reqH = 40;
+  const staticReqs = [
+    { name: 'Req 1 (fast, 10 tokens)', time: 10 },
+    { name: 'Req 2 (slow, 50 tokens)', time: 50 },
+    { name: 'Req 3 (med, 25 tokens)', time: 25 }
+  ];
+
+  const x1 = 60;
+  const timelineY = y1 + 35;
+
+  for (let i = 0; i < staticReqs.length; i++) {
+    const r = staticReqs[i];
+    ctx.fillStyle = '#ff6b6b' + '33';
+    ctx.strokeStyle = '#ff6b6b';
+    ctx.lineWidth = 1.5;
+    ctx.fillRect(x1, timelineY + i * 45, r.time * 2, reqH);
+    ctx.strokeRect(x1, timelineY + i * 45, r.time * 2, reqH);
+
+    ctx.fillStyle = '#fff';
+    ctx.font = '10px Inter';
+    ctx.textAlign = 'left';
+    ctx.fillText(r.name, x1 + 5, timelineY + i * 45 + 25);
+  }
+
+  // Idle time marker
+  ctx.strokeStyle = '#ff6b6b' + '66';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([5, 5]);
+  ctx.beginPath();
+  ctx.moveTo(x1 + 50 * 2, timelineY - 10);
+  ctx.lineTo(x1 + 50 * 2, timelineY + 3 * 45);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = '#ff6b6b';
+  ctx.font = '9px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText('GPU idle', x1 + 50 * 2, timelineY - 25);
+
+  // Total time
+  ctx.fillStyle = '#666';
+  ctx.font = '10px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText('Total: 50 steps (waits for slowest)', 40, timelineY + 165);
+
+  // Continuous batching
+  const y2 = timelineY + 200;
+  ctx.fillStyle = '#44bd32';
+  ctx.font = 'bold 12px Inter';
+  ctx.fillText('Continuous Batching (vLLM, TGI):', 40, y2);
+
+  const batchReqs = [
+    { name: 'Req 1', steps: 10 },
+    { name: 'Req 2', steps: 50 },
+    { name: 'Req 3', steps: 25 }
+  ];
+
+  const y3 = y2 + 35;
+  const timeSlots = 20;
+  const slotW = 12;
+
+  ctx.fillStyle = '#666';
+  ctx.font = '9px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText('Step 1-10:', 50, y3);
+  ctx.fillText('Step 11-25:', 50, y3 + 45);
+  ctx.fillText('Step 26-50:', 50, y3 + 90);
+
+  // Timeline for continuous
+  const xc = 130;
+
+  // Steps 1-10: all three
+  ctx.fillStyle = '#ff6b6b' + '33';
+  ctx.strokeStyle = '#ff6b6b';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 10; i++) {
+    ctx.strokeRect(xc + i * slotW, y3, slotW, 15);
+  }
+  ctx.fillText('[1, 2, 3]', xc + 50, y3 + 25);
+
+  // Steps 11-25: 2, 3
+  ctx.fillStyle = '#4ecdc4' + '33';
+  ctx.strokeStyle = '#4ecdc4';
+  for (let i = 0; i < 15; i++) {
+    ctx.strokeRect(xc + i * slotW, y3 + 45, slotW, 15);
+  }
+  ctx.fillText('[2, 3] + NEW REQ', xc + 50, y3 + 75);
+
+  // Steps 26-50: 2
+  ctx.fillStyle = '#44bd32' + '33';
+  ctx.strokeStyle = '#44bd32';
+  for (let i = 0; i < 25; i++) {
+    ctx.strokeRect(xc + i * slotW, y3 + 90, slotW, 15);
+  }
+  ctx.fillText('[2]', xc + 50, y3 + 120);
+
+  ctx.fillStyle = '#666';
+  ctx.font = '10px Inter';
+  ctx.fillText('Total: 50 steps (constant GPU utilization)', 40, y3 + 145);
+
+  // Paged Attention
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter';
+  ctx.fillText('PagedAttention (vLLM):', 40, y3 + 185);
+
+  ctx.fillStyle = '#666';
+  ctx.font = '9px Inter';
+  const notes = [
+    '• Virtualizes KV-cache like OS virtual memory',
+    '• Allocates 16KB blocks on-demand',
+    '• Eliminates memory fragmentation',
+    '• 15-20x throughput increase vs naive batching'
+  ];
+
+  for (let i = 0; i < notes.length; i++) {
+    ctx.fillText(notes[i], 50, y3 + 205 + i * 14);
+  }
+}
+
+// ==================== RAG PIPELINE ====================
+let ragStrategy = 'fixed';
+
+function setRAGStrategy(strategy) {
+  ragStrategy = strategy;
+  document.getElementById('ragFixed').classList.toggle('active', strategy === 'fixed');
+  document.getElementById('ragSemantic').classList.toggle('active', strategy === 'semantic');
+  document.getElementById('ragRecursive').classList.toggle('active', strategy === 'recursive');
+  drawRAG();
+}
+
+function drawRAG() {
+  const canvas = document.getElementById('ragPipelineCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.fillStyle = '#4ecdc4';
+  ctx.font = 'bold 13px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText('RAG Pipeline: Retrieval-Augmented Generation', W / 2, 30);
+
+  const stages = [
+    { title: '1. Query', desc: 'User question' },
+    { title: '2. Embed', desc: 'Query embedding' },
+    { title: '3. Retrieve', desc: 'Find similar docs' },
+    { title: '4. Rerank', desc: 'Top-k relevance' },
+    { title: '5. Augment', desc: 'Add to prompt' },
+    { title: '6. Generate', desc: 'LLM response' }
+  ];
+
+  const stageW = 130, stageH = 60;
+  const spacing = 20;
+  const startY = 80;
+  let x = 40;
+
+  for (let i = 0; i < stages.length; i++) {
+    const s = stages[i];
+    const color = ['#ff9ff3', '#54a0ff', '#4ecdc4', '#ffd93d', '#44bd32', '#ff6b6b'][i];
+
+    ctx.fillStyle = color + '33';
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(x, startY, stageW, stageH, 8);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 10px Inter';
+    ctx.textAlign = 'center';
+    ctx.fillText(s.title, x + stageW / 2, startY + 18);
+
+    ctx.fillStyle = '#ccc';
+    ctx.font = '9px Inter';
+    ctx.fillText(s.desc, x + stageW / 2, startY + 38);
+
+    if (i < stages.length - 1) {
+      ctx.strokeStyle = '#666';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x + stageW, startY + stageH / 2);
+      ctx.lineTo(x + stageW + spacing, startY + stageH / 2);
+      ctx.stroke();
+    }
+
+    x += stageW + spacing;
+  }
+
+  // Chunking strategies
+  const stratY = 180;
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText('Chunking Strategy:', 40, stratY);
+
+  const strategies = {
+    fixed: {
+      name: 'Fixed Size',
+      desc: 'Split every 512 tokens with 100 overlap',
+      pros: 'Simple, fast',
+      cons: 'May split coherent content',
+      color: '#54a0ff'
+    },
+    semantic: {
+      name: 'Semantic',
+      desc: 'Split on sentence/paragraph boundaries',
+      pros: 'Preserves meaning',
+      cons: 'Variable chunk size',
+      color: '#4ecdc4'
+    },
+    recursive: {
+      name: 'Recursive',
+      desc: 'Hierarchical: para → sent → clause',
+      pros: 'Best precision',
+      cons: 'More complex',
+      color: '#44bd32'
+    }
+  };
+
+  const strat = strategies[ragStrategy];
+  ctx.fillStyle = strat.color;
+  ctx.font = 'bold 11px Inter';
+  ctx.fillText(strat.name, 40, stratY + 25);
+
+  ctx.fillStyle = '#666';
+  ctx.font = '10px Inter';
+  ctx.fillText(strat.desc, 40, stratY + 45);
+  ctx.fillText(`✓ ${strat.pros}`, 40, stratY + 65);
+  ctx.fillText(`✗ ${strat.cons}`, 40, stratY + 82);
+
+  // Vector DB example
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter';
+  ctx.fillText('Vector Database (Retrieval):', 420, stratY);
+
+  ctx.fillStyle = '#666';
+  ctx.font = '10px Inter';
+  const dbInfo = [
+    '• Embed all chunks with dense encoder',
+    '• Store in vector DB (Pinecone, Weaviate, etc)',
+    '• Retrieve top-k by cosine similarity',
+    '• Rerank with cross-encoder (optional)',
+    '• Concatenate top chunks into context window'
+  ];
+
+  for (let i = 0; i < dbInfo.length; i++) {
+    ctx.fillText(dbInfo[i], 420, stratY + 25 + i * 16);
+  }
+
+  // Benefits
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter';
+  ctx.fillText('RAG Benefits:', 40, 370);
+
+  ctx.fillStyle = '#44bd32';
+  ctx.font = '10px Inter';
+  const benefits = [
+    '✓ Reduces hallucination (grounds in retrieved docs)',
+    '✓ Supports knowledge cutoff & latest data',
+    '✓ More transparent (can show sources)',
+    '✓ Works with smaller/cheaper models'
+  ];
+
+  for (let i = 0; i < benefits.length; i++) {
+    ctx.fillText(benefits[i], 40, 390 + i * 16);
+  }
+}
+
+// ==================== HNSW & VECTOR DB ====================
+function drawHNSW() {
+  const canvas = document.getElementById('hnsqCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const layers = parseInt(document.getElementById('hnsqLayers').value);
+  document.getElementById('hnsqLayersVal').textContent = layers;
+
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.fillStyle = '#4ecdc4';
+  ctx.font = 'bold 12px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText('HNSW: Hierarchical Navigable Small World', W / 2, 20);
+
+  const layerH = 50;
+  const nodeR = 8;
+  const startY = 50;
+
+  // Draw layers
+  for (let layer = layers - 1; layer >= 0; layer--) {
+    const y = startY + layer * (layerH + 15);
+    const numNodes = Math.max(3, 8 - layer * 2);
+
+    ctx.fillStyle = '#666';
+    ctx.font = '10px Inter';
+    ctx.textAlign = 'left';
+    ctx.fillText(`Layer ${layer}`, 15, y + 20);
+
+    const spacing = (W - 60) / numNodes;
+    for (let i = 0; i < numNodes; i++) {
+      const x = 50 + i * spacing;
+
+      // Node
+      ctx.fillStyle = layer === 0 ? '#44bd32' : '#4ecdc4';
+      ctx.beginPath();
+      ctx.arc(x, y, nodeR, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Connections to neighbors
+      if (i < numNodes - 1) {
+        ctx.strokeStyle = '#666';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x + nodeR, y);
+        ctx.lineTo(x + spacing - nodeR, y);
+        ctx.stroke();
+      }
+    }
+
+    if (layer < layers - 1) {
+      // Vertical connection to next layer
+      const x = 50 + (numNodes - 1) * spacing / 2;
+      ctx.strokeStyle = '#666' + '44';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x, y + nodeR);
+      ctx.lineTo(x, y + layerH + 15 - nodeR);
+      ctx.stroke();
+    }
+  }
+
+  // Query path
+  ctx.fillStyle = '#ffd93d';
+  ctx.font = '10px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText('Query starts at top (yellow)', 15, startY + layers * (layerH + 15) + 20);
+
+  ctx.fillStyle = '#888';
+  ctx.font = '9px Inter';
+  const info = [
+    `• Start: top layer (${Math.max(1, 8 - (layers - 1) * 2)} nodes)`,
+    '• Greedy: navigate to nearest neighbor',
+    '• Drop to next layer, repeat',
+    `• Time: O(log n), space: ~32 bytes/vec`
+  ];
+
+  for (let i = 0; i < info.length; i++) {
+    ctx.fillText(info[i], 15, startY + layers * (layerH + 15) + 40 + i * 14);
+  }
+}
+
+function drawRetrievalStats() {
+  const canvas = document.getElementById('retrievalStatsCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.fillStyle = '#4ecdc4';
+  ctx.font = 'bold 12px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText('Search Complexity Comparison', W / 2, 20);
+
+  // Chart
+  const methods = [
+    { name: 'Brute Force', time: 1000, n: 10000000, color: '#ff6b6b' },
+    { name: 'HNSW', time: 50, n: 10000000, color: '#4ecdc4' },
+    { name: 'Product Quantization', time: 20, n: 10000000, color: '#44bd32' },
+    { name: 'LSH', time: 15, n: 10000000, color: '#ffd93d' }
+  ];
+
+  const barH = 30;
+  const startX = 60;
+  const startY = 60;
+  const barW = 300;
+
+  // Scale
+  const maxTime = 1200;
+
+  for (let i = 0; i < methods.length; i++) {
+    const m = methods[i];
+    const y = startY + i * (barH + 15);
+    const w = (m.time / maxTime) * barW;
+
+    ctx.fillStyle = m.color + '33';
+    ctx.strokeStyle = m.color;
+    ctx.lineWidth = 1.5;
+    ctx.fillRect(startX, y, w, barH);
+    ctx.strokeRect(startX, y, w, barH);
+
+    ctx.fillStyle = m.color;
+    ctx.font = 'bold 11px Inter';
+    ctx.textAlign = 'left';
+    ctx.fillText(m.name, 10, y + barH / 2 + 4);
+
+    ctx.fillStyle = '#666';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(`${m.time}ms`, startX + w + 10, y + barH / 2 + 4);
+  }
+
+  // Legend
+  ctx.fillStyle = '#888';
+  ctx.font = '11px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText('For 10M vectors (1B corpus):', 10, 200);
+
+  ctx.fillStyle = '#666';
+  ctx.font = '9px Inter';
+  const legend = [
+    'Brute: check all 10M vectors',
+    'HNSW: O(log n) with ~32 bytes overhead/vec',
+    'PQ: compress to 4-8 bytes, ~20x faster',
+    'LSH: locality-sensitive hashing'
+  ];
+
+  for (let i = 0; i < legend.length; i++) {
+    ctx.fillText(legend[i], 10, 220 + i * 14);
+  }
+
+  // Memory
+  ctx.fillStyle = '#888';
+  ctx.font = '11px Inter';
+  ctx.fillText('Memory per 1B vectors:', 10, 310);
+
+  ctx.fillStyle = '#666';
+  ctx.font = '9px Inter';
+  const memory = [
+    'FP32:       4 GB (baseline)',
+    'FP16:       2 GB (lossy)',
+    'INT8:     1 GB + scales',
+    'PQ+HNSW:  0.5-1 GB (good trade-off)'
+  ];
+
+  for (let i = 0; i < memory.length; i++) {
+    ctx.fillText(memory[i], 10, 330 + i * 14);
+  }
+}
+
+// Initialize
+initAttn();
+initBPE();
+window.addEventListener('load', () => {
+  drawAttn();
+  drawMHA();
+  drawPos();
+  drawKV();
+  drawBlock();
+  drawBPE();
+  drawLoRA();
+  drawPEFTCompare();
+  drawRLHF();
+  drawSpeculative();
+  drawQuantization();
+  drawContinuousBatch();
+  drawRAG();
+  drawHNSW();
+  drawRetrievalStats();
+});
+
+// Redraw on window resize
+window.addEventListener('resize', () => {
+  drawAttn();
+  drawMHA();
+  drawPos();
+  drawKV();
+  drawBlock();
+  drawBPE();
+  drawLoRA();
+  drawPEFTCompare();
+  drawRLHF();
+  drawSpeculative();
+  drawQuantization();
+  drawContinuousBatch();
+  drawRAG();
+  drawHNSW();
+  drawRetrievalStats();
+});
+</script>
+
+</body>
+</html>

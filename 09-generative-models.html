@@ -1,0 +1,2005 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generative Models - ML Interview Prep</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a0a0f;
+            color: #e0e0e0;
+            line-height: 1.6;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #e056fd 0%, #1a0033 100%);
+            padding: 40px 20px;
+            text-align: center;
+            border-bottom: 2px solid #e056fd;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 10px rgba(224, 86, 253, 0.3);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .section {
+            background: #12121f;
+            border: 1px solid #e056fd;
+            border-radius: 8px;
+            margin: 30px 0;
+            padding: 30px;
+            box-shadow: 0 0 20px rgba(224, 86, 253, 0.1);
+        }
+
+        .section h2 {
+            color: #e056fd;
+            font-size: 2em;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e056fd;
+            padding-bottom: 10px;
+        }
+
+        .section-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        .visualization {
+            background: #0a0a0f;
+            border: 1px solid #2a2a3f;
+            border-radius: 6px;
+            padding: 15px;
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+            background: #0a0a0f;
+            border-radius: 4px;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .control-label {
+            color: #e056fd;
+            font-weight: 600;
+            font-size: 0.95em;
+        }
+
+        .control-value {
+            color: #b0b0c0;
+            font-size: 0.9em;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #2a2a3f;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #e056fd;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(224, 86, 253, 0.5);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #e056fd;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 0 10px rgba(224, 86, 253, 0.5);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: #e056fd;
+            color: #0a0a0f;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 0.95em;
+        }
+
+        button:hover {
+            background: #ff3cd6;
+            transform: translateY(-2px);
+            box-shadow: 0 0 15px rgba(224, 86, 253, 0.5);
+        }
+
+        button.active {
+            background: #ff3cd6;
+            box-shadow: 0 0 20px rgba(224, 86, 253, 0.7);
+        }
+
+      
+        .insight-box h3 {
+            color: #e056fd;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .insight-box p {
+            color: #c0c0d0;
+            font-size: 0.95em;
+            line-height: 1.6;
+        }
+
+        .insight-box ul {
+            color: #c0c0d0;
+            font-size: 0.95em;
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+
+        .insight-box li {
+            margin: 8px 0;
+        }
+
+        .info-text {
+            color: #b0b0c0;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 1000px) {
+            .section-content {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .stat-card {
+            background: #1a1a28;
+            border: 1px solid #2a2a3f;
+            padding: 12px;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .stat-label {
+            color: #8080a0;
+            font-size: 0.85em;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            color: #e056fd;
+            font-size: 1.4em;
+            font-weight: 600;
+        }
+    
+  .insight-box { background: linear-gradient(135deg, #1a1a3e 0%, #151530 100%); border-left: 4px solid #e056fd; padding: 20px 24px; margin-top: 20px; border-radius: 0 12px 12px 0; font-size: 0.92em; color: #ccc; line-height: 1.8; }
+  .insight-box strong { color: #e056fd; font-size: 1.05em; }
+  .insight-box .formula { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 12px 18px; margin: 12px 0; font-family: 'Courier New', monospace; color: #e8e8ff; font-size: 1.05em; text-align: center; letter-spacing: 0.5px; line-height: 1.9; }
+  .insight-box .formula .highlight { color: #e056fd; font-weight: bold; }
+  .insight-box .key-point { display: flex; gap: 8px; margin: 8px 0; padding: 4px 0; }
+  .insight-box .key-point .label { color: #e056fd; font-weight: 600; white-space: nowrap; min-width: 90px; }
+  .insight-box .key-point .desc { color: #ddd; }
+  .insight-box .interview-tip { background: rgba(100, 255, 100, 0.05); border: 1px solid rgba(100, 255, 100, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #b0ffb0; font-size: 0.93em; line-height: 1.6; }
+  .insight-box .interview-tip::before { content: '\1F4A1  Interview Tip: '; font-weight: 700; color: #7fff7f; }
+  .insight-box .mnemonic { background: rgba(255, 150, 255, 0.05); border: 1px solid rgba(255, 150, 255, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #ffb0ff; font-size: 0.93em; line-height: 1.6; }
+  .insight-box .mnemonic::before { content: '\1F9E0  Remember: '; font-weight: 700; color: #ff7fff; }
+  .insight-box .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+  .insight-box .comparison .option { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 10px 14px; }
+  .insight-box .comparison .option .opt-title { color: #e056fd; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
+  .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
+  .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
+
+</style>
+</head>
+<body>
+    <div class="header">
+        <h1>🧬 Generative Models</h1>
+        <p>VAE, Diffusion, GAN, Flow models, Latent Diffusion, VQ-VAE, and Transformer architectures</p>
+    </div>
+
+    <div class="container">
+        <!-- VAE Section -->
+        <div class="section">
+            <h2>1. Variational Autoencoder (VAE)</h2>
+            <div class="section-content">
+                <div class="visualization">
+                    <div style="margin-bottom: 10px;">
+                        <strong style="color: #e056fd;">Encoder → Latent Space → Decoder</strong>
+                    </div>
+                    <canvas id="vaeCanvas" width="480" height="300"></canvas>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">Reconstruction Loss</div>
+                            <div class="stat-value" id="vaeLossValue">0.00</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">KL Divergence</div>
+                            <div class="stat-value" id="vaeKLValue">0.00</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Quality</div>
+                            <div class="stat-value" id="vaeQualityValue">0%</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="controls">
+                    <div class="control-group">
+                        <label class="control-label">β (KL Weight)</label>
+                        <input type="range" id="vaeKLWeight" min="0" max="1" step="0.1" value="0.5">
+                        <div class="control-value">β = <span id="vaeKLWeightValue">0.5</span></div>
+                        <div class="info-text">Controls latent space regularization</div>
+                    </div>
+
+                    <div class="control-group">
+                        <label class="control-label">Latent Dimension</label>
+                        <input type="range" id="vaeLatentDim" min="2" max="20" step="1" value="2">
+                        <div class="control-value">D = <span id="vaeLatentDimValue">2</span></div>
+                    </div>
+
+                    <div class="button-group">
+                        <button onclick="resetVAE()">Reset</button>
+                        <button onclick="trainVAE()">Train Step</button>
+                    </div>
+
+                    <div class="insight-box">
+                        <h3>Interview Tips: β-VAE</h3>
+                        <p><strong>What it is:</strong> VAE with weighted KL divergence. Higher β = more disentanglement, lower reconstruction. Trade-off is explicit and unavoidable.</p>
+
+                        <div class="formula">ELBO = E[log p(x|z)] - β·KL(q(z|x) || p(z))</div>
+                        <div class="key-point"><span class="label">ELBO (Evidence Lower Bound):</span><span class="desc">Log-likelihood lower bound; maximize to improve both reconstruction and latent consistency</span></div>
+                        <div class="key-point"><span class="label">E[log p(x|z)]:</span><span class="desc">Reconstruction term; expected log-likelihood of data given latent; higher = better reconstruction</span></div>
+                        <div class="key-point"><span class="label">x:</span><span class="desc">Input data (e.g., image)</span></div>
+                        <div class="key-point"><span class="label">z:</span><span class="desc">Latent representation; lower-dimensional encoding of x</span></div>
+                        <div class="key-point"><span class="label">KL(q(z|x) || p(z)):</span><span class="desc">Kullback-Leibler divergence; regularization term; measures how much posterior q(z|x) deviates from prior p(z) ≈ N(0, I)</span></div>
+                        <div class="key-point"><span class="label">β:</span><span class="desc">Weighting parameter ∈ [0, ∞); β=1 standard VAE, β>1 encourages disentanglement, β<1 prefers reconstruction</span></div>
+                        <div class="formula">Posterior Collapse: q(z|x) = p(z) when β too high → encoder useless, no info in z</div>
+                        <div class="key-point"><span class="label">Posterior Collapse:</span><span class="desc">When KL term dominates, encoder learns to ignore x; latent z becomes independent of input, learned nothing</span></div>
+                        <div class="key-point"><span class="label">KL Divergence:</span><span class="desc">For Gaussian VAE: KL = 0.5 * Σ(μ² + σ² - 1 - log(σ²)); when σ²→1, μ→0, KL→0 (collapse)</span></div>
+
+                        <div class="mnemonic">β=1 baseline. High β = disentangled (each z dimension independent). Low β = good reconstruction. Can't have both.</div>
+
+                        <hr class="divider">
+
+                        <div class="key-point">
+                            <span class="label">Disentanglement:</span>
+                            <span class="desc">Each latent dimension encodes independent factors. E.g., one dim = style, another = content. Interpretable.</span>
+                        </div>
+
+                        <div class="interview-tip">Tuning β: critical, often overlooked. Wrong β gives fuzzy reconstructions (low β) or collapsed latents (high β).</div>
+
+                        <div class="interview-tip">Posterior collapse: if KL → 0 after few epochs, you have collapse. Use KL warmup schedule to prevent.</div>
+
+                        <hr class="divider">
+
+                        <div class="key-point">
+                            <span class="label">Production rule:</span>
+                            <span class="desc">Start β=1, tune for your task. Use KL annealing. Evaluate disentanglement via downstream classification, not visual inspection. Gaussian prior for smooth interpolation.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Diffusion Section -->
+        <div class="section">
+            <h2>2. Diffusion Models</h2>
+            <div class="section-content">
+                <div class="visualization">
+                    <div style="margin-bottom: 10px;">
+                        <strong style="color: #e056fd;">Forward Process (Add Noise) → Reverse Process (Denoise)</strong>
+                    </div>
+                    <canvas id="diffusionCanvas" width="480" height="350"></canvas>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">Signal Ratio</div>
+                            <div class="stat-value" id="diffusionSignalValue">100%</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Noise Ratio</div>
+                            <div class="stat-value" id="diffusionNoiseValue">0%</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Timestep</div>
+                            <div class="stat-value" id="diffusionStepValue">0</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="controls">
+                    <div class="control-group">
+                        <label class="control-label">Timestep (t)</label>
+                        <input type="range" id="diffusionTimestep" min="0" max="100" step="1" value="0">
+                        <div class="control-value">t = <span id="diffusionTimestepValue">0</span> / 100</div>
+                        <div class="info-text">Slide to see forward/reverse process</div>
+                    </div>
+
+                    <div class="control-group">
+                        <label class="control-label">Noise Schedule</label>
+                        <select id="diffusionSchedule" style="padding: 8px; border-radius: 4px; background: #2a2a3f; color: #e056fd; border: 1px solid #e056fd;">
+                            <option value="linear">Linear</option>
+                            <option value="quadratic">Quadratic</option>
+                            <option value="cosine">Cosine</option>
+                        </select>
+                        <div class="info-text">Different noise schedules affect quality</div>
+                    </div>
+
+                    <div class="button-group">
+                        <button onclick="startDiffusionAnimation()">Animate</button>
+                        <button onclick="resetDiffusion()">Reset</button>
+                    </div>
+
+                    <div class="insight-box">
+                        <h3>Interview Tips: Diffusion Models</h3>
+                        <p><strong>What it is:</strong> Learn to reverse noise addition. Forward adds noise T steps: x_t = √ᾱ_t·x_0 + √(1-ᾱ_t)·ε. Reverse: x_t → x_{t-1} iteratively. Stable vs GANs. High quality samples.</p>
+
+                        <div class="formula">Forward: q(x_t|x_0) = N(√ᾱ_t·x_0, (1-ᾱ_t)I)  |  Reverse: denoise ε ~ N(0,I)</div>
+                        <div class="key-point"><span class="label">q(x_t|x_0):</span><span class="desc">Forward process distribution; conditionally Gaussian given clean x_0</span></div>
+                        <div class="key-point"><span class="label">x_0:</span><span class="desc">Clean original data</span></div>
+                        <div class="key-point"><span class="label">x_t:</span><span class="desc">Noisy data at diffusion step t; interpolation between x_0 and pure noise</span></div>
+                        <div class="key-point"><span class="label">ᾱ_t (alpha_bar_t):</span><span class="desc">Cumulative product of noise schedule; starts at ≈1 (t=0, clean), approaches 0 (t=T, full noise); ᾱ_t = ∏_{i=1}^t α_i where α_i = 1 - β_i</span></div>
+                        <div class="key-point"><span class="label">β_i:</span><span class="desc">Noise variance at step i; β_i ∈ [0, 0.02] typically; defines how much noise added at each step</span></div>
+                        <div class="key-point"><span class="label">√ᾱ_t·x_0:</span><span class="desc">Signal coefficient; how much original signal remains at step t; decreases over time</span></div>
+                        <div class="key-point"><span class="label">(1-ᾱ_t)I:</span><span class="desc">Noise variance (covariance matrix); noise increases over time as ᾱ_t decreases</span></div>
+                        <div class="key-point"><span class="label">ε ~ N(0,I):</span><span class="desc">Standard Gaussian noise used in forward process; mean 0, variance 1</span></div>
+                        <div class="formula">Loss: ||ε_θ(x_t, t) - ε||²  →  predict added noise at step t</div>
+                        <div class="key-point"><span class="label">ε_θ(x_t, t):</span><span class="desc">Neural network prediction of noise at step t given noisy input x_t; outputs estimated noise ε̂</span></div>
+                        <div class="key-point"><span class="label">ε:</span><span class="desc">Ground truth noise that was added in forward process; sampled fresh for each training example</span></div>
+                        <div class="key-point"><span class="label">||...||²:</span><span class="desc">Mean squared error (L2 loss); measures pixel-level reconstruction error between predicted and actual noise</span></div>
+                        <div class="key-point"><span class="label">θ:</span><span class="desc">Neural network parameters (typically UNet or transformer); learned during training</span></div>
+
+                        <div class="mnemonic">Closed-form diffusion: add noise → learn to reverse → sample via T denoising steps. More stable than adversarial training.</div>
+
+                        <hr class="divider">
+
+                        <div class="key-point">
+                            <span class="label">T (diffusion steps):</span>
+                            <span class="desc">T=1000 high quality but slow. Trade-off: quality vs latency. DDIM/DPM-Solver enable fast sampling (few steps).</span>
+                        </div>
+
+                        <div class="interview-tip">Variance schedule (linear, cosine, etc.) tunes quality. Wrong schedule = poor samples. Critical tuning knob.</div>
+
+                        <div class="interview-tip">Score matching = predict noise, not mean directly. More stable training than explicit mean prediction.</div>
+
+                        <hr class="divider">
+
+                        <div class="key-point">
+                            <span class="label">Production rule:</span>
+                            <span class="desc">Use DDIM/DPM-Solver for speed. Store noise schedule (reproducibility). Monitor FID/IS scores. Slower than GANs but more stable (trade latency for reliability).</span>
+                        </div>
+
+                        <div class="key-point">
+                            <span class="label">Conditioning:</span>
+                            <span class="desc">Classifier-free guidance common for control but can be unstable. Fine-tuning via inpainting/text-to-image needs specific procedures.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- GAN Section -->
+        <div class="section">
+            <h2>3. GAN Training Dynamics</h2>
+            <div class="section-content">
+                <div class="visualization">
+                    <div style="margin-bottom: 10px;">
+                        <strong style="color: #e056fd;">Loss Curves & Mode Collapse</strong>
+                    </div>
+                    <canvas id="ganCanvas" width="480" height="350"></canvas>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">Gen Loss</div>
+                            <div class="stat-value" id="ganGenLossValue">0.00</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Disc Loss</div>
+                            <div class="stat-value" id="ganDiscLossValue">0.00</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Mode Coverage</div>
+                            <div class="stat-value" id="ganModeValue">100%</div>
+                        </div>
+                    </div>
+
+
+        <!-- Classifier-Free Guidance -->
+        <div class="section">
+            <h2>5. Classifier-Free Guidance: Conditional Generation Control</h2>
+            <div class="section-content">
+                <div class="visualization">
+                    <canvas id="cfgCanvas" width="480" height="300"></canvas>
+                </div>
+                <div class="controls">
+                    <div class="control-group">
+                        <label class="control-label">Guidance Scale (w)</label>
+                        <input type="range" id="cfgScale" min="0" max="20" step="0.5" value="7.5">
+                        <div class="control-value">w = <span id="cfgScaleValue">7.5</span></div>
+                        <div class="info-text">0 = unconditional, 1 = conditional only, >1 = amplified</div>
+                    </div>
+                    <button onclick="drawCFG()">Update</button>
+                    <div class="insight-box">
+                        <h3>How It Works: Classifier-Free Guidance</h3>
+                        <p><strong>What it is:</strong> Steer generation without separate classifier. Reweight conditional vs unconditional predictions. w=0 (unconditional), w=1 (conditional), w>1 (amplify condition). Enables text-to-image control.</p>
+
+                        <div class="formula">ε_guided = ε_θ(x_t, ∅) + w·(ε_θ(x_t, c) - ε_θ(x_t, ∅))</div>
+                        <div class="key-point"><span class="label">ε_θ(x_t, ∅):</span><span class="desc">Network prediction for unconditional generation (condition c is None/dropped); baseline noise estimate</span></div>
+                        <div class="key-point"><span class="label">ε_θ(x_t, c):</span><span class="desc">Network prediction for conditional generation given condition c (e.g., text prompt, image class)</span></div>
+                        <div class="key-point"><span class="label">c:</span><span class="desc">Conditioning signal (e.g., text embedding from CLIP, class embedding); modulates generation direction</span></div>
+                        <div class="key-point"><span class="label">w (guidance scale):</span><span class="desc">Scaling factor ∈ [0, ∞); w=0 = unconditional only, w=1 = conditional only, w>1 = emphasize condition; w=7.5 typical, w>15 = artifacts</span></div>
+                        <div class="key-point"><span class="label">ε_guided:</span><span class="desc">Final guided noise prediction combining unconditional baseline with conditional offset amplified by w</span></div>
+                        <div class="key-point"><span class="label">Interpretation:</span><span class="desc">w=0 ignores condition, w=1 only listens to condition, w=7.5 amplifies conditional signal 7.5x relative to unconditional</span></div>
+                        <div class="formula">Importance reweighting: p(x_t|c) ∝ p(x_t) · [p(x_t|c)/p(x_t)]^w  →  sharpens distribution</div>
+                        <div class="key-point"><span class="label">p(x_t):</span><span class="desc">Unconditional distribution; prior without any guidance</span></div>
+                        <div class="key-point"><span class="label">p(x_t|c):</span><span class="desc">Conditional distribution given condition c; posterior after observing condition</span></div>
+                        <div class="key-point"><span class="label">[p(x_t|c)/p(x_t)]^w:</span><span class="desc">Likelihood ratio raised to power w; reweights samples toward condition; higher w = stronger reweighting</span></div>
+                        <div class="key-point"><span class="label">Sharp distribution:</span><span class="desc">Increasing w makes distribution more concentrated on high-likelihood samples; less diversity, higher fidelity to condition</span></div>
+
+                        <div class="mnemonic">w=7.5 is Stable Diffusion default. w>15 = artifacts. Trade w for diversity-vs-fidelity. Cannot invent info not in training.</div>
+
+                        <hr class="divider">
+
+                        <div class="key-point">
+                            <span class="label">Training requirement:</span>
+                            <span class="desc">Randomly drop condition c with prob ~10% during training so model learns both conditional + unconditional denoising. Critical!</span>
+                        </div>
+
+                        <div class="interview-tip">High w (w>15) causes mode collapse, artifacts, saturated colors, over-sharpening. Guidance cannot "invent" outside training data.</div>
+
+                        <div class="interview-tip">Guidance is orthogonal to likelihood. Doesn't improve likelihood, just reweights sampling distribution toward condition.</div>
+
+                        <hr class="divider">
+
+                        <div class="key-point">
+                            <span class="label">Production rule:</span>
+                            <span class="desc">Start w=1.0, increase gradually. Expose w in UI. Monitor diversity (LPIPS) + adherence (CLIP). Combine with negative prompts, LoRA, prompt weights.</span>
+                        </div>
+
+                        <div class="key-point">
+                            <span class="label">Task-specific:</span>
+                            <span class="desc">Photorealistic: w=7-12. Artistic: w=4-8. One-dimensional control; multidimensional requires other methods.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Latent Diffusion / Stable Diffusion -->
+        <div class="section">
+            <h2>6. Latent Diffusion & Stable Diffusion</h2>
+            <div class="section-content">
+                <div class="visualization">
+                    <canvas id="latentDiffCanvas" width="480" height="300"></canvas>
+                </div>
+                <div class="controls">
+                    <div class="control-group">
+                        <label class="control-label">Diffusion Steps</label>
+                        <input type="range" id="diffusionSteps" min="10" max="100" step="10" value="50">
+                        <div class="control-value"><span id="diffusionStepsValue">50</span> steps</div>
+                        <div class="info-text">More steps = better quality, slower. 20-100 typical.</div>
+                    </div>
+                    <button onclick="drawLatentDiff()">Animate</button>
+                    <div class="insight-box">
+                        <h3>Pipeline: Encode → Diffuse → Decode</h3>
+                        <p><strong>What it is:</strong> Diffuse in compressed latent space not pixels. 3-stage: (1) VAE encode x→z (8-16x spatial reduction), (2) diffuse in z, (3) VAE decode z→x̂. 10-50x speedup vs pixel-diffusion, quality maintained.</p>
+
+                        <div class="formula">Latent forward: q(z_t | z_0) = √ᾱ_t·z_0 + √(1-ᾱ_t)·ε  (same form, compressed space)</div>
+                        <div class="key-point"><span class="label">z_0:</span><span class="desc">Latent representation from VAE encoder; compressed version of original image x_0; shape ≈ H/8 × W/8 × D where D ∈ [4, 8]</span></div>
+                        <div class="key-point"><span class="label">z_t:</span><span class="desc">Latent at diffusion step t; noisy version of z_0; same shape as z_0 but with added noise</span></div>
+                        <div class="key-point"><span class="label">ᾱ_t:</span><span class="desc">Cumulative noise schedule in latent space; same as pixel-diffusion but operates on compressed features</span></div>
+                        <div class="key-point"><span class="label">√ᾱ_t·z_0:</span><span class="desc">Signal component; original latent scaled by signal retention at step t</span></div>
+                        <div class="key-point"><span class="label">√(1-ᾱ_t)·ε:</span><span class="desc">Noise component; Gaussian noise scaled by noise level at step t</span></div>
+                        <div class="formula">Compression: 512×512 image → 64×64 latent + 4-8 channels = 50-100x compression</div>
+                        <div class="key-point"><span class="label">Input image:</span><span class="desc">Original pixel space; 512×512×3 = ~786K values</span></div>
+                        <div class="key-point"><span class="label">VAE encoding:</span><span class="desc">Spatial reduction 8× (512→64), channels reduced from 3 to 4-8; typically 8 channels for high quality</span></div>
+                        <div class="key-point"><span class="label">Latent space:</span><span class="desc">64×64×8 = 32,768 values; ~24x fewer than pixel space</span></div>
+                        <div class="key-point"><span class="label">Compression ratio:</span><span class="desc">50-100x total (accounting for spatial + channel reduction); enables 10-50x speedup in diffusion sampling</span></div>
+
+                        <div class="mnemonic">VAE compresses semantically (learns important features). Diffusion then structures instead of pixels. Latent space smoother, more stable.</div>
+
+                        <hr class="divider">
+
+                        <div class="key-point">
+                            <span class="label">VAE quality critical:</span>
+                            <span class="desc">Poor VAE = lost details in latent diffusion. Cannot generate outside VAE training distribution (latent space has boundaries).</span>
+                        </div>
+
+                        <div class="interview-tip">Latent scaling (0.18 in Stable Diffusion) important. Posterior scaling matches diffusion model's expected statistics. Fine-tune diffusion, freeze VAE.</div>
+
+                        <div class="interview-tip">Text encoders (CLIP, T5) condition via cross-attention. Conditioning orthogonal to latent compression benefit. Can swap independently.</div>
+
+                        <hr class="divider">
+
+                        <div class="key-point">
+                            <span class="label">Production rule:</span>
+                            <span class="desc">Use pre-trained Stable Diffusion VAE (hard to train). Quantize: fp16 memory reduction, int8 for mobile. Monitor latent stats: mean≈0, var≈1.</span>
+                        </div>
+
+                        <div class="key-point">
+                            <span class="label">Efficiency:</span>
+                            <span class="desc">20-50 latent steps ≈ 100-200 pixel steps. DDIM 15-30 steps acceptable quality. Batch in latent: 40-100x faster vs pixel-diffusion.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VQ-VAE -->
+        <div class="section">
+            <h2>7. VQ-VAE: Vector Quantization for Discrete Latents</h2>
+            <div class="section-content">
+                <div class="visualization">
+                    <canvas id="vqvaeCanvas" width="480" height="300"></canvas>
+                </div>
+                <div class="controls">
+                    <div class="control-group">
+                        <label class="control-label">Codebook Size</label>
+                        <input type="range" id="codebookSize" min="64" max="512" step="64" value="256">
+                        <div class="control-value">K = <span id="codebookSizeValue">256</span> codes</div>
+                        <div class="info-text">More codes = better reconstruction, higher entropy</div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label">Embedding Dim</label>
+                        <input type="range" id="embeddingDim" min="16" max="128" step="16" value="64">
+                        <div class="control-value">D = <span id="embeddingDimValue">64</span> dim</div>
+                    </div>
+                    <button onclick="drawVQVAE()">Update</button>
+                    <div class="insight-box">
+                        <h3>Discrete Latent Space: VQ-VAE</h3>
+                        <p><strong>What it is:</strong> Replace continuous Gaussian z with discrete tokens via codebook quantization. Enables Transformer-based autoregressive generation. Two-stage: (1) tokenize via VQ-VAE, (2) autoregressive language model on tokens.</p>
+
+                        <div class="formula">Quantize: ẑ = e_k where k = argmin_i ||z - e_i||²  (nearest codebook entry)</div>
+                        <div class="key-point"><span class="label">z:</span><span class="desc">Continuous latent vector from encoder; the value to be quantized</span></div>
+                        <div class="key-point"><span class="label">e_i:</span><span class="desc">i-th entry (embedding) in the codebook; dimension matches z, one per discrete token</span></div>
+                        <div class="key-point"><span class="label">||z - e_i||²:</span><span class="desc">L2 distance between z and each codebook entry e_i</span></div>
+                        <div class="key-point"><span class="label">k = argmin_i:</span><span class="desc">Index of nearest codebook entry; discrete choice ∈ {0, 1, ..., K-1}</span></div>
+                        <div class="key-point"><span class="label">ẑ = e_k:</span><span class="desc">Quantized representation; replaces continuous z with closest codebook entry (discrete token)</span></div>
+                        <div class="key-point"><span class="label">K:</span><span class="desc">Codebook size; number of discrete tokens available; K ∈ [64, 1024] typically</span></div>
+                        <div class="formula">Loss: ||x - dec(ẑ)||² + β₁||z - sg[e_k]||² + β₂||sg[z] - e_k||²</div>
+                        <div class="key-point"><span class="label">||x - dec(ẑ)||²:</span><span class="desc">Reconstruction loss; penalizes decoder for not recovering original x from quantized latent ẑ</span></div>
+                        <div class="key-point"><span class="label">x:</span><span class="desc">Original input</span></div>
+                        <div class="key-point"><span class="label">dec():</span><span class="desc">Decoder network that reconstructs x̂ from latent representation</span></div>
+                        <div class="key-point"><span class="label">β₁||z - sg[e_k]||²:</span><span class="desc">Codebook loss; moves codebook entries e_k toward encoder outputs z; sg[] = stop-gradient (no backprop to encoder)</span></div>
+                        <div class="key-point"><span class="label">β₁:</span><span class="desc">Weight for codebook loss term; typically β₁=0.99; prevents codebook collapse</span></div>
+                        <div class="key-point"><span class="label">sg[] (stop-gradient):</span><span class="desc">Detaches gradients; prevents backpropagation through this term; critical for stable training</span></div>
+                        <div class="key-point"><span class="label">β₂||sg[z] - e_k||²:</span><span class="desc">Encoder commitment loss; pulls encoder outputs z toward selected codebook entries; sg[z] prevents codebook gradient</span></div>
+                        <div class="key-point"><span class="label">β₂:</span><span class="desc">Weight for commitment loss; typically β₂=0.25; balances learning speed of encoder vs codebook</span></div>
+
+                        <div class="mnemonic">Discrete tokens = H×W grid of K-way choices. Transformers better at scaling than diffusion on tokens. Used in DALL-E, Jukebox.</div>
+
+                        <hr class="divider">
+
+                        <div class="key-point">
+                            <span class="label">Gradient flow:</span>
+                            <span class="desc">Straight-through estimator needed (argmin not differentiable). Encourages encoder→codebook (term 2), codebook→encoder (term 3 with EMA).</span>
+                        </div>
+
+                        <div class="interview-tip">Codebook collapse: if K too large, some embeddings unused (reduce effective quantization). Use EMA updates + per-embedding loss penalty.</div>
+
+                        <div class="interview-tip">Entropy bottleneck: each token carries log K bits. Too small K = poor reconstruction. Too large K = entropy unbounded.</div>
+
+                        <hr class="divider">
+
+                        <div class="key-point">
+                            <span class="label">Production rule:</span>
+                            <span class="desc">K ∈ [512, 8192], 4096 typical. EMA updates: e_i = (m·e_i + n(a)·z_a)/(m + n(a) + ε). Monitor usage: if <80% used, increase K.</span>
+                        </div>
+
+                        <div class="key-point">
+                            <span class="label">Two-stage benefits:</span>
+                            <span class="desc">Lightweight (int32 tokens). Flexible (swap tokenizer or LM independently). Slow generation (hundreds forward passes for HW tokens). Uses Transformer scaling laws.</span>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- U-Net vs DiT -->
+        <div class="section">
+            <h2>8. U-Net vs DiT: Architecture for Diffusion</h2>
+            <div class="section-content">
+                <div class="visualization">
+                    <canvas id="architectureCanvas" width="480" height="350"></canvas>
+                </div>
+                <div class="controls">
+                    <div class="control-group">
+                        <label class="control-label">Architecture</label>
+                        <div class="button-group">
+                            <button class="arch-btn active" data-arch="unet">U-Net (ResNet-style)</button>
+                            <button class="arch-btn" data-arch="dit">DiT (Transformer-based)</button>
+                        </div>
+                    </div>
+                    <button onclick="drawArchitecture()">Update</button>
+                    <div class="insight-box">
+                        <h3>U-Net vs Diffusion Transformer (DiT)</h3>
+                        <p><strong>U-Net:</strong> Conv encoder-decoder + skip connections. Local inductive bias (spatial structure). Time via FiLM, condition via cross-attention. Fast, proven, ~0.5-1 sec for 512×512.</p>
+                        <p><strong>DiT:</strong> Treats spatial as tokens (HW patches). Global receptive field (any→any attention). Self-attention + cross-attention. Scales better with compute (Transformer laws). Used Stable Diffusion 3, slower but higher quality.</p>
+
+                        <div class="comparison">
+                            <div class="option">
+                                <div class="opt-title">U-Net</div>
+                                <div class="opt-desc">O(H·W·C) memory. Logarithmic receptive field. Local bias = efficient. Skip preserve details. Training fast, quality plateaus with scale.</div>
+                            </div>
+                            <div class="option">
+                                <div class="opt-title">DiT</div>
+                                <div class="opt-desc">O((HW)² · D) memory (quadratic bottleneck). Global receptive field. More compute but scales like LLMs. Init critical for stability.</div>
+                            </div>
+                        </div>
+
+                        <hr class="divider">
+
+                        <div class="interview-tip">U-Net skip design matters. Poor skips limit quality. DiT quadratic complexity prohibitive for 4K (use sparse/linear attention, pruning).</div>
+
+                        <div class="interview-tip">U-Net: improvements plateau with size. DiT: continues improving (LLM-like scaling). DiT = future-proof but engineering-intensive.</div>
+
+                        <div class="key-point">
+                            <span class="label">Production:</span>
+                            <span class="desc"><512×512 latency-critical: U-Net (0.5 sec with DDIM). >768×768 or max quality: DiT + memory opt. U-Net faster training (prototype), DiT needs tuning.</span>
+                        </div>
+
+                        <div class="key-point">
+                            <span class="label">Fine-tuning:</span>
+                            <span class="desc">U-Net: LoRA works. DiT: LoRA + higher rank. Can mix: U-Net encoder + DiT decoder hybrid for benefits.</span>
+                        </div>
+
+                        <div class="key-point">
+                            <span class="label">Trade-off:</span>
+                            <span class="desc">U-Net = proven, fast, efficient current resolutions. DiT = future-proof, scales better, requires more engineering. Conditioning: FiLM good U-Net, cross-attention better DiT.</span>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+                </div>
+                <div class="controls">
+                    <div class="control-group">
+                        <label class="control-label">Training Mode</label>
+                        <div class="button-group">
+                            <button id="normalModeBtn" class="active" onclick="setGANMode('normal')">Normal</button>
+                            <button id="collapseModeBtn" onclick="setGANMode('collapse')">Mode Collapse</button>
+                        </div>
+                        <div class="info-text">Toggle between training scenarios</div>
+                    </div>
+
+                    <div class="control-group">
+                        <label class="control-label">Training Iterations</label>
+                        <input type="range" id="ganIterations" min="0" max="500" step="10" value="0">
+                        <div class="control-value">Iter: <span id="ganIterValue">0</span></div>
+                    </div>
+
+                    <div class="button-group">
+                        <button onclick="trainGANStep()">Train Step</button>
+                        <button onclick="resetGAN()">Reset</button>
+                    </div>
+
+                    <div class="insight-box">
+                        <h3>Interview Tips: GANs</h3>
+                        <p><strong>What it is:</strong> Generator G: z→fake. Discriminator D: real vs fake. Min-max game. Nash Eq = D can't distinguish. Fast sampling. Hard to train.</p>
+
+                        <div class="formula">min_G max_D E[log D(x)] - E[log(1-D(G(z)))]  =  -2log(2) - 2·JS(p_data || p_gen)</div>
+                        <div class="key-point"><span class="label">min_G max_D:</span><span class="desc">Min-max game: Generator G minimizes, Discriminator D maximizes (adversarial objectives)</span></div>
+                        <div class="key-point"><span class="label">D(x):</span><span class="desc">Discriminator output for real data x; probability [0, 1] that input is real; ideally D(x) → 1</span></div>
+                        <div class="key-point"><span class="label">E[log D(x)]:</span><span class="desc">Expected log-likelihood of real data; D wants to maximize (output → 1), G indifferent</span></div>
+                        <div class="key-point"><span class="label">G(z):</span><span class="desc">Generator output; generates fake sample from random noise z ~ N(0, I); ideally indistinguishable from real</span></div>
+                        <div class="key-point"><span class="label">D(G(z)):</span><span class="desc">Discriminator output for fake data; probability that generated sample is real; ideally D(G(z)) → 0</span></div>
+                        <div class="key-point"><span class="label">E[log(1-D(G(z)))]:</span><span class="desc">D wants to maximize (detect fakes), G wants to minimize (fool D); when D(G(z)) → 1, this term → 0</span></div>
+                        <div class="key-point"><span class="label">JS(p_data || p_gen):</span><span class="desc">Jensen-Shannon divergence between real and generated distributions; at Nash equilibrium = 0 (distributions match)</span></div>
+                        <div class="key-point"><span class="label">-2log(2) ≈ -1.39:</span><span class="desc">Constant in GAN objective; Nash equilibrium value when JS divergence = 0</span></div>
+                        <div class="formula">Wasserstein GAN: min_G max_D E[D(x)] - E[D(G(z))] s.t. ||D||_L ≤ 1  →  better gradients</div>
+                        <div class="key-point"><span class="label">E[D(x)] - E[D(G(z))]:</span><span class="desc">Wasserstein distance (critic network, not probability); measures distribution distance directly</span></div>
+                        <div class="key-point"><span class="label">D (Critic):</span><span class="desc">No sigmoid; outputs real-valued score; higher for real data, lower for fake; 1-Lipschitz constraint ensures smooth gradients</span></div>
+                        <div class="key-point"><span class="label">||D||_L ≤ 1:</span><span class="desc">Lipschitz constraint; 1-Lipschitz ensures gradients well-behaved (≤1 everywhere); prevents vanishing/exploding gradients</span></div>
+                        <div class="key-point"><span class="label">Practical enforcement:</span><span class="desc">Weight clipping (clip weights to [-c, c]) or gradient penalty (adds regularization term); gradient penalty preferred</span></div>
+
+                        <div class="mnemonic">Generator wants D to say "real". Discriminator wants to separate. If training converges = Nash Eq = D output 1/2 everywhere (can't distinguish).</div>
+
+                        <hr class="divider">
+
+                        <div class="key-point">
+                            <span class="label">Mode collapse:</span>
+                            <span class="desc">Generator learns 1-few modes, ignores diversity. D overfits to G. Solutions: minibatch discrimination, unrolled D, diversity-promoting losses.</span>
+                        </div>
+
+                        <div class="interview-tip">Vanishing gradients: D confident (output 0 or 1) = small gradients = training stalls. Use Wasserstein loss or Lipschitz constraint (spectral norm).</div>
+
+                        <div class="interview-tip">Training instability: G/D learning rates must be tuned together. No guarantee of Nash convergence (may cycle/diverge). Different archs need different schedules.</div>
+
+                        <hr class="divider">
+
+                        <div class="key-point">
+                            <span class="label">Production rule:</span>
+                            <span class="desc">Wasserstein + gradient penalty or spectral norm. Progressive training (4×4 → 8×8...). Monitor FID. Separate BN for G/D. Use self-attention, residual.</span>
+                        </div>
+
+                        <div class="key-point">
+                            <span class="label">Trade-off:</span>
+                            <span class="desc">Fast sampling (<0.1 sec vs diffusion 1+ sec). Hard to train, lower quality. Use when realtime critical. StyleGAN SOTA faces. Diffusion dominates text-to-image now.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Flow Models Section -->
+        <div class="section">
+            <h2>4. Flow-Based Models</h2>
+            <div class="section-content">
+                <div class="visualization">
+                    <div style="margin-bottom: 10px;">
+                        <strong style="color: #e056fd;">Invertible Transformations: Z → ... → X</strong>
+                    </div>
+                    <canvas id="flowCanvas" width="480" height="350"></canvas>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">Layers</div>
+                            <div class="stat-value" id="flowLayersValue">1</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Det(J)</div>
+                            <div class="stat-value" id="flowDetValue">1.00</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Likelihood</div>
+                            <div class="stat-value" id="flowLikelihoodValue">0.00</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="controls">
+                    <div class="control-group">
+                        <label class="control-label">Number of Layers</label>
+                        <input type="range" id="flowLayers" min="1" max="6" step="1" value="1">
+                        <div class="control-value">K = <span id="flowLayersValueLabel">1</span></div>
+                        <div class="info-text">More layers enable complex transformations</div>
+                    </div>
+
+                    <div class="control-group">
+                        <label class="control-label">Transformation Type</label>
+                        <select id="flowType" style="padding: 8px; border-radius: 4px; background: #2a2a3f; color: #e056fd; border: 1px solid #e056fd;">
+                            <option value="linear">Linear</option>
+                            <option value="sigmoid">Sigmoid</option>
+                            <option value="rational">Rational Quadratic</option>
+                        </select>
+                        <div class="info-text">Different coupling strategies</div>
+                    </div>
+
+                    <div class="button-group">
+                        <button onclick="animateFlow()">Animate</button>
+                        <button onclick="resetFlow()">Reset</button>
+                    </div>
+
+                    <div class="insight-box">
+                        <h3>Interview Tips: Flow Models</h3>
+                        <p><strong>What it is:</strong> Invertible transformations z→x via coupling layers. Exact likelihood (no lower bound like VAE). Sample z~N(0,I), compute x=f(z). Bidirectional generation.</p>
+
+                        <div class="formula">log p(x) = log p(z) - log|det J_f|  where J_f = ∂f/∂z (Jacobian)</div>
+                        <div class="key-point"><span class="label">p(x):</span><span class="desc">Probability of data x; what we want to maximize (log-likelihood)</span></div>
+                        <div class="key-point"><span class="label">p(z):</span><span class="desc">Prior distribution, typically N(0, I); probability of latent code z</span></div>
+                        <div class="key-point"><span class="label">f (flow):</span><span class="desc">Invertible transformation z → x; must be bijective (one-to-one, onto)</span></div>
+                        <div class="key-point"><span class="label">J_f = ∂f/∂z:</span><span class="desc">Jacobian matrix; partial derivatives of each output w.r.t. each input; size d×d where d = dimension</span></div>
+                        <div class="key-point"><span class="label">det J_f:</span><span class="desc">Determinant of Jacobian; measures volume scaling of transformation; must be ≠ 0 for invertibility</span></div>
+                        <div class="key-point"><span class="label">|det J_f|:</span><span class="desc">Absolute value of Jacobian determinant; always positive; quantifies how much transformation stretches/shrinks volume</span></div>
+                        <div class="key-point"><span class="label">log|det J_f|:</span><span class="desc">Log absolute Jacobian determinant; correction term to account for volume change (change of variables formula)</span></div>
+                        <div class="key-point"><span class="label">Exact likelihood:</span><span class="desc">No approximation; unlike VAE (ELBO lower bound), flows give true log p(x) without variational bound</span></div>
+                        <div class="formula">Coupling: z'_2 = T_θ(z_1) * z_2 + S_θ(z_1)  →  Jacobian triangular, |det|=product diagonal</div>
+                        <div class="key-point"><span class="label">z = [z_1, z_2]:</span><span class="desc">Latent split into two parts; z_1 kept fixed, z_2 transformed conditioned on z_1</span></div>
+                        <div class="key-point"><span class="label">T_θ(z_1):</span><span class="desc">Transform (scale) network; outputs multiplicative factor for z_2; depends on z_1, no gradients through z_2</span></div>
+                        <div class="key-point"><span class="label">S_θ(z_1):</span><span class="desc">Shift (translation) network; outputs additive bias for z_2; depends on z_1</span></div>
+                        <div class="key-point"><span class="label">z'_2 = T_θ(z_1) * z_2 + S_θ(z_1):</span><span class="desc">Affine transformation of z_2 conditioned on z_1; invertible via z_2 = (z'_2 - S_θ(z_1)) / T_θ(z_1)</span></div>
+                        <div class="key-point"><span class="label">Jacobian triangular:</span><span class="desc">Because z_1 → z'_1 identity (no change), z_2 → z'_2 affine; results in triangular Jacobian matrix</span></div>
+                        <div class="key-point"><span class="label">|det| = product diagonal:</span><span class="desc">For triangular matrix, determinant = product of diagonal elements; diagonal = [1, 1, ..., 1, T_θ(z_1)] = T_θ(z_1)</span></div>
+                        <div class="key-point"><span class="label">O(d) complexity:</span><span class="desc">Computing determinant = O(d) vs O(d³) for general Jacobian; huge speedup enables efficient exact likelihood</span></div>
+
+                        <div class="mnemonic">Invertibility constraint = exact likelihood but architectures restrictive. Triangular Jacobian = O(d) not O(d³) det. Bidirectional: encode x→z, modify, decode z→x.</div>
+
+                        <hr class="divider">
+
+                        <div class="key-point">
+                            <span class="label">Invertibility cost:</span>
+                            <span class="desc">Cannot use ReLU (non-monotonic in reverse). Coupling must be carefully partitioned. Architecture highly constrained vs diffusion/VAE.</span>
+                        </div>
+
+                        <div class="interview-tip">Likelihood ≠ quality. Exact likelihood can be far from log-prob if overtrained. Monitor both likelihood + FID. Likelihood alone insufficient.</div>
+
+                        <div class="interview-tip">Jacobian efficiency critical. Coupling layers triangular = O(d) determinant. Naive = O(d³) via LU. Use special structure.</div>
+
+                        <hr class="divider">
+
+                        <div class="key-point">
+                            <span class="label">Architectures:</span>
+                            <span class="desc">Real NVP: affine coupling. Glow: invertible 1×1 convs. Neural Spline: monotonic spline couplings. Good balance expressive vs efficient.</span>
+                        </div>
+
+                        <div class="key-point">
+                            <span class="label">Production rule:</span>
+                            <span class="desc">Monitor likelihood + FID. Multi-scale (flows at different resolutions). Variational dequantization for discrete data. Exact posterior: p(z|x) exact (no variation approx).</span>
+                        </div>
+
+                        <div class="key-point">
+                            <span class="label">Trade-off:</span>
+                            <span class="desc">Exact likelihood + invertibility (anomaly detection, controllable gen). Slower sampling, restricted archs. Use when likelihood/invertibility crucial. Diffusion > quality+speed.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============ VAE Implementation ============
+        let vaeState = {
+            samples: [],
+            losses: [],
+            klWeight: 0.5,
+            latentDim: 2,
+            reconstructionLoss: 1.0,
+            klDivergence: 0.5,
+            quality: 50
+        };
+
+        function initVAESamples() {
+            vaeState.samples = [];
+            for (let i = 0; i < 20; i++) {
+                vaeState.samples.push({
+                    x: Math.random() * 200 + 40,
+                    y: Math.random() * 150 + 75,
+                    vx: (Math.random() - 0.5) * 2,
+                    vy: (Math.random() - 0.5) * 2
+                });
+            }
+        }
+
+        function drawVAE() {
+            const canvas = document.getElementById('vaeCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Encoder section
+            ctx.fillStyle = '#e056fd';
+            ctx.font = 'bold 12px Arial';
+            ctx.fillText('ENCODER', 20, 25);
+
+            // Input samples
+            ctx.fillStyle = '#4080ff';
+            for (let i = 0; i < Math.min(5, vaeState.samples.length); i++) {
+                const x = 30 + (i % 3) * 40;
+                const y = 45 + Math.floor(i / 3) * 40;
+                ctx.fillRect(x, y, 30, 30);
+                ctx.strokeStyle = '#4080ff';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(x, y, 30, 30);
+            }
+
+            // Encoder arrow
+            ctx.strokeStyle = '#e056fd';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(180, 70);
+            ctx.lineTo(220, 70);
+            ctx.stroke();
+            ctx.fillStyle = '#e056fd';
+            ctx.fillText('μ,σ', 200, 60);
+
+            // Latent space
+            ctx.fillStyle = '#e056fd';
+            ctx.font = 'bold 12px Arial';
+            ctx.fillText('LATENT SPACE', 240, 25);
+
+            // Draw 2D latent visualization
+            const latentCx = 310;
+            const latentCy = 90;
+            const latentSize = 50;
+
+            // Gaussian contours
+            ctx.strokeStyle = 'rgba(224, 86, 253, 0.3)';
+            ctx.lineWidth = 1;
+            for (let r = 10; r <= latentSize; r += 10) {
+                ctx.beginPath();
+                ctx.arc(latentCx, latentCy, r, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            // Sample points from latent
+            ctx.fillStyle = '#ff6600';
+            for (let i = 0; i < 8; i++) {
+                const angle = (i / 8) * Math.PI * 2;
+                const r = 25 + Math.sin(Date.now() * 0.001 + i) * 10;
+                const px = latentCx + Math.cos(angle) * r;
+                const py = latentCy + Math.sin(angle) * r;
+                ctx.beginPath();
+                ctx.arc(px, py, 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // KL divergence indicator
+            const klAlpha = Math.min(vaeState.klWeight, 1);
+            ctx.fillStyle = `rgba(255, 100, 100, ${klAlpha * 0.5})`;
+            ctx.fillRect(latentCx - latentSize - 2, latentCy - latentSize - 2,
+                        latentSize * 2 + 4, latentSize * 2 + 4);
+            ctx.strokeStyle = `rgba(255, 100, 100, ${klAlpha})`;
+            ctx.lineWidth = 2;
+            ctx.strokeRect(latentCx - latentSize - 2, latentCy - latentSize - 2,
+                          latentSize * 2 + 4, latentSize * 2 + 4);
+            ctx.fillStyle = 'rgba(255, 100, 100, 0.7)';
+            ctx.font = '10px Arial';
+            ctx.fillText('KL Regularization', latentCx - 40, latentCy + latentSize + 15);
+
+            // Decoder arrow
+            ctx.strokeStyle = '#e056fd';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(380, 70);
+            ctx.lineTo(420, 70);
+            ctx.stroke();
+
+            // Decoder section
+            ctx.fillStyle = '#e056fd';
+            ctx.font = 'bold 12px Arial';
+            ctx.fillText('DECODER', 430, 25);
+
+            // Reconstructed samples
+            ctx.fillStyle = '#40ff80';
+            for (let i = 0; i < Math.min(5, vaeState.samples.length); i++) {
+                const x = 420 + (i % 3) * 40;
+                const y = 45 + Math.floor(i / 3) * 40;
+
+                // Add slight blur/distortion based on reconstruction loss
+                ctx.globalAlpha = 1 - vaeState.reconstructionLoss * 0.5;
+                ctx.fillRect(x, y, 30, 30);
+                ctx.globalAlpha = 1.0;
+
+                ctx.strokeStyle = '#40ff80';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(x, y, 30, 30);
+            }
+
+            // Quality bar at bottom
+            ctx.fillStyle = '#2a2a3f';
+            ctx.fillRect(20, 240, 440, 20);
+            ctx.fillStyle = '#e056fd';
+            const qualityWidth = (vaeState.quality / 100) * 440;
+            ctx.fillRect(20, 240, qualityWidth, 20);
+            ctx.strokeStyle = '#e056fd';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(20, 240, 440, 20);
+            ctx.fillStyle = '#0a0a0f';
+            ctx.font = 'bold 11px Arial';
+            ctx.fillText(`Reconstruction Quality: ${Math.round(vaeState.quality)}%`, 180, 254);
+
+            // ELBO formula
+            ctx.fillStyle = '#b0b0c0';
+            ctx.font = '11px monospace';
+            ctx.fillText('ELBO = E[log p(x|z)] - β·KL(q(z|x)||p(z))', 20, 285);
+        }
+
+        function trainVAE() {
+            vaeState.reconstructionLoss = Math.max(0.1, vaeState.reconstructionLoss - 0.05);
+            vaeState.klDivergence = Math.max(0.1, 1.0 - (vaeState.klWeight * 0.8));
+            vaeState.quality = Math.min(95, (1 - vaeState.reconstructionLoss) * 100);
+
+            document.getElementById('vaeLossValue').textContent = vaeState.reconstructionLoss.toFixed(2);
+            document.getElementById('vaeKLValue').textContent = (vaeState.klDivergence * vaeState.klWeight).toFixed(2);
+            document.getElementById('vaeQualityValue').textContent = Math.round(vaeState.quality) + '%';
+
+            drawVAE();
+        }
+
+        function resetVAE() {
+            vaeState.reconstructionLoss = 1.0;
+            vaeState.klDivergence = 0.5;
+            vaeState.quality = 50;
+            vaeState.losses = [];
+            initVAESamples();
+            document.getElementById('vaeLossValue').textContent = '1.00';
+            document.getElementById('vaeKLValue').textContent = '0.50';
+            document.getElementById('vaeQualityValue').textContent = '50%';
+            drawVAE();
+        }
+
+        // ============ Diffusion Implementation ============
+        let diffusionState = {
+            timestep: 0,
+            maxTimesteps: 100,
+            schedule: 'linear',
+            animationId: null
+        };
+
+        function getNoiseSchedule(t, schedule) {
+            const s = t / diffusionState.maxTimesteps;
+            switch(schedule) {
+                case 'linear':
+                    return s;
+                case 'quadratic':
+                    return s * s;
+                case 'cosine':
+                    return (1 - Math.cos(s * Math.PI)) / 2;
+                default:
+                    return s;
+            }
+        }
+
+        function drawDiffusion() {
+            const canvas = document.getElementById('diffusionCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const t = diffusionState.timestep;
+            const noiseLevel = getNoiseSchedule(t, diffusionState.schedule);
+            const signalLevel = 1 - noiseLevel;
+
+            // Title
+            ctx.fillStyle = '#e056fd';
+            ctx.font = 'bold 12px Arial';
+            ctx.fillText('FORWARD PROCESS (Add Noise)', 20, 25);
+            ctx.fillText('REVERSE PROCESS (Denoise)', 20, 160);
+
+            // Forward process visualization
+            const gridSize = 8;
+            const cellSize = 30;
+            const startX = 40;
+            const startY = 40;
+
+            // Clean image (t=0)
+            for (let i = 0; i < gridSize; i++) {
+                for (let j = 0; j < gridSize; j++) {
+                    const x = startX + i * cellSize;
+                    const y = startY + j * cellSize;
+
+                    // Create a pattern
+                    const isActive = (i + j) % 2 === 0 || (i < 2 && j < 2);
+                    const baseColor = isActive ? '#4080ff' : '#1a1a28';
+
+                    // Fade out based on noise level
+                    const alpha = 1 - noiseLevel * 0.7;
+                    ctx.fillStyle = isActive ? '#4080ff' : '#2a2a3f';
+                    ctx.globalAlpha = alpha;
+                    ctx.fillRect(x, y, cellSize - 2, cellSize - 2);
+                    ctx.globalAlpha = 1.0;
+
+                    // Add noise overlay
+                    if (noiseLevel > 0) {
+                        const noiseIntensity = noiseLevel * 100;
+                        ctx.fillStyle = `rgba(255, 255, 255, ${noiseIntensity * 0.3})`;
+                        ctx.globalAlpha = noiseLevel;
+                        ctx.fillRect(x, y, cellSize - 2, cellSize - 2);
+                        ctx.globalAlpha = 1.0;
+                    }
+
+                    ctx.strokeStyle = '#2a2a3f';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(x, y, cellSize - 2, cellSize - 2);
+                }
+            }
+
+            // Labels and arrows
+            ctx.fillStyle = '#e056fd';
+            ctx.font = '11px Arial';
+            ctx.fillText('t=0', 40, startY + gridSize * cellSize + 20);
+            ctx.fillText(`t=${t}`, 40 + gridSize * cellSize / 2, startY + gridSize * cellSize + 20);
+
+            // Arrow
+            ctx.strokeStyle = '#e056fd';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(startX + 150, startY + gridSize * cellSize + 30);
+            ctx.lineTo(startX + 180, startY + gridSize * cellSize + 30);
+            ctx.stroke();
+            ctx.fillStyle = '#e056fd';
+            ctx.fillText('Add Noise (Forward)', 190, startY + gridSize * cellSize + 35);
+
+            // Reverse process (mirror visualization)
+            const revStartX = 280;
+            const revStartY = 175;
+            for (let i = 0; i < gridSize; i++) {
+                for (let j = 0; j < gridSize; j++) {
+                    const x = revStartX + i * cellSize;
+                    const y = revStartY + j * cellSize;
+
+                    const isActive = (i + j) % 2 === 0 || (i < 2 && j < 2);
+
+                    // Reverse process: noise decreases
+                    const revAlpha = signalLevel * 0.9 + 0.1;
+                    ctx.fillStyle = isActive ? '#40ff80' : '#2a2a3f';
+                    ctx.globalAlpha = revAlpha;
+                    ctx.fillRect(x, y, cellSize - 2, cellSize - 2);
+                    ctx.globalAlpha = 1.0;
+
+                    // Noise decreases
+                    if (signalLevel < 1) {
+                        ctx.fillStyle = `rgba(255, 255, 255, ${(1 - signalLevel) * 50})`;
+                        ctx.globalAlpha = 1 - signalLevel;
+                        ctx.fillRect(x, y, cellSize - 2, cellSize - 2);
+                        ctx.globalAlpha = 1.0;
+                    }
+
+                    ctx.strokeStyle = '#2a2a3f';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(x, y, cellSize - 2, cellSize - 2);
+                }
+            }
+
+            ctx.fillStyle = '#e056fd';
+            ctx.font = '11px Arial';
+            ctx.fillText(`t=${t}`, revStartX, revStartY + gridSize * cellSize + 20);
+            ctx.fillText('t=0 (Clean)', revStartX + gridSize * cellSize / 2, revStartY + gridSize * cellSize + 20);
+
+            // Noise schedule curve
+            ctx.fillStyle = '#1a1a28';
+            ctx.fillRect(20, 270, 440, 60);
+            ctx.strokeStyle = '#e056fd';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(20, 270, 440, 60);
+
+            ctx.fillStyle = '#e056fd';
+            ctx.font = '11px Arial';
+            ctx.fillText('Noise Schedule (α)', 30, 285);
+
+            // Draw schedule curve
+            ctx.strokeStyle = '#ff6600';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            const schedulePoints = 100;
+            for (let i = 0; i < schedulePoints; i++) {
+                const schedT = (i / schedulePoints) * diffusionState.maxTimesteps;
+                const schedNoise = getNoiseSchedule(schedT, diffusionState.schedule);
+                const px = 30 + (i / schedulePoints) * 420;
+                const py = 320 - schedNoise * 40;
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.stroke();
+
+            // Current position on schedule
+            const currentX = 30 + (t / diffusionState.maxTimesteps) * 420;
+            const currentY = 320 - noiseLevel * 40;
+            ctx.fillStyle = '#e056fd';
+            ctx.beginPath();
+            ctx.arc(currentX, currentY, 4, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Stats
+            document.getElementById('diffusionSignalValue').textContent = Math.round(signalLevel * 100) + '%';
+            document.getElementById('diffusionNoiseValue').textContent = Math.round(noiseLevel * 100) + '%';
+            document.getElementById('diffusionStepValue').textContent = t;
+        }
+
+        function startDiffusionAnimation() {
+            if (diffusionState.animationId) return;
+
+            diffusionState.timestep = 0;
+            const animate = () => {
+                diffusionState.timestep = (diffusionState.timestep + 1) % (diffusionState.maxTimesteps * 2 + 1);
+                document.getElementById('diffusionTimestep').value =
+                    diffusionState.timestep > diffusionState.maxTimesteps ?
+                    diffusionState.maxTimesteps * 2 - diffusionState.timestep :
+                    diffusionState.timestep;
+                document.getElementById('diffusionTimestepValue').textContent =
+                    Math.round(diffusionState.timestep / 2);
+                drawDiffusion();
+                diffusionState.animationId = requestAnimationFrame(animate);
+            };
+            diffusionState.animationId = requestAnimationFrame(animate);
+        }
+
+        function resetDiffusion() {
+            if (diffusionState.animationId) {
+                cancelAnimationFrame(diffusionState.animationId);
+                diffusionState.animationId = null;
+            }
+            diffusionState.timestep = 0;
+            document.getElementById('diffusionTimestep').value = 0;
+            document.getElementById('diffusionTimestepValue').textContent = '0';
+            drawDiffusion();
+        }
+
+        // ============ GAN Implementation ============
+        let ganState = {
+            mode: 'normal',
+            iterations: 0,
+            genLoss: 2.0,
+            discLoss: 2.0,
+            modeCoverage: 100,
+            lossHistory: [],
+            discLossHistory: [],
+            modes: [
+                {x: 100, y: 100, active: true},
+                {x: 150, y: 150, active: true},
+                {x: 80, y: 160, active: true},
+                {x: 200, y: 80, active: true},
+            ]
+        };
+
+        function drawGAN() {
+            const canvas = document.getElementById('ganCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Title
+            ctx.fillStyle = '#e056fd';
+            ctx.font = 'bold 12px Arial';
+            ctx.fillText('GAN Min-Max Game', 20, 25);
+
+            // Mode collapse visualization
+            const modeAreaX = 40;
+            const modeAreaY = 45;
+            const modeAreaW = 200;
+            const modeAreaH = 200;
+
+            ctx.strokeStyle = '#2a2a3f';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(modeAreaX, modeAreaY, modeAreaW, modeAreaH);
+
+            // Real data modes
+            ctx.fillStyle = '#4080ff';
+            ctx.font = '11px Arial';
+            ctx.fillText('Real Modes', modeAreaX + 5, modeAreaY - 10);
+            for (let mode of ganState.modes) {
+                ctx.fillStyle = 'rgba(64, 128, 255, 0.3)';
+                ctx.beginPath();
+                ctx.arc(modeAreaX + mode.x, modeAreaY + mode.y, 15, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#4080ff';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+
+            // Generated samples
+            ctx.fillStyle = '#ff6600';
+            ctx.font = '11px Arial';
+            ctx.fillText('Generated', modeAreaX + modeAreaW + 20, modeAreaY - 10);
+
+            const activeModes = ganState.modes.filter(m => m.active);
+            if (ganState.mode === 'normal') {
+                // Spread across modes
+                for (let mode of ganState.modes) {
+                    for (let i = 0; i < 3; i++) {
+                        const angle = (i / 3) * Math.PI * 2;
+                        const r = 8 + Math.sin(Date.now() * 0.001 + i) * 3;
+                        const x = modeAreaX + mode.x + Math.cos(angle) * r;
+                        const y = modeAreaY + mode.y + Math.sin(angle) * r;
+                        ctx.fillStyle = '#ff6600';
+                        ctx.beginPath();
+                        ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            } else {
+                // Mode collapse - all generated samples cluster to one mode
+                const centerMode = ganState.modes[0];
+                for (let i = 0; i < 10; i++) {
+                    const angle = (i / 10) * Math.PI * 2;
+                    const r = 12 + Math.sin(Date.now() * 0.001 + i) * 5;
+                    const x = modeAreaX + centerMode.x + Math.cos(angle) * r;
+                    const y = modeAreaY + centerMode.y + Math.sin(angle) * r;
+                    ctx.fillStyle = '#ff6600';
+                    ctx.beginPath();
+                    ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // Dim inactive modes
+                for (let i = 1; i < ganState.modes.length; i++) {
+                    ctx.fillStyle = 'rgba(64, 128, 255, 0.1)';
+                    ctx.beginPath();
+                    ctx.arc(modeAreaX + ganState.modes[i].x, modeAreaY + ganState.modes[i].y, 15, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            // Loss curves
+            const graphX = 280;
+            const graphY = 45;
+            const graphW = 190;
+            const graphH = 200;
+
+            ctx.fillStyle = '#1a1a28';
+            ctx.fillRect(graphX, graphY, graphW, graphH);
+            ctx.strokeStyle = '#e056fd';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(graphX, graphY, graphW, graphH);
+
+            ctx.fillStyle = '#e056fd';
+            ctx.font = '11px Arial';
+            ctx.fillText('Loss Curves', graphX + 10, graphY - 10);
+
+            // Grid
+            ctx.strokeStyle = 'rgba(224, 86, 253, 0.1)';
+            ctx.lineWidth = 0.5;
+            for (let i = 0; i <= 5; i++) {
+                const x = graphX + (i / 5) * graphW;
+                const y = graphY + (i / 5) * graphH;
+                ctx.beginPath();
+                ctx.moveTo(x, graphY);
+                ctx.lineTo(x, graphY + graphH);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(graphX, y);
+                ctx.lineTo(graphX + graphW, y);
+                ctx.stroke();
+            }
+
+            // Draw loss curves
+            const maxHistory = 50;
+            if (ganState.lossHistory.length > 1) {
+                // Generator loss
+                ctx.strokeStyle = '#40ff80';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                for (let i = 0; i < ganState.lossHistory.length; i++) {
+                    const x = graphX + (i / maxHistory) * graphW;
+                    const y = graphY + graphH - (ganState.lossHistory[i] / 3) * graphH;
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+
+                // Discriminator loss
+                ctx.strokeStyle = '#ff4080';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                for (let i = 0; i < ganState.discLossHistory.length; i++) {
+                    const x = graphX + (i / maxHistory) * graphW;
+                    const y = graphY + graphH - (ganState.discLossHistory[i] / 3) * graphH;
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+            }
+
+            // Legend
+            ctx.fillStyle = '#40ff80';
+            ctx.fillRect(graphX + 10, graphY + graphH + 10, 8, 8);
+            ctx.fillStyle = '#40ff80';
+            ctx.font = '10px Arial';
+            ctx.fillText('Gen', graphX + 22, graphY + graphH + 17);
+
+            ctx.fillStyle = '#ff4080';
+            ctx.fillRect(graphX + 80, graphY + graphH + 10, 8, 8);
+            ctx.fillStyle = '#ff4080';
+            ctx.fillText('Disc', graphX + 92, graphY + graphH + 17);
+
+            // Stats
+            document.getElementById('ganGenLossValue').textContent = ganState.genLoss.toFixed(2);
+            document.getElementById('ganDiscLossValue').textContent = ganState.discLoss.toFixed(2);
+            document.getElementById('ganModeValue').textContent =
+                (ganState.mode === 'normal' ? '100%' : '25%');
+        }
+
+        function trainGANStep() {
+            ganState.iterations += 1;
+
+            if (ganState.mode === 'normal') {
+                // Normal convergence
+                ganState.genLoss = Math.max(0.2, ganState.genLoss - 0.05);
+                ganState.discLoss = Math.max(0.3, ganState.discLoss - 0.03);
+            } else {
+                // Mode collapse: generator gets stuck, discriminator still learns
+                ganState.genLoss = 0.5 + Math.sin(ganState.iterations * 0.05) * 0.2;
+                ganState.discLoss = Math.max(0.2, ganState.discLoss - 0.02);
+            }
+
+            ganState.lossHistory.push(ganState.genLoss);
+            ganState.discLossHistory.push(ganState.discLoss);
+            if (ganState.lossHistory.length > 50) ganState.lossHistory.shift();
+            if (ganState.discLossHistory.length > 50) ganState.discLossHistory.shift();
+
+            document.getElementById('ganIterValue').textContent = ganState.iterations;
+            drawGAN();
+        }
+
+        function setGANMode(mode) {
+            ganState.mode = mode;
+            document.getElementById('normalModeBtn').classList.toggle('active', mode === 'normal');
+            document.getElementById('collapseModeBtn').classList.toggle('active', mode === 'collapse');
+            drawGAN();
+        }
+
+        function resetGAN() {
+            ganState.iterations = 0;
+            ganState.genLoss = 2.0;
+            ganState.discLoss = 2.0;
+            ganState.lossHistory = [];
+            ganState.discLossHistory = [];
+            document.getElementById('ganIterations').value = 0;
+            document.getElementById('ganIterValue').textContent = '0';
+            drawGAN();
+        }
+
+        // ============ Flow Models Implementation ============
+        let flowState = {
+            layers: 1,
+            type: 'linear',
+            animationProgress: 0,
+            determinant: 1.0,
+            likelihood: 0
+        };
+
+        function drawFlow() {
+            const canvas = document.getElementById('flowCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const numSamples = 100;
+            const progress = flowState.animationProgress;
+
+            // Title
+            ctx.fillStyle = '#e056fd';
+            ctx.font = 'bold 12px Arial';
+            ctx.fillText('Normalizing Flow: Z → f₁ → f₂ → ... → X', 20, 25);
+
+            // Source distribution (Gaussian)
+            const sourceX = 50;
+            const sourceY = 80;
+            ctx.fillStyle = '#4080ff';
+            ctx.font = '11px Arial';
+            ctx.fillText('Z ~ N(0, I)', sourceX, sourceY - 10);
+
+            // Draw Gaussian samples
+            const samples = [];
+            for (let i = 0; i < numSamples; i++) {
+                const angle = (i / numSamples) * Math.PI * 2;
+                const r = 20 + Math.sin(i * 0.1) * 5;
+                samples.push({
+                    x: sourceX + Math.cos(angle) * r,
+                    y: sourceY + Math.sin(angle) * r
+                });
+            }
+
+            ctx.fillStyle = '#4080ff';
+            for (let s of samples) {
+                ctx.fillRect(s.x - 2, s.y - 2, 4, 4);
+            }
+
+            // Draw transformation layers
+            const layerSpacing = 70;
+            const numLayers = flowState.layers;
+
+            for (let l = 0; l < numLayers; l++) {
+                const layerX = sourceX + (l + 1) * layerSpacing;
+
+                // Layer arrow and label
+                ctx.strokeStyle = '#e056fd';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(layerX - 25, sourceY);
+                ctx.lineTo(layerX - 40, sourceY);
+                ctx.stroke();
+
+                ctx.fillStyle = '#e056fd';
+                ctx.font = '10px Arial';
+                let transformName = 'f';
+                if (flowState.type === 'linear') transformName = 'Affine';
+                else if (flowState.type === 'sigmoid') transformName = 'Sigmoid';
+                else transformName = 'RQ';
+                ctx.fillText(`${transformName}${l + 1}`, layerX - 30, sourceY - 10);
+
+                // Draw transformed samples
+                ctx.fillStyle = flowState.type === 'linear' ? '#ffaa00' : '#ff6600';
+                for (let i = 0; i < numSamples; i++) {
+                    let sample = {...samples[i]};
+
+                    // Apply transformations up to current layer
+                    for (let tl = 0; tl <= l; tl++) {
+                        const dx = sample.x - sourceX;
+                        const dy = sample.y - sourceY;
+
+                        if (flowState.type === 'linear') {
+                            // Affine transformation
+                            const angle = tl * Math.PI / numLayers;
+                            const scale = 1 + tl * 0.3;
+                            sample.x = sourceX + (dx * Math.cos(angle) - dy * Math.sin(angle)) * scale;
+                            sample.y = sourceY + (dx * Math.sin(angle) + dy * Math.cos(angle)) * scale;
+                        } else if (flowState.type === 'sigmoid') {
+                            // Sigmoid-like squashing
+                            const scale = 1 / (1 + Math.exp(-((dx * dy) / 100)));
+                            sample.x = sourceX + dx * scale;
+                            sample.y = sourceY + dy * scale;
+                        } else {
+                            // Rational quadratic
+                            const r2 = dx * dx + dy * dy;
+                            const scale = 1 + Math.sin(r2 / 500);
+                            sample.x = sourceX + dx * scale * 0.7;
+                            sample.y = sourceY + dy * scale * 0.7;
+                        }
+                    }
+
+                    const displayX = (layerX - sourceX) / (sourceX + (numLayers + 1) * layerSpacing - sourceX);
+                    const interpX = sourceX + displayX * (layerX + 20 - sourceX);
+                    const interpY = sourceY + displayX * (sample.y - sourceY);
+
+                    ctx.fillRect(interpX - 2, interpY - 2, 4, 4);
+                }
+            }
+
+            // Final distribution
+            const finalX = sourceX + (numLayers + 1) * layerSpacing;
+            ctx.fillStyle = '#40ff80';
+            ctx.font = '11px Arial';
+            ctx.fillText('X ~ p(x)', finalX - 20, sourceY - 10);
+
+            // Draw final samples with distortion
+            ctx.fillStyle = '#40ff80';
+            for (let i = 0; i < numSamples; i++) {
+                let x = samples[i].x;
+                let y = samples[i].y;
+
+                // Apply all transformations
+                for (let l = 0; l < numLayers; l++) {
+                    const dx = x - sourceX;
+                    const dy = y - sourceY;
+
+                    if (flowState.type === 'linear') {
+                        const angle = l * Math.PI / Math.max(1, numLayers);
+                        const scale = 1 + l * 0.3;
+                        x = sourceX + (dx * Math.cos(angle) - dy * Math.sin(angle)) * scale;
+                        y = sourceY + (dx * Math.sin(angle) + dy * Math.cos(angle)) * scale;
+                    }
+                }
+
+                x = finalX + (x - sourceX) * 0.7;
+                y = sourceY + (y - sourceY) * 0.7;
+                ctx.fillRect(x - 2, y - 2, 4, 4);
+            }
+
+            // Change of variables visualization
+            ctx.fillStyle = '#1a1a28';
+            ctx.fillRect(20, 270, 440, 60);
+            ctx.strokeStyle = '#e056fd';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(20, 270, 440, 60);
+
+            ctx.fillStyle = '#e056fd';
+            ctx.font = 'bold 11px monospace';
+            ctx.fillText('log p(x) = log p(z) - Σ log|det(∂f_i/∂x_{i-1})|', 30, 290);
+
+            ctx.fillStyle = '#b0b0c0';
+            ctx.font = '10px monospace';
+            ctx.fillText(`log|det(J)| = ${flowState.determinant.toFixed(3)}    Likelihood = ${flowState.likelihood.toFixed(2)}`, 30, 310);
+
+            // Update determinant based on transformations
+            flowState.determinant = Math.exp(-numLayers * 0.2);
+            flowState.likelihood = -Math.log(flowState.determinant + 1);
+
+            document.getElementById('flowLayersValue').textContent = numLayers;
+            document.getElementById('flowDetValue').textContent = flowState.determinant.toFixed(2);
+            document.getElementById('flowLikelihoodValue').textContent = flowState.likelihood.toFixed(2);
+        }
+
+        function animateFlow() {
+            let frame = 0;
+            const animate = () => {
+                frame = (frame + 1) % 100;
+                flowState.animationProgress = frame / 100;
+                drawFlow();
+                if (frame < 99) requestAnimationFrame(animate);
+            };
+            animate();
+        }
+
+        function resetFlow() {
+            flowState.animationProgress = 0;
+            drawFlow();
+        }
+
+        // ============ Event Listeners ============
+        document.getElementById('vaeKLWeight').addEventListener('input', (e) => {
+            vaeState.klWeight = parseFloat(e.target.value);
+            document.getElementById('vaeKLWeightValue').textContent = vaeState.klWeight.toFixed(1);
+            drawVAE();
+        });
+
+        document.getElementById('vaeLatentDim').addEventListener('input', (e) => {
+            vaeState.latentDim = parseInt(e.target.value);
+            document.getElementById('vaeLatentDimValue').textContent = vaeState.latentDim;
+            drawVAE();
+        });
+
+        document.getElementById('diffusionTimestep').addEventListener('input', (e) => {
+            diffusionState.timestep = parseInt(e.target.value);
+            document.getElementById('diffusionTimestepValue').textContent = diffusionState.timestep;
+            drawDiffusion();
+        });
+
+        document.getElementById('diffusionSchedule').addEventListener('change', (e) => {
+            diffusionState.schedule = e.target.value;
+            drawDiffusion();
+        });
+
+        document.getElementById('ganIterations').addEventListener('input', (e) => {
+            const newIter = parseInt(e.target.value);
+            while (ganState.iterations < newIter) {
+                trainGANStep();
+            }
+        });
+
+        document.getElementById('flowLayers').addEventListener('input', (e) => {
+            flowState.layers = parseInt(e.target.value);
+            document.getElementById('flowLayersValueLabel').textContent = flowState.layers;
+            drawFlow();
+        });
+
+        document.getElementById('flowType').addEventListener('change', (e) => {
+            flowState.type = e.target.value;
+            drawFlow();
+        });
+
+        // ============ Initialize ============
+        window.addEventListener('load', () => {
+            initVAESamples();
+            drawVAE();
+            drawDiffusion();
+            drawGAN();
+            drawFlow();
+        });
+
+        // Redraw on window resize
+        window.addEventListener('resize', () => {
+            drawVAE();
+            drawDiffusion();
+            drawGAN();
+            drawFlow();
+        });
+    
+        
+        // ============ Classifier-Free Guidance ============
+        const cfgCanvas = document.getElementById('cfgCanvas');
+        const cfgCtx = cfgCanvas.getContext('2d');
+
+        document.getElementById('cfgScale').addEventListener('input', drawCFG);
+
+        function drawCFG() {
+            const w = parseFloat(document.getElementById('cfgScale').value);
+            document.getElementById('cfgScaleValue').textContent = w.toFixed(1);
+
+            cfgCtx.fillStyle = '#0a0a0f';
+            cfgCtx.fillRect(0, 0, cfgCanvas.width, cfgCanvas.height);
+
+            cfgCtx.fillStyle = '#e056fd';
+            cfgCtx.font = 'bold 13px Arial';
+            cfgCtx.fillText('Guidance Scale Effect: w = ' + w.toFixed(1), 20, 25);
+
+            const pad = 40;
+            const graphW = cfgCanvas.width - pad * 2;
+            const graphH = cfgCanvas.height - 100;
+
+            // Draw guidance scale vs output quality
+            cfgCtx.strokeStyle = '#e056fd';
+            cfgCtx.lineWidth = 2;
+            cfgCtx.beginPath();
+            for (let x = 0; x <= graphW; x += 10) {
+                const scale = (x / graphW) * 20;
+                let quality = 0.2 * scale + 0.3 * Math.sin(scale / 3);
+                if (scale > 15) quality = 1.0 - (scale - 15) * 0.05;
+
+                const y = cfgCanvas.height - 60 - quality * (graphH - 20);
+                if (x === 0) cfgCtx.moveTo(pad + x, y);
+                else cfgCtx.lineTo(pad + x, y);
+            }
+            cfgCtx.stroke();
+
+            // Current position
+            const currentX = (w / 20) * graphW;
+            const currentY = cfgCanvas.height - 60 - (0.2 * w + 0.3 * Math.sin(w / 3)) * (graphH - 20);
+            cfgCtx.fillStyle = '#e056fd';
+            cfgCtx.beginPath();
+            cfgCtx.arc(pad + currentX, currentY, 6, 0, Math.PI * 2);
+            cfgCtx.fill();
+
+            // Axes
+            cfgCtx.strokeStyle = '#444';
+            cfgCtx.lineWidth = 1;
+            cfgCtx.beginPath();
+            cfgCtx.moveTo(pad, cfgCanvas.height - 60);
+            cfgCtx.lineTo(cfgCanvas.width - pad, cfgCanvas.height - 60);
+            cfgCtx.moveTo(pad, cfgCanvas.height - 60);
+            cfgCtx.lineTo(pad, pad + 20);
+            cfgCtx.stroke();
+
+            // Labels
+            cfgCtx.fillStyle = '#888';
+            cfgCtx.font = '10px Arial';
+            cfgCtx.textAlign = 'center';
+            cfgCtx.fillText('Guidance Scale (w)', cfgCanvas.width / 2, cfgCanvas.height - 10);
+            cfgCtx.save();
+            cfgCtx.translate(15, cfgCanvas.height / 2);
+            cfgCtx.rotate(-Math.PI / 2);
+            cfgCtx.fillText('Quality / Adherence', 0, 0);
+            cfgCtx.restore();
+
+            // Regions
+            cfgCtx.fillStyle = '#7c4dff33';
+            cfgCtx.fillRect(pad, pad + 20, graphW * 0.1, graphH);
+            cfgCtx.fillStyle = '#64ffda33';
+            cfgCtx.fillRect(pad + graphW * 0.1, pad + 20, graphW * 0.4, graphH);
+            cfgCtx.fillStyle = '#ff6b6b33';
+            cfgCtx.fillRect(pad + graphW * 0.5, pad + 20, graphW * 0.5, graphH);
+
+            cfgCtx.fillStyle = '#888';
+            cfgCtx.font = '9px Arial';
+            cfgCtx.fillText('w<1', pad + 5, pad + 15);
+            cfgCtx.fillText('1-10 (optimal)', pad + graphW * 0.2, pad + 15);
+            cfgCtx.fillText('w>10 (artifacts)', pad + graphW * 0.7, pad + 15);
+        }
+        drawCFG();
+
+        // ============ Latent Diffusion ============
+        const latentDiffCanvas = document.getElementById('latentDiffCanvas');
+        const latentDiffCtx = latentDiffCanvas.getContext('2d');
+
+        document.getElementById('diffusionSteps').addEventListener('input', (e) => {
+            document.getElementById('diffusionStepsValue').textContent = e.target.value;
+        });
+
+        function drawLatentDiff() {
+            const steps = parseInt(document.getElementById('diffusionSteps').value);
+            latentDiffCtx.fillStyle = '#0a0a0f';
+            latentDiffCtx.fillRect(0, 0, latentDiffCanvas.width, latentDiffCanvas.height);
+
+            latentDiffCtx.fillStyle = '#e056fd';
+            latentDiffCtx.font = 'bold 13px Arial';
+            latentDiffCtx.fillText('Latent Diffusion Pipeline', 20, 25);
+
+            const stages = [
+                { name: 'Image', w: 60, x: 20, color: '#64ffda' },
+                { name: 'VAE Encode', w: 60, x: 90, color: '#ffd93d' },
+                { name: 'Latent z', w: 60, x: 160, color: '#ff6b6b' },
+                { name: 'Denoise ('+steps+')', w: 60, x: 230, color: '#7c4dff' },
+                { name: 'Decode', w: 60, x: 300, color: '#ffd93d' },
+                { name: 'Image', w: 60, x: 370, color: '#64ffda' }
+            ];
+
+            let y = 80;
+            stages.forEach((stage, i) => {
+                latentDiffCtx.fillStyle = stage.color + '33';
+                latentDiffCtx.fillRect(stage.x, y, stage.w, 60);
+                latentDiffCtx.strokeStyle = stage.color;
+                latentDiffCtx.lineWidth = 2;
+                latentDiffCtx.strokeRect(stage.x, y, stage.w, 60);
+
+                latentDiffCtx.fillStyle = stage.color;
+                latentDiffCtx.font = '10px Arial';
+                latentDiffCtx.textAlign = 'center';
+                latentDiffCtx.fillText(stage.name, stage.x + stage.w / 2, y + 35);
+
+                if (i < stages.length - 1) {
+                    latentDiffCtx.strokeStyle = '#888';
+                    latentDiffCtx.lineWidth = 1;
+                    latentDiffCtx.beginPath();
+                    latentDiffCtx.moveTo(stage.x + stage.w, y + 30);
+                    latentDiffCtx.lineTo(stage.x + stage.w + 15, y + 30);
+                    latentDiffCtx.stroke();
+                }
+            });
+
+            latentDiffCtx.fillStyle = '#888';
+            latentDiffCtx.font = '11px Arial';
+            latentDiffCtx.fillText('Speed-up: 10-50x faster than pixel-space diffusion', 20, 200);
+            latentDiffCtx.fillText('Quality: Minimal loss vs pixel-space (VAE ensures good reconstruction)', 20, 220);
+        }
+        drawLatentDiff();
+
+        // ============ VQ-VAE ============
+        const vqvaeCanvas = document.getElementById('vqvaeCanvas');
+        const vqvaeCtx = vqvaeCanvas.getContext('2d');
+
+        document.getElementById('codebookSize').addEventListener('input', (e) => {
+            document.getElementById('codebookSizeValue').textContent = e.target.value;
+            drawVQVAE();
+        });
+        document.getElementById('embeddingDim').addEventListener('input', (e) => {
+            document.getElementById('embeddingDimValue').textContent = e.target.value;
+            drawVQVAE();
+        });
+
+        function drawVQVAE() {
+            const K = parseInt(document.getElementById('codebookSize').value);
+            const D = parseInt(document.getElementById('embeddingDim').value);
+
+            vqvaeCtx.fillStyle = '#0a0a0f';
+            vqvaeCtx.fillRect(0, 0, vqvaeCanvas.width, vqvaeCanvas.height);
+
+            vqvaeCtx.fillStyle = '#e056fd';
+            vqvaeCtx.font = 'bold 13px Arial';
+            vqvaeCtx.fillText('VQ-VAE: Discrete Latent Quantization', 20, 25);
+
+            vqvaeCtx.fillStyle = '#888';
+            vqvaeCtx.font = '11px Arial';
+            vqvaeCtx.fillText('Input x → Encoder → z (continuous) → Quantize → Codebook lookup → Decoder → x̂', 20, 50);
+
+            const boxW = 70, boxH = 50;
+            let x = 30;
+            const y = 80;
+
+            const boxes = [
+                { label: 'z (cont)', color: '#64ffda' },
+                { label: 'Codebook', color: '#ff6b6b' },
+                { label: 'ẑ (disc)', color: '#7c4dff' }
+            ];
+
+            boxes.forEach(box => {
+                vqvaeCtx.fillStyle = box.color + '33';
+                vqvaeCtx.fillRect(x, y, boxW, boxH);
+                vqvaeCtx.strokeStyle = box.color;
+                vqvaeCtx.strokeRect(x, y, boxW, boxH);
+
+                vqvaeCtx.fillStyle = box.color;
+                vqvaeCtx.font = '10px Arial';
+                vqvaeCtx.textAlign = 'center';
+                vqvaeCtx.fillText(box.label, x + boxW / 2, y + boxH / 2);
+
+                x += boxW + 30;
+            });
+
+            vqvaeCtx.fillStyle = '#ffd93d';
+            vqvaeCtx.font = '10px monospace';
+            vqvaeCtx.textAlign = 'left';
+            vqvaeCtx.fillText('Codebook E ∈ ℝ^(K×D): K=' + K + ' codes, D=' + D + 'D embeddings', 30, 170);
+            vqvaeCtx.fillText('Quantization: z_q = E[ argmin_k ||z - e_k|| ]', 30, 190);
+            vqvaeCtx.fillText('Discrete tokens enable sequence modeling (Transformers).', 30, 210);
+
+            vqvaeCtx.fillStyle = '#a0a0b0';
+            vqvaeCtx.font = '10px Arial';
+            vqvaeCtx.fillText('Used in: Dall-E, MuseNet, VQGAN. Trade-off: quantization loss vs discrete structure.', 30, 240);
+        }
+        drawVQVAE();
+
+        // ============ U-Net vs DiT ============
+        let archType = 'unet';
+        const architectureCanvas = document.getElementById('architectureCanvas');
+        const architectureCtx = architectureCanvas.getContext('2d');
+
+        document.querySelectorAll('.arch-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.arch-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                archType = e.target.dataset.arch;
+                drawArchitecture();
+            });
+        });
+
+        function drawArchitecture() {
+            architectureCtx.fillStyle = '#0a0a0f';
+            architectureCtx.fillRect(0, 0, architectureCanvas.width, architectureCanvas.height);
+
+            architectureCtx.fillStyle = '#e056fd';
+            architectureCtx.font = 'bold 13px Arial';
+            architectureCtx.fillText(archType === 'unet' ? 'U-Net (CNN-based)' : 'DiT (Transformer-based)', 20, 25);
+
+            if (archType === 'unet') {
+                // U-Net structure
+                const layers = ['Input', 'Conv↓', 'Conv↓', 'Conv↓', 'Bottleneck', 'Conv↑', 'Conv↑', 'Conv↑', 'Output'];
+                let x = 20;
+                const boxW = 35;
+                const y = 60;
+
+                layers.slice(0, 5).forEach((layer, i) => {
+                    architectureCtx.fillStyle = '#64ffda33';
+                    architectureCtx.fillRect(x, y + (4 - i) * 25, boxW, 20);
+                    architectureCtx.strokeStyle = '#64ffda';
+                    architectureCtx.strokeRect(x, y + (4 - i) * 25, boxW, 20);
+                    x += boxW + 5;
+                });
+
+                x = 20;
+                layers.slice(4).forEach((layer, i) => {
+                    architectureCtx.fillStyle = '#4ecdc433';
+                    architectureCtx.fillRect(x, y - i * 25, boxW, 20);
+                    architectureCtx.strokeStyle = '#4ecdc4';
+                    architectureCtx.strokeRect(x, y - i * 25, boxW, 20);
+                    x += boxW + 5;
+                });
+
+                // Skip connections
+                architectureCtx.strokeStyle = '#ffd93d';
+                architectureCtx.setLineDash([3, 3]);
+                for (let i = 0; i < 3; i++) {
+                    const startX = 90 + i * 40;
+                    const endX = 320 - i * 40;
+                    architectureCtx.beginPath();
+                    architectureCtx.moveTo(startX, 75);
+                    architectureCtx.lineTo(endX, 75);
+                    architectureCtx.stroke();
+                }
+                architectureCtx.setLineDash([]);
+
+                architectureCtx.fillStyle = '#888';
+                architectureCtx.font = '10px Arial';
+                architectureCtx.fillText('Skip connections preserve spatial detail', 20, 220);
+                architectureCtx.fillText('Time/text injection via FiLM or cross-attention', 20, 235);
+            } else {
+                // DiT structure
+                architectureCtx.fillStyle = '#888';
+                architectureCtx.font = '11px Arial';
+                architectureCtx.fillText('Input image → Patch embedding (e.g., 64×64 patches)', 20, 60);
+                architectureCtx.fillText('→ Positional embedding + time + text embedding', 20, 80);
+                architectureCtx.fillText('→ Stack of Transformer blocks (self + cross-attention)', 20, 100);
+                architectureCtx.fillText('→ Linear prediction head → noise/velocity', 20, 120);
+
+                // Draw transformer blocks
+                let y = 160;
+                for (let i = 0; i < 3; i++) {
+                    architectureCtx.fillStyle = '#7c4dff33';
+                    architectureCtx.fillRect(30, y, 200, 30);
+                    architectureCtx.strokeStyle = '#7c4dff';
+                    architectureCtx.strokeRect(30, y, 200, 30);
+
+                    architectureCtx.fillStyle = '#7c4dff';
+                    architectureCtx.font = '10px Arial';
+                    architectureCtx.textAlign = 'center';
+                    architectureCtx.fillText('Transformer Block ' + (i+1), 130, y + 18);
+                    y += 35;
+                }
+
+                architectureCtx.fillStyle = '#888';
+                architectureCtx.font = '10px Arial';
+                architectureCtx.textAlign = 'left';
+                architectureCtx.fillText('Scalable: larger models = better quality. Efficient compute (no spatial ops).', 30, y + 20);
+                architectureCtx.fillText('Slower inference than U-Net (quadratic attention cost).', 30, y + 35);
+            }
+        }
+        drawArchitecture();
+
+    </script>
+</body>
+</html>

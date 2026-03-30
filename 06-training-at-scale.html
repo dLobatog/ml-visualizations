@@ -1,0 +1,1954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Training at Scale - ML Interview Prep</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0f;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            color: #01a3a4;
+            font-size: 2.5em;
+            text-shadow: 0 0 10px rgba(1, 163, 164, 0.3);
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .section {
+            background: #12121f;
+            border: 1px solid #1e1e2e;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .section-title {
+            color: #01a3a4;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title::before {
+            content: '';
+            display: inline-block;
+            width: 4px;
+            height: 30px;
+            background: #01a3a4;
+            border-radius: 2px;
+        }
+
+        .content-wrapper {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .visualization {
+            flex: 1;
+            min-width: 400px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #0f0f17;
+            border-radius: 6px;
+            padding: 15px;
+        }
+
+        .controls {
+            flex: 0 0 250px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .control-label {
+            color: #01a3a4;
+            font-size: 0.95em;
+            font-weight: 600;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #1e1e2e;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #01a3a4;
+            cursor: pointer;
+            box-shadow: 0 0 5px rgba(1, 163, 164, 0.5);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #01a3a4;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 0 5px rgba(1, 163, 164, 0.5);
+        }
+
+        .slider-value {
+            text-align: center;
+            color: #01a3a4;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        canvas {
+            display: block;
+            border-radius: 4px;
+        }
+
+      
+      
+        .insight-title {
+            color: #01a3a4;
+            font-weight: 700;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .insight-title::before {
+            content: '💡';
+            font-size: 1.2em;
+        }
+
+        .metric-display {
+            background: #1e1e2e;
+            padding: 12px;
+            border-radius: 4px;
+            margin-top: 8px;
+            font-size: 0.9em;
+            color: #01a3a4;
+        }
+
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 6px 0;
+        }
+
+        .metric-label {
+            color: #888;
+        }
+
+        button {
+            background: #01a3a4;
+            color: #0a0a0f;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.95em;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: #02c7c9;
+            box-shadow: 0 0 10px rgba(1, 163, 164, 0.4);
+        }
+
+        button.active {
+            background: #01a3a4;
+            box-shadow: 0 0 10px rgba(1, 163, 164, 0.6);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .text-input {
+            background: #1e1e2e;
+            color: #e0e0e0;
+            border: 1px solid #2e2e3e;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+
+        .text-input:focus {
+            outline: none;
+            border-color: #01a3a4;
+            box-shadow: 0 0 5px rgba(1, 163, 164, 0.3);
+        }
+
+        @media (max-width: 1024px) {
+            .content-wrapper {
+                flex-direction: column;
+            }
+
+            .visualization {
+                min-width: 100%;
+            }
+
+            .controls {
+                flex: 1;
+            }
+        }
+
+        .legend {
+            background: #1a1a2e;
+            padding: 12px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 6px 0;
+        }
+
+        .legend-color {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+
+        .tooltip {
+            position: absolute;
+            background: #1a1a2e;
+            color: #01a3a4;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            pointer-events: none;
+            border: 1px solid #01a3a4;
+            display: none;
+            z-index: 1000;
+        }
+
+        .description {
+            color: #aaa;
+            font-size: 0.95em;
+            margin-top: 10px;
+            line-height: 1.5;
+        }
+    
+  .insight-box { background: linear-gradient(135deg, #1a1a3e 0%, #151530 100%); border-left: 4px solid #01a3a4; padding: 20px 24px; margin-top: 20px; border-radius: 0 12px 12px 0; font-size: 0.92em; color: #ccc; line-height: 1.8; }
+  .insight-box strong { color: #01a3a4; font-size: 1.05em; }
+  .insight-box .formula { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 12px 18px; margin: 12px 0; font-family: 'Courier New', monospace; color: #e8e8ff; font-size: 1.05em; text-align: center; letter-spacing: 0.5px; line-height: 1.9; }
+  .insight-box .formula .highlight { color: #01a3a4; font-weight: bold; }
+  .insight-box .key-point { display: flex; gap: 8px; margin: 8px 0; padding: 4px 0; }
+  .insight-box .key-point .label { color: #01a3a4; font-weight: 600; white-space: nowrap; min-width: 90px; }
+  .insight-box .key-point .desc { color: #ddd; }
+  .insight-box .interview-tip { background: rgba(100, 255, 100, 0.05); border: 1px solid rgba(100, 255, 100, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #b0ffb0; font-size: 0.93em; line-height: 1.6; }
+  .insight-box .interview-tip::before { content: '\1F4A1  Interview Tip: '; font-weight: 700; color: #7fff7f; }
+  .insight-box .mnemonic { background: rgba(255, 150, 255, 0.05); border: 1px solid rgba(255, 150, 255, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #ffb0ff; font-size: 0.93em; line-height: 1.6; }
+  .insight-box .mnemonic::before { content: '\1F9E0  Remember: '; font-weight: 700; color: #ff7fff; }
+  .insight-box .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+  .insight-box .comparison .option { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 10px 14px; }
+  .insight-box .comparison .option .opt-title { color: #01a3a4; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
+  .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
+  .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
+
+</style>
+</head>
+<body>
+    <div class="container">
+        <h1>Training at Scale</h1>
+        <p class="subtitle">Distributed Training, Optimization, Memory Management, Monitoring & Hardware</p>
+
+        <!-- Section 1: Data Parallelism vs Model Parallelism -->
+        <div class="section">
+            <div class="section-title">Data Parallelism vs Model Parallelism</div>
+
+            <div class="content-wrapper">
+                <div class="visualization">
+                    <canvas id="parallelismCanvas" width="600" height="400"></canvas>
+                </div>
+                <div class="controls">
+                    <div class="control-group">
+                        <div class="control-label">Strategy</div>
+                        <div class="button-group">
+                            <button class="strategy-btn active" data-strategy="data">Data Parallel</button>
+                            <button class="strategy-btn" data-strategy="model">Model Parallel</button>
+                            <button class="strategy-btn" data-strategy="pipeline">Pipeline Parallel</button>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <div class="control-label">Number of GPUs</div>
+                        <input type="range" id="gpuCount" min="2" max="8" value="4" class="gpu-slider">
+                        <div class="slider-value" id="gpuValue">4 GPUs</div>
+                    </div>
+                    <div class="control-group">
+                        <div class="control-label">Batch Size</div>
+                        <input type="range" id="batchSize" min="32" max="512" value="128" step="32" class="batch-slider">
+                        <div class="slider-value" id="batchValue">128</div>
+                    </div>
+                    <div class="metric-display">
+                        <div class="metric-row">
+                            <span class="metric-label">Global Batch:</span>
+                            <span id="globalBatch">128</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Comm. Pattern:</span>
+                            <span id="commPattern">AllReduce</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Model Copies:</span>
+                            <span id="modelCopies">4</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="description">
+                <strong>Data Parallelism:</strong> Each GPU has a full copy of the model. Data is split across GPUs, and gradients are synchronized via AllReduce. Best for models that fit in GPU memory.
+                <br><br>
+                <strong>Model Parallelism:</strong> Model layers are split across GPUs. Each GPU processes all data. Requires significant communication between layers. Use when model is too large for single GPU.
+                <br><br>
+                <strong>Pipeline Parallelism:</strong> Combines both - different layers on different GPUs, multiple batches in flight for better utilization.
+            </div>
+
+            <div class="insight-box">
+                <div class="insight-title">Distributed Training: Data vs Model Parallelism</div>
+                <strong>Key Insight:</strong> Data parallelism (model replicas, per-device gradients synced via AllReduce) dominates; model parallelism splits model across devices but has O(N) communication overhead.
+                <div class="comparison">
+                  <div class="option">
+                    <div class="opt-title">Data Parallelism</div>
+                    <div class="opt-desc">Each GPU holds identical model, processes disjoint data, computes gradients locally; sync via AllReduce (O(log N)); communication-efficient</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title">Model Parallelism</div>
+                    <div class="opt-desc">Different layers on different GPUs; forward/backward require inter-GPU communication (O(N) per layer); slower unless model huge</div>
+                  </div>
+                </div>
+                <div class="key-point"><span class="label">Pipeline parallelism:</span><span class="desc">Stages (layer groups) on different GPUs, multiple micro-batches in flight; maximizes utilization but complex scheduling (Megatron, GShard)</span></div>
+                <div class="key-point"><span class="label">AllReduce bottleneck:</span><span class="desc">Communication bandwidth dominates beyond 32-64 GPUs per node; network or PCIe saturation → poor scaling</span></div>
+                <div class="key-point"><span class="label">When to use model parallelism:</span><span class="desc">Only when model exceeds single GPU memory; trade compute-per-device for communication cost (rarely worth it)</span></div>
+                <div class="key-point"><span class="label">Scaling efficiency:</span><span class="desc">N-GPU training should be ~N times faster; if slower, communication or I/O bottlenecked (not compute-bound)</span></div>
+                <hr class="divider">
+                <div class="interview-tip">Communication vs computation ratio: If model has X FLOPs and communication transfers Y bytes, ratio = Y/X. High ratio = communication-bound; low ratio = compute-bound.</div>
+                <div class="interview-tip">Reduce synchronization: Gradient accumulation (accumulate over k batches before sync), communication-computation overlap (compute while communicating), reduce precision (FP16 transfers 2x less data).</div>
+                <div class="mnemonic">Data parallelism = many workers, one model copy each; Model parallelism = one worker per model shard (harder to coordinate).</div>
+            </div>
+        </div>
+
+        <!-- Section 2: Learning Rate Schedules -->
+        <div class="section">
+            <div class="section-title">Learning Rate Schedules</div>
+
+            <div class="content-wrapper">
+                <div class="visualization">
+                    <canvas id="lrScheduleCanvas" width="600" height="400"></canvas>
+                </div>
+                <div class="controls">
+                    <div class="control-group">
+                        <div class="control-label">Schedule Type</div>
+                        <div class="button-group">
+                            <button class="schedule-btn active" data-schedule="constant">Constant</button>
+                            <button class="schedule-btn" data-schedule="step">Step Decay</button>
+                            <button class="schedule-btn" data-schedule="cosine">Cosine</button>
+                            <button class="schedule-btn" data-schedule="warmup">Warmup+Cosine</button>
+                            <button class="schedule-btn" data-schedule="onecycle">OneCycle</button>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <div class="control-label">Max LR</div>
+                        <input type="range" id="maxLr" min="0.0001" max="0.1" step="0.0001" value="0.001" class="lr-slider">
+                        <div class="slider-value" id="maxLrValue">0.001</div>
+                    </div>
+                    <div class="control-group">
+                        <div class="control-label">Warmup Steps (%)</div>
+                        <input type="range" id="warmupPct" min="0" max="20" value="5" class="warmup-slider">
+                        <div class="slider-value" id="warmupValue">5%</div>
+                    </div>
+                    <div class="control-group">
+                        <div class="control-label">Total Steps</div>
+                        <input type="range" id="totalSteps" min="500" max="5000" step="100" value="1000" class="steps-slider">
+                        <div class="slider-value" id="stepsValue">1000</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="description">
+                <strong>Constant:</strong> Fixed learning rate - rarely optimal.
+                <br><strong>Step Decay:</strong> Reduce LR by factor (e.g., 0.1x) every N epochs. Simple but not smooth.
+                <br><strong>Cosine Annealing:</strong> Smooth decay following cosine curve. Often best for vision/language.
+                <br><strong>Warmup+Cosine:</strong> Start from low LR, ramp up linearly, then cosine decay. Stabilizes early training.
+                <br><strong>OneCycleLR:</strong> Single cycle with warmup and decay. Works well with momentum.
+            </div>
+
+            <div class="insight-box">
+                <div class="insight-title">Learning Rate Schedules and Training Dynamics</div>
+                <strong>Key Insight:</strong> Warmup (ramp up LR early) + decay (reduce LR late) helps escape sharp minima and converge to flat minima with better generalization.
+                <div class="formula">LR(t) = LR_max · 0.5 · <span class="highlight">(1 + cos(π · t / T))</span>, cosine annealing decays smoothly from max to near-zero over T epochs</div>
+                <div class="key-point"><span class="label">LR(t):</span><span class="desc">Learning rate at epoch t; dynamically adjusted during training; controls optimizer step magnitude</span></div>
+                <div class="key-point"><span class="label">LR_max:</span><span class="desc">Maximum learning rate (peak value); typically 10^-3 to 10^-4 for LLMs; set via learning rate finder or grid search</span></div>
+                <div class="key-point"><span class="label">0.5:</span><span class="desc">Scale factor; ensures LR oscillates between LR_max and ~0 (not negative); formula: LR(0)=LR_max, LR(T)≈0</span></div>
+                <div class="key-point"><span class="label">t:</span><span class="desc">Current epoch number (0 ≤ t ≤ T); training progresses from t=0 to t=T</span></div>
+                <div class="key-point"><span class="label">T:</span><span class="desc">Total number of epochs (training duration); annealing period; larger T = longer slow decay phase</span></div>
+                <div class="key-point"><span class="label">π · t / T:</span><span class="desc">Phase angle in radians; as t goes 0 → T, angle goes 0 → π; controls cosine curve shape</span></div>
+                <div class="key-point"><span class="label">cos(π · t / T):</span><span class="desc">Cosine function; starts at cos(0)=1 and decays to cos(π)=-1; smooth monotonic decay</span></div>
+                <div class="key-point"><span class="label">1 + cos(π · t / T):</span><span class="desc">Shifts cosine to range [0, 2]; ensures final LR approaches 0 (not negative)</span></div>
+                <div class="key-point"><span class="label">Constant LR fails:</span><span class="desc">Too large → gradients explode → diverge; too small → slow convergence; schedule adapts dynamically</span></div>
+                <div class="key-point"><span class="label">Warmup:</span><span class="desc">Start from very low LR, ramp up linearly over initial epochs; stabilizes gradient flow when weights random and loss unstable; critical for Transformers</span></div>
+                <div class="key-point"><span class="label">Decay (Annealing):</span><span class="desc">Reduce LR as training progresses for fine-grained updates near convergence; cosine annealing smooth (avoid sudden disruptions)</span></div>
+                <div class="key-point"><span class="label">LR finder:</span><span class="desc">Train for epoch, exponentially increase LR (10^-5 to 10), plot loss vs LR, choose LR in steep descent region (not minimum)</span></div>
+                <div class="key-point"><span class="label">Sharp vs flat minima:</span><span class="desc">Sharp (high curvature) = overfits, generalizes poorly; flat (low curvature) = robust. Schedules help escape sharp minima.</span></div>
+                <hr class="divider">
+                <div class="interview-tip">Warmup necessity: Large-batch training destabilizes early iterations (gradient norms vary wildly); warmup smooths initial gradient flow. Without it, loss explodes.</div>
+                <div class="interview-tip">Validate schedule: Plot training loss curve. Does earlier decay help (lower final loss) or hurt (slower convergence)? Validate on final validation metric.</div>
+                <div class="mnemonic">Warmup = preparation (stabilize); cosine = smooth descent (avoid shocks); flat minima = robustness (generalize well).</div>
+            </div>
+        </div>
+
+        <!-- Section 3: Mixed Precision Training -->
+        <div class="section">
+            <div class="section-title">Mixed Precision Training (FP32 vs FP16 vs BF16)</div>
+
+            <div class="content-wrapper">
+                <div class="visualization">
+                    <canvas id="precisionCanvas" width="600" height="400"></canvas>
+                </div>
+                <div class="controls">
+                    <div class="control-group">
+                        <div class="control-label">Precision Format</div>
+                        <div class="button-group">
+                            <button class="precision-btn active" data-precision="fp32">FP32</button>
+                            <button class="precision-btn" data-precision="fp16">FP16</button>
+                            <button class="precision-btn" data-precision="bf16">BF16</button>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <div class="control-label">Loss Scale Factor</div>
+                        <input type="range" id="lossScale" min="1" max="32768" value="1024" step="1" class="loss-scale-slider">
+                        <div class="slider-value" id="lossScaleValue">1024x</div>
+                    </div>
+                    <div class="metric-display">
+                        <div class="metric-row">
+                            <span class="metric-label">Bits:</span>
+                            <span id="bitCount">32</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Range:</span>
+                            <span id="rangeInfo">±3.4e38</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Memory:</span>
+                            <span id="memoryUsage">100%</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Speed:</span>
+                            <span id="speedGain">1.0x</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="description">
+                <strong>FP32:</strong> 32-bit floating point. 1 sign bit, 8 exponent bits, 23 mantissa bits. Full precision, slow on modern hardware.
+                <br><strong>FP16:</strong> 16-bit floating point. 1 sign, 5 exponent, 10 mantissa. 2x faster, 2x memory savings, but underflow issues with small gradients.
+                <br><strong>BF16:</strong> 16-bit "brain float". 1 sign, 8 exponent (same as FP32!), 7 mantissa. Better range, less precision, preferred in modern ML.
+                <br><strong>Loss Scaling:</strong> Multiply loss by scale factor before backward pass to prevent gradient underflow. Divide scaled gradients by scale after backward.
+            </div>
+
+            <div class="insight-box">
+                <div class="insight-title">Mixed Precision Training and Numerical Stability</div>
+                <strong>Key Insight:</strong> Mix FP16/BF16 (fast, low memory) and FP32 (accurate) for 2x speedup; loss scaling amplifies gradients to avoid FP16 underflow.
+                <div class="comparison">
+                  <div class="option">
+                    <div class="opt-title">FP16</div>
+                    <div class="opt-desc">1 sign, 5 exponent, 10 mantissa; 2x speed, 2x memory savings; limited range (min ~6×10^-5)—gradients underflow to zero</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title">BF16</div>
+                    <div class="opt-desc">1 sign, 8 exponent (matches FP32!), 7 mantissa; preserves range while saving memory; no underflow risk, more robust</div>
+                  </div>
+                </div>
+                <div class="key-point"><span class="label">Loss scaling technique:</span><span class="desc">Multiply loss by scale (e.g., 2^15) before backward, amplifying gradients; divide after backward; dynamic scaling adjusts for overflow/underflow</span></div>
+                <div class="key-point"><span class="label">Autocast (PyTorch):</span><span class="desc">Automatically use FP16/BF16 for matmuls (stable), FP32 for reductions/losses (require full precision); near-FP32 convergence with 2x speedup</span></div>
+                <div class="key-point"><span class="label">Gradient underflow:</span><span class="desc">FP16 gradients < 6×10^-5 become zero → no gradient update → training stalled. Loss scaling prevents by enlarging gradients.</span></div>
+                <div class="key-point"><span class="label">Production preference:</span><span class="desc">TPUs use BF16 natively (hardware-efficient); GPUs A100+ prefer BF16 (better stability than FP16); older GPUs default to FP16</span></div>
+                <hr class="divider">
+                <div class="interview-tip">Debug numerical instabilities: Monitor loss and gradient norms across iterations. Exploding norms → reduce LR or increase loss scaling. NaN/Inf → investigate data or loss function.</div>
+                <div class="interview-tip">When to use BF16 vs FP16: BF16 has range advantage (prefer unless hardware accelerates FP16). If gradient norms are very small (< 1e-4), loss scaling must be more aggressive.</div>
+                <div class="mnemonic">FP16 = fast but fragile (underflow risk); BF16 = fast and robust (range-safe); loss scaling = safety net (prevent underflow).</div>
+            </div>
+        </div>
+
+        <!-- Section 4: Gradient Accumulation -->
+        <div class="section">
+            <div class="section-title">Gradient Accumulation</div>
+
+            <div class="content-wrapper">
+                <div class="visualization">
+                    <canvas id="gradAccumCanvas" width="600" height="400"></canvas>
+                </div>
+                <div class="controls">
+                    <div class="control-group">
+                        <div class="control-label">Accumulation Steps</div>
+                        <input type="range" id="accumSteps" min="1" max="16" value="4" class="accum-slider">
+                        <div class="slider-value" id="accumValue">4</div>
+                    </div>
+                    <div class="control-group">
+                        <div class="control-label">Micro-batch Size</div>
+                        <input type="range" id="microBatchSize" min="8" max="128" step="8" value="32" class="microbatch-slider">
+                        <div class="slider-value" id="microBatchValue">32</div>
+                    </div>
+                    <div class="metric-display">
+                        <div class="metric-row">
+                            <span class="metric-label">Effective Batch:</span>
+                            <span id="effectiveBatch">128</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Forward Passes:</span>
+                            <span id="forwardPasses">4</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Backward Passes:</span>
+                            <span id="backwardPasses">4</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Optimizer Steps:</span>
+                            <span id="optimSteps">1</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="description">
+                <strong>Gradient Accumulation:</strong> Process multiple micro-batches without updating weights, accumulating gradients in place. After N micro-batches, run optimizer step. Effective batch size = micro-batch size × accumulation steps.
+                <br><br>
+                <strong>Use Case:</strong> When you need large batch size (for stability/convergence) but GPU memory is limited. Alternative to distributed training for single GPU.
+                <br><br>
+                <strong>Implementation:</strong> (1) Forward pass on micro-batch, (2) Backward without optimizer step (use scaler.scale for mixed precision), (3) Repeat N times, (4) Optimizer step, (5) Zero gradients.
+            </div>
+
+            <div class="insight-box">
+                <div class="insight-title">Gradient Accumulation for Effective Batch Size Control</div>
+                <strong>Key Insight:</strong> Simulate large batch size B by accumulating gradients over N micro-batches (size B/N each), then apply optimizer step on aggregated gradients.
+                <div class="formula">Accumulated gradient ≈ average(N gradient steps) ≈ one step on batch size B, even if B doesn't fit in GPU memory</div>
+                <div class="key-point"><span class="label">Accumulated gradient:</span><span class="desc">Sum of gradients from N micro-batches; stored in parameter .grad attributes; approximates gradient on full batch B</span></div>
+                <div class="key-point"><span class="label">average(N gradient steps):</span><span class="desc">Average of N individual backward passes; scaled by 1/N when computing optimizer step to match single batch</span></div>
+                <div class="key-point"><span class="label">N:</span><span class="desc">Number of accumulation steps (micro-batches); typical range 2-8; larger N trades compute time for memory savings</span></div>
+                <div class="key-point"><span class="label">B (effective batch size):</span><span class="desc">Target total batch size; B = N × B_micro where B_micro is GPU-resident micro-batch size</span></div>
+                <div class="key-point"><span class="label">B_micro (micro-batch size):</span><span class="desc">Batch size per forward-backward pass; fits in GPU memory; typically 32-256</span></div>
+                <div class="key-point"><span class="label">B/N:</span><span class="desc">Micro-batch size; size of each gradient computation before accumulation</span></div>
+                <div class="key-point"><span class="label">Execution flow:</span><span class="desc">(1) forward on micro-batch i, (2) backward (gradients accumulate), (3) repeat i=2..N, (4) optimizer step, (5) zero gradients</span></div>
+                <div class="key-point"><span class="label">Trade-off:</span><span class="desc">Memory reduced by N (effective batch B with micro-batch B/N); wall-clock time increased ~N× (N forward-backward iterations)</span></div>
+                <div class="key-point"><span class="label">Convergence benefit:</span><span class="desc">Larger effective batch size improves generalization and gradient stability; empirically often converges better than single micro-batch</span></div>
+                <div class="key-point"><span class="label">Critical implementation:</span><span class="desc">Do NOT zero between accumulation steps (loses accumulated gradients); with autocast, scale/unscale correctly; gradient clipping after full accumulation</span></div>
+                <div class="key-point"><span class="label">Batch normalization:</span><span class="desc">Computed per micro-batch (not full batch); causes biased estimates; synchronized batch norm across accumulation complex (usually ignored)</span></div>
+                <hr class="divider">
+                <div class="interview-tip">Batch size for stable training: Typical rule is 32-256 for vision, 64-512 for NLP. If loss noisy, increase batch size; if gradient updates too conservative, decrease.</div>
+                <div class="interview-tip">Choose accumulation steps: If effective batch B needed but GPU memory only holds B/N, use N accumulation steps. Example: want batch 512, GPU holds 128 → N=4 steps.</div>
+                <div class="mnemonic">Gradient accumulation = financial analogy: collect payments (gradients) over time, apply one large transaction (optimizer step) periodically.</div>
+            </div>
+        </div>
+
+        <!-- Section 5: ZeRO Optimization -->
+        <div class="section">
+            <div class="section-title">ZeRO Optimization Stages (DeepSpeed)</div>
+
+            <div class="content-wrapper">
+                <div class="visualization">
+                    <canvas id="zeroCanvas" width="600" height="400"></canvas>
+                </div>
+                <div class="controls">
+                    <div class="control-group">
+                        <div class="control-label">ZeRO Stage</div>
+                        <div class="button-group">
+                            <button class="zero-btn active" data-zero="0">Baseline</button>
+                            <button class="zero-btn" data-zero="1">Stage 1</button>
+                            <button class="zero-btn" data-zero="2">Stage 2</button>
+                            <button class="zero-btn" data-zero="3">Stage 3</button>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <div class="control-label">Model Size (B params)</div>
+                        <input type="range" id="modelSize" min="0.1" max="100" step="0.1" value="7" class="model-size-slider">
+                        <div class="slider-value" id="modelSizeValue">7B</div>
+                    </div>
+                    <div class="control-group">
+                        <div class="control-label">Number of GPUs</div>
+                        <input type="range" id="numGpus" min="1" max="128" step="1" value="8" class="num-gpus-slider">
+                        <div class="slider-value" id="numGpusValue">8</div>
+                    </div>
+                    <div class="metric-display">
+                        <div class="metric-row">
+                            <span class="metric-label">Memory/GPU:</span>
+                            <span id="memoryPerGpu">40.0 GB</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Communication:</span>
+                            <span id="commOverhead">AllGather</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="description">
+                <strong>ZeRO Stage 1:</strong> Partition optimizer states (momentum, variance) across GPUs. 4x memory reduction for optimizer states. Each GPU computes gradients for all parameters.
+                <br><br>
+                <strong>ZeRO Stage 2:</strong> Also partition gradients across GPUs. 8x total memory reduction. Gradients are local to partition - gathered only when needed.
+                <br><br>
+                <strong>ZeRO Stage 3:</strong> Also partition model parameters. Remaining parameter partitions gathered on-the-fly during forward/backward. Maximum memory efficiency but highest communication overhead.
+                <br><br>
+                <strong>Memory Breakdown:</strong> Model (weights) + Gradients + Optimizer states (2x: momentum + variance for Adam). ZeRO partitions each across GPUs.
+            </div>
+
+            <div class="insight-box">
+                <div class="insight-title">ZeRO Optimization: Partitioning for Massive Scale</div>
+                <strong>Key Insight:</strong> ZeRO partitions optimizer state/gradients/parameters across GPUs, enabling training of models 10-100× larger by trading memory for communication.
+                <div class="formula">Per-param memory: 4 bytes (weight) + 4 bytes (grad) + 8 bytes (Adam state) = <span class="highlight">16 bytes</span>; 7B model = 112GB per GPU → impossible</div>
+                <div class="key-point"><span class="label">Per-param memory:</span><span class="desc">Total memory required per parameter across all training components</span></div>
+                <div class="key-point"><span class="label">4 bytes (weight):</span><span class="desc">FP32 model parameter; 1 parameter = 4 bytes; 7B parameters × 4 = 28GB</span></div>
+                <div class="key-point"><span class="label">4 bytes (grad):</span><span class="desc">FP32 gradient accumulator; 1 parameter = 4 bytes; 7B × 4 = 28GB</span></div>
+                <div class="key-point"><span class="label">8 bytes (Adam state):</span><span class="desc">Two FP32 buffers (momentum m, variance v) per parameter; 2 × 4 = 8 bytes; 7B × 8 = 56GB</span></div>
+                <div class="key-point"><span class="label">16 bytes/param total:</span><span class="desc">Sum of weight + grad + optimizer state; 7B × 16 bytes = 112GB per single GPU (impossible for typical 40-80GB VRAM)</span></div>
+                <div class="key-point"><span class="label">N:</span><span class="desc">Number of GPUs in distributed training group; ZeRO partitions across N devices</span></div>
+                <div class="key-point"><span class="label">Stage 1 (Optimizer states):</span><span class="desc">Each GPU stores 1/N of Adam momentum/variance; memory → 12 bytes/param; 7B + 8 GPUs = 14GB/GPU (11× reduction)</span></div>
+                <div class="key-point"><span class="label">Stage 2 (Gradients + Stage 1):</span><span class="desc">Each GPU stores 1/N of gradient buffer; memory → 8 bytes/param; 7B + 8 GPUs = 7GB/GPU (16× reduction)</span></div>
+                <div class="key-point"><span class="label">Stage 3 (Parameters + Stage 1-2):</span><span class="desc">Parameters gathered on-the-fly during forward/backward; memory → 4 bytes/param; 7B + 8 GPUs = 3.5GB/GPU (32× reduction); 2-3× communication overhead</span></div>
+                <div class="key-point"><span class="label">CPU offloading:</span><span class="desc">Store partitions in pinned CPU RAM, asynchronously transfer to GPU; further GPU memory reduction; requires high PCIe bandwidth</span></div>
+                <div class="key-point"><span class="label">Trade-off tiers:</span><span class="desc">Stage 1-2: cost-effective (10-20% overhead); Stage 3: necessary for extreme scale but requires high-bandwidth interconnects (NVLink, RoCE)</span></div>
+                <hr class="divider">
+                <div class="interview-tip">Communication overhead analysis: If bandwidth is B GB/s and gather 1TB parameters, overhead = 1TB / B seconds per iteration. Example: 100 GB/s × 1TB = 10s overhead—significant.</div>
+                <div class="interview-tip">When to offload to CPU: GPU memory < 10GB available; trade GPU-CPU PCIe bandwidth for GPU VRAM. Typical: CPU offloading worthwhile only if PCIe bandwidth > 50 GB/s.</div>
+                <div class="mnemonic">ZeRO = sharing is caring: partition parameters/gradients across GPUs, gather only what's needed, reduce per-GPU memory drastically.</div>
+            </div>
+        </div>
+
+        <!-- Activation Checkpointing -->
+        <div class="section">
+            <div class="section-title">Activation Checkpointing</div>
+            <div style="display:flex;flex-wrap:wrap;gap:15px;align-items:flex-start;">
+                <div style="flex:1;min-width:300px;">
+                    <canvas id="checkpointCanvas" width="600" height="300" style="width:100%;background:#0f0f17;border-radius:6px;"></canvas>
+                </div>
+                <div style="width:260px;">
+                    <div class="control-group">
+                        <div class="control-label">Strategy</div>
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                            <button class="strategy-btn checkpoint-btn active" data-checkpoint="none" style="padding:6px 12px;background:#01a3a433;border:1px solid #01a3a4;color:#01a3a4;border-radius:4px;cursor:pointer;">None</button>
+                            <button class="strategy-btn checkpoint-btn" data-checkpoint="selective" style="padding:6px 12px;background:#1e1e2e;border:1px solid #333;color:#aaa;border-radius:4px;cursor:pointer;">Selective</button>
+                            <button class="strategy-btn checkpoint-btn" data-checkpoint="full" style="padding:6px 12px;background:#1e1e2e;border:1px solid #333;color:#aaa;border-radius:4px;cursor:pointer;">Full Recompute</button>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <div class="control-label">Network Depth</div>
+                        <input type="range" id="checkpointDepth" min="6" max="96" step="6" value="48">
+                        <div class="slider-value" id="checkpointDepthValue">48 layers</div>
+                    </div>
+                    <div class="metric-display">
+                        <div class="metric-row"><span class="metric-label">Memory Usage:</span><span id="checkpointMem">100%</span></div>
+                        <div class="metric-row"><span class="metric-label">Compute Overhead:</span><span id="checkpointCompute">0%</span></div>
+                        <div class="metric-row"><span class="metric-label">Training Time:</span><span id="checkpointTime">No overhead</span></div>
+                    </div>
+                </div>
+            </div>
+            <div class="description">
+                <strong>None:</strong> Store all intermediate activations. Maximum memory, zero recomputation. <br>
+                <strong>Selective:</strong> Store every k-th layer's activations (√N memory). Recompute others during backward pass. Best tradeoff. <br>
+                <strong>Full Recompute:</strong> Store only inputs. Recompute everything during backward. ~33% slower but massive memory savings.
+            </div>
+            <div class="insight-box">
+                <div class="insight-title">Activation Checkpointing: Trading Compute for Memory</div>
+                <strong>Key Insight:</strong> Selectively checkpoint activations instead of storing all; recompute during backward; memory reduces O(L) → O(√L) with modest compute overhead.
+                <div class="comparison">
+                  <div class="option">
+                    <div class="opt-title">Standard (All activations)</div>
+                    <div class="opt-desc">Store all h_1, ..., h_L during forward; memory O(L); backward uses stored activations instantly</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title">Selective checkpoint</div>
+                    <div class="opt-desc">Store every k-th layer (k=√L); recompute missing on-demand during backward; memory O(√L), time T_f × 1.2-1.5</div>
+                  </div>
+                </div>
+                <div class="key-point"><span class="label">Full recomputation:</span><span class="desc">Store only inputs, recompute all activations during backward; memory O(1) (maximum savings), ~33% slowdown (extra forward passes)</span></div>
+                <div class="key-point"><span class="label">Checkpoint frequency:</span><span class="desc">Trade-off: more frequent checkpoints → less recomputation (faster) but more memory; less frequent → more recomputation (slower) but less memory</span></div>
+                <div class="key-point"><span class="label">Math:</span><span class="desc">If forward = T_f, memory = M; selective checkpoint ≈ T_f + (1/√L)·T_f ≈ 1.2-1.5T_f time, M/√L memory</span></div>
+                <div class="key-point"><span class="label">When worthwhile:</span><span class="desc">Deep networks (L > 100, e.g., ResNet-200, GPT-3); memory-constrained hardware; compute cheaper than memory bandwidth</span></div>
+                <div class="key-point"><span class="label">Production use:</span><span class="desc">Checkpointing + ZeRO-3 enables training 100B+ parameter models on 8-16 GPUs with 20-30% slowdown (acceptable)</span></div>
+                <hr class="divider">
+                <div class="interview-tip">Debug checkpointing: Verify gradients match between checkpointed and non-checkpointed via numerical differentiation (finite differences); catches recomputation errors.</div>
+                <div class="interview-tip">Choose k (checkpoint frequency): Start k=√L; if still OOM, increase k (less checkpoints, more recompute). If mostly memory-bound, decrease k (more checkpoints, less recompute).</div>
+                <div class="mnemonic">Checkpointing = bookmarks: mark certain pages (layers), skip middle pages during reading (backward), flip back to marked pages to reread (recompute).</div>
+            </div>
+        </div>
+
+        <!-- Training Monitoring -->
+        <div class="section">
+            <div class="section-title">Training Monitoring & Debugging</div>
+            <div style="display:flex;flex-wrap:wrap;gap:15px;align-items:flex-start;">
+                <div style="flex:1;min-width:300px;">
+                    <canvas id="monitoringCanvas" width="600" height="300" style="width:100%;background:#0f0f17;border-radius:6px;"></canvas>
+                </div>
+                <div style="width:260px;">
+                    <div class="control-group">
+                        <div class="control-label">Scenario</div>
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                            <button class="strategy-btn monitor-btn active" data-scenario="healthy" style="padding:6px 12px;background:#01a3a433;border:1px solid #01a3a4;color:#01a3a4;border-radius:4px;cursor:pointer;">Healthy</button>
+                            <button class="strategy-btn monitor-btn" data-scenario="exploding" style="padding:6px 12px;background:#1e1e2e;border:1px solid #333;color:#aaa;border-radius:4px;cursor:pointer;">Exploding</button>
+                            <button class="strategy-btn monitor-btn" data-scenario="plateau" style="padding:6px 12px;background:#1e1e2e;border:1px solid #333;color:#aaa;border-radius:4px;cursor:pointer;">Plateau</button>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <div class="control-label">Training Steps</div>
+                        <input type="range" id="monitoringSteps" min="100" max="10000" step="100" value="5000">
+                        <div class="slider-value" id="monitoringStepsValue">5000 steps</div>
+                    </div>
+                    <div class="metric-display">
+                        <div class="metric-row"><span class="metric-label">Status:</span><span id="monitoringStatus" style="color:#64ffda;">Healthy</span></div>
+                        <div class="metric-row"><span class="metric-label">Grad Norm:</span><span id="monitoringGradNorm">1.2</span></div>
+                        <div class="metric-row"><span class="metric-label">Action:</span><span id="monitoringAction">None needed</span></div>
+                    </div>
+                </div>
+            </div>
+            <div class="description">
+                <strong>Healthy:</strong> Loss decreases steadily, gradient norms stable. <br>
+                <strong>Exploding Gradients:</strong> Loss spikes, grad norms explode → reduce LR, add gradient clipping. <br>
+                <strong>Plateau:</strong> Loss flattens prematurely → increase LR, check data, adjust architecture.
+            </div>
+            <div class="insight-box">
+                <div class="insight-title">Training Monitoring: Detecting Instabilities Early</div>
+                <strong>Key Insight:</strong> Monitor loss, gradient norms, learning rate, throughput; early detection of instabilities prevents wasted compute and corrupted models.
+                <div class="key-point"><span class="label">Loss curve:</span><span class="desc">Should decrease monotonically; spikes indicate instability or data issues; smooth via EMA before drawing conclusions</span></div>
+                <div class="key-point"><span class="label">Gradient norms (L2):</span><span class="desc">Healthy: 0.1-10; exploding (>100) → divergence; vanishing (<1e-4) → slow learning; leading indicator of failure</span></div>
+                <div class="key-point"><span class="label">Learning rate schedule:</span><span class="desc">Verify matches intended schedule; sudden changes → investigate training code</span></div>
+                <div class="key-point"><span class="label">Throughput:</span><span class="desc">tokens/sec (LLMs), examples/sec (others); sudden drops → hardware issues or I/O bottleneck</span></div>
+                <div class="key-point"><span class="label">Response actions:</span><span class="desc">Exploding gradients → clip (max_norm=1.0) or reduce LR; NaN/Inf → halt (unrecoverable), investigate mixed precision; Plateau → increase LR or verify data</span></div>
+                <div class="key-point"><span class="label">LLM-specific:</span><span class="desc">Monitor perplexity (exp(-log-likelihood)); check loss spikes correlate with data changes (new language); track token accuracy</span></div>
+                <hr class="divider">
+                <div class="interview-tip">Leading indicators of failure: Gradient norms explode 1-2 iterations before NaN loss; catch early via norm thresholds (alert if >100).</div>
+                <div class="interview-tip">Monitoring architecture: Central logging (W&B, TensorBoard, MLflow) with alerting thresholds; saves best validation model (not last); enables post-hoc analysis.</div>
+                <div class="mnemonic">Monitor = early warning system: gradient norms → health check; loss curve → performance; throughput → efficiency.</div>
+            </div>
+        </div>
+
+        <!-- Hardware Awareness / Roofline Model -->
+        <div class="section">
+            <div class="section-title">Hardware Awareness & Roofline Model</div>
+            <div style="display:flex;flex-wrap:wrap;gap:15px;align-items:flex-start;">
+                <div style="flex:1;min-width:300px;">
+                    <canvas id="hardwareCanvas" width="600" height="300" style="width:100%;background:#0f0f17;border-radius:6px;"></canvas>
+                </div>
+                <div style="width:260px;">
+                    <div class="control-group">
+                        <div class="control-label">View</div>
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                            <button class="strategy-btn hardware-btn active" data-view="hierarchy" style="padding:6px 12px;background:#01a3a433;border:1px solid #01a3a4;color:#01a3a4;border-radius:4px;cursor:pointer;">Memory</button>
+                            <button class="strategy-btn hardware-btn" data-view="roofline" style="padding:6px 12px;background:#1e1e2e;border:1px solid #333;color:#aaa;border-radius:4px;cursor:pointer;">Roofline</button>
+                            <button class="strategy-btn hardware-btn" data-view="intensity" style="padding:6px 12px;background:#1e1e2e;border:1px solid #333;color:#aaa;border-radius:4px;cursor:pointer;">Intensity</button>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <div class="control-label">GPU Type</div>
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                            <button class="strategy-btn gpu-type-btn active" data-gpu="h100" style="padding:6px 12px;background:#01a3a433;border:1px solid #01a3a4;color:#01a3a4;border-radius:4px;cursor:pointer;">H100</button>
+                            <button class="strategy-btn gpu-type-btn" data-gpu="a100" style="padding:6px 12px;background:#1e1e2e;border:1px solid #333;color:#aaa;border-radius:4px;cursor:pointer;">A100</button>
+                            <button class="strategy-btn gpu-type-btn" data-gpu="l40s" style="padding:6px 12px;background:#1e1e2e;border:1px solid #333;color:#aaa;border-radius:4px;cursor:pointer;">L40S</button>
+                        </div>
+                    </div>
+                    <div class="metric-display">
+                        <div class="metric-row"><span class="metric-label">Peak Compute:</span><span id="hardwarePeakCompute">3.5 PFLOPs</span></div>
+                        <div class="metric-row"><span class="metric-label">Bandwidth:</span><span id="hardwareBandwidth">3.35 TB/s</span></div>
+                        <div class="metric-row"><span class="metric-label">AI / BW:</span><span id="hardwareIntensity">3.35 TB/s</span></div>
+                    </div>
+                </div>
+            </div>
+            <div class="description">
+                <strong>Memory Hierarchy:</strong> SRAM → L2 → HBM. Speed drops 10-100× at each level. Flash Attention exploits SRAM tiling. <br>
+                <strong>Roofline Model:</strong> Performance = min(Peak Compute, AI × Bandwidth). Most DL ops are memory-bound! <br>
+                <strong>Arithmetic Intensity:</strong> FLOPs per byte transferred. MatMuls are compute-bound, element-wise ops are memory-bound.
+            </div>
+            <div class="insight-box">
+                <div class="insight-title">Hardware Awareness and the Roofline Model</div>
+                <strong>Key Insight:</strong> Roofline model predicts performance: workloads are compute-bound or memory-bound; understand arithmetic intensity to optimize kernels.
+                <div class="formula">Peak_Performance = min(<span class="highlight">Peak_FLOPS</span>, Arithmetic_Intensity × Bandwidth)</div>
+                <div class="key-point"><span class="label">Peak_Performance:</span><span class="desc">Maximum achievable throughput (FLOPS); limited by either compute or memory, whichever is tighter</span></div>
+                <div class="key-point"><span class="label">min(·,·):</span><span class="desc">Takes minimum of two terms; bottleneck is whichever resource saturates first (compute or memory)</span></div>
+                <div class="key-point"><span class="label">Peak_FLOPS:</span><span class="desc">Theoretical peak floating-point operations per second; GPU spec (e.g., A100: 312 TFLOPS FP32); hardware limit</span></div>
+                <div class="key-point"><span class="label">Arithmetic_Intensity (AI):</span><span class="desc">Ratio of FLOPs to bytes transferred (FLOPS/byte); measures compute-to-communication ratio; higher AI → more compute-bound</span></div>
+                <div class="key-point"><span class="label">Bandwidth:</span><span class="desc">Maximum memory bandwidth (bytes/sec); GPU-memory throughput (e.g., A100 HBM: 2TB/s); hardware limit</span></div>
+                <div class="key-point"><span class="label">AI × Bandwidth:</span><span class="desc">FLOPS achievable if memory bandwidth is saturated; determines memory-bound performance ceiling</span></div>
+                <div class="key-point"><span class="label">Compute-bound condition:</span><span class="desc">AI × Bandwidth ≥ Peak_FLOPS; workload compute requirement exceeds bandwidth capacity; optimize compute</span></div>
+                <div class="key-point"><span class="label">Memory-bound condition:</span><span class="desc">AI × Bandwidth < Peak_FLOPS; workload limited by memory bandwidth, not compute; optimize memory access</span></div>
+                <div class="key-point"><span class="label">Memory hierarchy:</span><span class="desc">SRAM (1 cycle), L2 (10 cycles), HBM (100 cycles)—100× latency difference; data movement dominates latency</span></div>
+                <div class="key-point"><span class="label">Arithmetic intensity (AI):</span><span class="desc">FLOPs per byte transferred; matmul high AI (O(n³) FLOPs, O(n²) memory → compute-bound); ReLU low AI (O(n), memory-bound)</span></div>
+                <div class="key-point"><span class="label">Compute-bound:</span><span class="desc">AI high enough that computation saturates GPU compute (achieves near-peak FLOPS); examples: dense matmuls, convolutions</span></div>
+                <div class="key-point"><span class="label">Memory-bound:</span><span class="desc">Memory bandwidth saturates first; increasing compute doesn't help (still limited by BW); examples: element-wise ops, normalization</span></div>
+                <div class="key-point"><span class="label">Flash Attention:</span><span class="desc">Standard attention memory-bound (softmax O(n²) HBM passes); Flash computes in SRAM (tiling, recomputing) → O(n) passes → compute-bound</span></div>
+                <div class="key-point"><span class="label">Kernel fusion:</span><span class="desc">Combine operations to avoid intermediate HBM writes/reads; 2-10× speedup vs naive implementation</span></div>
+                <hr class="divider">
+                <div class="interview-tip">Calculate AI for your model: Count FLOPs (matrix multiplications, convolutions) and memory transfers (gradient updates, batch norm). High AI = compute-bound (optimize compute); low AI = memory-bound (optimize memory access).</div>
+                <div class="interview-tip">Quantization effect: Lower precision reduces memory traffic (good for memory-bound ops) but reduces compute (hurts compute-bound ops). Analyze AI before and after quantization.</div>
+                <div class="mnemonic">Roofline = ceiling for performance: either compute or memory bandwidth caps you; find which and optimize that bottleneck.</div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // ============ Data Parallelism vs Model Parallelism ============
+        const parallelismCanvas = document.getElementById('parallelismCanvas');
+        const parallelismCtx = parallelismCanvas.getContext('2d');
+        let currentStrategy = 'data';
+        let gpuCountVal = 4;
+        let batchSizeVal = 128;
+
+        document.querySelectorAll('.strategy-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.strategy-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                currentStrategy = e.target.dataset.strategy;
+                drawParallelism();
+            });
+        });
+
+        document.getElementById('gpuCount').addEventListener('input', (e) => {
+            gpuCountVal = parseInt(e.target.value);
+            document.getElementById('gpuValue').textContent = gpuCountVal + ' GPUs';
+            document.getElementById('modelCopies').textContent = currentStrategy === 'data' ? gpuCountVal : Math.ceil(gpuCountVal / 2);
+            drawParallelism();
+        });
+
+        document.getElementById('batchSize').addEventListener('input', (e) => {
+            batchSizeVal = parseInt(e.target.value);
+            document.getElementById('batchValue').textContent = batchSizeVal;
+            if (currentStrategy === 'data') {
+                document.getElementById('globalBatch').textContent = batchSizeVal;
+            }
+            drawParallelism();
+        });
+
+        function drawParallelism() {
+            parallelismCtx.fillStyle = '#0f0f17';
+            parallelismCtx.fillRect(0, 0, parallelismCanvas.width, parallelismCanvas.height);
+
+            parallelismCtx.font = 'bold 14px Arial';
+            parallelismCtx.fillStyle = '#01a3a4';
+
+            if (currentStrategy === 'data') {
+                drawDataParallel();
+            } else if (currentStrategy === 'model') {
+                drawModelParallel();
+            } else {
+                drawPipelineParallel();
+            }
+        }
+
+        function drawDataParallel() {
+            const gpuWidth = 120;
+            const gpuHeight = 80;
+            const startX = 40;
+            const startY = 80;
+            const spacing = 10;
+
+            parallelismCtx.fillStyle = '#1a1a2e';
+            parallelismCtx.strokeStyle = '#01a3a4';
+            parallelismCtx.lineWidth = 2;
+
+            for (let i = 0; i < gpuCountVal; i++) {
+                const x = startX + i * (gpuWidth + spacing);
+                if (x + gpuWidth > parallelismCanvas.width - 20) break;
+
+                // GPU box
+                parallelismCtx.fillRect(x, startY, gpuWidth, gpuHeight);
+                parallelismCtx.strokeRect(x, startY, gpuWidth, gpuHeight);
+
+                // Model inside
+                parallelismCtx.fillStyle = '#2e5f5f';
+                parallelismCtx.fillRect(x + 5, startY + 5, gpuWidth - 10, 25);
+                parallelismCtx.fillStyle = '#01a3a4';
+                parallelismCtx.font = '11px Arial';
+                parallelismCtx.textAlign = 'center';
+                parallelismCtx.fillText('Full Model', x + gpuWidth/2, startY + 23);
+
+                // Data batch
+                parallelismCtx.fillStyle = '#3a6b6b';
+                parallelismCtx.fillRect(x + 5, startY + 35, gpuWidth - 10, 40);
+                parallelismCtx.fillStyle = '#01a3a4';
+                const batchPerGpu = Math.round(batchSizeVal / gpuCountVal);
+                parallelismCtx.fillText('Batch ' + batchPerGpu, x + gpuWidth/2, startY + 62);
+
+                // GPU label
+                parallelismCtx.fillStyle = '#888';
+                parallelismCtx.font = '12px Arial';
+                parallelismCtx.fillText('GPU ' + (i+1), x + gpuWidth/2, startY + gpuHeight + 20);
+            }
+
+            // AllReduce arrow
+            if (gpuCountVal > 1) {
+                parallelismCtx.strokeStyle = '#01a3a4';
+                parallelismCtx.lineWidth = 2;
+                parallelismCtx.setLineDash([5, 5]);
+                parallelismCtx.beginPath();
+                parallelismCtx.moveTo(50, 200);
+                parallelismCtx.lineTo(550, 200);
+                parallelismCtx.stroke();
+                parallelismCtx.setLineDash([]);
+
+                parallelismCtx.fillStyle = '#01a3a4';
+                parallelismCtx.font = 'bold 12px Arial';
+                parallelismCtx.textAlign = 'center';
+                parallelismCtx.fillText('AllReduce (Gradient Sync)', 300, 220);
+            }
+
+            // Title
+            parallelismCtx.fillStyle = '#01a3a4';
+            parallelismCtx.font = 'bold 16px Arial';
+            parallelismCtx.textAlign = 'left';
+            parallelismCtx.fillText('Data Parallel Strategy', 40, 30);
+
+            // Metrics
+            parallelismCtx.fillStyle = '#01a3a4';
+            parallelismCtx.font = '11px Arial';
+            parallelismCtx.textAlign = 'left';
+            parallelismCtx.fillText(`Global Batch: ${batchSizeVal}`, 40, 340);
+            parallelismCtx.fillText(`Model Copies: ${gpuCountVal}`, 40, 360);
+            parallelismCtx.fillText(`Communication: O(log N)`, 40, 380);
+        }
+
+        function drawModelParallel() {
+            const gpuWidth = 120;
+            const gpuHeight = 200;
+            const startX = 40;
+            const startY = 40;
+            const spacing = 10;
+            const layersPerGpu = 4;
+
+            parallelismCtx.fillStyle = '#1a1a2e';
+            parallelismCtx.strokeStyle = '#01a3a4';
+            parallelismCtx.lineWidth = 2;
+
+            for (let i = 0; i < gpuCountVal; i++) {
+                const x = startX + i * (gpuWidth + spacing);
+                if (x + gpuWidth > parallelismCanvas.width - 20) break;
+
+                // GPU box
+                parallelismCtx.fillRect(x, startY, gpuWidth, gpuHeight);
+                parallelismCtx.strokeRect(x, startY, gpuWidth, gpuHeight);
+
+                // Layers
+                const layerHeight = gpuHeight / layersPerGpu;
+                const colors = ['#2e5f5f', '#3a6b6b', '#2e5f5f', '#3a6b6b'];
+                for (let j = 0; j < layersPerGpu; j++) {
+                    parallelismCtx.fillStyle = colors[j];
+                    parallelismCtx.fillRect(x + 2, startY + 2 + j * layerHeight, gpuWidth - 4, layerHeight - 2);
+
+                    parallelismCtx.fillStyle = '#01a3a4';
+                    parallelismCtx.font = '9px Arial';
+                    parallelismCtx.textAlign = 'center';
+                    parallelismCtx.fillText(`Layer ${i*layersPerGpu + j + 1}`, x + gpuWidth/2, startY + j * layerHeight + layerHeight/2 + 3);
+                }
+
+                // GPU label
+                parallelismCtx.fillStyle = '#888';
+                parallelismCtx.font = '12px Arial';
+                parallelismCtx.fillText('GPU ' + (i+1), x + gpuWidth/2, startY + gpuHeight + 20);
+            }
+
+            // Communication arrows
+            for (let i = 0; i < gpuCountVal - 1; i++) {
+                const x1 = startX + (i+1) * (gpuWidth + spacing);
+                const x2 = startX + (i+2) * (gpuWidth + spacing);
+
+                parallelismCtx.strokeStyle = '#ff6b6b';
+                parallelismCtx.lineWidth = 2;
+                parallelismCtx.setLineDash([5, 5]);
+                parallelismCtx.beginPath();
+                parallelismCtx.moveTo(x1 - 5, startY + gpuHeight/2);
+                parallelismCtx.lineTo(x2 + 5, startY + gpuHeight/2);
+                parallelismCtx.stroke();
+                parallelismCtx.setLineDash([]);
+            }
+
+            // Title
+            parallelismCtx.fillStyle = '#01a3a4';
+            parallelismCtx.font = 'bold 16px Arial';
+            parallelismCtx.textAlign = 'left';
+            parallelismCtx.fillText('Model Parallel Strategy', 40, 290);
+
+            // Metrics
+            parallelismCtx.fillStyle = '#01a3a4';
+            parallelismCtx.font = '11px Arial';
+            parallelismCtx.textAlign = 'left';
+            parallelismCtx.fillText(`Batch Size: ${batchSizeVal}`, 40, 315);
+            parallelismCtx.fillText(`Model Copies: 1`, 40, 335);
+            parallelismCtx.fillText(`Communication: High (per layer)`, 40, 355);
+            parallelismCtx.fillText(`Use Case: Models > GPU memory`, 40, 375);
+        }
+
+        function drawPipelineParallel() {
+            const gpuWidth = 120;
+            const gpuHeight = 100;
+            const startX = 40;
+            const startY = 50;
+            const spacing = 10;
+
+            parallelismCtx.fillStyle = '#1a1a2e';
+            parallelismCtx.strokeStyle = '#01a3a4';
+            parallelismCtx.lineWidth = 2;
+
+            // Time axis
+            parallelismCtx.strokeStyle = '#01a3a4';
+            parallelismCtx.lineWidth = 1;
+            parallelismCtx.beginPath();
+            parallelismCtx.moveTo(40, 280);
+            parallelismCtx.lineTo(580, 280);
+            parallelismCtx.stroke();
+
+            parallelismCtx.fillStyle = '#01a3a4';
+            parallelismCtx.font = '11px Arial';
+            parallelismCtx.textAlign = 'center';
+            parallelismCtx.fillText('Time →', 590, 285);
+
+            // GPUs with pipelines
+            for (let i = 0; i < Math.min(gpuCountVal, 4); i++) {
+                const x = startX + i * (gpuWidth + spacing);
+                const y = startY;
+
+                // GPU box
+                parallelismCtx.fillStyle = '#1a1a2e';
+                parallelismCtx.strokeStyle = '#01a3a4';
+                parallelismCtx.lineWidth = 2;
+                parallelismCtx.fillRect(x, y, gpuWidth, gpuHeight);
+                parallelismCtx.strokeRect(x, y, gpuWidth, gpuHeight);
+
+                // Pipeline stages
+                const colors = ['#2e5f5f', '#3a6b6b'];
+                for (let j = 0; j < 2; j++) {
+                    parallelismCtx.fillStyle = colors[j];
+                    parallelismCtx.fillRect(x + 5, y + 5 + j * 45, gpuWidth - 10, 40);
+
+                    parallelismCtx.fillStyle = '#01a3a4';
+                    parallelismCtx.font = '10px Arial';
+                    parallelismCtx.textAlign = 'center';
+                    parallelismCtx.fillText(`Stage ${j+1}`, x + gpuWidth/2, y + j * 45 + 32);
+                }
+
+                // GPU label
+                parallelismCtx.fillStyle = '#888';
+                parallelismCtx.font = '12px Arial';
+                parallelismCtx.fillText('GPU ' + (i+1), x + gpuWidth/2, y + gpuHeight + 20);
+            }
+
+            // Title and legend
+            parallelismCtx.fillStyle = '#01a3a4';
+            parallelismCtx.font = 'bold 16px Arial';
+            parallelismCtx.textAlign = 'left';
+            parallelismCtx.fillText('Pipeline Parallel (Multiple Batches in Flight)', 40, 320);
+
+            parallelismCtx.fillStyle = '#01a3a4';
+            parallelismCtx.font = '11px Arial';
+            parallelismCtx.fillText('Different layers on different GPUs', 40, 345);
+            parallelismCtx.fillText('Multiple micro-batches in pipeline', 40, 365);
+            parallelismCtx.fillText('Reduces bubble time vs sequential', 40, 385);
+        }
+
+        drawParallelism();
+
+        // ============ Learning Rate Schedules ============
+        const lrScheduleCanvas = document.getElementById('lrScheduleCanvas');
+        const lrScheduleCtx = lrScheduleCanvas.getContext('2d');
+        let selectedSchedule = 'constant';
+        let maxLrVal = 0.001;
+        let warmupPctVal = 5;
+        let totalStepsVal = 1000;
+
+        document.querySelectorAll('.schedule-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.schedule-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                selectedSchedule = e.target.dataset.schedule;
+                drawLRSchedule();
+            });
+        });
+
+        document.getElementById('maxLr').addEventListener('input', (e) => {
+            maxLrVal = parseFloat(e.target.value);
+            document.getElementById('maxLrValue').textContent = maxLrVal.toFixed(6);
+            drawLRSchedule();
+        });
+
+        document.getElementById('warmupPct').addEventListener('input', (e) => {
+            warmupPctVal = parseInt(e.target.value);
+            document.getElementById('warmupValue').textContent = warmupPctVal + '%';
+            drawLRSchedule();
+        });
+
+        document.getElementById('totalSteps').addEventListener('input', (e) => {
+            totalStepsVal = parseInt(e.target.value);
+            document.getElementById('stepsValue').textContent = totalStepsVal;
+            drawLRSchedule();
+        });
+
+        function getLearningRate(step) {
+            const warmupSteps = Math.round(totalStepsVal * warmupPctVal / 100);
+
+            switch(selectedSchedule) {
+                case 'constant':
+                    return maxLrVal;
+                case 'step':
+                    const decay = Math.floor(step / (totalStepsVal / 4)) * 0.1;
+                    return maxLrVal * Math.max(0.1, 1 - decay);
+                case 'cosine':
+                    return maxLrVal * (1 + Math.cos(Math.PI * step / totalStepsVal)) / 2;
+                case 'warmup':
+                    if (step < warmupSteps) {
+                        return maxLrVal * (step / warmupSteps);
+                    }
+                    return maxLrVal * (1 + Math.cos(Math.PI * (step - warmupSteps) / (totalStepsVal - warmupSteps))) / 2;
+                case 'onecycle':
+                    const pct = step / totalStepsVal;
+                    if (pct < 0.3) {
+                        return maxLrVal * (pct / 0.3);
+                    } else if (pct < 0.85) {
+                        return maxLrVal * (1 + Math.cos(Math.PI * (pct - 0.3) / 0.55)) / 2;
+                    } else {
+                        return maxLrVal * (0.05 + 0.95 * (pct - 0.85) / 0.15);
+                    }
+            }
+        }
+
+        function drawLRSchedule() {
+            lrScheduleCtx.fillStyle = '#0f0f17';
+            lrScheduleCtx.fillRect(0, 0, lrScheduleCanvas.width, lrScheduleCanvas.height);
+
+            // Axes
+            const padding = 50;
+            const width = lrScheduleCanvas.width - 2 * padding;
+            const height = lrScheduleCanvas.height - 2 * padding;
+
+            lrScheduleCtx.strokeStyle = '#1e1e2e';
+            lrScheduleCtx.lineWidth = 1;
+            lrScheduleCtx.beginPath();
+            lrScheduleCtx.moveTo(padding, padding);
+            lrScheduleCtx.lineTo(padding, lrScheduleCanvas.height - padding);
+            lrScheduleCtx.lineTo(lrScheduleCanvas.width - padding, lrScheduleCanvas.height - padding);
+            lrScheduleCtx.stroke();
+
+            // Grid
+            lrScheduleCtx.strokeStyle = '#1a1a2e';
+            lrScheduleCtx.lineWidth = 0.5;
+            for (let i = 0; i <= 10; i++) {
+                const x = padding + (width / 10) * i;
+                const y = padding + (height / 10) * i;
+                lrScheduleCtx.beginPath();
+                lrScheduleCtx.moveTo(x, lrScheduleCanvas.height - padding);
+                lrScheduleCtx.lineTo(x, lrScheduleCanvas.height - padding + 5);
+                lrScheduleCtx.stroke();
+                lrScheduleCtx.beginPath();
+                lrScheduleCtx.moveTo(padding - 5, y);
+                lrScheduleCtx.lineTo(padding, y);
+                lrScheduleCtx.stroke();
+            }
+
+            // Draw schedule curve
+            lrScheduleCtx.strokeStyle = '#01a3a4';
+            lrScheduleCtx.lineWidth = 3;
+            lrScheduleCtx.beginPath();
+
+            for (let step = 0; step <= totalStepsVal; step += Math.max(1, Math.floor(totalStepsVal / 300))) {
+                const lr = getLearningRate(step);
+                const x = padding + (step / totalStepsVal) * width;
+                const y = lrScheduleCanvas.height - padding - (lr / maxLrVal) * height * 1.2;
+
+                if (step === 0) {
+                    lrScheduleCtx.moveTo(x, y);
+                } else {
+                    lrScheduleCtx.lineTo(x, y);
+                }
+            }
+            lrScheduleCtx.stroke();
+
+            // Labels
+            lrScheduleCtx.fillStyle = '#888';
+            lrScheduleCtx.font = '11px Arial';
+            lrScheduleCtx.textAlign = 'center';
+            lrScheduleCtx.fillText('Steps', lrScheduleCanvas.width / 2, lrScheduleCanvas.height - 10);
+
+            lrScheduleCtx.save();
+            lrScheduleCtx.translate(15, lrScheduleCanvas.height / 2);
+            lrScheduleCtx.rotate(-Math.PI / 2);
+            lrScheduleCtx.textAlign = 'center';
+            lrScheduleCtx.fillText('Learning Rate', 0, 0);
+            lrScheduleCtx.restore();
+
+            // Title
+            lrScheduleCtx.fillStyle = '#01a3a4';
+            lrScheduleCtx.font = 'bold 14px Arial';
+            lrScheduleCtx.textAlign = 'left';
+            lrScheduleCtx.fillText(selectedSchedule.charAt(0).toUpperCase() + selectedSchedule.slice(1) + ' Schedule', padding, 30);
+        }
+
+        drawLRSchedule();
+
+        // ============ Mixed Precision Training ============
+        const precisionCanvas = document.getElementById('precisionCanvas');
+        const precisionCtx = precisionCanvas.getContext('2d');
+        let selectedPrecision = 'fp32';
+        let lossScaleVal = 1024;
+
+        document.querySelectorAll('.precision-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.precision-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                selectedPrecision = e.target.dataset.precision;
+                drawPrecision();
+            });
+        });
+
+        document.getElementById('lossScale').addEventListener('input', (e) => {
+            lossScaleVal = parseInt(e.target.value);
+            document.getElementById('lossScaleValue').textContent = lossScaleVal + 'x';
+            drawPrecision();
+        });
+
+        function drawPrecision() {
+            precisionCtx.fillStyle = '#0f0f17';
+            precisionCtx.fillRect(0, 0, precisionCanvas.width, precisionCanvas.height);
+
+            // Title
+            precisionCtx.fillStyle = '#01a3a4';
+            precisionCtx.font = 'bold 16px Arial';
+            precisionCtx.textAlign = 'left';
+            precisionCtx.fillText('Floating Point Format: ' + selectedPrecision.toUpperCase(), 40, 30);
+
+            // Bit layout visualization
+            const bitLayouts = {
+                fp32: { sign: 1, exponent: 8, mantissa: 23, bits: 32 },
+                fp16: { sign: 1, exponent: 5, mantissa: 10, bits: 16 },
+                bf16: { sign: 1, exponent: 8, mantissa: 7, bits: 16 }
+            };
+
+            const layout = bitLayouts[selectedPrecision];
+            let x = 40;
+            let y = 80;
+
+            // Draw bit boxes
+            const colors = { sign: '#ff6b6b', exponent: '#4ecdc4', mantissa: '#45b7d1' };
+            const bitPositions = [
+                { name: 'Sign', count: layout.sign, color: colors.sign },
+                { name: 'Exponent', count: layout.exponent, color: colors.exponent },
+                { name: 'Mantissa', count: layout.mantissa, color: colors.mantissa }
+            ];
+
+            let currentX = x;
+            bitPositions.forEach(bit => {
+                const boxWidth = (bit.count / layout.bits) * 300;
+                precisionCtx.fillStyle = bit.color;
+                precisionCtx.fillRect(currentX, y, boxWidth, 40);
+                precisionCtx.strokeStyle = '#01a3a4';
+                precisionCtx.lineWidth = 2;
+                precisionCtx.strokeRect(currentX, y, boxWidth, 40);
+
+                precisionCtx.fillStyle = '#0a0a0f';
+                precisionCtx.font = 'bold 12px Arial';
+                precisionCtx.textAlign = 'center';
+                precisionCtx.fillText(bit.name, currentX + boxWidth/2, y + 15);
+                precisionCtx.fillStyle = '#888';
+                precisionCtx.font = '10px Arial';
+                precisionCtx.fillText(bit.count + ' bits', currentX + boxWidth/2, y + 30);
+
+                currentX += boxWidth;
+            });
+
+            // Statistics
+            const stats = {
+                fp32: { range: '±3.4e38', precision: '~7 decimals', memory: '4 bytes', speed: '1.0x' },
+                fp16: { range: '±6.6e4', precision: '~3 decimals', memory: '2 bytes', speed: '2-3x' },
+                bf16: { range: '±3.4e38', precision: '~2 decimals', memory: '2 bytes', speed: '2-3x' }
+            };
+
+            y += 80;
+            precisionCtx.fillStyle = '#01a3a4';
+            precisionCtx.font = 'bold 12px Arial';
+            precisionCtx.textAlign = 'left';
+
+            const statKeys = ['range', 'precision', 'memory', 'speed'];
+            const statLabels = ['Range:', 'Precision:', 'Memory:', 'Speed:'];
+
+            statKeys.forEach((key, i) => {
+                precisionCtx.fillText(statLabels[i], 40, y + i * 30);
+                precisionCtx.fillStyle = '#01a3a4';
+                precisionCtx.fillText(stats[selectedPrecision][key], 150, y + i * 30);
+            });
+
+            // Loss scaling visualization
+            y += 160;
+            precisionCtx.fillStyle = '#01a3a4';
+            precisionCtx.font = 'bold 12px Arial';
+            precisionCtx.textAlign = 'left';
+            precisionCtx.fillText('Loss Scaling (FP16 only)', 40, y);
+
+            // Before and after
+            y += 40;
+            const scaledLoss = 0.0001 * lossScaleVal;
+
+            precisionCtx.fillStyle = '#ff6b6b';
+            precisionCtx.fillRect(40, y, 120, 40);
+            precisionCtx.fillStyle = '#0a0a0f';
+            precisionCtx.font = 'bold 11px Arial';
+            precisionCtx.textAlign = 'center';
+            precisionCtx.fillText('Loss: 0.0001', 100, y + 15);
+            precisionCtx.fillText('→ Underflow!', 100, y + 32);
+
+            precisionCtx.fillStyle = '#888';
+            precisionCtx.font = '10px Arial';
+            precisionCtx.textAlign = 'center';
+            precisionCtx.fillText('×' + lossScaleVal, 200, y + 22);
+
+            precisionCtx.fillStyle = '#4ecdc4';
+            precisionCtx.fillRect(280, y, 120, 40);
+            precisionCtx.fillStyle = '#0a0a0f';
+            precisionCtx.font = 'bold 11px Arial';
+            precisionCtx.textAlign = 'center';
+            precisionCtx.fillText('Scaled: ' + scaledLoss.toFixed(4), 340, y + 15);
+            precisionCtx.fillText('→ Safe!', 340, y + 32);
+
+            // Update metrics
+            document.getElementById('bitCount').textContent = layout.bits;
+            document.getElementById('rangeInfo').textContent = stats[selectedPrecision].range;
+            document.getElementById('memoryUsage').textContent = (100 / (selectedPrecision === 'fp32' ? 1 : 2)).toFixed(0) + '%';
+            document.getElementById('speedGain').textContent = selectedPrecision === 'fp32' ? '1.0x' : '2-3x';
+        }
+
+        drawPrecision();
+
+        // ============ Gradient Accumulation ============
+        const gradAccumCanvas = document.getElementById('gradAccumCanvas');
+        const gradAccumCtx = gradAccumCanvas.getContext('2d');
+        let accumStepsVal = 4;
+        let microBatchVal = 32;
+
+        document.getElementById('accumSteps').addEventListener('input', (e) => {
+            accumStepsVal = parseInt(e.target.value);
+            document.getElementById('accumValue').textContent = accumStepsVal;
+            updateGradAccumMetrics();
+            drawGradAccum();
+        });
+
+        document.getElementById('microBatchSize').addEventListener('input', (e) => {
+            microBatchVal = parseInt(e.target.value);
+            document.getElementById('microBatchValue').textContent = microBatchVal;
+            updateGradAccumMetrics();
+            drawGradAccum();
+        });
+
+        function updateGradAccumMetrics() {
+            const effectiveBatch = microBatchVal * accumStepsVal;
+            document.getElementById('effectiveBatch').textContent = effectiveBatch;
+            document.getElementById('forwardPasses').textContent = accumStepsVal;
+            document.getElementById('backwardPasses').textContent = accumStepsVal;
+            document.getElementById('optimSteps').textContent = 1;
+        }
+
+        function drawGradAccum() {
+            gradAccumCtx.fillStyle = '#0f0f17';
+            gradAccumCtx.fillRect(0, 0, gradAccumCanvas.width, gradAccumCanvas.height);
+
+            const stepWidth = 520 / accumStepsVal;
+            const startX = 40;
+            const startY = 60;
+
+            // Timeline
+            gradAccumCtx.fillStyle = '#01a3a4';
+            gradAccumCtx.font = 'bold 16px Arial';
+            gradAccumCtx.textAlign = 'left';
+            gradAccumCtx.fillText('Gradient Accumulation Timeline', startX, 30);
+
+            // Steps
+            for (let i = 0; i < accumStepsVal; i++) {
+                const x = startX + i * stepWidth;
+                const y = startY;
+
+                // Forward pass
+                gradAccumCtx.fillStyle = '#2e5f5f';
+                gradAccumCtx.fillRect(x, y, stepWidth - 5, 50);
+                gradAccumCtx.strokeStyle = '#01a3a4';
+                gradAccumCtx.lineWidth = 2;
+                gradAccumCtx.strokeRect(x, y, stepWidth - 5, 50);
+
+                gradAccumCtx.fillStyle = '#01a3a4';
+                gradAccumCtx.font = 'bold 10px Arial';
+                gradAccumCtx.textAlign = 'center';
+                gradAccumCtx.fillText('Forward', x + (stepWidth - 5) / 2, y + 15);
+                gradAccumCtx.font = '9px Arial';
+                gradAccumCtx.fillText('Batch ' + (i+1), x + (stepWidth - 5) / 2, y + 32);
+
+                // Backward pass
+                gradAccumCtx.fillStyle = '#3a6b6b';
+                gradAccumCtx.fillRect(x, y + 60, stepWidth - 5, 50);
+                gradAccumCtx.strokeStyle = '#01a3a4';
+                gradAccumCtx.lineWidth = 2;
+                gradAccumCtx.strokeRect(x, y + 60, stepWidth - 5, 50);
+
+                gradAccumCtx.fillStyle = '#01a3a4';
+                gradAccumCtx.font = 'bold 10px Arial';
+                gradAccumCtx.textAlign = 'center';
+                gradAccumCtx.fillText('Backward', x + (stepWidth - 5) / 2, y + 75);
+                gradAccumCtx.font = '9px Arial';
+                gradAccumCtx.fillText('No zero', x + (stepWidth - 5) / 2, y + 92);
+
+                // Accumulate label
+                gradAccumCtx.fillStyle = '#ff9800';
+                gradAccumCtx.font = '9px Arial';
+                gradAccumCtx.fillText('Accumulate', x + (stepWidth - 5) / 2, y + 145);
+            }
+
+            // Optimizer step at the end
+            const optX = startX + accumStepsVal * stepWidth + 20;
+            gradAccumCtx.fillStyle = '#4ecdc4';
+            gradAccumCtx.fillRect(optX, startY, 80, 110);
+            gradAccumCtx.strokeStyle = '#01a3a4';
+            gradAccumCtx.lineWidth = 2;
+            gradAccumCtx.strokeRect(optX, startY, 80, 110);
+
+            gradAccumCtx.fillStyle = '#0a0a0f';
+            gradAccumCtx.font = 'bold 11px Arial';
+            gradAccumCtx.textAlign = 'center';
+            gradAccumCtx.fillText('Optimizer', optX + 40, startY + 30);
+            gradAccumCtx.fillText('Step', optX + 40, startY + 45);
+            gradAccumCtx.font = '9px Arial';
+            gradAccumCtx.fillText('(Scale grad by', optX + 40, startY + 65);
+            gradAccumCtx.fillText('1/N, update)', optX + 40, startY + 80);
+
+            // Arrow from accumulation to optimizer
+            gradAccumCtx.strokeStyle = '#01a3a4';
+            gradAccumCtx.lineWidth = 2;
+            gradAccumCtx.setLineDash([5, 5]);
+            gradAccumCtx.beginPath();
+            gradAccumCtx.moveTo(startX + accumStepsVal * stepWidth + 5, startY + 55);
+            gradAccumCtx.lineTo(optX, startY + 55);
+            gradAccumCtx.stroke();
+            gradAccumCtx.setLineDash([]);
+
+            // Memory comparison
+            const memY = 250;
+            gradAccumCtx.fillStyle = '#01a3a4';
+            gradAccumCtx.font = 'bold 12px Arial';
+            gradAccumCtx.textAlign = 'left';
+            gradAccumCtx.fillText('Memory & Compute Trade-off', startX, memY);
+
+            const memInfoX = startX;
+            const memInfoY = memY + 40;
+
+            gradAccumCtx.fillStyle = '#2e5f5f';
+            gradAccumCtx.fillRect(memInfoX, memInfoY, 100, 30);
+            gradAccumCtx.fillStyle = '#01a3a4';
+            gradAccumCtx.font = '11px Arial';
+            gradAccumCtx.textAlign = 'center';
+            gradAccumCtx.fillText('Memory: Low', memInfoX + 50, memInfoY + 20);
+
+            gradAccumCtx.fillStyle = '#3a6b6b';
+            gradAccumCtx.fillRect(memInfoX + 120, memInfoY, 100, 30);
+            gradAccumCtx.fillStyle = '#01a3a4';
+            gradAccumCtx.fillText('Compute: Slow', memInfoX + 170, memInfoY + 20);
+
+            gradAccumCtx.fillStyle = '#ff9800';
+            gradAccumCtx.fillRect(memInfoX + 240, memInfoY, 100, 30);
+            gradAccumCtx.fillStyle = '#0a0a0f';
+            gradAccumCtx.font = 'bold 11px Arial';
+            gradAccumCtx.fillText('Factor: ' + accumStepsVal + 'x', memInfoX + 290, memInfoY + 20);
+        }
+
+        updateGradAccumMetrics();
+        drawGradAccum();
+
+        // ============ ZeRO Optimization ============
+        const zeroCanvas = document.getElementById('zeroCanvas');
+        const zeroCtx = zeroCanvas.getContext('2d');
+        let selectedZero = '0';
+        let modelSizeVal = 7;
+        let numGpusVal = 8;
+
+        document.querySelectorAll('.zero-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.zero-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                selectedZero = e.target.dataset.zero;
+                drawZero();
+            });
+        });
+
+        document.getElementById('modelSize').addEventListener('input', (e) => {
+            modelSizeVal = parseFloat(e.target.value);
+            document.getElementById('modelSizeValue').textContent = modelSizeVal.toFixed(1) + 'B';
+            drawZero();
+        });
+
+        document.getElementById('numGpus').addEventListener('input', (e) => {
+            numGpusVal = parseInt(e.target.value);
+            document.getElementById('numGpusValue').textContent = numGpusVal;
+            drawZero();
+        });
+
+        function drawZero() {
+            zeroCtx.fillStyle = '#0f0f17';
+            zeroCtx.fillRect(0, 0, zeroCanvas.width, zeroCanvas.height);
+
+            // Title
+            zeroCtx.fillStyle = '#01a3a4';
+            zeroCtx.font = 'bold 16px Arial';
+            zeroCtx.textAlign = 'left';
+            zeroCtx.fillText('ZeRO Stage ' + selectedZero + ' - Memory Layout', 40, 30);
+
+            const stages = {
+                '0': { name: 'Baseline (No ZeRO)', desc: 'All states on every GPU' },
+                '1': { name: 'Stage 1: Partition Optimizer', desc: 'Optimizer states split across GPUs' },
+                '2': { name: 'Stage 2: Partition Gradients', desc: 'Gradients also split across GPUs' },
+                '3': { name: 'Stage 3: Partition Parameters', desc: 'Parameters split across GPUs' }
+            };
+
+            // Memory calculation (bytes per param)
+            const paramBytes = 4; // FP32
+            const gradBytes = 4;
+            const optimBytes = 8; // Adam: momentum + variance
+
+            let memoryLayout = [];
+            if (selectedZero === '0') {
+                memoryLayout = [
+                    { name: 'Parameters', bytes: paramBytes, color: '#2e5f5f' },
+                    { name: 'Gradients', bytes: gradBytes, color: '#3a6b6b' },
+                    { name: 'Optimizer', bytes: optimBytes, color: '#4ecdc4' }
+                ];
+            } else if (selectedZero === '1') {
+                memoryLayout = [
+                    { name: 'Parameters', bytes: paramBytes, color: '#2e5f5f' },
+                    { name: 'Gradients', bytes: gradBytes, color: '#3a6b6b' },
+                    { name: 'Optimizer (÷GPUs)', bytes: optimBytes / numGpusVal, color: '#4ecdc4' }
+                ];
+            } else if (selectedZero === '2') {
+                memoryLayout = [
+                    { name: 'Parameters', bytes: paramBytes, color: '#2e5f5f' },
+                    { name: 'Gradients (÷GPUs)', bytes: gradBytes / numGpusVal, color: '#3a6b6b' },
+                    { name: 'Optimizer (÷GPUs)', bytes: optimBytes / numGpusVal, color: '#4ecdc4' }
+                ];
+            } else {
+                memoryLayout = [
+                    { name: 'Parameters (÷GPUs)', bytes: paramBytes / numGpusVal, color: '#2e5f5f' },
+                    { name: 'Gradients (÷GPUs)', bytes: gradBytes / numGpusVal, color: '#3a6b6b' },
+                    { name: 'Optimizer (÷GPUs)', bytes: optimBytes / numGpusVal, color: '#4ecdc4' }
+                ];
+            }
+
+            // Draw stacked bars for GPUs
+            const barWidth = 500 / numGpusVal;
+            const startX = 40;
+            const startY = 80;
+            let totalMemory = 0;
+
+            for (let g = 0; g < Math.min(numGpusVal, 10); g++) {
+                const x = startX + g * barWidth;
+                let y = startY;
+
+                memoryLayout.forEach(item => {
+                    const height = (item.bytes / 16) * 150;
+                    zeroCtx.fillStyle = item.color;
+                    zeroCtx.fillRect(x + 2, y, barWidth - 4, height);
+                    zeroCtx.strokeStyle = '#01a3a4';
+                    zeroCtx.lineWidth = 1;
+                    zeroCtx.strokeRect(x + 2, y, barWidth - 4, height);
+
+                    if (g === 0 && height > 15) {
+                        zeroCtx.fillStyle = '#01a3a4';
+                        zeroCtx.font = '8px Arial';
+                        zeroCtx.textAlign = 'center';
+                        zeroCtx.fillText(item.bytes.toFixed(1) + 'B', x + barWidth/2, y + height/2);
+                    }
+
+                    y += height;
+                });
+
+                if (g === 0) totalMemory = y - startY;
+
+                zeroCtx.fillStyle = '#888';
+                zeroCtx.font = '9px Arial';
+                zeroCtx.textAlign = 'center';
+                zeroCtx.fillText('GPU' + (g+1), x + barWidth/2, y + 20);
+            }
+
+            if (numGpusVal > 10) {
+                zeroCtx.fillStyle = '#888';
+                zeroCtx.font = '9px Arial';
+                zeroCtx.textAlign = 'left';
+                zeroCtx.fillText('... (+' + (numGpusVal - 10) + ' more)', startX + 10 * barWidth + 20, startY + 100);
+            }
+
+            // Total memory per GPU
+            const totalPerGpu = (paramBytes + gradBytes + optimBytes) * modelSizeVal * 1e9 / numGpusVal;
+
+            // Legend
+            let legendY = startY + totalMemory + 40;
+            zeroCtx.fillStyle = '#01a3a4';
+            zeroCtx.font = 'bold 12px Arial';
+            zeroCtx.textAlign = 'left';
+
+            memoryLayout.forEach((item, i) => {
+                zeroCtx.fillStyle = item.color;
+                zeroCtx.fillRect(40, legendY + i * 25, 15, 15);
+
+                zeroCtx.fillStyle = '#01a3a4';
+                zeroCtx.font = '11px Arial';
+                zeroCtx.fillText(item.name + ': ' + item.bytes.toFixed(1) + ' bytes/param', 65, legendY + i * 25 + 12);
+            });
+
+            // Metrics
+            document.getElementById('memoryPerGpu').textContent = (totalPerGpu / 1e9).toFixed(1) + ' GB';
+            const commPatterns = {
+                '0': 'AllReduce',
+                '1': 'AllGather (Optimizer)',
+                '2': 'AllGather (Gradients)',
+                '3': 'AllGather (Params + Grads)'
+            };
+            document.getElementById('commOverhead').textContent = commPatterns[selectedZero];
+        }
+
+        drawZero();
+
+        // Initialize
+        updateGradAccumMetrics();
+    
+        
+        // ============ Activation Checkpointing ============
+        let checkpointType = 'none';
+        const checkpointCanvas = document.getElementById('checkpointCanvas');
+        const checkpointCtx = checkpointCanvas.getContext('2d');
+
+        document.querySelectorAll('.checkpoint-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.checkpoint-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                checkpointType = e.target.dataset.checkpoint;
+                drawCheckpoint();
+            });
+        });
+
+        document.getElementById('checkpointDepth').addEventListener('input', (e) => {
+            document.getElementById('checkpointDepthValue').textContent = e.target.value + ' layers';
+            drawCheckpoint();
+        });
+
+        function drawCheckpoint() {
+            const depth = parseInt(document.getElementById('checkpointDepth').value);
+            checkpointCtx.fillStyle = '#0f0f17';
+            checkpointCtx.fillRect(0, 0, checkpointCanvas.width, checkpointCanvas.height);
+
+            checkpointCtx.fillStyle = '#01a3a4';
+            checkpointCtx.font = 'bold 14px Arial';
+            checkpointCtx.fillText(checkpointType === 'none' ? 'Standard: Store All Activations' : 
+                                  checkpointType === 'selective' ? 'Selective: Store Every k-th Layer' :
+                                  'Full Recompute: Minimal Memory', 40, 30);
+
+            const layerH = 15;
+            const startY = 60;
+            const startX = 40;
+            const layerW = 300;
+            let memUsage = 100;
+            let computeOverhead = 0;
+
+            for (let i = 0; i < depth / 6; i++) {
+                const y = startY + i * (layerH + 2);
+                let shouldStore = false;
+                if (checkpointType === 'none') shouldStore = true;
+                else if (checkpointType === 'selective') shouldStore = (i % 2 === 0);
+                else shouldStore = false;
+
+                checkpointCtx.fillStyle = shouldStore ? '#4ecdc433' : '#2e5f5f33';
+                checkpointCtx.fillRect(startX, y, layerW, layerH);
+                checkpointCtx.strokeStyle = shouldStore ? '#4ecdc4' : '#888';
+                checkpointCtx.strokeRect(startX, y, layerW, layerH);
+
+                checkpointCtx.fillStyle = '#999';
+                checkpointCtx.font = '11px Arial';
+                checkpointCtx.fillText(`Layer ${i+1}${shouldStore ? ' [STORED]' : ' [RECOMP]'}`, startX + 10, y + 12);
+            }
+
+            if (checkpointType === 'none') {
+                memUsage = 100;
+                computeOverhead = 0;
+            } else if (checkpointType === 'selective') {
+                memUsage = Math.sqrt(100);
+                computeOverhead = 15;
+            } else {
+                memUsage = 20;
+                computeOverhead = 30;
+            }
+
+            document.getElementById('checkpointMem').textContent = Math.round(memUsage) + '%';
+            document.getElementById('checkpointCompute').textContent = Math.round(computeOverhead) + '%';
+            document.getElementById('checkpointTime').textContent = computeOverhead === 0 ? 'No overhead' : '+' + Math.round(computeOverhead) + '% slower';
+
+            checkpointCtx.fillStyle = '#ffd93d';
+            checkpointCtx.font = 'bold 12px Arial';
+            checkpointCtx.fillText('Memory Savings (Activation Storage)', startX, startY + 200);
+            checkpointCtx.font = '11px Arial';
+            checkpointCtx.fillText('Total memory: ' + Math.round(memUsage) + '% of baseline', startX, startY + 225);
+            checkpointCtx.fillText('Compute overhead: ' + Math.round(computeOverhead) + '% during backward', startX, startY + 245);
+        }
+        drawCheckpoint();
+
+        // ============ Training Monitoring ============
+        let monitoringScenario = 'healthy';
+        const monitoringCanvas = document.getElementById('monitoringCanvas');
+        const monitoringCtx = monitoringCanvas.getContext('2d');
+
+        document.querySelectorAll('.monitor-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.monitor-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                monitoringScenario = e.target.dataset.scenario;
+                drawMonitoring();
+            });
+        });
+
+        document.getElementById('monitoringSteps').addEventListener('input', (e) => {
+            document.getElementById('monitoringStepsValue').textContent = e.target.value + ' steps';
+            drawMonitoring();
+        });
+
+        function drawMonitoring() {
+            const steps = parseInt(document.getElementById('monitoringSteps').value);
+            monitoringCtx.fillStyle = '#0f0f17';
+            monitoringCtx.fillRect(0, 0, monitoringCanvas.width, monitoringCanvas.height);
+
+            const pad = { l: 50, r: 30, t: 40, b: 50 };
+            const pw = monitoringCanvas.width - pad.l - pad.r;
+            const ph = monitoringCanvas.height - pad.t - pad.b;
+
+            monitoringCtx.strokeStyle = '#444';
+            monitoringCtx.lineWidth = 1;
+            monitoringCtx.beginPath();
+            monitoringCtx.moveTo(pad.l, pad.t);
+            monitoringCtx.lineTo(pad.l, monitoringCanvas.height - pad.b);
+            monitoringCtx.lineTo(monitoringCanvas.width - pad.r, monitoringCanvas.height - pad.b);
+            monitoringCtx.stroke();
+
+            // Generate loss curve based on scenario
+            let lossPoints = [];
+            const baseDecay = 1.0;
+            for (let s = 0; s < steps; s++) {
+                let loss;
+                if (monitoringScenario === 'healthy') {
+                    loss = baseDecay * Math.exp(-s / 150) + 0.1 + Math.random() * 0.02;
+                } else if (monitoringScenario === 'overfitting') {
+                    const phase = s / steps;
+                    loss = baseDecay * Math.exp(-s / 100) + 0.1;
+                    if (phase > 0.6) loss += (phase - 0.6) * 0.3;
+                } else if (monitoringScenario === 'diverging') {
+                    loss = baseDecay * Math.exp(-s / 200) + 0.1 * Math.pow(1.005, s);
+                } else {
+                    loss = baseDecay * Math.exp(-s / 150) + 0.1;
+                    if (s % 100 < 5) loss += 0.5 * Math.sin(s / 5);
+                }
+                lossPoints.push(loss);
+            }
+
+            // Draw loss curve
+            monitoringCtx.strokeStyle = '#01a3a4';
+            monitoringCtx.lineWidth = 2;
+            monitoringCtx.beginPath();
+            for (let s = 0; s < steps; s++) {
+                const x = pad.l + (s / steps) * pw;
+                const normalized = Math.min(lossPoints[s] / 2.0, 1.0);
+                const y = monitoringCanvas.height - pad.b - normalized * ph;
+                if (s === 0) monitoringCtx.moveTo(x, y);
+                else monitoringCtx.lineTo(x, y);
+            }
+            monitoringCtx.stroke();
+
+            // Status indicator
+            let status, statusColor, gradNorm, action;
+            if (monitoringScenario === 'healthy') {
+                status = 'Healthy Training';
+                statusColor = '#64ffda';
+                gradNorm = '0.5-2.0';
+                action = 'Continue';
+            } else if (monitoringScenario === 'overfitting') {
+                status = 'Overfitting Detected';
+                statusColor = '#ffd93d';
+                gradNorm = '1.0-5.0';
+                action = 'Add regularization';
+            } else if (monitoringScenario === 'diverging') {
+                status = 'Loss Diverging!';
+                statusColor = '#ff6b6b';
+                gradNorm = '> 10';
+                action = 'Reduce LR, clip grads';
+            } else {
+                status = 'Loss Spikes';
+                statusColor = '#ff9800';
+                gradNorm = 'Variable';
+                action = 'Monitor batch quality';
+            }
+
+            document.getElementById('monitoringStatus').textContent = status;
+            document.getElementById('monitoringStatus').style.color = statusColor;
+            document.getElementById('monitoringGradNorm').textContent = gradNorm;
+            document.getElementById('monitoringAction').textContent = action;
+
+            monitoringCtx.fillStyle = statusColor;
+            monitoringCtx.font = 'bold 12px Arial';
+            monitoringCtx.fillText(status, pad.l, pad.t - 10);
+        }
+        drawMonitoring();
+
+        // ============ Hardware Awareness ============
+        let hardwareView = 'hierarchy';
+        let gpuType = 'h100';
+        const hardwareCanvas = document.getElementById('hardwareCanvas');
+        const hardwareCtx = hardwareCanvas.getContext('2d');
+
+        document.querySelectorAll('.hardware-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.hardware-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                hardwareView = e.target.dataset.view;
+                drawHardware();
+            });
+        });
+
+        document.querySelectorAll('.gpu-type-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.gpu-type-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                gpuType = e.target.dataset.gpu;
+                drawHardware();
+            });
+        });
+
+        function drawHardware() {
+            hardwareCtx.fillStyle = '#0f0f17';
+            hardwareCtx.fillRect(0, 0, hardwareCanvas.width, hardwareCanvas.height);
+
+            const specs = {
+                h100: { compute: '3.5 PFLOPs', bandwidth: '3.35 TB/s', mem: '80GB' },
+                a100: { compute: '1.5 PFLOPs', bandwidth: '2.0 TB/s', mem: '80GB' },
+                l40s: { compute: '0.728 PFLOPs', bandwidth: '0.96 TB/s', mem: '48GB' }
+            };
+
+            const spec = specs[gpuType];
+
+            hardwareCtx.fillStyle = '#01a3a4';
+            hardwareCtx.font = 'bold 14px Arial';
+            hardwareCtx.fillText(gpuType.toUpperCase() + ' - ' + hardwareView.toUpperCase(), 40, 30);
+
+            if (hardwareView === 'hierarchy') {
+                hardwareCtx.font = '12px Arial';
+                const levels = [
+                    { name: 'SRAM (Tensor Cores)', size: '144 KB', bandwidth: '19.5 TB/s', y: 60 },
+                    { name: 'L2 Cache', size: '144 MB', bandwidth: '10 TB/s', y: 120 },
+                    { name: 'HBM (Main Memory)', size: spec.mem, bandwidth: spec.bandwidth, y: 180 }
+                ];
+
+                levels.forEach(level => {
+                    hardwareCtx.fillStyle = '#2e5f5f';
+                    hardwareCtx.fillRect(40, level.y, 500, 40);
+                    hardwareCtx.strokeStyle = '#01a3a4';
+                    hardwareCtx.lineWidth = 2;
+                    hardwareCtx.strokeRect(40, level.y, 500, 40);
+
+                    hardwareCtx.fillStyle = '#01a3a4';
+                    hardwareCtx.fillText(level.name + ' | Size: ' + level.size + ' | BW: ' + level.bandwidth, 50, level.y + 25);
+                });
+
+                hardwareCtx.fillStyle = '#ff6b6b';
+                hardwareCtx.font = 'bold 11px Arial';
+                hardwareCtx.fillText('Bottleneck: Data movement from HBM is typically the limiting factor!', 40, 270);
+            } else if (hardwareView === 'roofline') {
+                hardwareCtx.fillStyle = '#666';
+                hardwareCtx.font = '11px monospace';
+                hardwareCtx.fillText('Performance limited by: min(Peak Compute, AI × Bandwidth)', 40, 60);
+                hardwareCtx.fillText('AI = FLOPs / Bytes moved', 40, 85);
+                hardwareCtx.fillText('', 40, 110);
+
+                hardwareCtx.fillStyle = '#01a3a4';
+                hardwareCtx.fillText('Peak Compute: ' + spec.compute, 50, 140);
+                hardwareCtx.fillText('HBM Bandwidth: ' + spec.bandwidth, 50, 165);
+                hardwareCtx.fillText('Roof (AI=1): ' + spec.bandwidth.split(' ')[0] + ' TFLOPS', 50, 190);
+                hardwareCtx.fillText('Roof (AI=10): ' + (parseFloat(spec.bandwidth) * 10) + ' TFLOPS', 50, 215);
+                hardwareCtx.fillText('Roof (AI=100): Peak Compute (' + spec.compute + ')', 50, 240);
+            } else {
+                hardwareCtx.fillStyle = '#ffd93d';
+                hardwareCtx.font = '12px Arial';
+                hardwareCtx.fillText('Arithmetic Intensity = FLOPs per Byte', 40, 60);
+
+                const ops = [
+                    { name: 'Element-wise (ReLU, softmax)', ai: '~1 FLOPs/B', type: 'memory-bound' },
+                    { name: 'Vector dot product', ai: '~5 FLOPs/B', type: 'memory-bound' },
+                    { name: 'Small MatMul (N=64)', ai: '~50 FLOPs/B', type: 'memory-bound' },
+                    { name: 'Large MatMul (N=512)', ai: '~200 FLOPs/B', type: 'compute-bound' },
+                    { name: 'Flash Attention (tiled)', ai: '~200 FLOPs/B', type: 'compute-bound' }
+                ];
+
+                let y = 90;
+                ops.forEach(op => {
+                    hardwareCtx.fillStyle = op.type === 'compute-bound' ? '#64ffda88' : '#ff6b6b88';
+                    hardwareCtx.fillRect(40, y, 500, 25);
+                    hardwareCtx.strokeStyle = op.type === 'compute-bound' ? '#64ffda' : '#ff6b6b';
+                    hardwareCtx.strokeRect(40, y, 500, 25);
+
+                    hardwareCtx.fillStyle = '#ccc';
+                    hardwareCtx.font = '11px Arial';
+                    hardwareCtx.fillText(op.name + ' (' + op.ai + ') - ' + op.type, 50, y + 16);
+                    y += 30;
+                });
+            }
+
+            // Update specs display
+            document.getElementById('hardwarePeakCompute').textContent = spec.compute;
+            document.getElementById('hardwareBandwidth').textContent = spec.bandwidth;
+            const aiValue = hardwareView === 'roofline' ? '10-200 FLOPs/B' : spec.bandwidth.split(' ')[0] + ' TB/s';
+            document.getElementById('hardwareIntensity').textContent = aiValue;
+        }
+        drawHardware();
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,2865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1. ML Fundamentals — Interactive Visualizations</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #0a0a0f; color: #e0e0e0; line-height: 1.6; }
+  .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; text-align: center; border-bottom: 1px solid #2a2a4a; }
+  .header h1 { font-size: 2.2em; background: linear-gradient(90deg, #64ffda, #7c4dff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+  .header p { color: #888; font-size: 1.1em; }
+  .header a { color: #64ffda; text-decoration: none; font-size: 0.9em; }
+  .header a:hover { text-decoration: underline; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+  .viz-section { background: #12121f; border: 1px solid #2a2a4a; border-radius: 16px; padding: 32px; margin-bottom: 40px; }
+  .viz-section h2 { font-size: 1.5em; color: #64ffda; margin-bottom: 8px; }
+  .viz-section .subtitle { color: #888; margin-bottom: 24px; font-size: 0.95em; }
+  .viz-canvas { background: #0d0d1a; border-radius: 12px; position: relative; overflow: hidden; }
+  canvas { display: block; width: 100%; }
+  .controls { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; align-items: center; }
+  .control-group { display: flex; flex-direction: column; gap: 4px; }
+  .control-group label { font-size: 0.85em; color: #aaa; }
+  .control-group input[type="range"] { width: 200px; accent-color: #64ffda; }
+  .control-group .value { font-size: 0.85em; color: #64ffda; font-family: monospace; }
+  .legend { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.85em; color: #ccc; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 50%; }
+  .btn { padding: 8px 16px; border: 1px solid #64ffda; background: transparent; color: #64ffda; border-radius: 8px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
+  .btn:hover { background: #64ffda22; }
+  .btn.active { background: #64ffda33; }
+  .tab-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+
+  .insight-box { background: linear-gradient(135deg, #1a1a3e 0%, #151530 100%); border-left: 4px solid #64ffda; padding: 20px 24px; margin-top: 20px; border-radius: 0 12px 12px 0; font-size: 0.92em; color: #ccc; line-height: 1.8; }
+  .insight-box strong { color: #64ffda; font-size: 1.05em; }
+  .insight-box .formula { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 12px 18px; margin: 12px 0; font-family: 'Courier New', monospace; color: #e8e8ff; font-size: 1.05em; text-align: center; letter-spacing: 0.5px; line-height: 1.9; }
+  .insight-box .formula .highlight { color: #64ffda; font-weight: bold; }
+  .insight-box .key-point { display: flex; gap: 8px; margin: 8px 0; padding: 4px 0; }
+  .insight-box .key-point .label { color: #64ffda; font-weight: 600; white-space: nowrap; min-width: 90px; }
+  .insight-box .key-point .desc { color: #ddd; }
+  .insight-box .interview-tip { background: rgba(100, 255, 100, 0.05); border: 1px solid rgba(100, 255, 100, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #b0ffb0; font-size: 0.93em; line-height: 1.6; }
+  .insight-box .interview-tip::before { content: '\1F4A1  Interview Tip: '; font-weight: 700; color: #7fff7f; }
+  .insight-box .mnemonic { background: rgba(255, 150, 255, 0.05); border: 1px solid rgba(255, 150, 255, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #ffb0ff; font-size: 0.93em; line-height: 1.6; }
+  .insight-box .mnemonic::before { content: '\1F9E0  Remember: '; font-weight: 700; color: #ff7fff; }
+  .insight-box .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+  .insight-box .comparison .option { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 10px 14px; }
+  .insight-box .comparison .option .opt-title { color: #64ffda; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
+  .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
+  .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
+
+</style>
+</head>
+<body>
+
+<div class="header">
+  <a href="index.html">&larr; Back to Index</a>
+  <h1>1. ML Fundamentals & Theory</h1>
+  <p>Interactive visualizations for core machine learning concepts</p>
+</div>
+
+<div class="container">
+
+<!-- 1. BAYES THEOREM -->
+<div class="viz-section">
+  <h2>Bayes Theorem: Disease Testing</h2>
+  <p class="subtitle">Update your belief about having a disease based on a test result. Adjust prior probability and test accuracy to see how P(disease|positive test) changes.</p>
+  <div class="viz-canvas">
+    <canvas id="bayesCanvas" width="800" height="400"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>Prior P(disease)</label>
+      <input type="range" id="bayesPrior" min="1" max="100" value="1" oninput="drawBayes()">
+      <span class="value" id="bayesPriorVal">1%</span>
+    </div>
+    <div class="control-group">
+      <label>Sensitivity (true positive rate)</label>
+      <input type="range" id="bayesSensitivity" min="50" max="99" value="99" oninput="drawBayes()">
+      <span class="value" id="bayesSensitivityVal">99%</span>
+    </div>
+    <div class="control-group">
+      <label>Specificity (true negative rate)</label>
+      <input type="range" id="bayesSpecificity" min="50" max="99" value="99" oninput="drawBayes()">
+      <span class="value" id="bayesSpecificityVal">99%</span>
+    </div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Bayes Theorem is the foundation of probabilistic inference.
+    <div class="formula">P(A|B) = <span class="highlight">P(B|A) · P(A)</span> / P(B)</div>
+    <div class="key-point">
+      <span class="label">Posterior:</span>
+      <span class="desc">P(A|B) - updated belief after observing evidence</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Likelihood:</span>
+      <span class="desc">P(B|A) - probability of data if hypothesis is true</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Prior:</span>
+      <span class="desc">P(A) - initial belief before seeing data</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Evidence:</span>
+      <span class="desc">P(B) - total probability of observing data (normalizer)</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Base rate fallacy: A 99% accurate test on a 1% prevalence disease gives only ~50% posterior probability. Prior dominates with rare events!</div>
+    <div class="mnemonic">Posterior ∝ Likelihood × Prior. Update beliefs by multiplying how well data fits with what you already believed.</div>
+    <div class="key-point">
+      <span class="label">ML Connection:</span>
+      <span class="desc">L2 regularization λ||w||² = log Gaussian prior on weights. Regularization = MAP with Gaussian prior.</span>
+    </div>
+  </div>
+  </div>
+
+<!-- 2. COMMON DISTRIBUTIONS -->
+<div class="viz-section">
+  <h2>Probability Distributions</h2>
+  <p class="subtitle">Explore PDFs and PMFs. Toggle between distributions and adjust parameters to see how mean and variance change.</p>
+  <div class="viz-canvas">
+    <canvas id="distCanvas" width="800" height="400"></canvas>
+  </div>
+  <div class="controls">
+    <div class="tab-bar">
+      <button class="btn active" id="distBernBtn" onclick="setDistType('bernoulli')">Bernoulli</button>
+      <button class="btn" id="distBinBtn" onclick="setDistType('binomial')">Binomial</button>
+      <button class="btn" id="distPoisBtn" onclick="setDistType('poisson')">Poisson</button>
+      <button class="btn" id="distGaussBtn" onclick="setDistType('gaussian')">Gaussian</button>
+      <button class="btn" id="distExpBtn" onclick="setDistType('exponential')">Exponential</button>
+      <button class="btn" id="distBetaBtn" onclick="setDistType('beta')">Beta</button>
+    </div>
+    <div class="control-group">
+      <label>Parameter</label>
+      <input type="range" id="distParam" min="1" max="100" value="50" oninput="drawDist()">
+      <span class="value" id="distParamVal">0.50</span>
+    </div>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span id="distInfo">Bernoulli: p=0.50</span></div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Each distribution has specific use cases, parameters, and assumptions.
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title">Bernoulli / Binomial</div>
+        <div class="opt-desc">Binary events. Binomial: E[X]=np, Var=np(1-p) for n trials.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title">Poisson</div>
+        <div class="opt-desc">Rare events with rate λ. When n large, p small, approximates Binomial.</div>
+      </div>
+    </div>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title">Gaussian</div>
+        <div class="opt-desc">Parameterized by μ, σ². Everywhere due to Central Limit Theorem.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title">Exponential</div>
+        <div class="opt-desc">Waiting times, inter-arrival. Memoryless property.</div>
+      </div>
+    </div>
+    <div class="key-point">
+      <span class="label">Beta Distribution:</span>
+      <span class="desc">Conjugate prior to Binomial. Flexible shapes via α, β. Standard for Bayesian A/B tests.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">When to use each? Poisson for counts, Gaussian for continuous data, Beta for probability parameters, Exponential for waiting times.</div>
+    <div class="mnemonic">Binary→Bernoulli, Counts→Poisson, Continuous→Gaussian, Waiting times→Exponential, Probability parameters→Beta</div>
+  </div>
+  </div>
+
+<!-- 3. MLE vs MAP -->
+<div class="viz-section">
+  <h2>MLE vs MAP: Coin Flips</h2>
+  <p class="subtitle">Maximum Likelihood finds the peak of likelihood. MAP adds a prior, pulling the solution toward prior beliefs. As data increases, MAP approaches MLE.</p>
+  <div class="viz-canvas">
+    <canvas id="mleCanvas" width="800" height="400"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>Number of Coin Flips (observations)</label>
+      <input type="range" id="mleN" min="1" max="100" value="20" oninput="drawMLE()">
+      <span class="value" id="mleNVal">20</span>
+    </div>
+    <div class="control-group">
+      <label>Prior Strength (Beta alpha+beta)</label>
+      <input type="range" id="mlePrior" min="2" max="100" value="20" oninput="drawMLE()">
+      <span class="value" id="mlePriorVal">20</span>
+    </div>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>Likelihood</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#4ecdc4"></div>Posterior (MAP)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#64ffda"></div>Prior</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> MLE maximizes likelihood; MAP incorporates prior beliefs.
+    <div class="formula">MLE: θ* = argmax<sub>θ</sub> log P(data|θ)</div>
+    <div class="key-point"><span class="label">θ:</span><span class="desc">Model parameters to optimize (weights, means, variances, etc.). θ* is the optimal value.</span></div>
+    <div class="key-point"><span class="label">argmax<sub>θ</sub>:</span><span class="desc">Find the parameter value θ that maximizes the expression—returns θ not the maximum value</span></div>
+    <div class="key-point"><span class="label">P(data|θ):</span><span class="desc">Likelihood—probability of observing the data given parameters θ. Higher = better fit.</span></div>
+    <div class="formula">MAP: θ* = argmax<sub>θ</sub> [log P(data|θ) + <span class="highlight">log P(θ)</span>]</div>
+    <div class="key-point"><span class="label">P(data|θ):</span><span class="desc">Likelihood—same as MLE, fits data well</span></div>
+    <div class="key-point"><span class="label">P(θ):</span><span class="desc">Prior—encodes domain belief about which θ values are reasonable before seeing data</span></div>
+    <div class="key-point"><span class="label">Adding log P(θ):</span><span class="desc">Biases optimization toward high-probability θ regions. In neural networks, this is regularization (L2 = Gaussian prior, L1 = Laplace prior)</span></div>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title">Maximum Likelihood</div>
+        <div class="opt-desc">Ignores prior. With weak priors and abundance of data, converges to MLE.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title">Maximum A Posteriori</div>
+        <div class="opt-desc">Incorporates P(θ). Combines likelihood with domain knowledge.</div>
+      </div>
+    </div>
+    <hr class="divider">
+    <div class="key-point">
+      <span class="label">Regularization = MAP:</span>
+      <span class="desc">L2 regularization λ||w||² = log Gaussian prior. Regularization is MAP in disguise.</span>
+    </div>
+    <div class="interview-tip">Use MAP when you have domain knowledge or limited data. Why regularization works? It encodes the belief that weights should be small.</div>
+    <div class="mnemonic">MLE = trust data completely. MAP = balance data with prior beliefs. Regularization = MAP hidden in neural networks.</div>
+  </div>
+  </div>
+
+<!-- 4. CENTRAL LIMIT THEOREM -->
+<div class="viz-section">
+  <h2>Central Limit Theorem</h2>
+  <p class="subtitle">Sample from a highly skewed distribution. As sample size increases, the histogram of sample means becomes Gaussian, even though the original distribution is not.</p>
+  <div class="viz-canvas">
+    <canvas id="cltCanvas" width="800" height="400"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>Sample Size per Mean (n)</label>
+      <input type="range" id="cltN" min="1" max="100" value="10" oninput="drawCLT()">
+      <span class="value" id="cltNVal">10</span>
+    </div>
+    <div class="control-group">
+      <label>Number of Samples Drawn</label>
+      <input type="range" id="cltSamples" min="100" max="5000" value="1000" oninput="drawCLT()">
+      <span class="value" id="cltSamplesVal">1000</span>
+    </div>
+    <button class="btn" onclick="animateCLT()">▶ Animate</button>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Sample means approach a Gaussian distribution as sample size increases, regardless of underlying distribution.
+    <div class="formula">If X₁, X₂, ..., Xₙ ~ any distribution with mean μ, variance σ²<br>Then: (X̄ - μ)/(σ/√n) → <span class="highlight">N(0,1)</span></div>
+    <div class="key-point">
+      <span class="label">Key condition:</span>
+      <span class="desc">Finite variance. Distribution shape doesn't matter—only mean and variance.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Why it matters:</span>
+      <span class="desc">Justifies t-tests, confidence intervals, Gaussian assumptions in inference on sample means.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Sample size needed:</span>
+      <span class="desc">~30 samples for most distributions. More if distribution is very skewed.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">This is why we can use normal-based tests even when data isn't normally distributed. Always remember: applies to sample MEANS, not individual observations.</div>
+    <div class="mnemonic">Averages of any distribution look Gaussian. This profound result explains why Gaussian assumptions are everywhere in statistics.</div>
+  </div>
+  </div>
+
+<!-- 5. ENTROPY & CROSS-ENTROPY -->
+<div class="viz-section">
+  <h2>Entropy & Cross-Entropy</h2>
+  <p class="subtitle">Binary entropy H(p) = -p log(p) - (1-p)log(1-p). Cross-entropy H(p,q) measures divergence. Gap = KL divergence.</p>
+  <div class="viz-canvas">
+    <canvas id="entropyCanvas" width="800" height="400"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>True Distribution p</label>
+      <input type="range" id="entropyP" min="0" max="100" value="30" oninput="drawEntropy()">
+      <span class="value" id="entropyPVal">0.30</span>
+    </div>
+    <div class="control-group">
+      <label>Approximation q</label>
+      <input type="range" id="entropyQ" min="0" max="100" value="50" oninput="drawEntropy()">
+      <span class="value" id="entropyQVal">0.50</span>
+    </div>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#64ffda"></div>Entropy H(p)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>Cross-Entropy H(p,q)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#7c4dff"></div>KL Divergence KL(p||q)</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Entropy measures information content and fundamental limits of compression.
+    <div class="formula">H(p) = -Σ p(x) log p(x)</div>
+    <div class="key-point"><span class="label">p(x):</span><span class="desc">True probability of outcome x (the real data distribution)</span></div>
+    <div class="key-point"><span class="label">Σ:</span><span class="desc">Sum over all possible outcomes x in the distribution</span></div>
+    <div class="key-point"><span class="label">H(p):</span><span class="desc">Minimum average bits needed to encode outcomes from distribution p (lossless compression limit). Maximum = log₂(N) for N equally likely outcomes.</span></div>
+    <hr class="divider">
+    <div class="formula">Cross-entropy: H(p, q) = -Σ p(x) log q(x)</div>
+    <div class="key-point"><span class="label">p(x):</span><span class="desc">True distribution — how outcomes actually occur (e.g., true labels)</span></div>
+    <div class="key-point"><span class="label">q(x):</span><span class="desc">Model's predicted distribution — your approximation (e.g., softmax outputs)</span></div>
+    <div class="key-point"><span class="label">H(p, q):</span><span class="desc">Average bits needed when encoding with wrong distribution q. Always ≥ H(p). The gap is the KL divergence.</span></div>
+    <hr class="divider">
+    <div class="formula">KL(p ‖ q) = H(p, q) − H(p) = Σ p(x) log <span class="highlight">p(x) / q(x)</span></div>
+    <div class="key-point"><span class="label">p(x) / q(x):</span><span class="desc">Likelihood ratio — how much the true distribution disagrees with the model at each point x</span></div>
+    <div class="key-point"><span class="label">KL = 0:</span><span class="desc">q perfectly matches p everywhere. KL ≥ 0 always (Gibbs' inequality).</span></div>
+    <div class="key-point"><span class="label">Asymmetric:</span><span class="desc">KL(p‖q) ≠ KL(q‖p) — this matters hugely for VAEs vs. expectation propagation</span></div>
+    <hr class="divider">
+    <div class="interview-tip">"What loss does classification optimize?" → Cross-entropy H(p, q) where p = one-hot true labels, q = softmax predictions. Minimizing cross-entropy = minimizing KL(p‖q) because H(p) is fixed.</div>
+    <div class="mnemonic">p = truth, q = your model. H(p) = best possible. H(p,q) = what you actually pay. KL = the tax for being wrong.</div>
+  </div>
+  </div>
+
+<!-- 6. KL DIVERGENCE -->
+<div class="viz-section">
+  <h2>KL Divergence: Asymmetry</h2>
+  <p class="subtitle">KL(p||q) measures how hard it is to approximate p with q. KL(q||p) is different. Forward KL fits q in high-probability regions of p. Reverse KL fits q everywhere p has support.</p>
+  <div class="viz-canvas">
+    <canvas id="klCanvas" width="800" height="400"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>P Distribution Width</label>
+      <input type="range" id="klPWidth" min="10" max="150" value="50" oninput="drawKL()">
+      <span class="value" id="klPWidthVal">50</span>
+    </div>
+    <div class="control-group">
+      <label>Q Distribution Width</label>
+      <input type="range" id="klQWidth" min="10" max="150" value="50" oninput="drawKL()">
+      <span class="value" id="klQWidthVal">50</span>
+    </div>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#64ffda"></div>P (True)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>Q (Approx)</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> KL divergence is asymmetric; forward and reverse KL have opposite behavior.
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title">Forward KL: KL(p||q)</div>
+        <div class="opt-desc">Penalizes missing modes where p has mass. q must have modes everywhere p has mass. Mode-covering, covers all modes.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title">Reverse KL: KL(q||p)</div>
+        <div class="opt-desc">Penalizes placing mass where p has none. q focuses on highest mode of p. Mode-seeking, picks single mode.</div>
+      </div>
+    </div>
+    <div class="key-point">
+      <span class="label">Forward KL consequence:</span>
+      <span class="desc">Used in expectation propagation, can learn multimodal distributions, places probability mass broadly</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Reverse KL consequence:</span>
+      <span class="desc">Used in variational inference, learns sharp concentrated distribution, misses modes</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Reverse KL in VAEs leads to posterior collapse if not careful. Forward KL more expensive computationally but covers all modes.</div>
+    <div class="mnemonic">Forward KL covers all modes (broader, safer). Reverse KL picks best mode (faster, sharper). Remember: asymmetry matters for distribution matching!</div>
+  </div>
+  </div>
+
+<!-- 7. GRADIENT DESCENT VARIANTS -->
+<div class="viz-section">
+  <h2>Gradient Descent Variants</h2>
+  <p class="subtitle">Compare SGD, Momentum, and Adam on a 2D loss surface. Momentum dampens oscillations. Adam adapts per-parameter learning rates.</p>
+  <div class="viz-canvas">
+    <canvas id="gdvCanvas" width="800" height="400"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>Learning Rate</label>
+      <input type="range" id="gdvLR" min="1" max="50" value="10" oninput="initGDV()">
+      <span class="value" id="gdvLRVal">0.010</span>
+    </div>
+    <button class="btn" onclick="resetGDV()">↺ Reset</button>
+    <button class="btn" id="gdvPlayBtn" onclick="toggleGDV()">▶ Start</button>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>SGD</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#4ecdc4"></div>Momentum</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ffd93d"></div>Adam</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Momentum accelerates convergence by accumulating velocity over time.
+    <div class="formula">Standard SGD: θ ← θ - <span class="highlight">lr·∇L(θ)</span></div>
+    <div class="key-point"><span class="label">θ:</span><span class="desc">Model parameters (weights, biases). ← means "update to"</span></div>
+    <div class="key-point"><span class="label">lr:</span><span class="desc">Learning rate—step size for parameter update. Typical range: 0.001 to 0.1 depending on optimizer. Too large = divergence, too small = slow convergence.</span></div>
+    <div class="key-point"><span class="label">∇L(θ):</span><span class="desc">Gradient of loss w.r.t. parameters. Points in direction of steepest increase. We move opposite (negative sign) to decrease loss.</span></div>
+    <div class="formula">Momentum: v<sub>t</sub> = <span class="highlight">β·v<sub>t-1</sub></span> + ∇L(θ),  then θ ← θ - lr·v<sub>t</sub></div>
+    <div class="key-point"><span class="label">v<sub>t</sub>:</span><span class="desc">Velocity vector at iteration t. Accumulates gradients over time with decay</span></div>
+    <div class="key-point"><span class="label">β:</span><span class="desc">Momentum coefficient, typically 0.9. Controls how much history to retain. β ∈ (0,1)</span></div>
+    <div class="key-point"><span class="label">β·v<sub>t-1</sub> + ∇L(θ):</span><span class="desc">Weighted sum: retain 90% of previous velocity (β=0.9), add current gradient. Smooths oscillations, accelerates consistent directions.</span></div>
+    <div class="key-point">
+      <span class="label">What momentum does:</span>
+      <span class="desc">Accumulates velocity in consistent directions. Dampens oscillations in directions that change sign. Accelerates in plateau regions.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">β parameter:</span>
+      <span class="desc">Typically 0.9. Controls how much history to retain. Higher β = more history, smoother but slower to change direction.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Typical choices:</span>
+      <span class="desc">β=0.9 for standard SGD. Modern optimizers (Adam) incorporate momentum automatically.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Momentum helps escape local minima and plateaus. It's like a ball rolling downhill—accumulates speed in good directions.</div>
+    <div class="mnemonic">Momentum = velocity accumulation. Pushes in consistent directions, fights oscillation, scales poorly with noisy gradients.</div>
+  </div>
+  </div>
+
+<!-- 8. LEARNING RATE EFFECT -->
+<div class="viz-section">
+  <h2>Learning Rate Effect</h2>
+  <p class="subtitle">Same loss surface, but slider controls learning rate. Too small = slow convergence, just right = smooth descent, too large = divergence.</p>
+  <div class="viz-canvas">
+    <canvas id="lrCanvas" width="800" height="400"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>Learning Rate (α)</label>
+      <input type="range" id="lrAlpha" min="1" max="100" value="20" oninput="drawLR()">
+      <span class="value" id="lrAlphaVal">0.020</span>
+    </div>
+    <button class="btn" onclick="resetLR()">↺ Reset</button>
+    <button class="btn" id="lrPlayBtn" onclick="toggleLR()">▶ Start</button>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Learning rate controls gradient step magnitude—most critical hyperparameter.
+    <div class="formula">θ ← θ - <span class="highlight">α·∇L(θ)</span>  where α is learning rate</div>
+    <div class="key-point">
+      <span class="label">Too small α:</span>
+      <span class="desc">Training prohibitively slow. May get stuck in local minima. High variance from noise.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Too large α:</span>
+      <span class="desc">Parameters diverge, loss oscillates wildly, training explodes. May diverge immediately.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Finding the right α:</span>
+      <span class="desc">Learning rate schedules (decay, warm restart). Rule of thumb: start with 0.001-0.01, adjust based on loss curve.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Adaptive methods:</span>
+      <span class="desc">Adam, RMSprop automatically adjust per-parameter learning rates. Reduces tuning burden.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Plot loss vs. iterations! Smooth curve = good α. Diverging = too large. Flat then drop = too small. Oscillating = right size but noisy.</div>
+    <div class="mnemonic">Learning rate is the gas pedal: too small = crawl, too large = crash. Sweet spot: smooth consistent decrease.</div>
+  </div>
+  </div>
+
+<!-- 9. SVD VISUALIZATION -->
+<div class="viz-section">
+  <h2>SVD & Rank-k Approximation</h2>
+  <p class="subtitle">A = U Σ V^T. Slider controls rank k. Low rank = compressed version. Higher rank = better reconstruction. Related to PCA.</p>
+  <div class="viz-canvas">
+    <canvas id="svdCanvas" width="800" height="400"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>Rank k (keep top k components)</label>
+      <input type="range" id="svdK" min="1" max="50" value="5" oninput="drawSVD()">
+      <span class="value" id="svdKVal">5</span>
+    </div>
+    <button class="btn" onclick="toggleSVDDetails()">Show Details</button>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span id="svdInfo">Rank 5 / 50: 10% parameters, 85% variance</span></div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> SVD factors any matrix into orthogonal matrices and singular values.
+    <div class="formula">A (m×n) = <span class="highlight">U·Σ·V<sup>T</sup></span></div>
+    <div class="key-point">
+      <span class="label">U (m×m):</span>
+      <span class="desc">Orthogonal matrix. Columns are principal directions of A.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Σ (m×n):</span>
+      <span class="desc">Diagonal with singular values σ₁≥σ₂≥... decreasing order. Represents importance of each direction.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">V<sup>T</sup> (n×n):</span>
+      <span class="desc">Orthogonal matrix. Rows are principal directions in original space.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Interpretation:</span>
+      <span class="desc">First r singular values capture ~95% of information. Truncate for dimensionality reduction, denoising.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">SVD is numerically stable, always exists. For tall matrices, use reduced SVD (m×n factors) for efficiency.</div>
+    <div class="mnemonic">SVD = best-fit orthogonal decomposition. U and V are rotations, Σ scales. Smaller singular values = noise.</div>
+  </div>
+  </div>
+
+<!-- 10. EIGENVALUES & EIGENVECTORS -->
+<div class="viz-section">
+  <h2>Eigenvalues & Eigenvectors</h2>
+  <p class="subtitle">Transform vectors via matrix A. Eigenvectors do not change direction (only scale by eigenvalue). Adjust matrix entries to see effect.</p>
+  <div class="viz-canvas">
+    <canvas id="eigenCanvas" width="800" height="400"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>Matrix A[0,0]</label>
+      <input type="range" id="eigenA00" min="0" max="30" value="15" oninput="drawEigen()">
+      <span class="value" id="eigenA00Val">1.50</span>
+    </div>
+    <div class="control-group">
+      <label>Matrix A[0,1] (symmetry)</label>
+      <input type="range" id="eigenA01" min="0" max="30" value="5" oninput="drawEigen()">
+      <span class="value" id="eigenA01Val">0.50</span>
+    </div>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#64ffda"></div>Original</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>Eigenvector 1</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#7c4dff"></div>Eigenvector 2</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Eigendecomposition factorizes symmetric matrices into eigenvectors and eigenvalues.
+    <div class="formula">For symmetric A: <span class="highlight">A = Q·Λ·Q<sup>T</sup></span></div>
+    <div class="key-point">
+      <span class="label">Q (n×n):</span>
+      <span class="desc">Orthogonal matrix of eigenvectors. Columns are principal axes of A.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Λ (n×n):</span>
+      <span class="desc">Diagonal matrix with eigenvalues λ₁, λ₂, ... on diagonal. Represents stretch/compression along each eigenvector.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">For covariance matrices:</span>
+      <span class="desc">Eigenvalues = variance along principal components. Larger eigenvalue = more variance explained.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Only for symmetric matrices:</span>
+      <span class="desc">Covariance Cov(X) is symmetric positive semidefinite. Guarantees real eigenvalues, orthogonal eigenvectors.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">PCA uses eigendecomposition of covariance matrix. Eigenvectors = principal components. Eigenvalues = variance explained.</div>
+    <div class="mnemonic">Eigendecomposition = finding natural axes. Eigenvectors = directions, eigenvalues = how much the matrix stretches along each direction.</div>
+  </div>
+  </div>
+
+<!-- 11. BIAS-VARIANCE TRADEOFF -->
+<div class="viz-section">
+  <h2>Bias-Variance Tradeoff</h2>
+  <p class="subtitle">Adjust model complexity. Simple models = high bias (underfit). Complex models = high variance (overfit). Optimal balances both.</p>
+  <div class="viz-canvas">
+    <canvas id="bvCanvas" width="800" height="400"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>Model Complexity (polynomial degree)</label>
+      <input type="range" id="bvComplexity" min="1" max="15" value="3" oninput="drawBV()">
+      <span class="value" id="bvComplexityVal">3</span>
+    </div>
+    <button class="btn" onclick="animateBV()">▶ Animate Sweep</button>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>Bias²</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#4ecdc4"></div>Variance</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ffd93d"></div>Total Error</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#64ffda"></div>Current</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Test error decomposes into three parts: bias, variance, and irreducible error.
+    <div class="formula">E[(y - f̂)²] = <span class="highlight">Bias(f̂)²</span> + <span class="highlight">Var(f̂)</span> + σ²</div>
+    <div class="key-point">
+      <span class="label">Bias:</span>
+      <span class="desc">Error from wrong modeling assumptions. E.g., fitting a line to curved data. High bias = underfitting.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Variance:</span>
+      <span class="desc">Sensitivity to training set fluctuations. Small changes in data cause large model changes. High variance = overfitting.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Irreducible error σ²:</span>
+      <span class="desc">Noise in labels. Can't reduce below this. Sets performance ceiling.</span>
+    </div>
+    <hr class="divider">
+    <div class="key-point">
+      <span class="label">Model complexity trade-off:</span>
+      <span class="desc">Simple models: high bias, low variance. Complex models: low bias, high variance.</span>
+    </div>
+    <div class="interview-tip">How to diagnose underfitting vs overfitting? High training and test error = underfitting (high bias). Low training, high test error = overfitting (high variance).</div>
+    <div class="mnemonic">Bias = systematic error. Variance = random error. Balance them: neither too rigid (high bias) nor too flexible (high variance).</div>
+  </div>
+  </div>
+
+<!-- 12. L1 vs L2 REGULARIZATION -->
+<div class="viz-section">
+  <h2>L1 vs L2 Regularization</h2>
+  <p class="subtitle">L1 (Lasso) creates sparsity (diamond constraint). L2 (Ridge) shrinks uniformly (circle constraint). L1 corners explain feature selection.</p>
+  <div class="viz-canvas">
+    <canvas id="regCanvas" width="800" height="400"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>Regularization Strength (λ)</label>
+      <input type="range" id="regLambda" min="1" max="100" value="30" oninput="drawReg()">
+      <span class="value" id="regLambdaVal">0.30</span>
+    </div>
+    <div class="tab-bar">
+      <button class="btn active" id="regL1Btn" onclick="setRegType('l1')">L1 (Lasso)</button>
+      <button class="btn" id="regL2Btn" onclick="setRegType('l2')">L2 (Ridge)</button>
+      <button class="btn" id="regBothBtn" onclick="setRegType('both')">Compare Both</button>
+    </div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> L1 regularization induces sparsity by constraining weights to a diamond region.
+    <div class="formula">Loss + <span class="highlight">λ·Σ|w<sub>i</sub>|</span>  (add L1 penalty)</div>
+    <div class="key-point">
+      <span class="label">Geometric intuition:</span>
+      <span class="desc">Constraint region is diamond-shaped (axis-aligned). Loss contours are elliptical. Optimum hits corner on axes → many w=0.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Sparsity:</span>
+      <span class="desc">As λ increases, more weights become exactly zero. Natural feature selection. Only important features remain.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Why L1 sparsifies:</span>
+      <span class="desc">Corners of diamond region are on axes. L2 ellipse vs L1 diamond: L1 hits axes first, L2 hits sides.</span>
+    </div>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title">L1 (Lasso)</div>
+        <div class="opt-desc">Sparsity, feature selection, interpretability. Unstable if correlated features.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title">L2 (Ridge)</div>
+        <div class="opt-desc">Smooth shrinkage, stable with correlated features. Interpretable weights.</div>
+      </div>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Use L1 for feature selection when you want sparse solutions. L2 when you want to keep all features but penalize large weights.</div>
+    <div class="mnemonic">L1 = diamonds and sparsity. L2 = smooth shrinkage. Both prevent overfitting, but L1 also does feature selection.</div>
+  </div>
+  </div>
+
+<!-- 13. DECISION BOUNDARIES -->
+<div class="viz-section">
+  <h2>Decision Boundaries: Linear vs Non-Linear</h2>
+  <p class="subtitle">Compare classifiers. Linear = straight boundaries. Polynomial/RBF = complex curves. Trees = axis-aligned blocks.</p>
+  <div class="viz-canvas">
+    <canvas id="dbCanvas" width="800" height="400"></canvas>
+  </div>
+  <div class="controls">
+    <div class="tab-bar">
+      <button class="btn active" id="dbLinBtn" onclick="setDBType('linear')">Logistic Regression</button>
+      <button class="btn" id="dbPolyBtn" onclick="setDBType('poly')">Polynomial SVM</button>
+      <button class="btn" id="dbRbfBtn" onclick="setDBType('rbf')">RBF Kernel SVM</button>
+      <button class="btn" id="dbTreeBtn" onclick="setDBType('tree')">Decision Tree</button>
+    </div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Kernel trick enables high/infinite-dimensional computations without explicit feature vectors.
+    <div class="formula">If K(x, x') = φ(x)·φ(x'), then can work in feature space using K</div>
+    <div class="key-point">
+      <span class="label">Core idea:</span>
+      <span class="desc">Compute dot products in high-dimensional feature space φ(x)·φ(x') without computing φ explicitly. Only need kernel K.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Examples:</span>
+      <span class="desc">Linear: K(x,x')=x·x'. Polynomial: (x·x'+1)^d. RBF: exp(-γ||x-x'||²). Each corresponds to implicit feature space.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Advantage:</span>
+      <span class="desc">SVMs can handle infinite dimensions. Polynomial kernel = implicitly polynomial features without computing them.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Limitation:</span>
+      <span class="desc">Kernel matrix is O(n²) in memory. Only for kernelized algorithms (SVM, kernel regression, GP). Not all algorithms support kernels.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Kernel trick = avoid curse of dimensionality. RBF kernel in high-dim is powerful but computationally expensive. Always check kernel matrix size.</div>
+    <div class="mnemonic">Kernel trick = compute dot products in feature space without computing features. Magic of SVMs and kernel methods.</div>
+  </div>
+  </div>
+
+<!-- 14. K-FOLD CROSS-VALIDATION -->
+<div class="viz-section">
+  <h2>K-Fold Cross-Validation</h2>
+  <p class="subtitle">Data split into K folds. Each fold is validation once; others train. Average K error estimates for robust test error.</p>
+  <div class="viz-canvas">
+    <canvas id="cvCanvas" width="800" height="300"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>Number of Folds (K)</label>
+      <input type="range" id="cvK" min="2" max="10" value="5" oninput="drawCV()">
+      <span class="value" id="cvKVal">5</span>
+    </div>
+    <button class="btn" onclick="animateCV()">▶ Animate Folds</button>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#4ecdc4"></div>Training Data</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>Validation Fold</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> K-fold CV splits data into K disjoint folds for robust generalization estimates.
+    <div class="formula">Repeat K times: <span class="highlight">Train on K-1 folds</span>, test on held-out fold</div>
+    <div class="key-point">
+      <span class="label">Process:</span>
+      <span class="desc">1. Split data into K disjoint folds. 2. Train on K-1, test on 1 fold. 3. Repeat K times. 4. Average K test errors.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Advantage:</span>
+      <span class="desc">Uses all data for both training and evaluation. Robust to train/test split randomness. Reduces variance of estimate.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Typical K:</span>
+      <span class="desc">K=5 or K=10. Tradeoff: larger K = better estimate but more computation. K=n (leave-one-out) expensive but unbiased.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Stratified K-fold:</span>
+      <span class="desc">For classification, maintain class distribution in each fold. Important for imbalanced datasets.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Don't use K-fold for time series! Data leakage. Use expanding window or time-series split instead.</div>
+    <div class="mnemonic">K-fold = multiple train/test splits averaged. Robust estimate of true generalization error. Standard in ML competitions.</div>
+  </div>
+  </div>
+
+<!-- 15. GRADIENT BOOSTED TREES -->
+<div class="viz-section">
+  <h2>Gradient Boosted Trees</h2>
+  <p class="subtitle">Sequentially build trees. Each new tree fits the residuals of previous trees. Predictions accumulate as sum of weak learners.</p>
+  <div class="viz-canvas">
+    <canvas id="gbtCanvas" width="800" height="400"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>Number of Trees</label>
+      <input type="range" id="gbtTrees" min="1" max="50" value="10" oninput="drawGBT()">
+      <span class="value" id="gbtTreesVal">10</span>
+    </div>
+    <button class="btn" onclick="animateGBT()">▶ Animate Build</button>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#0d0d1a"></div>Data</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#64ffda"></div>Current Prediction</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>True Function</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Boosting sequentially trains weak learners, each correcting previous mistakes.
+    <div class="formula">F_m = F_{m-1} + <span class="highlight">learning_rate·tree_m(residuals)</span></div>
+    <div class="key-point">
+      <span class="label">Algorithm:</span>
+      <span class="desc">1. Train weak learner on data. 2. Compute residuals (prediction errors). 3. Train next learner on residuals. 4. Add with learning rate.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Why it works:</span>
+      <span class="desc">Each weak learner fixes mistakes of previous ensemble. Greedy correction mechanism focuses on hard examples.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Learning rate:</span>
+      <span class="desc">Controls step size. Small (0.01-0.1) often better than large. Requires more iterations but better generalization.</span>
+    </div>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title">Gradient Boosting</div>
+        <div class="opt-desc">Fits residuals directly. Can use any differentiable loss. Flexible for regression/classification.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title">AdaBoost</div>
+        <div class="opt-desc">Re-weights examples, focuses on misclassified. For binary classification.</div>
+      </div>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Boosting reduces bias significantly. Watch for overfitting as iterations increase. Use early stopping on validation set.</div>
+    <div class="mnemonic">Boosting = successive corrections. Each learner fixes previous mistakes. Slow and steady wins the race (small learning rates).</div>
+  </div>
+  </div>
+
+<!-- 16. HYPOTHESIS TESTING -->
+<div class="viz-section">
+  <h2>Hypothesis Testing & p-Values</h2>
+  <p class="subtitle">Visualize Type I/II errors, statistical power, and how sample size affects significance.</p>
+  <div class="viz-canvas">
+    <canvas id="htCanvas" width="800" height="400"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>Effect Size (Cohen's d)</label>
+      <input type="range" id="htEffect" min="0.1" max="2" step="0.1" value="0.5">
+      <div class="value" id="htEffectVal">0.5</div>
+    </div>
+    <div class="control-group">
+      <label>Sample Size (n)</label>
+      <input type="range" id="htN" min="10" max="200" step="10" value="30">
+      <div class="value" id="htNVal">30</div>
+    </div>
+    <div class="control-group">
+      <label>Significance Level (α)</label>
+      <input type="range" id="htAlpha" min="1" max="10" step="1" value="5">
+      <div class="value" id="htAlphaVal">0.05</div>
+    </div>
+  </div>
+  <div class="insight-box">
+    <strong>Interview Tips:</strong> Understanding p-values and statistical significance is crucial.
+    <div class="key-point">
+      <span class="label">p-value definition:</span>
+      <span class="desc">Probability of observing test statistic as extreme as observed, under null hypothesis H₀ (no effect).</span>
+    </div>
+    <div class="key-point">
+      <span class="label">What p-value is NOT:</span>
+      <span class="desc">NOT probability that H₀ is true. NOT probability your result is reproducible. NOT effect size or practical significance.</span>
+    </div>
+    <div class="formula">Decision rule: p-value <span class="highlight">&lt; α</span> (typically 0.05) → reject H₀</div>
+    <div class="key-point">
+      <span class="label">Type I error (false positive):</span>
+      <span class="desc">Reject H₀ when it's true. Probability = α. Setting α=0.05 means 5% false positive rate.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Type II error (false negative):</span>
+      <span class="desc">Fail to reject H₀ when it's false. Probability = β. Power = 1-β.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Multiple comparisons: if you test 20 hypotheses at α=0.05, expect ~1 false positive. Use Bonferroni correction or false discovery rate control.</div>
+    <div class="mnemonic">p-value = evidence against H₀ under assumption H₀ is true. Small p = unlikely data under H₀. But doesn't mean H₀ is false!</div>
+  </div>
+  </div>
+
+<!-- 17. MONTE CARLO ESTIMATION -->
+<div class="viz-section">
+  <h2>Monte Carlo Estimation of π</h2>
+  <p class="subtitle">Random sampling to approximate π. Watch convergence as samples increase.</p>
+  <div class="viz-canvas">
+    <canvas id="mcCanvas" width="800" height="400"></canvas>
+  </div>
+  <div class="controls">
+    <button class="btn" id="mcReset">Reset</button>
+    <button class="btn" id="mcRun">Run 1000 Samples</button>
+    <div class="control-group">
+      <label>Current Estimate</label>
+      <div class="value" id="mcEstimate">—</div>
+    </div>
+    <div class="control-group">
+      <label>Total Samples</label>
+      <div class="value" id="mcTotal">0</div>
+    </div>
+    <div class="control-group">
+      <label>Error</label>
+      <div class="value" id="mcError">—</div>
+    </div>
+  </div>
+  <div class="insight-box">
+    <strong>Interview Tips:</strong> Monte Carlo sampling is fundamental for intractable expectations.
+    <div class="formula">E[f(X)] = ∫f(x)p(x)dx ≈ <span class="highlight">(1/n)·Σf(x_i)</span>  where x_i ~ p(x)</div>
+    <div class="key-point">
+      <span class="label">Algorithm:</span>
+      <span class="desc">1. Sample x₁,...,xₙ from p(x). 2. Compute average f̂ = (1/n)·Σf(xᵢ). 3. f̂ → E[f(X)] as n→∞ (Law of Large Numbers).</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Convergence rate:</span>
+      <span class="desc">O(1/√n). Very slow! Need n² samples to halve error. Curse of dimensionality.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Variance reduction:</span>
+      <span class="desc">Importance sampling, control variates, stratified sampling reduce variance per sample.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Application:</span>
+      <span class="desc">Computing partition functions in graphical models, expectations under intractable posteriors in Bayesian inference.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Slow convergence but embarrassingly parallel. Useful when analytical integral is intractable. Always consider variance reduction.</div>
+    <div class="mnemonic">Monte Carlo = approximate integral by sampling. Simple, general, slow (O(1/√n)). Variance reduction is key.</div>
+  </div>
+  </div>
+
+<!-- 18. NUMERICAL STABILITY -->
+<div class="viz-section">
+  <h2>Numerical Stability: Log-Sum-Exp Trick</h2>
+  <p class="subtitle">See why naive softmax overflows and how the max-subtraction trick fixes it.</p>
+  <div class="viz-canvas">
+    <canvas id="nsCanvas" width="800" height="400"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>Temperature</label>
+      <input type="range" id="nsTemp" min="0.1" max="5" step="0.1" value="1.0">
+      <div class="value" id="nsTempVal">1.0</div>
+    </div>
+    <div class="control-group">
+      <label>Max Logit Magnitude</label>
+      <input type="range" id="nsMag" min="1" max="1000" step="10" value="100">
+      <div class="value" id="nsMagVal">100</div>
+    </div>
+  </div>
+  <div class="insight-box">
+    <strong>Interview Tips:</strong> Log-sum-exp trick is essential for numerical stability in machine learning.
+    <div class="formula">log(Σexp(xᵢ)) = <span class="highlight">m + log(Σexp(xᵢ - m))</span>  where m = max(xᵢ)</div>
+    <div class="key-point">
+      <span class="label">The problem:</span>
+      <span class="desc">Direct computation exp(x) overflows when x is large. E.g., exp(1000) exceeds float64 range.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">The trick:</span>
+      <span class="desc">Subtract max before exponentiating. exp(xᵢ - m) stays bounded in [0,1]. Then add log(m) back.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Application:</span>
+      <span class="desc">Softmax: log softmax(xᵢ) = xᵢ - logsumexp(x). Log-likelihood in classification. Gradient computation.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Equivalent form:</span>
+      <span class="desc">logsumexp(x) = m + log(Σexp(x-m)). PyTorch: torch.logsumexp(). NumPy: scipy.special.logsumexp().</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Always use log-space computation for probabilities and likelihoods. Never compute softmax as exp(x)/Σexp(x) directly.</div>
+    <div class="mnemonic">Log-sum-exp = prevent overflow/underflow by shifting to max. Subtract max, exponentiate safely, add max back in log space.</div>
+  </div>
+  </div>
+
+</div>
+
+<script>
+// ==================== BAYES THEOREM ====================
+function drawBayes() {
+  const canvas = document.getElementById('bayesCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  const prior = parseInt(document.getElementById('bayesPrior').value) / 100;
+  const sensitivity = parseInt(document.getElementById('bayesSensitivity').value) / 100;
+  const specificity = parseInt(document.getElementById('bayesSpecificity').value) / 100;
+
+  document.getElementById('bayesPriorVal').textContent = (prior * 100).toFixed(0) + '%';
+  document.getElementById('bayesSensitivityVal').textContent = (sensitivity * 100).toFixed(0) + '%';
+  document.getElementById('bayesSpecificityVal').textContent = (specificity * 100).toFixed(0) + '%';
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Calculate posterior: P(disease|positive) = P(positive|disease)*P(disease) / P(positive)
+  const p_pos_given_disease = sensitivity;
+  const p_pos_given_no_disease = 1 - specificity;
+  const p_positive = p_pos_given_disease * prior + p_pos_given_no_disease * (1 - prior);
+  const posterior = (p_pos_given_disease * prior) / p_positive;
+
+  const pad = { l: 60, r: 30, t: 30, b: 50 };
+  const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+
+  // Draw axes
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.l, pad.t);
+  ctx.lineTo(pad.l, H - pad.b);
+  ctx.lineTo(W - pad.r, H - pad.b);
+  ctx.stroke();
+
+  // Labels
+  ctx.fillStyle = '#888';
+  ctx.font = '13px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Prior vs Posterior →', W/2, H - 10);
+  ctx.save();
+  ctx.translate(18, H/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText('Probability →', 0, 0);
+  ctx.restore();
+
+  // Prior bar
+  const barW = 80, spacing = 120;
+  const priorX = pad.l + spacing;
+  const postX = pad.l + spacing + 160;
+
+  // Prior bar
+  const priorH = prior * ph;
+  ctx.fillStyle = '#7c4dff88';
+  ctx.fillRect(priorX - barW/2, H - pad.b - priorH, barW, priorH);
+  ctx.strokeStyle = '#7c4dff';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(priorX - barW/2, H - pad.b - priorH, barW, priorH);
+
+  ctx.fillStyle = '#7c4dff';
+  ctx.font = '12px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText((prior * 100).toFixed(1) + '%', priorX, H - pad.b + 20);
+  ctx.fillText('Prior', priorX, pad.t + 15);
+
+  // Posterior bar
+  const postH = posterior * ph;
+  ctx.fillStyle = '#64ffda88';
+  ctx.fillRect(postX - barW/2, H - pad.b - postH, barW, postH);
+  ctx.strokeStyle = '#64ffda';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(postX - barW/2, H - pad.b - postH, barW, postH);
+
+  ctx.fillStyle = '#64ffda';
+  ctx.fillText((posterior * 100).toFixed(1) + '%', postX, H - pad.b + 20);
+  ctx.fillText('Posterior', postX, pad.t + 15);
+
+  // Surprise annotation
+  if (prior < 0.05 && posterior < 0.6) {
+    ctx.fillStyle = '#ff6b6b';
+    ctx.font = 'bold 14px Inter';
+    ctx.textAlign = 'left';
+    ctx.fillText('SURPRISE!', postX + 50, H/2);
+    ctx.font = '11px Inter';
+    ctx.fillText('Even accurate tests still leave high uncertainty', postX + 50, H/2 + 20);
+  }
+
+  // Formula at bottom
+  ctx.fillStyle = '#aaa';
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('P(D|+) = P(+|D) * P(D) / P(+) = ' + (sensitivity.toFixed(2)) + ' * ' + (prior.toFixed(4)) + ' / ' + (p_positive.toFixed(4)), pad.l, H - 8);
+}
+
+// ==================== COMMON DISTRIBUTIONS ====================
+let distType = 'bernoulli';
+
+function setDistType(type) {
+  distType = type;
+  document.getElementById('distBernBtn').classList.toggle('active', type === 'bernoulli');
+  document.getElementById('distBinBtn').classList.toggle('active', type === 'binomial');
+  document.getElementById('distPoisBtn').classList.toggle('active', type === 'poisson');
+  document.getElementById('distGaussBtn').classList.toggle('active', type === 'gaussian');
+  document.getElementById('distExpBtn').classList.toggle('active', type === 'exponential');
+  document.getElementById('distBetaBtn').classList.toggle('active', type === 'beta');
+  drawDist();
+}
+
+function drawDist() {
+  const canvas = document.getElementById('distCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const paramVal = parseInt(document.getElementById('distParam').value) / 100;
+
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = { l: 60, r: 40, t: 30, b: 50 };
+  const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+
+  // Draw axes
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.l, pad.t);
+  ctx.lineTo(pad.l, H - pad.b);
+  ctx.lineTo(W - pad.r, H - pad.b);
+  ctx.stroke();
+
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText('x →', W/2, H - 8);
+
+  let data = [], mean = 0, variance = 0, info = '';
+
+  if (distType === 'bernoulli') {
+    const p = paramVal;
+    data = [1 - p, p];
+    mean = p;
+    variance = p * (1 - p);
+    info = `Bernoulli: p=${p.toFixed(2)}, E[X]=${mean.toFixed(3)}, Var=${variance.toFixed(3)}`;
+
+    // Draw bars
+    ctx.fillStyle = '#64ffda88';
+    for (let i = 0; i < 2; i++) {
+      const x = pad.l + (i + 0.5) * pw / 2;
+      const y = H - pad.b - data[i] * ph;
+      const w = pw / 4;
+      ctx.fillRect(x - w/2, y, w, data[i] * ph);
+      ctx.strokeStyle = '#64ffda';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(x - w/2, y, w, data[i] * ph);
+      ctx.fillStyle = '#aaa';
+      ctx.textAlign = 'center';
+      ctx.fillText(i, x, H - pad.b + 15);
+    }
+  } else if (distType === 'binomial') {
+    const n = Math.floor(paramVal * 20 + 5);
+    const p = 0.5;
+    for (let k = 0; k <= n; k++) {
+      const prob = binomial(n, k, p);
+      data.push(prob);
+      mean += k * prob;
+      variance += k * k * prob - mean * mean;
+    }
+    variance = n * p * (1 - p);
+    mean = n * p;
+    info = `Binomial: n=${n}, p=0.50, E[X]=${mean.toFixed(2)}, Var=${variance.toFixed(2)}`;
+
+    // Draw bars
+    ctx.fillStyle = '#64ffda88';
+    for (let k = 0; k < data.length; k++) {
+      const x = pad.l + k / data.length * pw;
+      const y = H - pad.b - data[k] * ph * 5;
+      const w = pw / data.length * 0.8;
+      ctx.fillRect(x, y, w, Math.max(1, data[k] * ph * 5));
+      ctx.strokeStyle = '#64ffda';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x, y, w, Math.max(1, data[k] * ph * 5));
+    }
+  } else if (distType === 'poisson') {
+    const lambda = paramVal * 10 + 0.5;
+    for (let k = 0; k < 20; k++) {
+      const prob = Math.exp(-lambda) * Math.pow(lambda, k) / factorial(k);
+      if (prob > 0.001) {
+        data.push(prob);
+        mean += k * prob;
+      }
+    }
+    variance = lambda;
+    mean = lambda;
+    info = `Poisson: λ=${lambda.toFixed(2)}, E[X]=${mean.toFixed(2)}, Var=${variance.toFixed(2)}`;
+
+    ctx.fillStyle = '#64ffda88';
+    for (let k = 0; k < data.length; k++) {
+      const x = pad.l + k / 20 * pw;
+      const y = H - pad.b - data[k] * ph * 3;
+      const w = pw / 20 * 0.7;
+      ctx.fillRect(x, y, w, Math.max(1, data[k] * ph * 3));
+      ctx.strokeStyle = '#64ffda';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x, y, w, Math.max(1, data[k] * ph * 3));
+    }
+  } else if (distType === 'gaussian') {
+    const mu = 0, sigma = paramVal * 2 + 0.3;
+    info = `Gaussian: μ=0, σ=${sigma.toFixed(2)}, E[X]=0, Var=${(sigma*sigma).toFixed(3)}`;
+
+    ctx.strokeStyle = '#64ffda';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    for (let i = 0; i <= 100; i++) {
+      const x = -3 + i * 0.06;
+      const density = Math.exp(-(x - mu) * (x - mu) / (2 * sigma * sigma)) / (sigma * Math.sqrt(2 * Math.PI));
+      const px = pad.l + (x + 3) / 6 * pw;
+      const py = H - pad.b - density * ph / 0.4;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+  } else if (distType === 'exponential') {
+    const lambda = paramVal * 5 + 0.1;
+    mean = 1 / lambda;
+    variance = 1 / (lambda * lambda);
+    info = `Exponential: λ=${lambda.toFixed(2)}, E[X]=${mean.toFixed(3)}, Var=${variance.toFixed(3)}`;
+
+    ctx.strokeStyle = '#64ffda';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    for (let i = 0; i <= 100; i++) {
+      const x = i / 100 * 6;
+      const density = lambda * Math.exp(-lambda * x);
+      const px = pad.l + x / 6 * pw;
+      const py = H - pad.b - density * ph;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+  } else if (distType === 'beta') {
+    const alpha = paramVal * 15 + 0.5;
+    const beta = paramVal * 15 + 0.5;
+    mean = alpha / (alpha + beta);
+    variance = alpha * beta / ((alpha + beta) * (alpha + beta) * (alpha + beta + 1));
+    info = `Beta: α=${alpha.toFixed(2)}, β=${beta.toFixed(2)}, E[X]=${mean.toFixed(3)}, Var=${variance.toFixed(3)}`;
+
+    ctx.strokeStyle = '#64ffda';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    for (let i = 0; i <= 100; i++) {
+      const x = i / 100;
+      const density = Math.pow(x, alpha - 1) * Math.pow(1 - x, beta - 1) / betaFunction(alpha, beta);
+      const px = pad.l + x * pw;
+      const py = H - pad.b - Math.min(density * ph / 4, ph);
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+  }
+
+  document.getElementById('distInfo').textContent = info;
+}
+
+function binomial(n, k, p) {
+  let coeff = 1;
+  for (let i = 0; i < k; i++) coeff *= (n - i) / (i + 1);
+  return coeff * Math.pow(p, k) * Math.pow(1 - p, n - k);
+}
+
+function factorial(n) {
+  if (n <= 1) return 1;
+  let f = 1;
+  for (let i = 2; i <= n; i++) f *= i;
+  return f;
+}
+
+function betaFunction(a, b) {
+  return Math.exp(logGamma(a) + logGamma(b) - logGamma(a + b));
+}
+
+function logGamma(z) {
+  const g = 7;
+  const coef = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313, -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+  if (z < 0.5) return Math.log(Math.PI) - Math.log(Math.sin(Math.PI * z)) - logGamma(1 - z);
+  z -= 1;
+  let base = z + g + 0.5;
+  let sum = coef[0];
+  for (let i = 1; i < coef.length; i++) sum += coef[i] / (z + i);
+  return 0.5 * Math.log(2 * Math.PI) + (base - 0.5) * Math.log(base) - base + Math.log(sum);
+}
+
+// ==================== MLE vs MAP ====================
+function drawMLE() {
+  const canvas = document.getElementById('mleCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  const n = parseInt(document.getElementById('mleN').value);
+  const priorStrength = parseInt(document.getElementById('mlePrior').value);
+
+  document.getElementById('mleNVal').textContent = n;
+  document.getElementById('mlePriorVal').textContent = priorStrength;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Assume 70% heads in data
+  const heads = Math.round(n * 0.7);
+  const mleTheta = heads / n;
+
+  const pad = { l: 50, r: 40, t: 30, b: 50 };
+  const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+
+  // Draw axes
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.l, pad.t);
+  ctx.lineTo(pad.l, H - pad.b);
+  ctx.lineTo(W - pad.r, H - pad.b);
+  ctx.stroke();
+
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText('θ (probability heads) →', W/2, H - 8);
+
+  // Prior (uniform or Beta)
+  ctx.strokeStyle = '#64ffda';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let i = 0; i <= 100; i++) {
+    const theta = i / 100;
+    const priorDensity = Math.pow(theta, priorStrength/10 - 1) * Math.pow(1 - theta, priorStrength/10 - 1) / betaFunction(priorStrength/10, priorStrength/10);
+    const x = pad.l + theta * pw;
+    const y = H - pad.b - priorDensity * ph / 3;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  ctx.fillStyle = '#64ffda';
+  ctx.font = '11px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText('Prior', pad.l + 10, pad.t + 15);
+
+  // Likelihood
+  ctx.strokeStyle = '#ff6b6b';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let i = 0; i <= 100; i++) {
+    const theta = i / 100;
+    const likelihood = Math.pow(theta, heads) * Math.pow(1 - theta, n - heads);
+    const x = pad.l + theta * pw;
+    const y = H - pad.b - likelihood * ph / 0.3;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  ctx.fillStyle = '#ff6b6b';
+  ctx.fillText('Likelihood', pad.l + 80, pad.t + 15);
+
+  // Posterior (MAP)
+  ctx.strokeStyle = '#4ecdc4';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  for (let i = 0; i <= 100; i++) {
+    const theta = i / 100;
+    const prior = Math.pow(theta, priorStrength/10 - 1) * Math.pow(1 - theta, priorStrength/10 - 1) / betaFunction(priorStrength/10, priorStrength/10);
+    const likelihood = Math.pow(theta, heads) * Math.pow(1 - theta, n - heads);
+    const posterior = prior * likelihood;
+    const x = pad.l + theta * pw;
+    const y = H - pad.b - posterior * ph / 0.3;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  ctx.fillStyle = '#4ecdc4';
+  ctx.fillText('Posterior (MAP)', pad.l + 180, pad.t + 15);
+
+  // Mark MLE
+  const mleX = pad.l + mleTheta * pw;
+  ctx.strokeStyle = '#ff6b6b';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath();
+  ctx.moveTo(mleX, pad.t);
+  ctx.lineTo(mleX, H - pad.b);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Info
+  ctx.fillStyle = '#aaa';
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText(`Data: ${heads}/${n} heads  |  MLE θ = ${mleTheta.toFixed(3)}  |  Observed ${heads} heads in ${n} flips`, pad.l, H - 12);
+}
+
+// ==================== CENTRAL LIMIT THEOREM ====================
+function drawCLT() {
+  const canvas = document.getElementById('cltCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  const n = parseInt(document.getElementById('cltN').value);
+  const numSamples = parseInt(document.getElementById('cltSamples').value);
+
+  document.getElementById('cltNVal').textContent = n;
+  document.getElementById('cltSamplesVal').textContent = numSamples;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Generate sample means from skewed distribution
+  const sampleMeans = [];
+  for (let i = 0; i < numSamples; i++) {
+    let sum = 0;
+    for (let j = 0; j < n; j++) {
+      // Exponential distribution (right-skewed)
+      sum += -Math.log(Math.random());
+    }
+    sampleMeans.push(sum / n);
+  }
+
+  const pad = { l: 60, r: 40, t: 30, b: 50 };
+  const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+
+  // Draw axes
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.l, pad.t);
+  ctx.lineTo(pad.l, H - pad.b);
+  ctx.lineTo(W - pad.r, H - pad.b);
+  ctx.stroke();
+
+  // Histogram of sample means
+  const nbins = 40;
+  const minMean = Math.min(...sampleMeans);
+  const maxMean = Math.max(...sampleMeans);
+  const bins = new Array(nbins).fill(0);
+  for (let mean of sampleMeans) {
+    const idx = Math.floor((mean - minMean) / (maxMean - minMean) * (nbins - 1));
+    bins[idx]++;
+  }
+
+  const maxBin = Math.max(...bins);
+  ctx.fillStyle = '#64ffda88';
+  for (let i = 0; i < nbins; i++) {
+    const x = pad.l + i / nbins * pw;
+    const h = bins[i] / maxBin * ph;
+    ctx.fillRect(x, H - pad.b - h, pw / nbins * 0.95, h);
+  }
+
+  // Overlay Gaussian fit
+  const meanOfMeans = sampleMeans.reduce((a, b) => a + b) / sampleMeans.length;
+  const stdOfMeans = Math.sqrt(sampleMeans.reduce((a, m) => a + Math.pow((m - meanOfMeans), 2), 0) / sampleMeans.length);
+
+  ctx.strokeStyle = '#ff6b6b';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  for (let i = 0; i <= 100; i++) {
+    const val = minMean + i / 100 * (maxMean - minMean);
+    const density = Math.exp(-Math.pow((val - meanOfMeans), 2) / (2 * stdOfMeans ** 2)) / (stdOfMeans * Math.sqrt(2 * Math.PI));
+    const x = pad.l + (val - minMean) / (maxMean - minMean) * pw;
+    const y = H - pad.b - density * ph / (0.4 / stdOfMeans);
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  ctx.fillStyle = '#aaa';
+  ctx.font = '11px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText(`n=${n} per mean, ${numSamples} samples  |  Mean of means: ${meanOfMeans.toFixed(3)}  |  Std: ${stdOfMeans.toFixed(3)}`, pad.l, H - 12);
+}
+
+let cltAnimId;
+function animateCLT() {
+  const slider = document.getElementById('cltN');
+  let n = 1;
+  cancelAnimationFrame(cltAnimId);
+  function step() {
+    slider.value = n;
+    drawCLT();
+    n += 2;
+    if (n <= 100) cltAnimId = requestAnimationFrame(step);
+  }
+  step();
+}
+
+// ==================== ENTROPY & CROSS-ENTROPY ====================
+function drawEntropy() {
+  const canvas = document.getElementById('entropyCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  const p = parseInt(document.getElementById('entropyP').value) / 100;
+  const q = parseInt(document.getElementById('entropyQ').value) / 100;
+
+  document.getElementById('entropyPVal').textContent = p.toFixed(2);
+  document.getElementById('entropyQVal').textContent = q.toFixed(2);
+
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = { l: 60, r: 40, t: 30, b: 50 };
+  const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+
+  // Draw axes
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.l, pad.t);
+  ctx.lineTo(pad.l, H - pad.b);
+  ctx.lineTo(W - pad.r, H - pad.b);
+  ctx.stroke();
+
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText('p (probability) →', W/2, H - 8);
+
+  // Entropy H(p) = -p*log(p) - (1-p)*log(1-p)
+  ctx.strokeStyle = '#64ffda';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  for (let i = 1; i <= 100; i++) {
+    const pp = i / 100;
+    const entropy = pp === 0 || pp === 1 ? 0 : -(pp * Math.log2(pp) + (1 - pp) * Math.log2(1 - pp));
+    const x = pad.l + pp * pw;
+    const y = H - pad.b - entropy * ph;
+    if (i === 1) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  ctx.fillStyle = '#64ffda';
+  ctx.font = '11px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText('H(p)', pad.l + 10, pad.t + 15);
+
+  // Cross-entropy H(p,q)
+  ctx.strokeStyle = '#ff6b6b';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let i = 1; i <= 100; i++) {
+    const pp = i / 100;
+    const ce = pp === 0 || pp === 1 ? 0 : -(pp * Math.log2(q + 0.001) + (1 - pp) * Math.log2((1 - q) + 0.001));
+    const x = pad.l + pp * pw;
+    const y = H - pad.b - ce * ph;
+    if (i === 1) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  ctx.fillStyle = '#ff6b6b';
+  ctx.fillText('H(p,q)', pad.l + 80, pad.t + 15);
+
+  // KL divergence KL(p||q)
+  ctx.strokeStyle = '#7c4dff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let i = 1; i <= 100; i++) {
+    const pp = i / 100;
+    const entropy = pp === 0 || pp === 1 ? 0 : -(pp * Math.log2(pp) + (1 - pp) * Math.log2(1 - pp));
+    const ce = pp === 0 || pp === 1 ? 0 : -(pp * Math.log2(q + 0.001) + (1 - pp) * Math.log2((1 - q) + 0.001));
+    const kl = ce - entropy;
+    const x = pad.l + pp * pw;
+    const y = H - pad.b - kl * ph;
+    if (i === 1) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  ctx.fillStyle = '#7c4dff';
+  ctx.fillText('KL(p||q)', pad.l + 150, pad.t + 15);
+
+  // Mark current p
+  const entropy_p = p === 0 || p === 1 ? 0 : -(p * Math.log2(p) + (1 - p) * Math.log2(1 - p));
+  const ce_p = p === 0 || p === 1 ? 0 : -(p * Math.log2(q + 0.001) + (1 - p) * Math.log2((1 - q) + 0.001));
+  const kl_p = ce_p - entropy_p;
+
+  const markX = pad.l + p * pw;
+  ctx.fillStyle = '#64ffda44';
+  ctx.fillRect(markX - 2, pad.t, 4, ph);
+
+  ctx.fillStyle = '#aaa';
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText(`H(p)=${entropy_p.toFixed(3)}  H(p,q)=${ce_p.toFixed(3)}  KL=${kl_p.toFixed(3)}`, pad.l, H - 12);
+}
+
+// ==================== KL DIVERGENCE ====================
+function drawKL() {
+  const canvas = document.getElementById('klCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  const pWidth = parseInt(document.getElementById('klPWidth').value) / 100;
+  const qWidth = parseInt(document.getElementById('klQWidth').value) / 100;
+
+  document.getElementById('klPWidthVal').textContent = (pWidth * 100).toFixed(0);
+  document.getElementById('klQWidthVal').textContent = (qWidth * 100).toFixed(0);
+
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = { l: 60, r: 40, t: 30, b: 50 };
+  const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+
+  // Draw axes
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.l, pad.t);
+  ctx.lineTo(pad.l, H - pad.b);
+  ctx.lineTo(W - pad.r, H - pad.b);
+  ctx.stroke();
+
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText('x →', W/2, H - 8);
+
+  // P distribution (fixed at center)
+  ctx.strokeStyle = '#64ffda';
+  ctx.fillStyle = '#64ffda11';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  for (let i = 0; i <= 100; i++) {
+    const x = -3 + i * 0.06;
+    const sigma_p = pWidth * 0.5;
+    const p_dens = Math.exp(-Math.pow(x - 0, 2) / (2 * sigma_p * sigma_p)) / (sigma_p * Math.sqrt(2 * Math.PI));
+    const px = pad.l + (x + 3) / 6 * pw;
+    const py = H - pad.b - p_dens * ph / 0.6;
+    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+
+  // Q distribution
+  ctx.strokeStyle = '#ff6b6b';
+  ctx.fillStyle = '#ff6b6b11';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  for (let i = 0; i <= 100; i++) {
+    const x = -3 + i * 0.06;
+    const sigma_q = qWidth * 0.5;
+    const q_dens = Math.exp(-Math.pow(x - 0.8, 2) / (2 * sigma_q * sigma_q)) / (sigma_q * Math.sqrt(2 * Math.PI));
+    const px = pad.l + (x + 3) / 6 * pw;
+    const py = H - pad.b - q_dens * ph / 0.6;
+    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+
+  ctx.fillStyle = '#64ffda';
+  ctx.font = '11px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText('P (True Dist)', pad.l + 10, pad.t + 15);
+
+  ctx.fillStyle = '#ff6b6b';
+  ctx.fillText('Q (Approx Dist)', pad.l + 150, pad.t + 15);
+
+  // Compute actual KL values numerically
+  let klFwd = 0, klRev = 0;
+  const dx = 0.01;
+  for (let xi = -3; xi <= 3; xi += dx) {
+    const sp = pWidth * 0.5, sq = qWidth * 0.5;
+    const pv = Math.exp(-Math.pow(xi, 2) / (2 * sp * sp)) / (sp * Math.sqrt(2 * Math.PI));
+    const qv = Math.exp(-Math.pow(xi - 0.8, 2) / (2 * sq * sq)) / (sq * Math.sqrt(2 * Math.PI));
+    if (pv > 1e-10 && qv > 1e-10) klFwd += pv * Math.log(pv / qv) * dx;
+    if (qv > 1e-10 && pv > 1e-10) klRev += qv * Math.log(qv / pv) * dx;
+  }
+
+  ctx.fillStyle = '#aaa';
+  ctx.font = '12px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText(`KL(P||Q) = ${klFwd.toFixed(3)} (forward, mode-covering)  |  KL(Q||P) = ${klRev.toFixed(3)} (reverse, mode-seeking)`, pad.l, H - 12);
+}
+
+// ==================== GRADIENT DESCENT VARIANTS ====================
+let gdvRunning = false;
+let gdvAnimId;
+let gdvPaths = { sgd: [], momentum: [], adam: [] };
+let gdvVmom = { x: 0, y: 0 };
+let gdvSqmom = { x: 0, y: 0 };
+let gdvStep = 0;
+
+function lossFunc(x, y) {
+  return 0.5 * (x * x * 0.5 + y * y * 2) + 0.3 * Math.sin(2 * x) * Math.cos(2 * y);
+}
+
+function lossGrad(x, y) {
+  const dx = 0.5 * x + 0.6 * Math.cos(2 * x) * Math.cos(2 * y);
+  const dy = 2 * y - 0.6 * Math.sin(2 * x) * Math.sin(2 * y);
+  return [dx, dy];
+}
+
+function initGDV() {
+  const lr = parseInt(document.getElementById('gdvLR').value) / 1000;
+  document.getElementById('gdvLRVal').textContent = lr.toFixed(3);
+}
+
+function resetGDV() {
+  gdvRunning = false;
+  cancelAnimationFrame(gdvAnimId);
+  gdvPaths = { sgd: [[3.2, 3.0]], momentum: [[3.2, 3.0]], adam: [[3.2, 3.0]] };
+  gdvVmom = { x: 0, y: 0 };
+  gdvSqmom = { x: 0, y: 0 };
+  gdvStep = 0;
+  document.getElementById('gdvPlayBtn').textContent = '▶ Start';
+  drawGDV();
+}
+
+function drawGDV() {
+  const canvas = document.getElementById('gdvCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Contour background
+  const range = 4;
+  for (let px = 0; px < W; px += 3) {
+    for (let py = 0; py < H; py += 3) {
+      const x = (px / W - 0.5) * 2 * range;
+      const y = (py / H - 0.5) * 2 * range;
+      const z = lossFunc(x, y);
+      const intensity = Math.min(1, z / 10);
+      const r = Math.floor(10 + intensity * 30);
+      const g = Math.floor(10 + intensity * 15);
+      const b = Math.floor(26 + intensity * 50);
+      ctx.fillStyle = `rgb(${r},${g},${b})`;
+      ctx.fillRect(px, py, 3, 3);
+    }
+  }
+
+  // Draw paths
+  function drawPath(path, color) {
+    if (path.length > 1) {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i < path.length; i++) {
+        const px = (path[i][0] / (2 * range) + 0.5) * W;
+        const py = (path[i][1] / (2 * range) + 0.5) * H;
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+
+      // Current point
+      const last = path[path.length - 1];
+      const lpx = (last[0] / (2 * range) + 0.5) * W;
+      const lpy = (last[1] / (2 * range) + 0.5) * H;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(lpx, lpy, 5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  drawPath(gdvPaths.sgd, '#ff6b6b');
+  drawPath(gdvPaths.momentum, '#4ecdc4');
+  drawPath(gdvPaths.adam, '#ffd93d');
+
+  // Minimum
+  ctx.fillStyle = '#64ffda44';
+  ctx.beginPath();
+  ctx.arc(W / 2, H / 2, 8, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function toggleGDV() {
+  if (gdvRunning) {
+    gdvRunning = false;
+    cancelAnimationFrame(gdvAnimId);
+    document.getElementById('gdvPlayBtn').textContent = '▶ Resume';
+  } else {
+    gdvRunning = true;
+    document.getElementById('gdvPlayBtn').textContent = '⏸ Pause';
+    if (gdvPaths.sgd.length === 0) {
+      gdvPaths = { sgd: [[3.2, 3.0]], momentum: [[3.2, 3.0]], adam: [[3.2, 3.0]] };
+    }
+    stepGDV();
+  }
+}
+
+function stepGDV() {
+  if (!gdvRunning) return;
+  const lr = parseInt(document.getElementById('gdvLR').value) / 1000;
+
+  // SGD
+  const sgdLast = gdvPaths.sgd[gdvPaths.sgd.length - 1];
+  const [gx, gy] = lossGrad(sgdLast[0], sgdLast[1]);
+  gdvPaths.sgd.push([sgdLast[0] - lr * gx, sgdLast[1] - lr * gy]);
+
+  // Momentum
+  const momLast = gdvPaths.momentum[gdvPaths.momentum.length - 1];
+  const [gmx, gmy] = lossGrad(momLast[0], momLast[1]);
+  const beta = 0.9;
+  gdvVmom.x = beta * gdvVmom.x + lr * gmx;
+  gdvVmom.y = beta * gdvVmom.y + lr * gmy;
+  gdvPaths.momentum.push([momLast[0] - gdvVmom.x, momLast[1] - gdvVmom.y]);
+
+  // Adam
+  const adamLast = gdvPaths.adam[gdvPaths.adam.length - 1];
+  const [gax, gay] = lossGrad(adamLast[0], adamLast[1]);
+  const beta1 = 0.9, beta2 = 0.999, eps = 1e-8;
+  gdvVmom.x = beta1 * gdvVmom.x + (1 - beta1) * gax;
+  gdvVmom.y = beta1 * gdvVmom.y + (1 - beta1) * gay;
+  gdvSqmom.x = beta2 * gdvSqmom.x + (1 - beta2) * gax * gax;
+  gdvSqmom.y = beta2 * gdvSqmom.y + (1 - beta2) * gay * gay;
+  const adamX = adamLast[0] - lr * gdvVmom.x / (Math.sqrt(gdvSqmom.x) + eps);
+  const adamY = adamLast[1] - lr * gdvVmom.y / (Math.sqrt(gdvSqmom.y) + eps);
+  gdvPaths.adam.push([adamX, adamY]);
+
+  gdvStep++;
+  drawGDV();
+
+  if (gdvStep < 200) gdvAnimId = requestAnimationFrame(stepGDV);
+  else {
+    gdvRunning = false;
+    document.getElementById('gdvPlayBtn').textContent = '▶ Start';
+  }
+}
+
+// ==================== LEARNING RATE EFFECT ====================
+let lrPath = [];
+let lrRunning = false;
+let lrAnimId;
+
+function drawLR() {
+  const canvas = document.getElementById('lrCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Contour
+  const range = 4;
+  for (let px = 0; px < W; px += 3) {
+    for (let py = 0; py < H; py += 3) {
+      const x = (px / W - 0.5) * 2 * range;
+      const y = (py / H - 0.5) * 2 * range;
+      const z = lossFunc(x, y);
+      const intensity = Math.min(1, z / 10);
+      const r = Math.floor(10 + intensity * 30);
+      const g = Math.floor(10 + intensity * 15);
+      const b = Math.floor(26 + intensity * 50);
+      ctx.fillStyle = `rgb(${r},${g},${b})`;
+      ctx.fillRect(px, py, 3, 3);
+    }
+  }
+
+  // Draw path
+  if (lrPath.length > 1) {
+    ctx.strokeStyle = '#ff6b6b';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i < lrPath.length; i++) {
+      const px = (lrPath[i][0] / (2 * range) + 0.5) * W;
+      const py = (lrPath[i][1] / (2 * range) + 0.5) * H;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+
+    const last = lrPath[lrPath.length - 1];
+    ctx.fillStyle = '#ff6b6b';
+    ctx.beginPath();
+    ctx.arc((last[0] / (2 * range) + 0.5) * W, (last[1] / (2 * range) + 0.5) * H, 5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Minimum
+  ctx.fillStyle = '#64ffda44';
+  ctx.beginPath();
+  ctx.arc(W / 2, H / 2, 8, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function resetLR() {
+  lrRunning = false;
+  cancelAnimationFrame(lrAnimId);
+  document.getElementById('lrPlayBtn').textContent = '▶ Start';
+  lrPath = [[3.2, 3.0]];
+  drawLR();
+}
+
+function toggleLR() {
+  if (lrRunning) {
+    lrRunning = false;
+    cancelAnimationFrame(lrAnimId);
+    document.getElementById('lrPlayBtn').textContent = '▶ Resume';
+  } else {
+    lrRunning = true;
+    document.getElementById('lrPlayBtn').textContent = '⏸ Pause';
+    if (lrPath.length === 0) lrPath = [[3.2, 3.0]];
+    stepLR();
+  }
+}
+
+function stepLR() {
+  if (!lrRunning) return;
+  const lr = parseInt(document.getElementById('lrAlpha').value) / 1000;
+  document.getElementById('lrAlphaVal').textContent = lr.toFixed(3);
+
+  const last = lrPath[lrPath.length - 1];
+  const [gx, gy] = lossGrad(last[0], last[1]);
+
+  const nx = last[0] - lr * gx;
+  const ny = last[1] - lr * gy;
+
+  lrPath.push([nx, ny]);
+  drawLR();
+
+  if (lrPath.length < 500 && Math.abs(nx) < 4 && Math.abs(ny) < 4) {
+    lrAnimId = requestAnimationFrame(stepLR);
+  } else {
+    lrRunning = false;
+    document.getElementById('lrPlayBtn').textContent = '▶ Start';
+  }
+}
+
+// ==================== SVD VISUALIZATION ====================
+function drawSVD() {
+  const canvas = document.getElementById('svdCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  const k = parseInt(document.getElementById('svdK').value);
+  document.getElementById('svdKVal').textContent = k;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Simple visualization: show singular values and reconstruction
+  const pad = { l: 60, r: 40, t: 30, b: 60 };
+  const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+
+  // Draw axes
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.l, pad.t);
+  ctx.lineTo(pad.l, H - pad.b);
+  ctx.lineTo(W - pad.r, H - pad.b);
+  ctx.stroke();
+
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText('Component Index →', W/2, H - 8);
+
+  // Generate synthetic singular values (decaying exponentially)
+  const maxRank = 50;
+  const svals = [];
+  for (let i = 0; i < maxRank; i++) {
+    svals.push(Math.exp(-i / 15));
+  }
+
+  // Draw all singular values
+  const barW = pw / maxRank * 0.9;
+  ctx.fillStyle = '#4ecdc488';
+  for (let i = 0; i < maxRank; i++) {
+    const x = pad.l + (i + 0.5) * pw / maxRank;
+    const h = svals[i] * ph;
+    ctx.fillRect(x - barW/2, H - pad.b - h, barW, h);
+  }
+
+  // Highlight kept components
+  ctx.fillStyle = '#64ffda';
+  for (let i = 0; i < k; i++) {
+    const x = pad.l + (i + 0.5) * pw / maxRank;
+    const h = svals[i] * ph;
+    ctx.fillRect(x - barW/2, H - pad.b - h, barW, h);
+  }
+
+  // Reconstruction error
+  let variance_kept = 0, variance_total = 0;
+  for (let i = 0; i < maxRank; i++) {
+    const v = svals[i] * svals[i];
+    variance_total += v;
+    if (i < k) variance_kept += v;
+  }
+  const reconstruction_quality = variance_kept / variance_total;
+
+  ctx.fillStyle = '#aaa';
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText(`Rank ${k} / ${maxRank}: ${(reconstruction_quality * 100).toFixed(1)}% variance  |  Compression: ${(k / maxRank * 100).toFixed(1)}% parameters`, pad.l, H - 35);
+
+  document.getElementById('svdInfo').textContent = `Rank ${k} / ${maxRank}: ${(reconstruction_quality * 100).toFixed(1)}% variance explained`;
+}
+
+function toggleSVDDetails() {
+  // Could show U, Σ, V^T decomposition in detail
+}
+
+// ==================== EIGENVALUES & EIGENVECTORS ====================
+function drawEigen() {
+  const canvas = document.getElementById('eigenCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  const a00 = parseInt(document.getElementById('eigenA00').value) / 10;
+  const a01 = parseInt(document.getElementById('eigenA01').value) / 10;
+
+  document.getElementById('eigenA00Val').textContent = a00.toFixed(2);
+  document.getElementById('eigenA01Val').textContent = a01.toFixed(2);
+
+  ctx.clearRect(0, 0, W, H);
+
+  const cx = W / 2, cy = H / 2;
+  const scale = 60;
+
+  // Draw axes
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, cy); ctx.lineTo(W, cy);
+  ctx.moveTo(cx, 0); ctx.lineTo(cx, H);
+  ctx.stroke();
+
+  // Symmetric matrix A = [[a00, a01], [a01, a00]]
+  // Eigenvalues: a00 ± a01
+  const lambda1 = a00 + a01;
+  const lambda2 = a00 - a01;
+
+  // Eigenvectors (for symmetric matrix)
+  // v1 = [1/sqrt(2), 1/sqrt(2)], v2 = [1/sqrt(2), -1/sqrt(2)]
+
+  // Draw original vectors
+  ctx.strokeStyle = '#64ffda88';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx + 1 * scale, cy + 0 * scale);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx + 0 * scale, cy + 1 * scale);
+  ctx.stroke();
+
+  // Eigenvector 1: (1/sqrt(2), 1/sqrt(2)) scaled by lambda1
+  const ev1x = lambda1 / Math.sqrt(2) * scale;
+  const ev1y = lambda1 / Math.sqrt(2) * scale;
+  ctx.strokeStyle = '#ff6b6b';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx + ev1x, cy + ev1y);
+  ctx.stroke();
+
+  ctx.fillStyle = '#ff6b6b';
+  ctx.font = '11px Inter';
+  ctx.fillText(`λ₁=${lambda1.toFixed(2)}`, cx + ev1x + 5, cy + ev1y - 5);
+
+  // Eigenvector 2: (1/sqrt(2), -1/sqrt(2)) scaled by lambda2
+  const ev2x = lambda2 / Math.sqrt(2) * scale;
+  const ev2y = -lambda2 / Math.sqrt(2) * scale;
+  ctx.strokeStyle = '#7c4dff';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx + ev2x, cy + ev2y);
+  ctx.stroke();
+
+  ctx.fillStyle = '#7c4dff';
+  ctx.fillText(`λ₂=${lambda2.toFixed(2)}`, cx + ev2x + 5, cy + ev2y + 15);
+
+  // Legend
+  ctx.fillStyle = '#64ffda';
+  ctx.font = '11px Inter';
+  ctx.fillText('Original Basis', cx - scale - 50, cy - scale - 50);
+  ctx.fillText('A = [[' + a00.toFixed(1) + ', ' + a01.toFixed(1) + '], [' + a01.toFixed(1) + ', ' + a00.toFixed(1) + ']]', 10, 20);
+}
+
+// ==================== BIAS-VARIANCE ====================
+function drawBV() {
+  const canvas = document.getElementById('bvCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const complexity = parseInt(document.getElementById('bvComplexity').value);
+  document.getElementById('bvComplexityVal').textContent = complexity;
+
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = { l: 60, r: 30, t: 30, b: 50 };
+  const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+
+  // Draw axes
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.l, pad.t);
+  ctx.lineTo(pad.l, H - pad.b);
+  ctx.lineTo(W - pad.r, H - pad.b);
+  ctx.stroke();
+
+  // Labels
+  ctx.fillStyle = '#888';
+  ctx.font = '13px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Model Complexity →', W/2, H - 10);
+  ctx.save();
+  ctx.translate(18, H/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText('Error →', 0, 0);
+  ctx.restore();
+
+  // Tick labels
+  ctx.font = '11px monospace';
+  for (let i = 1; i <= 15; i += 2) {
+    const x = pad.l + (i - 1) / 14 * pw;
+    ctx.fillStyle = '#555';
+    ctx.fillText(i, x, H - pad.b + 18);
+  }
+
+  // Compute curves
+  const points = 100;
+  const biasData = [], varData = [], totalData = [];
+
+  for (let i = 0; i < points; i++) {
+    const t = i / (points - 1);
+    const x = 1 + t * 14;
+    const bias2 = 0.8 * Math.exp(-0.35 * x) + 0.02;
+    const variance = 0.01 * Math.exp(0.28 * x) * (1 - Math.exp(-0.5 * x));
+    const noise = 0.05;
+    biasData.push({ x, y: bias2 });
+    varData.push({ x, y: variance });
+    totalData.push({ x, y: bias2 + variance + noise });
+  }
+
+  function drawCurve(data, color, lineWidth = 2.5) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lineWidth;
+    ctx.beginPath();
+    data.forEach((p, i) => {
+      const x = pad.l + (p.x - 1) / 14 * pw;
+      const y = H - pad.b - p.y / 1.0 * ph;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+  }
+
+  // Fill area under total
+  ctx.fillStyle = '#ffd93d11';
+  ctx.beginPath();
+  totalData.forEach((p, i) => {
+    const x = pad.l + (p.x - 1) / 14 * pw;
+    const y = H - pad.b - p.y / 1.0 * ph;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  });
+  ctx.lineTo(W - pad.r, H - pad.b);
+  ctx.lineTo(pad.l, H - pad.b);
+  ctx.fill();
+
+  drawCurve(biasData, '#ff6b6b');
+  drawCurve(varData, '#4ecdc4');
+  drawCurve(totalData, '#ffd93d', 3);
+
+  // Current complexity marker
+  const cx = pad.l + (complexity - 1) / 14 * pw;
+  const bias2c = 0.8 * Math.exp(-0.35 * complexity) + 0.02;
+  const varc = 0.01 * Math.exp(0.28 * complexity) * (1 - Math.exp(-0.5 * complexity));
+  const totalc = bias2c + varc + 0.05;
+  const cy = H - pad.b - totalc / 1.0 * ph;
+
+  // Vertical line
+  ctx.strokeStyle = '#64ffda44';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([5, 5]);
+  ctx.beginPath();
+  ctx.moveTo(cx, pad.t);
+  ctx.lineTo(cx, H - pad.b);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Dot on total error
+  ctx.fillStyle = '#64ffda';
+  ctx.beginPath();
+  ctx.arc(cx, cy, 7, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#0d0d1a';
+  ctx.beginPath();
+  ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Labels for underfitting/overfitting
+  ctx.font = '12px Inter, sans-serif';
+  ctx.fillStyle = '#ff6b6b88';
+  ctx.textAlign = 'left';
+  ctx.fillText('Underfitting →', pad.l + 10, pad.t + 20);
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#4ecdc488';
+  ctx.fillText('← Overfitting', W - pad.r - 10, pad.t + 20);
+
+  // Optimal zone
+  const optX = 4;
+  const optPx = pad.l + (optX - 1) / 14 * pw;
+  ctx.fillStyle = '#64ffda33';
+  ctx.fillRect(optPx - 20, pad.t, 40, ph);
+  ctx.fillStyle = '#64ffda88';
+  ctx.font = '11px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Sweet Spot', optPx, pad.t + 35);
+
+  // Error readout
+  ctx.fillStyle = '#fff';
+  ctx.font = '12px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText(`Bias² = ${bias2c.toFixed(3)}  |  Variance = ${varc.toFixed(3)}  |  Total = ${totalc.toFixed(3)}`, pad.l + 10, pad.t + 55);
+}
+
+let bvAnimFrame;
+function animateBV() {
+  const slider = document.getElementById('bvComplexity');
+  let val = 1;
+  cancelAnimationFrame(bvAnimFrame);
+  function step() {
+    slider.value = val;
+    drawBV();
+    val += 0.15;
+    if (val <= 15) bvAnimFrame = requestAnimationFrame(step);
+  }
+  step();
+}
+
+// ==================== REGULARIZATION ====================
+let regType = 'l1';
+
+function setRegType(type) {
+  regType = type;
+  document.getElementById('regL1Btn').classList.toggle('active', type === 'l1');
+  document.getElementById('regL2Btn').classList.toggle('active', type === 'l2');
+  document.getElementById('regBothBtn').classList.toggle('active', type === 'both');
+  drawReg();
+}
+
+function drawReg() {
+  const canvas = document.getElementById('regCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const lambda = parseInt(document.getElementById('regLambda').value) / 100;
+  document.getElementById('regLambdaVal').textContent = lambda.toFixed(2);
+
+  ctx.clearRect(0, 0, W, H);
+
+  const cx = W / 2, cy = H / 2;
+  const scale = 80;
+
+  // Draw axes
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, cy); ctx.lineTo(W, cy);
+  ctx.moveTo(cx, 0); ctx.lineTo(cx, H);
+  ctx.stroke();
+
+  ctx.fillStyle = '#666';
+  ctx.font = '13px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText('w₁', W - 20, cy - 10);
+  ctx.fillText('w₂', cx + 15, 18);
+
+  // Draw loss contours (ellipses centered at w*=(1.5, 1.8))
+  const wStarX = 1.5, wStarY = 1.8;
+  ctx.strokeStyle = '#ffd93d33';
+  ctx.lineWidth = 1;
+  for (let r = 0.3; r < 4; r += 0.3) {
+    ctx.beginPath();
+    for (let a = 0; a < Math.PI * 2; a += 0.05) {
+      const x = wStarX + r * Math.cos(a) * 1.3;
+      const y = wStarY + r * Math.sin(a) * 0.8;
+      const px = cx + x * scale;
+      const py = cy - y * scale;
+      if (a === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.stroke();
+  }
+
+  // w* marker
+  ctx.fillStyle = '#ffd93d';
+  ctx.beginPath();
+  ctx.arc(cx + wStarX * scale, cy - wStarY * scale, 5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#ffd93d';
+  ctx.font = '11px Inter';
+  ctx.fillText('w*', cx + wStarX * scale, cy - wStarY * scale - 12);
+
+  function drawConstraint(type, color, r) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.5;
+    ctx.fillStyle = color.replace(')', ',0.08)').replace('rgb', 'rgba');
+    ctx.beginPath();
+    if (type === 'l1') {
+      ctx.moveTo(cx, cy - r * scale);
+      ctx.lineTo(cx + r * scale, cy);
+      ctx.lineTo(cx, cy + r * scale);
+      ctx.lineTo(cx - r * scale, cy);
+      ctx.closePath();
+    } else {
+      for (let a = 0; a < Math.PI * 2; a += 0.05) {
+        const x = r * Math.cos(a);
+        const y = r * Math.sin(a);
+        if (a === 0) ctx.moveTo(cx + x * scale, cy - y * scale);
+        else ctx.lineTo(cx + x * scale, cy - y * scale);
+      }
+      ctx.closePath();
+    }
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  const r = 2.5 * (1 - lambda * 0.8);
+
+  if (regType === 'l1' || regType === 'both') {
+    drawConstraint('l1', 'rgb(255,107,107)', r);
+  }
+  if (regType === 'l2' || regType === 'both') {
+    drawConstraint('l2', 'rgb(78,205,196)', regType === 'both' ? r * 0.95 : r);
+  }
+
+  // Compute intersection points
+  function findL1Intersection(wsx, wsy, r) {
+    if (r < 0.3) return [0, 0];
+    const angle = Math.atan2(wsy, wsx);
+    if (wsx > wsy) return [r * 0.98, r * 0.02];
+    return [r * 0.02, r * 0.98];
+  }
+
+  function findL2Intersection(wsx, wsy, r) {
+    const dist = Math.sqrt(wsx * wsx + wsy * wsy);
+    if (dist <= r) return [wsx, wsy];
+    return [wsx * r / dist, wsy * r / dist];
+  }
+
+  if (regType === 'l1' || regType === 'both') {
+    const [sx, sy] = findL1Intersection(wStarX, wStarY, r);
+    ctx.fillStyle = '#ff6b6b';
+    ctx.beginPath();
+    ctx.arc(cx + sx * scale, cy - sy * scale, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ff6b6b';
+    ctx.font = '11px Inter';
+    ctx.textAlign = 'left';
+    ctx.fillText(`L1: (${sx.toFixed(2)}, ${sy.toFixed(2)})`, cx + sx * scale + 10, cy - sy * scale + 4);
+  }
+
+  if (regType === 'l2' || regType === 'both') {
+    const r2 = regType === 'both' ? r * 0.95 : r;
+    const [sx, sy] = findL2Intersection(wStarX, wStarY, r2);
+    ctx.fillStyle = '#4ecdc4';
+    ctx.beginPath();
+    ctx.arc(cx + sx * scale, cy - sy * scale, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#4ecdc4';
+    ctx.font = '11px Inter';
+    ctx.textAlign = 'left';
+    ctx.fillText(`L2: (${sx.toFixed(2)}, ${sy.toFixed(2)})`, cx + sx * scale + 10, cy - sy * scale - 10);
+  }
+}
+
+// ==================== DECISION BOUNDARIES ====================
+let dbType = 'linear';
+
+function setDBType(type) {
+  dbType = type;
+  document.getElementById('dbLinBtn').classList.toggle('active', type === 'linear');
+  document.getElementById('dbPolyBtn').classList.toggle('active', type === 'poly');
+  document.getElementById('dbRbfBtn').classList.toggle('active', type === 'rbf');
+  document.getElementById('dbTreeBtn').classList.toggle('active', type === 'tree');
+  drawDB();
+}
+
+function drawDB() {
+  const canvas = document.getElementById('dbCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Generate synthetic data
+  const data = generateClassificationData();
+
+  // Draw decision boundary
+  const resolution = 5;
+  for (let px = 0; px < W; px += resolution) {
+    for (let py = 0; py < H; py += resolution) {
+      const x = px / W * 3 - 1.5;
+      const y = py / H * 3 - 1.5;
+      const pred = predictBoundary(x, y, dbType);
+      ctx.fillStyle = pred > 0.5 ? '#ff6b6b33' : '#4ecdc433';
+      ctx.fillRect(px, py, resolution, resolution);
+    }
+  }
+
+  // Draw data points
+  for (let point of data) {
+    ctx.fillStyle = point.label > 0.5 ? '#ff6b6b' : '#4ecdc4';
+    ctx.beginPath();
+    ctx.arc(point.x * W/3 + W/2, point.y * H/3 + H/2, 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Draw decision boundary line/curves
+  ctx.strokeStyle = '#64ffda';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  let first = true;
+  for (let px = 0; px < W; px += 2) {
+    const x = px / W * 3 - 1.5;
+    for (let py = 0; py < H; py += 2) {
+      const y = py / H * 3 - 1.5;
+      const pred = predictBoundary(x, y, dbType);
+      if (Math.abs(pred - 0.5) < 0.05) {
+        if (first) { ctx.moveTo(px, py); first = false; }
+        else ctx.lineTo(px, py);
+      }
+    }
+  }
+  ctx.stroke();
+}
+
+function generateClassificationData() {
+  const data = [];
+  for (let i = 0; i < 200; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const r = Math.random();
+    const x = r * Math.cos(angle);
+    const y = r * Math.sin(angle);
+    const label = r < 0.5 ? 0.1 : 0.9;
+    data.push({ x, y, label });
+  }
+  return data;
+}
+
+function predictBoundary(x, y, type) {
+  if (type === 'linear') {
+    return 1 / (1 + Math.exp(-(x + y)));
+  } else if (type === 'poly') {
+    const z = x * x + y * y - 0.5;
+    return 1 / (1 + Math.exp(-z * 5));
+  } else if (type === 'rbf') {
+    const dist = Math.sqrt(x * x + y * y);
+    return Math.exp(-dist * dist / 0.1);
+  } else { // tree
+    return x > 0 ? (y > 0 ? 0.9 : 0.1) : (y > 0 ? 0.1 : 0.9);
+  }
+}
+
+// ==================== CROSS-VALIDATION ====================
+let cvHighlight = -1;
+let cvAnimId;
+
+function drawCV() {
+  const canvas = document.getElementById('cvCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const K = parseInt(document.getElementById('cvK').value);
+  document.getElementById('cvKVal').textContent = K;
+
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = { l: 80, r: 30, t: 40, b: 30 };
+  const rowH = (H - pad.t - pad.b) / K;
+  const barW = (W - pad.l - pad.r);
+
+  ctx.fillStyle = '#888';
+  ctx.font = '13px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText('Data samples →', W / 2, 22);
+
+  for (let fold = 0; fold < K; fold++) {
+    const y = pad.t + fold * rowH;
+
+    ctx.fillStyle = '#aaa';
+    ctx.font = '12px Inter';
+    ctx.textAlign = 'right';
+    ctx.fillText(`Fold ${fold + 1}`, pad.l - 10, y + rowH / 2 + 4);
+
+    for (let seg = 0; seg < K; seg++) {
+      const x = pad.l + seg * (barW / K);
+      const w = barW / K - 2;
+      const isVal = seg === fold;
+      const isActive = fold === cvHighlight;
+
+      if (isVal) {
+        ctx.fillStyle = isActive ? '#ff6b6b' : '#ff6b6b88';
+        ctx.strokeStyle = '#ff6b6b';
+      } else {
+        ctx.fillStyle = isActive ? '#4ecdc4' : '#4ecdc488';
+        ctx.strokeStyle = '#4ecdc4';
+      }
+
+      ctx.lineWidth = isActive ? 2 : 1;
+      ctx.beginPath();
+      ctx.roundRect(x + 1, y + 4, w, rowH - 8, 4);
+      ctx.fill();
+      if (isActive) ctx.stroke();
+
+      if (rowH > 25) {
+        ctx.fillStyle = isActive ? '#fff' : '#ffffff88';
+        ctx.font = '10px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(isVal ? 'VAL' : 'TRAIN', x + 1 + w / 2, y + rowH / 2 + 3);
+      }
+    }
+
+    if (fold === cvHighlight) {
+      const acc = (85 + Math.random() * 10).toFixed(1);
+      ctx.fillStyle = '#64ffda';
+      ctx.font = '11px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(`acc: ${acc}%`, W - pad.r + 5, y + rowH / 2 + 4);
+    }
+  }
+}
+
+function animateCV() {
+  const K = parseInt(document.getElementById('cvK').value);
+  let fold = 0;
+  cancelAnimationFrame(cvAnimId);
+
+  function step() {
+    cvHighlight = fold;
+    drawCV();
+    fold = (fold + 1) % K;
+    cvAnimId = requestAnimationFrame(step);
+  }
+  step();
+
+  setTimeout(() => {
+    cancelAnimationFrame(cvAnimId);
+    cvHighlight = -1;
+    drawCV();
+  }, K * 500);
+}
+
+// ==================== GRADIENT BOOSTED TREES ====================
+function drawGBT() {
+  const canvas = document.getElementById('gbtCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  const numTrees = parseInt(document.getElementById('gbtTrees').value);
+  document.getElementById('gbtTreesVal').textContent = numTrees;
+
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = { l: 60, r: 40, t: 30, b: 50 };
+  const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+
+  // Draw axes
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.l, pad.t);
+  ctx.lineTo(pad.l, H - pad.b);
+  ctx.lineTo(W - pad.r, H - pad.b);
+  ctx.stroke();
+
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText('x →', W/2, H - 8);
+  ctx.save();
+  ctx.translate(12, H/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText('y →', 0, 0);
+  ctx.restore();
+
+  // True function: sin wave
+  ctx.strokeStyle = '#ff6b6b';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let i = 0; i <= 100; i++) {
+    const x = i / 100;
+    const y = 0.5 + 0.3 * Math.sin(x * Math.PI * 4);
+    const px = pad.l + x * pw;
+    const py = H - pad.b - y * ph;
+    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+
+  ctx.fillStyle = '#ff6b6b';
+  ctx.font = '11px Inter';
+  ctx.fillText('True', pad.l + 10, pad.t + 15);
+
+  // Ensemble prediction (step function, improves with more trees)
+  ctx.strokeStyle = '#64ffda';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  for (let i = 0; i <= 100; i++) {
+    const x = i / 100;
+    let pred = 0.5;
+    for (let t = 0; t < numTrees; t++) {
+      const lr = 0.1;
+      const treeStep = Math.sin(x * Math.PI * (t + 1)) > 0 ? 1 : 0;
+      pred += lr * (treeStep - 0.5) * 0.3;
+    }
+    const px = pad.l + x * pw;
+    const py = H - pad.b - pred * ph;
+    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+
+  ctx.fillStyle = '#64ffda';
+  ctx.fillText('Prediction', pad.l + 80, pad.t + 15);
+
+  ctx.fillStyle = '#aaa';
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText(`${numTrees} trees: MSE ≈ ${(0.05 / (1 + numTrees * 0.05)).toFixed(3)}`, pad.l, H - 12);
+}
+
+function animateGBT() {
+  const slider = document.getElementById('gbtTrees');
+  let t = 1;
+  let animId;
+
+  function step() {
+    slider.value = t;
+    drawGBT();
+    t += 1;
+    if (t <= 50) animId = requestAnimationFrame(step);
+  }
+  step();
+}
+
+// Initial draws
+drawBayes();
+drawDist();
+drawMLE();
+drawCLT();
+drawEntropy();
+drawKL();
+initGDV();
+drawGDV();
+drawLR();
+drawSVD();
+drawEigen();
+drawBV();
+drawReg();
+drawDB();
+drawCV();
+drawGBT();
+
+// ==================== HYPOTHESIS TESTING ====================
+function drawHT() {
+  const canvas = document.getElementById('htCanvas');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, w, h);
+
+  const effect = parseFloat(document.getElementById('htEffect').value);
+  const n = parseInt(document.getElementById('htN').value);
+  const alpha = parseInt(document.getElementById('htAlpha').value) / 100;
+
+  document.getElementById('htEffectVal').textContent = effect.toFixed(1);
+  document.getElementById('htNVal').textContent = n;
+  document.getElementById('htAlphaVal').textContent = alpha.toFixed(2);
+
+  const se = 1 / Math.sqrt(n);
+  const pad = { l: 60, r: 30, t: 40, b: 50 };
+  const pw = w - pad.l - pad.r, ph = h - pad.t - pad.b;
+
+  function normalPDF(x, mu, sigma) {
+    return Math.exp(-Math.pow(x - mu, 2) / (2 * sigma * sigma)) / (sigma * Math.sqrt(2 * Math.PI));
+  }
+
+  // z critical value for alpha (one-sided for simplicity, show two-tailed)
+  const zCrit = alpha <= 0.01 ? 2.576 : alpha <= 0.05 ? 1.96 : 1.645;
+  const criticalValue = zCrit * se;
+
+  const xMin = -4 * se, xMax = effect + 4 * se;
+  const yMax = normalPDF(0, 0, se) * 1.1;
+
+  function toX(val) { return pad.l + (val - xMin) / (xMax - xMin) * pw; }
+  function toY(val) { return pad.t + ph - val / yMax * ph; }
+
+  // Null distribution (H0: mu=0)
+  ctx.beginPath();
+  ctx.strokeStyle = '#64ffda';
+  ctx.lineWidth = 2;
+  for (let px = 0; px <= pw; px++) {
+    const val = xMin + px / pw * (xMax - xMin);
+    const y = normalPDF(val, 0, se);
+    if (px === 0) ctx.moveTo(toX(val), toY(y)); else ctx.lineTo(toX(val), toY(y));
+  }
+  ctx.stroke();
+
+  // Alternative distribution (H1: mu=effect)
+  ctx.beginPath();
+  ctx.strokeStyle = '#ff6b6b';
+  ctx.lineWidth = 2;
+  for (let px = 0; px <= pw; px++) {
+    const val = xMin + px / pw * (xMax - xMin);
+    const y = normalPDF(val, effect, se);
+    if (px === 0) ctx.moveTo(toX(val), toY(y)); else ctx.lineTo(toX(val), toY(y));
+  }
+  ctx.stroke();
+
+  // Critical region (Type I error)
+  ctx.fillStyle = '#64ffda22';
+  ctx.beginPath();
+  ctx.moveTo(toX(criticalValue), toY(0));
+  for (let px = Math.max(0, Math.floor((criticalValue - xMin) / (xMax - xMin) * pw)); px <= pw; px++) {
+    const val = xMin + px / pw * (xMax - xMin);
+    ctx.lineTo(toX(val), toY(normalPDF(val, 0, se)));
+  }
+  ctx.lineTo(toX(xMax), toY(0));
+  ctx.fill();
+
+  // Power region (1 - Type II)
+  ctx.fillStyle = '#ff6b6b22';
+  ctx.beginPath();
+  ctx.moveTo(toX(criticalValue), toY(0));
+  for (let px = Math.max(0, Math.floor((criticalValue - xMin) / (xMax - xMin) * pw)); px <= pw; px++) {
+    const val = xMin + px / pw * (xMax - xMin);
+    ctx.lineTo(toX(val), toY(normalPDF(val, effect, se)));
+  }
+  ctx.lineTo(toX(xMax), toY(0));
+  ctx.fill();
+
+  // Critical line
+  ctx.setLineDash([5, 5]);
+  ctx.strokeStyle = '#ffd93d';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(toX(criticalValue), pad.t);
+  ctx.lineTo(toX(criticalValue), pad.t + ph);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Labels
+  ctx.font = 'bold 14px Arial';
+  ctx.fillStyle = '#64ffda';
+  ctx.fillText('H\u2080: \u03BC = 0', toX(0) - 30, pad.t - 10);
+  ctx.fillStyle = '#ff6b6b';
+  ctx.fillText('H\u2081: \u03BC = ' + effect.toFixed(1), toX(effect) - 30, pad.t - 10);
+  ctx.fillStyle = '#ffd93d';
+  ctx.font = '12px Arial';
+  ctx.fillText('Critical value', toX(criticalValue) + 5, pad.t + 15);
+
+  // Power estimate
+  const zPower = (effect - criticalValue) / se;
+  const power = 0.5 * (1 + erf(zPower / Math.sqrt(2)));
+  ctx.fillStyle = '#e0e0e0';
+  ctx.font = 'bold 13px Arial';
+  ctx.fillText('Power: ' + (power * 100).toFixed(1) + '%', w - 150, pad.t + 20);
+  ctx.fillText('\u03B2 (Type II): ' + ((1 - power) * 100).toFixed(1) + '%', w - 150, pad.t + 40);
+
+  // Axis
+  ctx.strokeStyle = '#444';
+  ctx.beginPath();
+  ctx.moveTo(pad.l, pad.t + ph);
+  ctx.lineTo(pad.l + pw, pad.t + ph);
+  ctx.stroke();
+}
+
+function erf(x) {
+  const a1 = 0.254829592, a2 = -0.284496736, a3 = 1.421413741, a4 = -1.453152027, a5 = 1.061405429;
+  const p = 0.3275911;
+  const sign = x < 0 ? -1 : 1;
+  x = Math.abs(x);
+  const t = 1.0 / (1.0 + p * x);
+  const y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+  return sign * y;
+}
+
+['htEffect', 'htN', 'htAlpha'].forEach(id => document.getElementById(id).addEventListener('input', drawHT));
+drawHT();
+
+// ==================== MONTE CARLO ====================
+let mcPoints = [];
+let mcInside = 0;
+
+function drawMC() {
+  const canvas = document.getElementById('mcCanvas');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, w, h);
+
+  const squareSize = Math.min(h - 60, w / 2 - 40);
+  const sx = 40, sy = 30;
+
+  // Draw square and circle
+  ctx.strokeStyle = '#444';
+  ctx.strokeRect(sx, sy, squareSize, squareSize);
+  ctx.beginPath();
+  ctx.arc(sx + squareSize / 2, sy + squareSize / 2, squareSize / 2, 0, Math.PI * 2);
+  ctx.strokeStyle = '#64ffda55';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.lineWidth = 1;
+
+  // Draw points
+  for (const p of mcPoints) {
+    ctx.fillStyle = p.inside ? '#64ffda88' : '#ff6b6b88';
+    ctx.fillRect(sx + p.x * squareSize, sy + p.y * squareSize, 2, 2);
+  }
+
+  // Convergence chart on right
+  const cx = w / 2 + 20, cy = sy, cw = w / 2 - 60, ch = squareSize;
+  ctx.strokeStyle = '#333';
+  ctx.strokeRect(cx, cy, cw, ch);
+
+  // True pi line
+  ctx.setLineDash([5, 5]);
+  ctx.strokeStyle = '#ffd93d';
+  const piY = cy + ch - (Math.PI / 4) * ch;
+  ctx.beginPath();
+  ctx.moveTo(cx, piY);
+  ctx.lineTo(cx + cw, piY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#ffd93d';
+  ctx.font = '11px Arial';
+  ctx.fillText('\u03C0/4 = 0.785...', cx + cw - 80, piY - 5);
+
+  // Draw convergence
+  if (mcPoints.length > 1) {
+    ctx.beginPath();
+    ctx.strokeStyle = '#64ffda';
+    let runIn = 0;
+    for (let i = 0; i < mcPoints.length; i++) {
+      if (mcPoints[i].inside) runIn++;
+      const ratio = runIn / (i + 1);
+      const x = cx + (i / mcPoints.length) * cw;
+      const y = cy + ch - ratio * ch;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+
+  // Labels
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Arial';
+  ctx.fillText('Unit Square + Circle', sx, sy + squareSize + 20);
+  ctx.fillText('Convergence of ratio', cx, cy + ch + 20);
+
+  const total = mcPoints.length;
+  const estimate = total > 0 ? 4 * mcInside / total : 0;
+  document.getElementById('mcEstimate').textContent = total > 0 ? estimate.toFixed(6) : '\u2014';
+  document.getElementById('mcTotal').textContent = total;
+  document.getElementById('mcError').textContent = total > 0 ? Math.abs(estimate - Math.PI).toFixed(6) : '\u2014';
+}
+
+function addMCSamples(count) {
+  for (let i = 0; i < count; i++) {
+    const x = Math.random(), y = Math.random();
+    const inside = Math.pow(x - 0.5, 2) + Math.pow(y - 0.5, 2) <= 0.25;
+    if (inside) mcInside++;
+    mcPoints.push({ x, y, inside });
+  }
+  drawMC();
+}
+
+document.getElementById('mcReset').addEventListener('click', () => { mcPoints = []; mcInside = 0; drawMC(); });
+document.getElementById('mcRun').addEventListener('click', () => addMCSamples(1000));
+drawMC();
+
+// ==================== NUMERICAL STABILITY ====================
+function drawNS() {
+  const canvas = document.getElementById('nsCanvas');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, w, h);
+
+  const temp = parseFloat(document.getElementById('nsTemp').value);
+  const mag = parseInt(document.getElementById('nsMag').value);
+  document.getElementById('nsTempVal').textContent = temp.toFixed(1);
+  document.getElementById('nsMagVal').textContent = mag;
+
+  // Generate logits
+  const logits = [-0.3 * mag, 0.1 * mag, 0.5 * mag, -0.2 * mag, 0.8 * mag];
+  const labels = ['Class A', 'Class B', 'Class C', 'Class D', 'Class E'];
+
+  // Naive softmax (show overflow)
+  const naiveExps = logits.map(x => Math.exp(x / temp));
+  const naiveSum = naiveExps.reduce((a, b) => a + b, 0);
+  const naiveProbs = naiveExps.map(e => e / naiveSum);
+  const naiveOverflow = naiveExps.some(e => !isFinite(e));
+
+  // Stable softmax
+  const maxLogit = Math.max(...logits);
+  const stableExps = logits.map(x => Math.exp((x - maxLogit) / temp));
+  const stableSum = stableExps.reduce((a, b) => a + b, 0);
+  const stableProbs = stableExps.map(e => e / stableSum);
+
+  const pad = { l: 60, r: 30, t: 50, b: 50 };
+  const halfW = (w - pad.l - pad.r) / 2 - 20;
+
+  // Left: Naive
+  ctx.fillStyle = naiveOverflow ? '#ff6b6b' : '#64ffda';
+  ctx.font = 'bold 14px Arial';
+  ctx.fillText('Naive Softmax' + (naiveOverflow ? ' (OVERFLOW!)' : ''), pad.l, pad.t - 15);
+
+  const barW = halfW / logits.length - 8;
+  for (let i = 0; i < logits.length; i++) {
+    const x = pad.l + i * (barW + 8);
+    const prob = naiveOverflow ? (i === 4 ? 1 : 0) : naiveProbs[i]; // Show what overflow looks like
+    const barH = prob * (h - pad.t - pad.b - 30);
+    ctx.fillStyle = naiveOverflow ? '#ff6b6b55' : '#64ffda55';
+    ctx.fillRect(x, h - pad.b - barH, barW, barH);
+    ctx.strokeStyle = naiveOverflow ? '#ff6b6b' : '#64ffda';
+    ctx.strokeRect(x, h - pad.b - barH, barW, barH);
+    ctx.fillStyle = '#888';
+    ctx.font = '10px Arial';
+    ctx.fillText(labels[i], x, h - pad.b + 15);
+    ctx.fillStyle = naiveOverflow ? '#ff6b6b' : '#64ffda';
+    ctx.font = '11px monospace';
+    ctx.fillText(naiveOverflow ? (isFinite(naiveExps[i]) ? naiveProbs[i].toFixed(3) : 'NaN/Inf') : naiveProbs[i].toFixed(3), x, h - pad.b - barH - 5);
+  }
+
+  if (naiveOverflow) {
+    ctx.fillStyle = '#ff6b6b';
+    ctx.font = 'bold 12px Arial';
+    ctx.fillText('exp(' + (0.8 * mag / temp).toFixed(0) + ') = Infinity!', pad.l, pad.t + 20);
+  }
+
+  // Right: Stable
+  const offsetX = pad.l + halfW + 40;
+  ctx.fillStyle = '#64ffda';
+  ctx.font = 'bold 14px Arial';
+  ctx.fillText('Stable Softmax (max-subtracted)', offsetX, pad.t - 15);
+
+  for (let i = 0; i < logits.length; i++) {
+    const x = offsetX + i * (barW + 8);
+    const barH = stableProbs[i] * (h - pad.t - pad.b - 30);
+    ctx.fillStyle = '#7c4dff55';
+    ctx.fillRect(x, h - pad.b - barH, barW, barH);
+    ctx.strokeStyle = '#7c4dff';
+    ctx.strokeRect(x, h - pad.b - barH, barW, barH);
+    ctx.fillStyle = '#888';
+    ctx.font = '10px Arial';
+    ctx.fillText(labels[i], x, h - pad.b + 15);
+    ctx.fillStyle = '#7c4dff';
+    ctx.font = '11px monospace';
+    ctx.fillText(stableProbs[i].toFixed(3), x, h - pad.b - barH - 5);
+  }
+
+  ctx.fillStyle = '#7c4dff';
+  ctx.font = '12px Arial';
+  ctx.fillText('max = ' + maxLogit.toFixed(1) + ', exp(' + ((0.8 * mag - maxLogit) / temp).toFixed(1) + ') = ' + stableExps[4].toFixed(4), offsetX, pad.t + 20);
+
+  // Divider
+  ctx.strokeStyle = '#333';
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath();
+  ctx.moveTo(pad.l + halfW + 20, pad.t - 20);
+  ctx.lineTo(pad.l + halfW + 20, h - pad.b + 20);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+['nsTemp', 'nsMag'].forEach(id => document.getElementById(id).addEventListener('input', drawNS));
+drawNS();
+</script>
+
+</body>
+</html>

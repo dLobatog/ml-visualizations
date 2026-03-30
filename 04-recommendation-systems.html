@@ -1,0 +1,1908 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4. Recommendation Systems — Interactive Visualizations</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #0a0a0f; color: #e0e0e0; line-height: 1.6; }
+  .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; text-align: center; border-bottom: 1px solid #2a2a4a; }
+  .header h1 { font-size: 2.2em; background: linear-gradient(90deg, #ff9ff3, #ff6b9d); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+  .header p { color: #888; font-size: 1.1em; }
+  .container { max-width: 1400px; margin: 0 auto; padding: 40px 20px; }
+  .viz-section { background: #12121f; border: 1px solid #2a2a4a; border-radius: 16px; padding: 32px; margin-bottom: 40px; }
+  .viz-section h2 { font-size: 1.5em; color: #ff9ff3; margin-bottom: 8px; }
+  .viz-section .subtitle { color: #888; margin-bottom: 24px; font-size: 0.95em; }
+  .viz-canvas { background: #0d0d1a; border-radius: 12px; position: relative; overflow: hidden; }
+  canvas { display: block; }
+  .controls { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; align-items: center; }
+  .control-group { display: flex; flex-direction: column; gap: 4px; }
+  .control-group label { font-size: 0.85em; color: #aaa; }
+  .control-group input[type="range"] { width: 200px; accent-color: #ff9ff3; }
+  .control-group .value { font-size: 0.85em; color: #ff9ff3; font-family: monospace; }
+  .legend { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.85em; color: #ccc; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 50%; }
+  .btn { padding: 8px 16px; border: 1px solid #ff9ff3; background: transparent; color: #ff9ff3; border-radius: 8px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
+  .btn:hover { background: #ff9ff344; }
+  .btn.active { background: #ff9ff366; }
+  .tab-bar { display: flex; gap: 8px; margin-bottom: 16px; }
+  .comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+  .comparison-item { background: #1a1a2a; border: 1px solid #2a2a4a; border-radius: 8px; padding: 16px; }
+  .comparison-item h4 { color: #ff9ff3; margin-bottom: 8px; font-size: 1em; }
+  .comparison-item p { font-size: 0.85em; color: #aaa; line-height: 1.5; }
+  .metric-box { background: #1a1a2a; border: 1px solid #2a2a4a; border-radius: 8px; padding: 12px; margin-top: 12px; font-family: monospace; font-size: 0.85em; }
+
+  .insight-box { background: linear-gradient(135deg, #1a1a3e 0%, #151530 100%); border-left: 4px solid #ff9ff3; padding: 20px 24px; margin-top: 20px; border-radius: 0 12px 12px 0; font-size: 0.92em; color: #ccc; line-height: 1.8; }
+  .insight-box strong { color: #ff9ff3; font-size: 1.05em; }
+  .insight-box .formula { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 12px 18px; margin: 12px 0; font-family: 'Courier New', monospace; color: #e8e8ff; font-size: 1.05em; text-align: center; letter-spacing: 0.5px; line-height: 1.9; }
+  .insight-box .formula .highlight { color: #ff9ff3; font-weight: bold; }
+  .insight-box .key-point { display: flex; gap: 8px; margin: 8px 0; padding: 4px 0; }
+  .insight-box .key-point .label { color: #ff9ff3; font-weight: 600; white-space: nowrap; min-width: 90px; }
+  .insight-box .key-point .desc { color: #ddd; }
+  .insight-box .interview-tip { background: rgba(100, 255, 100, 0.05); border: 1px solid rgba(100, 255, 100, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #b0ffb0; font-size: 0.93em; line-height: 1.6; }
+  .insight-box .interview-tip::before { content: '\1F4A1  Interview Tip: '; font-weight: 700; color: #7fff7f; }
+  .insight-box .mnemonic { background: rgba(255, 150, 255, 0.05); border: 1px solid rgba(255, 150, 255, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #ffb0ff; font-size: 0.93em; line-height: 1.6; }
+  .insight-box .mnemonic::before { content: '\1F9E0  Remember: '; font-weight: 700; color: #ff7fff; }
+  .insight-box .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+  .insight-box .comparison .option { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 10px 14px; }
+  .insight-box .comparison .option .opt-title { color: #ff9ff3; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
+  .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
+  .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
+
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>4. Recommendation Systems</h1>
+  <p>Interactive visualizations for recommendation algorithms and architectures</p>
+</div>
+
+<div class="container">
+
+<!-- 1. COLLABORATIVE FILTERING MATRIX FACTORIZATION -->
+<div class="viz-section">
+  <h2>Collaborative Filtering: Matrix Factorization</h2>
+  <p class="subtitle">Decompose user×item rating matrix R into U (users) and V (items) in latent space. Adjust k to see reconstruction quality change.</p>
+  <div class="viz-canvas">
+    <canvas id="mfCanvas" width="900" height="500"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>Latent Dimensions (k)</label>
+      <input type="range" id="mfK" min="1" max="20" value="5" oninput="drawMatrixFactorization()">
+      <span class="value" id="mfKVal">5</span>
+    </div>
+    <button class="btn" onclick="initMatrixFactorization()">↺ Reset</button>
+  </div>
+  <div class="metric-box" id="mfMetrics">Reconstruction Error: --</div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Singular Value Decomposition decomposes user-item matrix R into low-rank factors U, Σ, V, enabling scalable collaborative filtering despite sparse data.
+    <div class="formula">R ≈ U·Σ·Vᵀ, where ||R - <span class="highlight">Uₖ·Σₖ·Vₖᵀ</span>||² is minimized for rank-k approximation</div>
+    <div class="key-point"><span class="label">R:</span><span class="desc">User-item interaction matrix (m users × n items), sparse with mostly missing entries (0.01-1% observed)</span></div>
+    <div class="key-point"><span class="label">U:</span><span class="desc">User embedding matrix (m × k), each row is a user's latent preference vector in k-dimensional space</span></div>
+    <div class="key-point"><span class="label">Σ:</span><span class="desc">Singular values diagonal matrix (k × k), ordered by magnitude; higher values indicate more important latent factors</span></div>
+    <div class="key-point"><span class="label">Vᵀ:</span><span class="desc">Item embedding matrix transposed (k × n), each column is an item's latent factor vector</span></div>
+    <div class="key-point"><span class="label">k:</span><span class="desc">Latent dimension (rank of approximation), typically 64-512 in production; controls model capacity and latency trade-off</span></div>
+    <div class="key-point"><span class="label">Data property:</span><span class="desc">Netflix-scale systems have only ~0.01-1% observed entries; explicit SVD cannot handle missing data</span></div>
+    <div class="key-point"><span class="label">Parameter reduction:</span><span class="desc">From m·n (dense) to (m+n)·k (low-rank); k controls model capacity and latency trade-off</span></div>
+    <div class="key-point"><span class="label">Algorithms:</span><span class="desc">SGD or Alternating Least Squares (ALS) instead of explicit eigendecomposition</span></div>
+    <div class="key-point"><span class="label">Production detail:</span><span class="desc">L2 regularization λ||U||² + λ||V||² prevents overfitting; normalize random initialization</span></div>
+    <hr class="divider">
+    <div class="interview-tip">Why does sparse data require different algorithms? Explicit SVD solvers (eigendecomposition) cannot handle missing values; SGD/ALS gracefully skip unobserved entries by computing only on observed pairs.</div>
+    <div class="interview-tip">How do you choose k? Via cross-validation: lower k is faster at serving (fewer parameters) but less accurate; higher k improves NDCG but increases latency—typical production range is k=64-512.</div>
+    <div class="mnemonic">Think of SVD as embedding users and items in a shared k-dimensional space; similar users have similar embedding vectors, so their preferences are correlated.</div>
+  </div>
+</div>
+
+<!-- 2. TWO-TOWER MODEL ARCHITECTURE -->
+<div class="viz-section">
+  <h2>Two-Tower Embedding Model</h2>
+  <p class="subtitle">User and item features independently encoded into embeddings, combined via dot product. Shows ANN search for fast retrieval.</p>
+  <div class="viz-canvas">
+    <canvas id="towerCanvas" width="900" height="550"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>Query User ID</label>
+      <input type="range" id="towerUserId" min="0" max="4" value="0" oninput="drawTowerModel()">
+      <span class="value" id="towerUserIdVal">User 0</span>
+    </div>
+    <button class="btn" onclick="drawTowerModel()">🔍 Find Neighbors</button>
+  </div>
+  <div class="metric-box" id="towerMetrics">Top-3 Recommendations: --</div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Two-tower decouples user and item feature processing, enabling pre-computed item embeddings and fast ANN-based retrieval at serving time.
+    <div class="formula">Score(u, i) = u · i, where u ∈ ℝᵈ (user embedding) and i ∈ ℝᵈ (item embedding) via independent towers</div>
+    <div class="key-point"><span class="label">Score(u, i):</span><span class="desc">Relevance score for user u and item i; higher scores indicate better recommendations; used for ranking candidates</span></div>
+    <div class="key-point"><span class="label">u:</span><span class="desc">User embedding vector (d-dimensional), output of user tower; learned from user features (ID, demographics, history)</span></div>
+    <div class="key-point"><span class="label">i:</span><span class="desc">Item embedding vector (d-dimensional), output of item tower; learned from item features (metadata, content, category)</span></div>
+    <div class="key-point"><span class="label">d:</span><span class="desc">Embedding dimension, typically 32-256 in production; controls model capacity and serving latency</span></div>
+    <div class="key-point"><span class="label">· (dot product):</span><span class="desc">Inner product measures alignment between user and item preferences in shared d-dimensional embedding space</span></div>
+    <div class="key-point"><span class="label">Architecture:</span><span class="desc">Separate neural networks for user/item features (ID, demographics, metadata); each tower learns independent dense embeddings</span></div>
+    <div class="key-point"><span class="label">Training loss:</span><span class="desc">Softmax triplet loss or in-batch negatives to push relevant items closer and irrelevant items farther</span></div>
+    <div class="key-point"><span class="label">Serving advantage:</span><span class="desc">Pre-compute all item embeddings offline, index in HNSW/LSH/IVF for sub-millisecond retrieval over millions of items</span></div>
+    <div class="key-point"><span class="label">Limitation:</span><span class="desc">Cannot capture fine-grained user-item interactions (specific feature combinations); requires ranking model for precision</span></div>
+    <hr class="divider">
+    <div class="interview-tip">Why pre-compute item embeddings? User tower requires online inference (live user context), but item embeddings are static—pre-computing and indexing eliminates real-time item inference cost.</div>
+    <div class="interview-tip">Why dot product over cosine? Cosine similarity requires L2 normalization at serving time; dot product is faster in FAISS/Annoy libraries and achieves similar ranking when embeddings are approximately normalized.</div>
+    <div class="mnemonic">Two-tower is like two separate coordinate systems: users and items map independently into shared embedding space, then you find nearest neighbors via simple dot product.</div>
+  </div>
+</div>
+
+<!-- 3. EMBEDDING SPACE VISUALIZATION -->
+<div class="viz-section">
+  <h2>Item Embedding Space (2D Projection)</h2>
+  <p class="subtitle">Items clustered by latent factors. Colors represent categories. Click items to find nearest neighbors in embedding space.</p>
+  <div class="viz-canvas">
+    <canvas id="embeddingCanvas" width="900" height="500"></canvas>
+  </div>
+  <div class="controls">
+    <button class="btn" onclick="initEmbeddings()">↺ Reset</button>
+    <button class="btn" onclick="toggleEmbeddingCategories()">◎ Toggle Categories</button>
+    <span style="color: #888; font-size: 0.85em; margin-left: 16px;">Click on items to find nearest neighbors</span>
+  </div>
+  <div class="metric-box" id="embeddingMetrics">Click an item to see details</div>
+  <div class="legend" id="embeddingLegend">
+    <div class="legend-item"><div class="legend-dot" style="background:#ff6b9d"></div>Action</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#c06c84"></div>Drama</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#6c567b"></div>Comedy</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#a23b72"></div>Sci-Fi</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Embedding visualization (t-SNE, UMAP) reveals learned structure of recommendation models; well-trained embeddings cluster similar items proximally, exploitable by ANN search.
+    <div class="key-point"><span class="label">Visualization tools:</span><span class="desc">t-SNE and UMAP project high-dimensional embeddings (128-512D in production) to 2D/3D while preserving neighborhood structure</span></div>
+    <div class="key-point"><span class="label">Property:</span><span class="desc">Similar items (movies watched together, products bought together) cluster proximally; dissimilar items spread apart</span></div>
+    <div class="key-point"><span class="label">Mechanism:</span><span class="desc">Training maximizes dot-product similarity for relevant pairs, pushing them close; loss on negatives pushes them apart</span></div>
+    <div class="key-point"><span class="label">Production monitoring:</span><span class="desc">Recall@k metric (fraction of true positives in top-k nearest neighbors) tracks embedding quality over time</span></div>
+    <div class="key-point"><span class="label">Drift concern:</span><span class="desc">As item catalog grows or user preferences evolve, embeddings degrade; periodic retraining required</span></div>
+    <hr class="divider">
+    <div class="interview-tip">How do you onboard new items without retraining? Use content-based initialization: compute embeddings from item metadata/category features, then fine-tune with user interaction signals.</div>
+    <div class="interview-tip">What prevents embedding collapse (all items mapping to same region)? Proper loss functions (triplet, in-batch negatives) keep diverse negative samples far; batch normalization also helps stabilize scale.</div>
+    <div class="mnemonic">Think of embeddings as a map of item space: similar items are neighbors on the map; ANN search finds nearby neighbors quickly instead of searching all items.</div>
+  </div>
+</div>
+
+<!-- 4. COLD START PROBLEM -->
+<div class="viz-section">
+  <h2>Cold Start Problem: Content vs Collaborative</h2>
+  <p class="subtitle">New users/items lack interaction data. Compare content-based and collaborative approaches, and hybrid solutions.</p>
+  <div class="viz-canvas">
+    <canvas id="coldStartCanvas" width="900" height="450"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>New User Data Points</label>
+      <input type="range" id="csDataPoints" min="0" max="50" value="5" oninput="drawColdStart()">
+      <span class="value" id="csDataPointsVal">5</span>
+    </div>
+    <button class="btn" id="csContentBtn" onclick="setColdStartMode('content')">Content-Based</button>
+    <button class="btn active" id="csCollabBtn" onclick="setColdStartMode('collab')">Collaborative</button>
+    <button class="btn" id="csHybridBtn" onclick="setColdStartMode('hybrid')">Hybrid</button>
+  </div>
+  <div class="comparison-grid">
+    <div class="comparison-item">
+      <h4>Content-Based</h4>
+      <p><strong>Pros:</strong> Works for new items (no ratings needed).</p>
+      <p><strong>Cons:</strong> Requires feature engineering. Limited discovery.</p>
+    </div>
+    <div class="comparison-item">
+      <h4>Collaborative</h4>
+      <p><strong>Pros:</strong> Serendipitous discovery. No features needed.</p>
+      <p><strong>Cons:</strong> Fails for new users/items (cold start).</p>
+    </div>
+    <div class="comparison-item">
+      <h4>Hybrid (Blending)</h4>
+      <p><strong>Pros:</strong> Combine both signals. Works at startup.</p>
+      <p><strong>Cons:</strong> More complex. Need both types of data.</p>
+    </div>
+    <div class="comparison-item">
+      <h4>Exploration</h4>
+      <p><strong>Pros:</strong> Bandit algorithms (Thompson, ε-greedy).</p>
+      <p><strong>Cons:</strong> Can recommend suboptimal items initially.</p>
+    </div>
+  </div>
+  <div class="metric-box" id="csMetrics">Coverage: --, Precision: --</div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Cold-start (no user/item history) requires layered fallback strategies: content features → cross-domain transfer → bandit exploration → popularity baseline.
+    <div class="key-point"><span class="label">Cold new user:</span><span class="desc">Demographics (age, country, device) initialize coarse embedding; insufficient signal for CF-based ranking</span></div>
+    <div class="key-point"><span class="label">Cold new item:</span><span class="desc">Use transfer learning: inherit embedding from similar items via content metadata (category, tags, description)</span></div>
+    <div class="key-point"><span class="label">Layer 1: Content-based:</span><span class="desc">Compute embedding from metadata features; coarse but immediate</span></div>
+    <div class="key-point"><span class="label">Layer 2: Cross-domain:</span><span class="desc">If user exists in related product, copy embedding and fine-tune; leverages existing user behavior</span></div>
+    <div class="key-point"><span class="label">Layer 3: Bandit algorithms:</span><span class="desc">Thompson sampling or UCB to balance exploration (diverse items to learn preferences) vs exploitation (good recommendations)</span></div>
+    <div class="key-point"><span class="label">Layer 4: Fallback:</span><span class="desc">Popularity or recency ranking when all else fails; simple but safe</span></div>
+    <hr class="divider">
+    <div class="interview-tip">Practical trick: When user embedding is unavailable, find nearest neighbor in content-feature space (demographics), copy their embedding until interactions accumulate—leverages collaborative signal from similar users.</div>
+    <div class="interview-tip">How do you evaluate cold-start? Separately: measure NDCG on users/items with age < 7 days (cold metrics) vs age > 30 days (warm metrics). A/B test changes on cold users only to isolate impact.</div>
+    <div class="mnemonic">Cold-start is a funnel: content-based (broad, weak) → exploration bandit (learning) → exploitation (leveraging learned preferences) → mature warm-start recommendations.</div>
+  </div>
+</div>
+
+<!-- 5. DEEP RECOMMENDATION MODELS: Wide & Deep -->
+<div class="viz-section">
+  <h2>Deep Recommendation Models: Wide & Deep Architecture</h2>
+  <p class="subtitle">Combines linear (wide) path for memorization with deep neural path for generalization. Adjust input features to see model flow.</p>
+  <div class="viz-canvas">
+    <canvas id="wideDeepCanvas" width="1000" height="600"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>Feature Set Size</label>
+      <input type="range" id="wdFeatures" min="5" max="30" value="15" oninput="drawWideDeep()">
+      <span class="value" id="wdFeaturesVal">15</span>
+    </div>
+    <button class="btn" onclick="drawWideDeep()">⟳ Refresh</button>
+  </div>
+  <div class="metric-box" id="wdMetrics">Model Depth: Deep | Parameters: --</div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Wide & Deep hybrid combines memorization (linear wide path) and generalization (deep neural path) to handle both frequent interactions and unseen feature combinations.
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title">Wide (Linear)</div>
+        <div class="opt-desc">Hand-crafted cross-product features (user_id × item_id, category × region); memorizes low-order interactions perfectly but poor generalization to unseen combos</div>
+      </div>
+      <div class="option">
+        <div class="opt-title">Deep (Neural)</div>
+        <div class="opt-desc">Embeddings + ReLU layers learn implicit nonlinear patterns; generalizes well but may miss important low-order feature interactions</div>
+      </div>
+    </div>
+    <div class="formula">L = α·L_wide + (1-α)·L_deep, balancing memorization and generalization (α typically 0.5)</div>
+    <div class="key-point"><span class="label">L:</span><span class="desc">Total training loss to optimize; weighted sum of wide and deep path losses</span></div>
+    <div class="key-point"><span class="label">L_wide:</span><span class="desc">Cross-entropy or logistic loss from wide path (linear model); penalizes incorrect memorized patterns</span></div>
+    <div class="key-point"><span class="label">L_deep:</span><span class="desc">Cross-entropy or logistic loss from deep path (neural network); penalizes incorrect generalized patterns</span></div>
+    <div class="key-point"><span class="label">α:</span><span class="desc">Weight balancing memorization vs generalization; α ∈ [0, 1]; α=0.5 gives equal importance; tune via validation</span></div>
+    <div class="key-point"><span class="label">Serving latency:</span><span class="desc">Wide path (linear) adds minimal cost; deep path dominates computation</span></div>
+    <div class="key-point"><span class="label">Regularization:</span><span class="desc">L2 on wide weights (prevent overfit to specific user-item pairs); dropout on deep layers (prevent co-adaptation)</span></div>
+    <div class="key-point"><span class="label">Shared embeddings:</span><span class="desc">Both paths share embedding tables; deep path learns better representations, improving wide path</span></div>
+    <hr class="divider">
+    <div class="interview-tip">How do you choose wide-path features? High-dimensional, expensive to hand-engineer. Start with top-k frequent feature crosses (identified via statistical tests), then iteratively add new crosses based on model analysis.</div>
+    <div class="interview-tip">Compare to baselines: Deep-only struggles with memorization (e.g., specific promo combos); Wide-only cannot generalize. Wide&Deep achieves both—validate via A/B test: Deep-only vs Wide-only vs Wide&Deep.</div>
+    <div class="mnemonic">Think of it as: Wide handles special cases (memorize important user-item patterns), Deep handles the general case (learn reusable patterns from raw features).</div>
+  </div>
+</div>
+
+<!-- 6. DCN (Deep & Cross Network) -->
+<div class="viz-section">
+  <h2>DCN: Deep & Cross Network</h2>
+  <p class="subtitle">Cross network computes explicit feature crosses at each layer. Stack of cross layers learns high-order interactions efficiently.</p>
+  <div class="viz-canvas">
+    <canvas id="dcnCanvas" width="1000" height="550"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>Cross Network Depth</label>
+      <input type="range" id="dcnDepth" min="1" max="6" value="3" oninput="drawDCN()">
+      <span class="value" id="dcnDepthVal">3</span>
+    </div>
+    <button class="btn" onclick="drawDCN()">⟳ Refresh</button>
+  </div>
+  <div class="metric-box" id="dcnMetrics">Cross Layers: -- | Deep Layers: 4</div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> DCN automates feature crossing without exponential explosion: each cross layer generates polynomial order 2^l interactions with only O(d) parameters per layer.
+    <div class="formula">x_{l+1} = x_0 ⊙ <span class="highlight">(wₗᵀ xₗ + bₗ)</span> + xₗ, where ⊙ is element-wise multiplication and x_0 is original input</div>
+    <div class="key-point"><span class="label">x_{l+1}:</span><span class="desc">Output of l-th cross layer; contains polynomial feature interactions up to order 2^l</span></div>
+    <div class="key-point"><span class="label">x_0:</span><span class="desc">Original input feature vector to first cross layer; preserved and used in residual connection throughout network</span></div>
+    <div class="key-point"><span class="label">x_l:</span><span class="desc">Input to l-th cross layer; output of previous cross layer (or x_0 if l=1)</span></div>
+    <div class="key-point"><span class="label">w_l:</span><span class="desc">Weight vector for l-th cross layer (d-dimensional); learns linear projection of input x_l to scalar</span></div>
+    <div class="key-point"><span class="label">b_l:</span><span class="desc">Bias term for l-th cross layer (scalar); adds offset to weighted sum w_l^T x_l</span></div>
+    <div class="key-point"><span class="label">⊙:</span><span class="desc">Element-wise (Hadamard) multiplication; gates original input x_0 by learned projection (w_l^T x_l + b_l)</span></div>
+    <div class="key-point"><span class="label">l:</span><span class="desc">Cross layer index starting from 0; l-th layer produces 2^l-order feature interactions</span></div>
+    <div class="key-point"><span class="label">d:</span><span class="desc">Feature dimension; same throughout network; parameter count per layer is O(d), not O(d^2)</span></div>
+    <div class="key-point"><span class="label">vs Wide & Deep:</span><span class="desc">Wide requires manual feature engineering (expensive); DCN learns feature crosses automatically</span></div>
+    <div class="key-point"><span class="label">Cross layer output:</span><span class="desc">l-th layer produces polynomial order 2^l (Layer 1: 2nd order, Layer 2: 4th order, etc.); exponential expressivity with linear parameters</span></div>
+    <div class="key-point"><span class="label">Architecture:</span><span class="desc">Cross network (automatic feature crosses) + Deep network (embeddings + MLPs) in parallel; concatenate outputs for final classification layer</span></div>
+    <div class="key-point"><span class="label">Serving cost:</span><span class="desc">Minimal latency overhead (simple dot products and element-wise ops); ideal for production constraints</span></div>
+    <hr class="divider">
+    <div class="interview-tip">Why more efficient than hand-crafted crosses? Exponential feature explosion: to get 4th-order interactions manually, you need O(d^4) features. DCN achieves it with O(4d) parameters via automatic layer-wise composition.</div>
+    <div class="interview-tip">Interpretability trade-off? Unlike Wide & Deep (you can inspect wide weights to see which crosses matter), DCN cross layers are learned implicitly—harder to debug but more automated.</div>
+    <div class="mnemonic">Think of cross layers as a learnable feature interaction funnel: each layer multiplies original input by learned gates to extract higher-order patterns progressively.</div>
+  </div>
+</div>
+
+<!-- 7. DIN (Deep Interest Network) -->
+<div class="viz-section">
+  <h2>DIN: Deep Interest Network (Attention Mechanism)</h2>
+  <p class="subtitle">Attention layer weights user's historical items by relevance to query item. Recent/relevant items get higher weights.</p>
+  <div class="viz-canvas">
+    <canvas id="dinCanvas" width="1000" height="500"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>User History Length</label>
+      <input type="range" id="dinLength" min="3" max="20" value="10" oninput="drawDIN()">
+      <span class="value" id="dinLengthVal">10</span>
+    </div>
+    <button class="btn" onclick="drawDIN()">↺ Refresh</button>
+  </div>
+  <div class="metric-box" id="dinMetrics">Attention Weights: --</div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Attention computes dynamic relevance weights for historical items, capturing user's multi-faceted interests as weighted aggregation.
+    <div class="formula">Interest representation I = Σᵢ αᵢ · embed(item_i), where αᵢ = softmax(score(item_i, candidate))</div>
+    <div class="key-point"><span class="label">I:</span><span class="desc">Final user interest representation (d-dimensional); weighted average of historical item embeddings relevant to candidate</span></div>
+    <div class="key-point"><span class="label">Σᵢ:</span><span class="desc">Sum over all i historical items in user's sequence (i = 1..sequence_length)</span></div>
+    <div class="key-point"><span class="label">αᵢ:</span><span class="desc">Attention weight for item i; αᵢ ∈ [0,1] and Σαᵢ = 1; higher if item i is relevant to candidate</span></div>
+    <div class="key-point"><span class="label">embed(item_i):</span><span class="desc">Embedding vector (d-dimensional) of historical item i; learned during training</span></div>
+    <div class="key-point"><span class="label">score(item_i, candidate):</span><span class="desc">Raw relevance score (before softmax); typically dot product or learned bilinear similarity between historical and candidate embeddings</span></div>
+    <div class="key-point"><span class="label">softmax(·):</span><span class="desc">Converts scores to normalized weights; ensures αᵢ ≥ 0 and Σαᵢ = 1; emphasizes high-scoring items exponentially</span></div>
+    <div class="key-point"><span class="label">candidate:</span><span class="desc">Query item being ranked; all attention weights computed relative to this single candidate</span></div>
+    <div class="key-point"><span class="label">Scoring function:</span><span class="desc">Typically dot product or learned bilinear similarity between historical item and candidate embeddings</span></div>
+    <div class="key-point"><span class="label">Dynamic weighting:</span><span class="desc">Candidate item "pulls" relevant historical items to the forefront; users with diverse interests (action + documentaries) are naturally handled</span></div>
+    <div class="key-point"><span class="label">vs Average pooling:</span><span class="desc">Average treats all history equally (loses context); attention weights history adaptively based on candidate</span></div>
+    <div class="key-point"><span class="label">Computational cost:</span><span class="desc">O(sequence_length) per candidate; can be prohibitive if sequences are long (100+ items)</span></div>
+    <div class="key-point"><span class="label">Extensions:</span><span class="desc">Multi-head attention (k separate relevance functions); Transformers (parallel all-pairs attention); attention-over-attention (hierarchical)</span></div>
+    <hr class="divider">
+    <div class="interview-tip">Why better than average? Example: User watched [Romance, Romance, Romance, Action]. Average gives little weight to Action preference. Attention on Action candidate upweights the Action history item.</div>
+    <div class="interview-tip">Recency bias emerges naturally: if items are ordered temporally, softmax attention over recent items (higher scores) gives more weight to recent history without explicit time decay.</div>
+    <div class="mnemonic">Attention = Adaptive history summarization: different candidates pull different "summaries" from the same user history based on relevance.</div>
+  </div>
+</div>
+
+<!-- 8. FULL RECOMMENDATION PIPELINE -->
+<div class="viz-section">
+  <h2>Full Recommendation Pipeline: 3-Stage Funnel</h2>
+  <p class="subtitle">Candidate Generation (millions→1000) → Ranking (complex models) → Re-ranking (diversity/freshness). Each stage has latency budget.</p>
+  <div class="viz-canvas">
+    <canvas id="pipelineCanvas" width="1100" height="500"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>Candidate Pool Size (millions)</label>
+      <input type="range" id="pipelinePool" min="10" max="1000" value="100" oninput="drawPipeline()">
+      <span class="value" id="pipelinePoolVal">100M</span>
+    </div>
+    <button class="btn" onclick="drawPipeline()">⟳ Refresh</button>
+  </div>
+  <div class="metric-box" id="pipelineMetrics">Total Latency: -- | Models: 3</div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Multi-stage funnel trades off latency (500ms end-to-end) against accuracy via recall→precision→business-logic progression.
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title">Stage 1: Candidate Gen (50-200ms)</div>
+        <div class="opt-desc">Fast, approximate methods (ANN, collaborative filtering, popularity); optimize recall—do not miss relevant items</div>
+      </div>
+      <div class="option">
+        <div class="opt-title">Stage 2: Ranking (100-300ms)</div>
+        <div class="opt-desc">Expensive models (DIN, Wide&Deep, DCN) score candidates; optimize precision—fine-grained relevance</div>
+      </div>
+    </div>
+    <div class="key-point"><span class="label">Stage 3: Re-ranking (50-100ms):</span><span class="desc">Business logic—diversity filters, freshness boost, ad slots, CTR thresholds; final ranking before returning</span></div>
+    <div class="key-point"><span class="label">Latency budget:</span><span class="desc">Each stage has fixed time slice; if Stage 1 uses 150ms, Stages 2-3 share 350ms—strict SLA enforcement</span></div>
+    <div class="key-point"><span class="label">Fundamental trade-off:</span><span class="desc">More stages enable accuracy improvements but consume latency; fewer stages are faster but may discard relevant items too early</span></div>
+    <div class="key-point"><span class="label">Variations:</span><span class="desc">Batch pre-compute scores offline; use LambdaMART to optimize ranking metrics directly; different models for head vs tail items</span></div>
+    <hr class="divider">
+    <div class="interview-tip">Validate candidate generation recall: If top-100 candidates always miss relevant items (measured offline), increase recall@k during Stage 1—trade some latency for accuracy.</div>
+    <div class="interview-tip">Parallelize if bottlenecked: Stage 1 (ANN search) and business logic (re-ranking) are parallelizable; Stage 2 (sequential scoring) is harder to parallelize.</div>
+    <div class="mnemonic">Think of it as a filtering funnel: broad candidate net (high recall) → precise ranking (high precision) → final polish (business logic).</div>
+  </div>
+</div>
+
+<!-- 9. SEQUENTIAL RECOMMENDATIONS: SASRec -->
+<div class="viz-section">
+  <h2>Sequential Recommendations: SASRec (Self-Attention)</h2>
+  <p class="subtitle">Self-attention over user action sequence. Recent items and relevant patterns get higher attention. Predicts next item.</p>
+  <div class="viz-canvas">
+    <canvas id="sasrecCanvas" width="1000" height="450"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>Sequence Length</label>
+      <input type="range" id="sasrecSeqLen" min="3" max="20" value="10" oninput="drawSASRec()">
+      <span class="value" id="sasrecSeqLenVal">10</span>
+    </div>
+    <button class="btn" onclick="drawSASRec()">↺ Refresh</button>
+  </div>
+  <div class="metric-box" id="sasrecMetrics">Predicted Next Item: -- | Confidence: --</div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Transformers via self-attention capture long-range item dependencies without sequential bottleneck; each item attends to all prior items in sequence.
+    <div class="formula">Attention(Q,K,V) = softmax(QK^T / <span class="highlight">√d</span>)V, where Q, K, V are projections of embedding sequence; √d stabilizes gradients</div>
+    <div class="key-point"><span class="label">Q (Query):</span><span class="desc">Query matrix (sequence_length × d); projections of input embeddings; represents "what to attend to"</span></div>
+    <div class="key-point"><span class="label">K (Key):</span><span class="desc">Key matrix (sequence_length × d); projections of input embeddings; represents "what can be attended"</span></div>
+    <div class="key-point"><span class="label">V (Value):</span><span class="desc">Value matrix (sequence_length × d); projections of input embeddings; represents "information to aggregate"</span></div>
+    <div class="key-point"><span class="label">QK^T:</span><span class="desc">Matrix multiplication (sequence_length × sequence_length); each element [i,j] = dot product of query i and key j</span></div>
+    <div class="key-point"><span class="label">d:</span><span class="desc">Embedding dimension; typically 64 per head in multi-head attention; impacts gradient scale</span></div>
+    <div class="key-point"><span class="label">√d (scaling factor):</span><span class="desc">Divides attention scores by sqrt(d); stabilizes gradients (prevents very large/small dot products); ensures softmax doesn't saturate</span></div>
+    <div class="key-point"><span class="label">softmax(·):</span><span class="desc">Converts scaled scores to normalized attention weights; each row sums to 1; emphasizes high-scoring positions</span></div>
+    <div class="key-point"><span class="label">softmax(QK^T/√d)V:</span><span class="desc">Final output (sequence_length × d); weighted sum of values by attention weights; each position attends to all previous positions</span></div>
+    <div class="key-point"><span class="label">Mechanism:</span><span class="desc">Each position i attends to all previous positions [1..i-1] (causal masking prevents future leakage); item representation = weighted sum of all prior items</span></div>
+    <div class="key-point"><span class="label">vs RNNs/LSTMs:</span><span class="desc">Parallel training (no sequential bottleneck), better gradient flow (no vanishing gradients), scales to longer sequences (100+ items)</span></div>
+    <div class="key-point"><span class="label">Learned patterns:</span><span class="desc">Item transitions (shoe → sock → laces); recency bias (softmax places higher weight on recent items) emerges naturally</span></div>
+    <div class="key-point"><span class="label">Engineering details:</span><span class="desc">Position embeddings (absolute or relative) encode temporal order; layer-normalization stabilizes; multi-head attention learns k separate relevance functions</span></div>
+    <hr class="divider">
+    <div class="interview-tip">Variable-length sequences: Pad to max length with special tokens, use attention mask to ignore padding. Alternatively, truncate to recent k items (e.g., last 50 items).</div>
+    <div class="interview-tip">Recency bias: Emerges naturally from attention weights (recent items higher QK scores); no explicit time decay needed. Validate via attention weight visualization.</div>
+    <div class="mnemonic">Self-attention = parallel RNN: each position "reads" previous positions simultaneously via learned attention weights, avoiding sequential computation.</div>
+  </div>
+</div>
+
+<!-- 10. MULTI-TASK LEARNING: MMOE -->
+<div class="viz-section">
+  <h2>Multi-Task Learning: MMOE (Multi-gate Mixture of Experts)</h2>
+  <p class="subtitle">Shared expert representations with per-task gating networks. Jointly learn CTR, CVR, watch-time. Show expert utilization per task.</p>
+  <div class="viz-canvas">
+    <canvas id="mmoeCanvas" width="1050" height="550"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>Number of Experts</label>
+      <input type="range" id="mmoeExperts" min="3" max="10" value="6" oninput="drawMMOE()">
+      <span class="value" id="mmoeExpertsVal">6</span>
+    </div>
+    <button class="btn" onclick="drawMMOE()">⟳ Refresh</button>
+  </div>
+  <div class="metric-box" id="mmoeMetrics">Task Weights: CTR -- | CVR -- | Watch Time --</div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Multi-task learning optimizes correlated objectives (CTR, CVR, watch-time) jointly; Mixture of Experts (MoE) allows task-specific expert selection via gating.
+    <div class="formula">Task_k output = gate_k ⊗ Σᵢ<span class="highlight">expertᵢ</span>, where gate_k = softmax(W_k · features) selects task-relevant experts</div>
+    <div class="key-point"><span class="label">Task_k output:</span><span class="desc">Final prediction for task k (CTR, CVR, watch-time, etc.); vector of shape (batch_size, output_dim)</span></div>
+    <div class="key-point"><span class="label">gate_k:</span><span class="desc">Gating vector for task k (m-dimensional); softmax weights over m experts; emphasizes task-relevant expert representations</span></div>
+    <div class="key-point"><span class="label">Σᵢ expertᵢ:</span><span class="desc">Sum of all expert outputs; each expert i is a small MLP producing (batch_size, output_dim) representation</span></div>
+    <div class="key-point"><span class="label">m:</span><span class="desc">Number of shared experts; typical range 4-10 in production; each expert is a small MLP (2-3 hidden layers)</span></div>
+    <div class="key-point"><span class="label">⊗:</span><span class="desc">Broadcasting multiplication; gate_k (m-dimensional) multiplies across experts dimension of Σᵢ expertᵢ</span></div>
+    <div class="key-point"><span class="label">W_k:</span><span class="desc">Weight matrix for task k's gating network; shapes (feature_dim, m); learns task-specific expert preferences</span></div>
+    <div class="key-point"><span class="label">features:</span><span class="desc">Input feature vector (user context, item features, etc.); shared across all experts and gating networks</span></div>
+    <div class="key-point"><span class="label">softmax(W_k · features):</span><span class="desc">Normalized weights over m experts; ensures gate_k sums to 1 and all weights in [0,1]</span></div>
+    <div class="key-point"><span class="label">k:</span><span class="desc">Task index; separate gating networks for each task (CTR, CVR, etc.); experts shared across all tasks</span></div>
+    <div class="key-point"><span class="label">Objectives:</span><span class="desc">CTR (click), CVR (conversion), watch time, engagement—all correlated; joint training improves data efficiency and calibration</span></div>
+    <div class="key-point"><span class="label">MoE architecture:</span><span class="desc">m shared experts (small MLPs, e.g., m=6); per-task gating networks learn softmax weights over experts; task output = weighted sum</span></div>
+    <div class="key-point"><span class="label">Benefits:</span><span class="desc">Parameter efficiency (shared experts << task-specific towers); mutual information between tasks improves generalization; flexible task importance weighting</span></div>
+    <div class="key-point"><span class="label">Joint loss:</span><span class="desc">L = α·L_ctr + β·L_cvr + γ·L_watch, where α, β, γ reflect business priorities (tune on validation set)</span></div>
+    <div class="key-point"><span class="label">Production gotchas:</span><span class="desc">Task calibration (different loss scales → gradient dominance); label delay (CVR takes days, CTR immediate); negative transfer (tasks conflict)</span></div>
+    <hr class="divider">
+    <div class="interview-tip">Handle label imbalance: CVR is ~1% (rarer than CTR ~10%). Use weighted sampling or loss weighting to balance task gradients; monitor which task dominates training.</div>
+    <div class="interview-tip">Validate improvements: Compare multi-task vs CTR-only baseline. Measure both task accuracy (does each task improve?) and correlation (do tasks help each other?).</div>
+    <div class="mnemonic">MoE gating = skill specialization: CTR gate prefers experts good at short-term clicks; CVR gate prefers experts predicting long-term conversions.</div>
+  </div>
+</div>
+
+<!-- 11. LEARNING TO RANK: Pointwise vs Pairwise vs Listwise -->
+<div class="viz-section">
+  <h2>Learning to Rank (LTR): Loss Function Comparison</h2>
+  <p class="subtitle">Pointwise: predict score per doc. Pairwise: prefer one doc over another. Listwise: optimize ranking of whole list.</p>
+  <div class="viz-canvas">
+    <canvas id="ltrCanvas" width="1100" height="500"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>Number of Documents</label>
+      <input type="range" id="ltrDocs" min="3" max="20" value="10" oninput="drawLTR()">
+      <span class="value" id="ltrDocsVal">10</span>
+    </div>
+    <button class="btn" id="ltrPointBtn" onclick="setLTRMode('pointwise')">Pointwise</button>
+    <button class="btn active" id="ltrPairBtn" onclick="setLTRMode('pairwise')">Pairwise</button>
+    <button class="btn" id="ltrListBtn" onclick="setLTRMode('listwise')">Listwise</button>
+  </div>
+  <div class="metric-box" id="ltrMetrics">Mode: Pairwise | Loss: --</div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> LTR optimizes ranking metrics (NDCG, MRR) directly; pointwise ignores ranking structure; pairwise captures pairs; listwise optimizes full ranking.
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title">Pointwise</div>
+        <div class="opt-desc">Treat each document independently; loss = classification_loss. Simple but ignores ranking structure and position bias.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title">Pairwise</div>
+        <div class="opt-desc">Minimize inversion loss for pairs: log(1 + exp(-σ(s_i - s_j))). Captures ranking structure; O(n²) pairs per example.</div>
+      </div>
+    </div>
+    <div class="key-point"><span class="label">Listwise:</span><span class="desc">Direct NDCG optimization: loss = -NDCG(ranked_list). Most principled but requires sorting (expensive); LambdaMART combines with pairwise for efficiency</span></div>
+    <div class="key-point"><span class="label">LambdaMART:</span><span class="desc">Computes pairwise gradients but weights by NDCG improvement (lambda gradient weighting); efficient listwise optimization</span></div>
+    <div class="key-point"><span class="label">Accuracy vs Computation:</span><span class="desc">Pointwise (fast) << Pairwise (medium) << Listwise (slow but best); production typically uses LambdaMART via XGBoost/LightGBM</span></div>
+    <hr class="divider">
+    <div class="interview-tip">Why does pointwise fail on ranked outputs? Position bias: top-ranked docs receive more clicks regardless of relevance. Evaluation metric mismatch: classification loss doesn't align with NDCG/MRR metrics.</div>
+    <div class="interview-tip">Variable-length lists: Pad with negative labels (rank 0) to uniform length. LambdaMART handles missing labels gracefully (skips pairs with missing labels).</div>
+    <div class="mnemonic">Pointwise = per-item scores ignoring context; Pairwise = respecting relative order; Listwise = optimizing the entire ranked order for metric.</div>
+  </div>
+</div>
+
+<!-- 12. ADS & MONETIZATION: Auction & Attribution -->
+<div class="viz-section">
+  <h2>Ads & Monetization: Auction & Attribution Models</h2>
+  <p class="subtitle">Ad ranking: bid × CTR × quality_score. Attribution: last-click vs multi-touch for conversion credit.</p>
+  <div class="viz-canvas">
+    <canvas id="adsCanvas" width="1050" height="550"></canvas>
+  </div>
+  <div class="controls">
+    <button class="btn" id="adsAuctionBtn" onclick="setAdsMode('auction')">Auction Mechanics</button>
+    <button class="btn active" id="adsAttributionBtn" onclick="setAdsMode('attribution')">Attribution Models</button>
+  </div>
+  <div class="metric-box" id="adsMetrics">Mode: Attribution | Total Revenue: --</div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Auction equation balances advertiser bid, user relevance (pCTR), and platform incentives; strategy-proof design prevents bid manipulation.
+    <div class="formula">Rank ∝ bid × <span class="highlight">pCTR</span> × quality_score</div>
+    <div class="key-point"><span class="label">Rank:</span><span class="desc">Final ranking position of ad in auction; higher score = better position (higher visibility and CTR)</span></div>
+    <div class="key-point"><span class="label">∝ (proportional to):</span><span class="desc">Ranking function not strictly equals due to other factors (position, context); function is monotonic in product</span></div>
+    <div class="key-point"><span class="label">bid:</span><span class="desc">Advertiser's monetary bid per click ($/click); advertiser's valuation of user engagement; set by bidder</span></div>
+    <div class="key-point"><span class="label">pCTR:</span><span class="desc">Predicted click-through rate (probability ∈ [0,1]); neural network (DIN-style) predicting P(click | user, ad, context)</span></div>
+    <div class="key-point"><span class="label">quality_score:</span><span class="desc">Platform quality metric (typically ∈ [0,10]); penalizes low-CTR ads; rewards relevant/high-quality ads</span></div>
+    <div class="key-point"><span class="label">Strategy-proof:</span><span class="desc">Advertisers cannot benefit from misreporting bids; dominant strategy is truthful bidding (game theory property)</span></div>
+    <div class="key-point"><span class="label">Attribution:</span><span class="desc">Last-click (simple, biased); linear (fair); time-decay (recent ads more credit); Shapley value (game-theory fair, expensive)</span></div>
+    <div class="key-point"><span class="label">Production risks:</span><span class="desc">Feedback loops (ads affect exposure → clicks → retraining); position bias (top ads get more clicks); brand safety (toxic adjacencies); budget constraints</span></div>
+    <hr class="divider">
+    <div class="interview-tip">Budget constraints: Advertisers cap daily spend; challenge is allocating limited budget across ads. Use online optimization (bid adjustment) to respect budgets while maximizing CTR.</div>
+    <div class="interview-tip">Multi-touch attribution: Why harder? Multiple touchpoints in user journey; isolating which ad caused conversion is confounded by user intent. Shapley value fair but computationally expensive.</div>
+    <div class="mnemonic">Think of auction equation as: (Advertiser value) × (User relevance) × (Platform quality); all three terms must be non-zero for ads to rank well.</div>
+  </div>
+</div>
+
+<!-- 13. DENSE RETRIEVAL & SEARCH: Bi-encoder vs Cross-encoder -->
+<div class="viz-section">
+  <h2>Dense Retrieval: Bi-encoder vs Cross-encoder vs ColBERT</h2>
+  <p class="subtitle">Bi-encoder: independent embeddings (fast but lower quality). Cross-encoder: joint scoring (slower but more accurate). ColBERT: late interaction compromise.</p>
+  <div class="viz-canvas">
+    <canvas id="denseCanvas" width="1100" height="520"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>Candidate Pool Size</label>
+      <input type="range" id="denseCandidates" min="100" max="10000" value="1000" value="1000" oninput="drawDenseRetrieval()">
+      <span class="value" id="denseCandidatesVal">1k docs</span>
+    </div>
+    <button class="btn" onclick="drawDenseRetrieval()">⟳ Refresh</button>
+  </div>
+  <div class="metric-box" id="denseMetrics">Bi-encoder: 1ms | Cross-encoder: 500ms | ColBERT: 50ms</div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Dense retrieval encodes queries/documents as embeddings; bi-encoder is fast but coarse; cross-encoder is accurate but slow; ColBERT bridges both.
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title">Bi-encoder</div>
+        <div class="opt-desc">query_emb = BERT(query), doc_emb = BERT(doc); score = cosine(q, d). Pre-index all docs in FAISS/Annoy; O(1) serving cost.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title">Cross-encoder</div>
+        <div class="opt-desc">score = BERT([query, doc]); direct relevance. O(n) serving cost (re-encode each candidate). Accurate but expensive.</div>
+      </div>
+    </div>
+    <div class="key-point"><span class="label">ColBERT (late interaction):</span><span class="desc">Per-token embeddings; score = max_{i,j} cos(q_i, d_j); defers fine-grained matching to serving without full re-encoding</span></div>
+    <div class="key-point"><span class="label">vs BM25:</span><span class="desc">BM25 lexical matching cheap and handles rare terms; dense retrieval semantic matching better for paraphrases and out-of-vocabulary</span></div>
+    <div class="key-point"><span class="label">Production hybrid:</span><span class="desc">BM25 (cheap retrieval) → bi-encoder re-rank (efficient) → cross-encoder/ColBERT refine top-k (accurate); multi-signal fusion</span></div>
+    <div class="key-point"><span class="label">Cold-start new docs:</span><span class="desc">Compute embeddings from content (metadata, title, body); no user interaction history required; fine-tune as signals accumulate</span></div>
+    <hr class="divider">
+    <div class="interview-tip">Why does ColBERT avoid early-interaction bottleneck? Standard dense matching locks in interaction decision at embedding time; ColBERT defers to serving (per-token flexibility).</div>
+    <div class="interview-tip">Measure retrieval quality: recall@k (fraction of relevant docs in top-k), MRR (mean reciprocal rank of first relevant doc), NDCG. Validate on holdout relevance judgments.</div>
+    <div class="mnemonic">Bi-encoder = fast approximate search; Cross-encoder = slow precise scoring; ColBERT = fast token-level flexibility for accurate re-ranking.</div>
+  </div>
+</div>
+
+</div>
+
+<script>
+// ============ MATRIX FACTORIZATION ============
+let mfData = {};
+
+function initMatrixFactorization() {
+  const m = 6;
+  const n = 8;
+  const sparsity = 0.7;
+  mfData.R = Array(m).fill(0).map(() =>
+    Array(n).fill(0).map(() => Math.random() > sparsity ? Math.floor(Math.random() * 5) + 1 : 0)
+  );
+  drawMatrixFactorization();
+}
+
+function drawMatrixFactorization() {
+  const canvas = document.getElementById('mfCanvas');
+  const ctx = canvas.getContext('2d');
+  const k = parseInt(document.getElementById('mfK').value);
+  document.getElementById('mfKVal').textContent = k;
+  if (!mfData.R) initMatrixFactorization();
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const m = mfData.R.length;
+  const n = mfData.R[0].length;
+  const cellSize = 30;
+  const spacing = 100;
+  ctx.fillStyle = '#ff9ff3';
+  ctx.font = 'bold 14px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('User×Item Rating Matrix (R)', spacing + (cellSize * n) / 2, 30);
+  for (let i = 0; i < m; i++) {
+    for (let j = 0; j < n; j++) {
+      const x = spacing + j * cellSize;
+      const y = 50 + i * cellSize;
+      const val = mfData.R[i][j];
+      ctx.fillStyle = val === 0 ? '#2a2a3a' : '#1a4a6a';
+      ctx.fillRect(x, y, cellSize - 2, cellSize - 2);
+      ctx.fillStyle = val === 0 ? '#555' : '#ff9ff3';
+      ctx.font = '11px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(val || '?', x + cellSize/2 - 1, y + cellSize/2);
+    }
+  }
+  const arrowX = spacing + (cellSize * n) + 50;
+  ctx.strokeStyle = '#ff9ff3';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(arrowX, 100);
+  ctx.lineTo(arrowX + 30, 100);
+  ctx.stroke();
+  ctx.fillStyle = '#ff9ff3';
+  ctx.beginPath();
+  ctx.moveTo(arrowX + 30, 100);
+  ctx.lineTo(arrowX + 25, 95);
+  ctx.lineTo(arrowX + 25, 105);
+  ctx.closePath();
+  ctx.fill();
+  const uX = arrowX + 60;
+  ctx.fillStyle = '#ff9ff3';
+  ctx.font = 'bold 12px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(`U (${m}×${k})`, uX + (cellSize * k) / 2 - 5, 30);
+  for (let i = 0; i < Math.min(m, 6); i++) {
+    for (let j = 0; j < k; j++) {
+      const x = uX + j * cellSize;
+      const y = 50 + i * cellSize;
+      const val = (Math.sin(i * 0.5 + j * 0.7) * 0.5 + 0.5).toFixed(2);
+      ctx.fillStyle = '#1a4a6a';
+      ctx.fillRect(x, y, cellSize - 2, cellSize - 2);
+      ctx.fillStyle = '#88ccff';
+      ctx.font = '9px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(val, x + cellSize/2 - 1, y + cellSize/2);
+    }
+  }
+  const vX = uX + (cellSize * k) + 40;
+  ctx.fillStyle = '#ff9ff3';
+  ctx.font = 'bold 12px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(`Vᵀ (${k}×${n})`, vX + (cellSize * Math.min(n, 8)) / 2 - 5, 30);
+  for (let i = 0; i < k; i++) {
+    for (let j = 0; j < Math.min(n, 8); j++) {
+      const x = vX + j * cellSize;
+      const y = 50 + i * cellSize;
+      const val = (Math.cos(i * 0.3 + j * 0.6) * 0.5 + 0.5).toFixed(2);
+      ctx.fillStyle = '#1a4a6a';
+      ctx.fillRect(x, y, cellSize - 2, cellSize - 2);
+      ctx.fillStyle = '#88ccff';
+      ctx.font = '9px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(val, x + cellSize/2 - 1, y + cellSize/2);
+    }
+  }
+  let totalError = 0, count = 0;
+  for (let i = 0; i < m; i++) {
+    for (let j = 0; j < n; j++) {
+      if (mfData.R[i][j] !== 0) {
+        let reconstructed = 0;
+        for (let d = 0; d < k; d++) {
+          const uVal = Math.sin(i * 0.5 + d * 0.7) * 0.5 + 0.5;
+          const vVal = Math.cos(d * 0.3 + j * 0.6) * 0.5 + 0.5;
+          reconstructed += uVal * vVal * 5;
+        }
+        totalError += Math.pow(mfData.R[i][j] - reconstructed, 2);
+        count++;
+      }
+    }
+  }
+  const rmse = Math.sqrt(totalError / count).toFixed(3);
+  document.getElementById('mfMetrics').textContent = `RMSE: ${rmse} | Parameters: ${m * k + k * n} vs original ${m * n}`;
+}
+
+// ============ TWO-TOWER MODEL ============
+let towerData = {};
+
+function initTowerModel() {
+  towerData.users = Array(5).fill(0).map((_, i) => ({
+    id: i,
+    embedding: Array(8).fill(0).map(() => Math.random() * 2 - 1)
+  }));
+  towerData.items = Array(12).fill(0).map((_, i) => ({
+    id: i,
+    title: ['Thriller', 'Drama', 'Comedy', 'Action', 'Sci-Fi', 'Horror'][i % 6] + ' ' + (i + 1),
+    embedding: Array(8).fill(0).map((_, d) =>
+      Math.sin(i * 0.3 + d * 0.2) * 0.5 + Math.cos(i * 0.7) * 0.3
+    )
+  }));
+}
+
+function drawTowerModel() {
+  const canvas = document.getElementById('towerCanvas');
+  const ctx = canvas.getContext('2d');
+  const userId = parseInt(document.getElementById('towerUserId').value);
+  document.getElementById('towerUserIdVal').textContent = 'User ' + userId;
+  if (!towerData.users) initTowerModel();
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#ff9ff3';
+  ctx.font = 'bold 16px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('User Tower', 50, 35);
+  ctx.fillText('Item Tower', 350, 35);
+  ctx.fillText('Dot Product Search', 650, 35);
+  const userEmb = towerData.users[userId].embedding;
+  drawTower(ctx, 50, 70, 'User Features', ['Age', 'Country', 'Watch History', ...Array(5).fill('...')], userEmb);
+  drawTower(ctx, 350, 70, 'Item Features', ['Genre', 'Year', 'Length', 'Director', 'Cast', ...Array(3).fill('...')], towerData.items[0].embedding);
+  ctx.fillStyle = '#1a1a2a';
+  ctx.fillRect(600, 70, 250, 280);
+  const scores = towerData.items.map((item, idx) => {
+    let score = 0;
+    for (let d = 0; d < Math.min(userEmb.length, item.embedding.length); d++) {
+      score += userEmb[d] * item.embedding[d];
+    }
+    return { idx, title: item.title, score };
+  }).sort((a, b) => b.score - a.score).slice(0, 5);
+  ctx.fillStyle = '#ff9ff3';
+  ctx.font = 'bold 12px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('Top-5 Recommendations:', 620, 95);
+  scores.forEach((rec, i) => {
+    const y = 120 + i * 40;
+    const bar_w = Math.max(0, (rec.score + 2) * 50);
+    ctx.fillStyle = '#2a2a4a';
+    ctx.fillRect(620, y, 200, 28);
+    ctx.fillStyle = '#ff9ff3';
+    ctx.fillRect(620, y, Math.min(bar_w, 200), 28);
+    ctx.fillStyle = '#fff';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText((i + 1) + '. ' + rec.title.substring(0, 14), 625, y + 14);
+    ctx.fillStyle = '#aaa';
+    ctx.fillText(rec.score.toFixed(2), 630 + bar_w, y + 14);
+  });
+  document.getElementById('towerMetrics').textContent = `Top-3: ${scores.slice(0, 3).map(s => s.title).join(', ')}`;
+}
+
+function drawTower(ctx, x, y, label, features, embedding) {
+  ctx.fillStyle = '#1a1a2a';
+  ctx.fillRect(x, y, 230, 300);
+  ctx.fillStyle = '#88ccff';
+  ctx.font = 'bold 11px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(label, x + 115, y + 20);
+  for (let i = 0; i < 5; i++) {
+    const fy = y + 40 + i * 35;
+    ctx.fillStyle = '#2a4a6a';
+    ctx.fillRect(x + 10, fy, 90, 25);
+    ctx.fillStyle = '#88ccff';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(features[i], x + 55, fy + 12);
+  }
+  ctx.strokeStyle = '#ff9ff3';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x + 115, y + 240);
+  ctx.lineTo(x + 115, y + 260);
+  ctx.stroke();
+  ctx.fillStyle = '#1a2a3a';
+  ctx.fillRect(x + 30, y + 260, 170, 30);
+  ctx.fillStyle = '#ff9ff3';
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('Embedding (8-dim)', x + 115, y + 275);
+}
+
+// ============ EMBEDDING SPACE ============
+let embeddingData = {};
+
+function initEmbeddings() {
+  const categories = ['Action', 'Drama', 'Comedy', 'Sci-Fi'];
+  embeddingData.items = Array(20).fill(0).map((_, i) => {
+    const catIdx = i % 4;
+    const angle = (Math.random() * Math.PI * 2);
+    const radius = 60 + Math.random() * 40;
+    const catOffset = (catIdx * 360 / 4) * Math.PI / 180;
+    return {
+      id: i,
+      title: categories[catIdx] + ' ' + (i + 1),
+      category: catIdx,
+      x: 450 + Math.cos(angle + catOffset) * radius,
+      y: 250 + Math.sin(angle + catOffset) * radius
+    };
+  });
+  embeddingData.colors = ['#ff6b9d', '#c06c84', '#6c567b', '#a23b72'];
+  embeddingData.selected = null;
+  drawEmbeddingSpace();
+}
+
+function drawEmbeddingSpace() {
+  const canvas = document.getElementById('embeddingCanvas');
+  const ctx = canvas.getContext('2d');
+  if (!embeddingData.items) initEmbeddings();
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = '#2a2a4a';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(50, 250);
+  ctx.lineTo(850, 250);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(450, 50);
+  ctx.lineTo(450, 450);
+  ctx.stroke();
+  ctx.fillStyle = '#555';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Latent Dimension 1', 450, 470);
+  ctx.save();
+  ctx.translate(20, 250);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('Latent Dimension 2', 0, 0);
+  ctx.restore();
+  embeddingData.items.forEach(item => {
+    const color = embeddingData.colors[item.category];
+    ctx.fillStyle = embeddingData.selected === item.id ? '#ffff00' : color;
+    ctx.beginPath();
+    ctx.arc(item.x, item.y, embeddingData.selected === item.id ? 8 : 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(item.id, item.x, item.y);
+  });
+  if (embeddingData.selected !== null) {
+    const selected = embeddingData.items.find(it => it.id === embeddingData.selected);
+    const neighbors = embeddingData.items
+      .map(item => ({
+        ...item,
+        dist: Math.sqrt(Math.pow(item.x - selected.x, 2) + Math.pow(item.y - selected.y, 2))
+      }))
+      .filter(it => it.id !== selected.id)
+      .sort((a, b) => a.dist - b.dist)
+      .slice(0, 3);
+    neighbors.forEach((neighbor, idx) => {
+      ctx.strokeStyle = '#ff9ff3';
+      ctx.lineWidth = 2 - idx * 0.5;
+      ctx.setLineDash([5, 5]);
+      ctx.beginPath();
+      ctx.moveTo(selected.x, selected.y);
+      ctx.lineTo(neighbor.x, neighbor.y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    });
+    let metricsText = `Selected: ${selected.title} | Nearest: `;
+    metricsText += neighbors.map((n, i) => `${i+1}. ${n.title} (dist: ${n.dist.toFixed(1)})`).join(' | ');
+    document.getElementById('embeddingMetrics').textContent = metricsText;
+  }
+  canvas.onclick = (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    for (let item of embeddingData.items) {
+      const d = Math.sqrt(Math.pow(item.x - mx, 2) + Math.pow(item.y - my, 2));
+      if (d < 10) {
+        embeddingData.selected = embeddingData.selected === item.id ? null : item.id;
+        drawEmbeddingSpace();
+        return;
+      }
+    }
+  };
+}
+
+function toggleEmbeddingCategories() {
+  if (!embeddingData.items) return;
+  embeddingData.showCategories = !embeddingData.showCategories;
+  drawEmbeddingSpace();
+}
+
+// ============ COLD START PROBLEM ============
+let coldStartData = {};
+
+function initColdStart() {
+  coldStartData.mode = 'collab';
+  coldStartData.dataPoints = 5;
+  drawColdStart();
+}
+
+function drawColdStart() {
+  const canvas = document.getElementById('coldStartCanvas');
+  const ctx = canvas.getContext('2d');
+  const dataPoints = parseInt(document.getElementById('csDataPoints').value);
+  document.getElementById('csDataPointsVal').textContent = dataPoints;
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const mode = coldStartData.mode || 'collab';
+  const boxW = 350, boxH = 350;
+  const lX = 50, rX = 500;
+  ctx.fillStyle = '#ff9ff3';
+  ctx.font = 'bold 14px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('New User Problem', canvas.width / 2, 25);
+  ctx.fillStyle = '#1a1a2a';
+  ctx.fillRect(lX, 50, boxW, boxH);
+  ctx.fillStyle = '#888';
+  ctx.font = 'bold 12px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('User Profile Matrix', lX + boxW / 2, 70);
+  const cellSize = 25;
+  const itemsToShow = 8;
+  for (let i = 0; i < 4; i++) {
+    for (let j = 0; j < itemsToShow; j++) {
+      const x = lX + 20 + j * cellSize;
+      const y = 90 + i * cellSize;
+      const hasData = i === 0 && j < dataPoints;
+      ctx.fillStyle = hasData ? '#1a4a6a' : '#2a1a1a';
+      ctx.fillRect(x, y, cellSize - 2, cellSize - 2);
+      ctx.fillStyle = hasData ? '#ff9ff3' : '#555';
+      ctx.font = '9px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(hasData ? '★' : '?', x + cellSize / 2 - 1, y + cellSize / 2);
+    }
+  }
+  ctx.fillStyle = '#aaa';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('New User', lX + 20, 200);
+  ctx.fillText('Existing Users', lX + 20, 225);
+  ctx.fillStyle = '#1a1a2a';
+  ctx.fillRect(rX, 50, boxW, boxH);
+  const methods = {
+    content: 'Content-Based Recommendation',
+    collab: 'Collaborative Filtering',
+    hybrid: 'Hybrid Approach'
+  };
+  ctx.fillStyle = '#ff9ff3';
+  ctx.font = 'bold 12px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(methods[mode], rX + boxW / 2, 70);
+  const y0 = 100;
+  if (mode === 'content') {
+    ctx.fillStyle = '#1a4a6a';
+    ctx.fillRect(rX + 20, y0, boxW - 40, 60);
+    ctx.fillStyle = '#88ccff';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('Match item features to user preferences', rX + 30, y0 + 20);
+    ctx.fillText('(Genre, Director, Cast, etc.)', rX + 30, y0 + 40);
+    ctx.fillStyle = '#2a4a6a';
+    ctx.fillRect(rX + 20, y0 + 80, boxW - 40, 60);
+    ctx.fillStyle = '#88ccff';
+    ctx.fillText('Formula: Score(u,i) = w · f_i', rX + 30, y0 + 100);
+    ctx.fillText('where w = user preference weights', rX + 30, y0 + 120);
+    const coverage = Math.max(40, dataPoints * 2);
+    ctx.fillStyle = '#ff6b9d';
+    ctx.fillRect(rX + 20, y0 + 160, Math.min(coverage, 300), 20);
+    ctx.fillStyle = '#fff';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('Coverage: ' + coverage.toFixed(0) + '%', rX + 170, y0 + 175);
+  } else if (mode === 'collab') {
+    ctx.fillStyle = '#1a4a6a';
+    ctx.fillRect(rX + 20, y0, boxW - 40, 60);
+    ctx.fillStyle = '#88ccff';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('Find similar users, recommend their items', rX + 30, y0 + 20);
+    ctx.fillText('(No features needed, pure behavior)', rX + 30, y0 + 40);
+    ctx.fillStyle = '#2a4a6a';
+    ctx.fillRect(rX + 20, y0 + 80, boxW - 40, 60);
+    ctx.fillStyle = '#88ccff';
+    ctx.fillText('Formula: Score(u,i) = Σ sim(u,u\') * r(u\',i)', rX + 30, y0 + 100);
+    ctx.fillText('u\' = similar users', rX + 30, y0 + 120);
+    const coverage = Math.max(5, dataPoints * 3);
+    ctx.fillStyle = '#ff6b9d';
+    ctx.fillRect(rX + 20, y0 + 160, Math.min(coverage, 300), 20);
+    ctx.fillStyle = '#fff';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('Coverage: ' + coverage.toFixed(0) + '%', rX + 170, y0 + 175);
+  } else {
+    ctx.fillStyle = '#1a4a6a';
+    ctx.fillRect(rX + 20, y0, boxW - 40, 60);
+    ctx.fillStyle = '#88ccff';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('Blend content + collaborative signals', rX + 30, y0 + 20);
+    ctx.fillText('(Best of both worlds)', rX + 30, y0 + 40);
+    ctx.fillStyle = '#2a4a6a';
+    ctx.fillRect(rX + 20, y0 + 80, boxW - 40, 60);
+    ctx.fillStyle = '#88ccff';
+    ctx.fillText('Score = α·(content) + (1-α)·(collab)', rX + 30, y0 + 100);
+    ctx.fillText('α ≈ 0.3-0.7 depending on use case', rX + 30, y0 + 120);
+    const coverage = Math.max(65, dataPoints * 4);
+    ctx.fillStyle = '#ff6b9d';
+    ctx.fillRect(rX + 20, y0 + 160, Math.min(coverage, 300), 20);
+    ctx.fillStyle = '#fff';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('Coverage: ' + Math.min(coverage, 100).toFixed(0) + '%', rX + 170, y0 + 175);
+  }
+  const precision = Math.min(0.9, 0.3 + dataPoints * 0.08).toFixed(2);
+  document.getElementById('csMetrics').textContent = `Data Points: ${dataPoints} | Precision: ${precision}`;
+}
+
+function setColdStartMode(mode) {
+  coldStartData.mode = mode;
+  document.getElementById('csContentBtn').classList.remove('active');
+  document.getElementById('csCollabBtn').classList.remove('active');
+  document.getElementById('csHybridBtn').classList.remove('active');
+  if (mode === 'content') document.getElementById('csContentBtn').classList.add('active');
+  else if (mode === 'collab') document.getElementById('csCollabBtn').classList.add('active');
+  else document.getElementById('csHybridBtn').classList.add('active');
+  drawColdStart();
+}
+
+// ============ WIDE & DEEP ============
+function drawWideDeep() {
+  const canvas = document.getElementById('wideDeepCanvas');
+  const ctx = canvas.getContext('2d');
+  const numFeatures = parseInt(document.getElementById('wdFeatures').value);
+  document.getElementById('wdFeaturesVal').textContent = numFeatures;
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#ff9ff3';
+  ctx.font = 'bold 16px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Wide & Deep Architecture', canvas.width / 2, 30);
+  const featureWidth = 40;
+  const featureY = 60;
+  ctx.fillStyle = '#888';
+  ctx.font = 'bold 11px monospace';
+  ctx.fillText('Input Features (' + numFeatures + ')', canvas.width / 2, featureY - 10);
+  for (let i = 0; i < Math.min(numFeatures, 30); i++) {
+    const x = 100 + (i % 15) * 30;
+    const y = featureY + Math.floor(i / 15) * 40;
+    ctx.fillStyle = '#2a4a6a';
+    ctx.fillRect(x, y, 25, 25);
+    ctx.fillStyle = '#88ccff';
+    ctx.font = '8px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('f' + i, x + 12, y + 12);
+  }
+  const wideY = 200;
+  const deepY = 200;
+  const splitX = 150;
+  ctx.fillStyle = '#ff6b9d';
+  ctx.font = 'bold 12px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('WIDE (Memorization)', splitX, wideY - 10);
+  ctx.fillStyle = '#1a3a5a';
+  ctx.fillRect(splitX, wideY, 300, 120);
+  ctx.fillStyle = '#88ccff';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Cross-Product Features', splitX + 150, wideY + 20);
+  ctx.fillText('(Hand-crafted feature crosses)', splitX + 150, wideY + 35);
+  ctx.fillText('Linear Regression/Logistic', splitX + 150, wideY + 50);
+  ctx.fillText('Output: w · x', splitX + 150, wideY + 70);
+  ctx.fillStyle = '#c06c84';
+  ctx.font = 'bold 12px monospace';
+  ctx.textAlign = 'right';
+  ctx.fillText('DEEP (Generalization)', splitX + 450, deepY - 10);
+  ctx.fillStyle = '#1a3a5a';
+  ctx.fillRect(splitX + 320, deepY, 300, 120);
+  ctx.fillStyle = '#88ccff';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Embeddings → Dense Layers', splitX + 470, deepY + 20);
+  ctx.fillText('(Automatic feature learning)', splitX + 470, deepY + 35);
+  ctx.fillText('ReLU activations', splitX + 470, deepY + 50);
+  ctx.fillText('Output: MLP(embeddings)', splitX + 470, deepY + 70);
+  const bottomY = 380;
+  ctx.fillStyle = '#2a2a4a';
+  ctx.fillRect(200, bottomY - 30, 600, 50);
+  ctx.fillStyle = '#ff9ff3';
+  ctx.font = 'bold 11px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Joint Output: logit = α·wide_logit + (1-α)·deep_logit', canvas.width / 2, bottomY);
+  ctx.fillText('Training Loss: sigmoid cross-entropy', canvas.width / 2, bottomY + 20);
+  ctx.fillStyle = '#ff9ff3';
+  ctx.strokeStyle = '#ff9ff3';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(splitX + 150, wideY + 120);
+  ctx.lineTo(canvas.width / 2 - 100, bottomY - 30);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(splitX + 470, deepY + 120);
+  ctx.lineTo(canvas.width / 2 + 100, bottomY - 30);
+  ctx.stroke();
+  document.getElementById('wdMetrics').textContent = `Features: ${numFeatures} | Wide params: ${numFeatures * (numFeatures - 1) / 2} | Deep params: ~50k`;
+}
+
+// ============ DCN ============
+function drawDCN() {
+  const canvas = document.getElementById('dcnCanvas');
+  const ctx = canvas.getContext('2d');
+  const depth = parseInt(document.getElementById('dcnDepth').value);
+  document.getElementById('dcnDepthVal').textContent = depth;
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#ff9ff3';
+  ctx.font = 'bold 16px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('DCN: Deep & Cross Network', canvas.width / 2, 30);
+  const inputX = 50;
+  const inputY = 60;
+  ctx.fillStyle = '#888';
+  ctx.font = 'bold 11px monospace';
+  ctx.fillText('Input Embeddings', inputX + 100, inputY - 10);
+  ctx.fillStyle = '#2a4a6a';
+  ctx.fillRect(inputX, inputY, 200, 40);
+  ctx.fillStyle = '#88ccff';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('x0 ∈ ℝ^d', inputX + 100, inputY + 20);
+  const crossX = 50;
+  const deepX = 450;
+  const startY = 150;
+  const layerHeight = 70;
+  ctx.fillStyle = '#ff6b9d';
+  ctx.font = 'bold 11px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('Cross Layers', crossX, startY - 20);
+  ctx.fillStyle = '#a23b72';
+  ctx.font = 'bold 11px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('Deep Layers', deepX, startY - 20);
+  for (let l = 0; l < depth; l++) {
+    const y = startY + l * layerHeight;
+    ctx.fillStyle = '#1a3a5a';
+    ctx.fillRect(crossX, y, 160, 55);
+    ctx.fillStyle = '#88ccff';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`x${l+1} = x0 ⊙ (w_l · x_l) + x_l`, crossX + 80, y + 15);
+    ctx.fillText(`(Cross Layer ${l+1})`, crossX + 80, y + 35);
+    ctx.fillStyle = '#1a3a5a';
+    ctx.fillRect(deepX, y, 160, 55);
+    ctx.fillStyle = '#88ccff';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`h${l+1} = ReLU(W_l · h_l + b_l)`, deepX + 80, y + 15);
+    ctx.fillText(`(Deep Layer ${l+1})`, deepX + 80, y + 35);
+    if (l > 0) {
+      ctx.strokeStyle = '#ff9ff344';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(crossX + 80, y - layerHeight + 55);
+      ctx.lineTo(crossX + 80, y);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(deepX + 80, y - layerHeight + 55);
+      ctx.lineTo(deepX + 80, y);
+      ctx.stroke();
+    }
+  }
+  const bottomY = startY + depth * layerHeight + 20;
+  ctx.fillStyle = '#2a2a4a';
+  ctx.fillRect(150, bottomY, 700, 50);
+  ctx.fillStyle = '#ff9ff3';
+  ctx.font = 'bold 11px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Concatenate & Output: [x_final, h_final] → MLP → logit', canvas.width / 2, bottomY + 15);
+  ctx.fillText('Explicit polynomial feature crosses of order ' + (depth + 1), canvas.width / 2, bottomY + 33);
+  document.getElementById('dcnMetrics').textContent = `Cross Layers: ${depth} | Feature Interaction Order: ${depth + 1}`;
+}
+
+// ============ DIN ============
+function drawDIN() {
+  const canvas = document.getElementById('dinCanvas');
+  const ctx = canvas.getContext('2d');
+  const seqLen = parseInt(document.getElementById('dinLength').value);
+  document.getElementById('dinLengthVal').textContent = seqLen;
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#ff9ff3';
+  ctx.font = 'bold 16px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('DIN: Deep Interest Network with Attention', canvas.width / 2, 30);
+  const histX = 50;
+  const histY = 70;
+  ctx.fillStyle = '#888';
+  ctx.font = 'bold 11px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('User Behavior History', histX, histY - 10);
+  const itemW = 50;
+  const itemH = 40;
+  for (let i = 0; i < Math.min(seqLen, 15); i++) {
+    const x = histX + i * 55;
+    const y = histY;
+    ctx.fillStyle = '#2a4a6a';
+    ctx.fillRect(x, y, itemW, itemH);
+    ctx.fillStyle = '#88ccff';
+    ctx.font = '8px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('item_' + i, x + itemW / 2, y + itemH / 2);
+  }
+  if (seqLen > 15) {
+    ctx.fillStyle = '#888';
+    ctx.font = '10px monospace';
+    ctx.fillText('... (' + (seqLen - 15) + ' more)', histX + 15 * 55, histY + 20);
+  }
+  const candY = 150;
+  ctx.fillStyle = '#888';
+  ctx.font = 'bold 11px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('Candidate Item (query)', histX, candY - 10);
+  ctx.fillStyle = '#c06c84';
+  ctx.fillRect(histX, candY, itemW, itemH);
+  ctx.fillStyle = '#fff';
+  ctx.font = '8px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('item_c', histX + itemW / 2, candY + itemH / 2);
+  const attentionY = 250;
+  ctx.fillStyle = '#888';
+  ctx.font = 'bold 11px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('Attention Scores & Weights', histX, attentionY - 10);
+  const numToShow = Math.min(seqLen, 12);
+  for (let i = 0; i < numToShow; i++) {
+    const x = histX + i * 60;
+    const y = attentionY;
+    const score = Math.sin(i * 0.5) * 0.5 + 0.5;
+    const barH = score * 40;
+    ctx.fillStyle = '#1a3a5a';
+    ctx.fillRect(x, y + 40 - barH, 50, barH);
+    ctx.strokeStyle = '#ff9ff3';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x, y, 50, 40);
+    ctx.fillStyle = '#ff9ff3';
+    ctx.font = '7px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(score.toFixed(2), x + 25, y + 50);
+  }
+  const finalY = 360;
+  ctx.fillStyle = '#2a2a4a';
+  ctx.fillRect(100, finalY, 800, 80);
+  ctx.fillStyle = '#ff9ff3';
+  ctx.font = 'bold 11px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Interest Representation: I = Σ α_i · embed(item_i)', 500, finalY + 15);
+  ctx.fillText('Final Score: MLP([I, embed(item_c), features]) → CTR/CVR prediction', 500, finalY + 40);
+  ctx.fillText('Recency & Relevance bias automatically learned via attention', 500, finalY + 60);
+  document.getElementById('dinMetrics').textContent = `History Length: ${seqLen} | Attention Heads: 4 (typical)`;
+}
+
+// ============ PIPELINE ============
+function drawPipeline() {
+  const canvas = document.getElementById('pipelineCanvas');
+  const ctx = canvas.getContext('2d');
+  const poolSize = parseInt(document.getElementById('pipelinePool').value);
+  document.getElementById('pipelinePoolVal').textContent = poolSize + 'M';
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#ff9ff3';
+  ctx.font = 'bold 16px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('3-Stage Recommendation Pipeline', canvas.width / 2, 30);
+  const stages = [
+    { title: 'Candidate Generation', y: 80, pool: poolSize + 'M items', output: '~1000', model: 'Collab/ANN', latency: '50-200ms' },
+    { title: 'Ranking', y: 80, pool: '1000 items', output: '~100', model: 'DIN/Wide&Deep', latency: '100-300ms' },
+    { title: 'Re-ranking', y: 80, pool: '100 items', output: '10-50', model: 'Business Rules', latency: '50-100ms' }
+  ];
+  const stageW = 320;
+  const stageH = 300;
+  const stageX = [50, 380, 710];
+  stages.forEach((stage, idx) => {
+    const x = stageX[idx];
+    ctx.fillStyle = '#1a1a2a';
+    ctx.fillRect(x, stage.y, stageW, stageH);
+    ctx.fillStyle = '#ff9ff3';
+    ctx.font = 'bold 12px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('Stage ' + (idx + 1) + ': ' + stage.title, x + stageW / 2, stage.y + 25);
+    ctx.fillStyle = '#888';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'left';
+    const textX = x + 15;
+    ctx.fillText('Input Pool: ' + stage.pool, textX, stage.y + 55);
+    ctx.fillText('Output: ' + stage.output, textX, stage.y + 80);
+    ctx.fillText('Model: ' + stage.model, textX, stage.y + 105);
+    ctx.fillText('Latency: ' + stage.latency, textX, stage.y + 130);
+    ctx.fillStyle = '#2a4a6a';
+    ctx.fillRect(x + 15, stage.y + 160, stageW - 30, 100);
+    ctx.fillStyle = '#88ccff';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    if (idx === 0) {
+      ctx.fillText('Use simple, fast models', x + stageW / 2, stage.y + 190);
+      ctx.fillText('Recall important', x + stageW / 2, stage.y + 210);
+      ctx.fillText('Precision less critical', x + stageW / 2, stage.y + 230);
+    } else if (idx === 1) {
+      ctx.fillText('Run expensive models', x + stageW / 2, stage.y + 190);
+      ctx.fillText('Deep learning OK here', x + stageW / 2, stage.y + 210);
+      ctx.fillText('Ranking precision key', x + stageW / 2, stage.y + 230);
+    } else {
+      ctx.fillText('Apply business logic', x + stageW / 2, stage.y + 190);
+      ctx.fillText('Diversity constraints', x + stageW / 2, stage.y + 210);
+      ctx.fillText('Freshness/ads/CTR cutoff', x + stageW / 2, stage.y + 230);
+    }
+    if (idx < 2) {
+      ctx.strokeStyle = '#ff9ff3';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x + stageW, stage.y + 230);
+      ctx.lineTo(x + stageW + 20, stage.y + 230);
+      ctx.stroke();
+      ctx.fillStyle = '#ff9ff3';
+      ctx.beginPath();
+      ctx.moveTo(x + stageW + 20, stage.y + 230);
+      ctx.lineTo(x + stageW + 15, stage.y + 225);
+      ctx.lineTo(x + stageW + 15, stage.y + 235);
+      ctx.closePath();
+      ctx.fill();
+    }
+  });
+  const bottomY = 430;
+  ctx.fillStyle = '#2a2a4a';
+  ctx.fillRect(100, bottomY, 900, 50);
+  ctx.fillStyle = '#ff9ff3';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Total P99 Latency: ~500ms | Tradeoff: accuracy vs serving latency at each stage', 550, bottomY + 18);
+  ctx.fillText('Different serving paths: online (real-time) vs batch (pre-computed)', 550, bottomY + 35);
+  document.getElementById('pipelineMetrics').textContent = `Candidate Pool: ${poolSize}M | Total Latency: ~500ms`;
+}
+
+// ============ SASRec ============
+function drawSASRec() {
+  const canvas = document.getElementById('sasrecCanvas');
+  const ctx = canvas.getContext('2d');
+  const seqLen = parseInt(document.getElementById('sasrecSeqLen').value);
+  document.getElementById('sasrecSeqLenVal').textContent = seqLen;
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#ff9ff3';
+  ctx.font = 'bold 16px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('SASRec: Self-Attention Sequential Recommendation', canvas.width / 2, 30);
+  const seqX = 80;
+  const seqY = 80;
+  ctx.fillStyle = '#888';
+  ctx.font = 'bold 11px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('User Action Sequence', seqX, seqY - 10);
+  const itemW = 50;
+  const itemH = 40;
+  const numToShow = Math.min(seqLen, 12);
+  for (let i = 0; i < numToShow; i++) {
+    const x = seqX + i * 60;
+    const y = seqY;
+    const colorIntensity = i / numToShow;
+    ctx.fillStyle = `rgba(192, 108, 132, ${0.3 + colorIntensity * 0.4})`;
+    ctx.fillRect(x, y, itemW, itemH);
+    ctx.fillStyle = '#fff';
+    ctx.font = '8px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('i_' + i, x + itemW / 2, y + itemH / 2);
+  }
+  if (seqLen > 12) {
+    ctx.fillStyle = '#888';
+    ctx.font = '9px monospace';
+    ctx.fillText('... (' + (seqLen - 12) + ' more)', seqX + 12 * 60, seqY + 20);
+  }
+  const attY = 160;
+  ctx.fillStyle = '#888';
+  ctx.font = 'bold 11px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('Self-Attention Heatmap (last position attends to history)', seqX, attY - 10);
+  const heatW = Math.min(seqLen, 15) * 40;
+  for (let t = 0; t < Math.min(seqLen, 15); t++) {
+    for (let s = 0; s <= t; s++) {
+      const x = seqX + s * 40;
+      const y = attY + t * 30;
+      const attnScore = Math.exp(-(t - s) * 0.3);
+      const intensity = Math.floor(attnScore * 255);
+      ctx.fillStyle = `rgba(255, 159, 243, ${attnScore})`;
+      ctx.fillRect(x, y, 35, 25);
+      ctx.strokeStyle = '#2a2a4a';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x, y, 35, 25);
+    }
+  }
+  const predY = 290;
+  ctx.fillStyle = '#888';
+  ctx.font = 'bold 11px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('Prediction: Next Item Candidate Scores', seqX, predY - 10);
+  const topCandidates = 5;
+  for (let i = 0; i < topCandidates; i++) {
+    const x = seqX + i * 150;
+    const y = predY + 30;
+    const score = Math.random();
+    const barW = score * 80;
+    ctx.fillStyle = '#1a3a5a';
+    ctx.fillRect(x, y + 30 - barW, 90, barW);
+    ctx.strokeStyle = '#ff9ff3';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x, y, 90, 30);
+    ctx.fillStyle = '#ff9ff3';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('item_' + i + ': ' + score.toFixed(2), x + 45, y + 45);
+  }
+  document.getElementById('sasrecMetrics').textContent = `Sequence Length: ${seqLen} | Predicted: item_${Math.floor(Math.random() * 100)} | Confidence: ${(Math.random() * 0.4 + 0.5).toFixed(2)}`;
+}
+
+// ============ MMOE ============
+function drawMMOE() {
+  const canvas = document.getElementById('mmoeCanvas');
+  const ctx = canvas.getContext('2d');
+  const numExperts = parseInt(document.getElementById('mmoeExperts').value);
+  document.getElementById('mmoeExpertsVal').textContent = numExperts;
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#ff9ff3';
+  ctx.font = 'bold 16px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('MMOE: Multi-gate Mixture of Experts', canvas.width / 2, 30);
+  const inputX = 50;
+  const inputY = 70;
+  ctx.fillStyle = '#888';
+  ctx.font = 'bold 11px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('Shared Input Features', inputX, inputY - 10);
+  ctx.fillStyle = '#2a4a6a';
+  ctx.fillRect(inputX, inputY, 180, 50);
+  ctx.fillStyle = '#88ccff';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('User & Item Features', inputX + 90, inputY + 25);
+  const expertsY = 180;
+  ctx.fillStyle = '#888';
+  ctx.font = 'bold 11px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(numExperts + ' Shared Experts', canvas.width / 2, expertsY - 10);
+  const expertW = 70;
+  const expertH = 60;
+  for (let e = 0; e < numExperts; e++) {
+    const x = 80 + e * (expertW + 10);
+    ctx.fillStyle = '#1a3a5a';
+    ctx.fillRect(x, expertsY, expertW, expertH);
+    ctx.fillStyle = '#88ccff';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Expert', x + expertW / 2, expertsY + 20);
+    ctx.fillText(e + 1, x + expertW / 2, expertsY + 40);
+    ctx.strokeStyle = '#ff9ff344';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(135, inputY + 50);
+    ctx.lineTo(x + expertW / 2, expertsY);
+    ctx.stroke();
+  }
+  const tasksY = 320;
+  const tasks = ['CTR', 'CVR', 'Watch Time'];
+  const taskColors = ['#ff6b9d', '#c06c84', '#a23b72'];
+  const taskX = [150, 400, 650];
+  ctx.fillStyle = '#888';
+  ctx.font = 'bold 11px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('Per-Task Gating Networks', 50, tasksY - 10);
+  tasks.forEach((task, idx) => {
+    const x = taskX[idx];
+    ctx.fillStyle = '#1a1a2a';
+    ctx.fillRect(x, tasksY, 200, 180);
+    ctx.fillStyle = taskColors[idx];
+    ctx.font = 'bold 11px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(task + ' Task Gate', x + 100, tasksY + 25);
+    ctx.fillStyle = '#2a4a6a';
+    ctx.fillRect(x + 20, tasksY + 40, 160, 50);
+    ctx.fillStyle = '#88ccff';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Gate Softmax', x + 100, tasksY + 55);
+    ctx.fillText('(weights experts)', x + 100, tasksY + 70);
+    ctx.fillStyle = '#2a4a6a';
+    ctx.fillRect(x + 20, tasksY + 100, 160, 50);
+    ctx.fillStyle = '#88ccff';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Weighted Experts', x + 100, tasksY + 115);
+    ctx.fillText('Task Output', x + 100, tasksY + 130);
+    for (let e = 0; e < Math.min(numExperts, 4); e++) {
+      ctx.strokeStyle = '#ff9ff344';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(80 + e * (expertW + 10) + expertW / 2, expertsY + expertH);
+      ctx.lineTo(x + 100, tasksY + 40);
+      ctx.stroke();
+    }
+  });
+  const bottomY = 540;
+  ctx.fillStyle = '#2a2a4a';
+  ctx.fillRect(80, bottomY - 30, 900, 50);
+  ctx.fillStyle = '#ff9ff3';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Loss = α·L_ctr + β·L_cvr + γ·L_watch_time | Shared experts reduce overfitting', 530, bottomY + 5);
+  ctx.fillText('Each task learns which experts to emphasize via gating', 530, bottomY + 25);
+  document.getElementById('mmoeMetrics').textContent = `Experts: ${numExperts} | Tasks: 3 | Shared Knowledge`;
+}
+
+// ============ LTR ============
+let ltrData = { mode: 'pairwise' };
+
+function drawLTR() {
+  const canvas = document.getElementById('ltrCanvas');
+  const ctx = canvas.getContext('2d');
+  const numDocs = parseInt(document.getElementById('ltrDocs').value);
+  document.getElementById('ltrDocsVal').textContent = numDocs;
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#ff9ff3';
+  ctx.font = 'bold 16px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Learning to Rank: Loss Function Formulations', canvas.width / 2, 30);
+  const mode = ltrData.mode || 'pairwise';
+  const startX = 80;
+  if (mode === 'pointwise') {
+    ctx.fillStyle = '#888';
+    ctx.font = 'bold 11px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('POINTWISE: Predict relevance score per document', startX, 70);
+    const docY = 110;
+    for (let i = 0; i < Math.min(numDocs, 10); i++) {
+      const x = startX + i * 80;
+      ctx.fillStyle = '#1a1a2a';
+      ctx.fillRect(x, docY, 70, 60);
+      ctx.fillStyle = '#88ccff';
+      ctx.font = '9px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Doc ' + i, x + 35, docY + 15);
+      const score = Math.random();
+      ctx.fillStyle = '#ff9ff3';
+      ctx.fillText('Score: ' + score.toFixed(2), x + 35, docY + 35);
+      ctx.fillText('Label: ' + Math.floor(score * 3), x + 35, docY + 50);
+    }
+    ctx.fillStyle = '#888';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('Loss = Σ (y_i - score_i)^2 (regression)', startX, 250);
+    ctx.fillText('Problem: Ignores ranking order. Only cares about absolute scores.', startX, 280);
+  } else if (mode === 'pairwise') {
+    ctx.fillStyle = '#888';
+    ctx.font = 'bold 11px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('PAIRWISE: Minimize inversions. If doc_i > doc_j, rank i before j.', startX, 70);
+    ctx.fillStyle = '#888';
+    ctx.font = '10px monospace';
+    const pairY = 110;
+    const pairShowN = Math.min(numDocs, 6);
+    for (let i = 0; i < pairShowN - 1; i++) {
+      const x = startX + i * 120;
+      const y = pairY + Math.floor(i / 4) * 100;
+      ctx.fillStyle = '#1a1a2a';
+      ctx.fillRect(x, y, 60, 40);
+      ctx.fillStyle = '#88ccff';
+      ctx.font = '9px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Doc ' + i, x + 30, y + 20);
+      ctx.strokeStyle = '#c06c84';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x + 60, y + 20);
+      ctx.lineTo(x + 80, y + 20);
+      ctx.stroke();
+      ctx.fillStyle = '#c06c84';
+      ctx.beginPath();
+      ctx.moveTo(x + 80, y + 20);
+      ctx.lineTo(x + 75, y + 15);
+      ctx.lineTo(x + 75, y + 25);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#1a1a2a';
+      ctx.fillRect(x + 85, y, 60, 40);
+      ctx.fillStyle = '#88ccff';
+      ctx.font = '9px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Doc ' + (i + 1), x + 115, y + 20);
+    }
+    ctx.fillStyle = '#888';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('Loss = log(1 + exp(-σ(s_i - s_j))) for each pair', startX, 320);
+    ctx.fillText('Advantage: Focuses on ranking order. Efficient for large doc sets.', startX, 350);
+  } else {
+    ctx.fillStyle = '#888';
+    ctx.font = 'bold 11px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('LISTWISE: Directly optimize ranking metrics (NDCG, MRR).', startX, 70);
+    ctx.fillStyle = '#888';
+    ctx.font = '10px monospace';
+    const rankY = 110;
+    const rankN = Math.min(numDocs, 8);
+    for (let i = 0; i < rankN; i++) {
+      const x = startX + (i % 8) * 100;
+      const y = rankY + Math.floor(i / 8) * 80;
+      const relevance = Math.floor(Math.random() * 3);
+      ctx.fillStyle = relevance === 2 ? '#1a4a6a' : relevance === 1 ? '#1a2a4a' : '#2a1a1a';
+      ctx.fillRect(x, y, 85, 50);
+      ctx.fillStyle = '#88ccff';
+      ctx.font = '9px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Rank ' + (i + 1), x + 42, y + 15);
+      ctx.fillText('Doc, Rel=' + relevance, x + 42, y + 35);
+    }
+    ctx.fillStyle = '#888';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('Loss = -NDCG or -MRR (direct metric optimization)', startX, 320);
+    ctx.fillText('Advantage: Best for ranking. Most computationally expensive.', startX, 350);
+  }
+  const bottomY = 410;
+  ctx.fillStyle = '#2a2a4a';
+  ctx.fillRect(80, bottomY, 950, 60);
+  ctx.fillStyle = '#ff9ff3';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Production Use: LambdaMART (pairwise + listwise) or XGBoost + NDCG rank:pairwise', 555, bottomY + 18);
+  ctx.fillText('Tradeoff: Listwise > Pairwise > Pointwise in quality; Pointwise > Pairwise > Listwise in speed', 555, bottomY + 40);
+  document.getElementById('ltrMetrics').textContent = `Mode: ${mode.charAt(0).toUpperCase() + mode.slice(1)} | Docs: ${numDocs}`;
+}
+
+function setLTRMode(mode) {
+  ltrData.mode = mode;
+  document.getElementById('ltrPointBtn').classList.remove('active');
+  document.getElementById('ltrPairBtn').classList.remove('active');
+  document.getElementById('ltrListBtn').classList.remove('active');
+  if (mode === 'pointwise') document.getElementById('ltrPointBtn').classList.add('active');
+  else if (mode === 'pairwise') document.getElementById('ltrPairBtn').classList.add('active');
+  else document.getElementById('ltrListBtn').classList.add('active');
+  drawLTR();
+}
+
+// ============ ADS & ATTRIBUTION ============
+let adsData = { mode: 'attribution' };
+
+function drawAds() {
+  const canvas = document.getElementById('adsCanvas');
+  const ctx = canvas.getContext('2d');
+  const mode = adsData.mode || 'attribution';
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#ff9ff3';
+  ctx.font = 'bold 16px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Ads & Monetization', canvas.width / 2, 30);
+  if (mode === 'auction') {
+    ctx.fillStyle = '#888';
+    ctx.font = 'bold 11px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('Ad Auction Ranking Equation', 80, 70);
+    ctx.fillStyle = '#888';
+    ctx.font = '11px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('Rank = bid × pCTR × quality_score', 80, 110);
+    const adY = 160;
+    const ads = [
+      { bid: 2.5, ctr: 0.05, quality: 0.9, ad: 'Ad 1: Shoes' },
+      { bid: 1.8, ctr: 0.08, quality: 0.85, ad: 'Ad 2: Socks' },
+      { bid: 3.0, ctr: 0.03, quality: 0.7, ad: 'Ad 3: Hats' }
+    ];
+    ads.forEach((ad, idx) => {
+      const x = 80 + idx * 300;
+      const score = ad.bid * ad.ctr * ad.quality;
+      ctx.fillStyle = '#1a1a2a';
+      ctx.fillRect(x, adY, 260, 260);
+      ctx.fillStyle = '#ff9ff3';
+      ctx.font = 'bold 10px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('Rank ' + (idx + 1) + ': ' + ad.ad, x + 130, adY + 25);
+      ctx.fillStyle = '#88ccff';
+      ctx.font = '10px monospace';
+      ctx.textAlign = 'left';
+      const textX = x + 15;
+      ctx.fillText('Bid: $' + ad.bid.toFixed(2), textX, adY + 60);
+      ctx.fillText('pCTR (model): ' + ad.ctr.toFixed(3), textX, adY + 90);
+      ctx.fillText('Quality Score: ' + ad.quality.toFixed(2), textX, adY + 120);
+      ctx.fillStyle = '#c06c84';
+      ctx.font = 'bold 10px monospace';
+      ctx.fillText('Rank Score: ' + score.toFixed(3), textX, adY + 160);
+      const cpc = ad.bid / ad.ctr / ad.quality;
+      ctx.fillStyle = '#ff6b9d';
+      ctx.font = 'bold 10px monospace';
+      ctx.fillText('CPC: $' + cpc.toFixed(2), textX, adY + 190);
+      ctx.fillText('(Lower cost = higher quality!)', textX, adY + 220);
+    });
+  } else {
+    ctx.fillStyle = '#888';
+    ctx.font = 'bold 11px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('Attribution Models: Credit Assignment', 80, 70);
+    const journey = [
+      { name: 'Email Ad', type: 'touch' },
+      { name: 'Search Click', type: 'touch' },
+      { name: 'Site Visit', type: 'touch' },
+      { name: 'Conversion', type: 'convert' }
+    ];
+    const journeyY = 120;
+    journey.forEach((touch, idx) => {
+      const x = 80 + idx * 200;
+      const isConvert = touch.type === 'convert';
+      ctx.fillStyle = isConvert ? '#c06c84' : '#2a4a6a';
+      ctx.fillRect(x, journeyY, 160, 50);
+      ctx.fillStyle = '#fff';
+      ctx.font = '10px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(touch.name, x + 80, journeyY + 25);
+      if (idx < journey.length - 1) {
+        ctx.strokeStyle = '#ff9ff3';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x + 160, journeyY + 25);
+        ctx.lineTo(x + 200, journeyY + 25);
+        ctx.stroke();
+      }
+    });
+    const attribY = 230;
+    ctx.fillStyle = '#888';
+    ctx.font = 'bold 10px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('Total Conversion: $100', 80, attribY);
+    const models = [
+      { name: 'Last-Click', credits: [0, 0, 100, 0] },
+      { name: 'Multi-Touch (Linear)', credits: [33, 33, 34, 0] },
+      { name: 'Time-Decay (recent weights)', credits: [15, 25, 60, 0] },
+      { name: 'Shapley Value', credits: [25, 30, 35, 0] }
+    ];
+    const modelY = 280;
+    models.forEach((model, idx) => {
+      const x = 80 + (idx % 2) * 500;
+      const y = modelY + Math.floor(idx / 2) * 120;
+      ctx.fillStyle = '#1a1a2a';
+      ctx.fillRect(x, y, 420, 100);
+      ctx.fillStyle = '#ff9ff3';
+      ctx.font = '10px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(model.name, x + 15, y + 25);
+      let creditStr = '';
+      journey.slice(0, 3).forEach((_, i) => {
+        creditStr += '$' + model.credits[i].toFixed(0) + ' ';
+      });
+      ctx.fillStyle = '#88ccff';
+      ctx.font = '9px monospace';
+      ctx.fillText('Credit: ' + creditStr, x + 15, y + 50);
+      ctx.fillText('→ bid adjustment & model retraining changes', x + 15, y + 75);
+    });
+  }
+  document.getElementById('adsMetrics').textContent = `Mode: ${mode === 'auction' ? 'Auction' : 'Attribution'} | Revenue Impact: --`;
+}
+
+function setAdsMode(mode) {
+  adsData.mode = mode;
+  document.getElementById('adsAuctionBtn').classList.remove('active');
+  document.getElementById('adsAttributionBtn').classList.remove('active');
+  if (mode === 'auction') document.getElementById('adsAuctionBtn').classList.add('active');
+  else document.getElementById('adsAttributionBtn').classList.add('active');
+  drawAds();
+}
+
+// ============ DENSE RETRIEVAL ============
+function drawDenseRetrieval() {
+  const canvas = document.getElementById('denseCanvas');
+  const ctx = canvas.getContext('2d');
+  const candidates = parseInt(document.getElementById('denseCandidates').value);
+  const candStr = candidates >= 1000 ? (candidates / 1000).toFixed(1) + 'k' : candidates.toString();
+  document.getElementById('denseCandidatesVal').textContent = candStr + ' docs';
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#ff9ff3';
+  ctx.font = 'bold 16px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Dense Retrieval: Three Approaches', canvas.width / 2, 30);
+  const methods = [
+    { name: 'Bi-encoder', desc: 'Query & docs encoded\nindependently', latency: '1ms', quality: 'Medium', color: '#ff6b9d' },
+    { name: 'Cross-encoder', desc: 'Query & doc together\nfull interaction', latency: '500ms', quality: 'High', color: '#c06c84' },
+    { name: 'ColBERT', desc: 'Per-token interactions\nlate late interaction', latency: '50ms', quality: 'High', color: '#a23b72' }
+  ];
+  const boxW = 330;
+  const boxH = 400;
+  const boxX = [50, 390, 730];
+  methods.forEach((method, idx) => {
+    const x = boxX[idx];
+    ctx.fillStyle = '#1a1a2a';
+    ctx.fillRect(x, 80, boxW, boxH);
+    ctx.fillStyle = method.color;
+    ctx.font = 'bold 12px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(method.name, x + boxW / 2, 110);
+    ctx.fillStyle = '#88ccff';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(method.desc, x + boxW / 2, 145);
+    ctx.fillStyle = '#2a4a6a';
+    ctx.fillRect(x + 15, 180, boxW - 30, 80);
+    ctx.fillStyle = '#88ccff';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    if (idx === 0) {
+      ctx.fillText('query_emb = BERT(query)', x + boxW / 2, 200);
+      ctx.fillText('doc_emb = BERT(doc)', x + boxW / 2, 218);
+      ctx.fillText('score = cos(query_emb, doc_emb)', x + boxW / 2, 236);
+    } else if (idx === 1) {
+      ctx.fillText('score = BERT([query, doc])', x + boxW / 2, 200);
+      ctx.fillText('Full attention between', x + boxW / 2, 218);
+      ctx.fillText('query and doc tokens', x + boxW / 2, 236);
+    } else {
+      ctx.fillText('query_tok = BERT(query) per token', x + boxW / 2, 200);
+      ctx.fillText('doc_tok = BERT(doc) per token', x + boxW / 2, 218);
+      ctx.fillText('score = max_q(max_d(cos(...)))', x + boxW / 2, 236);
+    }
+    ctx.fillStyle = '#2a4a6a';
+    ctx.fillRect(x + 15, 280, boxW - 30, 30);
+    ctx.fillStyle = '#ff9ff3';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Latency: ' + method.latency, x + boxW / 2, 295);
+    ctx.fillStyle = '#2a4a6a';
+    ctx.fillRect(x + 15, 320, boxW - 30, 30);
+    ctx.fillStyle = '#ff9ff3';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Quality: ' + method.quality, x + boxW / 2, 335);
+    ctx.fillStyle = '#2a4a6a';
+    ctx.fillRect(x + 15, 360, boxW - 30, 100);
+    ctx.fillStyle = '#88ccff';
+    ctx.font = '8px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    if (idx === 0) {
+      ctx.fillText('ANN search: 1M docs in 1ms', x + boxW / 2, 375);
+      ctx.fillText('Good for candidate gen', x + boxW / 2, 388);
+      ctx.fillText('Limited fine-grained match', x + boxW / 2, 401);
+    } else if (idx === 1) {
+      ctx.fillText('Precise relevance matching', x + boxW / 2, 375);
+      ctx.fillText('Too slow for large pools', x + boxW / 2, 388);
+      ctx.fillText('Use post-ranking (100 docs)', x + boxW / 2, 401);
+    } else {
+      ctx.fillText('Best tradeoff: speed + quality', x + boxW / 2, 375);
+      ctx.fillText('Token-level fine-grained match', x + boxW / 2, 388);
+      ctx.fillText('Scalable ranking of 1k docs', x + boxW / 2, 401);
+    }
+  });
+  const bottomY = 530;
+  ctx.fillStyle = '#2a2a4a';
+  ctx.fillRect(80, bottomY - 20, 950, 40);
+  ctx.fillStyle = '#ff9ff3';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Hybrid Search: BM25 (lexical) + Dense scores (fusion) for best of both worlds', 555, bottomY);
+  document.getElementById('denseMetrics').textContent = `Candidates: ${candStr} | Bi-encoder: 1ms | ColBERT: 50ms | Cross-encoder: 500ms`;
+}
+
+// ============ INIT ============
+window.addEventListener('load', () => {
+  initMatrixFactorization();
+  initTowerModel();
+  drawTowerModel();
+  initEmbeddings();
+  initColdStart();
+  drawWideDeep();
+  drawDCN();
+  drawDIN();
+  drawPipeline();
+  drawSASRec();
+  drawMMOE();
+  setLTRMode('pairwise');
+  drawLTR();
+  setAdsMode('attribution');
+  drawAds();
+  drawDenseRetrieval();
+});
+</script>
+
+</body>
+</html>

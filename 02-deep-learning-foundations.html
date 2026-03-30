@@ -1,0 +1,1545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2. Deep Learning Foundations — Interactive Visualizations</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #0a0a0f; color: #e0e0e0; line-height: 1.6; }
+  .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; text-align: center; border-bottom: 1px solid #2a2a4a; }
+  .header h1 { font-size: 2.2em; background: linear-gradient(90deg, #ff6b6b, #ffd93d); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+  .header p { color: #888; font-size: 1.1em; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+  .viz-section { background: #12121f; border: 1px solid #2a2a4a; border-radius: 16px; padding: 32px; margin-bottom: 40px; }
+  .viz-section h2 { font-size: 1.5em; color: #ff6b6b; margin-bottom: 8px; }
+  .viz-section .subtitle { color: #888; margin-bottom: 24px; font-size: 0.95em; }
+  canvas { display: block; background: #0d0d1a; border-radius: 12px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; align-items: center; }
+  .control-group { display: flex; flex-direction: column; gap: 4px; }
+  .control-group label { font-size: 0.85em; color: #aaa; }
+  .control-group input[type="range"] { width: 180px; accent-color: #ff6b6b; }
+  .control-group .value { font-size: 0.85em; color: #ff6b6b; font-family: monospace; }
+  .legend { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.85em; color: #ccc; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 50%; }
+  .btn { padding: 8px 16px; border: 1px solid #ff6b6b; background: transparent; color: #ff6b6b; border-radius: 8px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
+  .btn:hover { background: #ff6b6b22; }
+  .btn.active { background: #ff6b6b33; }
+  .tab-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .math { font-family: 'Times New Roman', serif; font-style: italic; color: #ddd; }
+
+  .insight-box { background: linear-gradient(135deg, #1a1a3e 0%, #151530 100%); border-left: 4px solid #ff6b6b; padding: 20px 24px; margin-top: 20px; border-radius: 0 12px 12px 0; font-size: 0.92em; color: #ccc; line-height: 1.8; }
+  .insight-box strong { color: #ff6b6b; font-size: 1.05em; }
+  .insight-box .formula { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 12px 18px; margin: 12px 0; font-family: 'Courier New', monospace; color: #e8e8ff; font-size: 1.05em; text-align: center; letter-spacing: 0.5px; line-height: 1.9; }
+  .insight-box .formula .highlight { color: #ff6b6b; font-weight: bold; }
+  .insight-box .key-point { display: flex; gap: 8px; margin: 8px 0; padding: 4px 0; }
+  .insight-box .key-point .label { color: #ff6b6b; font-weight: 600; white-space: nowrap; min-width: 90px; }
+  .insight-box .key-point .desc { color: #ddd; }
+  .insight-box .interview-tip { background: rgba(100, 255, 100, 0.05); border: 1px solid rgba(100, 255, 100, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #b0ffb0; font-size: 0.93em; line-height: 1.6; }
+  .insight-box .interview-tip::before { content: '\1F4A1  Interview Tip: '; font-weight: 700; color: #7fff7f; }
+  .insight-box .mnemonic { background: rgba(255, 150, 255, 0.05); border: 1px solid rgba(255, 150, 255, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #ffb0ff; font-size: 0.93em; line-height: 1.6; }
+  .insight-box .mnemonic::before { content: '\1F9E0  Remember: '; font-weight: 700; color: #ff7fff; }
+  .insight-box .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+  .insight-box .comparison .option { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 10px 14px; }
+  .insight-box .comparison .option .opt-title { color: #ff6b6b; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
+  .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
+  .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
+
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>2. Deep Learning Foundations</h1>
+  <p>Backpropagation, activation functions, CNNs, normalization, RNNs, Attention, and Scaling</p>
+</div>
+
+<div class="container">
+
+<!-- 1. NEURAL NETWORK FORWARD & BACKWARD PASS -->
+<div class="viz-section">
+  <h2>Neural Network: Forward & Backward Pass</h2>
+  <p class="subtitle">Watch activations flow forward (blue) and gradients flow backward (red) through a 2-layer MLP. Hover over nodes to see values.</p>
+  <canvas id="nnCanvas" width="800" height="450"></canvas>
+  <div class="controls">
+    <button class="btn" id="nnFwdBtn" onclick="runForward()">→ Forward Pass</button>
+    <button class="btn" id="nnBwdBtn" onclick="runBackward()">← Backward Pass</button>
+    <button class="btn" onclick="resetNN()">↺ Reset</button>
+    <div class="control-group">
+      <label>Input x₁</label>
+      <input type="range" id="nnX1" min="-20" max="20" value="10" oninput="resetNN()">
+      <span class="value" id="nnX1Val">1.0</span>
+    </div>
+    <div class="control-group">
+      <label>Input x₂</label>
+      <input type="range" id="nnX2" min="-20" max="20" value="-5" oninput="resetNN()">
+      <span class="value" id="nnX2Val">-0.5</span>
+    </div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Neural networks learn hierarchical feature representations through backpropagation.
+    <div class="key-point">
+      <span class="label">Architecture:</span>
+      <span class="desc">Input → Hidden layers (learn features) → Output. Each layer builds on lower layer representations.</span>
+    </div>
+    <div class="formula">Forward pass: h_l = σ(W_l·h_{l-1} + b_l)</div>
+    <div class="key-point"><span class="label">h_l:</span><span class="desc">Hidden layer output/activation at layer l. Shape: (batch_size, layer_width)</span></div>
+    <div class="key-point"><span class="label">W_l:</span><span class="desc">Weight matrix for layer l. Shape: (input_dim, output_dim). Learned during training.</span></div>
+    <div class="key-point"><span class="label">h_{l-1}:</span><span class="desc">Input to layer l (output from previous layer l-1). At layer 0, this is the raw input x.</span></div>
+    <div class="key-point"><span class="label">b_l:</span><span class="desc">Bias vector for layer l. Shape: (output_dim,). Shifted learned parameter, one per output unit.</span></div>
+    <div class="key-point"><span class="label">W_l·h_{l-1} + b_l:</span><span class="desc">Linear transformation (affine). Without σ would just be linear combinations, stack of linear layers = one linear layer.</span></div>
+    <div class="key-point"><span class="label">σ:</span><span class="desc">Activation function—introduces non-linearity. Examples: ReLU (max(0,x)), tanh, sigmoid. Critical: without it, network is just linear.</span></div>
+    <div class="key-point">
+      <span class="label">Backpropagation:</span>
+      <span class="desc">Compute ∂L/∂W by chain rule. Gradients flow backward. Updates all weights to reduce loss.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Activation function σ:</span>
+      <span class="desc">Introduces non-linearity. Without it, network is just linear transformation. ReLU, tanh, sigmoid common choices.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Why deep networks? Deeper networks learn more abstract representations. Trade-off: harder to train, need more data.</div>
+    <div class="mnemonic">Neural network = function composition. Each layer learns a transformation. Depth = abstraction hierarchy.</div>
+  </div>
+  </div>
+
+<!-- 2. ACTIVATION FUNCTIONS -->
+<div class="viz-section">
+  <h2>Activation Functions Compared</h2>
+  <p class="subtitle">See each function and its derivative. The derivative matters for gradient flow — flat regions = vanishing gradients.</p>
+  <canvas id="actCanvas" width="800" height="400"></canvas>
+  <div class="controls">
+    <div class="tab-bar">
+      <button class="btn active" id="actRelu" onclick="toggleAct('relu')">ReLU</button>
+      <button class="btn" id="actGelu" onclick="toggleAct('gelu')">GELU</button>
+      <button class="btn" id="actSilu" onclick="toggleAct('silu')">SiLU/Swish</button>
+      <button class="btn" id="actSigmoid" onclick="toggleAct('sigmoid')">Sigmoid</button>
+      <button class="btn" id="actTanh" onclick="toggleAct('tanh')">Tanh</button>
+    </div>
+    <label style="font-size:0.85em; color:#aaa;"><input type="checkbox" id="actShowDeriv" checked onchange="drawAct()"> Show derivatives</label>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Backpropagation efficiently computes gradients for all weights using the chain rule.
+    <div class="formula">∂L/∂W = (∂L/∂output) · (∂output/∂W)</div>
+    <div class="key-point"><span class="label">∂L/∂W:</span><span class="desc">Gradient of loss w.r.t. weights. Tells how much each weight affects final loss. Used to update weights.</span></div>
+    <div class="key-point"><span class="label">∂L/∂output:</span><span class="desc">Gradient of loss w.r.t. final output. How much the output contributes to loss.</span></div>
+    <div class="key-point"><span class="label">∂output/∂W:</span><span class="desc">Gradient of output w.r.t. weights. How much changing W changes the output.</span></div>
+    <div class="key-point"><span class="label">Chain rule (·):</span><span class="desc">Multiply gradients along the computation path. Example: if loss depends on output, and output depends on W, then ∂L/∂W = ∂L/∂output × ∂output/∂W</span></div>
+    <div class="key-point">
+      <span class="label">Chain rule in networks:</span>
+      <span class="desc">Error at output flows backward through layers. Each layer contributes to gradient via local ∂h/∂W.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Computational complexity:</span>
+      <span class="desc">One forward pass + one backward pass. Backward cost ≈ 2× forward. Much cheaper than numerical gradients.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Vanishing gradients:</span>
+      <span class="desc">Gradients multiply as they flow backward. With small derivatives (<0.1), deep layers get tiny gradients. Training stalls.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Exploding gradients:</span>
+      <span class="desc">Gradients multiply, grow exponentially. Weights become NaN/Inf. Solution: gradient clipping.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Use ReLU instead of sigmoid/tanh to avoid vanishing gradients. Use batch normalization to stabilize gradient flow.</div>
+    <div class="mnemonic">Backpropagation = chain rule applied recursively. Efficient but suffers from vanishing/exploding gradients in deep networks.</div>
+  </div>
+  </div>
+
+<!-- 3. VANISHING & EXPLODING GRADIENTS -->
+<div class="viz-section">
+  <h2>Vanishing & Exploding Gradients</h2>
+  <p class="subtitle">See how gradient magnitude changes across layers. Adjust depth and activation to watch gradients vanish or explode.</p>
+  <canvas id="vgCanvas" width="800" height="350"></canvas>
+  <div class="controls">
+    <div class="control-group">
+      <label>Network Depth</label>
+      <input type="range" id="vgDepth" min="3" max="30" value="10" oninput="drawVG()">
+      <span class="value" id="vgDepthVal">10</span>
+    </div>
+    <div class="control-group">
+      <label>Weight Scale</label>
+      <input type="range" id="vgScale" min="30" max="200" value="80" oninput="drawVG()">
+      <span class="value" id="vgScaleVal">0.80</span>
+    </div>
+    <div class="tab-bar">
+      <button class="btn active" id="vgSigBtn" onclick="setVGAct('sigmoid')">Sigmoid</button>
+      <button class="btn" id="vgReluBtn" onclick="setVGAct('relu')">ReLU</button>
+      <button class="btn" id="vgResBtn" onclick="setVGAct('residual')">Residual</button>
+    </div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Batch normalization standardizes layer inputs, stabilizing training and improving generalization.
+    <div class="formula">x̂ = (x - μ_batch) / √(σ²_batch + ε)</div>
+    <div class="key-point"><span class="label">x:</span><span class="desc">Input activation (pre-normalization). Can be output of previous layer or raw features.</span></div>
+    <div class="key-point"><span class="label">x̂:</span><span class="desc">Normalized activation. Centered at mean 0, scale variance 1 (approximately).</span></div>
+    <div class="key-point"><span class="label">μ_batch:</span><span class="desc">Mean of x computed over current minibatch. Different batches have different means, adds regularization noise.</span></div>
+    <div class="key-point"><span class="label">σ²_batch:</span><span class="desc">Variance of x over current minibatch. Measures spread of values in batch.</span></div>
+    <div class="key-point"><span class="label">√(σ²_batch + ε):</span><span class="desc">Standard deviation plus epsilon. ε is small constant (e.g., 1e-5) for numerical stability (avoid division by zero).</span></div>
+    <div class="key-point"><span class="label">(x - μ_batch) / √(...):</span><span class="desc">Standardization: shift by mean, divide by std dev. Makes scale invariant, centers distribution at 0.</span></div>
+    <div class="key-point">
+      <span class="label">What it does:</span>
+      <span class="desc">Normalize each activation to mean 0, variance 1 during training. Reduces internal covariate shift.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Benefits:</span>
+      <span class="desc">Stabilizes gradient flow (reduces vanishing gradient). Allows higher learning rates. Acts as regularizer (noise from batch statistics).</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Learnable scale/shift:</span>
+      <span class="desc">Network learns γ, β to scale/shift normalized activations. Preserves expressiveness.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">At test time:</span>
+      <span class="desc">Use running mean/variance from training. No randomness at test time. Important for reproducibility.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Batch norm before activation vs after? Both work, but before activation more common. Careful with small batch sizes (batch norm estimates are noisy).</div>
+    <div class="mnemonic">Batch norm = normalize activations to stabilize training. Side effect: regularization. Test time: use training statistics.</div>
+  </div>
+  </div>
+
+<!-- 4. CNN CONVOLUTION OPERATION -->
+<div class="viz-section">
+  <h2>Convolution Operation Step by Step</h2>
+  <p class="subtitle">Watch a 3×3 kernel slide across the input, computing the dot product at each position. This is the core of CNNs.</p>
+  <canvas id="cnnCanvas" width="800" height="420"></canvas>
+  <div class="controls">
+    <button class="btn" id="cnnPlayBtn" onclick="toggleCNN()">▶ Animate</button>
+    <button class="btn" onclick="stepCNN()">→ Next Step</button>
+    <button class="btn" onclick="resetCNN()">↺ Reset</button>
+    <div class="control-group">
+      <label>Stride</label>
+      <input type="range" id="cnnStride" min="1" max="3" value="1" oninput="resetCNN()">
+      <span class="value" id="cnnStrideVal">1</span>
+    </div>
+    <div class="control-group">
+      <label>Padding</label>
+      <input type="range" id="cnnPad" min="0" max="2" value="0" oninput="resetCNN()">
+      <span class="value" id="cnnPadVal">0</span>
+    </div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Dropout randomly zeros activations during training to prevent overfitting and co-adaptation.
+    <div class="formula">During training: h_drop = h * mask,  where mask_i ~ Bernoulli(p)</div>
+    <div class="key-point"><span class="label">h:</span><span class="desc">Hidden layer activations before dropout. Shape: (batch_size, num_units)</span></div>
+    <div class="key-point"><span class="label">mask:</span><span class="desc">Random binary mask. Each element drawn independently from Bernoulli(p)—probability p of being 1, probability (1-p) of being 0</span></div>
+    <div class="key-point"><span class="label">mask_i ~ Bernoulli(p):</span><span class="desc">Each unit i has independent probability p of being kept (mask_i=1) and probability (1-p) of being dropped (mask_i=0)</span></div>
+    <div class="key-point"><span class="label">h * mask:</span><span class="desc">Element-wise multiplication. Units with mask_i=0 are zeroed out (dropped). Units with mask_i=1 pass through unchanged.</span></div>
+    <div class="key-point"><span class="label">h_drop:</span><span class="desc">Output after dropout. Sparsified version of h. At test time, use h directly (or scale by p)</span></div>
+    <div class="key-point"><span class="label">p (keep probability):</span><span class="desc">Fraction of units to retain (typically 0.5 for hidden layers). Complementary to dropout rate: dropout_rate = 1-p</span></div>
+    <div class="key-point">
+      <span class="label">Why dropout works:</span>
+      <span class="desc">Prevents neurons from co-adapting (relying on specific other neurons). Forces network to learn robust features.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Effect:</span>
+      <span class="desc">Trains ensemble of ~2^n subnetworks. At test time, average them (or use all units with scaling).</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Dropout rate p:</span>
+      <span class="desc">Typical: 0.5 for hidden layers, 0.1-0.2 for input. Higher p = stronger regularization but risk underfitting.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">At test time:</span>
+      <span class="desc">No dropout! Use all activations. Scaling: multiply by (1-p) during training, OR divide by (1-p) at test (depends on implementation).</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Dropout is a simple, powerful regularizer. Less important with batch norm, but still useful together. Monitor train vs test error.</div>
+    <div class="mnemonic">Dropout = train multiple nets simultaneously, average at test time. Prevents co-adaptation. Ensemble effect = better generalization.</div>
+  </div>
+  </div>
+
+<!-- 5. BATCH NORM vs LAYER NORM -->
+<div class="viz-section">
+  <h2>Normalization: Batch vs Layer vs RMS</h2>
+  <p class="subtitle">Visualize which dimensions each normalization technique operates over. The highlighted region shows what gets normalized together.</p>
+  <canvas id="normCanvas" width="800" height="350"></canvas>
+  <div class="controls">
+    <div class="tab-bar">
+      <button class="btn active" id="normBN" onclick="setNormType('bn')">Batch Norm</button>
+      <button class="btn" id="normLN" onclick="setNormType('ln')">Layer Norm</button>
+      <button class="btn" id="normRMS" onclick="setNormType('rms')">RMSNorm</button>
+      <button class="btn" id="normGN" onclick="setNormType('gn')">Group Norm</button>
+    </div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Convolutional layers learn local spatial patterns via weight sharing and local connections.
+    <div class="formula">Conv output: y[i,j] = Σ w[a,b] * x[i+a, j+b] + b</div>
+    <div class="key-point"><span class="label">y[i,j]:</span><span class="desc">Output activation at spatial position (i,j). Shape across all filters: (height_out, width_out, num_filters)</span></div>
+    <div class="key-point"><span class="label">w[a,b]:</span><span class="desc">Filter/kernel weights at local offset (a,b). Learned parameter. Size: (kernel_h, kernel_w). Same for all positions (weight sharing).</span></div>
+    <div class="key-point"><span class="label">x[i+a, j+b]:</span><span class="desc">Input values in the receptive field—rectangular region around position (i,j). Sliding window centered at (i,j).</span></div>
+    <div class="key-point"><span class="label">Σ w[a,b] * x[i+a, j+b]:</span><span class="desc">Dot product of filter and local patch. Computes correlation/match between filter and local region.</span></div>
+    <div class="key-point"><span class="label">+ b:</span><span class="desc">Bias term—learned scalar added to dot product. Same bias for all spatial positions.</span></div>
+    <div class="key-point"><span class="label">Spatial locality:</span><span class="desc">Only uses values in small receptive field around (i,j), not entire image. Efficient and captures local features.</span></div>
+    <div class="key-point">
+      <span class="label">Weight sharing:</span>
+      <span class="desc">Same filter applied at every position. Much fewer parameters than fully connected. Captures translation invariance.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Spatial hierarchy:</span>
+      <span class="desc">Early layers: edge, texture detectors. Middle: shape, part detectors. Deep: object detectors. Learns hierarchical representations.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Hyperparameters:</span>
+      <span class="desc">Filter size (3×3, 5×5), stride (step between positions), padding (border handling), number of filters (output channels).</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Pooling:</span>
+      <span class="desc">Max/average pooling reduces spatial dimensions. Provides small translation invariance. Reduces parameters.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">CNNs are the backbone of computer vision. Receptive field grows with depth. Understand how filter size and stride affect output dimensions.</div>
+    <div class="mnemonic">CNN = local pattern matching with weight sharing. Captures spatial hierarchies. Deep = large receptive fields = global context.</div>
+  </div>
+  </div>
+
+<!-- 6. RNN/LSTM/GRU -->
+<div class="viz-section">
+  <h2>RNN/LSTM/GRU: Recurrence & Gating</h2>
+  <p class="subtitle">Visualize how recurrent cells maintain hidden state and use gates to control information flow. Watch how LSTM solves vanishing gradients.</p>
+  <canvas id="rnnCanvas" width="900" height="480"></canvas>
+  <div class="controls">
+    <div class="tab-bar">
+      <button class="btn active" id="rnnTypeRNN" onclick="setRNNType('rnn')">Vanilla RNN</button>
+      <button class="btn" id="rnnTypeLSTM" onclick="setRNNType('lstm')">LSTM</button>
+      <button class="btn" id="rnnTypeGRU" onclick="setRNNType('gru')">GRU</button>
+    </div>
+    <button class="btn" onclick="stepRNN()">→ Next Step</button>
+    <button class="btn" onclick="resetRNN()">↺ Reset</button>
+    <div class="control-group">
+      <label>Sequence Length</label>
+      <input type="range" id="rnnLen" min="3" max="10" value="5" oninput="resetRNN()">
+      <span class="value" id="rnnLenVal">5</span>
+    </div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Recurrent networks process sequences by maintaining hidden state that captures context from previous steps.
+    <div class="formula">h_t = σ(W_hh·h_{t-1} + W_xh·x_t + b_h)</div>
+    <div class="key-point"><span class="label">h_t:</span><span class="desc">Hidden state at timestep t. Acts as memory. Shape: (batch_size, hidden_dim). Updated every step based on current input and previous state.</span></div>
+    <div class="key-point"><span class="label">h_{t-1}:</span><span class="desc">Hidden state from previous timestep t-1. Carries information forward in sequence.</span></div>
+    <div class="key-point"><span class="label">x_t:</span><span class="desc">Input at timestep t (e.g., word embedding, single token). Shape: (batch_size, input_dim)</span></div>
+    <div class="key-point"><span class="label">W_hh:</span><span class="desc">Recurrent weight matrix (hidden-to-hidden). Shared across all timesteps. Shape: (hidden_dim, hidden_dim)</span></div>
+    <div class="key-point"><span class="label">W_xh:</span><span class="desc">Input-to-hidden weight matrix. Shape: (input_dim, hidden_dim). Also shared across timesteps.</span></div>
+    <div class="key-point"><span class="label">b_h:</span><span class="desc">Bias vector for hidden state. Shape: (hidden_dim,)</span></div>
+    <div class="key-point"><span class="label">W_hh·h_{t-1} + W_xh·x_t + b_h:</span><span class="desc">Linear combination of previous hidden state and current input. Combines memory with new information.</span></div>
+    <div class="key-point"><span class="label">σ(...):</span><span class="desc">Activation function (tanh common for RNNs). Bounds hidden state, typically to (-1,1) range.</span></div>
+    <div class="key-point">
+      <span class="label">Hidden state h_t:</span>
+      <span class="desc">Memory that carries information from previous positions. Initialized to zero, updated at each step.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Sequence processing:</span>
+      <span class="desc">At each timestep, network sees current input + hidden state from previous. Learns dependencies across sequence.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Vanishing gradient problem:</span>
+      <span class="desc">Gradients flow back through many timesteps. Same multiplication of derivatives (<0.1) causes vanishing gradients.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">LSTM/GRU solutions:</span>
+      <span class="desc">Gated mechanisms control information flow. Cell state = long-term memory. Much better at learning long-range dependencies.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">LSTMs widely used in practice. But Transformers (attention) often better for many tasks now. Sequence length matters: quadratic memory for attention.</div>
+    <div class="mnemonic">RNN = process sequence step-by-step, carrying memory. Long dependencies = vanishing gradients. LSTM = gates solve this via cell state.</div>
+  </div>
+  </div>
+
+<!-- 7. FLASH ATTENTION -->
+<div class="viz-section">
+  <h2>Flash Attention: Tiled IO-Aware Computation</h2>
+  <p class="subtitle">See how standard attention has O(N²) memory, while Flash Attention tiles computation to reduce HBM access by ~4-10x.</p>
+  <canvas id="flashCanvas" width="900" height="400"></canvas>
+  <div class="controls">
+    <div class="tab-bar">
+      <button class="btn active" id="attStdBtn" onclick="setAttentionType('standard')">Standard Attention</button>
+      <button class="btn" id="attFlashBtn" onclick="setAttentionType('flash')">Flash Attention</button>
+    </div>
+    <div class="control-group">
+      <label>Sequence Length (N)</label>
+      <input type="range" id="flashN" min="64" max="512" step="64" value="256" oninput="drawFlash()">
+      <span class="value" id="flashNVal">256</span>
+    </div>
+    <div class="control-group">
+      <label>Head Dimension (d)</label>
+      <input type="range" id="flashD" min="32" max="128" step="32" value="64" oninput="drawFlash()">
+      <span class="value" id="flashDVal">64</span>
+    </div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> ResNets add skip connections that allow direct gradient flow and enable training of very deep networks.
+    <div class="formula">y = F(x) + <span class="highlight">x</span>  (instead of just y = F(x))</div>
+    <div class="key-point"><span class="label">x:</span><span class="desc">Input to residual block. Shape: (batch_size, feature_dim)</span></div>
+    <div class="key-point"><span class="label">F(x):</span><span class="desc">Transformation by residual block—typically 2-3 layers (conv, norm, activation). Learns feature changes.</span></div>
+    <div class="key-point"><span class="label">+ x:</span><span class="desc">Skip/shortcut connection. Identity mapping directly adds input to output. Enables information to bypass block.</span></div>
+    <div class="key-point"><span class="label">y = F(x) + x:</span><span class="desc">Output is residual transformation F(x) PLUS identity. Network learns F(x) = (desired_output - x), i.e., the residual/difference.</span></div>
+    <div class="key-point"><span class="label">Dimension requirement:</span><span class="desc">F(x) and x must have same shape for addition. If different, use 1×1 conv to match dimensions.</span></div>
+    <div class="key-point">
+      <span class="label">Skip connection benefit:</span>
+      <span class="desc">Gradients bypass blocks, flow directly through identity connection. Solves vanishing gradient for deep networks.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Training depth:</span>
+      <span class="desc">Without residuals: hard to train networks >50 layers. With residuals: can train 150+ layers easily.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Residual block interpretation:</span>
+      <span class="desc">F(x) learns the residual (difference from identity). Network learns what to add/change, not entire function from scratch.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Dimensions matching:</span>
+      <span class="desc">If F changes dimensions (stride or filters), use 1×1 projection convolution for x. Or zero-pad/subsample x.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">ResNets revolutionized deep learning. Skip connections are now standard everywhere (Transformers, dense nets, etc.).</div>
+    <div class="mnemonic">ResNet = learn residuals, not full function. Skip connection = highway for gradients. Enables very deep networks.</div>
+  </div>
+  </div>
+
+<!-- 8. SCALING LAWS -->
+<div class="viz-section">
+  <h2>Scaling Laws: Loss vs Compute/Data/Parameters</h2>
+  <p class="subtitle">Plot loss curves following Chinchilla scaling (power-law). Adjust allocation of compute budget between parameters and data.</p>
+  <canvas id="scalingCanvas" width="900" height="400"></canvas>
+  <div class="controls">
+    <div class="control-group">
+      <label>Compute Budget (PFLOPs)</label>
+      <input type="range" id="scalingCompute" min="5" max="25" step="1" value="15" oninput="drawScaling()">
+      <span class="value" id="scalingComputeVal">15</span>
+    </div>
+    <div class="control-group">
+      <label>Data/Param Ratio</label>
+      <input type="range" id="scalingRatio" min="1" max="100" step="5" value="20" oninput="drawScaling()">
+      <span class="value" id="scalingRatioVal">20x</span>
+    </div>
+    <button class="btn" onclick="setChinchilla()">Apply Chinchilla (1:1)</button>
+    <button class="btn" onclick="setCompute()">Maximize Params</button>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Attention mechanisms compute weighted combinations of values based on query-key similarities, enabling long-range dependencies.
+    <div class="formula">Attention(Q,K,V) = softmax(QK^T/√d_k)V</div>
+    <div class="key-point"><span class="label">Q (Query):</span><span class="desc">Matrix of query vectors, shape (seq_len, d_k). "What am I looking for?" Linear projection of input.</span></div>
+    <div class="key-point"><span class="label">K (Key):</span><span class="desc">Matrix of key vectors, shape (seq_len, d_k). "What does each position represent?" Compared against queries.</span></div>
+    <div class="key-point"><span class="label">V (Value):</span><span class="desc">Matrix of value vectors, shape (seq_len, d_v). "What to output?" Weighted by attention scores.</span></div>
+    <div class="key-point"><span class="label">QK^T:</span><span class="desc">Dot product of queries and keys. Shape: (seq_len, seq_len). Measures similarity between each query and all keys. Unnormalized attention scores.</span></div>
+    <div class="key-point"><span class="label">√d_k:</span><span class="desc">Scaling factor. d_k = dimension of keys (usually 64). Prevents attention scores from becoming too large (softmax gradient issues).</span></div>
+    <div class="key-point"><span class="label">softmax(QK^T/√d_k):</span><span class="desc">Convert scaled scores to probability distribution over sequence positions. Each query sums to 1 across all keys. Attention weights.</span></div>
+    <div class="key-point"><span class="label">softmax(...) · V:</span><span class="desc">Weighted sum of values. Each value is weighted by its corresponding attention score. Output shape: (seq_len, d_v)</span></div>
+    <div class="key-point">
+      <span class="label">Query, Key, Value:</span>
+      <span class="desc">Q = what we're looking for. K = what each position represents. V = what to output. Learned linear projections of input.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Attention weights:</span>
+      <span class="desc">Softmax(QK^T) = probability of attending to each position. Learned during training based on query-key similarity.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Multi-head attention:</span>
+      <span class="desc">Multiple attention heads attend to different aspects. Concatenate outputs. Richer representations than single attention.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Computational cost:</span>
+      <span class="desc">Attention is O(n²) in sequence length. For long sequences, use approximations: local attention, sparse attention, linear attention.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Attention is core of Transformers. Self-attention: each position attends to all positions. Enables parallelization unlike RNNs.</div>
+    <div class="mnemonic">Attention = soft selection of values based on relevance. Queries ask questions, keys match queries, values are answers.</div>
+  </div>
+  </div>
+
+</div>
+
+<script>
+// ==================== NEURAL NETWORK FORWARD/BACKWARD ====================
+const nnWeights = {
+  w1: [[0.5, -0.3], [0.8, 0.4], [-0.2, 0.7]],
+  b1: [0.1, -0.1, 0.2],
+  w2: [[0.6, -0.4, 0.3], [0.2, 0.5, -0.6]],
+  b2: [0.1, -0.2]
+};
+let nnState = { phase: 'idle', step: 0, values: {} };
+
+function relu(x) { return Math.max(0, x); }
+function reluDeriv(x) { return x > 0 ? 1 : 0; }
+
+function computeNN(x1, x2) {
+  const z1 = nnWeights.w1.map((w, i) => w[0]*x1 + w[1]*x2 + nnWeights.b1[i]);
+  const a1 = z1.map(relu);
+  const z2 = nnWeights.w2.map((w, i) => w[0]*a1[0] + w[1]*a1[1] + w[2]*a1[2] + nnWeights.b2[i]);
+  const expZ = z2.map(z => Math.exp(z));
+  const sumExp = expZ.reduce((a,b) => a+b);
+  const a2 = expZ.map(e => e / sumExp);
+  const loss = -Math.log(a2[0] + 1e-8);
+  const da2 = [a2[0] - 1, a2[1]];
+  const dz2 = da2;
+  const da1 = [0, 0, 0];
+  for (let j = 0; j < 3; j++) {
+    for (let i = 0; i < 2; i++) {
+      da1[j] += dz2[i] * nnWeights.w2[i][j];
+    }
+  }
+  const dz1 = da1.map((d, i) => d * reluDeriv(z1[i]));
+  return { x: [x1, x2], z1, a1, z2, a2, loss, da2, dz2, da1, dz1 };
+}
+
+function drawNN() {
+  const canvas = document.getElementById('nnCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const x1 = parseInt(document.getElementById('nnX1').value) / 10;
+  const x2 = parseInt(document.getElementById('nnX2').value) / 10;
+  document.getElementById('nnX1Val').textContent = x1.toFixed(1);
+  document.getElementById('nnX2Val').textContent = x2.toFixed(1);
+
+  const vals = computeNN(x1, x2);
+  const layers = [
+    { label: 'Input', nodes: [`x₁=${x1.toFixed(1)}`, `x₂=${x2.toFixed(1)}`], values: vals.x, grads: [0,0] },
+    { label: 'Hidden (ReLU)', nodes: ['h₁', 'h₂', 'h₃'], values: vals.a1, grads: vals.dz1, preact: vals.z1 },
+    { label: 'Output (Softmax)', nodes: ['ŷ₁', 'ŷ₂'], values: vals.a2, grads: vals.da2 }
+  ];
+
+  const layerX = [120, 350, 600];
+  const phase = nnState.phase;
+
+  for (let l = 0; l < layers.length - 1; l++) {
+    const n1 = layers[l].nodes.length;
+    const n2 = layers[l + 1].nodes.length;
+    for (let i = 0; i < n1; i++) {
+      for (let j = 0; j < n2; j++) {
+        const y1 = H / 2 + (i - (n1 - 1) / 2) * 80;
+        const y2 = H / 2 + (j - (n2 - 1) / 2) * 80;
+        const weight = l === 0 ? nnWeights.w1[j][i] : nnWeights.w2[j][i];
+        const alpha = Math.min(1, Math.abs(weight) * 1.5);
+
+        if (phase === 'forward' && nnState.step > l) {
+          ctx.strokeStyle = `rgba(100,255,218,${alpha * 0.6})`;
+          ctx.lineWidth = Math.abs(weight) * 3;
+        } else if (phase === 'backward' && nnState.step > (layers.length - 2 - l)) {
+          ctx.strokeStyle = `rgba(255,107,107,${alpha * 0.6})`;
+          ctx.lineWidth = Math.abs(weight) * 3;
+        } else {
+          ctx.strokeStyle = `rgba(100,100,150,${alpha * 0.3})`;
+          ctx.lineWidth = 1;
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(layerX[l] + 25, y1);
+        ctx.lineTo(layerX[l + 1] - 25, y2);
+        ctx.stroke();
+      }
+    }
+  }
+
+  for (let l = 0; l < layers.length; l++) {
+    const layer = layers[l];
+    const n = layer.nodes.length;
+
+    ctx.fillStyle = '#888';
+    ctx.font = '12px Inter';
+    ctx.textAlign = 'center';
+    ctx.fillText(layer.label, layerX[l], 25);
+
+    for (let i = 0; i < n; i++) {
+      const y = H / 2 + (i - (n - 1) / 2) * 80;
+      const isActiveFwd = phase === 'forward' && nnState.step > l;
+      const isActiveBwd = phase === 'backward' && nnState.step > (layers.length - 1 - l);
+
+      const gradient = ctx.createRadialGradient(layerX[l], y, 0, layerX[l], y, 25);
+      if (isActiveFwd) {
+        gradient.addColorStop(0, '#64ffda55');
+        gradient.addColorStop(1, '#64ffda11');
+      } else if (isActiveBwd) {
+        gradient.addColorStop(0, '#ff6b6b55');
+        gradient.addColorStop(1, '#ff6b6b11');
+      } else {
+        gradient.addColorStop(0, '#33335555');
+        gradient.addColorStop(1, '#33335511');
+      }
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(layerX[l], y, 25, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = isActiveFwd ? '#64ffda' : isActiveBwd ? '#ff6b6b' : '#444';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(layerX[l], y, 25, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.fillStyle = '#fff';
+      ctx.font = '11px monospace';
+      ctx.textAlign = 'center';
+      const val = layer.values[i];
+      ctx.fillText(val.toFixed(2), layerX[l], y + 4);
+
+      if (isActiveBwd && l > 0) {
+        ctx.fillStyle = '#ff6b6b';
+        ctx.font = '10px monospace';
+        ctx.fillText(`∇=${layer.grads[i].toFixed(3)}`, layerX[l], y + 42);
+      }
+
+      ctx.fillStyle = '#aaa';
+      ctx.font = '11px Inter';
+      ctx.fillText(layer.nodes[i], layerX[l], y - 32);
+    }
+  }
+
+  ctx.fillStyle = '#ffd93d';
+  ctx.font = '14px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText(`Loss = ${vals.loss.toFixed(4)}`, 680, H / 2);
+
+  if (phase !== 'idle') {
+    ctx.fillStyle = phase === 'forward' ? '#64ffda' : '#ff6b6b';
+    ctx.font = '14px Inter';
+    ctx.textAlign = 'right';
+    ctx.fillText(phase === 'forward' ? '→ Forward Pass' : '← Backward Pass', W - 20, 25);
+  }
+}
+
+let nnAnimId;
+function runForward() {
+  nnState.phase = 'forward';
+  nnState.step = 0;
+  clearInterval(nnAnimId);
+  nnAnimId = setInterval(() => {
+    nnState.step++;
+    drawNN();
+    if (nnState.step >= 3) clearInterval(nnAnimId);
+  }, 500);
+}
+
+function runBackward() {
+  nnState.phase = 'backward';
+  nnState.step = 0;
+  clearInterval(nnAnimId);
+  nnAnimId = setInterval(() => {
+    nnState.step++;
+    drawNN();
+    if (nnState.step >= 3) clearInterval(nnAnimId);
+  }, 500);
+}
+
+function resetNN() {
+  nnState = { phase: 'idle', step: 0 };
+  clearInterval(nnAnimId);
+  drawNN();
+}
+
+// ==================== ACTIVATION FUNCTIONS ====================
+let activeActs = new Set(['relu']);
+
+function toggleAct(name) {
+  if (activeActs.has(name)) activeActs.delete(name);
+  else activeActs.add(name);
+  document.getElementById('actRelu').classList.toggle('active', activeActs.has('relu'));
+  document.getElementById('actGelu').classList.toggle('active', activeActs.has('gelu'));
+  document.getElementById('actSilu').classList.toggle('active', activeActs.has('silu'));
+  document.getElementById('actSigmoid').classList.toggle('active', activeActs.has('sigmoid'));
+  document.getElementById('actTanh').classList.toggle('active', activeActs.has('tanh'));
+  drawAct();
+}
+
+const actFuncs = {
+  relu: { fn: x => Math.max(0, x), deriv: x => x > 0 ? 1 : 0, color: '#64ffda', dcolor: '#64ffda88' },
+  gelu: { fn: x => 0.5*x*(1+Math.tanh(Math.sqrt(2/Math.PI)*(x+0.044715*x*x*x))), deriv: x => {
+    const c = Math.sqrt(2/Math.PI); const t = Math.tanh(c*(x+0.044715*x*x*x));
+    return 0.5*(1+t) + 0.5*x*(1-t*t)*c*(1+3*0.044715*x*x);
+  }, color: '#ff6b6b', dcolor: '#ff6b6b88' },
+  silu: { fn: x => x/(1+Math.exp(-x)), deriv: x => { const s=1/(1+Math.exp(-x)); return s+x*s*(1-s); }, color: '#ffd93d', dcolor: '#ffd93d88' },
+  sigmoid: { fn: x => 1/(1+Math.exp(-x)), deriv: x => { const s=1/(1+Math.exp(-x)); return s*(1-s); }, color: '#7c4dff', dcolor: '#7c4dff88' },
+  tanh: { fn: x => Math.tanh(x), deriv: x => 1-Math.tanh(x)**2, color: '#4ecdc4', dcolor: '#4ecdc488' }
+};
+
+function drawAct() {
+  const canvas = document.getElementById('actCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const showDeriv = document.getElementById('actShowDeriv').checked;
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = { l: 60, r: 30, t: 30, b: 40 };
+  const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+  const xRange = [-5, 5], yRange = [-1.5, 3];
+
+  function toScreen(x, y) {
+    return [
+      pad.l + (x - xRange[0]) / (xRange[1] - xRange[0]) * pw,
+      pad.t + (1 - (y - yRange[0]) / (yRange[1] - yRange[0])) * ph
+    ];
+  }
+
+  ctx.strokeStyle = '#222';
+  ctx.lineWidth = 0.5;
+  for (let x = -4; x <= 4; x++) {
+    const [sx] = toScreen(x, 0);
+    ctx.beginPath(); ctx.moveTo(sx, pad.t); ctx.lineTo(sx, H-pad.b); ctx.stroke();
+    ctx.fillStyle = '#555'; ctx.font = '10px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(x, sx, H - pad.b + 14);
+  }
+  for (let y = -1; y <= 3; y++) {
+    const [, sy] = toScreen(0, y);
+    ctx.beginPath(); ctx.moveTo(pad.l, sy); ctx.lineTo(W-pad.r, sy); ctx.stroke();
+    ctx.fillStyle = '#555'; ctx.font = '10px monospace'; ctx.textAlign = 'right';
+    ctx.fillText(y, pad.l - 8, sy + 4);
+  }
+
+  const [ax0, ay0] = toScreen(0, 0);
+  ctx.strokeStyle = '#444';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(pad.l, ay0); ctx.lineTo(W-pad.r, ay0); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(ax0, pad.t); ctx.lineTo(ax0, H-pad.b); ctx.stroke();
+
+  for (const [name, act] of Object.entries(actFuncs)) {
+    if (!activeActs.has(name)) continue;
+
+    ctx.strokeStyle = act.color;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    for (let px = 0; px <= pw; px++) {
+      const x = xRange[0] + px / pw * (xRange[1] - xRange[0]);
+      const y = act.fn(x);
+      const [sx, sy] = toScreen(x, y);
+      if (px === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+    }
+    ctx.stroke();
+
+    if (showDeriv) {
+      ctx.strokeStyle = act.dcolor;
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      for (let px = 0; px <= pw; px++) {
+        const x = xRange[0] + px / pw * (xRange[1] - xRange[0]);
+        const y = act.deriv(x);
+        const [sx, sy] = toScreen(x, y);
+        if (px === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    const labelX = name === 'relu' ? 3.5 : name === 'gelu' ? 3 : name === 'silu' ? 2.5 : name === 'sigmoid' ? 2 : 4;
+    const [lx, ly] = toScreen(labelX, act.fn(labelX));
+    ctx.fillStyle = act.color;
+    ctx.font = '12px Inter';
+    ctx.textAlign = 'left';
+    ctx.fillText(name.toUpperCase(), lx + 5, ly - 8);
+  }
+
+  ctx.fillStyle = '#666';
+  ctx.font = '11px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText('— solid: f(x)    --- dashed: f\'(x)', pad.l + 10, pad.t + 15);
+}
+
+// ==================== VANISHING/EXPLODING GRADIENTS ====================
+let vgAct = 'sigmoid';
+
+function setVGAct(act) {
+  vgAct = act;
+  document.getElementById('vgSigBtn').classList.toggle('active', act === 'sigmoid');
+  document.getElementById('vgReluBtn').classList.toggle('active', act === 'relu');
+  document.getElementById('vgResBtn').classList.toggle('active', act === 'residual');
+  drawVG();
+}
+
+function drawVG() {
+  const canvas = document.getElementById('vgCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const depth = parseInt(document.getElementById('vgDepth').value);
+  const scale = parseInt(document.getElementById('vgScale').value) / 100;
+  document.getElementById('vgDepthVal').textContent = depth;
+  document.getElementById('vgScaleVal').textContent = scale.toFixed(2);
+
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = { l: 70, r: 30, t: 40, b: 50 };
+  const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+
+  const gradients = [1];
+  for (let i = 1; i < depth; i++) {
+    let mult;
+    if (vgAct === 'sigmoid') {
+      mult = scale * 0.25;
+    } else if (vgAct === 'relu') {
+      mult = scale * (0.5 + Math.random() * 0.1);
+    } else {
+      mult = scale * 0.25 + 1;
+    }
+    gradients.push(gradients[i - 1] * mult);
+  }
+  gradients.reverse();
+
+  const maxGrad = Math.max(...gradients, 1);
+  const minGrad = Math.min(...gradients.filter(g => g > 0), 0.001);
+
+  const barW = Math.min(pw / depth - 2, 30);
+
+  for (let i = 0; i < depth; i++) {
+    const x = pad.l + (i + 0.5) * (pw / depth) - barW / 2;
+    const logGrad = Math.log10(gradients[i] + 1e-15);
+    const logMax = Math.log10(maxGrad + 1e-15);
+    const logMin = Math.log10(minGrad);
+    const normalizedH = Math.max(5, ((logGrad - logMin) / (logMax - logMin + 1)) * ph * 0.8);
+
+    let color;
+    if (gradients[i] > 1) color = '#ff6b6b';
+    else if (gradients[i] > 0.01) color = '#64ffda';
+    else color = '#7c4dff';
+
+    ctx.fillStyle = color + '88';
+    ctx.fillRect(x, H - pad.b - normalizedH, barW, normalizedH);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x, H - pad.b - normalizedH, barW, normalizedH);
+
+    if (depth <= 15 || i % 2 === 0) {
+      ctx.fillStyle = '#888';
+      ctx.font = '10px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`L${i+1}`, x + barW / 2, H - pad.b + 14);
+      ctx.fillText(gradients[i].toExponential(1), x + barW / 2, H - pad.b - normalizedH - 6);
+    }
+  }
+
+  ctx.strokeStyle = '#444';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.l, pad.t);
+  ctx.lineTo(pad.l, H - pad.b);
+  ctx.lineTo(W - pad.r, H - pad.b);
+  ctx.stroke();
+
+  ctx.fillStyle = '#888';
+  ctx.font = '13px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText('Layer (input → output)', W / 2, H - 8);
+  ctx.save();
+  ctx.translate(18, H / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('Gradient Magnitude (log scale)', 0, 0);
+  ctx.restore();
+
+  const ratio = gradients[0] / gradients[depth - 1];
+  let status, statusColor;
+  if (ratio < 0.01) { status = 'VANISHING — gradients die'; statusColor = '#7c4dff'; }
+  else if (ratio > 100) { status = 'EXPLODING — gradients blow up'; statusColor = '#ff6b6b'; }
+  else { status = 'HEALTHY — gradients flow well'; statusColor = '#64ffda'; }
+
+  ctx.fillStyle = statusColor;
+  ctx.font = '13px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText(status, pad.l, pad.t + 15);
+}
+
+// ==================== CNN CONVOLUTION ====================
+const cnnInput = [];
+const cnnKernel = [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]];
+let cnnPos = 0;
+let cnnRunning = false;
+let cnnAnimId;
+
+function initCNN() {
+  cnnInput.length = 0;
+  for (let i = 0; i < 7; i++) {
+    cnnInput.push([]);
+    for (let j = 0; j < 7; j++) {
+      cnnInput[i].push(Math.floor(Math.random() * 10));
+    }
+  }
+}
+
+function drawCNN() {
+  const canvas = document.getElementById('cnnCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const stride = parseInt(document.getElementById('cnnStride').value);
+  const padding = parseInt(document.getElementById('cnnPad').value);
+  document.getElementById('cnnStrideVal').textContent = stride;
+  document.getElementById('cnnPadVal').textContent = padding;
+
+  ctx.clearRect(0, 0, W, H);
+
+  const inSize = 7;
+  const kSize = 3;
+  const padInSize = inSize + 2 * padding;
+  const outSize = Math.floor((padInSize - kSize) / stride) + 1;
+  const totalPositions = outSize * outSize;
+  const pos = Math.min(cnnPos, totalPositions - 1);
+  const posRow = Math.floor(pos / outSize);
+  const posCol = pos % outSize;
+  const kernRow = posRow * stride;
+  const kernCol = posCol * stride;
+
+  const cellSize = 42;
+  const gap = 60;
+
+  const inputX = 40, inputY = 60;
+  ctx.fillStyle = '#64ffda';
+  ctx.font = '14px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText(`Input (${inSize}×${inSize})`, inputX, inputY - 12);
+
+  for (let i = 0; i < padInSize; i++) {
+    for (let j = 0; j < padInSize; j++) {
+      const x = inputX + j * cellSize;
+      const y = inputY + i * cellSize;
+      const isPad = i < padding || i >= inSize + padding || j < padding || j >= inSize + padding;
+      const isInKernel = i >= kernRow && i < kernRow + kSize && j >= kernCol && j < kernCol + kSize;
+
+      ctx.fillStyle = isPad ? '#1a1a2e' : isInKernel ? '#ff6b6b33' : '#1a1a3e';
+      ctx.fillRect(x, y, cellSize - 1, cellSize - 1);
+
+      if (isInKernel) {
+        ctx.strokeStyle = '#ff6b6b';
+        ctx.lineWidth = 2;
+        if (i === kernRow && j === kernCol) {
+          ctx.strokeRect(inputX + kernCol * cellSize - 1, inputY + kernRow * cellSize - 1, kSize * cellSize + 1, kSize * cellSize + 1);
+        }
+      }
+
+      const val = isPad ? 0 : cnnInput[i - padding]?.[j - padding] ?? 0;
+      ctx.fillStyle = isInKernel ? '#fff' : '#aaa';
+      ctx.font = '12px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(val, x + cellSize / 2, y + cellSize / 2 + 4);
+    }
+  }
+
+  const kernX = inputX + padInSize * cellSize + gap;
+  ctx.fillStyle = '#ffd93d';
+  ctx.font = '14px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText(`Kernel (${kSize}×${kSize})`, kernX, inputY - 12);
+
+  for (let i = 0; i < kSize; i++) {
+    for (let j = 0; j < kSize; j++) {
+      const x = kernX + j * cellSize;
+      const y = inputY + i * cellSize;
+      ctx.fillStyle = '#2a2a1e';
+      ctx.fillRect(x, y, cellSize - 1, cellSize - 1);
+      ctx.fillStyle = '#ffd93d';
+      ctx.font = '12px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(cnnKernel[i][j], x + cellSize / 2, y + cellSize / 2 + 4);
+    }
+  }
+
+  let sum = 0;
+  const compY = inputY + kSize * cellSize + 20;
+  for (let i = 0; i < kSize; i++) {
+    for (let j = 0; j < kSize; j++) {
+      const inI = kernRow + i - padding;
+      const inJ = kernCol + j - padding;
+      const inVal = (inI >= 0 && inI < inSize && inJ >= 0 && inJ < inSize) ? cnnInput[inI][inJ] : 0;
+      const kVal = cnnKernel[i][j];
+      sum += inVal * kVal;
+    }
+  }
+  ctx.fillStyle = '#64ffda';
+  ctx.font = '13px monospace';
+  ctx.fillText(`Σ(input ⊙ kernel) = ${sum}`, kernX, compY);
+
+  const outX = kernX;
+  const outY = compY + 30;
+  ctx.fillStyle = '#4ecdc4';
+  ctx.font = '14px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText(`Output (${outSize}×${outSize})  [stride=${stride}, pad=${padding}]`, outX, outY - 12);
+
+  for (let i = 0; i < outSize; i++) {
+    for (let j = 0; j < outSize; j++) {
+      const x = outX + j * cellSize;
+      const y = outY + i * cellSize;
+      const isCurrent = i === posRow && j === posCol;
+      const isPast = i * outSize + j <= pos;
+
+      ctx.fillStyle = isCurrent ? '#4ecdc4' : isPast ? '#1a3a3a' : '#1a1a2e';
+      ctx.fillRect(x, y, cellSize - 1, cellSize - 1);
+
+      if (isPast) {
+        let val = 0;
+        for (let ki = 0; ki < kSize; ki++) {
+          for (let kj = 0; kj < kSize; kj++) {
+            const inI = i * stride + ki - padding;
+            const inJ = j * stride + kj - padding;
+            const inVal = (inI >= 0 && inI < inSize && inJ >= 0 && inJ < inSize) ? cnnInput[inI][inJ] : 0;
+            val += inVal * cnnKernel[ki][kj];
+          }
+        }
+        ctx.fillStyle = isCurrent ? '#000' : '#4ecdc4';
+        ctx.font = '11px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(val, x + cellSize / 2, y + cellSize / 2 + 4);
+      }
+    }
+  }
+
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText(`Position: (${posRow}, ${posCol}) of ${outSize}×${outSize}  |  Step ${pos + 1}/${totalPositions}`, inputX, H - 15);
+}
+
+function stepCNN() {
+  const stride = parseInt(document.getElementById('cnnStride').value);
+  const padding = parseInt(document.getElementById('cnnPad').value);
+  const padInSize = 7 + 2 * padding;
+  const outSize = Math.floor((padInSize - 3) / stride) + 1;
+  cnnPos = Math.min(cnnPos + 1, outSize * outSize - 1);
+  drawCNN();
+}
+
+function resetCNN() {
+  cnnPos = 0;
+  cnnRunning = false;
+  clearInterval(cnnAnimId);
+  document.getElementById('cnnPlayBtn').textContent = '▶ Animate';
+  drawCNN();
+}
+
+function toggleCNN() {
+  if (cnnRunning) {
+    cnnRunning = false;
+    clearInterval(cnnAnimId);
+    document.getElementById('cnnPlayBtn').textContent = '▶ Animate';
+  } else {
+    cnnRunning = true;
+    document.getElementById('cnnPlayBtn').textContent = '⏸ Pause';
+    cnnPos = 0;
+    cnnAnimId = setInterval(() => {
+      const stride = parseInt(document.getElementById('cnnStride').value);
+      const padding = parseInt(document.getElementById('cnnPad').value);
+      const padInSize = 7 + 2 * padding;
+      const outSize = Math.floor((padInSize - 3) / stride) + 1;
+      cnnPos++;
+      drawCNN();
+      if (cnnPos >= outSize * outSize - 1) {
+        cnnRunning = false;
+        clearInterval(cnnAnimId);
+        document.getElementById('cnnPlayBtn').textContent = '▶ Animate';
+      }
+    }, 300);
+  }
+}
+
+// ==================== NORMALIZATION ====================
+let normType = 'bn';
+
+function setNormType(type) {
+  normType = type;
+  ['bn','ln','rms','gn'].forEach(t => document.getElementById('norm'+t.toUpperCase()).classList.toggle('active', t === type));
+  drawNorm();
+}
+
+function drawNorm() {
+  const canvas = document.getElementById('normCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = { l: 80, r: 40, t: 60, b: 40 };
+  const B = 4, C = 6, S = 8;
+  const cellW = 14, cellH = 14;
+
+  const titles = {
+    bn: 'Batch Normalization — normalize across batch for each channel',
+    ln: 'Layer Normalization — normalize across features for each sample',
+    rms: 'RMSNorm — like LayerNorm but without mean subtraction',
+    gn: 'Group Normalization — normalize within channel groups per sample'
+  };
+  ctx.fillStyle = '#ff6b6b';
+  ctx.font = '14px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText(titles[normType], W / 2, 30);
+
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter';
+  ctx.textAlign = 'right';
+
+  const startX = pad.l + 40;
+  const startY = pad.t + 20;
+
+  for (let b = 0; b < B; b++) {
+    const yOff = startY + b * (C * cellH + 16);
+    ctx.fillStyle = '#aaa';
+    ctx.font = '11px Inter';
+    ctx.textAlign = 'right';
+    ctx.fillText(`Sample ${b + 1}`, startX - 8, yOff + C * cellH / 2 + 4);
+
+    for (let c = 0; c < C; c++) {
+      for (let s = 0; s < S; s++) {
+        const x = startX + s * cellW;
+        const y = yOff + c * cellH;
+
+        let highlight = false;
+        if (normType === 'bn') {
+          highlight = (c === 2);
+        } else if (normType === 'ln' || normType === 'rms') {
+          highlight = (b === 1);
+        } else if (normType === 'gn') {
+          highlight = (b === 1 && c < 3);
+        }
+
+        const val = Math.sin(b * 3 + c * 7 + s * 2) * 0.5 + 0.5;
+        if (highlight) {
+          const r = Math.floor(100 + val * 155);
+          const g = Math.floor(50 + val * 50);
+          const bl = Math.floor(50 + val * 50);
+          ctx.fillStyle = `rgb(${r},${g},${bl})`;
+        } else {
+          const v = Math.floor(30 + val * 40);
+          ctx.fillStyle = `rgb(${v},${v},${v + 20})`;
+        }
+        ctx.fillRect(x, y, cellW - 1, cellH - 1);
+      }
+    }
+  }
+
+  ctx.fillStyle = '#888';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  for (let c = 0; c < C; c++) {
+    ctx.fillText(`C${c}`, startX - 18, startY + c * cellH + cellH / 2 + 3);
+  }
+
+  for (let s = 0; s < S; s++) {
+    ctx.fillText(s, startX + s * cellW + cellW / 2, startY - 6);
+  }
+
+  ctx.fillStyle = '#666';
+  ctx.font = '11px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText('Spatial / Feature dimension →', startX + S * cellW / 2, startY - 22);
+
+  const formulas = {
+    bn: 'μ = (1/B)Σxᵢ,  σ² = (1/B)Σ(xᵢ-μ)²,  x̂ = (x-μ)/√(σ²+ε),  y = γx̂+β',
+    ln: 'μ = (1/D)Σxⱼ,  σ² = (1/D)Σ(xⱼ-μ)²,  x̂ = (x-μ)/√(σ²+ε),  y = γx̂+β',
+    rms: 'RMS(x) = √(1/D · Σxⱼ²),  x̂ = x/RMS(x),  y = γx̂    [no mean subtraction!]',
+    gn: 'Like LN but over G groups of C/G channels.  Compromise between BN and LN.'
+  };
+
+  const panelX = startX + S * cellW + 40;
+  ctx.fillStyle = '#1a1a3e';
+  ctx.fillRect(panelX, startY, W - panelX - pad.r, 200);
+  ctx.strokeStyle = '#2a2a4a';
+  ctx.strokeRect(panelX, startY, W - panelX - pad.r, 200);
+
+  ctx.fillStyle = '#ffd93d';
+  ctx.font = '13px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText(normType.toUpperCase(), panelX + 12, startY + 24);
+
+  ctx.fillStyle = '#ccc';
+  ctx.font = '11px monospace';
+  const formula = formulas[normType];
+  const words = formula.split(',');
+  words.forEach((w, i) => {
+    ctx.fillText(w.trim(), panelX + 12, startY + 48 + i * 20);
+  });
+
+  const dimInfo = {
+    bn: 'Normalizes: across batch (B)\nFor each: channel (C)\nProblem: batch-dependent',
+    ln: 'Normalizes: across features (C×S)\nFor each: sample (B)\nUsed in: Transformers',
+    rms: 'Normalizes: across features (C×S)\nFor each: sample (B)\nUsed in: LLaMA, Gemma',
+    gn: 'Normalizes: across group channels\nFor each: sample (B)\nUsed in: Vision (small batch)'
+  };
+  ctx.fillStyle = '#aaa';
+  ctx.font = '11px Inter';
+  dimInfo[normType].split('\n').forEach((line, i) => {
+    ctx.fillText(line, panelX + 12, startY + 130 + i * 18);
+  });
+}
+
+// ==================== RNN/LSTM/GRU ====================
+let rnnType = 'rnn';
+let rnnStep = 0;
+
+function setRNNType(type) {
+  rnnType = type;
+  document.getElementById('rnnTypeRNN').classList.toggle('active', type === 'rnn');
+  document.getElementById('rnnTypeLSTM').classList.toggle('active', type === 'lstm');
+  document.getElementById('rnnTypeGRU').classList.toggle('active', type === 'gru');
+  rnnStep = 0;
+  drawRNN();
+}
+
+function stepRNN() {
+  const seqLen = parseInt(document.getElementById('rnnLen').value);
+  rnnStep = Math.min(rnnStep + 1, seqLen - 1);
+  drawRNN();
+}
+
+function resetRNN() {
+  rnnStep = 0;
+  drawRNN();
+}
+
+function drawRNN() {
+  const canvas = document.getElementById('rnnCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const seqLen = parseInt(document.getElementById('rnnLen').value);
+  document.getElementById('rnnLenVal').textContent = seqLen;
+  ctx.clearRect(0, 0, W, H);
+
+  const title = rnnType === 'rnn' ? 'Vanilla RNN' : rnnType === 'lstm' ? 'LSTM (Long Short-Term Memory)' : 'GRU (Gated Recurrent Unit)';
+  ctx.fillStyle = '#ff6b6b';
+  ctx.font = '16px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText(title, W / 2, 30);
+
+  const cellW = 120, cellH = 100;
+  const startX = 40, startY = 80;
+  const hSize = 24;
+
+  for (let t = 0; t < seqLen; t++) {
+    const x = startX + t * (cellW + 30);
+    const isActive = t === rnnStep;
+
+    ctx.fillStyle = isActive ? '#ff6b6b33' : '#1a1a3e';
+    ctx.fillRect(x, startY, cellW, cellH);
+    ctx.strokeStyle = isActive ? '#ff6b6b' : '#2a2a4a';
+    ctx.lineWidth = isActive ? 2 : 1;
+    ctx.strokeRect(x, startY, cellW, cellH);
+
+    ctx.fillStyle = isActive ? '#ffd93d' : '#888';
+    ctx.font = '13px Inter';
+    ctx.textAlign = 'center';
+    ctx.fillText(`t=${t}`, x + cellW / 2, startY - 8);
+
+    ctx.fillStyle = '#aaa';
+    ctx.font = '11px monospace';
+    ctx.fillText(`x${t}`, x + cellW / 2, startY + 20);
+
+    if (rnnType === 'lstm') {
+      ctx.fillStyle = isActive ? '#64ffda' : '#444';
+      ctx.font = '10px monospace';
+      ctx.fillText('i,f,o gates', x + cellW / 2, startY + 40);
+      ctx.fillText('C_t (cell)', x + cellW / 2, startY + 55);
+      ctx.fillText('h_t (out)', x + cellW / 2, startY + 70);
+    } else if (rnnType === 'gru') {
+      ctx.fillStyle = isActive ? '#64ffda' : '#444';
+      ctx.font = '10px monospace';
+      ctx.fillText('r,z gates', x + cellW / 2, startY + 40);
+      ctx.fillText('h_t', x + cellW / 2, startY + 65);
+    } else {
+      ctx.fillStyle = isActive ? '#64ffda' : '#444';
+      ctx.font = '10px monospace';
+      ctx.fillText('h_t', x + cellW / 2, startY + 55);
+    }
+
+    if (t < seqLen - 1) {
+      ctx.strokeStyle = isActive ? '#ff6b6b' : '#2a2a4a';
+      ctx.lineWidth = isActive ? 2 : 1;
+      ctx.beginPath();
+      ctx.moveTo(x + cellW, startY + cellH / 2);
+      ctx.lineTo(x + cellW + 25, startY + cellH / 2);
+      ctx.stroke();
+    }
+  }
+
+  const formulaY = startY + cellH + 60;
+  ctx.fillStyle = '#ffd93d';
+  ctx.font = '12px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText('Equations:', 40, formulaY);
+
+  ctx.fillStyle = '#ccc';
+  ctx.font = '11px monospace';
+  let formulas = [];
+  if (rnnType === 'rnn') {
+    formulas = [
+      'h_t = tanh(W_hh·h_{t-1} + W_xh·x_t + b_h)',
+      'y_t = W_hy·h_t + b_y',
+      'Problem: tanh derivative ≤ 0.25 → vanishing gradients over time'
+    ];
+  } else if (rnnType === 'lstm') {
+    formulas = [
+      'i_t = σ(W_i[h_{t-1}, x_t] + b_i)  — input gate (what to add)',
+      'f_t = σ(W_f[h_{t-1}, x_t] + b_f)  — forget gate (what to keep)',
+      'C_t = f_t ⊙ C_{t-1} + i_t ⊙ tanh(W_c[h_{t-1}, x_t] + b_c)',
+      'o_t = σ(W_o[h_{t-1}, x_t] + b_o)  — output gate',
+      'h_t = o_t ⊙ tanh(C_t)',
+      'Key: additive path through C_t allows ∂C_t/∂C_{t-1} = f_t (close to 1) → no vanishing!'
+    ];
+  } else {
+    formulas = [
+      'r_t = σ(W_r[h_{t-1}, x_t] + b_r)  — reset gate (forget past)',
+      'z_t = σ(W_z[h_{t-1}, x_t] + b_z)  — update gate (how much new info)',
+      'h̃_t = tanh(W[r_t ⊙ h_{t-1}, x_t] + b)',
+      'h_t = (1 - z_t) ⊙ h_{t-1} + z_t ⊙ h̃_t',
+      'Simpler than LSTM: only 2 gates. Faster but slightly less expressive.'
+    ];
+  }
+
+  formulas.forEach((f, i) => {
+    ctx.fillText(f, 40, formulaY + 25 + i * 18);
+  });
+}
+
+// ==================== FLASH ATTENTION ====================
+let attentionType = 'standard';
+
+function setAttentionType(type) {
+  attentionType = type;
+  document.getElementById('attStdBtn').classList.toggle('active', type === 'standard');
+  document.getElementById('attFlashBtn').classList.toggle('active', type === 'flash');
+  drawFlash();
+}
+
+function drawFlash() {
+  const canvas = document.getElementById('flashCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const N = parseInt(document.getElementById('flashN').value);
+  const d = parseInt(document.getElementById('flashD').value);
+  document.getElementById('flashNVal').textContent = N;
+  document.getElementById('flashDVal').textContent = d;
+
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = { l: 40, r: 40, t: 50, b: 100 };
+  const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+
+  ctx.fillStyle = '#ff6b6b';
+  ctx.font = '15px Inter';
+  ctx.textAlign = 'center';
+  const title = attentionType === 'standard' ? 'Standard Attention: Materialize QK^T' : 'Flash Attention: Tiled Computation';
+  ctx.fillText(title, W / 2, 30);
+
+  if (attentionType === 'standard') {
+    ctx.fillStyle = '#888';
+    ctx.font = '12px Inter';
+    ctx.textAlign = 'left';
+    ctx.fillText('Memory Layout:', pad.l, pad.t + 20);
+
+    const elemSize = 8;
+    let y = pad.t + 50;
+
+    const components = [
+      { name: 'Q (N×d)', size: N * d, color: '#64ffda' },
+      { name: 'K (N×d)', size: N * d, color: '#ffd93d' },
+      { name: 'V (N×d)', size: N * d, color: '#ff6b6b' },
+      { name: 'S = QK^T (N×N)', size: N * N, color: '#7c4dff' },
+      { name: 'P = softmax(S) (N×N)', size: N * N, color: '#4ecdc4' },
+      { name: 'O = PV (N×d)', size: N * d, color: '#64ffda' }
+    ];
+
+    components.forEach(comp => {
+      ctx.fillStyle = comp.color + '88';
+      const barW = Math.min(comp.size / 50, 300);
+      ctx.fillRect(pad.l + 150, y, barW, 20);
+      ctx.strokeStyle = comp.color;
+      ctx.strokeRect(pad.l + 150, y, barW, 20);
+
+      ctx.fillStyle = '#ccc';
+      ctx.font = '11px monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText(comp.name, pad.l + 145, y + 14);
+
+      ctx.textAlign = 'left';
+      ctx.fillText(`${Math.round(comp.size)} B`, pad.l + 460, y + 14);
+
+      y += 30;
+    });
+
+    const totalMem = 3*N*d + 2*N*N + N*d;
+    ctx.fillStyle = '#ffd93d';
+    ctx.font = '12px Inter';
+    ctx.fillText(`Total: ~${(totalMem / (1024*1024)).toFixed(1)}MB (for N=${N}, d=${d})`, pad.l, y + 30);
+
+    ctx.fillStyle = '#ff6b6b';
+    ctx.font = '13px Inter';
+    ctx.fillText('BOTTLENECK: N×N attention matrix requires O(N²) HBM memory!', pad.l, y + 60);
+
+  } else {
+    ctx.fillStyle = '#888';
+    ctx.font = '12px Inter';
+    ctx.textAlign = 'left';
+    ctx.fillText('Tiled Computation (Block Size M, SRAM): Load Q_i, compute with all K,V blocks', pad.l, pad.t + 20);
+
+    const blockSize = 64;
+    const numBlocks = Math.ceil(N / blockSize);
+    const tileW = (pw - 80) / numBlocks;
+    const tileH = 60;
+
+    let x = pad.l + 40;
+    ctx.fillStyle = '#666';
+    ctx.font = '11px Inter';
+    ctx.fillText('Memory moves per block:', pad.l, pad.t + 50);
+
+    for (let i = 0; i < numBlocks; i++) {
+      const blockN = Math.min(blockSize, N - i * blockSize);
+
+      ctx.fillStyle = '#1a1a3e';
+      ctx.fillRect(x, pad.t + 70, tileW, tileH);
+      ctx.strokeStyle = '#64ffda';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x, pad.t + 70, tileW, tileH);
+
+      ctx.fillStyle = '#64ffda';
+      ctx.font = '10px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`Q_${i}`, x + tileW / 2, pad.t + 85);
+      ctx.fillText(`K_${i}, V_${i}`, x + tileW / 2, pad.t + 100);
+      ctx.fillText(`O_${i}`, x + tileW / 2, pad.t + 115);
+
+      x += tileW + 5;
+    }
+
+    const memReduction = 100 * (1 - (3*N*d) / totalMem);
+    ctx.fillStyle = '#64ffda';
+    ctx.font = '13px Inter';
+    ctx.textAlign = 'left';
+    ctx.fillText(`Memory: O(N) instead of O(N²). Same FLOPs, ~4-10x faster due to reduced IO.`, pad.l, pad.t + 160);
+  }
+
+  const totalMem = 3*N*d + 2*N*N + N*d;
+  ctx.fillStyle = '#aaa';
+  ctx.font = '11px Inter';
+  ctx.textAlign = 'left';
+  const stats = [
+    `Sequence length: ${N} tokens`,
+    `Dimension: ${d}`,
+    `Standard memory: O(N²) = O(${(N*N).toLocaleString()}) for attention`,
+    `Flash memory: O(N) + tiling, ~${Math.round(N*N/(N))}x reduction in moves`
+  ];
+  let statsY = H - pad.b + 20;
+  stats.forEach(s => {
+    ctx.fillText(s, pad.l, statsY);
+    statsY += 18;
+  });
+}
+
+// ==================== SCALING LAWS ====================
+let scalingType = 'compute';
+
+function setChinchilla() {
+  document.getElementById('scalingRatio').value = 20;
+  drawScaling();
+}
+
+function setCompute() {
+  document.getElementById('scalingRatio').value = 100;
+  drawScaling();
+}
+
+function drawScaling() {
+  const canvas = document.getElementById('scalingCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const compute = parseInt(document.getElementById('scalingCompute').value);
+  const ratio = parseInt(document.getElementById('scalingRatio').value);
+  document.getElementById('scalingComputeVal').textContent = compute;
+  document.getElementById('scalingRatioVal').textContent = ratio + 'x';
+
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = { l: 80, r: 40, t: 60, b: 60 };
+  const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+
+  ctx.fillStyle = '#ff6b6b';
+  ctx.font = '15px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText('Chinchilla Scaling Laws: Loss vs Model Size & Data', W / 2, 30);
+
+  const xRange = [0.5, 200], yRange = [0.5, 5];
+
+  function toScreen(x, y) {
+    return [
+      pad.l + Math.log(x / xRange[0]) / Math.log(xRange[1] / xRange[0]) * pw,
+      pad.t + (1 - Math.log(y / yRange[0]) / Math.log(yRange[1] / yRange[0])) * ph
+    ];
+  }
+
+  ctx.strokeStyle = '#222';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]);
+  for (let logX = -1; logX <= 2.5; logX++) {
+    const x = Math.pow(10, logX);
+    const [sx] = toScreen(x, 1);
+    ctx.beginPath(); ctx.moveTo(sx, pad.t); ctx.lineTo(sx, H - pad.b); ctx.stroke();
+  }
+  for (let logY = -1; logY <= 1; logY++) {
+    const y = Math.pow(10, logY);
+    const [, sy] = toScreen(1, y);
+    ctx.beginPath(); ctx.moveTo(pad.l, sy); ctx.lineTo(W - pad.r, sy); ctx.stroke();
+  }
+  ctx.setLineDash([]);
+
+  const alpha = 0.07, beta = 0.07;
+  const params = Math.pow(10, compute / 3.33);
+  const tokens = params * ratio;
+
+  ctx.strokeStyle = '#64ffda';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  for (let logX = -0.5; logX <= 2.3; logX += 0.05) {
+    const N = Math.pow(10, logX);
+    const loss = 1.0 + 0.5 / Math.pow(N, alpha) + 0.5 / Math.pow(tokens / N, beta);
+    const [sx, sy] = toScreen(N, Math.max(loss, 0.5));
+    if (logX === -0.5) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+  }
+  ctx.stroke();
+
+  const [optX, optY] = toScreen(params, 1.0 + 0.5/Math.pow(params, alpha) + 0.5/Math.pow(tokens/params, beta));
+  ctx.fillStyle = '#ff6b6b';
+  ctx.beginPath();
+  ctx.arc(optX, optY, 6, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = '#444';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.l, pad.t);
+  ctx.lineTo(pad.l, H - pad.b);
+  ctx.lineTo(W - pad.r, H - pad.b);
+  ctx.stroke();
+
+  ctx.fillStyle = '#888';
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'center';
+  for (let logX = 0; logX <= 2; logX++) {
+    const x = Math.pow(10, logX);
+    const [sx] = toScreen(x, 1);
+    ctx.fillText(`10^${logX}`, sx, H - pad.b + 18);
+  }
+
+  ctx.save();
+  ctx.translate(20, H / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.textAlign = 'center';
+  ctx.fillText('Loss (log scale)', 0, 0);
+  ctx.restore();
+
+  ctx.textAlign = 'center';
+  ctx.fillText('Model size (log scale)', W / 2, H - 10);
+
+  ctx.fillStyle = '#ccc';
+  ctx.font = '12px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText(`Optimal: ${Math.round(params)}B params × ${Math.round(tokens / 1e9)}B tokens = 10^${compute} FLOPs`, pad.l, pad.t - 30);
+  ctx.fillText(`Ratio: ${ratio}x data:params`, pad.l, pad.t - 10);
+}
+
+// ==================== INIT ====================
+initCNN();
+drawNN();
+drawAct();
+drawVG();
+drawCNN();
+drawNorm();
+drawRNN();
+drawFlash();
+drawScaling();
+</script>
+</body>
+</html>

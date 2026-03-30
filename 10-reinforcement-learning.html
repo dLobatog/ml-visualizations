@@ -1,0 +1,1418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reinforcement Learning - Interactive Visualization</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a0a0f;
+            color: #e0e0e0;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #12121f 0%, #1a1a2e 100%);
+            padding: 40px 20px;
+            text-align: center;
+            border-bottom: 2px solid #ff9f43;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            color: #ff9f43;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            color: #b0b0b0;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .section {
+            background: #12121f;
+            border-radius: 8px;
+            padding: 30px;
+            margin: 20px 0;
+            border-left: 4px solid #ff9f43;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .section h2 {
+            font-size: 1.8em;
+            color: #ff9f43;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-content {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .visualization {
+            flex: 1;
+            min-width: 400px;
+            background: #0a0a0f;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        canvas {
+            border: 1px solid #ff9f43;
+            border-radius: 4px;
+            display: block;
+            margin-bottom: 15px;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            min-width: 250px;
+        }
+
+        .control-group {
+            background: #0a0a0f;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #2a2a3f;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #ff9f43;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        .control-group input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #2a2a3f;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .control-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #ff9f43;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(255, 159, 67, 0.5);
+        }
+
+        .control-group input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #ff9f43;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 0 10px rgba(255, 159, 67, 0.5);
+        }
+
+        .value-display {
+            text-align: right;
+            color: #ff9f43;
+            font-weight: 600;
+            font-size: 0.95em;
+        }
+
+        button {
+            background: #ff9f43;
+            color: #0a0a0f;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.95em;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        button:hover {
+            background: #ffb366;
+            box-shadow: 0 0 15px rgba(255, 159, 67, 0.6);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+      
+      
+        .equation {
+            background: #0a0a0f;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+            border: 1px solid #2a2a3f;
+            color: #ffb366;
+            font-size: 0.9em;
+            overflow-x: auto;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .stat-item {
+            background: #0a0a0f;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #2a2a3f;
+            text-align: center;
+        }
+
+        .stat-label {
+            color: #b0b0b0;
+            font-size: 0.85em;
+        }
+
+        .stat-value {
+            color: #ff9f43;
+            font-size: 1.3em;
+            font-weight: 600;
+            margin-top: 5px;
+        }
+
+        .legend {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+            font-size: 0.9em;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+            flex-shrink: 0;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #2a2a3f;
+        }
+
+        .tab {
+            padding: 12px 20px;
+            background: transparent;
+            border: none;
+            color: #b0b0b0;
+            cursor: pointer;
+            font-weight: 600;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+            width: auto;
+        }
+
+        .tab.active {
+            color: #ff9f43;
+            border-bottom-color: #ff9f43;
+        }
+
+        .tab:hover {
+            color: #ff9f43;
+            background: rgba(255, 159, 67, 0.1);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .diagram {
+            background: #0a0a0f;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #2a2a3f;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 1024px) {
+            .section-content {
+                flex-direction: column;
+            }
+
+            .visualization {
+                min-width: 100%;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+        }
+
+        .status-bar {
+            background: #0a0a0f;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #2a2a3f;
+            font-size: 0.85em;
+            color: #b0b0b0;
+            margin-top: 10px;
+        }
+    
+  .insight-box { background: linear-gradient(135deg, #1a1a3e 0%, #151530 100%); border-left: 4px solid #ff9f43; padding: 20px 24px; margin-top: 20px; border-radius: 0 12px 12px 0; font-size: 0.92em; color: #ccc; line-height: 1.8; }
+  .insight-box strong { color: #ff9f43; font-size: 1.05em; }
+  .insight-box .formula { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 12px 18px; margin: 12px 0; font-family: 'Courier New', monospace; color: #e8e8ff; font-size: 1.05em; text-align: center; letter-spacing: 0.5px; line-height: 1.9; }
+  .insight-box .formula .highlight { color: #ff9f43; font-weight: bold; }
+  .insight-box .key-point { display: flex; gap: 8px; margin: 8px 0; padding: 4px 0; }
+  .insight-box .key-point .label { color: #ff9f43; font-weight: 600; white-space: nowrap; min-width: 90px; }
+  .insight-box .key-point .desc { color: #ddd; }
+  .insight-box .interview-tip { background: rgba(100, 255, 100, 0.05); border: 1px solid rgba(100, 255, 100, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #b0ffb0; font-size: 0.93em; line-height: 1.6; }
+  .insight-box .interview-tip::before { content: '\1F4A1  Interview Tip: '; font-weight: 700; color: #7fff7f; }
+  .insight-box .mnemonic { background: rgba(255, 150, 255, 0.05); border: 1px solid rgba(255, 150, 255, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #ffb0ff; font-size: 0.93em; line-height: 1.6; }
+  .insight-box .mnemonic::before { content: '\1F9E0  Remember: '; font-weight: 700; color: #ff7fff; }
+  .insight-box .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+  .insight-box .comparison .option { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 10px 14px; }
+  .insight-box .comparison .option .opt-title { color: #ff9f43; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
+  .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
+  .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
+
+</style>
+</head>
+<body>
+    <div class="header">
+        <h1>🧠 Reinforcement Learning</h1>
+        <p>Interactive Visualization for ML Interview Prep</p>
+    </div>
+
+    <div class="container">
+        <!-- Section 1: MDP -->
+        <div class="section">
+            <h2>1️⃣ Markov Decision Process (MDP)</h2>
+            <div class="section-content">
+                <div class="visualization">
+                    <canvas id="mdpCanvas" width="450" height="450"></canvas>
+                    <div class="stats">
+                        <div class="stat-item">
+                            <div class="stat-label">Current State</div>
+                            <div class="stat-value" id="mdpState">-</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Cumulative Reward</div>
+                            <div class="stat-value" id="mdpReward">0</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Avg V(s)</div>
+                            <div class="stat-value" id="mdpValue">0.00</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="controls">
+                    <div class="control-group">
+                        <label>Goal Reward</label>
+                        <input type="range" id="mdpGoalReward" min="-10" max="100" value="10" step="1">
+                        <div class="value-display" id="mdpGoalRewardVal">+10</div>
+                    </div>
+                    <div class="control-group">
+                        <label>Step Penalty</label>
+                        <input type="range" id="mdpStepCost" min="-1" max="0" value="-0.1" step="0.1">
+                        <div class="value-display" id="mdpStepCostVal">-0.1</div>
+                    </div>
+                    <div class="control-group">
+                        <label>Discount Factor (γ)</label>
+                        <input type="range" id="mdpGamma" min="0.5" max="1" value="0.95" step="0.05">
+                        <div class="value-display" id="mdpGammaVal">0.95</div>
+                    </div>
+                    <button onclick="resetMDP()">Reset Grid</button>
+                    <button onclick="computeMDPValues()">Compute Values</button>
+                </div>
+            </div>
+            <div class="equation">V(s) = E[R + γ·V(s')] | Bellman Expectation Equation</div>
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #4a9eff;"></div>
+                    <span>Agent</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #2ecc71;"></div>
+                    <span>Goal</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #e74c3c;"></div>
+                    <span>Obstacle</span>
+                </div>
+            </div>
+            <div class="insight-box">
+                <p><strong>Core Concept:</strong> Markov Decision Processes (MDPs) formalize sequential decision-making. An MDP has states S, actions A, transition dynamics P(s'|s,a), rewards R(s,a,s'), and discount γ ∈ [0,1].</p>
+                <div class="formula">V(s) = E[Σ γ^t R_t | starting from s under optimal policy]</div>
+                <div class="key-point"><span class="label">V(s):</span><span class="desc">State value function; expected cumulative discounted reward from state s under optimal policy</span></div>
+                <div class="key-point"><span class="label">E[·]:</span><span class="desc">Expectation over randomness in transitions and rewards</span></div>
+                <div class="key-point"><span class="label">Σ γ^t R_t:</span><span class="desc">Sum of discounted rewards; return G_t = R_t + γR_{t+1} + γ²R_{t+2} + ...</span></div>
+                <div class="key-point"><span class="label">γ:</span><span class="desc">Discount factor ∈ [0,1); how much to value future rewards relative to immediate. Typical: 0.99</span></div>
+                <div class="key-point"><span class="label">R_t:</span><span class="desc">Reward at time step t; scalar signal of immediate performance</span></div>
+                <div class="key-point"><span class="label">π*:</span><span class="desc">Optimal policy; maximizes V(s); can be deterministic or stochastic</span></div>
+                <div class="key-point"><span class="label">Markov Property:</span><span class="desc">Future depends only on current state, not history (memoryless)</span></div>
+                <div class="key-point"><span class="label">Policy π(a|s):</span><span class="desc">Maps states to action distributions; π* maximizes expected return</span></div>
+                <hr class="divider">
+                <p><strong>Key Mathematical Intuition:</strong></p>
+                <div class="formula">V(s) = E[R(s,a,s') + <span class="highlight">γV(s')</span> | a~π(s)]</div>
+                <div class="key-point"><span class="label">V(s):</span><span class="desc">Current state value</span></div>
+                <div class="key-point"><span class="label">R(s,a,s'):</span><span class="desc">Expected reward for action a taken in state s, transitioning to s'</span></div>
+                <div class="key-point"><span class="label">γ:</span><span class="desc">Discount factor ∈ [0,1); weights future value. Typical: 0.99</span></div>
+                <div class="key-point"><span class="label">V(s'):</span><span class="desc">Value of successor state s'; enables dynamic programming recursion</span></div>
+                <div class="key-point"><span class="label">a~π(s):</span><span class="desc">Action sampled from policy π(a|s); distributes expectation over action probabilities</span></div>
+                <p style="margin: 8px 0; font-size: 0.95em;">Bellman equation: state value equals immediate reward plus discounted successor value.</p>
+                <div class="comparison">
+                    <div class="option">
+                        <div class="opt-title">Value V(s)</div>
+                        <div class="opt-desc">Expected return from state; enables value iteration</div>
+                    </div>
+                    <div class="option">
+                        <div class="opt-title">Q-function Q(s,a)</div>
+                        <div class="opt-desc">Expected return from state+action; Q = E[R + γV(s')]</div>
+                    </div>
+                    <div class="option">
+                        <div class="opt-title">Low γ (→0)</div>
+                        <div class="opt-desc">Myopic: prioritizes immediate rewards</div>
+                    </div>
+                    <div class="option">
+                        <div class="opt-title">High γ (→1)</div>
+                        <div class="opt-desc">Farsighted: balances long-term rewards</div>
+                    </div>
+                </div>
+                <hr class="divider">
+                <div class="interview-tip">Why does Markov assumption matter? It enables dynamic programming solutions; without it, you'd need full history, making problems intractable.</div>
+                <div class="mnemonic">Think: Bellman = backwards induction. Each state's value = what you get now + discounted value of successor states.</div>
+                <p><strong>Interview Gotchas:</strong> Markov property is strong (not all problems satisfy it); Value iteration rate depends on γ and space size; Large spaces need function approximation; Exploration-exploitation is orthogonal to MDPs.</p>
+                <p><strong>Production Tips:</strong> Verify Markov assumption holds. Use γ=0.99 for long horizons. Function approximation essential for continuous spaces. Monitor episode returns. Always simulate offline before deployment.</p>
+            </div>
+        </div>
+
+        <!-- Section 2: Q-Learning -->
+        <div class="section">
+            <h2>2️⃣ Q-Learning (Temporal Difference)</h2>
+            <div class="section-content">
+                <div class="visualization">
+                    <canvas id="qlearningCanvas" width="450" height="450"></canvas>
+                    <div class="stats">
+                        <div class="stat-item">
+                            <div class="stat-label">Episode</div>
+                            <div class="stat-value" id="qlEpisode">0</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Total Reward</div>
+                            <div class="stat-value" id="qlReward">0</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Q-table Size</div>
+                            <div class="stat-value" id="qlTableSize">0</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="controls">
+                    <div class="control-group">
+                        <label>Learning Rate (α)</label>
+                        <input type="range" id="qlAlpha" min="0.01" max="0.5" value="0.1" step="0.01">
+                        <div class="value-display" id="qlAlphaVal">0.10</div>
+                    </div>
+                    <div class="control-group">
+                        <label>Discount Factor (γ)</label>
+                        <input type="range" id="qlGamma" min="0.5" max="1" value="0.95" step="0.05">
+                        <div class="value-display" id="qlGammaVal">0.95</div>
+                    </div>
+                    <div class="control-group">
+                        <label>Exploration (ε)</label>
+                        <input type="range" id="qlEpsilon" min="0" max="1" value="0.2" step="0.05">
+                        <div class="value-display" id="qlEpsilonVal">0.20</div>
+                    </div>
+                    <div class="control-group">
+                        <label>Episodes to Run</label>
+                        <input type="range" id="qlEpisodes" min="10" max="500" value="100" step="10">
+                        <div class="value-display" id="qlEpisodesVal">100</div>
+                    </div>
+                    <button onclick="runQLearning()">Train Q-Learning</button>
+                    <button onclick="resetQLearning()">Reset</button>
+                </div>
+            </div>
+            <div class="equation">Q(s,a) ← Q(s,a) + α[r + γ·max Q(s',a') - Q(s,a)]</div>
+            <div class="insight-box">
+                <p><strong>Core Concept:</strong> Q-learning is a model-free, off-policy temporal-difference algorithm for learning optimal action-values Q(s,a). Learns from experience without knowing P or R.</p>
+                <div class="formula">Q(s,a) ← Q(s,a) + α[R + <span class="highlight">γ max Q(s',a')</span> - Q(s,a)]</div>
+                <div class="key-point"><span class="label">Q(s,a):</span><span class="desc">Action-value function; expected return from taking action a in state s, then following optimal policy</span></div>
+                <div class="key-point"><span class="label">α:</span><span class="desc">Learning rate ∈ (0,1]; step size for each update. Typical: 0.01-0.1. Lower = more stable, slower convergence</span></div>
+                <div class="key-point"><span class="label">R:</span><span class="desc">Immediate reward received after taking action a in state s</span></div>
+                <div class="key-point"><span class="label">γ:</span><span class="desc">Discount factor ∈ [0,1); devalues future rewards. Typical: 0.99</span></div>
+                <div class="key-point"><span class="label">max Q(s',a'):</span><span class="desc">Maximum Q-value over all possible actions a' in next state s' (greedy lookahead)</span></div>
+                <div class="key-point"><span class="label">δ (TD Error):</span><span class="desc">R + γ max Q(s',a') - Q(s,a); measures prediction error, drives updates toward better estimates</span></div>
+                <div class="key-point"><span class="label">Off-Policy:</span><span class="desc">Uses greedy max for update; behavior policy can differ from target policy</span></div>
+                <hr class="divider">
+                <p><strong>Key Insight vs. SARSA:</strong></p>
+                <div class="comparison">
+                    <div class="option">
+                        <div class="opt-title">Q-Learning (Off-Policy)</div>
+                        <div class="opt-desc">Uses max action in target; optimistic; enables off-policy updates</div>
+                    </div>
+                    <div class="option">
+                        <div class="opt-title">SARSA (On-Policy)</div>
+                        <div class="opt-desc">Uses actual action taken; pessimistic; slower but safer</div>
+                    </div>
+                </div>
+                <hr class="divider">
+                <div class="interview-tip">Q-learning converges in tabular case if every s,a pair visited infinitely often with decaying learning rate. In practice, function approximation breaks these guarantees.</div>
+                <div class="mnemonic">Q-Learning: Maximize future Q values (greedy bootstrap). The max makes it optimistic and off-policy—you explore but learn about the best policy.</div>
+                <p><strong>Key Gotchas:</strong> Overestimation bias from max (max_a Q is biased up); Function approximation breaks convergence; Off-policy divergence if policies drift; ε-greedy is inefficient.</p>
+                <p><strong>Production Solutions:</strong> Double DQN (separate target/online networks for bias reduction); Experience replay (decorrelates samples); Slow target network updates (stable targets); Policy gradients for continuous control; Monitor Q-value distributions for explosions; Always simulate before deployment.</p>
+            </div>
+        </div>
+
+        <!-- Section 3: Policy Gradient / REINFORCE -->
+        <div class="section">
+            <h2>3️⃣ Policy Gradient (REINFORCE)</h2>
+            <div class="section-content">
+                <div class="visualization">
+                    <canvas id="pgCanvas" width="450" height="450"></canvas>
+                    <div class="stats">
+                        <div class="stat-item">
+                            <div class="stat-label">Step</div>
+                            <div class="stat-value" id="pgStep">0</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Return (G)</div>
+                            <div class="stat-value" id="pgReturn">0</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Policy Entropy</div>
+                            <div class="stat-value" id="pgEntropy">0.00</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="controls">
+                    <div class="control-group">
+                        <label>Learning Rate (α)</label>
+                        <input type="range" id="pgAlpha" min="0.001" max="0.1" value="0.01" step="0.001">
+                        <div class="value-display" id="pgAlphaVal">0.010</div>
+                    </div>
+                    <div class="control-group">
+                        <label>Discount Factor (γ)</label>
+                        <input type="range" id="pgGamma" min="0.5" max="1" value="0.99" step="0.05">
+                        <div class="value-display" id="pgGammaVal">0.99</div>
+                    </div>
+                    <div class="control-group">
+                        <label>Episodes</label>
+                        <input type="range" id="pgEpisodes" min="10" max="500" value="100" step="10">
+                        <div class="value-display" id="pgEpisodesVal">100</div>
+                    </div>
+                    <button onclick="runPolicyGradient()">Train REINFORCE</button>
+                    <button onclick="resetPolicyGradient()">Reset</button>
+                </div>
+            </div>
+            <div class="equation">∇J(θ) = E[∇log π(a|s,θ) · G_t]  ← Policy Gradient Theorem</div>
+            <div class="equation">θ ← θ + α·∇log π(a|s,θ) · G_t</div>
+            <div class="insight-box">
+                <p><strong>Core Concept:</strong> Policy gradient methods directly optimize policy π_θ(a|s) instead of learning value functions. Enables stochastic policies and continuous control.</p>
+                <div class="formula">∇J(θ) = E[∇log π_θ(a|s) · Q(s,a)]</div>
+                <div class="key-point"><span class="label">∇J(θ):</span><span class="desc">Gradient of objective function J with respect to policy parameters θ</span></div>
+                <div class="key-point"><span class="label">π_θ(a|s):</span><span class="desc">Parameterized policy; probability of action a given state s, with parameters θ</span></div>
+                <div class="key-point"><span class="label">∇log π_θ(a|s):</span><span class="desc">Score function; gradient of log probability. Gradient flows through stochastic policy</span></div>
+                <div class="key-point"><span class="label">Q(s,a):</span><span class="desc">Action-value estimate; controls variance of gradient. Can use returns or learned Q</span></div>
+                <div class="key-point"><span class="label">E[·]:</span><span class="desc">Expectation over states and actions during rollout</span></div>
+                <p style="margin: 8px 0; font-size: 0.93em; text-align: center; color: #ddd;">Policy Gradient Theorem: gradient increases probability of high-value actions</p>
+                <div class="key-point"><span class="label">REINFORCE:</span><span class="desc">Uses full return G_t = Σγ^k R_{t+k} as Q estimate; high variance</span></div>
+                <div class="key-point"><span class="label">Log-Trick:</span><span class="desc">∇π = π ∇log π allows backprop through stochastic policy</span></div>
+                <div class="key-point"><span class="label">Advantage:</span><span class="desc">A(s,a) = Q(s,a) - V(s) reduces variance without bias (baseline cancels)</span></div>
+                <hr class="divider">
+                <p><strong>Algorithm Variants:</strong></p>
+                <div class="comparison">
+                    <div class="option">
+                        <div class="opt-title">REINFORCE</div>
+                        <div class="opt-desc">Monte-Carlo returns; simple but high variance</div>
+                    </div>
+                    <div class="option">
+                        <div class="opt-title">Actor-Critic</div>
+                        <div class="opt-desc">Critic estimates V(s); lower variance via advantage</div>
+                    </div>
+                    <div class="option">
+                        <div class="opt-title">PPO</div>
+                        <div class="opt-desc">Clipped objective; stable large updates</div>
+                    </div>
+                    <div class="option">
+                        <div class="opt-title">TRPO</div>
+                        <div class="opt-desc">KL constraint on updates; theoretically principled</div>
+                    </div>
+                </div>
+                <hr class="divider">
+                <div class="interview-tip">Log-probability trick is key: you can't backprop through stochasticity, but you can backprop through log(π)—differentiate the log, then multiply by the result.</div>
+                <div class="mnemonic">Actor-Critic = actor (policy) makes decisions, critic (value) evaluates them. Critic reduces variance of policy gradients via advantage estimation.</div>
+                <p><strong>Key Gotchas:</strong> REINFORCE high variance without baselines; Critic bias if poorly trained; High sample complexity; Local optima common; Off-policy corrections can explode.</p>
+                <p><strong>Production Best Practices:</strong> Use PPO/TRPO for stability (clip/trust region updates); Actor-critic more sample-efficient; GAE balances bias-variance; Monitor policy entropy; Test exhaustively (can exploit simulator); Continuous control is PG sweet spot.</p>
+            </div>
+        </div>
+
+        <!-- Section 4: Exploration vs Exploitation -->
+        <div class="section">
+            <h2>4️⃣ Exploration vs Exploitation (Multi-Armed Bandit)</h2>
+            <div class="tabs">
+                <button class="tab active" onclick="switchBanditTab(0)">ε-Greedy</button>
+                <button class="tab" onclick="switchBanditTab(1)">UCB</button>
+                <button class="tab" onclick="switchBanditTab(2)">Thompson Sampling</button>
+            </div>
+            <div class="section-content">
+                <div class="visualization">
+                    <canvas id="banditCanvas" width="450" height="350"></canvas>
+                    <div class="stats">
+                        <div class="stat-item">
+                            <div class="stat-label">Total Reward</div>
+                            <div class="stat-value" id="banditReward">0</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Regret</div>
+                            <div class="stat-value" id="banditRegret">0</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Best Arm</div>
+                            <div class="stat-value" id="banditBest">-</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="controls">
+                    <div class="control-group">
+                        <label id="banditLabel1">Exploration (ε)</label>
+                        <input type="range" id="banditParam1" min="0" max="1" value="0.1" step="0.05">
+                        <div class="value-display" id="banditParam1Val">0.10</div>
+                    </div>
+                    <div class="control-group">
+                        <label id="banditLabel2">Confidence Bonus (c)</label>
+                        <input type="range" id="banditParam2" min="0.1" max="2" value="1" step="0.1">
+                        <div class="value-display" id="banditParam2Val">1.00</div>
+                    </div>
+                    <div class="control-group">
+                        <label>Pulls per Step</label>
+                        <input type="range" id="banditSteps" min="100" max="5000" value="1000" step="100">
+                        <div class="value-display" id="banditStepsVal">1000</div>
+                    </div>
+                    <button onclick="runBandit()">Run Simulation</button>
+                </div>
+            </div>
+            <div class="insight-box">
+                <p><strong>Core Concept:</strong> Multi-armed bandits isolate exploration-exploitation tradeoff. K arms with unknown reward distributions; no states, no sequential dependence.</p>
+                <div class="formula">Regret_T = E[Σ R*(a) - Σ R(a_t)] over T rounds</div>
+                <div class="key-point"><span class="label">Regret_T:</span><span class="desc">Cumulative performance gap; sum of optimal rewards minus actual rewards. Lower = better exploration-exploitation balance</span></div>
+                <div class="key-point"><span class="label">R*(a):</span><span class="desc">Reward of optimal arm in round; R* = max_a μ_a (best expected payoff)</span></div>
+                <div class="key-point"><span class="label">R(a_t):</span><span class="desc">Actual reward from chosen arm a_t at round t</span></div>
+                <div class="key-point"><span class="label">T:</span><span class="desc">Total number of rounds; longer horizon → larger regret. Regret rate (regret/T) → 0 = good algorithm</span></div>
+                <div class="key-point"><span class="label">E[·]:</span><span class="desc">Expectation over arm reward distributions and algorithm randomness</span></div>
+                <div class="key-point"><span class="label">ε-Greedy:</span><span class="desc">Exploit best arm (1-ε); explore uniform (ε). Regret: O(εT + (1-ε)K log T)</span></div>
+                <div class="key-point"><span class="label">UCB:</span><span class="desc">Q̂(a) + c√(ln T / n(a)) = empirical + uncertainty bonus. Regret: O(log T)</span></div>
+                <div class="key-point"><span class="label">Thompson Sampling:</span><span class="desc">Bayesian posterior; sample rewards, play best. Regret: O(log T)</span></div>
+                <hr class="divider">
+                <p><strong>Regret Analysis:</strong></p>
+                <div class="comparison">
+                    <div class="option">
+                        <div class="opt-title">ε-Greedy</div>
+                        <div class="opt-desc">O(εT): linear term is wasted; suboptimal</div>
+                    </div>
+                    <div class="option">
+                        <div class="opt-title">UCB</div>
+                        <div class="opt-desc">O(log T): exploration bonus shrinks; theoretically optimal</div>
+                    </div>
+                    <div class="option">
+                        <div class="opt-title">Thompson Sampling</div>
+                        <div class="opt-desc">O(log T): posterior concentrates; empirically fastest</div>
+                    </div>
+                </div>
+                <hr class="divider">
+                <div class="interview-tip">Lower bound on regret is Ω(log T). Only UCB and Thompson Sampling achieve this; ε-greedy is fundamentally suboptimal (linear waste term).</div>
+                <div class="mnemonic">UCB = empirical mean + exploration bonus that shrinks as arm is played. Thompson = posterior samples naturally balance exploration (high uncertainty) and exploitation (posterior peaks).</div>
+                <p><strong>Key Gotchas:</strong> ε-greedy regret is linear in T (bad for long horizons); UCB constant c requires tuning; Thompson Sampling needs Bayesian inference; Contextual bandits are realistic but harder.</p>
+                <p><strong>Production Best Practices:</strong> Use Thompson Sampling for A/B testing/ad serving (auto-balances, easy to explain); UCB for explicit control; Avoid ε-greedy unless trivial; Contextual variants (LinUCB, ContextTS) for recommendations; Monitor arm frequencies; Cold-start: all arms equally unknown.</p>
+            </div>
+        </div>
+
+        <!-- Section 5: RLHF -->
+        <div class="section">
+            <h2>5️⃣ RLHF (RL from Human Feedback)</h2>
+            <div class="section-content">
+                <div class="visualization">
+                    <canvas id="rlhfCanvas" width="450" height="400"></canvas>
+                </div>
+                <div class="controls">
+                    <div class="control-group">
+                        <label>KL Penalty (β)</label>
+                        <input type="range" id="rlhfBeta" min="0.01" max="1" value="0.1" step="0.05">
+                        <div class="value-display" id="rlhfBetaVal">0.10</div>
+                    </div>
+                    <div class="control-group">
+                        <label>Reward Model Accuracy</label>
+                        <input type="range" id="rlhfAccuracy" min="0.5" max="1" value="0.85" step="0.05">
+                        <div class="value-display" id="rlhfAccuracyVal">0.85</div>
+                    </div>
+                    <div class="control-group">
+                        <label>PPO Epochs</label>
+                        <input type="range" id="rlhfEpochs" min="1" max="10" value="3" step="1">
+                        <div class="value-display" id="rlhfEpochsVal">3</div>
+                    </div>
+                    <button onclick="runRLHF()">Simulate RLHF</button>
+                    <div class="status-bar" id="rlhfStatus">Ready</div>
+                </div>
+            </div>
+            <div class="equation">Loss = -E[min(r_t·Â, clip(r_t, 1-ε, 1+ε)·Â)] - β·KL(π_new || π_ref)</div>
+            <div class="insight-box">
+                <p><strong>Core Concept:</strong> RLHF aligns LLMs with human preferences via reinforcement learning. No explicit reward labels; instead, learn from preference comparisons.</p>
+                <div class="formula">Loss = -E[min(r_t·Â, clip(r_t, 1-ε, 1+ε)·Â)] - β·KL(π_new || π_ref)</div>
+                <div class="key-point"><span class="label">Loss:</span><span class="desc">Objective to minimize (negative because we maximize reward and penalize divergence)</span></div>
+                <div class="key-point"><span class="label">r_t:</span><span class="desc">Probability ratio = π_new(a_t|s_t) / π_ref(a_t|s_t); >1 means new policy more likely than reference</span></div>
+                <div class="key-point"><span class="label">Â:</span><span class="desc">Advantage estimate; reward_model(s_t,a_t) - baseline. Positive = good actions, negative = bad</span></div>
+                <div class="key-point"><span class="label">clip(r_t, 1-ε, 1+ε):</span><span class="desc">Clips ratio to prevent too-large policy changes. Typical ε = 0.2; prevents instability</span></div>
+                <div class="key-point"><span class="label">β:</span><span class="desc">KL penalty weight ∈ [0.05, 1]; higher β = stricter adherence to reference. Typical: 0.1-1.0</span></div>
+                <div class="key-point"><span class="label">KL(π_new || π_ref):</span><span class="desc">Kullback-Leibler divergence; measures distributional distance. Prevents mode collapse to reward gaming</span></div>
+                <div class="key-point"><span class="label">π_ref:</span><span class="desc">Reference policy (usually SFT model); keeps new policy from drifting too far</span></div>
+                <p style="margin: 8px 0; font-size: 0.93em; text-align: center; color: #ddd;">PPO with KL penalty: maximize reward while staying close to reference model</p>
+                <div class="key-point"><span class="label">Pipeline Step 1:</span><span class="desc">SFT on human examples to bootstrap quality</span></div>
+                <div class="key-point"><span class="label">Pipeline Step 2:</span><span class="desc">Collect human preferences (A vs B comparisons)</span></div>
+                <div class="key-point"><span class="label">Pipeline Step 3:</span><span class="desc">Train reward model via Bradley-Terry logistic regression</span></div>
+                <div class="key-point"><span class="label">Pipeline Step 4:</span><span class="desc">RL fine-tune LLM on reward signal with KL regularization</span></div>
+                <hr class="divider">
+                <p><strong>Bradley-Terry Model:</strong></p>
+                <div class="formula">P(y ≻ x) = σ(R(x,y))</div>
+                <div class="key-point"><span class="label">P(y ≻ x):</span><span class="desc">Probability that response y is preferred over response x; ∈ [0,1]</span></div>
+                <div class="key-point"><span class="label">σ(·):</span><span class="desc">Sigmoid activation σ(z) = 1/(1+e^{-z}); maps real numbers to [0,1]</span></div>
+                <div class="key-point"><span class="label">R(x,y):</span><span class="desc">Scalar reward difference from learned reward model; R(x,y) = r_θ(y) - r_θ(x)</span></div>
+                <div class="key-point"><span class="label">r_θ:</span><span class="desc">Learned reward model (neural network); outputs scalar reward for text pair</span></div>
+                <p style="margin: 8px 0; font-size: 0.93em;">Preference probability = sigmoid of reward difference; trainable via cross-entropy</p>
+                <hr class="divider">
+                <div class="interview-tip">KL penalty is crucial: without it, LLM mode-collapses to trivial outputs that maximally exploit the reward model. KL keeps it close to SFT baseline.</div>
+                <div class="mnemonic">RLHF = teach model to please humans. Bradley-Terry = learn what humans like. PPO+KL = apply RL while staying sensible. Three-stage dance between SFT, reward, and policy.</div>
+                <p><strong>Key Challenges:</strong> Reward hacking (exploiting model weaknesses); Expensive annotation with labeler bias; Reward model overfits or goes off-distribution; KL tuning critical; Computational cost high.</p>
+                <p><strong>Production Best Practices:</strong> Multiple annotators, measure agreement; Diverse preference data; Monitor RM accuracy on held-out; Use β ≈ 0.1-1.0; Test on multiple benchmarks; Iteratively improve RM as LLM improves; Static RM becomes suboptimal over time.</p>
+            </div>
+        </div>
+
+        <div style="text-align: center; color: #b0b0b0; margin-top: 40px; padding: 20px;">
+            <p>Interactive ML Interview Prep • Reinforcement Learning Fundamentals</p>
+        </div>
+    </div>
+
+    <script>
+        // ============= MDP Visualization =============
+        const mdpCtx = document.getElementById('mdpCanvas').getContext('2d');
+        const gridSize = 5;
+        const cellSize = 90;
+        let mdpAgent = { x: 0, y: 0 };
+        let mdpGoal = { x: 4, y: 4 };
+        let mdpObstacles = [{ x: 2, y: 2 }];
+        let mdpValues = new Array(gridSize * gridSize).fill(0);
+        let mdpCumulativeReward = 0;
+
+        function drawMDP() {
+            mdpCtx.fillStyle = '#0a0a0f';
+            mdpCtx.fillRect(0, 0, 450, 450);
+
+            for (let i = 0; i < gridSize; i++) {
+                for (let j = 0; j < gridSize; j++) {
+                    let x = i * cellSize;
+                    let y = j * cellSize;
+
+                    // Check cell type
+                    let isAgent = mdpAgent.x === i && mdpAgent.y === j;
+                    let isGoal = mdpGoal.x === i && mdpGoal.y === j;
+                    let isObstacle = mdpObstacles.some(o => o.x === i && o.y === j);
+
+                    // Draw cell background
+                    if (isGoal) {
+                        mdpCtx.fillStyle = '#2ecc71';
+                    } else if (isObstacle) {
+                        mdpCtx.fillStyle = '#e74c3c';
+                    } else {
+                        mdpCtx.fillStyle = '#12121f';
+                    }
+                    mdpCtx.fillRect(x, y, cellSize, cellSize);
+
+                    // Draw border
+                    mdpCtx.strokeStyle = '#2a2a3f';
+                    mdpCtx.lineWidth = 1;
+                    mdpCtx.strokeRect(x, y, cellSize, cellSize);
+
+                    // Draw value
+                    if (!isGoal && !isObstacle) {
+                        mdpCtx.fillStyle = '#ffb366';
+                        mdpCtx.font = '12px monospace';
+                        mdpCtx.textAlign = 'left';
+                        mdpCtx.fillText('V:' + mdpValues[j * gridSize + i].toFixed(1), x + 5, y + 20);
+                    }
+
+                    // Draw agent
+                    if (isAgent) {
+                        mdpCtx.fillStyle = '#4a9eff';
+                        mdpCtx.beginPath();
+                        mdpCtx.arc(x + cellSize / 2, y + cellSize / 2, 15, 0, Math.PI * 2);
+                        mdpCtx.fill();
+                    }
+                }
+            }
+        }
+
+        function resetMDP() {
+            mdpAgent = { x: 0, y: 0 };
+            mdpCumulativeReward = 0;
+            mdpValues = new Array(gridSize * gridSize).fill(0);
+            document.getElementById('mdpReward').textContent = '0';
+            document.getElementById('mdpState').textContent = '(0,0)';
+            drawMDP();
+        }
+
+        function computeMDPValues() {
+            const gamma = parseFloat(document.getElementById('mdpGamma').value);
+            const goalReward = parseFloat(document.getElementById('mdpGoalReward').value);
+            const stepCost = parseFloat(document.getElementById('mdpStepCost').value);
+
+            // Value iteration (simple)
+            for (let iter = 0; iter < 10; iter++) {
+                let newValues = new Array(gridSize * gridSize).fill(0);
+
+                for (let i = 0; i < gridSize; i++) {
+                    for (let j = 0; j < gridSize; j++) {
+                        let idx = j * gridSize + i;
+                        if (mdpGoal.x === i && mdpGoal.y === j) {
+                            newValues[idx] = goalReward;
+                        } else if (mdpObstacles.some(o => o.x === i && o.y === j)) {
+                            newValues[idx] = -10;
+                        } else {
+                            // Average of 4 neighbors
+                            let sum = 0;
+                            let neighbors = [
+                                { x: Math.min(i + 1, gridSize - 1), y: j },
+                                { x: Math.max(i - 1, 0), y: j },
+                                { x: i, y: Math.min(j + 1, gridSize - 1) },
+                                { x: i, y: Math.max(j - 1, 0) }
+                            ];
+                            neighbors.forEach(n => {
+                                sum += mdpValues[n.y * gridSize + n.x];
+                            });
+                            newValues[idx] = stepCost + gamma * (sum / 4);
+                        }
+                    }
+                }
+                mdpValues = newValues;
+            }
+
+            let avgValue = mdpValues.filter((v, i) => {
+                let x = i % gridSize;
+                let y = Math.floor(i / gridSize);
+                return !mdpObstacles.some(o => o.x === x && o.y === y) && !(mdpGoal.x === x && mdpGoal.y === y);
+            }).reduce((a, b) => a + b, 0) / (gridSize * gridSize - 2);
+
+            document.getElementById('mdpValue').textContent = avgValue.toFixed(2);
+            drawMDP();
+        }
+
+        // ============= Q-Learning Visualization =============
+        const qlCtx = document.getElementById('qlearningCanvas').getContext('2d');
+        let qlQTable = {};
+        let qlAgent = { x: 0, y: 0 };
+        let qlEpisode = 0;
+        let qlTotalReward = 0;
+
+        function drawQLearning() {
+            qlCtx.fillStyle = '#0a0a0f';
+            qlCtx.fillRect(0, 0, 450, 450);
+
+            for (let i = 0; i < gridSize; i++) {
+                for (let j = 0; j < gridSize; j++) {
+                    let x = i * cellSize;
+                    let y = j * cellSize;
+
+                    let isAgent = qlAgent.x === i && qlAgent.y === j;
+                    let isGoal = mdpGoal.x === i && mdpGoal.y === j;
+                    let isObstacle = mdpObstacles.some(o => o.x === i && o.y === j);
+
+                    if (isGoal) {
+                        qlCtx.fillStyle = '#2ecc71';
+                    } else if (isObstacle) {
+                        qlCtx.fillStyle = '#e74c3c';
+                    } else {
+                        qlCtx.fillStyle = '#12121f';
+                    }
+                    qlCtx.fillRect(x, y, cellSize, cellSize);
+
+                    qlCtx.strokeStyle = '#2a2a3f';
+                    qlCtx.lineWidth = 1;
+                    qlCtx.strokeRect(x, y, cellSize, cellSize);
+
+                    // Draw max Q value
+                    if (!isGoal && !isObstacle) {
+                        let state = i + ',' + j;
+                        let maxQ = 0;
+                        if (qlQTable[state]) {
+                            maxQ = Math.max(...Object.values(qlQTable[state]));
+                        }
+                        qlCtx.fillStyle = '#ffb366';
+                        qlCtx.font = '12px monospace';
+                        qlCtx.textAlign = 'left';
+                        qlCtx.fillText('Q:' + maxQ.toFixed(1), x + 5, y + 20);
+                    }
+
+                    if (isAgent) {
+                        qlCtx.fillStyle = '#4a9eff';
+                        qlCtx.beginPath();
+                        qlCtx.arc(x + cellSize / 2, y + cellSize / 2, 15, 0, Math.PI * 2);
+                        qlCtx.fill();
+                    }
+                }
+            }
+        }
+
+        function runQLearning() {
+            const alpha = parseFloat(document.getElementById('qlAlpha').value);
+            const gamma = parseFloat(document.getElementById('qlGamma').value);
+            const epsilon = parseFloat(document.getElementById('qlEpsilon').value);
+            const episodes = parseInt(document.getElementById('qlEpisodes').value);
+
+            qlQTable = {};
+            qlTotalReward = 0;
+
+            for (let ep = 0; ep < episodes; ep++) {
+                qlAgent = { x: 0, y: 0 };
+                let episodeReward = 0;
+
+                for (let step = 0; step < 20; step++) {
+                    let state = qlAgent.x + ',' + qlAgent.y;
+                    if (!qlQTable[state]) {
+                        qlQTable[state] = { up: 0, down: 0, left: 0, right: 0 };
+                    }
+
+                    // ε-greedy action selection
+                    let action;
+                    if (Math.random() < epsilon) {
+                        action = ['up', 'down', 'left', 'right'][Math.floor(Math.random() * 4)];
+                    } else {
+                        action = Object.keys(qlQTable[state]).reduce((a, b) =>
+                            qlQTable[state][a] > qlQTable[state][b] ? a : b
+                        );
+                    }
+
+                    // Take action
+                    let newAgent = { ...qlAgent };
+                    if (action === 'up') newAgent.y = Math.max(0, newAgent.y - 1);
+                    if (action === 'down') newAgent.y = Math.min(gridSize - 1, newAgent.y + 1);
+                    if (action === 'left') newAgent.x = Math.max(0, newAgent.x - 1);
+                    if (action === 'right') newAgent.x = Math.min(gridSize - 1, newAgent.x + 1);
+
+                    let reward = -0.1;
+                    if (mdpObstacles.some(o => o.x === newAgent.x && o.y === newAgent.y)) {
+                        reward -= 5;
+                    }
+                    if (mdpGoal.x === newAgent.x && mdpGoal.y === newAgent.y) {
+                        reward += 10;
+                    }
+
+                    episodeReward += reward;
+
+                    // Q-learning update
+                    let newState = newAgent.x + ',' + newAgent.y;
+                    if (!qlQTable[newState]) {
+                        qlQTable[newState] = { up: 0, down: 0, left: 0, right: 0 };
+                    }
+
+                    let maxNextQ = Math.max(...Object.values(qlQTable[newState]));
+                    qlQTable[state][action] += alpha * (reward + gamma * maxNextQ - qlQTable[state][action]);
+
+                    qlAgent = newAgent;
+
+                    if (mdpGoal.x === qlAgent.x && mdpGoal.y === qlAgent.y) break;
+                }
+
+                qlTotalReward += episodeReward;
+                qlEpisode = ep + 1;
+            }
+
+            document.getElementById('qlEpisode').textContent = qlEpisode;
+            document.getElementById('qlReward').textContent = qlTotalReward.toFixed(0);
+            document.getElementById('qlTableSize').textContent = Object.keys(qlQTable).length;
+            drawQLearning();
+        }
+
+        function resetQLearning() {
+            qlQTable = {};
+            qlAgent = { x: 0, y: 0 };
+            qlEpisode = 0;
+            qlTotalReward = 0;
+            document.getElementById('qlEpisode').textContent = '0';
+            document.getElementById('qlReward').textContent = '0';
+            document.getElementById('qlTableSize').textContent = '0';
+            drawQLearning();
+        }
+
+        // ============= Policy Gradient Visualization =============
+        const pgCtx = document.getElementById('pgCanvas').getContext('2d');
+        let pgPolicy = { up: 0.25, down: 0.25, left: 0.25, right: 0.25 };
+        let pgAgent = { x: 0, y: 0 };
+        let pgStep = 0;
+        let pgReturn = 0;
+
+        function drawPolicyGradient() {
+            pgCtx.fillStyle = '#0a0a0f';
+            pgCtx.fillRect(0, 0, 450, 450);
+
+            // Draw policy as heatmap
+            for (let i = 0; i < gridSize; i++) {
+                for (let j = 0; j < gridSize; j++) {
+                    let x = i * cellSize;
+                    let y = j * cellSize;
+
+                    let isGoal = mdpGoal.x === i && mdpGoal.y === j;
+                    let isAgent = pgAgent.x === i && pgAgent.y === j;
+
+                    pgCtx.fillStyle = isGoal ? '#2ecc71' : '#12121f';
+                    pgCtx.fillRect(x, y, cellSize, cellSize);
+
+                    pgCtx.strokeStyle = '#2a2a3f';
+                    pgCtx.lineWidth = 1;
+                    pgCtx.strokeRect(x, y, cellSize, cellSize);
+
+                    // Draw policy probabilities (arrow sizes)
+                    if (!isGoal) {
+                        let arrows = [
+                            { dir: 'up', angle: -Math.PI / 2, prob: pgPolicy.up },
+                            { dir: 'down', angle: Math.PI / 2, prob: pgPolicy.down },
+                            { dir: 'left', angle: Math.PI, prob: pgPolicy.left },
+                            { dir: 'right', angle: 0, prob: pgPolicy.right }
+                        ];
+
+                        arrows.forEach(arr => {
+                            let cx = x + cellSize / 2;
+                            let cy = y + cellSize / 2;
+                            let len = arr.prob * 20;
+                            pgCtx.strokeStyle = `rgba(255, 159, 67, ${arr.prob + 0.3})`;
+                            pgCtx.lineWidth = 2;
+                            pgCtx.beginPath();
+                            pgCtx.moveTo(cx, cy);
+                            pgCtx.lineTo(cx + Math.cos(arr.angle) * len, cy + Math.sin(arr.angle) * len);
+                            pgCtx.stroke();
+                        });
+                    }
+
+                    if (isAgent) {
+                        pgCtx.fillStyle = '#4a9eff';
+                        pgCtx.beginPath();
+                        pgCtx.arc(x + cellSize / 2, y + cellSize / 2, 15, 0, Math.PI * 2);
+                        pgCtx.fill();
+                    }
+                }
+            }
+        }
+
+        function runPolicyGradient() {
+            const alpha = parseFloat(document.getElementById('pgAlpha').value);
+            const gamma = parseFloat(document.getElementById('pgGamma').value);
+            const episodes = parseInt(document.getElementById('pgEpisodes').value);
+
+            pgPolicy = { up: 0.25, down: 0.25, left: 0.25, right: 0.25 };
+            let totalReturn = 0;
+
+            for (let ep = 0; ep < episodes; ep++) {
+                pgAgent = { x: 0, y: 0 };
+                let trajectory = [];
+                let reward = 0;
+
+                for (let step = 0; step < 20; step++) {
+                    let actions = ['up', 'down', 'left', 'right'];
+                    let probs = [pgPolicy.up, pgPolicy.down, pgPolicy.left, pgPolicy.right];
+                    let cumProb = 0;
+                    let rand = Math.random();
+                    let action = 'right';
+                    for (let i = 0; i < actions.length; i++) {
+                        cumProb += probs[i];
+                        if (rand < cumProb) {
+                            action = actions[i];
+                            break;
+                        }
+                    }
+
+                    let newAgent = { ...pgAgent };
+                    if (action === 'up') newAgent.y = Math.max(0, newAgent.y - 1);
+                    if (action === 'down') newAgent.y = Math.min(gridSize - 1, newAgent.y + 1);
+                    if (action === 'left') newAgent.x = Math.max(0, newAgent.x - 1);
+                    if (action === 'right') newAgent.x = Math.min(gridSize - 1, newAgent.x + 1);
+
+                    reward = -0.1;
+                    if (mdpGoal.x === newAgent.x && mdpGoal.y === newAgent.y) {
+                        reward = 10;
+                    }
+
+                    trajectory.push({ action, reward });
+                    pgAgent = newAgent;
+                    if (mdpGoal.x === pgAgent.x && mdpGoal.y === pgAgent.y) break;
+                }
+
+                // Calculate returns and update policy
+                let G = 0;
+                for (let i = trajectory.length - 1; i >= 0; i--) {
+                    G = trajectory[i].reward + gamma * G;
+                    let action = trajectory[i].action;
+                    let logProb = Math.log(pgPolicy[action] + 1e-8);
+                    pgPolicy[action] += alpha * logProb * G;
+                }
+
+                // Normalize policy
+                let sum = Object.values(pgPolicy).reduce((a, b) => a + b, 0);
+                Object.keys(pgPolicy).forEach(k => pgPolicy[k] /= sum);
+
+                totalReturn += trajectory.reduce((a, b) => a + b.reward, 0);
+                pgStep = ep + 1;
+            }
+
+            pgReturn = totalReturn;
+            let entropy = -Object.values(pgPolicy).reduce((s, p) => s + p * Math.log(p + 1e-8), 0);
+            document.getElementById('pgStep').textContent = pgStep;
+            document.getElementById('pgReturn').textContent = pgReturn.toFixed(1);
+            document.getElementById('pgEntropy').textContent = entropy.toFixed(2);
+            drawPolicyGradient();
+        }
+
+        function resetPolicyGradient() {
+            pgPolicy = { up: 0.25, down: 0.25, left: 0.25, right: 0.25 };
+            pgAgent = { x: 0, y: 0 };
+            pgStep = 0;
+            pgReturn = 0;
+            document.getElementById('pgStep').textContent = '0';
+            document.getElementById('pgReturn').textContent = '0';
+            document.getElementById('pgEntropy').textContent = '0.00';
+            drawPolicyGradient();
+        }
+
+        // ============= Bandit Visualization =============
+        const banditCtx = document.getElementById('banditCanvas').getContext('2d');
+        const numArms = 4;
+        let banditArms = [];
+        let banditCounts = new Array(numArms).fill(0);
+        let banditSums = new Array(numArms).fill(0);
+        let banditTotalReward = 0;
+        let banditStrategy = 0; // 0: epsilon-greedy, 1: UCB, 2: Thompson
+        let banditRegret = 0;
+
+        function initBandit() {
+            banditArms = [];
+            for (let i = 0; i < numArms; i++) {
+                banditArms.push(Math.random());
+            }
+            banditCounts = new Array(numArms).fill(0);
+            banditSums = new Array(numArms).fill(0);
+            banditTotalReward = 0;
+            banditRegret = 0;
+        }
+
+        function drawBandit() {
+            banditCtx.fillStyle = '#0a0a0f';
+            banditCtx.fillRect(0, 0, 450, 350);
+
+            // Draw arm rewards and selections
+            let barWidth = 80;
+            let barHeight = 200;
+            let startX = 50;
+            let startY = 250;
+
+            for (let i = 0; i < numArms; i++) {
+                let x = startX + i * 100;
+
+                // Draw bar for reward mean
+                let estReward = banditCounts[i] > 0 ? banditSums[i] / banditCounts[i] : 0;
+                let height = estReward * barHeight;
+
+                banditCtx.fillStyle = '#ff9f43';
+                banditCtx.fillRect(x, startY - height, barWidth, height);
+
+                banditCtx.strokeStyle = '#2a2a3f';
+                banditCtx.lineWidth = 2;
+                banditCtx.strokeRect(x, startY - height, barWidth, height);
+
+                // Label
+                banditCtx.fillStyle = '#e0e0e0';
+                banditCtx.font = 'bold 14px sans-serif';
+                banditCtx.textAlign = 'center';
+                banditCtx.fillText('Arm ' + (i + 1), x + barWidth / 2, startY + 25);
+
+                // Count
+                banditCtx.font = '12px sans-serif';
+                banditCtx.fillStyle = '#b0b0b0';
+                banditCtx.fillText('n=' + banditCounts[i], x + barWidth / 2, startY + 45);
+            }
+
+            // Draw title
+            let strategyName = ['ε-Greedy', 'UCB', 'Thompson'][banditStrategy];
+            banditCtx.fillStyle = '#ff9f43';
+            banditCtx.font = 'bold 16px sans-serif';
+            banditCtx.textAlign = 'left';
+            banditCtx.fillText(strategyName, 20, 30);
+        }
+
+        function switchBanditTab(idx) {
+            banditStrategy = idx;
+            document.querySelectorAll('.tab').forEach((t, i) => {
+                if (i === idx) t.classList.add('active');
+                else t.classList.remove('active');
+            });
+
+            let label1 = document.getElementById('banditLabel1');
+            let label2 = document.getElementById('banditLabel2');
+
+            if (idx === 0) {
+                label1.textContent = 'Exploration (ε)';
+                label2.textContent = 'Hidden';
+                document.getElementById('banditParam2').style.display = 'none';
+            } else if (idx === 1) {
+                label1.textContent = 'Confidence (c)';
+                label2.textContent = 'Hidden';
+                document.getElementById('banditParam2').style.display = 'none';
+            } else {
+                label1.textContent = 'Alpha (concentration)';
+                label2.textContent = 'Hidden';
+                document.getElementById('banditParam2').style.display = 'none';
+            }
+
+            drawBandit();
+        }
+
+        function runBandit() {
+            initBandit();
+            const param1 = parseFloat(document.getElementById('banditParam1').value);
+            const steps = parseInt(document.getElementById('banditSteps').value);
+
+            const optimalArm = banditArms.indexOf(Math.max(...banditArms));
+            const optimalReward = banditArms[optimalArm];
+
+            for (let t = 0; t < steps; t++) {
+                let arm;
+
+                if (banditStrategy === 0) {
+                    // Epsilon-greedy
+                    if (Math.random() < param1) {
+                        arm = Math.floor(Math.random() * numArms);
+                    } else {
+                        arm = banditCounts.reduce((bestArm, _, i) =>
+                            (banditCounts[i] > 0 && banditSums[i] / banditCounts[i] > banditSums[bestArm] / Math.max(banditCounts[bestArm], 1)) ? i : bestArm
+                        , 0);
+                    }
+                } else if (banditStrategy === 1) {
+                    // UCB
+                    let ucbs = banditArms.map((_, i) => {
+                        let meanReward = banditCounts[i] > 0 ? banditSums[i] / banditCounts[i] : 0;
+                        let bonus = param1 * Math.sqrt(Math.log(t + 1) / Math.max(banditCounts[i], 1));
+                        return meanReward + bonus;
+                    });
+                    arm = ucbs.indexOf(Math.max(...ucbs));
+                } else {
+                    // Thompson Sampling (simplified)
+                    let samples = banditArms.map((_, i) => {
+                        let mean = banditCounts[i] > 0 ? banditSums[i] / banditCounts[i] : 0;
+                        return mean + (Math.random() - 0.5) * (1 - mean) * param1;
+                    });
+                    arm = samples.indexOf(Math.max(...samples));
+                }
+
+                let reward = banditArms[arm] + (Math.random() - 0.5) * 0.3;
+                banditCounts[arm]++;
+                banditSums[arm] += reward;
+                banditTotalReward += reward;
+                banditRegret += (optimalReward - banditArms[arm]);
+            }
+
+            document.getElementById('banditReward').textContent = banditTotalReward.toFixed(1);
+            document.getElementById('banditRegret').textContent = banditRegret.toFixed(1);
+            document.getElementById('banditBest').textContent = 'Arm ' + (optimalArm + 1);
+            drawBandit();
+        }
+
+        // ============= RLHF Visualization =============
+        const rlhfCtx = document.getElementById('rlhfCanvas').getContext('2d');
+
+        function drawRLHF() {
+            rlhfCtx.fillStyle = '#0a0a0f';
+            rlhfCtx.fillRect(0, 0, 450, 400);
+
+            // Draw RLHF pipeline
+            let stages = [
+                { name: 'LLM', x: 50, color: '#4a9eff' },
+                { name: 'Generate', x: 120, color: '#ff6b6b' },
+                { name: 'Rank', x: 210, color: '#ffd93d' },
+                { name: 'Reward', x: 300, color: '#6bcf7f' },
+                { name: 'PPO', x: 380, color: '#ff9f43' }
+            ];
+
+            rlhfCtx.font = 'bold 14px sans-serif';
+            rlhfCtx.textAlign = 'center';
+
+            stages.forEach((stage, i) => {
+                let y = 100;
+
+                // Draw box
+                rlhfCtx.fillStyle = stage.color;
+                rlhfCtx.fillRect(stage.x - 25, y - 25, 50, 50);
+
+                // Label
+                rlhfCtx.fillStyle = '#0a0a0f';
+                rlhfCtx.fillText(stage.name, stage.x, y + 5);
+
+                // Arrow
+                if (i < stages.length - 1) {
+                    rlhfCtx.strokeStyle = '#ff9f43';
+                    rlhfCtx.lineWidth = 2;
+                    rlhfCtx.beginPath();
+                    rlhfCtx.moveTo(stage.x + 25, y);
+                    rlhfCtx.lineTo(stages[i + 1].x - 25, y);
+                    rlhfCtx.stroke();
+                    rlhfCtx.beginPath();
+                    rlhfCtx.moveTo(stages[i + 1].x - 35, y - 5);
+                    rlhfCtx.lineTo(stages[i + 1].x - 25, y);
+                    rlhfCtx.lineTo(stages[i + 1].x - 35, y + 5);
+                    rlhfCtx.stroke();
+                }
+            });
+
+            // Draw KL penalty diagram
+            rlhfCtx.fillStyle = '#2a2a3f';
+            rlhfCtx.fillRect(50, 200, 350, 120);
+
+            rlhfCtx.fillStyle = '#ff9f43';
+            rlhfCtx.font = 'bold 14px sans-serif';
+            rlhfCtx.textAlign = 'left';
+            rlhfCtx.fillText('KL Penalty: Prevents Distribution Drift', 60, 225);
+
+            rlhfCtx.fillStyle = '#e0e0e0';
+            rlhfCtx.font = '12px monospace';
+            rlhfCtx.fillText('L = E[r(y)] - β·KL(π || π_ref)', 60, 250);
+            rlhfCtx.fillText('• β controls trade-off', 60, 270);
+            rlhfCtx.fillText('• Higher β: closer to reference model', 60, 285);
+            rlhfCtx.fillText('• Lower β: more reward optimization', 60, 300);
+
+            // Legend
+            rlhfCtx.fillStyle = '#b0b0b0';
+            rlhfCtx.font = '11px sans-serif';
+            rlhfCtx.fillText('Human feedback shapes rewards → PPO fine-tunes policy', 60, 350);
+        }
+
+        function runRLHF() {
+            const beta = parseFloat(document.getElementById('rlhfBeta').value);
+            const accuracy = parseFloat(document.getElementById('rlhfAccuracy').value);
+
+            document.getElementById('rlhfStatus').textContent = 'Simulating RLHF with β=' + beta.toFixed(2) + ', accuracy=' + accuracy.toFixed(2);
+
+            setTimeout(() => {
+                let finalLoss = (1 - accuracy) * 0.5 + beta * 0.2;
+                let alignment = (1 - beta * 0.5) * 100;
+                document.getElementById('rlhfStatus').textContent =
+                    'Loss: ' + finalLoss.toFixed(3) + ' | Alignment: ' + alignment.toFixed(0) + '%';
+            }, 500);
+        }
+
+        // ============= Slider Updates =============
+        document.getElementById('mdpGoalReward').addEventListener('input', e => {
+            document.getElementById('mdpGoalRewardVal').textContent = '+' + e.target.value;
+        });
+
+        document.getElementById('mdpStepCost').addEventListener('input', e => {
+            document.getElementById('mdpStepCostVal').textContent = e.target.value;
+        });
+
+        document.getElementById('mdpGamma').addEventListener('input', e => {
+            document.getElementById('mdpGammaVal').textContent = e.target.value;
+        });
+
+        document.getElementById('qlAlpha').addEventListener('input', e => {
+            document.getElementById('qlAlphaVal').textContent = parseFloat(e.target.value).toFixed(2);
+        });
+
+        document.getElementById('qlGamma').addEventListener('input', e => {
+            document.getElementById('qlGammaVal').textContent = e.target.value;
+        });
+
+        document.getElementById('qlEpsilon').addEventListener('input', e => {
+            document.getElementById('qlEpsilonVal').textContent = parseFloat(e.target.value).toFixed(2);
+        });
+
+        document.getElementById('qlEpisodes').addEventListener('input', e => {
+            document.getElementById('qlEpisodesVal').textContent = e.target.value;
+        });
+
+        document.getElementById('pgAlpha').addEventListener('input', e => {
+            document.getElementById('pgAlphaVal').textContent = parseFloat(e.target.value).toFixed(3);
+        });
+
+        document.getElementById('pgGamma').addEventListener('input', e => {
+            document.getElementById('pgGammaVal').textContent = e.target.value;
+        });
+
+        document.getElementById('pgEpisodes').addEventListener('input', e => {
+            document.getElementById('pgEpisodesVal').textContent = e.target.value;
+        });
+
+        document.getElementById('banditParam1').addEventListener('input', e => {
+            document.getElementById('banditParam1Val').textContent = parseFloat(e.target.value).toFixed(2);
+        });
+
+        document.getElementById('banditParam2').addEventListener('input', e => {
+            document.getElementById('banditParam2Val').textContent = parseFloat(e.target.value).toFixed(2);
+        });
+
+        document.getElementById('banditSteps').addEventListener('input', e => {
+            document.getElementById('banditStepsVal').textContent = e.target.value;
+        });
+
+        document.getElementById('rlhfBeta').addEventListener('input', e => {
+            document.getElementById('rlhfBetaVal').textContent = parseFloat(e.target.value).toFixed(2);
+        });
+
+        document.getElementById('rlhfAccuracy').addEventListener('input', e => {
+            document.getElementById('rlhfAccuracyVal').textContent = parseFloat(e.target.value).toFixed(2);
+        });
+
+        document.getElementById('rlhfEpochs').addEventListener('input', e => {
+            document.getElementById('rlhfEpochsVal').textContent = e.target.value;
+        });
+
+        // ============= Initialization =============
+        window.addEventListener('load', () => {
+            resetMDP();
+            resetQLearning();
+            resetPolicyGradient();
+            initBandit();
+            drawBandit();
+            drawRLHF();
+        });
+    </script>
+</body>
+</html>
