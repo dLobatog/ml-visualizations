@@ -1,0 +1,2039 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 7: Knowledge Distillation & Model Compression from Scratch</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #0a0a0f; color: #e0e0e0; line-height: 1.6; }
+  .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; text-align: center; border-bottom: 1px solid #2a2a4a; }
+  .header h1 { font-size: 2.2em; background: linear-gradient(90deg, #e056fd, #c44dff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+  .header p { color: #888; font-size: 1.1em; }
+  .header a { color: #e056fd; text-decoration: none; font-size: 0.9em; }
+  .header a:hover { text-decoration: underline; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+
+  /* Minimap */
+  .minimap { position: sticky; top: 0; z-index: 100; background: #0a0a0fee; backdrop-filter: blur(10px); border-bottom: 1px solid #2a2a4a; padding: 10px 20px; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }
+  .mm-step { padding: 4px 12px; border-radius: 6px; font-size: 0.75em; font-weight: 600; cursor: pointer; transition: all 0.2s; background: #151530; color: #555; border: 1px solid #2a2a4a; white-space: nowrap; }
+  .mm-step:hover { border-color: #e056fd; color: #e056fd; }
+  .mm-step.active { background: rgba(224,86,253,0.2); color: #e056fd; border-color: rgba(224,86,253,0.5); }
+  .mm-step.done { background: rgba(224,86,253,0.1); color: #e056fd; border-color: rgba(224,86,253,0.3); }
+  .mm-arrow { color: #333; font-size: 0.8em; }
+
+  .viz-section { background: #12121f; border: 1px solid #2a2a4a; border-radius: 16px; padding: 32px; margin-bottom: 40px; }
+  .viz-section h2 { font-size: 1.5em; color: #e056fd; margin-bottom: 8px; }
+  .viz-section .subtitle { color: #888; margin-bottom: 24px; font-size: 0.95em; }
+  .viz-canvas { background: #0d0d1a; border-radius: 12px; position: relative; overflow: hidden; }
+  canvas { display: block; width: 100%; }
+  .controls { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; align-items: center; }
+  .control-group { display: flex; flex-direction: column; gap: 4px; }
+  .control-group label { font-size: 0.85em; color: #aaa; }
+  .control-group input[type="range"] { width: 160px; accent-color: #e056fd; }
+  .control-group .value { font-size: 0.85em; color: #e056fd; font-family: monospace; }
+  .btn { padding: 8px 16px; border: 1px solid #e056fd; background: transparent; color: #e056fd; border-radius: 8px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
+  .btn:hover { background: #e056fd22; }
+  .btn.active { background: #e056fd33; }
+  .tab-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+
+  .insight-box { background: linear-gradient(135deg, #1a1a3e 0%, #151530 100%); border-left: 4px solid #e056fd; padding: 20px 24px; margin-top: 20px; border-radius: 0 12px 12px 0; font-size: 0.92em; color: #ccc; line-height: 1.8; }
+  .insight-box strong { color: #e056fd; font-size: 1.05em; }
+  .insight-box .formula { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 12px 18px; margin: 12px 0; font-family: 'Courier New', monospace; color: #e8e8ff; font-size: 1.05em; text-align: center; letter-spacing: 0.5px; line-height: 1.9; }
+  .insight-box .key-point { display: flex; flex-wrap: wrap; gap: 4px 8px; margin: 8px 0; padding: 4px 0; align-items: baseline; }
+  .insight-box .key-point .label { color: #e056fd; font-weight: 600; min-width: 160px; flex-shrink: 0; }
+  .insight-box .key-point .desc { color: #ddd; }
+  .insight-box .interview-tip { background: rgba(100, 255, 100, 0.05); border: 1px solid rgba(100, 255, 100, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #b0ffb0; font-size: 0.93em; line-height: 1.6; }
+  .insight-box .interview-tip::before { content: '\1F4A1  Interview Tip: '; font-weight: 700; color: #7fff7f; }
+  .insight-box .mnemonic { background: rgba(255, 150, 255, 0.05); border: 1px solid rgba(255, 150, 255, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #ffb0ff; font-size: 0.93em; line-height: 1.6; }
+  .insight-box .mnemonic::before { content: '\1F9E0  Remember: '; font-weight: 700; color: #ff7fff; }
+  .insight-box .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+  .insight-box .comparison .option { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 10px 14px; }
+  .insight-box .comparison .option .opt-title { color: #e056fd; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
+  .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
+  .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
+
+  .katex { color: #e8e8ff; font-size: 1.1em; }
+  .formula .katex { font-size: 1.2em; }
+
+  .narrative-note { background: rgba(255,217,61,0.05); border-left: 3px solid #ffd93d; padding: 14px 18px; margin: 16px 0; border-radius: 0 8px 8px 0; font-size: 0.9em; color: #ccb866; }
+  .narrative-note strong { color: #ffd93d; }
+
+  select { padding: 6px 12px; border: 1px solid #2a2a4a; background: #0d0d1a; color: #e0e0e0; border-radius: 6px; font-size: 0.9em; cursor: pointer; }
+  select:focus { outline: none; border-color: #e056fd; }
+
+#quizToggle{position:fixed;top:20px;right:20px;z-index:1000;padding:12px 20px;background:#e056fd;color:#0a0a0f;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:1em;box-shadow:0 4px 15px rgba(0,0,0,0.3);transition:transform 0.2s}
+#quizToggle:hover{transform:scale(1.05)}
+#quizSection{background:#0a0a0f;border-top:2px solid #e056fd;padding:40px 20px;margin-top:40px}
+.quiz-container{max-width:900px;margin:0 auto}
+.quiz-topic{margin-bottom:30px}
+.quiz-topic-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:10px;cursor:pointer;margin-bottom:12px;user-select:none}
+.quiz-topic-header h3{color:#e056fd;margin:0;font-size:1.15em}
+.quiz-topic-header:hover{background:#1f1f3a}
+.quiz-topic-score{color:#888;font-size:0.95em}
+.quiz-topic-questions{display:none}
+.quiz-topic-questions.open{display:block}
+.quiz-question{background:#12121f;border:1px solid #2a2a4a;border-radius:12px;padding:24px;margin-bottom:16px}
+.quiz-question h4{color:#e0e0e0;margin-bottom:16px;font-size:1.05em;line-height:1.5}
+.quiz-option{display:block;width:100%;padding:12px 16px;margin:8px 0;background:#0d0d1a;border:1px solid #2a2a4a;border-radius:8px;color:#e0e0e0;cursor:pointer;text-align:left;font-size:0.95em;transition:all 0.2s;font-family:inherit}
+.quiz-option:hover:not(:disabled){border-color:#e056fd;background:#1a1a3e}
+.quiz-option.correct{background:#1a3a2a !important;border-color:#2ecc71 !important;color:#2ecc71 !important}
+.quiz-option.wrong{background:#3a1a1a !important;border-color:#e74c3c !important;color:#e74c3c !important}
+.quiz-option.reveal{border-color:#2ecc71 !important;color:#2ecc71 !important}
+.quiz-option:disabled{cursor:default}
+.quiz-explanation{margin-top:12px;padding:14px 18px;border-radius:8px;font-size:0.93em;line-height:1.6;display:none}
+.quiz-explanation.show{display:block}
+.quiz-explanation.correct-exp{border-left:4px solid #2ecc71;background:rgba(46,204,113,0.08);color:#b0ffb0}
+.quiz-explanation.wrong-exp{border-left:4px solid #e74c3c;background:rgba(231,76,60,0.08);color:#ffb0b0}
+.quiz-score{text-align:center;font-size:1.5em;color:#e056fd;margin-bottom:30px}
+.quiz-actions{text-align:center;margin-top:30px;margin-bottom:20px}
+.quiz-actions button{padding:10px 24px;margin:0 8px;border-radius:8px;border:1px solid #e056fd;background:transparent;color:#e056fd;cursor:pointer;font-size:1em}
+.quiz-actions button:hover{background:rgba(224,86,253,0.1)}
+.quiz-progress{height:4px;background:#1a1a2e;border-radius:2px;margin-bottom:20px;overflow:hidden}
+.quiz-progress-bar{height:100%;background:#e056fd;border-radius:2px;transition:width 0.3s}
+
+.legend { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.85em; color: #ccc; }
+.legend-dot { width: 12px; height: 12px; border-radius: 50%; }
+
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '\\(', right: '\\)', display: false}]});"></script>
+</head>
+<body>
+<button id="quizToggle" onclick="toggleQuiz()">&#x1F9E0; Quiz Mode</button>
+
+<div class="header">
+  <a href="../index.html">&larr; Back to Index</a>
+  <h1>Chapter 7: Knowledge Distillation & Model Compression</h1>
+  <p>Take large models and compress them for deployment &mdash; soft targets, KL divergence, temperature, quantization, and pruning</p>
+</div>
+
+<div class="minimap" id="minimap">
+  <span class="mm-step active" data-section="viz71" onclick="scrollToViz('viz71')">1. Soft Targets</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz72" onclick="scrollToViz('viz72')">2. KL Divergence</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz73" onclick="scrollToViz('viz73')">3. Temperature</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz74" onclick="scrollToViz('viz74')">4. Teacher-Student</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz75" onclick="scrollToViz('viz75')">5. Quantization</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz76" onclick="scrollToViz('viz76')">6. Pruning</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz77" onclick="scrollToViz('viz77')">7. Compression Toolkit</span>
+</div>
+
+<div class="container">
+
+<!-- ============================================================ -->
+<!-- VIZ 7.1: HARD LABELS VS SOFT TARGETS -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz71">
+  <h2>7.1 Hard Labels vs Soft Targets: Dark Knowledge</h2>
+  <p class="subtitle">A teacher's probability distribution carries far more information than a one-hot hard label. The subtle inter-class similarities are the "dark knowledge."</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <div class="tab-bar">
+      <button class="btn active" id="ex_car" onclick="setDarkKnowledge('car')">Car (BMW)</button>
+      <button class="btn" id="ex_cat" onclick="setDarkKnowledge('cat')">Cat</button>
+      <button class="btn" id="ex_digit" onclick="setDarkKnowledge('digit')">Digit "3"</button>
+      <button class="btn" id="ex_bird" onclick="setDarkKnowledge('bird')">Bird</button>
+    </div>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="darkKnowledgeCanvas" width="900" height="400"></canvas>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:#666;"></span> Hard label (one-hot)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#e056fd;"></span> Teacher soft prediction</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Hard labels say "this is a cat, period." Soft targets say "it's a cat, but it looks a bit like a tiger and a dog." Those inter-class relationships are the dark knowledge.
+    <div class="formula">$$\text{Hard: } [0, 0, 1, 0, 0] \quad\text{vs}\quad \text{Soft: } [0.01, 0.15, 0.70, 0.12, 0.02]$$</div>
+    <div class="key-point">
+      <span class="label">Dark Knowledge:</span>
+      <span class="desc">The small probabilities assigned to incorrect classes encode structural similarity. A BMW gets confused with a Mercedes, never with a cat.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Why It Matters:</span>
+      <span class="desc">A student trained on soft targets learns these relationships and generalizes better than one trained on hard labels alone.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">When asked about knowledge distillation, start with dark knowledge: "The teacher's soft probabilities contain inter-class similarity information that hard one-hot labels throw away."</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 7.2: KL DIVERGENCE -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz72">
+  <h2>7.2 KL Divergence: Measuring Distribution Distance</h2>
+  <p class="subtitle">How different are two probability distributions? Drag the bars to edit P (teacher) and Q (student), and watch KL divergence update in real-time.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <div class="tab-bar">
+      <button class="btn active" id="klPresetIdentical" onclick="setKLPreset('identical')">Identical (KL=0)</button>
+      <button class="btn" id="klPresetShifted" onclick="setKLPreset('shifted')">Slightly Shifted</button>
+      <button class="btn" id="klPresetOpposite" onclick="setKLPreset('opposite')">Opposite</button>
+      <button class="btn" id="klPresetMissing" onclick="setKLPreset('missing')">Student Misses Peak</button>
+    </div>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="klCanvas" width="900" height="480"></canvas>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:#4a9eff;"></span> P (teacher)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#ff4a6a;"></span> Q (student)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#ffd93d;"></span> Per-term contribution</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> KL divergence measures the information lost when Q approximates P. It heavily penalizes Q for assigning low probability where P assigns high probability.
+    <div class="formula">$$D_{KL}(P \| Q) = \sum_x P(x) \cdot \log\frac{P(x)}{Q(x)}$$</div>
+    <div class="key-point">
+      <span class="label">Asymmetry:</span>
+      <span class="desc">\(D_{KL}(P \| Q) \neq D_{KL}(Q \| P)\). It matters who is the teacher and who is the student. In distillation, we minimize KL(teacher || student).</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Connection to CE:</span>
+      <span class="desc">\(D_{KL}(P \| Q) = H(P,Q) - H(P)\). Since teacher entropy \(H(P)\) is constant, minimizing KL is equivalent to minimizing cross-entropy.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">KL divergence is not a true distance (it is asymmetric). When Q puts near-zero probability where P puts mass, KL explodes -- this is why label smoothing helps.</div>
+    <div class="mnemonic">KL(P||Q) penalizes Q for "missing" what P considers important. Think of P as reality and Q as your model -- missing a likely event is far worse than wasting probability on an unlikely one.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 7.3: TEMPERATURE -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz73">
+  <h2>7.3 Temperature: Controlling Softness</h2>
+  <p class="subtitle">Temperature scales logits before softmax. Low T sharpens, high T softens. Drag the slider and watch the distribution smoothly transform.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <div class="control-group">
+      <label>Temperature T</label>
+      <input type="range" id="tempSlider" min="0.1" max="10" step="0.1" value="1.0" oninput="updateTemp()">
+      <span class="value" id="tempValue">T = 1.0</span>
+    </div>
+    <button class="btn" onclick="animateTemp(0.1, 10, 3000)">Animate 0.1 &rarr; 10</button>
+    <button class="btn" onclick="animateTemp(10, 0.1, 3000)">Animate 10 &rarr; 0.1</button>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="tempCanvas" width="900" height="420"></canvas>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:#555;"></span> Raw logits</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#e056fd;"></span> softmax(logits / T)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#4ecdc4;"></span> Gradient magnitude per class</div>
+  </div>
+  <div class="narrative-note">
+    <strong>Callback to Ch 4:</strong> Temperature also appeared in the attention mechanism (Viz 4.4). Same principle -- it controls how "peaked" or "spread" the probability distribution is. In attention, low T means sharply focusing on one token; here, low T means one class dominates.
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> At T=1, soft targets are too peaked for the student to learn subtle class relationships. At moderate T (2-5), the dark knowledge becomes visible. At very high T, everything becomes uniform -- no signal.
+    <div class="formula">$$\text{softmax}(z_i / T) = \frac{e^{z_i/T}}{\sum_j e^{z_j/T}}$$</div>
+    <div class="key-point">
+      <span class="label">Low T (0.1):</span>
+      <span class="desc">Nearly one-hot. All probability mass on the top class. Gradients only flow through one class.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Moderate T (3-5):</span>
+      <span class="desc">Subtle relationships become learnable. Gradients spread across all classes. This is the sweet spot for distillation.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">High T (10+):</span>
+      <span class="desc">Nearly uniform. No class stands out. All information is washed out.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">The T^2 factor in the distillation loss compensates for the reduced gradient magnitude at higher temperatures. Without it, the soft target loss would vanish as T increases.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 7.4: TEACHER-STUDENT TRAINING -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz74">
+  <h2>7.4 Teacher-Student Training: The Full Pipeline</h2>
+  <p class="subtitle">Wire it all together. A small student learns to mimic a large teacher. Watch the combined loss drive the student's output distribution toward the teacher's.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <div class="control-group">
+      <label>Alpha (\(\alpha\)) &mdash; hard label weight</label>
+      <input type="range" id="alphaSlider" min="0" max="1" step="0.05" value="0.3" oninput="updateAlpha()">
+      <span class="value" id="alphaValue">&alpha; = 0.30</span>
+    </div>
+    <div class="control-group">
+      <label>Temperature T</label>
+      <input type="range" id="tsTemperature" min="1" max="10" step="0.5" value="4" oninput="updateTSTemp()">
+      <span class="value" id="tsTempValue">T = 4.0</span>
+    </div>
+    <button class="btn" id="tsTrainBtn" onclick="startTSTraining()">Train Student</button>
+    <button class="btn" onclick="resetTSTraining()">Reset</button>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="tsCanvas" width="900" height="500"></canvas>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:#4a9eff;"></span> Teacher output</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#e056fd;"></span> Student output (distilled)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#ff6b6b;"></span> CE loss (hard)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#4ecdc4;"></span> KL loss (soft)</div>
+  </div>
+  <div class="narrative-note">
+    <strong>Callback to Ch 6:</strong> The teacher could be the full transformer you built in Chapter 6. Now you are compressing it into something that fits on a phone.
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> The distillation loss balances learning from hard labels (ground truth) and soft targets (teacher knowledge).
+    <div class="formula">$$\mathcal{L} = \alpha \cdot \text{CE}(y_{\text{student}}, y_{\text{hard}}) + (1 - \alpha) \cdot T^2 \cdot D_{KL}(\sigma(z_T/T) \| \sigma(z_S/T))$$</div>
+    <div class="key-point">
+      <span class="label">Teacher (6 layers, d=256):</span>
+      <span class="desc">2M parameters. High accuracy but slow and large.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Student (2 layers, d=64):</span>
+      <span class="desc">200K parameters (10x smaller). Distilled student retains ~95% of teacher accuracy.</span>
+    </div>
+    <hr class="divider">
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title" style="color: #ff6b6b;">Student from Scratch</div>
+        <div class="opt-desc">Trained on hard labels only. Accuracy: 85%. Misses inter-class relationships.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #4ecdc4;">Distilled Student</div>
+        <div class="opt-desc">Trained with teacher guidance. Accuracy: 94%. Learns dark knowledge about class similarities.</div>
+      </div>
+    </div>
+    <div class="interview-tip">The T^2 scaling factor is crucial. As temperature increases, gradient magnitudes from KL loss decrease by T^2. Multiplying by T^2 keeps the two loss terms on comparable scales regardless of the chosen temperature.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 7.5: QUANTIZATION -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz75">
+  <h2>7.5 Quantization: From FP32 to INT8 to INT4</h2>
+  <p class="subtitle">Reduce the precision of weights from 32-bit floats to integers. Watch the smooth distribution become a staircase and track reconstruction error.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <div class="control-group">
+      <label>Precision</label>
+      <select id="quantSelect" onchange="updateQuantization()">
+        <option value="fp32">FP32 (32-bit float)</option>
+        <option value="fp16">FP16 (16-bit float)</option>
+        <option value="int8" selected>INT8 (256 levels)</option>
+        <option value="int4">INT4 (16 levels)</option>
+        <option value="int2">INT2 (4 levels)</option>
+      </select>
+    </div>
+    <button class="btn" onclick="animateQuantization()">Animate All Levels</button>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="quantCanvas" width="900" height="460"></canvas>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:#4a9eff;"></span> Original FP32 weights</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#e056fd;"></span> Quantized weights</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#ff6b6b;"></span> Reconstruction error</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Quantization maps continuous float values to a discrete set of integers. Fewer bits means fewer possible values, creating a "staircase" approximation.
+    <div class="formula">$$w_{\text{quant}} = \text{round}\!\left(\frac{w - w_{\min}}{w_{\max} - w_{\min}} \cdot (2^b - 1)\right) \cdot \frac{w_{\max} - w_{\min}}{2^b - 1} + w_{\min}$$</div>
+    <div class="key-point">
+      <span class="label">FP32 (4 bytes):</span>
+      <span class="desc">Full precision. Baseline. Model size: 100%.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">INT8 (1 byte):</span>
+      <span class="desc">4x smaller. Tiny error. 256 discrete levels. Industry standard for inference.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">INT4 (0.5 bytes):</span>
+      <span class="desc">8x smaller. Visible staircase. 16 levels. Used in modern LLM serving (GPTQ, AWQ).</span>
+    </div>
+    <div class="key-point">
+      <span class="label">INT2 (0.25 bytes):</span>
+      <span class="desc">16x smaller. Only 4 levels. Severe distortion. Research frontier.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Quantization is the single most impactful compression technique for inference cost. INT8 quantization typically loses less than 1% accuracy while cutting memory and compute by 4x.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 7.6: PRUNING -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz76">
+  <h2>7.6 Pruning: Removing Unnecessary Weights</h2>
+  <p class="subtitle">Most weights in a neural network are near zero. Drag the pruning threshold to remove small weights and watch the network thin out.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <div class="control-group">
+      <label>Pruning Threshold</label>
+      <input type="range" id="pruneSlider" min="0" max="1" step="0.01" value="0.0" oninput="updatePruning()">
+      <span class="value" id="pruneValue">0% pruned</span>
+    </div>
+    <button class="btn" onclick="setPruneLevel(0.5)">50% Pruned</button>
+    <button class="btn" onclick="setPruneLevel(0.9)">90% Pruned</button>
+    <button class="btn" onclick="setPruneLevel(0.99)">99% Pruned</button>
+    <button class="btn" onclick="setPruneLevel(0)">Reset</button>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="pruneCanvas" width="900" height="460"></canvas>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:#4ecdc4;"></span> Active weights</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#ff4a4a44;"></span> Pruned weights</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#ffd93d;"></span> Pruning threshold</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Neural networks are heavily over-parameterized. You can remove 90% of weights with minimal accuracy loss -- the network was using a small fraction of its capacity.
+    <div class="formula">$$w_{\text{pruned}} = \begin{cases} w & \text{if } |w| > \theta \\ 0 & \text{if } |w| \leq \theta \end{cases}$$</div>
+    <div class="key-point">
+      <span class="label">50% Pruned:</span>
+      <span class="desc">Accuracy barely changes. The removed weights were contributing almost nothing.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">90% Pruned:</span>
+      <span class="desc">Slight accuracy drop (~1-2%). Network is 10x sparser. Huge speedup with sparse matrix ops.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">99% Pruned:</span>
+      <span class="desc">Noticeable accuracy drop (~5-10%). But the model is 100x sparser.</span>
+    </div>
+    <hr class="divider">
+    <strong style="color: #ffd93d; font-size: 1.05em;">Lottery Ticket Hypothesis</strong>
+    <div class="comparison" style="margin-top: 10px;">
+      <div class="option">
+        <div class="opt-title" style="color: #e056fd;">The Hypothesis</div>
+        <div class="opt-desc">A randomly initialized dense network contains a sparse subnetwork (the "winning ticket") that, when trained in isolation from its original initialization, matches the full network's performance.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #4ecdc4;">Implication</div>
+        <div class="opt-desc">We don't need large networks for their capacity -- we need them to find the right sparse structure. The winning ticket was hiding inside the full network all along.</div>
+      </div>
+    </div>
+    <div class="mnemonic">Pruning works because neural networks are like forests -- most trees (weights) are small and removing them does not change the landscape. The few tall trees carry all the information.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 7.7: COMPRESSION TOOLKIT -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz77">
+  <h2>7.7 Compression Toolkit: Combining Techniques</h2>
+  <p class="subtitle">Distillation, pruning, and quantization are complementary. Toggle each technique on and off to see the cumulative effect on model size, speed, and accuracy.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <button class="btn active" id="toggleDistill" onclick="toggleCompression('distill')">Distillation</button>
+    <button class="btn" id="togglePrune" onclick="toggleCompression('prune')">Pruning</button>
+    <button class="btn" id="toggleQuant" onclick="toggleCompression('quant')">Quantization (INT4)</button>
+    <button class="btn" onclick="toggleCompression('all')">Enable All</button>
+    <button class="btn" onclick="toggleCompression('none')">Disable All</button>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="toolkitCanvas" width="900" height="480"></canvas>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:#e056fd;"></span> Distillation</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#4ecdc4;"></span> Pruning</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#ffd93d;"></span> Quantization</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#ff6b6b;"></span> Pareto frontier</div>
+  </div>
+  <div class="narrative-note">
+    <strong>Chapter 7 Payoff:</strong> You now understand the full lifecycle: build a large, powerful model (Ch 6), then compress it for deployment (Ch 7). This is exactly how production LLMs are shipped -- a massive teacher model trains a family of smaller, faster student models. Distillation + pruning + quantization: from a data center GPU to your phone.
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Each compression technique targets a different axis. Combined, they achieve multiplicative compression.
+    <div class="formula">$$\text{2B params} \xrightarrow{\text{Distill}} \text{200M} \xrightarrow{\text{Prune}} \text{100M} \xrightarrow{\text{INT4}} \text{50MB on disk}$$</div>
+    <div class="key-point">
+      <span class="label">Distillation:</span>
+      <span class="desc">Reduces architecture size (fewer layers, smaller dimensions). 10x parameter reduction.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Pruning:</span>
+      <span class="desc">Removes unnecessary weights within the architecture. 2x additional sparsity.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Quantization:</span>
+      <span class="desc">Reduces precision of remaining weights. 4-8x memory reduction.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Production compression pipelines: (1) Train a large teacher on massive data. (2) Distill into a smaller student. (3) Prune the student. (4) Quantize to INT4/INT8 for serving. This is how GPT-4 becomes GPT-4-mini, and how Llama 70B becomes Llama 7B.</div>
+    <div class="mnemonic">Distillation changes the architecture (fewer neurons). Pruning changes the density (fewer connections). Quantization changes the precision (fewer bits). Three independent axes of compression.</div>
+  </div>
+</div>
+
+</div><!-- end container -->
+
+<!-- ============================================================ -->
+<!-- QUIZ SECTION -->
+<!-- ============================================================ -->
+<div id="quizSection" style="display:none">
+<div class="quiz-container">
+  <h2 style="text-align:center;color:#e056fd;margin-bottom:10px;font-size:1.8em;">Distillation & Compression Quiz</h2>
+  <p style="text-align:center;color:#888;margin-bottom:20px;">5 questions per visualization &bull; 35 questions total &bull; Click answers to reveal explanations</p>
+  <div class="quiz-progress"><div class="quiz-progress-bar" id="quizProgressBar" style="width:0%"></div></div>
+  <div class="quiz-score">Score: <span id="quizScore">0</span> / <span id="quizTotal">35</span></div>
+  <div class="quiz-actions">
+    <button onclick="resetQuiz()">&#8634; Reset All</button>
+    <button onclick="toggleQuiz()">&#10005; Hide Quiz</button>
+  </div>
+  <div id="quizQuestions"></div>
+</div>
+</div>
+
+<div style="text-align:center; padding:40px; color:#555; font-size:0.85em; border-top:1px solid #1a1a2e;">
+  Chapter 7: Knowledge Distillation & Model Compression &bull; <a href="../index.html" style="color:#e056fd; text-decoration:none;">From Scratch Series</a>
+</div>
+
+<script>
+// ============================================================
+// UTILITY FUNCTIONS
+// ============================================================
+const ACCENT = '#e056fd';
+const ACCENT2 = '#c44dff';
+const BG = '#0d0d1a';
+const GRID = '#1a1a2e';
+
+function softmax(logits, T) {
+  T = T || 1.0;
+  const scaled = logits.map(z => z / T);
+  const maxZ = Math.max(...scaled);
+  const exps = scaled.map(z => Math.exp(z - maxZ));
+  const sum = exps.reduce((a, b) => a + b, 0);
+  return exps.map(e => e / sum);
+}
+
+function klDivergence(P, Q) {
+  let kl = 0;
+  for (let i = 0; i < P.length; i++) {
+    if (P[i] > 1e-10 && Q[i] > 1e-10) {
+      kl += P[i] * Math.log(P[i] / Q[i]);
+    } else if (P[i] > 1e-10) {
+      kl += P[i] * Math.log(P[i] / 1e-10);
+    }
+  }
+  return kl;
+}
+
+function klTerms(P, Q) {
+  const terms = [];
+  for (let i = 0; i < P.length; i++) {
+    if (P[i] > 1e-10 && Q[i] > 1e-10) {
+      terms.push(P[i] * Math.log(P[i] / Q[i]));
+    } else if (P[i] > 1e-10) {
+      terms.push(P[i] * Math.log(P[i] / 1e-10));
+    } else {
+      terms.push(0);
+    }
+  }
+  return terms;
+}
+
+function normalize(arr) {
+  const s = arr.reduce((a, b) => a + b, 0);
+  return s > 0 ? arr.map(v => v / s) : arr.map(() => 1 / arr.length);
+}
+
+function getCanvasCtx(id) {
+  const c = document.getElementById(id);
+  const dpr = window.devicePixelRatio || 1;
+  const rect = c.getBoundingClientRect();
+  c.width = rect.width * dpr;
+  c.height = (parseInt(c.getAttribute('height')) || rect.height) * dpr;
+  const ctx = c.getContext('2d');
+  ctx.scale(dpr, dpr);
+  c.style.height = (parseInt(c.getAttribute('height')) || rect.height) + 'px';
+  return { ctx, w: rect.width, h: parseInt(c.getAttribute('height')) || rect.height, canvas: c };
+}
+
+function drawText(ctx, text, x, y, color, size, align, weight) {
+  ctx.font = (weight || '600') + ' ' + (size || 12) + 'px Inter, -apple-system, system-ui, sans-serif';
+  ctx.fillStyle = color || '#e0e0e0';
+  ctx.textAlign = align || 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, x, y);
+}
+
+function drawRoundedRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+// ============================================================
+// MINIMAP SCROLL TRACKING
+// ============================================================
+function scrollToViz(id) {
+  document.getElementById(id).scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function updateMinimap() {
+  const sections = ['viz71', 'viz72', 'viz73', 'viz74', 'viz75', 'viz76', 'viz77'];
+  const steps = document.querySelectorAll('.mm-step');
+  let activeIdx = 0;
+  sections.forEach(function(id, i) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    if (rect.top < window.innerHeight * 0.4) activeIdx = i;
+  });
+  steps.forEach(function(step, i) {
+    step.classList.remove('active', 'done');
+    if (i < activeIdx) step.classList.add('done');
+    else if (i === activeIdx) step.classList.add('active');
+  });
+}
+window.addEventListener('scroll', updateMinimap, { passive: true });
+
+// ============================================================
+// 7.1 DARK KNOWLEDGE
+// ============================================================
+const darkKnowledgeExamples = {
+  car: {
+    title: 'BMW 3 Series',
+    classes: ['BMW', 'Mercedes', 'Audi', 'Toyota', 'Cat'],
+    hard: [1, 0, 0, 0, 0],
+    soft: [0.62, 0.20, 0.12, 0.05, 0.01],
+    note: 'The teacher says: "It\'s a BMW, but it looks like a Mercedes and an Audi too. It definitely does NOT look like a cat."'
+  },
+  cat: {
+    title: 'Tabby Cat',
+    classes: ['Dog', 'Tiger', 'Cat', 'Fox', 'Rabbit'],
+    hard: [0, 0, 1, 0, 0],
+    soft: [0.08, 0.15, 0.65, 0.07, 0.05],
+    note: 'The teacher says: "It\'s a cat, but tigers and dogs share visual features. The cat-tiger confusion is structural knowledge."'
+  },
+  digit: {
+    title: 'Handwritten "3"',
+    classes: ['2', '3', '5', '8', '9'],
+    hard: [0, 1, 0, 0, 0],
+    soft: [0.05, 0.72, 0.08, 0.12, 0.03],
+    note: 'The teacher says: "It\'s a 3, but 8s and 5s have similar curves. A 3 is never confused with a 1."'
+  },
+  bird: {
+    title: 'Robin',
+    classes: ['Sparrow', 'Robin', 'Cardinal', 'Eagle', 'Penguin'],
+    hard: [0, 1, 0, 0, 0],
+    soft: [0.14, 0.58, 0.18, 0.06, 0.04],
+    note: 'The teacher says: "It\'s a robin, but sparrows and cardinals are similar small songbirds. An eagle and penguin are very different."'
+  }
+};
+
+let currentDK = 'car';
+
+function setDarkKnowledge(key) {
+  currentDK = key;
+  document.querySelectorAll('#viz71 .tab-bar .btn').forEach(function(b) { b.classList.remove('active'); });
+  document.getElementById('ex_' + key).classList.add('active');
+  drawDarkKnowledge();
+}
+
+function drawDarkKnowledge() {
+  const { ctx, w, h } = getCanvasCtx('darkKnowledgeCanvas');
+  ctx.clearRect(0, 0, w, h);
+
+  const ex = darkKnowledgeExamples[currentDK];
+  const n = ex.classes.length;
+  const margin = { top: 60, bottom: 70, left: 60, right: 40 };
+  const halfW = (w - margin.left - margin.right) / 2 - 20;
+  const chartH = h - margin.top - margin.bottom;
+
+  // Title
+  drawText(ctx, ex.title, w / 2, 25, '#e0e0e0', 18, 'center', '700');
+
+  // Left chart: Hard Labels
+  const lx = margin.left;
+  drawText(ctx, 'Hard Label (One-Hot)', lx + halfW / 2, margin.top - 15, '#888', 13, 'center', '600');
+  const barW = halfW / n * 0.6;
+  const gap = halfW / n;
+
+  for (let i = 0; i < n; i++) {
+    const x = lx + i * gap + (gap - barW) / 2;
+    const barH = ex.hard[i] * chartH * 0.85;
+    // Bar
+    ctx.fillStyle = ex.hard[i] > 0 ? '#666' : '#333';
+    drawRoundedRect(ctx, x, margin.top + chartH - barH, barW, barH, 3);
+    ctx.fill();
+    // Value
+    drawText(ctx, ex.hard[i].toFixed(0), x + barW / 2, margin.top + chartH - barH - 12, '#aaa', 11, 'center', '600');
+    // Label
+    drawText(ctx, ex.classes[i], x + barW / 2, h - margin.bottom + 20, '#888', 10, 'center', '400');
+  }
+
+  // Baseline
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(lx, margin.top + chartH);
+  ctx.lineTo(lx + halfW, margin.top + chartH);
+  ctx.stroke();
+
+  // Right chart: Soft Targets
+  const rx = w / 2 + 10;
+  drawText(ctx, 'Teacher Soft Prediction', rx + halfW / 2, margin.top - 15, ACCENT, 13, 'center', '600');
+  const gap2 = halfW / n;
+  const barW2 = halfW / n * 0.6;
+
+  for (let i = 0; i < n; i++) {
+    const x = rx + i * gap2 + (gap2 - barW2) / 2;
+    const barH = ex.soft[i] * chartH * 0.85;
+    const alpha = 0.3 + ex.soft[i] * 0.7;
+    ctx.fillStyle = 'rgba(224,86,253,' + alpha + ')';
+    drawRoundedRect(ctx, x, margin.top + chartH - barH, barW2, barH, 3);
+    ctx.fill();
+    drawText(ctx, ex.soft[i].toFixed(2), x + barW2 / 2, margin.top + chartH - barH - 12, ACCENT, 11, 'center', '600');
+    drawText(ctx, ex.classes[i], x + barW2 / 2, h - margin.bottom + 20, '#888', 10, 'center', '400');
+  }
+
+  ctx.strokeStyle = '#333';
+  ctx.beginPath();
+  ctx.moveTo(rx, margin.top + chartH);
+  ctx.lineTo(rx + halfW, margin.top + chartH);
+  ctx.stroke();
+
+  // Divider
+  ctx.strokeStyle = '#2a2a4a';
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(w / 2, margin.top - 20);
+  ctx.lineTo(w / 2, h - margin.bottom);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Note at bottom
+  ctx.font = '400 12px Inter, -apple-system, system-ui, sans-serif';
+  ctx.fillStyle = '#ccb866';
+  ctx.textAlign = 'center';
+  const noteLines = wrapText(ctx, ex.note, w - 100);
+  noteLines.forEach(function(line, i) {
+    ctx.fillText(line, w / 2, h - 20 + i * 16 - (noteLines.length - 1) * 8);
+  });
+}
+
+function wrapText(ctx, text, maxWidth) {
+  const words = text.split(' ');
+  const lines = [];
+  let line = '';
+  for (let i = 0; i < words.length; i++) {
+    const test = line + words[i] + ' ';
+    if (ctx.measureText(test).width > maxWidth && line) {
+      lines.push(line.trim());
+      line = words[i] + ' ';
+    } else {
+      line = test;
+    }
+  }
+  if (line.trim()) lines.push(line.trim());
+  return lines;
+}
+
+// ============================================================
+// 7.2 KL DIVERGENCE
+// ============================================================
+let klP = [0.05, 0.15, 0.55, 0.15, 0.10];
+let klQ = [0.10, 0.10, 0.50, 0.20, 0.10];
+let klDragging = null; // { dist: 'P'/'Q', index: i }
+const klLabels = ['A', 'B', 'C', 'D', 'E'];
+
+function setKLPreset(preset) {
+  document.querySelectorAll('#viz72 .tab-bar .btn').forEach(function(b) { b.classList.remove('active'); });
+  if (preset === 'identical') {
+    klP = [0.05, 0.15, 0.55, 0.15, 0.10];
+    klQ = [0.05, 0.15, 0.55, 0.15, 0.10];
+    document.getElementById('klPresetIdentical').classList.add('active');
+  } else if (preset === 'shifted') {
+    klP = [0.05, 0.15, 0.55, 0.15, 0.10];
+    klQ = [0.08, 0.20, 0.45, 0.18, 0.09];
+    document.getElementById('klPresetShifted').classList.add('active');
+  } else if (preset === 'opposite') {
+    klP = [0.05, 0.10, 0.60, 0.15, 0.10];
+    klQ = [0.35, 0.25, 0.05, 0.20, 0.15];
+    document.getElementById('klPresetOpposite').classList.add('active');
+  } else if (preset === 'missing') {
+    klP = [0.02, 0.08, 0.70, 0.12, 0.08];
+    klQ = [0.20, 0.25, 0.05, 0.30, 0.20];
+    document.getElementById('klPresetMissing').classList.add('active');
+  }
+  drawKL();
+}
+
+function drawKL() {
+  const { ctx, w, h, canvas } = getCanvasCtx('klCanvas');
+  ctx.clearRect(0, 0, w, h);
+
+  const n = 5;
+  const margin = { top: 50, bottom: 100, left: 60, right: 40 };
+  const chartW = w - margin.left - margin.right;
+  const chartH = (h - margin.top - margin.bottom - 80) / 2;
+
+  // Top: Distribution bars (P and Q side by side)
+  drawText(ctx, 'P (teacher, blue) vs Q (student, red)', w / 2, margin.top - 20, '#aaa', 13, 'center', '600');
+
+  const groupW = chartW / n;
+  const barW = groupW * 0.3;
+  const maxP = 1.0;
+
+  for (let i = 0; i < n; i++) {
+    const gx = margin.left + i * groupW;
+    // P bar
+    const pH = (klP[i] / maxP) * chartH * 0.9;
+    ctx.fillStyle = 'rgba(74,158,255,0.7)';
+    drawRoundedRect(ctx, gx + groupW * 0.15, margin.top + chartH - pH, barW, pH, 3);
+    ctx.fill();
+    drawText(ctx, klP[i].toFixed(2), gx + groupW * 0.15 + barW / 2, margin.top + chartH - pH - 12, '#4a9eff', 10, 'center', '600');
+
+    // Q bar
+    const qH = (klQ[i] / maxP) * chartH * 0.9;
+    ctx.fillStyle = 'rgba(255,74,106,0.7)';
+    drawRoundedRect(ctx, gx + groupW * 0.55, margin.top + chartH - qH, barW, qH, 3);
+    ctx.fill();
+    drawText(ctx, klQ[i].toFixed(2), gx + groupW * 0.55 + barW / 2, margin.top + chartH - qH - 12, '#ff4a6a', 10, 'center', '600');
+
+    // Class label
+    drawText(ctx, klLabels[i], gx + groupW / 2, margin.top + chartH + 15, '#888', 12, 'center', '400');
+  }
+
+  // Drag instruction
+  drawText(ctx, 'Click and drag bars to edit distributions', w / 2, margin.top + chartH + 35, '#555', 11, 'center', '400');
+
+  // Bottom: Per-term decomposition
+  const termY = margin.top + chartH + 60;
+  const termH = chartH * 0.6;
+  const terms = klTerms(klP, klQ);
+  const maxTerm = Math.max(0.01, ...terms.map(Math.abs));
+
+  drawText(ctx, 'Per-term KL contribution: P(x) * log(P(x)/Q(x))', w / 2, termY - 10, '#ffd93d', 12, 'center', '600');
+
+  for (let i = 0; i < n; i++) {
+    const gx = margin.left + i * groupW;
+    const tH = (Math.abs(terms[i]) / maxTerm) * termH * 0.8;
+    const positive = terms[i] >= 0;
+    ctx.fillStyle = positive ? 'rgba(255,217,61,0.6)' : 'rgba(255,100,100,0.6)';
+    const bx = gx + groupW * 0.25;
+    const bw = groupW * 0.5;
+    drawRoundedRect(ctx, bx, termY + termH - tH, bw, tH, 3);
+    ctx.fill();
+    drawText(ctx, terms[i].toFixed(3), bx + bw / 2, termY + termH - tH - 12, '#ffd93d', 10, 'center', '600');
+    drawText(ctx, klLabels[i], bx + bw / 2, termY + termH + 14, '#888', 11, 'center', '400');
+  }
+
+  // KL values
+  const klPQ = klDivergence(klP, klQ);
+  const klQP = klDivergence(klQ, klP);
+  const infoY = h - 35;
+  drawText(ctx, 'KL(P||Q) = ' + klPQ.toFixed(4), w * 0.25, infoY, '#4a9eff', 15, 'center', '700');
+  drawText(ctx, 'KL(Q||P) = ' + klQP.toFixed(4), w * 0.5, infoY, '#ff4a6a', 15, 'center', '700');
+  const sym = Math.abs(klPQ - klQP) < 0.0001 ? '=' : '\u2260';
+  drawText(ctx, 'Asymmetric! KL(P||Q) ' + sym + ' KL(Q||P)', w * 0.78, infoY, '#aaa', 12, 'center', '600');
+
+  // Store layout info for mouse interaction
+  canvas._klLayout = { margin, groupW, barW, chartH, maxP, n };
+}
+
+// Mouse interaction for KL bars
+(function() {
+  const c = document.getElementById('klCanvas');
+  function getBarAt(e) {
+    const rect = c.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    if (!c._klLayout) return null;
+    const { margin, groupW, barW, chartH, n } = c._klLayout;
+    for (let i = 0; i < n; i++) {
+      const gx = margin.left + i * groupW;
+      const px = gx + groupW * 0.15;
+      const qx = gx + groupW * 0.55;
+      if (mx >= px && mx <= px + barW && my >= margin.top && my <= margin.top + chartH + 10) {
+        return { dist: 'P', index: i, my: my };
+      }
+      if (mx >= qx && mx <= qx + barW && my >= margin.top && my <= margin.top + chartH + 10) {
+        return { dist: 'Q', index: i, my: my };
+      }
+    }
+    return null;
+  }
+
+  c.addEventListener('mousedown', function(e) {
+    const hit = getBarAt(e);
+    if (hit) { klDragging = hit; e.preventDefault(); }
+  });
+
+  window.addEventListener('mousemove', function(e) {
+    if (!klDragging || !c._klLayout) return;
+    const rect = c.getBoundingClientRect();
+    const my = e.clientY - rect.top;
+    const { margin, chartH, maxP } = c._klLayout;
+    let val = 1 - (my - margin.top) / chartH;
+    val = Math.max(0.01, Math.min(0.95, val));
+    if (klDragging.dist === 'P') {
+      klP[klDragging.index] = val;
+      klP = normalize(klP);
+    } else {
+      klQ[klDragging.index] = val;
+      klQ = normalize(klQ);
+    }
+    drawKL();
+  });
+
+  window.addEventListener('mouseup', function() { klDragging = null; });
+})();
+
+// ============================================================
+// 7.3 TEMPERATURE
+// ============================================================
+const tempLogits = [5.2, 2.1, -0.5, -1.3, 0.8];
+const tempClasses = ['Class A', 'Class B', 'Class C', 'Class D', 'Class E'];
+let tempAnimFrame = null;
+
+function updateTemp() {
+  const T = parseFloat(document.getElementById('tempSlider').value);
+  document.getElementById('tempValue').textContent = 'T = ' + T.toFixed(1);
+  drawTemperature(T);
+}
+
+function animateTemp(from, to, duration) {
+  if (tempAnimFrame) cancelAnimationFrame(tempAnimFrame);
+  const start = performance.now();
+  function step(now) {
+    const t = Math.min(1, (now - start) / duration);
+    const eased = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+    const T = from + (to - from) * eased;
+    document.getElementById('tempSlider').value = T;
+    document.getElementById('tempValue').textContent = 'T = ' + T.toFixed(1);
+    drawTemperature(T);
+    if (t < 1) tempAnimFrame = requestAnimationFrame(step);
+    else tempAnimFrame = null;
+  }
+  tempAnimFrame = requestAnimationFrame(step);
+}
+
+function drawTemperature(T) {
+  if (T === undefined) T = parseFloat(document.getElementById('tempSlider').value);
+  const { ctx, w, h } = getCanvasCtx('tempCanvas');
+  ctx.clearRect(0, 0, w, h);
+
+  const probs = softmax(tempLogits, T);
+  const n = tempLogits.length;
+  const margin = { top: 55, bottom: 60, left: 80, right: 40 };
+  const chartW = w - margin.left - margin.right;
+  const chartH = h - margin.top - margin.bottom;
+
+  // Title row
+  drawText(ctx, 'Logits: [' + tempLogits.map(v => v.toFixed(1)).join(', ') + ']', w * 0.35, 20, '#888', 12, 'center', '400');
+  drawText(ctx, 'softmax(logits / ' + T.toFixed(1) + ')', w * 0.75, 20, ACCENT, 13, 'center', '700');
+
+  // Left half: logits bars
+  const halfW = (chartW - 40) / 2;
+  const barSpace = chartH / n;
+  const barH = barSpace * 0.55;
+  const maxLogit = Math.max(...tempLogits.map(Math.abs));
+
+  drawText(ctx, 'Raw Logits', margin.left + halfW / 2, margin.top - 10, '#888', 12, 'center', '600');
+
+  for (let i = 0; i < n; i++) {
+    const y = margin.top + i * barSpace + (barSpace - barH) / 2;
+    const centerX = margin.left + halfW / 2;
+    const bw = (tempLogits[i] / maxLogit) * halfW * 0.4;
+
+    ctx.fillStyle = tempLogits[i] >= 0 ? 'rgba(100,100,120,0.5)' : 'rgba(120,80,80,0.5)';
+    if (bw >= 0) {
+      drawRoundedRect(ctx, centerX, y, bw, barH, 3);
+    } else {
+      drawRoundedRect(ctx, centerX + bw, y, -bw, barH, 3);
+    }
+    ctx.fill();
+
+    drawText(ctx, tempClasses[i], margin.left + 5, y + barH / 2, '#aaa', 11, 'left', '400');
+    drawText(ctx, tempLogits[i].toFixed(1), centerX + bw + (bw >= 0 ? 8 : -8), y + barH / 2, '#ccc', 11, bw >= 0 ? 'left' : 'right', '600');
+  }
+
+  // Center line for logits
+  const centerX = margin.left + halfW / 2;
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(centerX, margin.top);
+  ctx.lineTo(centerX, margin.top + chartH);
+  ctx.stroke();
+
+  // Right half: softmax probs + gradient magnitude
+  const rx = margin.left + halfW + 40;
+  drawText(ctx, 'Probabilities (T=' + T.toFixed(1) + ')', rx + halfW / 2, margin.top - 10, ACCENT, 12, 'center', '600');
+
+  // Compute gradient magnitudes (simplified: p_i * (1 - p_i) scaled by 1/T)
+  const grads = probs.map(function(p) { return p * (1 - p) / T; });
+  const maxGrad = Math.max(0.001, ...grads);
+
+  for (let i = 0; i < n; i++) {
+    const y = margin.top + i * barSpace + (barSpace - barH) / 2;
+
+    // Prob bar
+    const pw = probs[i] * halfW * 0.7;
+    const alpha = 0.4 + probs[i] * 0.6;
+    ctx.fillStyle = 'rgba(224,86,253,' + alpha + ')';
+    drawRoundedRect(ctx, rx, y, pw, barH * 0.55, 3);
+    ctx.fill();
+    drawText(ctx, probs[i].toFixed(3), rx + pw + 8, y + barH * 0.27, ACCENT, 11, 'left', '600');
+
+    // Gradient bar (below prob bar)
+    const gw = (grads[i] / maxGrad) * halfW * 0.4;
+    ctx.fillStyle = 'rgba(78,205,196,0.5)';
+    drawRoundedRect(ctx, rx, y + barH * 0.55 + 2, gw, barH * 0.35, 2);
+    ctx.fill();
+    drawText(ctx, 'grad: ' + grads[i].toFixed(4), rx + gw + 8, y + barH * 0.72, '#4ecdc4', 9, 'left', '400');
+
+    drawText(ctx, tempClasses[i], rx + halfW + 5, y + barH / 2, '#888', 10, 'left', '400');
+  }
+
+  // Temperature insight text
+  let insight = '';
+  if (T < 0.5) insight = 'Near one-hot: almost all mass on top class. Gradients only flow through one class.';
+  else if (T < 1.5) insight = 'Standard softmax: peaked distribution. Some dark knowledge visible.';
+  else if (T < 5) insight = 'Sweet spot for distillation: class relationships become visible. Gradients spread.';
+  else insight = 'Approaching uniform: all classes similar. Information washed out.';
+  drawText(ctx, insight, w / 2, h - 20, '#ccb866', 12, 'center', '400');
+}
+
+// ============================================================
+// 7.4 TEACHER-STUDENT TRAINING
+// ============================================================
+let tsAlpha = 0.3;
+let tsTemp = 4.0;
+let tsTraining = false;
+let tsEpoch = 0;
+let tsStudentLogits = [0.5, 0.3, 0.1, -0.2, -0.1];
+const tsTeacherLogits = [5.2, 1.8, -0.3, -1.5, 0.6];
+const tsHardLabel = [1, 0, 0, 0, 0]; // Class 0
+const tsClasses = ['Cat', 'Dog', 'Bird', 'Car', 'Fish'];
+let tsAnimFrame = null;
+let tsLossHistory = [];
+let tsAccHistory = [];
+
+function updateAlpha() {
+  tsAlpha = parseFloat(document.getElementById('alphaSlider').value);
+  document.getElementById('alphaValue').textContent = '\u03B1 = ' + tsAlpha.toFixed(2);
+  drawTeacherStudent();
+}
+
+function updateTSTemp() {
+  tsTemp = parseFloat(document.getElementById('tsTemperature').value);
+  document.getElementById('tsTempValue').textContent = 'T = ' + tsTemp.toFixed(1);
+  drawTeacherStudent();
+}
+
+function resetTSTraining() {
+  tsTraining = false;
+  if (tsAnimFrame) cancelAnimationFrame(tsAnimFrame);
+  tsEpoch = 0;
+  tsStudentLogits = [0.5, 0.3, 0.1, -0.2, -0.1];
+  tsLossHistory = [];
+  tsAccHistory = [];
+  document.getElementById('tsTrainBtn').textContent = 'Train Student';
+  drawTeacherStudent();
+}
+
+function startTSTraining() {
+  if (tsTraining) {
+    tsTraining = false;
+    document.getElementById('tsTrainBtn').textContent = 'Train Student';
+    return;
+  }
+  tsTraining = true;
+  document.getElementById('tsTrainBtn').textContent = 'Pause';
+  trainStep();
+}
+
+function trainStep() {
+  if (!tsTraining) return;
+  const T = tsTemp;
+  const alpha = tsAlpha;
+  const lr = 0.15;
+
+  const teacherSoft = softmax(tsTeacherLogits, T);
+  const studentSoft = softmax(tsStudentLogits, T);
+  const studentHard = softmax(tsStudentLogits, 1);
+
+  // Gradient from hard label CE
+  const hardGrad = studentHard.map(function(p, i) { return p - tsHardLabel[i]; });
+
+  // Gradient from KL with teacher soft targets
+  const klGrad = studentSoft.map(function(q, i) { return (q - teacherSoft[i]) / T; });
+
+  // Combined gradient
+  for (let i = 0; i < tsStudentLogits.length; i++) {
+    const grad = alpha * hardGrad[i] + (1 - alpha) * T * T * klGrad[i];
+    tsStudentLogits[i] -= lr * grad;
+  }
+
+  // Compute losses for history
+  let ceLoss = 0;
+  for (let i = 0; i < tsHardLabel.length; i++) {
+    if (tsHardLabel[i] > 0) ceLoss -= Math.log(Math.max(1e-10, studentHard[i]));
+  }
+  const klLoss = klDivergence(teacherSoft, studentSoft);
+  const totalLoss = alpha * ceLoss + (1 - alpha) * T * T * klLoss;
+
+  tsLossHistory.push(totalLoss);
+  // Accuracy: how close student top prediction matches teacher top prediction
+  const teacherTop = tsTeacherLogits.indexOf(Math.max(...tsTeacherLogits));
+  const studentTop = tsStudentLogits.indexOf(Math.max(...tsStudentLogits));
+  tsAccHistory.push(studentTop === teacherTop ? 1 : 0);
+
+  tsEpoch++;
+  drawTeacherStudent();
+
+  if (tsEpoch < 200 && tsTraining) {
+    tsAnimFrame = requestAnimationFrame(trainStep);
+  } else {
+    tsTraining = false;
+    document.getElementById('tsTrainBtn').textContent = 'Train Student';
+  }
+}
+
+function drawTeacherStudent() {
+  const { ctx, w, h } = getCanvasCtx('tsCanvas');
+  ctx.clearRect(0, 0, w, h);
+
+  const n = tsClasses.length;
+  const T = tsTemp;
+  const teacherSoft = softmax(tsTeacherLogits, T);
+  const studentSoft = softmax(tsStudentLogits, T);
+  const studentHard = softmax(tsStudentLogits, 1);
+
+  // Layout: left = architectures, center = distributions, right = loss/training curve
+  const colW = w / 3;
+  const margin = { top: 40, bottom: 30 };
+
+  // --- Left: Architecture Diagrams ---
+  drawText(ctx, 'Architectures', colW * 0.5, margin.top - 15, '#888', 12, 'center', '600');
+
+  // Teacher
+  const tBoxX = 20, tBoxY = margin.top + 10, tBoxW = colW * 0.42, tBoxH = 180;
+  ctx.strokeStyle = '#4a9eff';
+  ctx.lineWidth = 2;
+  drawRoundedRect(ctx, tBoxX, tBoxY, tBoxW, tBoxH, 8);
+  ctx.stroke();
+  drawText(ctx, 'Teacher', tBoxX + tBoxW / 2, tBoxY + 18, '#4a9eff', 12, 'center', '700');
+  // Draw layers
+  for (let l = 0; l < 6; l++) {
+    const ly = tBoxY + 38 + l * 22;
+    const lw = tBoxW * 0.7;
+    ctx.fillStyle = 'rgba(74,158,255,0.15)';
+    drawRoundedRect(ctx, tBoxX + (tBoxW - lw) / 2, ly, lw, 16, 4);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(74,158,255,0.3)';
+    ctx.lineWidth = 1;
+    drawRoundedRect(ctx, tBoxX + (tBoxW - lw) / 2, ly, lw, 16, 4);
+    ctx.stroke();
+    drawText(ctx, 'Layer ' + (l + 1) + ' (d=256)', tBoxX + tBoxW / 2, ly + 8, '#4a9eff', 8, 'center', '400');
+  }
+  drawText(ctx, '2M params', tBoxX + tBoxW / 2, tBoxY + tBoxH - 12, '#4a9eff', 10, 'center', '700');
+
+  // Student
+  const sBoxX = colW * 0.5, sBoxY = margin.top + 10, sBoxW = colW * 0.42, sBoxH = 180;
+  ctx.strokeStyle = ACCENT;
+  ctx.lineWidth = 2;
+  drawRoundedRect(ctx, sBoxX, sBoxY, sBoxW, sBoxH, 8);
+  ctx.stroke();
+  drawText(ctx, 'Student', sBoxX + sBoxW / 2, sBoxY + 18, ACCENT, 12, 'center', '700');
+  for (let l = 0; l < 2; l++) {
+    const ly = sBoxY + 38 + l * 22;
+    const lw = sBoxW * 0.5;
+    ctx.fillStyle = 'rgba(224,86,253,0.15)';
+    drawRoundedRect(ctx, sBoxX + (sBoxW - lw) / 2, ly, lw, 16, 4);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(224,86,253,0.3)';
+    ctx.lineWidth = 1;
+    drawRoundedRect(ctx, sBoxX + (sBoxW - lw) / 2, ly, lw, 16, 4);
+    ctx.stroke();
+    drawText(ctx, 'Layer ' + (l + 1) + ' (d=64)', sBoxX + sBoxW / 2, ly + 8, ACCENT, 8, 'center', '400');
+  }
+  drawText(ctx, '200K params', sBoxX + sBoxW / 2, sBoxY + sBoxH - 12, ACCENT, 10, 'center', '700');
+  drawText(ctx, '10x smaller', (tBoxX + tBoxW + sBoxX) / 2 + 10, sBoxY + sBoxH + 14, '#ffd93d', 10, 'center', '700');
+
+  // --- Center: Distribution comparison ---
+  const cx = colW + 10;
+  const cw = colW - 20;
+  drawText(ctx, 'Output Distributions (T=' + T.toFixed(1) + ')', cx + cw / 2, margin.top - 15, '#aaa', 12, 'center', '600');
+
+  const distTop = margin.top + 10;
+  const distH = h - margin.top - margin.bottom - 20;
+  const groupH = distH / n;
+
+  for (let i = 0; i < n; i++) {
+    const y = distTop + i * groupH;
+    const barMaxW = cw * 0.35;
+
+    // Teacher bar (left)
+    const tw = teacherSoft[i] * barMaxW;
+    ctx.fillStyle = 'rgba(74,158,255,0.6)';
+    drawRoundedRect(ctx, cx + cw / 2 - tw - 2, y + 6, tw, groupH * 0.35, 3);
+    ctx.fill();
+    drawText(ctx, teacherSoft[i].toFixed(3), cx + cw / 2 - tw - 8, y + 6 + groupH * 0.17, '#4a9eff', 9, 'right', '400');
+
+    // Student bar (right)
+    const sw = studentSoft[i] * barMaxW;
+    ctx.fillStyle = 'rgba(224,86,253,0.6)';
+    drawRoundedRect(ctx, cx + cw / 2 + 2, y + 6, sw, groupH * 0.35, 3);
+    ctx.fill();
+    drawText(ctx, studentSoft[i].toFixed(3), cx + cw / 2 + sw + 8, y + 6 + groupH * 0.17, ACCENT, 9, 'left', '400');
+
+    // Class label
+    drawText(ctx, tsClasses[i], cx + cw / 2, y + groupH * 0.65, '#888', 10, 'center', '400');
+  }
+
+  // Center line
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(cx + cw / 2, distTop);
+  ctx.lineTo(cx + cw / 2, distTop + distH);
+  ctx.stroke();
+
+  // --- Right: Loss curves ---
+  const rx = colW * 2 + 10;
+  const rw = colW - 30;
+  drawText(ctx, 'Training Progress', rx + rw / 2, margin.top - 15, '#aaa', 12, 'center', '600');
+
+  // Loss formula
+  const alpha = tsAlpha;
+  drawText(ctx, '\u03B1=' + alpha.toFixed(2) + '  T=' + T.toFixed(1), rx + rw / 2, margin.top + 8, '#ffd93d', 10, 'center', '600');
+
+  // Compute current losses
+  const teacherSoftCurr = softmax(tsTeacherLogits, T);
+  const studentSoftCurr = softmax(tsStudentLogits, T);
+  const studentHardCurr = softmax(tsStudentLogits, 1);
+  let ceLoss = 0;
+  for (let i = 0; i < n; i++) {
+    if (tsHardLabel[i] > 0) ceLoss -= Math.log(Math.max(1e-10, studentHardCurr[i]));
+  }
+  const klLoss = klDivergence(teacherSoftCurr, studentSoftCurr);
+
+  // Loss bars
+  const lossY = margin.top + 30;
+  const lossBarW = rw * 0.8;
+  const maxLoss = Math.max(3, ceLoss, T * T * klLoss);
+
+  drawText(ctx, 'CE (hard):', rx + 5, lossY + 12, '#ff6b6b', 10, 'left', '600');
+  const ceW = Math.min(lossBarW, (ceLoss / maxLoss) * lossBarW);
+  ctx.fillStyle = 'rgba(255,107,107,0.5)';
+  drawRoundedRect(ctx, rx + 70, lossY + 3, ceW, 18, 4);
+  ctx.fill();
+  drawText(ctx, ceLoss.toFixed(3), rx + 70 + ceW + 5, lossY + 12, '#ff6b6b', 10, 'left', '600');
+
+  drawText(ctx, 'T\u00B2*KL (soft):', rx + 5, lossY + 38, '#4ecdc4', 10, 'left', '600');
+  const klW = Math.min(lossBarW, (T * T * klLoss / maxLoss) * lossBarW);
+  ctx.fillStyle = 'rgba(78,205,196,0.5)';
+  drawRoundedRect(ctx, rx + 70, lossY + 29, klW, 18, 4);
+  ctx.fill();
+  drawText(ctx, (T * T * klLoss).toFixed(3), rx + 70 + klW + 5, lossY + 38, '#4ecdc4', 10, 'left', '600');
+
+  // Epoch counter
+  drawText(ctx, 'Epoch: ' + tsEpoch, rx + rw / 2, lossY + 65, '#aaa', 12, 'center', '700');
+
+  // Loss history plot
+  if (tsLossHistory.length > 1) {
+    const plotY = lossY + 85;
+    const plotH = h - plotY - margin.bottom - 10;
+    const plotW = rw;
+
+    // Axes
+    ctx.strokeStyle = '#2a2a4a';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(rx, plotY);
+    ctx.lineTo(rx, plotY + plotH);
+    ctx.lineTo(rx + plotW, plotY + plotH);
+    ctx.stroke();
+    drawText(ctx, 'Loss', rx - 5, plotY + plotH / 2, '#666', 9, 'right', '400');
+
+    const maxHist = Math.max(...tsLossHistory);
+    ctx.strokeStyle = ACCENT;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i < tsLossHistory.length; i++) {
+      const px = rx + (i / Math.max(1, tsLossHistory.length - 1)) * plotW;
+      const py = plotY + plotH - (tsLossHistory[i] / Math.max(0.01, maxHist)) * plotH * 0.9;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+  }
+}
+
+// ============================================================
+// 7.5 QUANTIZATION
+// ============================================================
+// Generate realistic weight distribution (Gaussian)
+const quantWeights = [];
+(function() {
+  // Box-Muller transform for Gaussian
+  for (let i = 0; i < 500; i++) {
+    let u1 = Math.random(), u2 = Math.random();
+    let z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+    quantWeights.push(z * 0.5); // mean 0, std 0.5
+  }
+  quantWeights.sort(function(a, b) { return a - b; });
+})();
+
+const quantLevels = {
+  fp32: { bits: 32, levels: Infinity, label: 'FP32 (32-bit)', sizeRatio: 1.0, speed: '1x', accuracy: 99.2 },
+  fp16: { bits: 16, levels: 65536, label: 'FP16 (16-bit)', sizeRatio: 0.5, speed: '1.5x', accuracy: 99.1 },
+  int8: { bits: 8, levels: 256, label: 'INT8 (8-bit)', sizeRatio: 0.25, speed: '2x', accuracy: 98.5 },
+  int4: { bits: 4, levels: 16, label: 'INT4 (4-bit)', sizeRatio: 0.125, speed: '3x', accuracy: 96.0 },
+  int2: { bits: 2, levels: 4, label: 'INT2 (2-bit)', sizeRatio: 0.0625, speed: '4x', accuracy: 82.0 }
+};
+
+let quantAnimFrame = null;
+
+function quantize(val, levels, minV, maxV) {
+  if (levels === Infinity || levels >= 65536) return val;
+  const step = (maxV - minV) / (levels - 1);
+  const idx = Math.round((val - minV) / step);
+  return minV + idx * step;
+}
+
+function updateQuantization() {
+  drawQuantization();
+}
+
+function animateQuantization() {
+  const keys = ['fp32', 'fp16', 'int8', 'int4', 'int2'];
+  let idx = 0;
+  const sel = document.getElementById('quantSelect');
+  function step() {
+    if (idx >= keys.length) return;
+    sel.value = keys[idx];
+    drawQuantization();
+    idx++;
+    if (idx < keys.length) setTimeout(step, 1200);
+  }
+  step();
+}
+
+function drawQuantization() {
+  const { ctx, w, h } = getCanvasCtx('quantCanvas');
+  ctx.clearRect(0, 0, w, h);
+
+  const mode = document.getElementById('quantSelect').value;
+  const info = quantLevels[mode];
+  const margin = { top: 50, bottom: 80, left: 60, right: 60 };
+  const chartW = w - margin.left - margin.right;
+  const chartH = (h - margin.top - margin.bottom - 60) / 2;
+
+  const minW = Math.min(...quantWeights);
+  const maxW = Math.max(...quantWeights);
+
+  // Title
+  drawText(ctx, info.label + '  |  Size: ' + (info.sizeRatio * 100).toFixed(0) + '%  |  Speed: ' + info.speed + '  |  Accuracy: ' + info.accuracy + '%', w / 2, 22, '#e0e0e0', 13, 'center', '600');
+
+  // Top: Weight histogram (original vs quantized)
+  drawText(ctx, 'Weight Distribution', w / 2, margin.top - 8, '#aaa', 12, 'center', '600');
+
+  const nBins = 60;
+  const binW = (maxW - minW) / nBins;
+  const origBins = new Array(nBins).fill(0);
+  const quantBins = new Array(nBins).fill(0);
+  const quantized = quantWeights.map(function(v) { return quantize(v, info.levels, minW, maxW); });
+
+  for (let i = 0; i < quantWeights.length; i++) {
+    const ob = Math.min(nBins - 1, Math.max(0, Math.floor((quantWeights[i] - minW) / binW)));
+    origBins[ob]++;
+    const qb = Math.min(nBins - 1, Math.max(0, Math.floor((quantized[i] - minW) / binW)));
+    quantBins[qb]++;
+  }
+
+  const maxBin = Math.max(...origBins, ...quantBins);
+  const bw = chartW / nBins;
+
+  for (let i = 0; i < nBins; i++) {
+    const x = margin.left + i * bw;
+    // Original
+    const oh = (origBins[i] / maxBin) * chartH * 0.85;
+    ctx.fillStyle = 'rgba(74,158,255,0.3)';
+    ctx.fillRect(x, margin.top + chartH - oh, bw - 1, oh);
+    // Quantized
+    const qh = (quantBins[i] / maxBin) * chartH * 0.85;
+    ctx.fillStyle = 'rgba(224,86,253,0.5)';
+    ctx.fillRect(x, margin.top + chartH - qh, bw - 1, qh);
+  }
+
+  // Axis
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(margin.left, margin.top + chartH);
+  ctx.lineTo(margin.left + chartW, margin.top + chartH);
+  ctx.stroke();
+  drawText(ctx, minW.toFixed(1), margin.left, margin.top + chartH + 14, '#666', 10, 'center', '400');
+  drawText(ctx, '0', margin.left + chartW / 2, margin.top + chartH + 14, '#666', 10, 'center', '400');
+  drawText(ctx, maxW.toFixed(1), margin.left + chartW, margin.top + chartH + 14, '#666', 10, 'center', '400');
+
+  // Draw quantization grid lines for INT4/INT2
+  if (info.levels <= 16) {
+    const step = (maxW - minW) / (info.levels - 1);
+    ctx.strokeStyle = 'rgba(224,86,253,0.2)';
+    ctx.setLineDash([2, 4]);
+    for (let l = 0; l < info.levels; l++) {
+      const val = minW + l * step;
+      const px = margin.left + ((val - minW) / (maxW - minW)) * chartW;
+      ctx.beginPath();
+      ctx.moveTo(px, margin.top);
+      ctx.lineTo(px, margin.top + chartH);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    drawText(ctx, info.levels + ' discrete levels', w / 2, margin.top + 12, 'rgba(224,86,253,0.6)', 10, 'center', '600');
+  }
+
+  // Bottom: Reconstruction error scatter
+  const errY = margin.top + chartH + 40;
+  drawText(ctx, 'Reconstruction Error (original - quantized)', w / 2, errY - 8, '#ff6b6b', 12, 'center', '600');
+
+  let mse = 0;
+  const errors = [];
+  for (let i = 0; i < quantWeights.length; i++) {
+    const err = quantWeights[i] - quantized[i];
+    errors.push(err);
+    mse += err * err;
+  }
+  mse /= quantWeights.length;
+  const maxErr = Math.max(0.001, ...errors.map(Math.abs));
+
+  const errH = chartH * 0.8;
+  // Draw zero line
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(margin.left, errY + errH / 2);
+  ctx.lineTo(margin.left + chartW, errY + errH / 2);
+  ctx.stroke();
+
+  // Scatter plot of errors
+  const step = Math.max(1, Math.floor(quantWeights.length / 200));
+  for (let i = 0; i < quantWeights.length; i += step) {
+    const px = margin.left + ((quantWeights[i] - minW) / (maxW - minW)) * chartW;
+    const py = errY + errH / 2 - (errors[i] / maxErr) * errH * 0.45;
+    const errMag = Math.abs(errors[i]) / maxErr;
+    ctx.fillStyle = 'rgba(255,107,107,' + (0.2 + errMag * 0.8) + ')';
+    ctx.beginPath();
+    ctx.arc(px, py, 2 + errMag * 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // MSE text
+  drawText(ctx, 'MSE = ' + mse.toFixed(6), w / 2, h - margin.bottom + 20, '#ff6b6b', 14, 'center', '700');
+  drawText(ctx, 'Model size: ' + (info.sizeRatio * 800).toFixed(0) + 'MB (from 800MB)', w / 2, h - margin.bottom + 40, '#aaa', 11, 'center', '400');
+}
+
+// ============================================================
+// 7.6 PRUNING
+// ============================================================
+// Generate a small network with weights
+const pruneNetwork = {
+  layers: [3, 5, 4, 2],
+  weights: []
+};
+
+(function() {
+  const layers = pruneNetwork.layers;
+  for (let l = 0; l < layers.length - 1; l++) {
+    const layerWeights = [];
+    for (let i = 0; i < layers[l]; i++) {
+      for (let j = 0; j < layers[l + 1]; j++) {
+        // Most weights near zero, some large (realistic distribution)
+        let u1 = Math.random(), u2 = Math.random();
+        let z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+        layerWeights.push({ from: i, to: j, layer: l, weight: z * 0.6 });
+      }
+    }
+    pruneNetwork.weights.push(layerWeights);
+  }
+})();
+
+function setPruneLevel(frac) {
+  document.getElementById('pruneSlider').value = frac;
+  updatePruning();
+}
+
+function updatePruning() {
+  const slider = parseFloat(document.getElementById('pruneSlider').value);
+  // Map slider to threshold: collect all weight magnitudes, find percentile
+  const allMags = [];
+  pruneNetwork.weights.forEach(function(layer) {
+    layer.forEach(function(w) { allMags.push(Math.abs(w.weight)); });
+  });
+  allMags.sort(function(a, b) { return a - b; });
+  const threshIdx = Math.min(allMags.length - 1, Math.floor(slider * allMags.length));
+  const threshold = slider > 0 ? allMags[threshIdx] : 0;
+
+  const totalW = allMags.length;
+  const pruned = allMags.filter(function(m) { return m <= threshold; }).length;
+  const pct = (pruned / totalW * 100).toFixed(0);
+  document.getElementById('pruneValue').textContent = pct + '% pruned (threshold: ' + threshold.toFixed(3) + ')';
+  drawPruning(threshold, slider);
+}
+
+function drawPruning(threshold, pruneFrac) {
+  const { ctx, w, h } = getCanvasCtx('pruneCanvas');
+  ctx.clearRect(0, 0, w, h);
+
+  const margin = { top: 40, bottom: 40, left: 40, right: 40 };
+  const netW = w * 0.55;
+  const histW = w * 0.4;
+  const chartH = h - margin.top - margin.bottom;
+
+  // --- Left: Network diagram ---
+  const layers = pruneNetwork.layers;
+  const nLayers = layers.length;
+  const layerSpacing = netW / (nLayers + 1);
+
+  // Node positions
+  const nodePositions = [];
+  for (let l = 0; l < nLayers; l++) {
+    const nNodes = layers[l];
+    const xPos = margin.left + (l + 1) * layerSpacing;
+    const positions = [];
+    for (let n = 0; n < nNodes; n++) {
+      const yPos = margin.top + chartH / 2 - ((nNodes - 1) / 2 - n) * 45;
+      positions.push({ x: xPos, y: yPos });
+    }
+    nodePositions.push(positions);
+  }
+
+  // Draw edges
+  let totalW_ = 0, prunedW = 0;
+  const allMags = [];
+  pruneNetwork.weights.forEach(function(layer) {
+    layer.forEach(function(wt) { allMags.push(Math.abs(wt.weight)); });
+  });
+  const maxMag = Math.max(...allMags);
+
+  pruneNetwork.weights.forEach(function(layerWeights, l) {
+    layerWeights.forEach(function(wt) {
+      totalW_++;
+      const mag = Math.abs(wt.weight);
+      const isPruned = mag <= threshold;
+      if (isPruned) prunedW++;
+
+      const from = nodePositions[l][wt.from];
+      const to = nodePositions[l + 1][wt.to];
+
+      if (isPruned) {
+        ctx.strokeStyle = 'rgba(255,74,74,0.08)';
+        ctx.lineWidth = 0.5;
+      } else {
+        const alpha = 0.2 + (mag / maxMag) * 0.8;
+        ctx.strokeStyle = 'rgba(78,205,196,' + alpha + ')';
+        ctx.lineWidth = 1 + (mag / maxMag) * 3;
+      }
+      ctx.beginPath();
+      ctx.moveTo(from.x, from.y);
+      ctx.lineTo(to.x, to.y);
+      ctx.stroke();
+    });
+  });
+
+  // Draw nodes
+  for (let l = 0; l < nLayers; l++) {
+    nodePositions[l].forEach(function(pos) {
+      ctx.fillStyle = '#1a1a3e';
+      ctx.strokeStyle = '#4ecdc4';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, 10, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    });
+    // Layer label
+    const lx = nodePositions[l][0].x;
+    drawText(ctx, 'L' + l, lx, h - margin.bottom + 15, '#666', 10, 'center', '400');
+  }
+
+  // Stats
+  const pctPruned = (prunedW / totalW_ * 100).toFixed(0);
+  drawText(ctx, pctPruned + '% weights pruned', netW / 2 + margin.left, margin.top - 10, '#ffd93d', 13, 'center', '700');
+
+  // Accuracy estimation
+  const p = prunedW / totalW_;
+  let acc;
+  if (p < 0.5) acc = 99 - p * 2;
+  else if (p < 0.9) acc = 98 - (p - 0.5) * 8;
+  else acc = Math.max(60, 94.8 - (p - 0.9) * 250);
+  drawText(ctx, 'Est. accuracy: ' + acc.toFixed(1) + '%', netW / 2 + margin.left, margin.top + 8, '#aaa', 10, 'center', '400');
+
+  // --- Right: Weight magnitude histogram ---
+  const hx = netW + 30;
+  const hw = histW - 40;
+  const hh = chartH * 0.85;
+  const hy = margin.top + 20;
+
+  drawText(ctx, 'Weight Magnitude Distribution', hx + hw / 2, hy - 12, '#aaa', 11, 'center', '600');
+
+  const nBins = 30;
+  allMags.sort(function(a, b) { return a - b; });
+  const maxBinVal = maxMag;
+  const binSize = maxBinVal / nBins;
+  const bins = new Array(nBins).fill(0);
+  allMags.forEach(function(m) {
+    const idx = Math.min(nBins - 1, Math.floor(m / binSize));
+    bins[idx]++;
+  });
+  const maxBinCount = Math.max(...bins);
+  const histBarW = hw / nBins;
+
+  for (let i = 0; i < nBins; i++) {
+    const bx = hx + i * histBarW;
+    const bh = (bins[i] / maxBinCount) * hh * 0.8;
+    const binCenter = (i + 0.5) * binSize;
+    const isPruned = binCenter <= threshold;
+    ctx.fillStyle = isPruned ? 'rgba(255,74,74,0.25)' : 'rgba(78,205,196,0.5)';
+    ctx.fillRect(bx, hy + hh - bh, histBarW - 1, bh);
+  }
+
+  // Threshold line
+  if (threshold > 0) {
+    const threshX = hx + (threshold / maxBinVal) * hw;
+    ctx.strokeStyle = '#ffd93d';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath();
+    ctx.moveTo(threshX, hy);
+    ctx.lineTo(threshX, hy + hh);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    drawText(ctx, '\u03B8=' + threshold.toFixed(3), threshX, hy - 4, '#ffd93d', 10, 'center', '600');
+  }
+
+  // Axis
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(hx, hy + hh);
+  ctx.lineTo(hx + hw, hy + hh);
+  ctx.stroke();
+  drawText(ctx, '0', hx, hy + hh + 12, '#666', 9, 'center', '400');
+  drawText(ctx, '|w|', hx + hw / 2, hy + hh + 12, '#666', 9, 'center', '400');
+  drawText(ctx, maxBinVal.toFixed(2), hx + hw, hy + hh + 12, '#666', 9, 'center', '400');
+
+  // Lottery ticket note
+  if (pruneFrac > 0.8) {
+    drawText(ctx, 'Lottery Ticket: this sparse subnetwork, retrained from', hx + hw / 2, hy + hh + 32, '#ccb866', 10, 'center', '400');
+    drawText(ctx, 'its original init, can match the dense network.', hx + hw / 2, hy + hh + 46, '#ccb866', 10, 'center', '400');
+  }
+}
+
+// ============================================================
+// 7.7 COMPRESSION TOOLKIT
+// ============================================================
+let compressionState = { distill: true, prune: false, quant: false };
+
+function toggleCompression(tech) {
+  if (tech === 'all') {
+    compressionState = { distill: true, prune: true, quant: true };
+  } else if (tech === 'none') {
+    compressionState = { distill: false, prune: false, quant: false };
+  } else {
+    compressionState[tech] = !compressionState[tech];
+  }
+  // Update buttons
+  document.getElementById('toggleDistill').classList.toggle('active', compressionState.distill);
+  document.getElementById('togglePrune').classList.toggle('active', compressionState.prune);
+  document.getElementById('toggleQuant').classList.toggle('active', compressionState.quant);
+  drawToolkit();
+}
+
+function drawToolkit() {
+  const { ctx, w, h } = getCanvasCtx('toolkitCanvas');
+  ctx.clearRect(0, 0, w, h);
+
+  const margin = { top: 50, bottom: 40, left: 50, right: 50 };
+  const st = compressionState;
+
+  // --- Top: Pipeline diagram ---
+  const pipeY = margin.top + 10;
+  const pipeH = 80;
+  const stages = [];
+  stages.push({ label: 'Original', params: '2B', size: 8000, acc: 99.5, color: '#888' });
+  if (st.distill) stages.push({ label: 'Distilled', params: '200M', size: 800, acc: 97.0, color: '#e056fd' });
+  if (st.prune) stages.push({ label: 'Pruned', params: st.distill ? '100M eff.' : '1B eff.', size: st.distill ? 400 : 4000, acc: st.distill ? 96.0 : 98.0, color: '#4ecdc4' });
+  if (st.quant) {
+    const prevSize = stages[stages.length - 1].size;
+    stages.push({ label: 'Quantized (INT4)', params: stages[stages.length - 1].params, size: Math.round(prevSize / 8), acc: stages[stages.length - 1].acc - 1.5, color: '#ffd93d' });
+  }
+
+  const stageW = (w - margin.left - margin.right) / stages.length;
+
+  for (let i = 0; i < stages.length; i++) {
+    const s = stages[i];
+    const cx = margin.left + i * stageW + stageW / 2;
+
+    // Box
+    const boxW = stageW * 0.7;
+    const boxH = pipeH * 0.65;
+    // Scale box to relative size
+    const sizeScale = 0.4 + 0.6 * (s.size / 8000);
+    const drawBoxW = boxW * sizeScale;
+    const drawBoxH = boxH * sizeScale;
+
+    ctx.fillStyle = s.color + '22';
+    ctx.strokeStyle = s.color;
+    ctx.lineWidth = 2;
+    drawRoundedRect(ctx, cx - drawBoxW / 2, pipeY + (pipeH - drawBoxH) / 2, drawBoxW, drawBoxH, 6);
+    ctx.fill();
+    drawRoundedRect(ctx, cx - drawBoxW / 2, pipeY + (pipeH - drawBoxH) / 2, drawBoxW, drawBoxH, 6);
+    ctx.stroke();
+
+    drawText(ctx, s.label, cx, pipeY - 5, s.color, 11, 'center', '700');
+    drawText(ctx, s.params, cx, pipeY + pipeH / 2, '#e0e0e0', 10, 'center', '600');
+    drawText(ctx, s.size >= 1000 ? (s.size / 1000).toFixed(1) + 'GB' : s.size + 'MB', cx, pipeY + pipeH + 8, '#aaa', 10, 'center', '400');
+    drawText(ctx, s.acc.toFixed(1) + '% acc', cx, pipeY + pipeH + 22, '#aaa', 9, 'center', '400');
+
+    // Arrow
+    if (i < stages.length - 1) {
+      const arrowX = cx + stageW / 2;
+      ctx.strokeStyle = '#555';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(arrowX - 15, pipeY + pipeH / 2);
+      ctx.lineTo(arrowX + 15, pipeY + pipeH / 2);
+      ctx.moveTo(arrowX + 10, pipeY + pipeH / 2 - 5);
+      ctx.lineTo(arrowX + 15, pipeY + pipeH / 2);
+      ctx.lineTo(arrowX + 10, pipeY + pipeH / 2 + 5);
+      ctx.stroke();
+    }
+  }
+
+  // Compression ratio
+  const firstSize = stages[0].size;
+  const lastSize = stages[stages.length - 1].size;
+  const ratio = (firstSize / lastSize).toFixed(0);
+  const accDrop = (stages[0].acc - stages[stages.length - 1].acc).toFixed(1);
+  if (stages.length > 1) {
+    drawText(ctx, ratio + 'x compression  |  ' + accDrop + '% accuracy drop', w / 2, pipeY + pipeH + 45, '#ffd93d', 13, 'center', '700');
+  }
+
+  // --- Bottom: Pareto frontier plot ---
+  const plotY = pipeY + pipeH + 70;
+  const plotW = w - margin.left - margin.right;
+  const plotH = h - plotY - margin.bottom;
+
+  // Axes
+  ctx.strokeStyle = '#2a2a4a';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(margin.left, plotY);
+  ctx.lineTo(margin.left, plotY + plotH);
+  ctx.lineTo(margin.left + plotW, plotY + plotH);
+  ctx.stroke();
+  drawText(ctx, 'Accuracy (%)', margin.left - 10, plotY + plotH / 2, '#666', 10, 'right', '400');
+  drawText(ctx, 'Model Size (log scale)', margin.left + plotW / 2, plotY + plotH + 20, '#666', 10, 'center', '400');
+
+  // Pareto data points: various configurations
+  const paretoPoints = [
+    { size: 8000, acc: 99.5, label: 'Original 2B', color: '#888' },
+    { size: 800, acc: 97.0, label: 'Distilled', color: '#e056fd', tech: 'distill' },
+    { size: 4000, acc: 98.0, label: 'Pruned only', color: '#4ecdc4', tech: 'prune' },
+    { size: 1000, acc: 96.8, label: 'Quantized only', color: '#ffd93d', tech: 'quant' },
+    { size: 400, acc: 96.0, label: 'Distill+Prune', color: '#e056fd', tech: 'distill+prune' },
+    { size: 100, acc: 95.5, label: 'Distill+Quant', color: '#ffd93d', tech: 'distill+quant' },
+    { size: 50, acc: 94.5, label: 'All Three', color: '#ff6b6b', tech: 'all' }
+  ];
+
+  // Map to plot coordinates (log scale for size)
+  const minLogSize = Math.log10(30);
+  const maxLogSize = Math.log10(10000);
+  const minAcc = 80;
+  const maxAcc = 100;
+
+  function toPlotX(size) { return margin.left + ((Math.log10(size) - minLogSize) / (maxLogSize - minLogSize)) * plotW; }
+  function toPlotY(acc) { return plotY + plotH - ((acc - minAcc) / (maxAcc - minAcc)) * plotH; }
+
+  // Grid lines
+  ctx.strokeStyle = '#1a1a2e';
+  ctx.lineWidth = 1;
+  [85, 90, 95, 100].forEach(function(acc) {
+    const py = toPlotY(acc);
+    ctx.beginPath();
+    ctx.moveTo(margin.left, py);
+    ctx.lineTo(margin.left + plotW, py);
+    ctx.stroke();
+    drawText(ctx, acc + '', margin.left - 5, py, '#444', 9, 'right', '400');
+  });
+  [50, 100, 500, 1000, 5000].forEach(function(size) {
+    const px = toPlotX(size);
+    ctx.beginPath();
+    ctx.moveTo(px, plotY);
+    ctx.lineTo(px, plotY + plotH);
+    ctx.stroke();
+    drawText(ctx, size >= 1000 ? (size / 1000) + 'GB' : size + 'MB', px, plotY + plotH + 10, '#444', 8, 'center', '400');
+  });
+
+  // Determine which points to highlight
+  function isActive(pt) {
+    if (!pt.tech) return true; // original always shown
+    if (pt.tech === 'all') return st.distill && st.prune && st.quant;
+    if (pt.tech === 'distill+prune') return st.distill && st.prune && !st.quant;
+    if (pt.tech === 'distill+quant') return st.distill && !st.prune && st.quant;
+    if (pt.tech === 'distill') return st.distill && !st.prune && !st.quant;
+    if (pt.tech === 'prune') return !st.distill && st.prune && !st.quant;
+    if (pt.tech === 'quant') return !st.distill && !st.prune && st.quant;
+    return false;
+  }
+
+  // Draw Pareto frontier line
+  const frontierPoints = paretoPoints.filter(function(pt) { return !pt.tech || isActive(pt); });
+  frontierPoints.sort(function(a, b) { return a.size - b.size; });
+  if (frontierPoints.length > 1) {
+    ctx.strokeStyle = 'rgba(255,107,107,0.4)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    frontierPoints.forEach(function(pt, i) {
+      const px = toPlotX(pt.size);
+      const py = toPlotY(pt.acc);
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    });
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Draw all points
+  paretoPoints.forEach(function(pt) {
+    const active = !pt.tech || isActive(pt);
+    const px = toPlotX(pt.size);
+    const py = toPlotY(pt.acc);
+
+    if (active) {
+      ctx.fillStyle = pt.color;
+      ctx.beginPath();
+      ctx.arc(px, py, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      drawText(ctx, pt.label, px, py - 14, pt.color, 9, 'center', '600');
+    } else {
+      ctx.fillStyle = '#333';
+      ctx.beginPath();
+      ctx.arc(px, py, 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  });
+
+  // Highlight current config
+  const currentStage = stages[stages.length - 1];
+  const cpx = toPlotX(currentStage.size);
+  const cpy = toPlotY(currentStage.acc);
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(cpx, cpy, 10, 0, Math.PI * 2);
+  ctx.stroke();
+}
+
+// ============================================================
+// QUIZ DATA (35 questions, 5 per visualization)
+// ============================================================
+const quizData = [
+  {
+    topic: "7.1: Hard Labels vs Soft Targets",
+    questions: [
+      { q: "What is 'dark knowledge' in knowledge distillation?", options: ["A) Weights of the teacher network", "B) The inter-class similarity information encoded in the teacher's soft probability distribution", "C) The hidden layers of the teacher", "D) The training data used by the teacher"], correct: 1, explanation: "Dark knowledge refers to the subtle inter-class relationships encoded in the teacher's soft predictions. A BMW being confused with a Mercedes (but not a cat) tells the student about structural similarity between classes." },
+      { q: "Why are soft targets more informative than hard labels?", options: ["A) They use more bits of data", "B) They are easier to compute", "C) They encode relationships between classes, not just the correct answer", "D) They are always more accurate"], correct: 2, explanation: "Hard labels say 'this is a cat' (one-hot). Soft targets say 'this is a cat, but it looks somewhat like a tiger and a dog.' The probabilities assigned to wrong classes carry information about class similarity." },
+      { q: "If a teacher predicts [0.01, 0.70, 0.02, 0.25, 0.02] for an image, what dark knowledge is revealed?", options: ["A) The image is definitely class 1", "B) Class 1 and class 3 share visual features", "C) The teacher is poorly trained", "D) All classes are equally likely"], correct: 1, explanation: "The teacher puts 0.70 on class 1 and 0.25 on class 3, suggesting these two classes share some visual features. Classes 0, 2, and 4 get very low probability, meaning they look very different from the input." },
+      { q: "A student trained on hard labels vs soft targets will differ mainly in:", options: ["A) Training speed", "B) Number of parameters", "C) Generalization to new examples, especially ambiguous ones", "D) The loss function used"], correct: 2, explanation: "The main benefit of soft targets is improved generalization. The student learns about class structure and handles ambiguous or edge-case inputs better because it understands which classes are similar." },
+      { q: "Which scenario demonstrates dark knowledge best?", options: ["A) A model correctly classifying a clear photo of a dog", "B) A model assigning high probability to both 'wolf' and 'husky' for an ambiguous image", "C) A model outputting uniform probabilities for all classes", "D) A model memorizing the training set"], correct: 1, explanation: "When the teacher assigns significant probability to both 'wolf' and 'husky', it reveals that these classes are visually similar. This structural information (wolves look like huskies) is the dark knowledge that hard labels cannot convey." }
+    ]
+  },
+  {
+    topic: "7.2: KL Divergence",
+    questions: [
+      { q: "What does KL(P||Q) measure?", options: ["A) The distance between P and Q (symmetric)", "B) The information lost when Q is used to approximate P", "C) The average of P and Q", "D) The overlap between P and Q"], correct: 1, explanation: "KL(P||Q) measures the information lost when using distribution Q (the approximation/student) to represent distribution P (the true/teacher). It quantifies how well Q captures P's structure." },
+      { q: "Why is KL divergence asymmetric?", options: ["A) It's a bug in the formula", "B) Because log(P/Q) != log(Q/P), and the weighting by P vs Q gives different results", "C) It is actually symmetric", "D) Because of floating point errors"], correct: 1, explanation: "KL(P||Q) = sum P*log(P/Q) while KL(Q||P) = sum Q*log(Q/P). The weighting distribution changes. KL(P||Q) penalizes Q for missing where P has mass; KL(Q||P) penalizes P for missing where Q has mass. Different priorities." },
+      { q: "If P = [0.5, 0.5] and Q = [0.01, 0.99], what can you say about KL(P||Q)?", options: ["A) It equals zero", "B) It is very large because Q misses the first class that P considers important", "C) It is small because Q concentrates on one class", "D) It is negative"], correct: 1, explanation: "P puts 0.5 probability on class 0, but Q only puts 0.01 there. The term P(0)*log(P(0)/Q(0)) = 0.5*log(0.5/0.01) = 0.5*log(50) is very large. KL heavily penalizes Q for 'missing' probability mass that P considers important." },
+      { q: "What is the relationship between KL divergence and cross-entropy?", options: ["A) They are completely unrelated", "B) KL(P||Q) = H(P,Q) - H(P). Since H(P) is constant, minimizing KL equals minimizing cross-entropy", "C) KL is always larger than cross-entropy", "D) Cross-entropy is the square of KL divergence"], correct: 1, explanation: "KL(P||Q) = H(P,Q) - H(P) where H(P,Q) is cross-entropy and H(P) is entropy. When P is fixed (the teacher), H(P) is a constant, so minimizing KL divergence is mathematically equivalent to minimizing cross-entropy." },
+      { q: "When does KL(P||Q) equal zero?", options: ["A) When P and Q are opposite distributions", "B) When P and Q are identical", "C) When both are uniform", "D) When P is zero everywhere"], correct: 1, explanation: "KL(P||Q) = 0 if and only if P = Q everywhere. When the distributions are identical, log(P(x)/Q(x)) = log(1) = 0 for every x, making the entire sum zero. No information is lost." }
+    ]
+  },
+  {
+    topic: "7.3: Temperature Scaling",
+    questions: [
+      { q: "What happens to softmax output as temperature T approaches 0?", options: ["A) It becomes uniform", "B) It approaches a one-hot vector (argmax)", "C) All probabilities become 0.5", "D) It becomes undefined"], correct: 1, explanation: "As T approaches 0, softmax(z/T) becomes a one-hot vector placing all probability on the maximum logit. The division by a very small T amplifies differences between logits, making the largest one dominate." },
+      { q: "Why does distillation use T > 1 instead of T = 1?", options: ["A) It's faster to compute", "B) Higher T softens the distribution, making dark knowledge more visible and learnable", "C) Lower temperatures cause overflow errors", "D) The teacher requires high temperature"], correct: 1, explanation: "At T=1, the teacher's distribution is too peaked -- almost all probability on the top class. At T=3-5, the subtle relationships between classes become visible. The student can learn from these smaller probabilities." },
+      { q: "What is the effect of very high temperature (T=100)?", options: ["A) The distribution becomes very peaked", "B) The distribution becomes nearly uniform, losing all information", "C) The model becomes more accurate", "D) Training converges faster"], correct: 1, explanation: "At very high T, all logits divided by T approach 0, so exp(z/T) approaches 1 for all classes. The softmax becomes nearly uniform: [0.2, 0.2, 0.2, 0.2, 0.2]. All class information is washed out." },
+      { q: "How does temperature affect gradient flow in distillation?", options: ["A) Higher T concentrates gradients on the top class", "B) Higher T spreads gradients across all classes, helping the student learn about every class relationship", "C) Temperature has no effect on gradients", "D) Lower T gives larger gradients everywhere"], correct: 1, explanation: "At T=1, gradients are dominated by the top class. At moderate T, gradients spread across all classes proportionally to their probability. The student receives learning signal about every class, not just the dominant one." },
+      { q: "Temperature in distillation is the same concept as temperature in:", options: ["A) Only distillation uses temperature", "B) Attention softmax (Ch 4) and text generation sampling", "C) Batch normalization", "D) Dropout regularization"], correct: 1, explanation: "Temperature scaling of softmax appears in attention mechanisms (controlling focus vs spread), in text generation (controlling randomness), and in distillation (controlling softness). All are the same formula: softmax(z/T)." }
+    ]
+  },
+  {
+    topic: "7.4: Teacher-Student Training",
+    questions: [
+      { q: "In the distillation loss L = alpha*CE(student,hard) + (1-alpha)*T^2*KL(teacher_soft, student_soft), what does alpha control?", options: ["A) The learning rate", "B) The balance between learning from hard labels and learning from the teacher", "C) The number of training epochs", "D) The model size"], correct: 1, explanation: "Alpha balances two objectives: learning the correct answer (hard labels via CE) and learning class relationships (soft targets via KL). Typical values are alpha=0.1 to 0.5, giving more weight to the teacher's soft knowledge." },
+      { q: "Why is there a T^2 factor in front of the KL term?", options: ["A) It's arbitrary", "B) It compensates for the reduced gradient magnitude at higher temperatures", "C) It makes the loss larger", "D) It normalizes the temperature"], correct: 1, explanation: "When temperature T increases, the softmax outputs become more uniform and gradients shrink by approximately T^2. Multiplying the KL term by T^2 rescales the gradients back to a comparable magnitude with the CE term, regardless of the chosen T." },
+      { q: "A distilled student with 200K params achieves 94% accuracy while the teacher with 2M params achieves 99%. The student trained from scratch achieves 85%. What explains the gap?", options: ["A) The distilled student memorized the teacher", "B) The soft targets transfer class relationship knowledge that hard labels cannot convey", "C) The distilled student has more parameters", "D) Random initialization differences"], correct: 1, explanation: "The 9% improvement (85% to 94%) comes from dark knowledge. The teacher's soft targets encode which classes are similar, helping the student generalize far better than hard labels alone. The student architecture is identical -- only the training signal differs." },
+      { q: "What is the typical compression ratio achieved by distillation alone?", options: ["A) 2x", "B) 5-10x in parameters, retaining 90-95% accuracy", "C) 100x", "D) No compression, same size"], correct: 1, explanation: "Knowledge distillation typically achieves 5-10x parameter reduction while retaining 90-95% of the teacher's accuracy. The student has fewer layers and smaller hidden dimensions. Further compression requires pruning and quantization." },
+      { q: "Can the student ever outperform the teacher?", options: ["A) Never, by definition", "B) Yes, on specific subsets or when the teacher is poorly calibrated", "C) Only with more parameters", "D) Only with more training data"], correct: 1, explanation: "Surprisingly, yes. The student can sometimes outperform the teacher on specific subsets, especially when the teacher's soft targets act as a regularizer. The averaged probabilities across similar examples can give cleaner signal than the teacher's prediction on any single example." }
+    ]
+  },
+  {
+    topic: "7.5: Quantization",
+    questions: [
+      { q: "What is quantization in the context of model compression?", options: ["A) Removing layers from the network", "B) Reducing the numerical precision of weights from floating point to lower-bit integers", "C) Pruning small weights", "D) Training with less data"], correct: 1, explanation: "Quantization maps continuous float values (FP32) to discrete integers (INT8, INT4). Instead of storing each weight as a 32-bit float, you store it as an 8-bit or 4-bit integer, reducing model size by 4-8x." },
+      { q: "INT8 quantization maps weights to how many discrete levels?", options: ["A) 8", "B) 16", "C) 128", "D) 256"], correct: 3, explanation: "INT8 means 8-bit integers, which can represent 2^8 = 256 different values. The continuous weight range is discretized into 256 evenly spaced levels. This is usually sufficient to maintain high accuracy." },
+      { q: "Why does INT4 quantization produce a visible 'staircase' pattern?", options: ["A) A software bug", "B) Only 16 discrete levels to represent the entire weight range, so many different weights map to the same value", "C) The weights are sorted", "D) The histogram bins are too wide"], correct: 1, explanation: "INT4 has only 2^4 = 16 possible values. When hundreds of continuous float weights are mapped to just 16 levels, many weights collapse to the same value, creating visible 'steps' in the distribution." },
+      { q: "What is the main tradeoff of quantization?", options: ["A) Training time vs inference time", "B) Model size and speed vs accuracy due to precision loss", "C) Number of layers vs width", "D) Batch size vs learning rate"], correct: 1, explanation: "Quantization trades precision for efficiency. Lower bit-width means smaller model, faster inference (integer ops are faster than float ops), but the rounding introduces error. INT8 usually loses <1% accuracy, INT4 loses 1-3%, INT2 can lose 10%+." },
+      { q: "In practice, which quantization level is most commonly used for LLM deployment?", options: ["A) INT2", "B) INT4 and INT8", "C) FP64", "D) INT1 (binary)"], correct: 1, explanation: "INT4 (via GPTQ, AWQ) and INT8 are the industry standard for LLM serving. INT4 provides 8x compression with 1-3% accuracy loss. INT8 provides 4x compression with <1% loss. Most production LLM APIs serve quantized models." }
+    ]
+  },
+  {
+    topic: "7.6: Pruning",
+    questions: [
+      { q: "What does magnitude-based pruning remove?", options: ["A) Entire layers", "B) Weights with the largest absolute values", "C) Weights whose absolute values fall below a threshold", "D) Random weights"], correct: 2, explanation: "Magnitude-based pruning removes weights with small absolute values (close to zero). The intuition is that these weights contribute minimally to the output. Weights below a threshold |w| <= theta are set to zero." },
+      { q: "Why can 90% of weights be pruned with minimal accuracy loss?", options: ["A) The model was not trained properly", "B) Neural networks are heavily over-parameterized; most weights are near-zero and redundant", "C) The remaining 10% are very large", "D) Pruning adds new information"], correct: 1, explanation: "Neural networks are typically over-parameterized -- they have far more parameters than necessary for the task. Training drives most weights toward zero. These near-zero weights can be removed because they contribute negligibly to the network's output." },
+      { q: "What is the Lottery Ticket Hypothesis?", options: ["A) Larger networks always win", "B) A randomly initialized dense network contains a sparse subnetwork that, retrained from its original init, matches the full network's accuracy", "C) You should buy lottery tickets to fund GPU training", "D) Sparse networks cannot be trained from scratch"], correct: 1, explanation: "The Lottery Ticket Hypothesis (Frankle & Carlin, 2019) states that dense networks contain sparse 'winning ticket' subnetworks that can be trained from scratch (using the original initialization) to match full network performance. The key is using the original initialization, not random re-initialization." },
+      { q: "What is structured vs unstructured pruning?", options: ["A) Structured removes individual weights; unstructured removes groups", "B) Structured removes entire filters/neurons/heads; unstructured removes individual weights", "C) They are the same thing", "D) Structured is for CNNs; unstructured is for transformers"], correct: 1, explanation: "Unstructured pruning removes individual weights (sparse matrices). Structured pruning removes entire structures: filters in CNNs, attention heads in transformers, or whole neurons. Structured pruning is hardware-friendly because it produces dense, smaller matrices rather than sparse ones." },
+      { q: "After pruning, what additional step often improves accuracy?", options: ["A) Adding more parameters", "B) Fine-tuning: retraining the pruned network for a few epochs", "C) Increasing the learning rate to 1.0", "D) Converting to FP64"], correct: 1, explanation: "After pruning, the remaining weights can be fine-tuned (retrained briefly) to adapt to the missing connections. This recovery step typically restores much of the lost accuracy. The prune-retrain cycle can even be repeated iteratively for better results." }
+    ]
+  },
+  {
+    topic: "7.7: Compression Toolkit",
+    questions: [
+      { q: "In what order should compression techniques typically be applied?", options: ["A) Quantize, then prune, then distill", "B) Distill (architecture reduction), then prune (sparsity), then quantize (precision reduction)", "C) All techniques simultaneously", "D) Order does not matter"], correct: 1, explanation: "The typical pipeline is: (1) Distill to a smaller architecture. (2) Prune unnecessary weights. (3) Quantize to lower precision. This order makes sense because distillation changes the architecture first, pruning removes redundancy, and quantization is a final compression step that works on any model." },
+      { q: "How do distillation, pruning, and quantization differ in what they compress?", options: ["A) They all do the same thing", "B) Distillation reduces architecture size, pruning reduces density, quantization reduces precision", "C) They all reduce the number of layers", "D) Pruning and quantization are identical"], correct: 1, explanation: "Each targets a different axis: Distillation gives you a smaller architecture (fewer layers/neurons). Pruning makes the model sparser (fewer non-zero weights). Quantization reduces bit-width (fewer bits per weight). These are orthogonal and compose multiplicatively." },
+      { q: "Starting from a 2B parameter FP32 model (8GB), what size might you reach by applying all three techniques?", options: ["A) 4GB", "B) ~50-100MB", "C) 8GB (no change)", "D) 1 byte"], correct: 1, explanation: "Distill 2B to 200M (10x reduction in params, ~800MB). Prune to 100M effective (~400MB). Quantize INT4 (8x, ~50MB). The combined 100-160x compression brings an 8GB model down to ~50-100MB, small enough for a smartphone." },
+      { q: "What is a Pareto frontier in the context of model compression?", options: ["A) The maximum accuracy achievable", "B) The set of models where you cannot improve one metric (size/speed) without worsening another (accuracy)", "C) The training loss curve", "D) The teacher's accuracy ceiling"], correct: 1, explanation: "The Pareto frontier shows optimal tradeoffs. Every point on the frontier represents a model where you cannot make it smaller without losing accuracy, or more accurate without making it bigger. Different compression combinations push this frontier toward smaller, faster, and nearly as accurate." },
+      { q: "How does this chapter connect to the full ML pipeline?", options: ["A) Compression is unrelated to training", "B) Ch 6 builds the large model, Ch 7 compresses it for deployment -- this is exactly how production LLMs are shipped", "C) Compression should be done before training", "D) Only researchers need compression"], correct: 1, explanation: "The full lifecycle: train a large, powerful teacher model (Ch 6 transformer), then compress it for deployment (Ch 7). GPT-4 trains as a huge model, then is served via smaller distilled/quantized variants. Llama 70B becomes Llama 7B through distillation. This chapter completes the production ML pipeline." }
+    ]
+  }
+];
+
+// ============================================================
+// QUIZ RENDERING
+// ============================================================
+let topicScores = {};
+let totalCorrect = 0;
+let totalAnswered = 0;
+const totalQ = 35;
+
+quizData.forEach(function(t, ti) { topicScores[ti] = { correct: 0, answered: 0, total: t.questions.length }; });
+
+function buildQuiz() {
+  const container = document.getElementById('quizQuestions');
+  container.innerHTML = '';
+  quizData.forEach(function(topic, ti) {
+    const topicDiv = document.createElement('div');
+    topicDiv.className = 'quiz-topic';
+    const header = document.createElement('div');
+    header.className = 'quiz-topic-header';
+    header.innerHTML = '<h3>' + topic.topic + '</h3><span class="quiz-topic-score" id="topicScore' + ti + '">0 / ' + topic.questions.length + '</span>';
+    header.onclick = function() {
+      const qDiv = topicDiv.querySelector('.quiz-topic-questions');
+      qDiv.classList.toggle('open');
+    };
+    topicDiv.appendChild(header);
+    const questionsDiv = document.createElement('div');
+    questionsDiv.className = 'quiz-topic-questions';
+
+    topic.questions.forEach(function(question, qi) {
+      const qDiv = document.createElement('div');
+      qDiv.className = 'quiz-question';
+      qDiv.innerHTML = '<h4>Q' + (qi+1) + ': ' + question.q + '</h4>';
+      question.options.forEach(function(opt, oi) {
+        const btn = document.createElement('button');
+        btn.className = 'quiz-option';
+        btn.textContent = opt;
+        btn.onclick = function() { checkAnswer(ti, qi, oi, qDiv); };
+        btn.id = 'qopt_' + ti + '_' + qi + '_' + oi;
+        qDiv.appendChild(btn);
+      });
+      const expDiv = document.createElement('div');
+      expDiv.className = 'quiz-explanation';
+      expDiv.id = 'qexp_' + ti + '_' + qi;
+      expDiv.textContent = question.explanation;
+      qDiv.appendChild(expDiv);
+      questionsDiv.appendChild(qDiv);
+    });
+    topicDiv.appendChild(questionsDiv);
+    container.appendChild(topicDiv);
+  });
+}
+
+function checkAnswer(ti, qi, oi, qDiv) {
+  const question = quizData[ti].questions[qi];
+  const buttons = qDiv.querySelectorAll('.quiz-option');
+  const expDiv = document.getElementById('qexp_' + ti + '_' + qi);
+  if (buttons[0].disabled) return;
+  buttons.forEach(function(b, i) {
+    b.disabled = true;
+    if (i === question.correct) b.classList.add('correct');
+    if (i === oi && oi !== question.correct) b.classList.add('wrong');
+  });
+  totalAnswered++;
+  topicScores[ti].answered++;
+  if (oi === question.correct) {
+    totalCorrect++;
+    topicScores[ti].correct++;
+    expDiv.className = 'quiz-explanation show correct-exp';
+  } else {
+    expDiv.className = 'quiz-explanation show wrong-exp';
+  }
+  document.getElementById('quizScore').textContent = totalCorrect;
+  document.getElementById('topicScore' + ti).textContent = topicScores[ti].correct + ' / ' + topicScores[ti].total;
+  document.getElementById('quizProgressBar').style.width = (totalAnswered / totalQ * 100) + '%';
+}
+
+function resetQuiz() {
+  totalCorrect = 0;
+  totalAnswered = 0;
+  quizData.forEach(function(t, ti) { topicScores[ti] = { correct: 0, answered: 0, total: t.questions.length }; });
+  buildQuiz();
+  document.getElementById('quizScore').textContent = '0';
+  document.getElementById('quizProgressBar').style.width = '0%';
+}
+
+function toggleQuiz() {
+  const section = document.getElementById('quizSection');
+  if (section.style.display === 'none') {
+    section.style.display = 'block';
+    section.scrollIntoView({ behavior: 'smooth' });
+  } else {
+    section.style.display = 'none';
+  }
+}
+
+// ============================================================
+// INITIALIZATION
+// ============================================================
+window.addEventListener('DOMContentLoaded', function() {
+  drawDarkKnowledge();
+  drawKL();
+  drawTemperature(1.0);
+  drawTeacherStudent();
+  drawQuantization();
+  updatePruning();
+  drawToolkit();
+  buildQuiz();
+});
+
+window.addEventListener('resize', function() {
+  drawDarkKnowledge();
+  drawKL();
+  updateTemp();
+  drawTeacherStudent();
+  drawQuantization();
+  updatePruning();
+  drawToolkit();
+});
+
+</script>
+</body>
+</html>
