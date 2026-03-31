@@ -48,6 +48,17 @@
   .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
   .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
 
+  .when-to-use { margin-top: 18px; padding-top: 14px; border-top: 1px solid #2a2a4a; }
+  .when-to-use h4 { color: #10ac84; margin-bottom: 10px; font-size: 1.05em; }
+  .when-to-use h5 { color: #ccc; margin-bottom: 6px; font-size: 0.95em; }
+  .use-grid { display: grid; gap: 16px; }
+  .use-grid-2 { grid-template-columns: 1fr 1fr; }
+  .use-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .use-col { background: rgba(16,172,132, 0.04); border: 1px solid rgba(16,172,132, 0.15); border-radius: 10px; padding: 14px; }
+  .use-col ul { list-style: none; padding: 0; }
+  .use-col li { padding: 3px 0; font-size: 0.88em; color: #bbb; }
+  .use-col li::before { content: '\2192  '; color: #10ac84; }
+
   .katex { color: #e8e8ff; font-size: 1.1em; }
   .formula .katex { font-size: 1.2em; }
 
@@ -127,6 +138,38 @@
     <hr class="divider">
     <div class="interview-tip">A single deep tree overfits. GBDT uses many shallow trees (depth 3-8) sequentially, each correcting residual errors. The "weak learner" is the shallow tree.</div>
     <div class="mnemonic">Decision trees are greedy: each split is locally optimal. Boosting compensates by iteratively correcting mistakes.</div>
+    <div class="when-to-use">
+      <h4>When to Use</h4>
+      <div class="use-grid use-grid-3">
+        <div class="use-col">
+          <h5>Shallow Trees (depth 2-4)</h5>
+          <ul>
+            <li>Boosting ensembles (XGBoost, LightGBM) where each tree is a weak learner</li>
+            <li>High-dimensional data prone to overfitting</li>
+            <li>When feature interactions are low-order</li>
+            <li><strong>Example:</strong> click-through rate prediction with 500+ sparse features</li>
+          </ul>
+        </div>
+        <div class="use-col">
+          <h5>Medium Trees (depth 5-8)</h5>
+          <ul>
+            <li>Moderate-size tabular datasets (10k-1M rows)</li>
+            <li>When you need to capture higher-order feature interactions</li>
+            <li>Random Forest or GBDT with early stopping</li>
+            <li><strong>Example:</strong> fraud detection with 50-100 engineered features</li>
+          </ul>
+        </div>
+        <div class="use-col">
+          <h5>Deep Trees (depth 10+)</h5>
+          <ul>
+            <li>Random Forest (bagging controls variance)</li>
+            <li>Small datasets where each split is well-supported</li>
+            <li>Avoid in boosting -- overfits rapidly</li>
+            <li><strong>Example:</strong> RF for medical diagnosis with 20 carefully curated features</li>
+          </ul>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -181,6 +224,38 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">GBDT fits trees to the negative gradient of the loss, not just residuals. For squared error, the negative gradient equals the residual. For other losses (logistic, huber), it differs.</div>
+    <div class="when-to-use">
+      <h4>When to Use</h4>
+      <div class="use-grid use-grid-3">
+        <div class="use-col">
+          <h5>Gradient Boosting</h5>
+          <ul>
+            <li>Maximum predictive accuracy on tabular data</li>
+            <li>When you can tune hyperparameters carefully</li>
+            <li>Sensitive to noisy labels -- use robust losses (Huber, quantile)</li>
+            <li><strong>Example:</strong> Kaggle competitions, insurance pricing, demand forecasting</li>
+          </ul>
+        </div>
+        <div class="use-col">
+          <h5>AdaBoost</h5>
+          <ul>
+            <li>Binary classification with clean labels</li>
+            <li>When you want a simpler, more interpretable boosting method</li>
+            <li>Legacy systems or educational contexts</li>
+            <li><strong>Example:</strong> face detection (Viola-Jones), simple spam filters</li>
+          </ul>
+        </div>
+        <div class="use-col">
+          <h5>Random Forest (Bagging)</h5>
+          <ul>
+            <li>When you need a robust baseline with minimal tuning</li>
+            <li>Noisy labels or unreliable data quality</li>
+            <li>Embarrassingly parallel training needed</li>
+            <li><strong>Example:</strong> quick prototyping, sensor data with noise, first model in a pipeline</li>
+          </ul>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -217,6 +292,31 @@
     <hr class="divider">
     <div class="interview-tip">In XGBoost/LightGBM, set n_estimators high (e.g., 10000) and use early_stopping_rounds=50. The learning rate controls the regularization strength. This is called "shrinkage".</div>
     <div class="mnemonic">Low learning rate + many trees = slow and steady wins the race. High learning rate + many trees = overfitting.</div>
+    <div class="when-to-use">
+      <h4>When to Use</h4>
+      <div class="use-grid use-grid-2">
+        <div class="use-col">
+          <h5>Low LR (0.01-0.1) + Many Trees</h5>
+          <ul>
+            <li>Production models where accuracy matters most</li>
+            <li>Large datasets (100k+ rows) that support many rounds</li>
+            <li>Always pair with early stopping (patience 30-50)</li>
+            <li>Typical: lr=0.05, n_estimators=5000, early_stopping_rounds=50</li>
+            <li><strong>Example:</strong> ad click prediction at scale, credit scoring models</li>
+          </ul>
+        </div>
+        <div class="use-col">
+          <h5>High LR (0.1-0.3) + Few Trees</h5>
+          <ul>
+            <li>Rapid prototyping and hyperparameter search</li>
+            <li>Small datasets where many rounds overfit quickly</li>
+            <li>Real-time inference with strict latency budgets (fewer trees = faster)</li>
+            <li>Typical: lr=0.3, n_estimators=100-300</li>
+            <li><strong>Example:</strong> model exploration during hackathons, edge-device deployment</li>
+          </ul>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -265,6 +365,29 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">XGBoost's regularization term \(\Omega(f)\) in the objective is what differentiates it from vanilla GBM. This explicit regularization is a key reason for XGBoost's success.</div>
+    <div class="when-to-use">
+      <h4>When to Use</h4>
+      <div class="use-grid use-grid-2">
+        <div class="use-col">
+          <h5>Tree-Level Regularization</h5>
+          <ul>
+            <li><strong>max_depth (3-8):</strong> Always set. Lower for small/noisy data, higher for large clean data</li>
+            <li><strong>min_child_weight:</strong> Increase for imbalanced classes or noisy labels (e.g., 5-10)</li>
+            <li><strong>gamma (min_split_loss):</strong> Use when you see many low-gain splits; typical range 0-5</li>
+            <li><strong>Example:</strong> fraud detection with 0.1% positive rate -- raise min_child_weight to avoid fitting noise</li>
+          </ul>
+        </div>
+        <div class="use-col">
+          <h5>Ensemble-Level Regularization</h5>
+          <ul>
+            <li><strong>subsample (0.5-0.9):</strong> Stochastic boosting; helps when data has duplicates or correlated rows</li>
+            <li><strong>colsample_bytree (0.5-0.8):</strong> Essential with many features; decorrelates trees</li>
+            <li><strong>L1/L2 (alpha/lambda):</strong> Use L1 to drive irrelevant leaf weights to zero; L2 for smooth predictions</li>
+            <li><strong>Example:</strong> genomics with 20k features -- colsample=0.3 prevents overfitting to a few genes</li>
+          </ul>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -298,6 +421,38 @@
     <div class="key-point"><span class="label">SHAP Values:</span><span class="desc">Game-theoretic approach: each feature's contribution to each prediction. Gold standard but computationally expensive.</span></div>
     <hr class="divider">
     <div class="interview-tip">Always use permutation importance or SHAP for feature selection decisions. Split-based importance from tree.feature_importances_ is fast but misleading with correlated or high-cardinality features.</div>
+    <div class="when-to-use">
+      <h4>When to Use</h4>
+      <div class="use-grid use-grid-3">
+        <div class="use-col">
+          <h5>Split Gain Importance</h5>
+          <ul>
+            <li>Quick exploratory analysis during development</li>
+            <li>When features are uncorrelated and low-cardinality</li>
+            <li>Free -- comes from training, no extra computation</li>
+            <li><strong>Example:</strong> initial feature screening on 10-20 engineered features</li>
+          </ul>
+        </div>
+        <div class="use-col">
+          <h5>Permutation Importance</h5>
+          <ul>
+            <li>Feature selection for production models</li>
+            <li>When features have varying cardinality (avoids bias)</li>
+            <li>Model-agnostic -- works for any model, not just trees</li>
+            <li><strong>Example:</strong> comparing feature value across GBDT, RF, and logistic regression</li>
+          </ul>
+        </div>
+        <div class="use-col">
+          <h5>SHAP Values</h5>
+          <ul>
+            <li>Model explainability for stakeholders or regulators</li>
+            <li>Per-prediction explanations (why did this customer get denied?)</li>
+            <li>Detecting feature interactions via SHAP interaction values</li>
+            <li><strong>Example:</strong> credit decisions requiring regulatory explanation (ECOA/FCRA compliance)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -345,6 +500,41 @@
     <hr class="divider">
     <div class="interview-tip">LightGBM's leaf-wise growth can overfit on small datasets (use max_depth to limit). CatBoost's ordered boosting avoids target leakage that plagues naive target encoding.</div>
     <div class="mnemonic">XGBoost = balanced growth, LightGBM = greedy growth (fastest), CatBoost = ordered growth (best categoricals).</div>
+    <div class="when-to-use">
+      <h4>When to Use</h4>
+      <div class="use-grid use-grid-3">
+        <div class="use-col">
+          <h5>XGBoost</h5>
+          <ul>
+            <li>Industry standard with widest ecosystem support</li>
+            <li>Sparse data (one-hot encoded features, NLP bag-of-words)</li>
+            <li>When you need GPU training on moderate-size data</li>
+            <li>Distributed training across clusters (Spark, Dask)</li>
+            <li><strong>Example:</strong> Kaggle tabular competitions, search ranking at scale</li>
+          </ul>
+        </div>
+        <div class="use-col">
+          <h5>LightGBM</h5>
+          <ul>
+            <li>Large datasets (millions of rows) -- fastest training</li>
+            <li>High-dimensional data with native categorical support</li>
+            <li>When training speed is critical (GOSS + EFB optimizations)</li>
+            <li>Memory-constrained environments (histogram is compact)</li>
+            <li><strong>Example:</strong> real-time bidding with 100M+ training samples, CTR prediction</li>
+          </ul>
+        </div>
+        <div class="use-col">
+          <h5>CatBoost</h5>
+          <ul>
+            <li>Data with many categorical features (no manual encoding needed)</li>
+            <li>When you want best out-of-box accuracy with minimal tuning</li>
+            <li>Small datasets where target leakage is a risk</li>
+            <li>Symmetric trees enable fast inference</li>
+            <li><strong>Example:</strong> e-commerce recommendations with product/user categories, loan default prediction</li>
+          </ul>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -381,6 +571,30 @@
     <div class="key-point"><span class="label">Histogram Subtraction:</span><span class="desc">Parent histogram - left child histogram = right child histogram. Saves 50% of computation.</span></div>
     <hr class="divider">
     <div class="interview-tip">LightGBM was the first major framework to use exclusive histogram-based splitting. XGBoost added it later (tree_method='hist'). For datasets with millions of rows, histogram is essential.</div>
+    <div class="when-to-use">
+      <h4>When to Use</h4>
+      <div class="use-grid use-grid-2">
+        <div class="use-col">
+          <h5>Exact Split Finding</h5>
+          <ul>
+            <li>Small datasets (under 10k rows) where exact splits matter</li>
+            <li>When you need the theoretically optimal split point</li>
+            <li>XGBoost with tree_method='exact' (default for small data)</li>
+            <li><strong>Example:</strong> clinical trials with 500 patients and high-precision requirements</li>
+          </ul>
+        </div>
+        <div class="use-col">
+          <h5>Histogram-Based Splitting</h5>
+          <ul>
+            <li>Large datasets (100k+ rows) -- mandatory for performance</li>
+            <li>High-cardinality continuous features (thousands of unique values)</li>
+            <li>LightGBM (always histogram), XGBoost tree_method='hist'</li>
+            <li>Reduces memory 8x (uint8 bins vs float64 values)</li>
+            <li><strong>Example:</strong> web-scale CTR prediction, time-series with millions of timestamps</li>
+          </ul>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -427,6 +641,41 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">GBDT wins on tabular data (Kaggle, industry). Neural nets win on unstructured data (images, text, audio). RF is the safe, hard-to-mess-up baseline. Use RF when you want robustness; GBDT when you want maximum performance.</div>
+    <div class="when-to-use">
+      <h4>When to Use</h4>
+      <div class="use-grid use-grid-3">
+        <div class="use-col">
+          <h5>GBDT</h5>
+          <ul>
+            <li>Structured/tabular data with mixed feature types</li>
+            <li>When interpretability via SHAP is needed</li>
+            <li>Moderate data size (1k-100M rows)</li>
+            <li>Missing values and categoricals present</li>
+            <li><strong>Example:</strong> credit scoring, churn prediction, Kaggle tabular, ad ranking</li>
+          </ul>
+        </div>
+        <div class="use-col">
+          <h5>Random Forest</h5>
+          <ul>
+            <li>When you need a fast, reliable baseline with zero tuning</li>
+            <li>Noisy labels or data quality issues</li>
+            <li>Embarrassingly parallel training (can scale to clusters)</li>
+            <li>When adding more trees never hurts (no overfitting risk)</li>
+            <li><strong>Example:</strong> remote sensing, bioinformatics feature screening, quick PoC models</li>
+          </ul>
+        </div>
+        <div class="use-col">
+          <h5>Neural Networks</h5>
+          <ul>
+            <li>Unstructured data: images, text, audio, video</li>
+            <li>Very large datasets (millions+ rows) with GPU access</li>
+            <li>Multi-modal inputs or sequence modeling</li>
+            <li>When transfer learning is available (pretrained models)</li>
+            <li><strong>Example:</strong> image classification, NLP, speech recognition, recommendation with embeddings</li>
+          </ul>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -468,6 +717,38 @@
     <hr class="divider">
     <div class="interview-tip">Never impute missing values before feeding to XGBoost/LightGBM - they handle them natively and learn optimal routing. Imputation can actually hurt performance by destroying the "missingness" signal.</div>
     <div class="mnemonic">XGBoost learns where missing goes. LightGBM handles categoricals natively. CatBoost handles both best out-of-box.</div>
+    <div class="when-to-use">
+      <h4>When to Use</h4>
+      <div class="use-grid use-grid-3">
+        <div class="use-col">
+          <h5>One-Hot Encoding</h5>
+          <ul>
+            <li>Low-cardinality categoricals (under 10-20 levels)</li>
+            <li>When using XGBoost (no native categorical support)</li>
+            <li>Sparse-aware algorithms handle the expansion efficiently</li>
+            <li><strong>Example:</strong> day-of-week, gender, region codes with XGBoost</li>
+          </ul>
+        </div>
+        <div class="use-col">
+          <h5>Native Categorical (LightGBM)</h5>
+          <ul>
+            <li>Medium-cardinality features (10-1000 levels)</li>
+            <li>Avoids one-hot explosion and preserves split efficiency</li>
+            <li>Set categorical_feature parameter in LightGBM</li>
+            <li><strong>Example:</strong> zip codes, product IDs, merchant categories</li>
+          </ul>
+        </div>
+        <div class="use-col">
+          <h5>Ordered Target Encoding (CatBoost)</h5>
+          <ul>
+            <li>High-cardinality categoricals (1000+ levels)</li>
+            <li>When target leakage from naive encoding is a concern</li>
+            <li>CatBoost handles this automatically -- no preprocessing</li>
+            <li><strong>Example:</strong> user IDs, IP address prefixes, city-level geolocation</li>
+          </ul>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -510,6 +791,31 @@
     <hr class="divider">
     <div class="interview-tip">The standard GBDT workflow: set n_estimators=10000, learning_rate=0.05, early_stopping_rounds=50. Let early stopping find the right number of trees. Then optionally retrain on full data with that count.</div>
     <div class="mnemonic">Early stopping = free regularization. Always use it. Set trees high, let validation loss decide when to stop.</div>
+    <div class="when-to-use">
+      <h4>When to Use</h4>
+      <div class="use-grid use-grid-2">
+        <div class="use-col">
+          <h5>Early Stopping (Recommended Default)</h5>
+          <ul>
+            <li>Any GBDT training -- should be used by default</li>
+            <li>Set n_estimators very high (5000-10000), let validation loss decide</li>
+            <li>Patience 20-50 rounds for low learning rates, 10-20 for high LR</li>
+            <li>Retrain final model on full train+val data with optimal round count</li>
+            <li><strong>Example:</strong> any production model -- lgb.train(..., callbacks=[lgb.early_stopping(50)])</li>
+          </ul>
+        </div>
+        <div class="use-col">
+          <h5>Fixed Rounds (No Early Stopping)</h5>
+          <ul>
+            <li>Cross-validation to determine optimal rounds first, then retrain</li>
+            <li>Very small datasets where a validation split wastes too much data</li>
+            <li>Ensemble stacking where each fold already uses CV</li>
+            <li>Reproducibility-critical pipelines where validation splits vary</li>
+            <li><strong>Example:</strong> final retraining after CV: xgb.train(params, dtrain, num_boost_round=best_round)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 

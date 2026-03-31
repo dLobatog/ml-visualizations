@@ -53,6 +53,17 @@
   .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
   .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
 
+  .when-to-use { margin-top: 18px; padding-top: 14px; border-top: 1px solid #2a2a4a; }
+  .when-to-use h4 { color: #10ac84; margin-bottom: 10px; font-size: 1.05em; }
+  .when-to-use h5 { color: #ccc; margin-bottom: 6px; font-size: 0.95em; }
+  .use-grid { display: grid; gap: 16px; }
+  .use-grid-2 { grid-template-columns: 1fr 1fr; }
+  .use-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .use-col { background: rgba(16,172,132, 0.04); border: 1px solid rgba(16,172,132, 0.15); border-radius: 10px; padding: 14px; }
+  .use-col ul { list-style: none; padding: 0; }
+  .use-col li { padding: 3px 0; font-size: 0.88em; color: #bbb; }
+  .use-col li::before { content: '\2192  '; color: #10ac84; }
+
   .katex { color: #e8e8ff; font-size: 1.1em; }
   .formula .katex { font-size: 1.2em; }
 
@@ -170,6 +181,29 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">Decision trees are greedy: they pick the locally best split at each node. This is not globally optimal, but it is fast and works well in practice.</div>
+    <div class="when-to-use">
+      <h4>When to Use</h4>
+      <div class="use-grid use-grid-2">
+        <div class="use-col">
+          <h5>Decision Stumps (Depth 1)</h5>
+          <ul>
+            <li>AdaBoost base learners (classic weak learner)</li>
+            <li>Ultra-fast feature screening -- which single feature splits best?</li>
+            <li>When data has one dominant predictive feature</li>
+            <li><strong>Example:</strong> quick triage filter (e.g., "is age > 65?" for medical screening)</li>
+          </ul>
+        </div>
+        <div class="use-col">
+          <h5>Deeper Splits (Depth 2+)</h5>
+          <ul>
+            <li>GBDT weak learners (typical depth 3-6 per tree)</li>
+            <li>When feature interactions matter (XOR-like patterns need depth >= 2)</li>
+            <li>Standalone decision trees for interpretable models</li>
+            <li><strong>Example:</strong> clinical decision rules that doctors can follow step-by-step</li>
+          </ul>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -211,6 +245,38 @@
     </div>
     <hr class="divider">
     <div class="mnemonic">In boosting, we WANT weak learners (shallow trees). We will combine many weak predictions to make a strong one.</div>
+    <div class="when-to-use">
+      <h4>When to Use</h4>
+      <div class="use-grid use-grid-3">
+        <div class="use-col">
+          <h5>Shallow Trees (depth 2-4)</h5>
+          <ul>
+            <li>GBDT / XGBoost / LightGBM weak learners</li>
+            <li>High-dimensional or noisy data</li>
+            <li>When you boost hundreds of trees</li>
+            <li><strong>Example:</strong> CTR prediction with 500 features -- each tree captures simple interactions</li>
+          </ul>
+        </div>
+        <div class="use-col">
+          <h5>Medium Trees (depth 5-8)</h5>
+          <ul>
+            <li>Random Forest or moderate GBDT</li>
+            <li>Balanced bias-variance on clean tabular data</li>
+            <li>XGBoost default (max_depth=6)</li>
+            <li><strong>Example:</strong> house price prediction with 30 meaningful features</li>
+          </ul>
+        </div>
+        <div class="use-col">
+          <h5>No Depth Limit</h5>
+          <ul>
+            <li>Random Forest only (bagging prevents overfitting)</li>
+            <li>Never for boosting -- will memorize training set</li>
+            <li>Very small, clean datasets with no noise</li>
+            <li><strong>Example:</strong> RF on Iris dataset for teaching purposes</li>
+          </ul>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -252,6 +318,38 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">When asked "what does gradient boosting do?", say: it iteratively fits new trees to the residuals (errors) of the current ensemble. Each tree corrects the mistakes of the previous trees.</div>
+    <div class="when-to-use">
+      <h4>When to Use</h4>
+      <div class="use-grid use-grid-3">
+        <div class="use-col">
+          <h5>MSE Residuals (Regression)</h5>
+          <ul>
+            <li>Standard regression tasks with Gaussian-like errors</li>
+            <li>Residual = negative gradient of squared loss</li>
+            <li>Sensitive to outliers (large residuals dominate)</li>
+            <li><strong>Example:</strong> house price prediction, demand forecasting</li>
+          </ul>
+        </div>
+        <div class="use-col">
+          <h5>Log-Loss Gradients (Classification)</h5>
+          <ul>
+            <li>Binary/multi-class classification</li>
+            <li>Pseudo-residuals are (y - predicted probability)</li>
+            <li>Trees predict log-odds corrections, not class labels</li>
+            <li><strong>Example:</strong> churn prediction, spam detection, medical diagnosis</li>
+          </ul>
+        </div>
+        <div class="use-col">
+          <h5>Huber / Quantile Residuals</h5>
+          <ul>
+            <li>When data has outliers that would distort MSE</li>
+            <li>Quantile loss for prediction intervals (not just point estimates)</li>
+            <li>Huber: smooth transition between L1 and L2</li>
+            <li><strong>Example:</strong> delivery time prediction with occasional extreme delays</li>
+          </ul>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -308,6 +406,29 @@
         <div class="opt-desc">Aggressive updates. Fewer trees needed but risk of oscillation and overfitting. Try "Break It" above!</div>
       </div>
     </div>
+    <div class="when-to-use">
+      <h4>When to Use</h4>
+      <div class="use-grid use-grid-2">
+        <div class="use-col">
+          <h5>Small Learning Rate (0.01-0.1)</h5>
+          <ul>
+            <li>Production models optimizing for every basis point of accuracy</li>
+            <li>Pair with early stopping and thousands of rounds</li>
+            <li>More robust to hyperparameter mis-specification</li>
+            <li><strong>Example:</strong> ad revenue optimization where 0.1% AUC improvement = millions of dollars</li>
+          </ul>
+        </div>
+        <div class="use-col">
+          <h5>Large Learning Rate (0.1-1.0)</h5>
+          <ul>
+            <li>Fast iteration during model development</li>
+            <li>Small datasets that cannot support many trees</li>
+            <li>Latency-sensitive inference (fewer trees in ensemble)</li>
+            <li><strong>Example:</strong> rapid A/B test model prototyping, mobile/edge deployment</li>
+          </ul>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -355,6 +476,38 @@
       <span class="label">Convergence:</span>
       <span class="desc">Train loss always decreases. Validation loss decreases then increases (overfitting). This gap motivates regularization and early stopping.</span>
     </div>
+    <div class="when-to-use">
+      <h4>When to Use</h4>
+      <div class="use-grid use-grid-3">
+        <div class="use-col">
+          <h5>Few Trees (10-50)</h5>
+          <ul>
+            <li>Simple patterns or very noisy data</li>
+            <li>High learning rate (0.3+) configurations</li>
+            <li>Latency-critical serving (each tree adds inference time)</li>
+            <li><strong>Example:</strong> real-time bidding with 5ms latency budget</li>
+          </ul>
+        </div>
+        <div class="use-col">
+          <h5>Moderate Trees (100-500)</h5>
+          <ul>
+            <li>Most tabular ML tasks with lr=0.05-0.1</li>
+            <li>Good balance of accuracy and inference speed</li>
+            <li>Standard for Kaggle-competitive models</li>
+            <li><strong>Example:</strong> fraud detection, churn prediction, loan default</li>
+          </ul>
+        </div>
+        <div class="use-col">
+          <h5>Many Trees (1000+)</h5>
+          <ul>
+            <li>Very low learning rate (0.01) for maximum accuracy</li>
+            <li>Large, complex datasets with subtle patterns</li>
+            <li>Always use early stopping to prevent waste</li>
+            <li><strong>Example:</strong> insurance pricing with millions of policies and 200+ features</li>
+          </ul>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -384,6 +537,18 @@
     <div class="legend-item"><span class="legend-dot" style="background:#e74c3c;"></span> Current loss</div>
     <div class="legend-item"><span class="legend-dot" style="background:#ffd93d;"></span> Gradient direction</div>
   </div>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:16px 0; padding:16px; background:#12121f; border:1px solid #2a2a4a; border-radius:12px;">
+    <div style="text-align:center;">
+      <div style="color:#54a0ff; font-weight:bold; margin-bottom:8px;">SGD (Parameter Space)</div>
+      <div class="formula">$$\theta_{t+1} = \theta_t - \eta \, \nabla_\theta \mathcal{L}$$</div>
+      <div style="color:#888; font-size:0.85em; margin-top:4px;">Update weights directly</div>
+    </div>
+    <div style="text-align:center;">
+      <div style="color:#10ac84; font-weight:bold; margin-bottom:8px;">Boosting (Function Space)</div>
+      <div class="formula">$$F_{t+1}(x) = F_t(x) - \eta \, h_t(x)$$</div>
+      <div style="color:#888; font-size:0.85em; margin-top:4px;">Add a tree \(h_t \approx \nabla_F \mathcal{L}\)</div>
+    </div>
+  </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Boosting performs gradient descent in function space.
     <div class="formula">$$F_t(x) = F_{t-1}(x) - \eta \cdot \nabla_{F} \mathcal{L}(y, F_{t-1}(x))$$</div>
@@ -398,6 +563,31 @@
     <hr class="divider">
     <div class="interview-tip">The name "gradient boosting" comes from this: we compute the gradient of the loss w.r.t. the current predictions, then fit a tree to approximate that gradient. The tree IS the gradient descent step.</div>
     <div class="mnemonic">Trees are to gradient boosting what parameter updates are to SGD. Both take steps that reduce the loss.</div>
+    <div class="when-to-use">
+      <h4>When to Use</h4>
+      <div class="use-grid use-grid-2">
+        <div class="use-col">
+          <h5>GBDT (Function-Space GD)</h5>
+          <ul>
+            <li>Tabular/structured data where features have clear meaning</li>
+            <li>When you need built-in feature selection and missing value handling</li>
+            <li>No need to define architecture -- tree structure is learned</li>
+            <li>Works well with small-to-medium data (1k-10M rows)</li>
+            <li><strong>Example:</strong> credit risk scoring, tabular Kaggle, recommendation ranking</li>
+          </ul>
+        </div>
+        <div class="use-col">
+          <h5>Neural Nets (Parameter-Space GD)</h5>
+          <ul>
+            <li>Unstructured data (images, text, audio, graphs)</li>
+            <li>When transfer learning from pretrained models is valuable</li>
+            <li>Differentiable end-to-end pipelines needed</li>
+            <li>Very large datasets with GPU/TPU acceleration</li>
+            <li><strong>Example:</strong> image classification, language models, speech-to-text</li>
+          </ul>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -461,6 +651,31 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">In practice, XGBoost/LightGBM defaults: learning_rate=0.1, max_depth=6, subsample=1.0, colsample=1.0. Start there and tune.</div>
+    <div class="when-to-use">
+      <h4>When to Use</h4>
+      <div class="use-grid use-grid-2">
+        <div class="use-col">
+          <h5>Shrinkage + Subsampling</h5>
+          <ul>
+            <li>Large datasets where overfitting is the primary risk</li>
+            <li>Row subsampling (0.7-0.9) acts like stochastic gradient descent</li>
+            <li>Column subsampling (0.5-0.8) decorrelates trees like Random Forest</li>
+            <li>Most impactful when combined: lr=0.05, subsample=0.8, colsample=0.7</li>
+            <li><strong>Example:</strong> e-commerce conversion prediction with 50M rows and 300 features</li>
+          </ul>
+        </div>
+        <div class="use-col">
+          <h5>Depth + Leaf Constraints</h5>
+          <ul>
+            <li>Small datasets (under 10k rows) where each split must be well-supported</li>
+            <li>max_depth=3-4 for boosting, plus min_child_weight=10-50</li>
+            <li>gamma (min split gain) prunes splits that barely help</li>
+            <li>Symmetric trees (CatBoost) for fastest inference</li>
+            <li><strong>Example:</strong> clinical prediction with 2000 patients -- tight depth limits prevent memorization</li>
+          </ul>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -532,6 +747,38 @@
     <hr class="divider">
     <div class="interview-tip">XGBoost, LightGBM, CatBoost all follow this same algorithm. The differences are in HOW they build trees (histogram binning, leaf-wise vs level-wise growth, handling categoricals). The core idea is identical.</div>
     <div class="mnemonic">GBDT = "fit the errors, add a little bit, repeat". Learning rate shrinks each tree's contribution, early stopping says when to stop.</div>
+    <div class="when-to-use">
+      <h4>When to Use</h4>
+      <div class="use-grid use-grid-3">
+        <div class="use-col">
+          <h5>GBDT for Production</h5>
+          <ul>
+            <li>Tabular data with mixed types (numeric, categorical, missing)</li>
+            <li>When model must train in minutes, not hours</li>
+            <li>Feature importance and SHAP for model governance</li>
+            <li><strong>Example:</strong> fraud detection pipeline, real-time credit decisions, search ranking</li>
+          </ul>
+        </div>
+        <div class="use-col">
+          <h5>GBDT for Competitions</h5>
+          <ul>
+            <li>Kaggle tabular tasks -- GBDT dominates leaderboards</li>
+            <li>Ensemble XGBoost + LightGBM + CatBoost for diversity</li>
+            <li>Aggressive hyperparameter search with Optuna/Hyperopt</li>
+            <li><strong>Example:</strong> stacking 3 GBDT variants with a linear meta-learner for top leaderboard spots</li>
+          </ul>
+        </div>
+        <div class="use-col">
+          <h5>When NOT to Use GBDT</h5>
+          <ul>
+            <li>Images, text, audio -- use neural networks instead</li>
+            <li>Online learning / streaming data (trees are batch learners)</li>
+            <li>When smooth decision boundaries are required</li>
+            <li><strong>Example:</strong> image classification, real-time personalization with streaming updates</li>
+          </ul>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1972,14 +2219,13 @@ function drawGradView(numRounds) {
     ctx.fillStyle = '#aaa';
     ctx.font = '11px Inter, sans-serif';
     var lines = [
-      'SGD:     theta -= lr * dL/dtheta',
-      'Boost:   F -= lr * dL/dF',
-      '',
       'In SGD, we update parameters.',
       'In boosting, we update the',
       'function F itself by adding',
-      'a new tree h_t that approx.',
-      'the negative gradient.'
+      'a new tree that approximates',
+      'the negative gradient.',
+      '',
+      '(see formulas below canvas)'
     ];
     lines.forEach(function(line) {
       ctx.fillText(line, infoX + 20, sly);
