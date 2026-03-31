@@ -1,0 +1,1911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 4: Attention & Sequence Modeling from Scratch</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #0a0a0f; color: #e0e0e0; line-height: 1.6; }
+  .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; text-align: center; border-bottom: 1px solid #2a2a4a; }
+  .header h1 { font-size: 2.2em; background: linear-gradient(90deg, #ff9ff3, #ffd93d); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+  .header p { color: #888; font-size: 1.1em; }
+  .header a { color: #ff9ff3; text-decoration: none; font-size: 0.9em; }
+  .header a:hover { text-decoration: underline; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+
+  /* Minimap */
+  .minimap { position: sticky; top: 0; z-index: 100; background: #0a0a0fee; backdrop-filter: blur(10px); border-bottom: 1px solid #2a2a4a; padding: 10px 20px; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }
+  .mm-step { padding: 4px 12px; border-radius: 6px; font-size: 0.75em; font-weight: 600; cursor: pointer; transition: all 0.2s; background: #151530; color: #555; border: 1px solid #2a2a4a; white-space: nowrap; }
+  .mm-step:hover { border-color: #ff9ff3; color: #ff9ff3; }
+  .mm-step.active { background: rgba(255,159,243,0.2); color: #ff9ff3; border-color: rgba(255,159,243,0.5); }
+  .mm-step.done { background: rgba(255,159,243,0.1); color: #ff9ff3; border-color: rgba(255,159,243,0.3); }
+  .mm-arrow { color: #333; font-size: 0.8em; }
+
+  .viz-section { background: #12121f; border: 1px solid #2a2a4a; border-radius: 16px; padding: 32px; margin-bottom: 40px; }
+  .viz-section h2 { font-size: 1.5em; color: #ff9ff3; margin-bottom: 8px; }
+  .viz-section .subtitle { color: #888; margin-bottom: 24px; font-size: 0.95em; }
+  .viz-canvas { background: #0d0d1a; border-radius: 12px; position: relative; overflow: hidden; }
+  canvas { display: block; width: 100%; }
+  .controls { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; align-items: center; }
+  .control-group { display: flex; flex-direction: column; gap: 4px; }
+  .control-group label { font-size: 0.85em; color: #aaa; }
+  .control-group input[type="range"] { width: 160px; accent-color: #ff9ff3; }
+  .control-group .value { font-size: 0.85em; color: #ff9ff3; font-family: monospace; }
+  .btn { padding: 8px 16px; border: 1px solid #ff9ff3; background: transparent; color: #ff9ff3; border-radius: 8px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
+  .btn:hover { background: #ff9ff322; }
+  .btn.active { background: #ff9ff333; }
+  .tab-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+
+  .insight-box { background: linear-gradient(135deg, #1a1a3e 0%, #151530 100%); border-left: 4px solid #ff9ff3; padding: 20px 24px; margin-top: 20px; border-radius: 0 12px 12px 0; font-size: 0.92em; color: #ccc; line-height: 1.8; }
+  .insight-box strong { color: #ff9ff3; font-size: 1.05em; }
+  .insight-box .formula { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 12px 18px; margin: 12px 0; font-family: 'Courier New', monospace; color: #e8e8ff; font-size: 1.05em; text-align: center; letter-spacing: 0.5px; line-height: 1.9; }
+  .insight-box .key-point { display: flex; flex-wrap: wrap; gap: 4px 8px; margin: 8px 0; padding: 4px 0; align-items: baseline; }
+  .insight-box .key-point .label { color: #ff9ff3; font-weight: 600; min-width: 160px; flex-shrink: 0; }
+  .insight-box .key-point .desc { color: #ddd; }
+  .insight-box .interview-tip { background: rgba(100, 255, 100, 0.05); border: 1px solid rgba(100, 255, 100, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #b0ffb0; font-size: 0.93em; line-height: 1.6; }
+  .insight-box .interview-tip::before { content: '\1F4A1  Interview Tip: '; font-weight: 700; color: #7fff7f; }
+  .insight-box .mnemonic { background: rgba(255, 150, 255, 0.05); border: 1px solid rgba(255, 150, 255, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #ffb0ff; font-size: 0.93em; line-height: 1.6; }
+  .insight-box .mnemonic::before { content: '\1F9E0  Remember: '; font-weight: 700; color: #ff7fff; }
+  .insight-box .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+  .insight-box .comparison .option { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 10px 14px; }
+  .insight-box .comparison .option .opt-title { color: #ff9ff3; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
+  .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
+  .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
+
+  .katex { color: #e8e8ff; font-size: 1.1em; }
+  .formula .katex { font-size: 1.2em; }
+
+  .narrative-note { background: rgba(255,217,61,0.05); border-left: 3px solid #ffd93d; padding: 14px 18px; margin: 16px 0; border-radius: 0 8px 8px 0; font-size: 0.9em; color: #ccb866; }
+  .narrative-note strong { color: #ffd93d; }
+
+  select { padding: 6px 12px; border: 1px solid #2a2a4a; background: #0d0d1a; color: #e0e0e0; border-radius: 6px; font-size: 0.9em; cursor: pointer; }
+  select:focus { outline: none; border-color: #ff9ff3; }
+
+#quizToggle{position:fixed;top:20px;right:20px;z-index:1000;padding:12px 20px;background:#ff9ff3;color:#0a0a0f;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:1em;box-shadow:0 4px 15px rgba(0,0,0,0.3);transition:transform 0.2s}
+#quizToggle:hover{transform:scale(1.05)}
+#quizSection{background:#0a0a0f;border-top:2px solid #ff9ff3;padding:40px 20px;margin-top:40px}
+.quiz-container{max-width:900px;margin:0 auto}
+.quiz-topic{margin-bottom:30px}
+.quiz-topic-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:10px;cursor:pointer;margin-bottom:12px;user-select:none}
+.quiz-topic-header h3{color:#ff9ff3;margin:0;font-size:1.15em}
+.quiz-topic-header:hover{background:#1f1f3a}
+.quiz-topic-score{color:#888;font-size:0.95em}
+.quiz-topic-questions{display:none}
+.quiz-topic-questions.open{display:block}
+.quiz-question{background:#12121f;border:1px solid #2a2a4a;border-radius:12px;padding:24px;margin-bottom:16px}
+.quiz-question h4{color:#e0e0e0;margin-bottom:16px;font-size:1.05em;line-height:1.5}
+.quiz-option{display:block;width:100%;padding:12px 16px;margin:8px 0;background:#0d0d1a;border:1px solid #2a2a4a;border-radius:8px;color:#e0e0e0;cursor:pointer;text-align:left;font-size:0.95em;transition:all 0.2s;font-family:inherit}
+.quiz-option:hover:not(:disabled){border-color:#ff9ff3;background:#1a1a3e}
+.quiz-option.correct{background:#1a3a2a !important;border-color:#2ecc71 !important;color:#2ecc71 !important}
+.quiz-option.wrong{background:#3a1a1a !important;border-color:#e74c3c !important;color:#e74c3c !important}
+.quiz-option.reveal{border-color:#2ecc71 !important;color:#2ecc71 !important}
+.quiz-option:disabled{cursor:default}
+.quiz-explanation{margin-top:12px;padding:14px 18px;border-radius:8px;font-size:0.93em;line-height:1.6;display:none}
+.quiz-explanation.show{display:block}
+.quiz-explanation.correct-exp{border-left:4px solid #2ecc71;background:rgba(46,204,113,0.08);color:#b0ffb0}
+.quiz-explanation.wrong-exp{border-left:4px solid #e74c3c;background:rgba(231,76,60,0.08);color:#ffb0b0}
+.quiz-score{text-align:center;font-size:1.5em;color:#ff9ff3;margin-bottom:30px}
+.quiz-actions{text-align:center;margin-top:30px;margin-bottom:20px}
+.quiz-actions button{padding:10px 24px;margin:0 8px;border-radius:8px;border:1px solid #ff9ff3;background:transparent;color:#ff9ff3;cursor:pointer;font-size:1em}
+.quiz-actions button:hover{background:rgba(255,159,243,0.1)}
+.quiz-progress{height:4px;background:#1a1a2e;border-radius:2px;margin-bottom:20px;overflow:hidden}
+.quiz-progress-bar{height:100%;background:#ff9ff3;border-radius:2px;transition:width 0.3s}
+
+.break-toggle { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border: 1px solid #e74c3c; background: transparent; color: #e74c3c; border-radius: 8px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
+.break-toggle:hover { background: rgba(231,76,60,0.15); }
+.break-toggle.broken { background: rgba(231,76,60,0.25); border-color: #ff4444; color: #ff4444; }
+
+.legend { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.85em; color: #ccc; }
+.legend-dot { width: 12px; height: 12px; border-radius: 50%; }
+
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '\\(', right: '\\)', display: false}]});"></script>
+</head>
+<body>
+<button id="quizToggle" onclick="toggleQuiz()">&#x1F9E0; Quiz Mode</button>
+
+<div class="header">
+  <a href="../index.html">&larr; Back to Index</a>
+  <h1>Chapter 4: Attention & Sequence Modeling from Scratch</h1>
+  <p>From the limitations of fixed-context MLPs to the full attention block &mdash; Prereqs: Ch 1 (Backprop), Ch 2 (Linear Algebra)</p>
+</div>
+
+<div class="minimap" id="minimap">
+  <span class="mm-step active" data-section="viz41" onclick="scrollToViz('viz41')">1. Why Sequences?</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz42" onclick="scrollToViz('viz42')">2. Soft Lookup</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz43" onclick="scrollToViz('viz43')">3. Q, K, V</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz44" onclick="scrollToViz('viz44')">4. Scaling</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz45" onclick="scrollToViz('viz45')">5. Multi-Head</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz46" onclick="scrollToViz('viz46')">6. Causal Mask</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz47" onclick="scrollToViz('viz47')">7. Full Block</span>
+</div>
+
+<div class="container">
+
+<!-- ============================================================ -->
+<!-- VIZ 4.1: WHY MLPS STRUGGLE WITH SEQUENCES -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz41">
+  <h2>4.1 The Problem: Why MLPs Struggle with Sequences</h2>
+  <p class="subtitle">Fixed-size context windows miss long-range dependencies. An MLP with context=3 trying to predict "was" only sees "the door ___" -- it can't see the subject "The cat" 8 tokens back. We need selective attention.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <div class="control-group">
+      <label>Context Window Size</label>
+      <input type="range" id="contextSlider" min="1" max="11" value="3" oninput="drawSequenceProblem()">
+      <span class="value" id="contextVal">3</span>
+    </div>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="seqCanvas" width="1100" height="480"></canvas>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> MLPs process a fixed window of tokens. Long-range dependencies (like subject-verb agreement) are invisible unless the window is enormous.
+    <div class="formula">$$\text{MLP input} = [x_{t-k}, \ldots, x_{t-1}] \quad \text{where } k = \text{context size}$$</div>
+    <div class="key-point">
+      <span class="label">The Scaling Problem:</span>
+      <span class="desc">Parameters grow as \(O(k \cdot d)\). For context=1000, d=768: that is 768,000 parameters just for the input layer.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">What We Need:</span>
+      <span class="desc">A mechanism that can <em>selectively</em> look at any position in the sequence, regardless of distance. This is attention.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">When asked "why attention over RNNs/MLPs?": MLPs have a fixed receptive field. RNNs process sequentially (slow, vanishing gradients). Attention looks at ALL positions in parallel with learned relevance weights.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 4.2: ATTENTION AS SOFT DICTIONARY LOOKUP -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz42">
+  <h2>4.2 Attention as Soft Dictionary Lookup</h2>
+  <p class="subtitle">Before the math: attention is just a "soft" version of a dictionary lookup. Instead of exact-match-or-error, every key gets a similarity score, and the output is a weighted blend of all values.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <div class="tab-bar">
+      <button class="btn active" id="queryBtn0" onclick="setQuery(0)">Query: "kitten"</button>
+      <button class="btn" id="queryBtn1" onclick="setQuery(1)">Query: "Berlin"</button>
+      <button class="btn" id="queryBtn2" onclick="setQuery(2)">Query: "river"</button>
+      <button class="btn" id="queryBtn3" onclick="setQuery(3)">Query: "happy"</button>
+    </div>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="softDictCanvas" width="1100" height="500"></canvas>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Attention = soft dictionary. The query doesn't need an exact match. Every key contributes proportionally to its similarity.
+    <div class="formula">$$\text{output} = \sum_{i} \text{softmax}(\text{similarity}(q, k_i)) \cdot v_i$$</div>
+    <div class="key-point">
+      <span class="label">Hard Lookup:</span>
+      <span class="desc">Exact match or KeyError. Binary: you either find it or you don't.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Soft Lookup:</span>
+      <span class="desc">Continuous similarity scores. Every key contributes. The output is a blend of all values weighted by relevance.</span>
+    </div>
+    <hr class="divider">
+    <div class="mnemonic">This IS attention. Everything else (Q, K, V projections, scaling, multi-head) is just making the similarity scores learnable and stable.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 4.3: SELF-ATTENTION Q, K, V PROJECTIONS -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz43">
+  <h2>4.3 Self-Attention: Q, K, V Projections</h2>
+  <p class="subtitle">Q, K, V are learned linear projections that make the soft lookup trainable. Each token's embedding is projected into three different spaces: what am I looking for (Q), what do I contain (K), and what do I offer (V).</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <div class="tab-bar">
+      <button class="btn active" id="qkvTok0" onclick="setQKVToken(0)">Token: "The"</button>
+      <button class="btn" id="qkvTok1" onclick="setQKVToken(1)">Token: "cat"</button>
+      <button class="btn" id="qkvTok2" onclick="setQKVToken(2)">Token: "sat"</button>
+    </div>
+    <button class="break-toggle" id="breakQKV" onclick="toggleBreakQKV()">Break It: W=Identity</button>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="qkvCanvas" width="1100" height="560"></canvas>
+  </div>
+  <div class="narrative-note">
+    <strong>Callback to 4.2:</strong> Remember the soft dictionary? Q is the query, K is the key, V is the value. We have just made all three <em>learnable</em> via weight matrices \(W_Q, W_K, W_V\).
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Without learned projections, attention is just dot-product similarity of raw embeddings. The W matrices let the model learn <em>what to look for</em> vs <em>what to advertise</em> vs <em>what to return</em>.
+    <div class="formula">$$Q = XW_Q, \quad K = XW_K, \quad V = XW_V$$</div>
+    <div class="key-point">
+      <span class="label">Query (Q):</span>
+      <span class="desc">"I'm looking for..." -- encodes what this token wants to find in other tokens.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Key (K):</span>
+      <span class="desc">"I contain..." -- encodes what this token advertises to other tokens.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Value (V):</span>
+      <span class="desc">"Here's my content..." -- the actual information that gets passed when attended to.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Q/K/V is the most asked attention question. Key answer: Q and K determine HOW MUCH to attend (the routing). V determines WHAT information flows. They are decoupled on purpose.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 4.4: SCALING & SOFTMAX -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz44">
+  <h2>4.4 Scaling & Softmax: Why \(\sqrt{d_k}\) Matters</h2>
+  <p class="subtitle">Without scaling, dot products grow large with embedding dimension, pushing softmax into saturation (nearly one-hot). Dividing by \(\sqrt{d_k}\) keeps gradients healthy.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <div class="control-group">
+      <label>Scale Factor (divisor)</label>
+      <input type="range" id="scaleSlider" min="1" max="16" value="1" step="0.5" oninput="drawScaling()">
+      <span class="value" id="scaleVal">1.0</span>
+    </div>
+    <button class="btn" onclick="setScaleOptimal()">Set to Optimal (&radic;d<sub>k</sub> = 8)</button>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="scaleCanvas" width="1100" height="500"></canvas>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> When \(d_k\) is large, dot products grow as \(O(\sqrt{d_k})\) in expectation. Softmax of large values saturates, killing gradients.
+    <div class="formula">$$\text{Attention}(Q,K,V) = \text{softmax}\!\left(\frac{QK^T}{\sqrt{d_k}}\right) V$$</div>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title" style="color: #e74c3c;">Without Scaling (scale=1)</div>
+        <div class="opt-desc">Scores: [45.2, -38.7, 51.0, 12.3]. Softmax: [0.003, 0.000, 0.997, 0.000]. Nearly one-hot -- can only attend to ONE token. Gradient of softmax near 0.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #2ecc71;">With &radic;d_k Scaling (scale=8)</div>
+        <div class="opt-desc">Scores: [5.65, -4.84, 6.38, 1.54]. Softmax: [0.29, 0.01, 0.59, 0.05]. Smooth distribution -- model can blend information from multiple tokens.</div>
+      </div>
+    </div>
+    <hr class="divider">
+    <div class="mnemonic">Think of it like temperature in a softmax. Large dot products = very cold = spiky. Dividing by &radic;d_k = warming up = smoother. The sweet spot keeps gradients flowing.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 4.5: MULTI-HEAD ATTENTION -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz45">
+  <h2>4.5 Multi-Head Attention: Parallel Perspectives</h2>
+  <p class="subtitle">One head captures one pattern. Multiple heads learn to attend to different things -- syntax, coreference, punctuation. Their outputs are concatenated and projected.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <div class="control-group">
+      <label>Number of Heads</label>
+      <input type="range" id="numHeadsSlider" min="0" max="3" value="0" oninput="drawMultiHead()">
+      <span class="value" id="numHeadsVal">1</span>
+    </div>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="multiHeadCanvas" width="1100" height="560"></canvas>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:#ff9ff3;"></span> Head 1: Local syntax</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#48dbfb;"></span> Head 2: Subject-verb</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#ffd93d;"></span> Head 3: Coreference</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#ff6b6b;"></span> Head 4: Positional</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Each head operates in a lower-dimensional subspace (\(d_k = d_{model} / h\)). This is cheaper than one big head AND captures diverse patterns.
+    <div class="formula">$$\text{MultiHead}(Q,K,V) = \text{Concat}(\text{head}_1, \ldots, \text{head}_h) W_O$$</div>
+    <div class="key-point">
+      <span class="label">Why Multiple Heads?</span>
+      <span class="desc">A single head can only produce one attention pattern per position. Multiple heads let each position attend to different things simultaneously.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Concatenation + W_O:</span>
+      <span class="desc">After all heads compute independently, their outputs are concatenated and projected through \(W_O\) to blend the perspectives.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Common follow-up: "Why not just use a bigger single head?" Because a single attention pattern per position is a bottleneck. Multi-head is like an ensemble -- each head specializes on a different linguistic relation.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 4.6: CAUSAL MASKING -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz46">
+  <h2>4.6 Causal Masking: No Peeking at the Future</h2>
+  <p class="subtitle">For autoregressive generation, position \(i\) can only attend to positions \(\leq i\). Without the mask, the model cheats by copying future tokens.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <div class="tab-bar">
+      <button class="btn active" id="maskView0" onclick="setMaskView(0)">Before Mask</button>
+      <button class="btn" id="maskView1" onclick="setMaskView(1)">After Mask</button>
+      <button class="btn" id="maskView2" onclick="setMaskView(2)">After Softmax</button>
+    </div>
+    <button class="break-toggle" id="breakMask" onclick="toggleBreakMask()">Break It: Remove Mask</button>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="causalCanvas" width="1100" height="520"></canvas>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> The causal mask prevents information leakage from future tokens. Without it, the model can trivially copy the next token, achieving ~0 training loss but failing at generation.
+    <div class="formula">$$\text{mask}_{ij} = \begin{cases} 0 & \text{if } j \leq i \\ -\infty & \text{if } j > i \end{cases}$$</div>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title" style="color: #2ecc71;">With Causal Mask</div>
+        <div class="opt-desc">Each position only sees past + present. Must actually LEARN to predict the next token from context. Generalization works.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #e74c3c;">Without Mask (Broken)</div>
+        <div class="opt-desc">Position 3 can see position 5 -- the answer it's trying to predict! Training loss drops to ~0 (cheating). Generation produces garbage because there's no future to peek at.</div>
+      </div>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Causal masking is what makes GPT-style models autoregressive. BERT uses NO mask (bidirectional). T5 uses causal mask in the decoder only. Know which architecture uses which masking strategy.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 4.7: COMPLETE ATTENTION BLOCK -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz47">
+  <h2>4.7 The Complete Attention Block</h2>
+  <p class="subtitle">Assemble everything: multi-head causal attention + LayerNorm + residual connections + FFN. Toggle each component to see what breaks.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <button class="btn active" id="togLN" onclick="toggleComponent('layernorm')">LayerNorm: ON</button>
+    <button class="btn active" id="togRes" onclick="toggleComponent('residual')">Residual: ON</button>
+    <button class="btn active" id="togFFN" onclick="toggleComponent('ffn')">FFN: ON</button>
+    <button class="btn" onclick="resetBlock()">Reset All</button>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="blockCanvas" width="1100" height="600"></canvas>
+  </div>
+  <div class="narrative-note">
+    <strong>Chapter 4 payoff:</strong> You have built the attention block -- the core building block of every transformer. In Ch 5, you will see that putting this same mechanism on <em>graph edges</em> gives you GATs. In Ch 6, you will stack these blocks into a full transformer.
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> The attention block is the fundamental unit of the transformer. Every component serves a critical purpose.
+    <div class="formula">$$\text{output} = x + \text{FFN}(\text{LayerNorm}(x + \text{MHA}(\text{LayerNorm}(x))))$$</div>
+    <div class="key-point">
+      <span class="label">LayerNorm:</span>
+      <span class="desc">Stabilizes training by normalizing activations. Without it: gradient magnitudes vary wildly across layers.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Residual Connection:</span>
+      <span class="desc">Enables gradient flow in deep stacks. Without it: gradients vanish after ~6 layers. With it: hundreds of layers work.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">FFN (Feed-Forward):</span>
+      <span class="desc">Applies a nonlinear transformation per-position. Attention alone is linear in V -- the FFN adds expressive power.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">If asked "what are the components of a transformer block?": LayerNorm, Multi-Head Attention, Residual Add, LayerNorm, FFN, Residual Add. Pre-norm (LN before attention) is now standard over post-norm.</div>
+    <div class="mnemonic">The block formula: (1) normalize, (2) attend, (3) add residual, (4) normalize, (5) feed-forward, (6) add residual. Six steps, one block. Stack N of these = a transformer.</div>
+  </div>
+</div>
+
+</div> <!-- /container -->
+
+<!-- ============================================================ -->
+<!-- QUIZ SECTION -->
+<!-- ============================================================ -->
+<div id="quizSection" style="display:none;">
+  <div class="quiz-container">
+    <h2 style="text-align:center; color:#ff9ff3; margin-bottom:10px;">Chapter 4 Quiz Mode</h2>
+    <div class="quiz-score">Score: <span id="quizScore">0</span></div>
+    <div class="quiz-progress"><div class="quiz-progress-bar" id="quizProgressBar"></div></div>
+    <div id="quizContent"></div>
+    <div class="quiz-actions">
+      <button onclick="resetQuiz()">Reset Quiz</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// GLOBAL STATE & UTILITIES
+// ============================================================
+const ACCENT = '#ff9ff3';
+const ACCENT2 = '#48dbfb';
+const ACCENT3 = '#ffd93d';
+const ACCENT4 = '#ff6b6b';
+const BG = '#0d0d1a';
+const FG = '#e0e0e0';
+const DIM = '#555';
+const GRID = '#1a1a2e';
+
+function scrollToViz(id) {
+  document.getElementById(id).scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Minimap scroll highlighting
+const vizSections = ['viz41','viz42','viz43','viz44','viz45','viz46','viz47'];
+window.addEventListener('scroll', function() {
+  const steps = document.querySelectorAll('.mm-step');
+  let activeIdx = 0;
+  vizSections.forEach(function(id, i) {
+    const el = document.getElementById(id);
+    if (el && el.getBoundingClientRect().top < 300) activeIdx = i;
+  });
+  steps.forEach(function(s, i) {
+    s.classList.remove('active', 'done');
+    if (i < activeIdx) s.classList.add('done');
+    else if (i === activeIdx) s.classList.add('active');
+  });
+});
+
+function softmax(arr) {
+  const max = Math.max.apply(null, arr);
+  const exps = arr.map(function(x) { return Math.exp(x - max); });
+  const sum = exps.reduce(function(a, b) { return a + b; }, 0);
+  return exps.map(function(e) { return e / sum; });
+}
+
+function matMul(A, B, rowsA, colsA, colsB) {
+  var C = [];
+  for (var i = 0; i < rowsA; i++) {
+    for (var j = 0; j < colsB; j++) {
+      var s = 0;
+      for (var k = 0; k < colsA; k++) s += A[i * colsA + k] * B[k * colsB + j];
+      C.push(s);
+    }
+  }
+  return C;
+}
+
+function getCtx(id) {
+  var c = document.getElementById(id);
+  var ctx = c.getContext('2d');
+  var dpr = window.devicePixelRatio || 1;
+  var w = c.width, h = c.height;
+  c.style.width = c.style.width || w + 'px';
+  c.style.height = c.style.height || '';
+  return ctx;
+}
+
+function clearCanvas(ctx, c) {
+  ctx.clearRect(0, 0, c.width, c.height);
+  ctx.fillStyle = BG;
+  ctx.fillRect(0, 0, c.width, c.height);
+}
+
+function drawRoundedRect(ctx, x, y, w, h, r, fill, stroke) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 1.5; ctx.stroke(); }
+}
+
+function drawArrow(ctx, x1, y1, x2, y2, color, width) {
+  ctx.save();
+  ctx.strokeStyle = color || '#555';
+  ctx.fillStyle = color || '#555';
+  ctx.lineWidth = width || 1.5;
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+  var angle = Math.atan2(y2 - y1, x2 - x1);
+  var hl = 8;
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - hl * Math.cos(angle - 0.4), y2 - hl * Math.sin(angle - 0.4));
+  ctx.lineTo(x2 - hl * Math.cos(angle + 0.4), y2 - hl * Math.sin(angle + 0.4));
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+// ============================================================
+// VIZ 4.1: SEQUENCE PROBLEM
+// ============================================================
+var sentence41 = ["The","cat","that","sat","on","the","mat","by","the","door","was","___"];
+var depArcs = [{from:0, to:10, label:"subject-verb"}, {from:1, to:10, label:"noun-verb"}, {from:3, to:1, label:"relative clause"}];
+
+function drawSequenceProblem() {
+  var c = document.getElementById('seqCanvas');
+  var ctx = c.getContext('2d');
+  clearCanvas(ctx, c);
+  var cw = parseInt(document.getElementById('contextSlider').value);
+  document.getElementById('contextVal').textContent = cw;
+
+  var n = sentence41.length;
+  var tokW = 72, tokH = 34, startX = 40, tokY = 240, gap = 6;
+
+  // Draw tokens
+  for (var i = 0; i < n; i++) {
+    var x = startX + i * (tokW + gap);
+    var inContext = (i >= n - 1 - cw && i < n - 1) || i === n - 1;
+    var col = inContext ? ACCENT : '#2a2a4a';
+    var textCol = inContext ? '#fff' : '#666';
+    drawRoundedRect(ctx, x, tokY, tokW, tokH, 6, inContext ? 'rgba(255,159,243,0.15)' : '#151530', col);
+    ctx.fillStyle = textCol;
+    ctx.font = '13px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(sentence41[i], x + tokW / 2, tokY + 22);
+  }
+
+  // Context window bracket
+  var cwStart = Math.max(0, n - 1 - cw);
+  var bx1 = startX + cwStart * (tokW + gap);
+  var bx2 = startX + (n - 1) * (tokW + gap) + tokW;
+  ctx.strokeStyle = ACCENT;
+  ctx.lineWidth = 2;
+  ctx.setLineDash([5, 3]);
+  ctx.strokeRect(bx1 - 4, tokY - 8, bx2 - bx1 + 8, tokH + 16);
+  ctx.setLineDash([]);
+  ctx.fillStyle = ACCENT;
+  ctx.font = 'bold 12px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('MLP context window (size=' + cw + ')', (bx1 + bx2) / 2, tokY + tokH + 36);
+
+  // Dependency arcs
+  depArcs.forEach(function(arc) {
+    var x1 = startX + arc.from * (tokW + gap) + tokW / 2;
+    var x2 = startX + arc.to * (tokW + gap) + tokW / 2;
+    var dist = Math.abs(arc.to - arc.from);
+    var arcH = 30 + dist * 12;
+    var canSee = (arc.from >= cwStart);
+    ctx.beginPath();
+    ctx.moveTo(x1, tokY);
+    ctx.quadraticCurveTo((x1 + x2) / 2, tokY - arcH, x2, tokY);
+    ctx.strokeStyle = canSee ? '#2ecc71' : '#e74c3c';
+    ctx.lineWidth = 2;
+    ctx.setLineDash(canSee ? [] : [4, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = canSee ? '#2ecc71' : '#e74c3c';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(arc.label, (x1 + x2) / 2, tokY - arcH - 4);
+    // Status icon
+    ctx.font = '14px sans-serif';
+    ctx.fillText(canSee ? '\u2713' : '\u2717', (x1 + x2) / 2 + 60, tokY - arcH - 2);
+  });
+
+  // Title
+  ctx.fillStyle = FG;
+  ctx.font = 'bold 16px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Sentence: "The cat that sat on the mat by the door was ___"', 40, 40);
+  ctx.font = '13px Inter, sans-serif';
+  ctx.fillStyle = '#888';
+  ctx.fillText('The MLP must predict "was" but only sees the last ' + cw + ' tokens.', 40, 62);
+  ctx.fillText('Green arcs = visible dependencies. Red arcs = missed (outside context window).', 40, 80);
+
+  // Parameter count display
+  var d = 768;
+  var params = cw * d;
+  ctx.fillStyle = '#888';
+  ctx.font = '12px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('Input params: context(' + cw + ') x d_model(768) = ' + params.toLocaleString(), 40, tokY + tokH + 70);
+
+  // MLP diagram
+  var mlpX = 40, mlpY = 340;
+  drawRoundedRect(ctx, mlpX, mlpY, 200, 80, 8, '#151530', '#2a2a4a');
+  ctx.fillStyle = '#888';
+  ctx.font = 'bold 13px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('MLP (context=' + cw + ')', mlpX + 100, mlpY + 20);
+
+  // Show visible tokens entering MLP
+  var visTokens = sentence41.slice(Math.max(0, n - 1 - cw), n - 1);
+  ctx.font = '12px monospace';
+  ctx.fillStyle = ACCENT;
+  ctx.fillText('Input: [' + visTokens.join(', ') + ']', mlpX + 100, mlpY + 45);
+  ctx.fillStyle = '#888';
+  ctx.font = '11px Inter, sans-serif';
+  ctx.fillText(cw >= 10 ? 'Can see "The cat" -- dependency reachable!' : 'Cannot see "The cat" -- will guess wrong', mlpX + 100, mlpY + 65);
+
+  // Big message
+  if (cw >= 10) {
+    ctx.fillStyle = '#2ecc71';
+    ctx.font = 'bold 14px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('All dependencies visible! But params = ' + params.toLocaleString() + ' -- grows linearly with context.', c.width / 2, 450);
+    ctx.fillStyle = '#888';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.fillText('We need selective attention, not brute-force context expansion.', c.width / 2, 470);
+  } else {
+    ctx.fillStyle = '#e74c3c';
+    ctx.font = 'bold 14px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Missing critical dependency: "The cat" is ' + (10 - cw) + ' positions outside the window!', c.width / 2, 450);
+  }
+}
+
+// ============================================================
+// VIZ 4.2: SOFT DICTIONARY LOOKUP
+// ============================================================
+var dictKeys = [
+  { key: "cat", value: "animal", embed: [0.9, 0.1, 0.2, 0.0] },
+  { key: "dog", value: "animal", embed: [0.85, 0.15, 0.25, 0.0] },
+  { key: "Paris", value: "city", embed: [0.0, 0.1, 0.8, 0.9] },
+  { key: "Rome", value: "city", embed: [0.0, 0.15, 0.75, 0.85] },
+  { key: "river", value: "nature", embed: [0.2, 0.7, 0.3, 0.1] },
+  { key: "happy", value: "emotion", embed: [0.1, 0.3, 0.0, 0.5] }
+];
+var queries = [
+  { word: "kitten", embed: [0.88, 0.12, 0.18, 0.02] },
+  { word: "Berlin", embed: [0.02, 0.08, 0.82, 0.88] },
+  { word: "river", embed: [0.2, 0.7, 0.3, 0.1] },
+  { word: "happy", embed: [0.1, 0.3, 0.0, 0.5] }
+];
+var currentQuery = 0;
+
+function setQuery(idx) {
+  currentQuery = idx;
+  for (var i = 0; i < 4; i++) document.getElementById('queryBtn' + i).className = i === idx ? 'btn active' : 'btn';
+  drawSoftDict();
+}
+
+function dotProduct(a, b) {
+  var s = 0;
+  for (var i = 0; i < a.length; i++) s += a[i] * b[i];
+  return s;
+}
+
+function drawSoftDict() {
+  var c = document.getElementById('softDictCanvas');
+  var ctx = c.getContext('2d');
+  clearCanvas(ctx, c);
+  var q = queries[currentQuery];
+
+  // Left: Hard lookup
+  var lx = 30, ly = 50;
+  ctx.fillStyle = ACCENT;
+  ctx.font = 'bold 16px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Hard Dictionary Lookup', lx, ly);
+  ctx.font = '13px Inter, sans-serif';
+  ctx.fillStyle = '#888';
+  ctx.fillText('Exact match or KeyError', lx, ly + 22);
+
+  drawRoundedRect(ctx, lx, ly + 35, 230, 240, 8, '#151530', '#2a2a4a');
+  ctx.font = '13px monospace';
+  ctx.fillStyle = '#888';
+  ctx.fillText('{', lx + 12, ly + 60);
+  dictKeys.forEach(function(entry, i) {
+    var y = ly + 80 + i * 30;
+    ctx.fillStyle = '#ff9ff3';
+    ctx.fillText('  "' + entry.key + '"', lx + 12, y);
+    ctx.fillStyle = '#888';
+    ctx.fillText(': "' + entry.value + '"', lx + 12 + ctx.measureText('  "' + entry.key + '"').width, y);
+  });
+  ctx.fillStyle = '#888';
+  ctx.fillText('}', lx + 12, ly + 80 + dictKeys.length * 30);
+
+  // Query result
+  var exactMatch = dictKeys.find(function(e) { return e.key === q.word; });
+  ctx.font = 'bold 13px monospace';
+  ctx.fillStyle = ACCENT;
+  ctx.fillText('query("' + q.word + '")', lx + 12, ly + 310);
+  ctx.font = '13px monospace';
+  if (exactMatch) {
+    ctx.fillStyle = '#2ecc71';
+    ctx.fillText('=> "' + exactMatch.value + '"', lx + 12, ly + 335);
+  } else {
+    ctx.fillStyle = '#e74c3c';
+    ctx.fillText('=> KeyError!', lx + 12, ly + 335);
+    ctx.fillStyle = '#888';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.fillText('No exact match for "' + q.word + '"', lx + 12, ly + 355);
+  }
+
+  // Right: Soft lookup
+  var rx = 340, ry = 50;
+  ctx.fillStyle = ACCENT;
+  ctx.font = 'bold 16px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Soft Attention Lookup', rx, ry);
+  ctx.font = '13px Inter, sans-serif';
+  ctx.fillStyle = '#888';
+  ctx.fillText('Similarity scores -> softmax -> weighted blend', rx, ry + 22);
+
+  // Compute similarities
+  var sims = dictKeys.map(function(entry) { return dotProduct(q.embed, entry.embed); });
+  var weights = softmax(sims.map(function(s) { return s * 4; })); // scale for sharper distribution
+
+  // Draw similarity bars
+  var barX = rx, barY = ry + 50;
+  var barW = 320, barH = 30;
+  ctx.font = '12px monospace';
+  dictKeys.forEach(function(entry, i) {
+    var y = barY + i * (barH + 12);
+    // Key label
+    ctx.fillStyle = '#aaa';
+    ctx.textAlign = 'left';
+    ctx.fillText(entry.key, barX, y + 14);
+    // Similarity bar
+    var simW = sims[i] / 2.0 * 140;
+    drawRoundedRect(ctx, barX + 60, y, simW, barH - 6, 4, 'rgba(255,159,243,0.3)', null);
+    // Score
+    ctx.fillStyle = ACCENT;
+    ctx.textAlign = 'left';
+    ctx.fillText(sims[i].toFixed(3), barX + 60 + simW + 8, y + 14);
+    // Softmax weight
+    ctx.fillStyle = '#2ecc71';
+    ctx.textAlign = 'right';
+    ctx.fillText((weights[i] * 100).toFixed(1) + '%', barX + barW, y + 14);
+    // Weight bar
+    var wW = weights[i] * 140;
+    drawRoundedRect(ctx, barX + barW + 10, y, wW, barH - 6, 4, 'rgba(46,204,113,0.4)', null);
+  });
+
+  // Labels
+  ctx.fillStyle = '#888';
+  ctx.font = '11px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('similarity', barX + 140, barY - 8);
+  ctx.fillText('softmax weight', barX + barW - 30, barY - 8);
+
+  // Arrow from similarity to softmax
+  drawArrow(ctx, barX + 220, barY + (dictKeys.length * (barH + 12)) / 2, barX + 260, barY + (dictKeys.length * (barH + 12)) / 2, '#888', 1);
+  ctx.fillStyle = '#888';
+  ctx.font = '10px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('softmax', barX + 240, barY + (dictKeys.length * (barH + 12)) / 2 - 8);
+
+  // Weighted blend output
+  var outY = barY + dictKeys.length * (barH + 12) + 20;
+  ctx.fillStyle = ACCENT;
+  ctx.font = 'bold 14px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Output (weighted blend):', rx, outY);
+  ctx.font = '12px monospace';
+  ctx.fillStyle = '#ccc';
+  var parts = [];
+  dictKeys.forEach(function(entry, i) {
+    if (weights[i] > 0.01) parts.push((weights[i]).toFixed(2) + ' x "' + entry.value + '"');
+  });
+  var lineY = outY + 22;
+  parts.forEach(function(p, i) {
+    ctx.fillStyle = '#ccc';
+    ctx.fillText((i > 0 ? '+ ' : '  ') + p, rx + 10, lineY);
+    lineY += 20;
+  });
+
+  // Query label
+  ctx.fillStyle = '#ffd93d';
+  ctx.font = 'bold 14px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Query: "' + q.word + '"', rx, ry + 42);
+
+  // Divider
+  ctx.strokeStyle = '#2a2a4a';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(300, 50);
+  ctx.lineTo(300, 480);
+  ctx.stroke();
+
+  // Bottom message
+  ctx.fillStyle = '#888';
+  ctx.font = '13px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('This IS attention. The rest is just making the similarity scores learnable.', c.width / 2, 480);
+}
+
+// ============================================================
+// VIZ 4.3: Q, K, V PROJECTIONS
+// ============================================================
+var tokens43 = ["The", "cat", "sat"];
+var embeddings43 = [
+  [0.5, -0.2, 0.8, 0.1],
+  [0.9, 0.3, -0.4, 0.7],
+  [-0.1, 0.6, 0.5, -0.3]
+];
+var W_Q = [0.3, -0.1, 0.5, 0.2, -0.4, 0.7, 0.1, -0.3, 0.6, -0.2, 0.4, 0.8, 0.1, 0.5, -0.6, 0.3];
+var W_K = [-0.2, 0.4, 0.3, -0.1, 0.5, -0.3, 0.6, 0.2, -0.1, 0.7, -0.4, 0.5, 0.3, 0.1, 0.8, -0.2];
+var W_V = [0.4, 0.2, -0.3, 0.6, -0.1, 0.5, 0.7, -0.2, 0.3, -0.4, 0.1, 0.8, 0.6, -0.1, 0.5, 0.3];
+var currentQKVToken = 1; // "cat" by default
+var breakQKVActive = false;
+
+function setQKVToken(idx) {
+  currentQKVToken = idx;
+  for (var i = 0; i < 3; i++) document.getElementById('qkvTok' + i).className = i === idx ? 'btn active' : 'btn';
+  drawQKV();
+}
+
+function toggleBreakQKV() {
+  breakQKVActive = !breakQKVActive;
+  document.getElementById('breakQKV').className = breakQKVActive ? 'break-toggle broken' : 'break-toggle';
+  drawQKV();
+}
+
+function drawQKV() {
+  var c = document.getElementById('qkvCanvas');
+  var ctx = c.getContext('2d');
+  clearCanvas(ctx, c);
+
+  var tok = currentQKVToken;
+  var emb = embeddings43[tok];
+
+  // Use identity if broken
+  var wq = breakQKVActive ? [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1] : W_Q;
+  var wk = breakQKVActive ? [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1] : W_K;
+  var wv = breakQKVActive ? [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1] : W_V;
+
+  var q = matMul(emb, wq, 1, 4, 4);
+  var k = matMul(emb, wk, 1, 4, 4);
+  var v = matMul(emb, wv, 1, 4, 4);
+
+  // Title
+  ctx.fillStyle = FG;
+  ctx.font = 'bold 16px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Token: "' + tokens43[tok] + '"' + (breakQKVActive ? '  [IDENTITY WEIGHTS -- no learned transform]' : ''), 30, 35);
+
+  // Embedding
+  var embX = 30, embY = 60;
+  ctx.fillStyle = ACCENT;
+  ctx.font = 'bold 13px Inter, sans-serif';
+  ctx.fillText('Embedding x', embX, embY);
+  drawMatrix(ctx, emb, 1, 4, embX, embY + 10, 65, 28, '#48dbfb');
+
+  // Draw three projection paths
+  var projections = [
+    { name: 'W_Q (Query)', w: wq, result: q, color: '#ff9ff3', desc: '"I\'m looking for..."' },
+    { name: 'W_K (Key)', w: wk, result: k, color: '#48dbfb', desc: '"I contain..."' },
+    { name: 'W_V (Value)', w: wv, result: v, color: '#ffd93d', desc: '"Here\'s my content..."' }
+  ];
+
+  projections.forEach(function(proj, pi) {
+    var py = 130 + pi * 140;
+    var px = 30;
+
+    // Weight matrix label
+    ctx.fillStyle = proj.color;
+    ctx.font = 'bold 13px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(proj.name, px, py);
+
+    // Draw weight matrix (4x4)
+    drawMatrix(ctx, proj.w, 4, 4, px, py + 10, 55, 24, proj.color);
+
+    // Multiplication sign
+    ctx.fillStyle = '#888';
+    ctx.font = 'bold 20px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('\u00D7', px + 240, py + 55);
+
+    // Input embedding (transposed for display)
+    drawMatrix(ctx, emb, 4, 1, px + 260, py + 10, 55, 24, '#48dbfb');
+
+    // Equals sign
+    ctx.fillStyle = '#888';
+    ctx.font = 'bold 20px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('=', px + 340, py + 55);
+
+    // Result vector
+    drawMatrix(ctx, proj.result, 4, 1, px + 360, py + 10, 65, 24, proj.color);
+
+    // Description
+    ctx.fillStyle = '#888';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(proj.desc, px + 450, py + 55);
+  });
+
+  // Attention scores between tokens
+  var scoreX = 600, scoreY = 60;
+  ctx.fillStyle = ACCENT;
+  ctx.font = 'bold 14px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Attention Scores (Q_' + tokens43[tok] + ' dot K_j)', scoreX, scoreY);
+
+  // Compute all Q and K for all tokens
+  var allQ = [], allK = [], allV = [];
+  for (var i = 0; i < 3; i++) {
+    allQ.push(matMul(embeddings43[i], wq, 1, 4, 4));
+    allK.push(matMul(embeddings43[i], wk, 1, 4, 4));
+    allV.push(matMul(embeddings43[i], wv, 1, 4, 4));
+  }
+
+  var scores = [];
+  for (var j = 0; j < 3; j++) {
+    scores.push(dotProduct(allQ[tok], allK[j]));
+  }
+  var attnWeights = softmax(scores);
+
+  // Draw score bars
+  tokens43.forEach(function(t, j) {
+    var y = scoreY + 20 + j * 50;
+    ctx.fillStyle = '#aaa';
+    ctx.font = '13px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(t, scoreX, y + 14);
+    var barW = Math.abs(scores[j]) * 40;
+    var barColor = scores[j] >= 0 ? 'rgba(255,159,243,0.4)' : 'rgba(231,76,60,0.3)';
+    drawRoundedRect(ctx, scoreX + 50, y, barW, 24, 4, barColor, null);
+    ctx.fillStyle = ACCENT;
+    ctx.fillText(scores[j].toFixed(3), scoreX + 50 + barW + 8, y + 16);
+    ctx.fillStyle = '#2ecc71';
+    ctx.textAlign = 'right';
+    ctx.fillText((attnWeights[j] * 100).toFixed(1) + '%', scoreX + 300, y + 16);
+  });
+
+  // Weighted output
+  var outY = scoreY + 200;
+  ctx.fillStyle = '#ffd93d';
+  ctx.font = 'bold 13px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Output = sum(weight_j * V_j):', scoreX, outY);
+  var output = [0, 0, 0, 0];
+  for (var j = 0; j < 3; j++) {
+    for (var d = 0; d < 4; d++) output[d] += attnWeights[j] * allV[j][d];
+  }
+  drawMatrix(ctx, output, 1, 4, scoreX, outY + 10, 65, 28, '#ffd93d');
+
+  // Break-it message
+  if (breakQKVActive) {
+    ctx.fillStyle = '#e74c3c';
+    ctx.font = 'bold 13px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('W = Identity: Q=K=V=raw embedding. No learned transformation!', c.width / 2, 540);
+    ctx.fillStyle = '#888';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.fillText('Attention becomes simple cosine similarity of raw embeddings -- much weaker.', c.width / 2, 540 + 18);
+  }
+}
+
+function drawMatrix(ctx, data, rows, cols, x, y, cellW, cellH, color) {
+  for (var r = 0; r < rows; r++) {
+    for (var cc = 0; cc < cols; cc++) {
+      var val = data[r * cols + cc];
+      var cx = x + cc * (cellW + 2);
+      var cy = y + r * (cellH + 2);
+      var alpha = Math.min(1, Math.abs(val) * 0.7 + 0.1);
+      drawRoundedRect(ctx, cx, cy, cellW, cellH, 3, 'rgba(' + hexToRgb(color) + ',' + (alpha * 0.3) + ')', color + '44');
+      ctx.fillStyle = '#ddd';
+      ctx.font = '11px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(val.toFixed(2), cx + cellW / 2, cy + cellH / 2 + 4);
+    }
+  }
+}
+
+function hexToRgb(hex) {
+  var r = parseInt(hex.slice(1, 3), 16);
+  var g = parseInt(hex.slice(3, 5), 16);
+  var b = parseInt(hex.slice(5, 7), 16);
+  return r + ',' + g + ',' + b;
+}
+
+// ============================================================
+// VIZ 4.4: SCALING & SOFTMAX
+// ============================================================
+// Pre-computed QK^T scores (simulating d_k=64)
+var rawScores = [
+  [45.2, -12.3, 51.0, 8.7, -38.7, 22.1],
+  [-8.4, 39.6, 5.2, 44.1, -15.3, 11.8],
+  [33.5, 7.8, -25.4, 18.9, 41.2, -6.5],
+  [12.1, -31.2, 28.7, -9.4, 15.6, 42.3],
+  [-22.6, 46.8, 13.5, -7.1, 37.9, -18.2],
+  [19.4, -5.7, 36.2, 27.8, -11.3, 44.6]
+];
+var scaleTokens = ["The", "cat", "that", "sat", "on", "the"];
+
+function drawScaling() {
+  var c = document.getElementById('scaleCanvas');
+  var ctx = c.getContext('2d');
+  clearCanvas(ctx, c);
+  var scale = parseFloat(document.getElementById('scaleSlider').value);
+  document.getElementById('scaleVal').textContent = scale.toFixed(1);
+
+  var optScale = 8; // sqrt(64)
+
+  // Title
+  ctx.fillStyle = FG;
+  ctx.font = 'bold 16px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('QK^T Scores (d_k = 64) divided by ' + scale.toFixed(1), 30, 35);
+  ctx.fillStyle = '#888';
+  ctx.font = '13px Inter, sans-serif';
+  ctx.fillText('Optimal: \u221A64 = 8.0' + (Math.abs(scale - optScale) < 0.5 ? '  \u2713 You are at the sweet spot!' : ''), 30, 55);
+
+  // Draw heatmap of scaled scores and softmax
+  var n = 6;
+  var cellSize = 60;
+  var heatX = 40, heatY = 80;
+
+  // Scaled scores heatmap
+  ctx.fillStyle = ACCENT;
+  ctx.font = 'bold 13px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Scaled Scores (QK^T / ' + scale.toFixed(1) + ')', heatX + n * cellSize / 2, heatY - 8);
+
+  // Column headers
+  for (var j = 0; j < n; j++) {
+    ctx.fillStyle = '#888';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.fillText(scaleTokens[j], heatX + j * cellSize + cellSize / 2, heatY + 8);
+  }
+
+  for (var i = 0; i < n; i++) {
+    // Row header
+    ctx.fillStyle = '#888';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(scaleTokens[i], heatX - 6, heatY + 18 + i * cellSize + cellSize / 2 + 4);
+    ctx.textAlign = 'center';
+
+    var scaledRow = rawScores[i].map(function(s) { return s / scale; });
+    for (var j = 0; j < n; j++) {
+      var val = scaledRow[j];
+      var cx = heatX + j * cellSize;
+      var cy = heatY + 18 + i * cellSize;
+      var norm = (val + 10) / 20; // normalize for coloring
+      norm = Math.max(0, Math.min(1, norm));
+      var r = Math.floor(255 * norm);
+      var g = Math.floor(50 + 100 * (1 - Math.abs(norm - 0.5) * 2));
+      var b = Math.floor(255 * (1 - norm));
+      ctx.fillStyle = 'rgb(' + r + ',' + g + ',' + b + ')';
+      ctx.fillRect(cx + 1, cy + 1, cellSize - 2, cellSize - 2);
+      ctx.fillStyle = '#fff';
+      ctx.font = '10px monospace';
+      ctx.fillText(val.toFixed(1), cx + cellSize / 2, cy + cellSize / 2 + 4);
+    }
+  }
+
+  // Softmax heatmap
+  var smX = heatX + n * cellSize + 80;
+  ctx.fillStyle = '#2ecc71';
+  ctx.font = 'bold 13px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('After Softmax', smX + n * cellSize / 2, heatY - 8);
+
+  for (var j = 0; j < n; j++) {
+    ctx.fillStyle = '#888';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.fillText(scaleTokens[j], smX + j * cellSize + cellSize / 2, heatY + 8);
+  }
+
+  var maxWeight = 0;
+  var entropy = 0;
+  for (var i = 0; i < n; i++) {
+    ctx.fillStyle = '#888';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(scaleTokens[i], smX - 6, heatY + 18 + i * cellSize + cellSize / 2 + 4);
+    ctx.textAlign = 'center';
+
+    var scaledRow = rawScores[i].map(function(s) { return s / scale; });
+    var sm = softmax(scaledRow);
+
+    for (var j = 0; j < n; j++) {
+      var val = sm[j];
+      if (val > maxWeight) maxWeight = val;
+      var cx = smX + j * cellSize;
+      var cy = heatY + 18 + i * cellSize;
+      var intensity = Math.pow(val, 0.5); // sqrt for better visibility
+      ctx.fillStyle = 'rgba(46, 204, 113,' + intensity + ')';
+      ctx.fillRect(cx + 1, cy + 1, cellSize - 2, cellSize - 2);
+      ctx.fillStyle = val > 0.3 ? '#000' : '#ccc';
+      ctx.font = '10px monospace';
+      ctx.fillText(val.toFixed(3), cx + cellSize / 2, cy + cellSize / 2 + 4);
+    }
+    // Compute entropy for this row
+    var rowEntropy = 0;
+    sm.forEach(function(p) { if (p > 1e-10) rowEntropy -= p * Math.log2(p); });
+    entropy += rowEntropy;
+  }
+  entropy /= n;
+
+  // Status indicators
+  var statusY = heatY + 18 + n * cellSize + 30;
+  ctx.textAlign = 'left';
+  ctx.font = 'bold 13px Inter, sans-serif';
+
+  if (scale < 3) {
+    ctx.fillStyle = '#e74c3c';
+    ctx.fillText('PROBLEM: Softmax is nearly one-hot (max weight: ' + maxWeight.toFixed(4) + ')', 40, statusY);
+    ctx.fillStyle = '#888';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.fillText('Model can only attend to ONE token per position. No blending of information.', 40, statusY + 20);
+    ctx.fillText('Gradients through softmax are ~0 (saturated). Training will be very slow.', 40, statusY + 38);
+  } else if (scale > 12) {
+    ctx.fillStyle = '#ffd93d';
+    ctx.fillText('Too much scaling: Distribution is nearly uniform (avg entropy: ' + entropy.toFixed(2) + ' bits)', 40, statusY);
+    ctx.fillStyle = '#888';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.fillText('Every token attends roughly equally to all others. Attention is meaningless.', 40, statusY + 20);
+  } else {
+    ctx.fillStyle = '#2ecc71';
+    ctx.fillText('Good scaling: Smooth but peaked distribution (avg entropy: ' + entropy.toFixed(2) + ' bits)', 40, statusY);
+    ctx.fillStyle = '#888';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.fillText('Model can attend to multiple tokens with varying weights. Gradients flow well.', 40, statusY + 20);
+  }
+
+  // Scale factor indicator bar
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Scale: 1 (no scaling) --------- 8 (\u221Ad_k) --------- 16 (over-scaled)', c.width / 2, statusY + 60);
+}
+
+function setScaleOptimal() {
+  document.getElementById('scaleSlider').value = 8;
+  drawScaling();
+}
+
+// ============================================================
+// VIZ 4.5: MULTI-HEAD ATTENTION
+// ============================================================
+var mhTokens = ["The", "cat", "that", "sat", "on", "the"];
+// Pre-defined attention patterns for different heads
+var headPatterns = [
+  // Head 1: Local/adjacent (syntax)
+  [
+    [0.1, 0.7, 0.1, 0.05, 0.03, 0.02],
+    [0.6, 0.1, 0.2, 0.05, 0.03, 0.02],
+    [0.05, 0.6, 0.1, 0.2, 0.03, 0.02],
+    [0.03, 0.05, 0.6, 0.1, 0.2, 0.02],
+    [0.02, 0.03, 0.05, 0.6, 0.1, 0.2],
+    [0.02, 0.02, 0.03, 0.05, 0.68, 0.2]
+  ],
+  // Head 2: Subject-verb agreement
+  [
+    [0.5, 0.1, 0.05, 0.3, 0.03, 0.02],
+    [0.1, 0.3, 0.05, 0.5, 0.03, 0.02],
+    [0.3, 0.3, 0.1, 0.2, 0.05, 0.05],
+    [0.4, 0.3, 0.05, 0.1, 0.1, 0.05],
+    [0.05, 0.05, 0.1, 0.5, 0.2, 0.1],
+    [0.3, 0.1, 0.1, 0.3, 0.1, 0.1]
+  ],
+  // Head 3: Coreference
+  [
+    [0.4, 0.1, 0.05, 0.05, 0.05, 0.35],
+    [0.1, 0.5, 0.1, 0.1, 0.1, 0.1],
+    [0.1, 0.4, 0.2, 0.1, 0.1, 0.1],
+    [0.05, 0.5, 0.1, 0.2, 0.1, 0.05],
+    [0.05, 0.05, 0.1, 0.1, 0.3, 0.4],
+    [0.35, 0.05, 0.05, 0.05, 0.05, 0.45]
+  ],
+  // Head 4: Positional/distance-based
+  [
+    [0.6, 0.2, 0.1, 0.05, 0.03, 0.02],
+    [0.15, 0.5, 0.2, 0.1, 0.03, 0.02],
+    [0.05, 0.15, 0.5, 0.2, 0.07, 0.03],
+    [0.02, 0.05, 0.15, 0.5, 0.2, 0.08],
+    [0.02, 0.02, 0.05, 0.15, 0.5, 0.26],
+    [0.01, 0.02, 0.03, 0.05, 0.19, 0.7]
+  ]
+];
+var headColors = [ACCENT, ACCENT2, ACCENT3, ACCENT4];
+var headNames = ['Local syntax', 'Subject-verb', 'Coreference', 'Positional'];
+
+function drawMultiHead() {
+  var c = document.getElementById('multiHeadCanvas');
+  var ctx = c.getContext('2d');
+  clearCanvas(ctx, c);
+
+  var sliderVal = parseInt(document.getElementById('numHeadsSlider').value);
+  var numHeads = [1, 2, 4, 8][sliderVal];
+  document.getElementById('numHeadsVal').textContent = numHeads;
+
+  var n = mhTokens.length;
+  var displayHeads = Math.min(numHeads, 4); // only show up to 4 distinct patterns
+
+  // Title
+  ctx.fillStyle = FG;
+  ctx.font = 'bold 16px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Multi-Head Attention (' + numHeads + ' head' + (numHeads > 1 ? 's' : '') + ')', 30, 35);
+  ctx.fillStyle = '#888';
+  ctx.font = '13px Inter, sans-serif';
+  ctx.fillText(numHeads === 1 ? 'One pattern must capture everything' : 'Each head specializes on a different pattern', 30, 55);
+
+  // Draw attention heatmaps
+  var cellSize = numHeads <= 2 ? 42 : 32;
+  var cols = displayHeads <= 2 ? 2 : 4;
+  var rows = Math.ceil(displayHeads / cols);
+  var gridStartX = 40;
+  var gridStartY = 75;
+  var heatmapW = n * cellSize;
+  var heatmapH = n * cellSize;
+  var spacing = 30;
+
+  for (var h = 0; h < displayHeads; h++) {
+    var col = h % cols;
+    var row = Math.floor(h / cols);
+    var hx = gridStartX + col * (heatmapW + spacing + 80);
+    var hy = gridStartY + row * (heatmapH + spacing + 50);
+
+    // Head label
+    ctx.fillStyle = headColors[h % 4];
+    ctx.font = 'bold 12px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('Head ' + (h + 1) + ': ' + headNames[h % 4], hx, hy - 4);
+
+    // Column headers
+    for (var j = 0; j < n; j++) {
+      ctx.fillStyle = '#666';
+      ctx.font = '9px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.save();
+      ctx.translate(hx + j * cellSize + cellSize / 2, hy + 6);
+      ctx.rotate(-0.5);
+      ctx.fillText(mhTokens[j], 0, 0);
+      ctx.restore();
+    }
+
+    var pattern = headPatterns[h % 4];
+    for (var i = 0; i < n; i++) {
+      // Row label
+      ctx.fillStyle = '#666';
+      ctx.font = '9px Inter, sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(mhTokens[i], hx - 4, hy + 16 + i * cellSize + cellSize / 2 + 3);
+
+      for (var j = 0; j < n; j++) {
+        var val = pattern[i][j];
+        var cx = hx + j * cellSize;
+        var cy = hy + 16 + i * cellSize;
+        var rgb = hexToRgb(headColors[h % 4]);
+        ctx.fillStyle = 'rgba(' + rgb + ',' + (val * 0.9 + 0.05) + ')';
+        ctx.fillRect(cx + 1, cy + 1, cellSize - 2, cellSize - 2);
+        if (cellSize >= 32) {
+          ctx.fillStyle = val > 0.35 ? '#000' : '#999';
+          ctx.font = '9px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText(val.toFixed(2), cx + cellSize / 2, cy + cellSize / 2 + 3);
+        }
+      }
+    }
+  }
+
+  // Concatenation + W_O step
+  var concatY = gridStartY + rows * (heatmapH + spacing + 50) + 30;
+  if (concatY > 460) concatY = 460;
+
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.textAlign = 'left';
+
+  // Draw concat diagram
+  var concatX = 40;
+  for (var h = 0; h < displayHeads; h++) {
+    var bw = 60;
+    var bx = concatX + h * (bw + 8);
+    drawRoundedRect(ctx, bx, concatY, bw, 30, 4, 'rgba(' + hexToRgb(headColors[h % 4]) + ',0.2)', headColors[h % 4] + '66');
+    ctx.fillStyle = headColors[h % 4];
+    ctx.font = '10px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('H' + (h + 1), bx + bw / 2, concatY + 19);
+  }
+
+  var afterConcat = concatX + displayHeads * 68 + 20;
+  drawArrow(ctx, afterConcat - 20, concatY + 15, afterConcat, concatY + 15, '#888', 1.5);
+  ctx.fillStyle = '#888';
+  ctx.font = '11px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Concat', afterConcat - 18, concatY - 5);
+
+  drawRoundedRect(ctx, afterConcat + 10, concatY - 2, 80, 34, 4, '#151530', ACCENT + '66');
+  ctx.fillStyle = ACCENT;
+  ctx.font = 'bold 11px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('W_O', afterConcat + 50, concatY + 18);
+
+  drawArrow(ctx, afterConcat + 100, concatY + 15, afterConcat + 130, concatY + 15, ACCENT, 1.5);
+
+  drawRoundedRect(ctx, afterConcat + 140, concatY - 2, 80, 34, 4, 'rgba(255,159,243,0.15)', ACCENT);
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 11px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Output', afterConcat + 180, concatY + 18);
+
+  // Shape annotations
+  ctx.fillStyle = '#555';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'left';
+  var d_head = Math.floor(64 / numHeads);
+  ctx.fillText('Each head: (seq, ' + d_head + ')', concatX, concatY + 50);
+  ctx.fillText('Concat: (seq, ' + (d_head * numHeads) + ')', afterConcat + 10, concatY + 50);
+  ctx.fillText('After W_O: (seq, 64)', afterConcat + 140, concatY + 50);
+}
+
+// ============================================================
+// VIZ 4.6: CAUSAL MASKING
+// ============================================================
+var maskTokens = ["The", "cat", "sat", "on", "the", "mat"];
+var maskScores = [
+  [2.1, 0.8, -0.3, 1.5, -1.2, 0.4],
+  [1.3, 2.5, 0.7, -0.6, 1.1, -0.8],
+  [-0.4, 1.8, 2.2, 0.9, -0.5, 1.3],
+  [0.6, -0.2, 1.4, 2.8, 0.3, -0.7],
+  [-0.9, 1.1, 0.5, 1.6, 2.4, 0.8],
+  [0.3, -0.5, 1.7, 0.4, 1.9, 2.6]
+];
+var currentMaskView = 0;
+var breakMaskActive = false;
+
+function setMaskView(idx) {
+  currentMaskView = idx;
+  for (var i = 0; i < 3; i++) document.getElementById('maskView' + i).className = i === idx ? 'btn active' : 'btn';
+  drawCausalMask();
+}
+
+function toggleBreakMask() {
+  breakMaskActive = !breakMaskActive;
+  document.getElementById('breakMask').className = breakMaskActive ? 'break-toggle broken' : 'break-toggle';
+  drawCausalMask();
+}
+
+function drawCausalMask() {
+  var c = document.getElementById('causalCanvas');
+  var ctx = c.getContext('2d');
+  clearCanvas(ctx, c);
+  var n = maskTokens.length;
+  var cellSize = 58;
+
+  // Title
+  ctx.fillStyle = FG;
+  ctx.font = 'bold 16px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  var viewNames = ['Raw Scores (QK^T)', 'After Causal Mask', 'After Softmax'];
+  ctx.fillText(viewNames[currentMaskView] + (breakMaskActive ? '  [MASK REMOVED]' : ''), 30, 35);
+
+  // Main heatmap
+  var hx = 100, hy = 70;
+
+  // Column headers
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Keys (attending TO)', hx + n * cellSize / 2, hy - 22);
+  for (var j = 0; j < n; j++) {
+    ctx.fillText(maskTokens[j], hx + j * cellSize + cellSize / 2, hy - 4);
+  }
+  ctx.save();
+  ctx.translate(hx - 30, hy + n * cellSize / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('Queries (attending FROM)', 0, 0);
+  ctx.restore();
+
+  for (var i = 0; i < n; i++) {
+    // Row label
+    ctx.fillStyle = '#888';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(maskTokens[i], hx - 8, hy + i * cellSize + cellSize / 2 + 4);
+
+    var row = maskScores[i].slice();
+
+    // Apply mask
+    if (currentMaskView >= 1 && !breakMaskActive) {
+      for (var j = 0; j < n; j++) {
+        if (j > i) row[j] = -Infinity;
+      }
+    }
+
+    // Apply softmax for view 2
+    var display = row;
+    if (currentMaskView === 2) {
+      // Replace -Inf with very negative for softmax
+      var forSm = row.map(function(v) { return v === -Infinity ? -1e9 : v; });
+      display = softmax(forSm);
+    }
+
+    for (var j = 0; j < n; j++) {
+      var cx = hx + j * cellSize;
+      var cy = hy + i * cellSize;
+      var val = display[j];
+      var isMasked = (j > i) && !breakMaskActive && currentMaskView >= 1;
+
+      if (isMasked && currentMaskView === 1) {
+        // Masked cell
+        ctx.fillStyle = '#1a0a0a';
+        ctx.fillRect(cx + 1, cy + 1, cellSize - 2, cellSize - 2);
+        ctx.fillStyle = '#e74c3c44';
+        ctx.fillRect(cx + 1, cy + 1, cellSize - 2, cellSize - 2);
+        ctx.strokeStyle = '#e74c3c44';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(cx + 1, cy + 1);
+        ctx.lineTo(cx + cellSize - 1, cy + cellSize - 1);
+        ctx.moveTo(cx + cellSize - 1, cy + 1);
+        ctx.lineTo(cx + 1, cy + cellSize - 1);
+        ctx.stroke();
+        ctx.fillStyle = '#e74c3c';
+        ctx.font = '10px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('-inf', cx + cellSize / 2, cy + cellSize / 2 + 4);
+      } else if (isMasked && currentMaskView === 2) {
+        // After softmax, masked positions are 0
+        ctx.fillStyle = '#0a0a15';
+        ctx.fillRect(cx + 1, cy + 1, cellSize - 2, cellSize - 2);
+        ctx.fillStyle = '#444';
+        ctx.font = '10px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('0.000', cx + cellSize / 2, cy + cellSize / 2 + 4);
+      } else {
+        // Normal cell
+        var intensity;
+        if (currentMaskView === 2) {
+          intensity = Math.pow(val, 0.4);
+          ctx.fillStyle = 'rgba(46, 204, 113,' + (intensity * 0.8 + 0.05) + ')';
+        } else {
+          var norm = (val + 2) / 5;
+          norm = Math.max(0, Math.min(1, norm));
+          ctx.fillStyle = 'rgba(255, 159, 243,' + (norm * 0.7 + 0.1) + ')';
+        }
+        ctx.fillRect(cx + 1, cy + 1, cellSize - 2, cellSize - 2);
+        ctx.fillStyle = '#fff';
+        ctx.font = '10px monospace';
+        ctx.textAlign = 'center';
+        if (currentMaskView === 2) {
+          ctx.fillText(val.toFixed(3), cx + cellSize / 2, cy + cellSize / 2 + 4);
+        } else {
+          ctx.fillText(val.toFixed(2), cx + cellSize / 2, cy + cellSize / 2 + 4);
+        }
+      }
+    }
+  }
+
+  // Explanation panel on the right
+  var px = hx + n * cellSize + 40;
+  ctx.textAlign = 'left';
+
+  if (breakMaskActive) {
+    ctx.fillStyle = '#e74c3c';
+    ctx.font = 'bold 14px Inter, sans-serif';
+    ctx.fillText('BROKEN: No Causal Mask!', px, hy + 20);
+    ctx.fillStyle = '#ffb0b0';
+    ctx.font = '12px Inter, sans-serif';
+    var lines = [
+      'Token 3 ("on") can see token 5 ("mat")',
+      '-- that is the answer it is trying to predict!',
+      '',
+      'During training:',
+      '  Loss drops to ~0 immediately (cheating)',
+      '  Model just copies future tokens',
+      '',
+      'During generation:',
+      '  No future tokens exist to peek at',
+      '  Model produces garbage output',
+      '',
+      '"The model learned to cheat,',
+      ' not to predict."'
+    ];
+    lines.forEach(function(line, i) {
+      ctx.fillStyle = i === 0 || i === 1 ? '#ffb0b0' : '#999';
+      ctx.fillText(line, px, hy + 45 + i * 20);
+    });
+  } else {
+    ctx.fillStyle = ACCENT;
+    ctx.font = 'bold 14px Inter, sans-serif';
+    if (currentMaskView === 0) {
+      ctx.fillText('Raw attention scores', px, hy + 20);
+      ctx.fillStyle = '#888';
+      ctx.font = '12px Inter, sans-serif';
+      ctx.fillText('Every position can see every other.', px, hy + 45);
+      ctx.fillText('The upper triangle contains future', px, hy + 65);
+      ctx.fillText('tokens -- information leakage!', px, hy + 85);
+    } else if (currentMaskView === 1) {
+      ctx.fillText('After masking', px, hy + 20);
+      ctx.fillStyle = '#888';
+      ctx.font = '12px Inter, sans-serif';
+      ctx.fillText('Upper triangle set to -infinity.', px, hy + 45);
+      ctx.fillText('Position i can only see j <= i.', px, hy + 65);
+      ctx.fillText('This is the causal constraint.', px, hy + 85);
+      ctx.fillText('', px, hy + 105);
+      ctx.fillText('mask_ij = 0 if j <= i', px, hy + 125);
+      ctx.fillText('mask_ij = -inf if j > i', px, hy + 145);
+    } else {
+      ctx.fillText('After softmax', px, hy + 20);
+      ctx.fillStyle = '#888';
+      ctx.font = '12px Inter, sans-serif';
+      ctx.fillText('-inf becomes 0 after softmax.', px, hy + 45);
+      ctx.fillText('Each row sums to 1.0.', px, hy + 65);
+      ctx.fillText('Lower triangle: proper attention.', px, hy + 85);
+      ctx.fillText('Upper triangle: exactly zero.', px, hy + 105);
+      ctx.fillText('', px, hy + 125);
+      ctx.fillText('Token 0 ("The") only sees itself.', px, hy + 145);
+      ctx.fillText('Token 5 ("mat") sees all 6 tokens.', px, hy + 165);
+    }
+  }
+
+  // Triangle annotation
+  if (!breakMaskActive && currentMaskView >= 1) {
+    ctx.strokeStyle = '#e74c3c66';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(hx, hy);
+    ctx.lineTo(hx + n * cellSize, hy);
+    ctx.lineTo(hx + n * cellSize, hy + n * cellSize);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#e74c3c88';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('masked (future)', hx + n * cellSize - 60, hy + 40);
+  }
+}
+
+// ============================================================
+// VIZ 4.7: COMPLETE ATTENTION BLOCK
+// ============================================================
+var blockComponents = { layernorm: true, residual: true, ffn: true };
+
+function toggleComponent(name) {
+  blockComponents[name] = !blockComponents[name];
+  var btn = document.getElementById('tog' + name.charAt(0).toUpperCase() + name.slice(1).replace('norm', 'N').replace('esidual', 'es').replace('fn', 'FN'));
+  // Map to actual button IDs
+  var btnMap = { layernorm: 'togLN', residual: 'togRes', ffn: 'togFFN' };
+  var b = document.getElementById(btnMap[name]);
+  var labels = { layernorm: 'LayerNorm', residual: 'Residual', ffn: 'FFN' };
+  b.className = blockComponents[name] ? 'btn active' : 'btn';
+  b.textContent = labels[name] + ': ' + (blockComponents[name] ? 'ON' : 'OFF');
+  drawBlock();
+}
+
+function resetBlock() {
+  blockComponents = { layernorm: true, residual: true, ffn: true };
+  document.getElementById('togLN').className = 'btn active';
+  document.getElementById('togLN').textContent = 'LayerNorm: ON';
+  document.getElementById('togRes').className = 'btn active';
+  document.getElementById('togRes').textContent = 'Residual: ON';
+  document.getElementById('togFFN').className = 'btn active';
+  document.getElementById('togFFN').textContent = 'FFN: ON';
+  drawBlock();
+}
+
+function drawBlock() {
+  var c = document.getElementById('blockCanvas');
+  var ctx = c.getContext('2d');
+  clearCanvas(ctx, c);
+
+  var ln = blockComponents.layernorm;
+  var res = blockComponents.residual;
+  var ffn = blockComponents.ffn;
+
+  // Block diagram
+  var bx = 150, startY = 40;
+  var boxW = 200, boxH = 38, gap = 14;
+  var y = startY;
+
+  // Input
+  drawBlockBox(ctx, bx, y, boxW, boxH, 'Input (batch, seq, d_model)', '#48dbfb', true);
+  var inputY = y + boxH / 2;
+  y += boxH + gap;
+
+  // Arrow
+  drawArrow(ctx, bx + boxW / 2, y - gap, bx + boxW / 2, y, '#555', 1.5);
+
+  // LayerNorm 1
+  var ln1Color = ln ? '#ff9ff3' : '#e74c3c55';
+  drawBlockBox(ctx, bx, y, boxW, boxH, 'LayerNorm' + (ln ? '' : ' [OFF]'), ln1Color, ln);
+  y += boxH + gap;
+  drawArrow(ctx, bx + boxW / 2, y - gap, bx + boxW / 2, y, '#555', 1.5);
+
+  // Multi-Head Attention
+  drawBlockBox(ctx, bx, y, boxW, boxH, 'Multi-Head Attention', ACCENT, true);
+  var mhaY = y + boxH / 2;
+  y += boxH + gap;
+  drawArrow(ctx, bx + boxW / 2, y - gap, bx + boxW / 2, y, '#555', 1.5);
+
+  // Residual Add 1
+  var resColor = res ? '#2ecc71' : '#e74c3c55';
+  drawBlockBox(ctx, bx, y, boxW, boxH, 'Add (Residual)' + (res ? '' : ' [OFF]'), resColor, res);
+  var res1Y = y + boxH / 2;
+  y += boxH + gap;
+
+  // Residual connection line 1
+  if (res) {
+    ctx.strokeStyle = '#2ecc7166';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath();
+    ctx.moveTo(bx - 20, inputY);
+    ctx.lineTo(bx - 20, res1Y);
+    ctx.lineTo(bx, res1Y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#2ecc71';
+    ctx.font = '10px Inter, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText('skip', bx - 24, (inputY + res1Y) / 2 + 3);
+  }
+
+  drawArrow(ctx, bx + boxW / 2, y - gap, bx + boxW / 2, y, '#555', 1.5);
+
+  // LayerNorm 2
+  drawBlockBox(ctx, bx, y, boxW, boxH, 'LayerNorm' + (ln ? '' : ' [OFF]'), ln1Color, ln);
+  y += boxH + gap;
+  drawArrow(ctx, bx + boxW / 2, y - gap, bx + boxW / 2, y, '#555', 1.5);
+
+  // FFN
+  var ffnColor = ffn ? '#ffd93d' : '#e74c3c55';
+  drawBlockBox(ctx, bx, y, boxW, boxH, 'FFN (d_model -> 4*d -> d_model)' + (ffn ? '' : ' [OFF]'), ffnColor, ffn);
+  var ffnY = y + boxH / 2;
+  y += boxH + gap;
+  drawArrow(ctx, bx + boxW / 2, y - gap, bx + boxW / 2, y, '#555', 1.5);
+
+  // Residual Add 2
+  drawBlockBox(ctx, bx, y, boxW, boxH, 'Add (Residual)' + (res ? '' : ' [OFF]'), resColor, res);
+  var res2Y = y + boxH / 2;
+  y += boxH + gap;
+
+  // Residual connection line 2
+  if (res) {
+    ctx.strokeStyle = '#2ecc7166';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath();
+    ctx.moveTo(bx - 20, res1Y);
+    ctx.lineTo(bx - 20, res2Y);
+    ctx.lineTo(bx, res2Y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#2ecc71';
+    ctx.font = '10px Inter, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText('skip', bx - 24, (res1Y + res2Y) / 2 + 3);
+  }
+
+  drawArrow(ctx, bx + boxW / 2, y - gap, bx + boxW / 2, y, '#555', 1.5);
+
+  // Output
+  drawBlockBox(ctx, bx, y, boxW, boxH, 'Output (batch, seq, d_model)', '#48dbfb', true);
+
+  // Tensor shape annotations on the right
+  var sx = bx + boxW + 40;
+  ctx.fillStyle = '#555';
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'left';
+
+  var shapes = [
+    { y: startY + boxH / 2, s: '(B, T, 768)' },
+    { y: startY + (boxH + gap) * 2 + boxH / 2, s: '(B, T, 768) -> Q,K,V' },
+    { y: startY + (boxH + gap) * 5 + boxH / 2, s: ffn ? '(B, T, 768) -> (B, T, 3072) -> (B, T, 768)' : '(B, T, 768) [SKIPPED]' },
+    { y: y + boxH / 2, s: '(B, T, 768)' }
+  ];
+  shapes.forEach(function(shape) {
+    ctx.fillText(shape.s, sx, shape.y + 4);
+  });
+
+  // Problem indicators
+  var problems = [];
+  if (!ln) problems.push('No LayerNorm: activations will explode/vanish. Training becomes unstable after ~2 layers.');
+  if (!res) problems.push('No Residual: gradients vanish in deep stacks. Cannot train >6 layers effectively.');
+  if (!ffn) problems.push('No FFN: attention is linear in V. Without nonlinearity, model cannot learn complex token transformations.');
+
+  if (problems.length > 0) {
+    var py = 460;
+    ctx.fillStyle = '#e74c3c';
+    ctx.font = 'bold 13px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('Problems with current configuration:', 30, py);
+    problems.forEach(function(p, i) {
+      ctx.fillStyle = '#ffb0b0';
+      ctx.font = '12px Inter, sans-serif';
+      ctx.fillText('- ' + p, 30, py + 22 + i * 22);
+    });
+  } else {
+    ctx.fillStyle = '#2ecc71';
+    ctx.font = 'bold 13px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('All components active. This is the standard transformer block (Pre-LN variant).', 30, 470);
+    ctx.fillStyle = '#888';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.fillText('Stack N of these blocks = a transformer. GPT-2: N=12, GPT-3: N=96, LLaMA-70B: N=80.', 30, 492);
+  }
+}
+
+function drawBlockBox(ctx, x, y, w, h, text, color, active) {
+  var bgAlpha = active ? 0.15 : 0.05;
+  var borderAlpha = active ? 0.6 : 0.15;
+  drawRoundedRect(ctx, x, y, w, h, 6,
+    active ? 'rgba(' + hexToRgb(color) + ',' + bgAlpha + ')' : '#0d0d1a',
+    active ? color : '#333');
+  ctx.fillStyle = active ? '#ddd' : '#555';
+  ctx.font = (active ? 'bold ' : '') + '11px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(text, x + w / 2, y + h / 2 + 4);
+}
+
+// ============================================================
+// QUIZ DATA - 35 QUESTIONS
+// ============================================================
+var quizData = [
+  {
+    topic: "4.1: Why MLPs Struggle with Sequences",
+    questions: [
+      { q: "An MLP with context window=3 tries to predict the next word in 'The cat that sat on the mat by the door was ___'. What tokens does it see?", options: ["A) 'The cat that'", "B) 'the door was'", "C) 'door was ___'", "D) 'the mat by'"], correct: 1, explanation: "With context=3, the MLP sees only the last 3 tokens before the blank: 'the', 'door', 'was'. It cannot see 'The cat' which is the subject needed for prediction." },
+      { q: "What is the fundamental limitation of fixed-context MLPs for sequences?", options: ["A) They are too slow", "B) They cannot learn nonlinear functions", "C) Long-range dependencies fall outside the context window", "D) They require too much training data"], correct: 2, explanation: "The core issue: dependencies between tokens far apart in the sequence fall outside any fixed-size window. Subject-verb agreement across 10+ tokens is invisible to a small window." },
+      { q: "If an MLP uses context=k with embedding dimension d, how do its input parameters scale?", options: ["A) O(k)", "B) O(d)", "C) O(k * d)", "D) O(k^2 * d)"], correct: 2, explanation: "The MLP input layer has k*d parameters (k tokens, each of dimension d). Doubling context doubles parameters linearly, but we need k to be very large for long-range dependencies." },
+      { q: "What does attention provide that fixed-context MLPs cannot?", options: ["A) Faster computation", "B) Selective access to any position regardless of distance", "C) Better activation functions", "D) More parameters"], correct: 1, explanation: "Attention can selectively attend to ANY position in the sequence, not just nearby tokens. A token at position 100 can directly attend to position 1, something impossible with a small fixed window." },
+      { q: "Why don't we just use a very large context window to solve this problem?", options: ["A) It's impossible to implement", "B) Parameters grow linearly and the model wastes capacity on irrelevant positions", "C) Large windows always overfit", "D) Hardware cannot store large vectors"], correct: 1, explanation: "While a large window technically works, parameters grow linearly with window size (O(k*d)), and the model treats all positions in the window equally -- it cannot learn to selectively focus on the relevant ones." }
+    ]
+  },
+  {
+    topic: "4.2: Attention as Soft Dictionary Lookup",
+    questions: [
+      { q: "In a hard dictionary lookup, what happens when the query has no exact match?", options: ["A) Returns the closest match", "B) Returns a weighted blend", "C) Raises a KeyError", "D) Returns the default value"], correct: 2, explanation: "A hard dictionary requires an exact key match. If the query 'kitten' is not a key, you get a KeyError -- no partial matches, no similarity-based retrieval." },
+      { q: "In soft attention, what determines how much each value contributes to the output?", options: ["A) The position of the key in the sequence", "B) The similarity between the query and each key, passed through softmax", "C) The magnitude of each value", "D) A random selection process"], correct: 1, explanation: "The contribution of each value is determined by how similar the query is to the corresponding key. These similarity scores are passed through softmax to get weights that sum to 1." },
+      { q: "If query 'kitten' has similarity scores [0.9, 0.7, 0.1] for keys ['cat', 'dog', 'Paris'], what is the dominant value in the output?", options: ["A) The value for 'Paris' (city)", "B) Equal blend of all three", "C) The value for 'cat' (animal)", "D) The value for 'dog' (animal)"], correct: 2, explanation: "After softmax, the highest similarity score (0.9 for 'cat') gets the highest weight. The output is dominated by the value associated with 'cat', with a smaller contribution from 'dog'." },
+      { q: "What makes soft attention 'differentiable' compared to hard attention?", options: ["A) It uses integers instead of floats", "B) All weights are continuous functions of the inputs, enabling gradient-based learning", "C) It only looks at one key", "D) It uses a fixed lookup table"], correct: 1, explanation: "Soft attention produces continuous weights via softmax, so every weight is a smooth function of the similarity scores. This means we can compute gradients and train the system end-to-end with backpropagation." },
+      { q: "In the soft dictionary analogy, what does the softmax function ensure?", options: ["A) All weights are negative", "B) Weights sum to 1 and are non-negative (a valid probability distribution)", "C) The output is always binary", "D) Only the maximum weight survives"], correct: 1, explanation: "Softmax transforms arbitrary real-valued scores into a probability distribution: all values are positive and sum to 1. This ensures the output is a proper weighted average of the values." }
+    ]
+  },
+  {
+    topic: "4.3: Self-Attention Q, K, V Projections",
+    questions: [
+      { q: "What is the role of W_Q in self-attention?", options: ["A) Projects tokens into the space of 'what I contain'", "B) Projects tokens into the space of 'what I'm looking for'", "C) Projects tokens into the space of 'what I offer as content'", "D) Normalizes the token embeddings"], correct: 1, explanation: "W_Q (query projection) transforms a token's embedding into a representation of 'what this token is looking for' in other tokens. It defines the search criteria." },
+      { q: "If W_Q = W_K = W_V = Identity, what happens to self-attention?", options: ["A) It works better because there are fewer parameters", "B) It becomes simple dot-product similarity of raw embeddings with no learned transformation", "C) The model cannot compute anything", "D) It produces random outputs"], correct: 1, explanation: "With identity projections, Q=K=V=raw embedding. Attention scores become raw dot products of embeddings. The model loses the ability to learn different 'query' and 'key' representations -- a much weaker model." },
+      { q: "Why are Q and K separate projections instead of using the same matrix?", options: ["A) To save computation", "B) So the model can learn asymmetric relationships: 'what I look for' differs from 'what I advertise'", "C) They must be different for mathematical correctness", "D) It's an arbitrary design choice"], correct: 1, explanation: "Separation allows asymmetric attention: token A attending to token B doesn't require B to equally attend to A. 'What I look for' (Q) is fundamentally different from 'what I advertise to others' (K)." },
+      { q: "In self-attention, if the input has shape (seq_len, d_model) and W_Q has shape (d_model, d_k), what is the shape of Q?", options: ["A) (seq_len, d_model)", "B) (d_k, seq_len)", "C) (seq_len, d_k)", "D) (d_model, d_k)"], correct: 2, explanation: "Q = X * W_Q. Matrix multiplication: (seq_len, d_model) * (d_model, d_k) = (seq_len, d_k). Each token's embedding is projected from d_model dimensions to d_k dimensions." },
+      { q: "Why is V a separate projection from K?", options: ["A) For computational efficiency", "B) So the routing decision (Q*K) is decoupled from the content that flows (V)", "C) V is always the identity", "D) V must be orthogonal to K"], correct: 1, explanation: "K determines HOW MUCH attention a token receives (the routing). V determines WHAT information flows when attended to. Decoupling these allows the model to route based on one representation while passing different content." }
+    ]
+  },
+  {
+    topic: "4.4: Scaling & Softmax",
+    questions: [
+      { q: "Why do we divide QK^T scores by sqrt(d_k)?", options: ["A) To make computation faster", "B) To prevent softmax saturation when d_k is large, keeping gradients healthy", "C) To normalize the output to unit length", "D) It's purely cosmetic -- has no effect on training"], correct: 1, explanation: "When d_k is large, dot products tend to have large magnitudes (variance proportional to d_k). Large inputs to softmax produce near-one-hot outputs with near-zero gradients. Dividing by sqrt(d_k) keeps the variance at 1." },
+      { q: "If softmax produces a nearly one-hot distribution [0.998, 0.001, 0.001], what is the problem?", options: ["A) The output is too accurate", "B) The model can only attend to one token; no blending, and gradients are near zero", "C) It uses too much memory", "D) The softmax is broken"], correct: 1, explanation: "A near-one-hot distribution means the model copies a single token's value instead of blending. Worse: the gradient of softmax near saturation is ~0, so the model cannot learn to adjust these attention weights." },
+      { q: "With d_k=64 and no scaling, a dot product score might be ~45. After dividing by sqrt(64)=8, it becomes ~5.6. Why does this matter?", options: ["A) Smaller numbers use less memory", "B) softmax(5.6) gives a smooth distribution; softmax(45) gives a spike", "C) The model trains faster with smaller numbers", "D) It prevents integer overflow"], correct: 1, explanation: "softmax([45, -38, 51]) gives [0.003, 0.000, 0.997] -- almost all weight on one token. softmax([5.6, -4.8, 6.4]) gives [0.29, 0.01, 0.59] -- a smooth blend. The scaling keeps softmax in its useful (non-saturated) range." },
+      { q: "What happens if you scale by too large a factor (e.g., divide by 16 instead of sqrt(d_k)=8)?", options: ["A) Better performance", "B) Attention becomes nearly uniform -- every token attends equally to all others", "C) Training becomes faster", "D) No effect"], correct: 1, explanation: "Over-scaling shrinks all scores toward 0. Softmax of near-zero values gives a nearly uniform distribution. The attention mechanism becomes meaningless -- every position gets roughly equal weight regardless of content." },
+      { q: "The scaling factor sqrt(d_k) comes from the assumption that Q and K entries are i.i.d. with variance 1. What is the expected variance of a single dot product element before scaling?", options: ["A) 1", "B) d_k", "C) sqrt(d_k)", "D) 1/d_k"], correct: 1, explanation: "If Q and K entries have variance 1, then Q*K^T is a sum of d_k products. Each product has variance 1, so the sum has variance d_k. Dividing by sqrt(d_k) brings the variance back to 1." }
+    ]
+  },
+  {
+    topic: "4.5: Multi-Head Attention",
+    questions: [
+      { q: "Why use multiple attention heads instead of one large head?", options: ["A) One head can only learn one attention pattern per position; multiple heads capture diverse patterns", "B) Multiple heads are faster", "C) A single head cannot compute attention", "D) Multiple heads use fewer parameters"], correct: 0, explanation: "A single head produces ONE set of attention weights per query position. Multiple heads allow each position to simultaneously attend to different tokens for different reasons (e.g., syntax, coreference, semantics)." },
+      { q: "If d_model=512 and num_heads=8, what is d_k per head?", options: ["A) 512", "B) 64", "C) 8", "D) 4096"], correct: 1, explanation: "Each head operates in a d_k = d_model / num_heads = 512/8 = 64 dimensional subspace. The total computation is roughly the same as a single head with d_k=512." },
+      { q: "What does the W_O projection matrix do in multi-head attention?", options: ["A) Computes attention scores", "B) Projects the concatenated head outputs back to d_model dimensions, blending perspectives", "C) Normalizes the output", "D) Applies masking"], correct: 1, explanation: "After all heads compute independently, their outputs are concatenated (giving a vector of size num_heads * d_v = d_model) and projected through W_O. This learned projection blends the different heads' perspectives." },
+      { q: "With 8 heads and d_model=512, what is the shape of the concatenated output before W_O?", options: ["A) (seq_len, 64)", "B) (seq_len, 512)", "C) (8, seq_len, 64)", "D) (seq_len, 4096)"], correct: 1, explanation: "Each head outputs (seq_len, 64). Concatenating 8 heads gives (seq_len, 8*64) = (seq_len, 512) = (seq_len, d_model). W_O then projects (seq_len, 512) -> (seq_len, 512)." },
+      { q: "If you observe that Head 1 attends to adjacent tokens and Head 2 connects subjects to verbs, what does this suggest?", options: ["A) The model is broken", "B) Different heads have specialized to capture different linguistic relationships", "C) The heads should be merged", "D) The attention is random"], correct: 1, explanation: "This specialization is exactly what multi-head attention enables. Different heads learn to capture different types of relationships: local syntax, long-range agreement, coreference, etc. This is empirically observed in trained transformers." }
+    ]
+  },
+  {
+    topic: "4.6: Causal Masking",
+    questions: [
+      { q: "What does the causal mask set the upper triangle of the attention matrix to?", options: ["A) 0", "B) 1", "C) -infinity (before softmax)", "D) A large positive number"], correct: 2, explanation: "The upper triangle (positions where j > i, i.e., future tokens) is set to -infinity. After softmax, e^(-inf) = 0, so future tokens get zero attention weight. This prevents information leakage." },
+      { q: "Why does removing the causal mask cause training loss to drop to ~0?", options: ["A) The model learns better features", "B) The model can directly see (and copy) the token it's trying to predict", "C) The mask was slowing down training", "D) Without mask, gradients flow better"], correct: 1, explanation: "Without the mask, token at position i can attend to position i+1 -- which IS the target it's trying to predict. The model learns to simply copy the next token through attention, achieving trivially low loss without learning any real patterns." },
+      { q: "In a causal mask, how many tokens can position 0 attend to?", options: ["A) All tokens", "B) 0 tokens", "C) 1 token (itself only)", "D) Half the tokens"], correct: 2, explanation: "Position 0 can only attend to positions j <= 0, which means only itself. It has no past context. Position 1 sees positions 0 and 1 (2 tokens), and so on. The last position sees all tokens." },
+      { q: "Which model architecture uses causal masking?", options: ["A) BERT (bidirectional encoder)", "B) GPT (autoregressive decoder)", "C) Both use causal masking", "D) Neither uses masking"], correct: 1, explanation: "GPT-style models use causal masking because they are autoregressive: each token must only see past tokens. BERT uses NO causal mask -- it's bidirectional, seeing all tokens at once (but uses [MASK] tokens instead)." },
+      { q: "During generation (inference), why does the causal mask not matter for the last generated token?", options: ["A) It still matters", "B) The last token has no future tokens to mask -- all previous tokens are already visible", "C) Generation doesn't use attention", "D) The mask is removed during inference"], correct: 1, explanation: "At generation time, the model produces tokens one at a time. The newest token only has past context available, so there IS no future to mask. The mask was critical during training (where the full sequence exists) to prevent cheating." }
+    ]
+  },
+  {
+    topic: "4.7: Complete Attention Block",
+    questions: [
+      { q: "In the Pre-LN transformer block, what is the order of operations?", options: ["A) Attention -> LayerNorm -> FFN -> LayerNorm", "B) LayerNorm -> Attention -> Residual Add -> LayerNorm -> FFN -> Residual Add", "C) FFN -> Attention -> LayerNorm", "D) Residual -> Attention -> FFN -> LayerNorm"], correct: 1, explanation: "Pre-LN order: (1) LayerNorm (2) Multi-Head Attention (3) Residual Add (4) LayerNorm (5) FFN (6) Residual Add. LayerNorm comes BEFORE each sub-layer, which is now standard (more stable training)." },
+      { q: "What happens if you remove residual connections from a 24-layer transformer?", options: ["A) Nothing changes", "B) Training improves", "C) Gradients vanish and the deep layers cannot learn", "D) The model trains faster"], correct: 2, explanation: "Residual connections (x + f(x)) allow gradients to flow directly through the skip connection. Without them, gradients must pass through every layer's transformations, vanishing exponentially. Deep models (>6 layers) become untrainable." },
+      { q: "What does the FFN (Feed-Forward Network) add that attention alone cannot provide?", options: ["A) The ability to attend to other tokens", "B) Nonlinear per-token transformations (attention is linear in V)", "C) Positional information", "D) Dropout regularization"], correct: 1, explanation: "Self-attention computes a weighted sum of V vectors -- a LINEAR operation. The FFN applies a nonlinear transformation (typically Linear -> GELU -> Linear) to each position independently, adding the expressive power needed for complex functions." },
+      { q: "In a transformer block, what is the typical expansion factor of the FFN?", options: ["A) 1x (same dimension)", "B) 2x", "C) 4x (d_model -> 4*d_model -> d_model)", "D) 8x"], correct: 2, explanation: "The standard FFN expands the dimension by 4x: d_model -> 4*d_model (with activation) -> d_model. For d_model=768, the hidden layer is 3072. This expansion provides a 'wider' nonlinear transformation before projecting back." },
+      { q: "Why does LayerNorm come before attention (Pre-LN) rather than after (Post-LN) in modern transformers?", options: ["A) Pre-LN is faster", "B) Pre-LN stabilizes training -- the residual path carries unnormalized gradients, preventing gradient issues in very deep models", "C) Post-LN is mathematically incorrect", "D) They are identical"], correct: 1, explanation: "Pre-LN means the residual path carries 'raw' gradients unmodified by LayerNorm, which keeps gradient magnitudes stable across many layers. Post-LN requires careful learning rate warmup and is less stable for very deep models." }
+    ]
+  }
+];
+
+// ============================================================
+// QUIZ ENGINE
+// ============================================================
+var totalCorrect = 0, totalAnswered = 0, totalQ = 0;
+var topicScores = [];
+
+function buildQuiz() {
+  var container = document.getElementById('quizContent');
+  container.innerHTML = '';
+  totalQ = 0;
+  quizData.forEach(function(topic, ti) {
+    totalQ += topic.questions.length;
+    if (!topicScores[ti]) topicScores[ti] = { correct: 0, answered: 0, total: topic.questions.length };
+
+    var topicDiv = document.createElement('div');
+    topicDiv.className = 'quiz-topic';
+
+    var header = document.createElement('div');
+    header.className = 'quiz-topic-header';
+    header.innerHTML = '<h3>' + topic.topic + '</h3><span class="quiz-topic-score" id="topicScore' + ti + '">0 / ' + topic.questions.length + '</span>';
+    header.onclick = function() {
+      var qs = topicDiv.querySelector('.quiz-topic-questions');
+      qs.classList.toggle('open');
+    };
+    topicDiv.appendChild(header);
+
+    var questionsDiv = document.createElement('div');
+    questionsDiv.className = 'quiz-topic-questions';
+
+    topic.questions.forEach(function(question, qi) {
+      var qDiv = document.createElement('div');
+      qDiv.className = 'quiz-question';
+      qDiv.innerHTML = '<h4>Q' + (qi + 1) + ': ' + question.q + '</h4>';
+      question.options.forEach(function(opt, oi) {
+        var btn = document.createElement('button');
+        btn.className = 'quiz-option';
+        btn.textContent = opt;
+        btn.onclick = function() { checkAnswer(ti, qi, oi, qDiv); };
+        btn.id = 'qopt_' + ti + '_' + qi + '_' + oi;
+        qDiv.appendChild(btn);
+      });
+      var expDiv = document.createElement('div');
+      expDiv.className = 'quiz-explanation';
+      expDiv.id = 'qexp_' + ti + '_' + qi;
+      expDiv.textContent = question.explanation;
+      qDiv.appendChild(expDiv);
+      questionsDiv.appendChild(qDiv);
+    });
+    topicDiv.appendChild(questionsDiv);
+    container.appendChild(topicDiv);
+  });
+}
+
+function checkAnswer(ti, qi, oi, qDiv) {
+  var question = quizData[ti].questions[qi];
+  var buttons = qDiv.querySelectorAll('.quiz-option');
+  var expDiv = document.getElementById('qexp_' + ti + '_' + qi);
+  if (buttons[0].disabled) return;
+  buttons.forEach(function(b, i) {
+    b.disabled = true;
+    if (i === question.correct) b.classList.add('correct');
+    if (i === oi && oi !== question.correct) b.classList.add('wrong');
+  });
+  totalAnswered++;
+  topicScores[ti].answered++;
+  if (oi === question.correct) {
+    totalCorrect++;
+    topicScores[ti].correct++;
+    expDiv.className = 'quiz-explanation show correct-exp';
+  } else {
+    expDiv.className = 'quiz-explanation show wrong-exp';
+  }
+  document.getElementById('quizScore').textContent = totalCorrect;
+  document.getElementById('topicScore' + ti).textContent = topicScores[ti].correct + ' / ' + topicScores[ti].total;
+  document.getElementById('quizProgressBar').style.width = (totalAnswered / totalQ * 100) + '%';
+}
+
+function resetQuiz() {
+  totalCorrect = 0;
+  totalAnswered = 0;
+  quizData.forEach(function(t, ti) { topicScores[ti] = { correct: 0, answered: 0, total: t.questions.length }; });
+  buildQuiz();
+  document.getElementById('quizScore').textContent = '0';
+  document.getElementById('quizProgressBar').style.width = '0%';
+}
+
+function toggleQuiz() {
+  var section = document.getElementById('quizSection');
+  if (section.style.display === 'none') {
+    section.style.display = 'block';
+    section.scrollIntoView({ behavior: 'smooth' });
+  } else {
+    section.style.display = 'none';
+  }
+}
+
+// ============================================================
+// INITIALIZATION
+// ============================================================
+window.addEventListener('DOMContentLoaded', function() {
+  drawSequenceProblem();
+  drawSoftDict();
+  drawQKV();
+  drawScaling();
+  drawMultiHead();
+  drawCausalMask();
+  drawBlock();
+  buildQuiz();
+});
+
+</script>
+</body>
+</html>

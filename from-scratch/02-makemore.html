@@ -1,0 +1,2362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 2: Makemore — Character-Level Language Models</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #0a0a0f; color: #e0e0e0; line-height: 1.6; }
+  .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; text-align: center; border-bottom: 1px solid #2a2a4a; }
+  .header h1 { font-size: 2.2em; background: linear-gradient(90deg, #ffd93d, #ff6b6b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+  .header p { color: #888; font-size: 1.1em; }
+  .header a { color: #ffd93d; text-decoration: none; font-size: 0.9em; }
+  .header a:hover { text-decoration: underline; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+
+  /* Minimap */
+  .minimap { position: sticky; top: 0; z-index: 100; background: #0a0a0fee; backdrop-filter: blur(10px); border-bottom: 1px solid #2a2a4a; padding: 10px 20px; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }
+  .mm-step { padding: 4px 12px; border-radius: 6px; font-size: 0.75em; font-weight: 600; cursor: pointer; transition: all 0.2s; background: #151530; color: #555; border: 1px solid #2a2a4a; white-space: nowrap; }
+  .mm-step:hover { border-color: #ffd93d; color: #ffd93d; }
+  .mm-step.active { background: rgba(255,217,61,0.2); color: #ffd93d; border-color: rgba(255,217,61,0.5); }
+  .mm-step.done { background: rgba(255,217,61,0.1); color: #ffd93d; border-color: rgba(255,217,61,0.3); }
+  .mm-arrow { color: #333; font-size: 0.8em; }
+
+  .viz-section { background: #12121f; border: 1px solid #2a2a4a; border-radius: 16px; padding: 32px; margin-bottom: 40px; }
+  .viz-section h2 { font-size: 1.5em; color: #ffd93d; margin-bottom: 8px; }
+  .viz-section .subtitle { color: #888; margin-bottom: 24px; font-size: 0.95em; }
+  .viz-canvas { background: #0d0d1a; border-radius: 12px; position: relative; overflow: hidden; }
+  canvas { display: block; width: 100%; }
+  .controls { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; align-items: center; }
+  .control-group { display: flex; flex-direction: column; gap: 4px; }
+  .control-group label { font-size: 0.85em; color: #aaa; }
+  .control-group input[type="range"] { width: 160px; accent-color: #ffd93d; }
+  .control-group .value { font-size: 0.85em; color: #ffd93d; font-family: monospace; }
+  .btn { padding: 8px 16px; border: 1px solid #ffd93d; background: transparent; color: #ffd93d; border-radius: 8px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
+  .btn:hover { background: #ffd93d22; }
+  .btn.active { background: #ffd93d33; }
+  .tab-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+
+  .insight-box { background: linear-gradient(135deg, #1a1a3e 0%, #151530 100%); border-left: 4px solid #ffd93d; padding: 20px 24px; margin-top: 20px; border-radius: 0 12px 12px 0; font-size: 0.92em; color: #ccc; line-height: 1.8; }
+  .insight-box strong { color: #ffd93d; font-size: 1.05em; }
+  .insight-box .formula { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 12px 18px; margin: 12px 0; font-family: 'Courier New', monospace; color: #e8e8ff; font-size: 1.05em; text-align: center; letter-spacing: 0.5px; line-height: 1.9; }
+  .insight-box .key-point { display: flex; flex-wrap: wrap; gap: 4px 8px; margin: 8px 0; padding: 4px 0; align-items: baseline; }
+  .insight-box .key-point .label { color: #ffd93d; font-weight: 600; min-width: 160px; flex-shrink: 0; }
+  .insight-box .key-point .desc { color: #ddd; }
+  .insight-box .interview-tip { background: rgba(100, 255, 100, 0.05); border: 1px solid rgba(100, 255, 100, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #b0ffb0; font-size: 0.93em; line-height: 1.6; }
+  .insight-box .interview-tip::before { content: '\1F4A1  Interview Tip: '; font-weight: 700; color: #7fff7f; }
+  .insight-box .mnemonic { background: rgba(255, 150, 255, 0.05); border: 1px solid rgba(255, 150, 255, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #ffb0ff; font-size: 0.93em; line-height: 1.6; }
+  .insight-box .mnemonic::before { content: '\1F9E0  Remember: '; font-weight: 700; color: #ff7fff; }
+  .insight-box .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+  .insight-box .comparison .option { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 10px 14px; }
+  .insight-box .comparison .option .opt-title { color: #ffd93d; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
+  .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
+  .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
+
+  .katex { color: #e8e8ff; font-size: 1.1em; }
+  .formula .katex { font-size: 1.2em; }
+
+  .narrative-note { background: rgba(255,217,61,0.05); border-left: 3px solid #ffd93d; padding: 14px 18px; margin: 16px 0; border-radius: 0 8px 8px 0; font-size: 0.9em; color: #ccb866; }
+  .narrative-note strong { color: #ffd93d; }
+
+  select { padding: 6px 12px; border: 1px solid #2a2a4a; background: #0d0d1a; color: #e0e0e0; border-radius: 6px; font-size: 0.9em; cursor: pointer; }
+  select:focus { outline: none; border-color: #ffd93d; }
+
+#quizToggle{position:fixed;top:20px;right:20px;z-index:1000;padding:12px 20px;background:#ffd93d;color:#0a0a0f;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:1em;box-shadow:0 4px 15px rgba(0,0,0,0.3);transition:transform 0.2s}
+#quizToggle:hover{transform:scale(1.05)}
+#quizSection{background:#0a0a0f;border-top:2px solid #ffd93d;padding:40px 20px;margin-top:40px}
+.quiz-container{max-width:900px;margin:0 auto}
+.quiz-topic{margin-bottom:30px}
+.quiz-topic-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:10px;cursor:pointer;margin-bottom:12px;user-select:none}
+.quiz-topic-header h3{color:#ffd93d;margin:0;font-size:1.15em}
+.quiz-topic-header:hover{background:#1f1f3a}
+.quiz-topic-score{color:#888;font-size:0.95em}
+.quiz-topic-questions{display:none}
+.quiz-topic-questions.open{display:block}
+.quiz-question{background:#12121f;border:1px solid #2a2a4a;border-radius:12px;padding:24px;margin-bottom:16px}
+.quiz-question h4{color:#e0e0e0;margin-bottom:16px;font-size:1.05em;line-height:1.5}
+.quiz-option{display:block;width:100%;padding:12px 16px;margin:8px 0;background:#0d0d1a;border:1px solid #2a2a4a;border-radius:8px;color:#e0e0e0;cursor:pointer;text-align:left;font-size:0.95em;transition:all 0.2s;font-family:inherit}
+.quiz-option:hover:not(:disabled){border-color:#ffd93d;background:#1a1a3e}
+.quiz-option.correct{background:#1a3a2a !important;border-color:#2ecc71 !important;color:#2ecc71 !important}
+.quiz-option.wrong{background:#3a1a1a !important;border-color:#e74c3c !important;color:#e74c3c !important}
+.quiz-option.reveal{border-color:#2ecc71 !important;color:#2ecc71 !important}
+.quiz-option:disabled{cursor:default}
+.quiz-explanation{margin-top:12px;padding:14px 18px;border-radius:8px;font-size:0.93em;line-height:1.6;display:none}
+.quiz-explanation.show{display:block}
+.quiz-explanation.correct-exp{border-left:4px solid #2ecc71;background:rgba(46,204,113,0.08);color:#b0ffb0}
+.quiz-explanation.wrong-exp{border-left:4px solid #e74c3c;background:rgba(231,76,60,0.08);color:#ffb0b0}
+.quiz-score{text-align:center;font-size:1.5em;color:#ffd93d;margin-bottom:30px}
+.quiz-actions{text-align:center;margin-top:30px;margin-bottom:20px}
+.quiz-actions button{padding:10px 24px;margin:0 8px;border-radius:8px;border:1px solid #ffd93d;background:transparent;color:#ffd93d;cursor:pointer;font-size:1em}
+.quiz-actions button:hover{background:rgba(255,217,61,0.1)}
+.quiz-progress{height:4px;background:#1a1a2e;border-radius:2px;margin-bottom:20px;overflow:hidden}
+.quiz-progress-bar{height:100%;background:#ffd93d;border-radius:2px;transition:width 0.3s}
+
+.legend { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.85em; color: #ccc; }
+.legend-dot { width: 12px; height: 12px; border-radius: 50%; }
+
+/* Tooltip */
+.tooltip { position: absolute; background: #1a1a2eee; border: 1px solid #ffd93d; border-radius: 8px; padding: 10px 14px; font-size: 0.85em; color: #e0e0e0; pointer-events: none; z-index: 50; max-width: 280px; line-height: 1.5; display: none; }
+.tooltip .tt-title { color: #ffd93d; font-weight: 600; margin-bottom: 4px; }
+
+/* Output panel */
+.output-panel { background: #0d0d1a; border: 1px solid #2a2a4a; border-radius: 10px; padding: 16px; margin-top: 16px; max-height: 200px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 0.9em; line-height: 1.8; color: #ccc; }
+.output-panel .name-tag { display: inline-block; background: #1a1a3e; border: 1px solid #3a3a6a; border-radius: 6px; padding: 2px 10px; margin: 3px; color: #ffd93d; }
+
+/* Step display */
+.step-display { background: #0d0d1a; border: 1px solid #2a2a4a; border-radius: 10px; padding: 16px; margin-top: 16px; font-family: 'Courier New', monospace; font-size: 0.9em; line-height: 2; }
+.step-char { display: inline-block; padding: 2px 8px; margin: 2px; border-radius: 4px; }
+.step-char.current { background: #ffd93d33; border: 1px solid #ffd93d; color: #ffd93d; }
+.step-char.done { background: #2a2a4a; color: #aaa; }
+.step-char.pending { color: #555; }
+
+/* Two-column layout */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 768px) { .two-col { grid-template-columns: 1fr; } .insight-box .comparison { grid-template-columns: 1fr; } }
+
+/* Name list */
+.name-list { background: #0d0d1a; border: 1px solid #2a2a4a; border-radius: 10px; padding: 12px; max-height: 300px; overflow-y: auto; font-size: 0.85em; line-height: 1.8; }
+.name-list span { display: inline-block; padding: 1px 8px; margin: 2px; background: #1a1a3e; border-radius: 4px; color: #ccc; }
+
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '\\(', right: '\\)', display: false}]});"></script>
+</head>
+<body>
+<button id="quizToggle" onclick="toggleQuiz()">&#x1F9E0; Quiz Mode</button>
+
+<div class="header">
+  <a href="../index.html">&larr; Back to Index</a>
+  <h1>Chapter 2: Makemore &mdash; Character-Level Language Models</h1>
+  <p>Build a character-level name generator from bigram counting to an MLP language model</p>
+  <div style="margin-top:8px;"><a href="01-backprop-autograd.html" style="color:#888;font-size:0.85em;">Prereq: Chapter 1 &mdash; Backpropagation &amp; Autograd</a></div>
+</div>
+
+<div class="minimap" id="minimap">
+  <span class="mm-step active" data-section="viz21" onclick="scrollToViz('viz21')">1. Dataset</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz22" onclick="scrollToViz('viz22')">2. Bigrams</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz23" onclick="scrollToViz('viz23')">3. Sampling</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz24" onclick="scrollToViz('viz24')">4. Loss(NLL)</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz25" onclick="scrollToViz('viz25')">5. Trigrams+</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz26" onclick="scrollToViz('viz26')">6. Embeddings</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz27" onclick="scrollToViz('viz27')">7. MLP LM</span>
+</div>
+
+<div class="container">
+
+<!-- ============================================================ -->
+<!-- VIZ 2.1: THE DATASET — CHARACTER FREQUENCIES -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz21">
+  <h2>2.1 The Dataset &mdash; Character Frequencies</h2>
+  <p class="subtitle">See the raw data. A language model must learn: given what I have seen so far, what character comes next? That is the whole game.</p>
+  <div class="two-col">
+    <div>
+      <h3 style="color:#aaa;font-size:0.95em;margin-bottom:8px;">Training Names (50 names)</h3>
+      <div class="name-list" id="nameList"></div>
+      <div style="margin-top:8px;font-size:0.8em;color:#666;">The special token <span style="color:#ffd93d;font-weight:600;">.</span> marks start and end of each name.</div>
+    </div>
+    <div>
+      <div class="viz-canvas">
+        <canvas id="freqCanvas" width="550" height="360"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> A character-level language model learns to predict the next character given the previous ones.
+    <div class="formula">$$P(c_{t+1} \mid c_1, c_2, \ldots, c_t) \quad \text{for each position } t$$</div>
+    <div class="key-point">
+      <span class="label">Special Token ".":</span>
+      <span class="desc">Marks both start and end of a name. The model learns which characters tend to begin or end names.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Character Distribution:</span>
+      <span class="desc">Not all characters are equally common. 'a', 'e', 'i' dominate in English names. The model must capture these frequencies.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Character-level models are the simplest language models. They are a great pedagogical tool because you can see every detail, but the same principles apply to word-level and subword (BPE) models.</div>
+    <div class="mnemonic">Language modeling = next token prediction. That is it. GPT, BERT, everything reduces to predicting the next token from context.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 2.2: BIGRAM FREQUENCY MATRIX -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz22">
+  <h2>2.2 Bigram Frequency Matrix</h2>
+  <p class="subtitle">Count character pairs. See the simplest possible language model: P(next | current) = count(pair) / count(current).</p>
+  <div class="controls" style="margin-bottom:16px;margin-top:0;">
+    <div class="tab-bar">
+      <button class="btn active" id="bmCounts" onclick="setBigramMode('counts')">Raw Counts</button>
+      <button class="btn" id="bmProbs" onclick="setBigramMode('probs')">Probabilities</button>
+    </div>
+    <button class="btn" id="bmAnimate" onclick="animateBigramFill()">Animate Fill</button>
+    <button class="btn" onclick="resetBigramAnim()">Reset</button>
+  </div>
+  <div class="viz-canvas" style="position:relative;">
+    <canvas id="bigramCanvas" width="900" height="560"></canvas>
+    <div class="tooltip" id="bigramTooltip"></div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> A bigram model estimates the probability of the next character using only the current character.
+    <div class="formula">$$P(c_{i+1} \mid c_i) = \frac{\text{count}(c_i, c_{i+1})}{\sum_{c} \text{count}(c_i, c)}$$</div>
+    <div class="key-point">
+      <span class="label">27 x 27 Matrix:</span>
+      <span class="desc">26 letters + "." special token. Each row sums to 1 after normalization (a valid probability distribution).</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Normalization:</span>
+      <span class="desc">Raw counts become probabilities by dividing each count by the row total. This is maximum likelihood estimation.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Bigram models are bag-of-pairs: they have no memory beyond the immediately preceding character. This is a first-order Markov assumption.</div>
+    <div class="mnemonic">Each row of the normalized matrix is a categorical distribution. Sampling from it gives the next character.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 2.3: SAMPLING FROM THE BIGRAM MODEL -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz23">
+  <h2>2.3 Sampling from the Bigram Model</h2>
+  <p class="subtitle">Generate names! See how sampling from the probability distribution produces "name-like" text (sort of).</p>
+  <div class="controls" style="margin-bottom:16px;margin-top:0;">
+    <button class="btn" onclick="sampleOneNameAnimated()">Generate One (Animated)</button>
+    <button class="btn" onclick="sampleBatch()">Generate 20 Names</button>
+    <div class="control-group">
+      <label>Temperature</label>
+      <input type="range" id="tempSlider" min="1" max="300" value="100" oninput="updateTemp()">
+      <span class="value" id="tempVal">1.00</span>
+    </div>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="samplingCanvas" width="900" height="340"></canvas>
+  </div>
+  <div class="step-display" id="samplingSteps" style="min-height:40px;">Click "Generate One" to see step-by-step name generation...</div>
+  <div class="output-panel" id="samplingOutput">Generated names will appear here...</div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Sampling from a language model means repeatedly drawing from \(P(\text{next} \mid \text{current})\) until the stop token appears.
+    <div class="formula">$$P_{\text{temp}}(c) = \frac{\exp(\log P(c) / \tau)}{\sum_{c'} \exp(\log P(c') / \tau)}$$</div>
+    <div class="key-point">
+      <span class="label">Temperature = 1.0:</span>
+      <span class="desc">Sample from the learned distribution exactly as-is.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Low temperature:</span>
+      <span class="desc">Sharpen the distribution &mdash; always pick the most likely next character. Repetitive but "safe".</span>
+    </div>
+    <div class="key-point">
+      <span class="label">High temperature:</span>
+      <span class="desc">Flatten the distribution &mdash; sample more uniformly. More random and diverse, but less coherent.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Temperature is the most common sampling hyperparameter in LLMs. It appears in GPT, LLaMA, and every production system. Explain it as "softmax sharpness control."</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 2.4: MEASURING QUALITY — NEGATIVE LOG-LIKELIHOOD -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz24">
+  <h2>2.4 Measuring Quality: Negative Log-Likelihood</h2>
+  <p class="subtitle">How do we know our model is any good? Step through a name and watch the NLL accumulate.</p>
+  <div class="controls" style="margin-bottom:16px;margin-top:0;">
+    <div class="tab-bar">
+      <button class="btn active" id="nllGood" onclick="setNLLName('good')">Good Name: "anna"</button>
+      <button class="btn" id="nllBad" onclick="setNLLName('bad')">Bad Name: "xzqw"</button>
+    </div>
+    <button class="btn" onclick="stepNLL()">Step Forward</button>
+    <button class="btn" onclick="resetNLL()">Reset</button>
+    <button class="btn" onclick="autoNLL()">Auto-Play</button>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="nllCanvas" width="900" height="400"></canvas>
+  </div>
+  <div class="step-display" id="nllSteps"></div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Negative log-likelihood measures how "surprised" the model is by the training data. Lower = better.
+    <div class="formula">$$\text{NLL} = -\frac{1}{N}\sum_{i=1}^{N} \log P(c_{i+1} \mid c_i)$$</div>
+    <div class="key-point">
+      <span class="label">High probability:</span>
+      <span class="desc">\(\log P \approx 0\), so \(-\log P \approx 0\). The model expected this transition. Low cost.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Low probability:</span>
+      <span class="desc">\(\log P \ll 0\), so \(-\log P \gg 0\). The model was surprised. High cost.</span>
+    </div>
+    <hr class="divider">
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title">"anna" (common patterns)</div>
+        <div class="opt-desc">Common bigrams like "an", "nn", "na" have high probability. Low NLL.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title">"xzqw" (rare patterns)</div>
+        <div class="opt-desc">Rare bigrams like "xz", "zq", "qw" have near-zero probability. Very high NLL.</div>
+      </div>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">NLL and cross-entropy are the same thing for language models. Perplexity = exp(NLL). These three metrics appear in every LLM paper.</div>
+    <div class="mnemonic">NLL = surprise. A perfect model that knows the data perfectly has NLL = 0. A uniform-random model over 27 chars has NLL = log(27) = 3.30.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 2.5: BEYOND BIGRAMS — N-GRAM CONTEXT WINDOW -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz25">
+  <h2>2.5 Beyond Bigrams: N-gram Context Window</h2>
+  <p class="subtitle">More context = better predictions. But the table grows exponentially. This tension motivates neural approaches.</p>
+  <div class="controls" style="margin-bottom:16px;margin-top:0;">
+    <div class="control-group">
+      <label>Context Length (n)</label>
+      <input type="range" id="ngramSlider" min="1" max="5" value="1" oninput="updateNgram()">
+      <span class="value" id="ngramVal">1 (bigram)</span>
+    </div>
+    <button class="btn" onclick="generateNgramNames()">Generate 10 Names</button>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="ngramCanvas" width="900" height="400"></canvas>
+  </div>
+  <div class="output-panel" id="ngramOutput">Generated names will appear here...</div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> N-gram models trade off expressiveness vs. data sparsity. More context means exponentially more parameters.
+    <div class="formula">$$\text{Table size} = 27^n \quad \Rightarrow \quad n=1: 27, \quad n=2: 729, \quad n=3: 19{,}683, \quad n=5: 14{,}348{,}907$$</div>
+    <div class="key-point">
+      <span class="label">The Sparsity Problem:</span>
+      <span class="desc">With n=5, most of the 14M entries are zero because we never observed that specific 5-character context in our tiny dataset.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">The Key Tension:</span>
+      <span class="desc">Quality improves with more context, but counting cannot generalize to unseen contexts. We need a neural network.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">This is the exact motivation for neural language models. Bengio et al. (2003) introduced neural LMs precisely to solve this curse-of-dimensionality problem in n-gram models.</div>
+    <div class="mnemonic">Counting can memorize but cannot generalize. Neural networks can generalize to unseen contexts via learned representations.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 2.6: CHARACTER EMBEDDINGS -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz26">
+  <h2>2.6 Character Embeddings</h2>
+  <p class="subtitle">Replace one-hot vectors with learned embeddings. Watch similar characters cluster in embedding space.</p>
+  <div class="controls" style="margin-bottom:16px;margin-top:0;">
+    <button class="btn" id="embTrainBtn" onclick="toggleEmbTraining()">Train</button>
+    <button class="btn" onclick="resetEmbeddings()">Reset</button>
+    <div class="control-group">
+      <label>Embedding Dim</label>
+      <input type="range" id="embDimSlider" min="0" max="3" value="0" oninput="updateEmbDim()">
+      <span class="value" id="embDimVal">2</span>
+    </div>
+    <div class="control-group">
+      <label>Training Step</label>
+      <span class="value" id="embStepVal">0</span>
+    </div>
+  </div>
+  <div class="viz-canvas" style="position:relative;">
+    <canvas id="embCanvas" width="900" height="480"></canvas>
+    <div class="tooltip" id="embTooltip"></div>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:#ff6b6b;"></span> Vowels</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#4ecdc4;"></span> Consonants</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#ffd93d;"></span> Special (.)</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Embeddings map discrete tokens into continuous vector space where similar tokens are nearby.
+    <div class="formula">$$\text{one-hot: } \mathbf{e}_a = [1,0,0,\ldots] \in \mathbb{R}^{27} \quad\Rightarrow\quad \text{embedding: } \mathbf{e}_a = [0.3, -0.7] \in \mathbb{R}^d$$</div>
+    <div class="key-point">
+      <span class="label">Why Embeddings?</span>
+      <span class="desc">One-hot vectors are orthogonal &mdash; every character is equally "different" from every other. Embeddings learn that 'a' and 'e' are more similar than 'a' and 'z'.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Emergent Structure:</span>
+      <span class="desc">Without being told, the network learns to cluster vowels together and consonants together, because they appear in similar contexts.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Word2Vec, GloVe, and the embedding layers in transformers all work on this same principle: tokens that appear in similar contexts get similar embeddings. This is the distributional hypothesis.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 2.7: MLP LANGUAGE MODEL — THE FULL PICTURE -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz27">
+  <h2>2.7 MLP Language Model &mdash; The Full Picture</h2>
+  <p class="subtitle">Wire it all together. Context embeddings &rarr; concatenate &rarr; hidden layer (ReLU) &rarr; softmax &rarr; next character prediction.</p>
+  <div class="controls" style="margin-bottom:16px;margin-top:0;">
+    <button class="btn" id="mlpTrainBtn" onclick="toggleMlpTraining()">Train MLP</button>
+    <button class="btn" onclick="resetMlp()">Reset</button>
+    <button class="btn" onclick="mlpGenerate()">Generate 10 Names</button>
+    <div class="control-group">
+      <label>Context Window</label>
+      <select id="mlpContext" onchange="resetMlp()">
+        <option value="2">2 chars</option>
+        <option value="3" selected>3 chars</option>
+        <option value="5">5 chars</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label>Training Step</label>
+      <span class="value" id="mlpStepVal">0</span>
+    </div>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="mlpCanvas" width="900" height="480"></canvas>
+  </div>
+  <div class="two-col" style="margin-top:16px;">
+    <div class="output-panel" id="mlpNames">Generated names will appear after training...</div>
+    <div class="viz-canvas" style="height:200px;">
+      <canvas id="mlpLossCanvas" width="440" height="200"></canvas>
+    </div>
+  </div>
+  <div class="narrative-note">
+    <strong>Chapter 2 Payoff:</strong> You have built a language model from counting bigrams to a neural network that understands character patterns. But characters are limiting &mdash; to model real language, we need to handle <em>sequences</em> of varying length and learn <em>long-range dependencies</em>. Next: the attention mechanism.
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> The MLP language model generalizes beyond counting by learning continuous representations.
+    <div class="formula">$$\hat{y} = \text{softmax}(W_2 \cdot \text{ReLU}(W_1 \cdot [\mathbf{e}_{c_1}; \mathbf{e}_{c_2}; \ldots; \mathbf{e}_{c_n}] + b_1) + b_2)$$</div>
+    <div class="key-point">
+      <span class="label">Embedding Lookup:</span>
+      <span class="desc">Each input character is mapped to its embedding vector. These are concatenated into a single input vector.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Hidden Layer:</span>
+      <span class="desc">A linear transform + ReLU nonlinearity allows the model to learn complex patterns over the input characters.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Softmax Output:</span>
+      <span class="desc">Produces a probability distribution over 27 possible next characters. Trained with cross-entropy (NLL) loss.</span>
+    </div>
+    <hr class="divider">
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title">Bigram Model</div>
+        <div class="opt-desc">729 parameters (27x27 table). Only 1 char of context. Cannot generalize to unseen bigrams. NLL ~ 2.45</div>
+      </div>
+      <div class="option">
+        <div class="opt-title">MLP Model</div>
+        <div class="opt-desc">~3500 parameters. 3 chars of context. Generalizes via embeddings. NLL ~ 2.10</div>
+      </div>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Bengio et al. (2003) "A Neural Probabilistic Language Model" is exactly this architecture. It introduced the idea of learned word embeddings and is the foundation for all modern LLMs.</div>
+  </div>
+</div>
+
+</div> <!-- container -->
+
+<!-- ============================================================ -->
+<!-- QUIZ SECTION -->
+<!-- ============================================================ -->
+<div id="quizSection" style="display:none">
+<div class="quiz-container">
+  <h2 style="text-align:center;color:#ffd93d;margin-bottom:10px;font-size:1.8em;">Makemore Quiz</h2>
+  <p style="text-align:center;color:#888;margin-bottom:20px;">5 questions per visualization &bull; 35 questions total &bull; Click answers to reveal explanations</p>
+  <div class="quiz-progress"><div class="quiz-progress-bar" id="quizProgressBar" style="width:0%"></div></div>
+  <div class="quiz-score">Score: <span id="quizScore">0</span> / <span id="quizTotal">35</span></div>
+  <div class="quiz-actions">
+    <button onclick="resetQuiz()">&#8634; Reset All</button>
+    <button onclick="toggleQuiz()">&#10005; Hide Quiz</button>
+  </div>
+  <div id="quizQuestions"></div>
+</div>
+</div>
+
+<div style="text-align:center; padding:40px; color:#555; font-size:0.85em; border-top:1px solid #1a1a2e;">
+  Chapter 2: Makemore &mdash; Character-Level Language Models &bull; <a href="../index.html" style="color:#ffd93d; text-decoration:none;">From Scratch Series</a>
+</div>
+
+<script>
+// ============================================================
+// DATASET
+// ============================================================
+var NAMES = [
+  'emma','olivia','ava','sophia','isabella','mia','charlotte','amelia','harper','evelyn',
+  'abigail','emily','elizabeth','mila','ella','avery','sofia','camila','aria','scarlett',
+  'victoria','madison','luna','grace','chloe','penelope','layla','riley','zoey','nora',
+  'lily','eleanor','hannah','lillian','addison','aubrey','ellie','stella','natalie','zoe',
+  'leah','hazel','violet','aurora','savannah','audrey','brooklyn','bella','claire','skylar'
+];
+
+var CHARS = '.abcdefghijklmnopqrstuvwxyz';
+var C2I = {};
+var I2C = {};
+for (var i = 0; i < CHARS.length; i++) { C2I[CHARS[i]] = i; I2C[i] = CHARS[i]; }
+var VOCAB = CHARS.length; // 27
+
+// ============================================================
+// UTILITY
+// ============================================================
+function seededRandom(seed) {
+  var s = seed;
+  return function() {
+    s = (s * 16807 + 0) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
+}
+var rng = seededRandom(42);
+
+function drawRoundRect(ctx, x, y, w, h, r, fill, stroke) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 1; ctx.stroke(); }
+}
+
+function drawArrow(ctx, x1, y1, x2, y2, color, width) {
+  var dx = x2 - x1, dy = y2 - y1;
+  var len = Math.sqrt(dx * dx + dy * dy);
+  if (len < 1) return;
+  var ux = dx / len, uy = dy / len;
+  var headLen = 8;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width || 2;
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2 - ux * headLen, y2 - uy * headLen);
+  ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - ux * headLen - uy * 5, y2 - uy * headLen + ux * 5);
+  ctx.lineTo(x2 - ux * headLen + uy * 5, y2 - uy * headLen - ux * 5);
+  ctx.fill();
+}
+
+// ============================================================
+// BIGRAM COMPUTATION
+// ============================================================
+var bigramCounts = [];
+var bigramProbs = [];
+var rowTotals = [];
+
+function computeBigrams() {
+  bigramCounts = [];
+  for (var i = 0; i < VOCAB; i++) {
+    bigramCounts.push(new Array(VOCAB).fill(0));
+  }
+  NAMES.forEach(function(name) {
+    var chars = '.' + name + '.';
+    for (var i = 0; i < chars.length - 1; i++) {
+      var c1 = C2I[chars[i]], c2 = C2I[chars[i + 1]];
+      bigramCounts[c1][c2]++;
+    }
+  });
+  // Compute probabilities
+  bigramProbs = [];
+  rowTotals = [];
+  for (var r = 0; r < VOCAB; r++) {
+    var total = 0;
+    for (var c = 0; c < VOCAB; c++) total += bigramCounts[r][c] + 1; // +1 smoothing
+    rowTotals.push(total);
+    var row = [];
+    for (var c = 0; c < VOCAB; c++) {
+      row.push((bigramCounts[r][c] + 1) / total);
+    }
+    bigramProbs.push(row);
+  }
+}
+computeBigrams();
+
+// ============================================================
+// MINIMAP / SCROLL TRACKING
+// ============================================================
+function scrollToViz(id) {
+  document.getElementById(id).scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+var vizSections = ['viz21','viz22','viz23','viz24','viz25','viz26','viz27'];
+window.addEventListener('scroll', function() {
+  var steps = document.querySelectorAll('.mm-step');
+  var activeIdx = 0;
+  for (var i = 0; i < vizSections.length; i++) {
+    var el = document.getElementById(vizSections[i]);
+    if (el && el.getBoundingClientRect().top < window.innerHeight / 2) activeIdx = i;
+  }
+  steps.forEach(function(s, i) {
+    s.classList.remove('active', 'done');
+    if (i < activeIdx) s.classList.add('done');
+    else if (i === activeIdx) s.classList.add('active');
+  });
+});
+
+// ============================================================
+// VIZ 2.1: CHARACTER FREQUENCIES
+// ============================================================
+function buildNameList() {
+  var el = document.getElementById('nameList');
+  el.innerHTML = NAMES.map(function(n) { return '<span>' + n + '</span>'; }).join(' ');
+}
+
+function drawFreqChart() {
+  var canvas = document.getElementById('freqCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  // Count character frequencies
+  var freq = {};
+  for (var i = 0; i < CHARS.length; i++) freq[CHARS[i]] = 0;
+  NAMES.forEach(function(name) {
+    freq['.'] += 2; // start and end
+    for (var i = 0; i < name.length; i++) freq[name[i]]++;
+  });
+
+  // Sort by frequency
+  var sorted = CHARS.split('').slice();
+  sorted.sort(function(a, b) { return freq[b] - freq[a]; });
+
+  var maxFreq = freq[sorted[0]];
+  var margin = { top: 40, bottom: 50, left: 50, right: 20 };
+  var barW = (W - margin.left - margin.right) / sorted.length - 2;
+  var chartH = H - margin.top - margin.bottom;
+
+  // Title
+  ctx.fillStyle = '#888';
+  ctx.font = '13px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Character Frequency in Training Names', W / 2, 22);
+
+  // Bars
+  sorted.forEach(function(ch, idx) {
+    var x = margin.left + idx * (barW + 2);
+    var h = (freq[ch] / maxFreq) * chartH;
+    var y = margin.top + chartH - h;
+
+    var color = ch === '.' ? '#ffd93d' : '#4ecdc4';
+    ctx.fillStyle = color;
+    ctx.fillRect(x, y, barW, h);
+
+    // Label
+    ctx.fillStyle = ch === '.' ? '#ffd93d' : '#aaa';
+    ctx.font = '11px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(ch === '.' ? '.' : ch, x + barW / 2, margin.top + chartH + 16);
+
+    // Count
+    if (h > 15) {
+      ctx.fillStyle = '#0a0a0f';
+      ctx.font = '9px monospace';
+      ctx.fillText(freq[ch], x + barW / 2, y + 12);
+    }
+  });
+
+  // Y axis
+  ctx.strokeStyle = '#2a2a4a';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(margin.left - 5, margin.top);
+  ctx.lineTo(margin.left - 5, margin.top + chartH);
+  ctx.stroke();
+
+  for (var i = 0; i <= 4; i++) {
+    var val = Math.round(maxFreq * i / 4);
+    var yy = margin.top + chartH - (chartH * i / 4);
+    ctx.fillStyle = '#555';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(val, margin.left - 10, yy + 4);
+    ctx.strokeStyle = '#1a1a2e';
+    ctx.beginPath();
+    ctx.moveTo(margin.left, yy);
+    ctx.lineTo(W - margin.right, yy);
+    ctx.stroke();
+  }
+}
+
+// ============================================================
+// VIZ 2.2: BIGRAM MATRIX
+// ============================================================
+var bigramMode = 'counts';
+var bigramAnimState = { running: false, nameIdx: 0, charIdx: 0, animCounts: null, timer: null };
+
+function setBigramMode(mode) {
+  bigramMode = mode;
+  document.getElementById('bmCounts').classList.toggle('active', mode === 'counts');
+  document.getElementById('bmProbs').classList.toggle('active', mode === 'probs');
+  drawBigramMatrix();
+}
+
+function drawBigramMatrix(highlightR, highlightC, animCounts) {
+  var canvas = document.getElementById('bigramCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  var counts = animCounts || bigramCounts;
+  var margin = { top: 45, left: 45, right: 30, bottom: 30 };
+  var gridW = W - margin.left - margin.right;
+  var gridH = H - margin.top - margin.bottom;
+  var cellW = gridW / VOCAB;
+  var cellH = gridH / VOCAB;
+
+  // Find max for color scaling
+  var maxVal = 1;
+  if (bigramMode === 'counts') {
+    for (var r = 0; r < VOCAB; r++)
+      for (var c = 0; c < VOCAB; c++)
+        if (counts[r][c] > maxVal) maxVal = counts[r][c];
+  }
+
+  // Column headers
+  ctx.font = '9px monospace';
+  ctx.textAlign = 'center';
+  for (var c = 0; c < VOCAB; c++) {
+    ctx.fillStyle = c === 0 ? '#ffd93d' : '#777';
+    ctx.fillText(I2C[c], margin.left + c * cellW + cellW / 2, margin.top - 8);
+  }
+
+  // Row headers and cells
+  for (var r = 0; r < VOCAB; r++) {
+    ctx.fillStyle = r === 0 ? '#ffd93d' : '#777';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(I2C[r], margin.left - 6, margin.top + r * cellH + cellH / 2 + 3);
+
+    // Compute row total for probs
+    var rowTotal = 0;
+    for (var c = 0; c < VOCAB; c++) rowTotal += counts[r][c] + 1;
+
+    for (var c = 0; c < VOCAB; c++) {
+      var x = margin.left + c * cellW;
+      var y = margin.top + r * cellH;
+      var val = counts[r][c];
+      var prob = (val + 1) / rowTotal;
+      var intensity;
+
+      if (bigramMode === 'counts') {
+        intensity = val / maxVal;
+      } else {
+        intensity = prob * 4; // scale probs for visibility
+      }
+      intensity = Math.min(1, intensity);
+
+      // Color: dark to accent
+      var red = Math.round(10 + intensity * 245);
+      var green = Math.round(10 + intensity * 207);
+      var blue = Math.round(30 + intensity * 31);
+      ctx.fillStyle = 'rgb(' + red + ',' + green + ',' + blue + ')';
+
+      if (r === highlightR && c === highlightC) {
+        ctx.fillStyle = '#ffd93d';
+      }
+
+      ctx.fillRect(x + 0.5, y + 0.5, cellW - 1, cellH - 1);
+
+      // Show number in larger cells
+      if (cellW > 14 && val > 0) {
+        ctx.fillStyle = intensity > 0.5 ? '#0a0a0f' : '#555';
+        ctx.font = '7px monospace';
+        ctx.textAlign = 'center';
+        if (bigramMode === 'counts') {
+          ctx.fillText(val, x + cellW / 2, y + cellH / 2 + 3);
+        } else {
+          ctx.fillText(prob.toFixed(2), x + cellW / 2, y + cellH / 2 + 3);
+        }
+      }
+    }
+  }
+
+  // Title
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Rows = current char, Columns = next char', margin.left, 16);
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#ffd93d';
+  ctx.fillText(bigramMode === 'counts' ? 'Raw Counts' : 'Probabilities', W - margin.right, 16);
+}
+
+// Hover for bigram tooltip
+(function() {
+  var canvas = document.getElementById('bigramCanvas');
+  var tooltip = document.getElementById('bigramTooltip');
+  canvas.addEventListener('mousemove', function(e) {
+    var rect = canvas.getBoundingClientRect();
+    var scaleX = canvas.width / rect.width;
+    var scaleY = canvas.height / rect.height;
+    var mx = (e.clientX - rect.left) * scaleX;
+    var my = (e.clientY - rect.top) * scaleY;
+    var margin = { top: 45, left: 45, right: 30, bottom: 30 };
+    var gridW = canvas.width - margin.left - margin.right;
+    var gridH = canvas.height - margin.top - margin.bottom;
+    var cellW = gridW / VOCAB;
+    var cellH = gridH / VOCAB;
+    var col = Math.floor((mx - margin.left) / cellW);
+    var row = Math.floor((my - margin.top) / cellH);
+    if (row >= 0 && row < VOCAB && col >= 0 && col < VOCAB) {
+      var count = bigramCounts[row][col];
+      var prob = bigramProbs[row][col];
+      tooltip.innerHTML = '<div class="tt-title">"' + I2C[row] + '" &rarr; "' + I2C[col] + '"</div>' +
+        'Count: ' + count + '<br>Probability: ' + prob.toFixed(4);
+      tooltip.style.display = 'block';
+      tooltip.style.left = (e.clientX - canvas.parentElement.getBoundingClientRect().left + 15) + 'px';
+      tooltip.style.top = (e.clientY - canvas.parentElement.getBoundingClientRect().top - 10) + 'px';
+      drawBigramMatrix(row, col);
+    } else {
+      tooltip.style.display = 'none';
+      drawBigramMatrix();
+    }
+  });
+  canvas.addEventListener('mouseleave', function() {
+    tooltip.style.display = 'none';
+    drawBigramMatrix();
+  });
+})();
+
+function animateBigramFill() {
+  if (bigramAnimState.running) return;
+  bigramAnimState.running = true;
+  bigramAnimState.nameIdx = 0;
+  bigramAnimState.charIdx = 0;
+  bigramAnimState.animCounts = [];
+  for (var i = 0; i < VOCAB; i++) bigramAnimState.animCounts.push(new Array(VOCAB).fill(0));
+
+  function step() {
+    var name = NAMES[bigramAnimState.nameIdx];
+    var chars = '.' + name + '.';
+    var ci = bigramAnimState.charIdx;
+    if (ci < chars.length - 1) {
+      var c1 = C2I[chars[ci]], c2 = C2I[chars[ci + 1]];
+      bigramAnimState.animCounts[c1][c2]++;
+      drawBigramMatrix(c1, c2, bigramAnimState.animCounts);
+      bigramAnimState.charIdx++;
+    } else {
+      bigramAnimState.nameIdx++;
+      bigramAnimState.charIdx = 0;
+    }
+    if (bigramAnimState.nameIdx < NAMES.length) {
+      bigramAnimState.timer = setTimeout(step, 20);
+    } else {
+      bigramAnimState.running = false;
+      drawBigramMatrix();
+    }
+  }
+  step();
+}
+
+function resetBigramAnim() {
+  if (bigramAnimState.timer) clearTimeout(bigramAnimState.timer);
+  bigramAnimState.running = false;
+  drawBigramMatrix();
+}
+
+// ============================================================
+// VIZ 2.3: SAMPLING
+// ============================================================
+var samplingTemp = 1.0;
+
+function updateTemp() {
+  samplingTemp = parseInt(document.getElementById('tempSlider').value) / 100;
+  document.getElementById('tempVal').textContent = samplingTemp.toFixed(2);
+}
+
+function sampleFromRow(row, temp) {
+  // Apply temperature
+  var logits = [];
+  for (var i = 0; i < VOCAB; i++) {
+    logits.push(Math.log(bigramProbs[row][i] + 1e-10) / temp);
+  }
+  // Softmax
+  var maxL = -Infinity;
+  for (var i = 0; i < logits.length; i++) if (logits[i] > maxL) maxL = logits[i];
+  var exps = [];
+  var sum = 0;
+  for (var i = 0; i < logits.length; i++) {
+    var e = Math.exp(logits[i] - maxL);
+    exps.push(e);
+    sum += e;
+  }
+  var probs = exps.map(function(e) { return e / sum; });
+
+  // Sample
+  var r = Math.random();
+  var cumulative = 0;
+  for (var i = 0; i < probs.length; i++) {
+    cumulative += probs[i];
+    if (r < cumulative) return { idx: i, probs: probs };
+  }
+  return { idx: VOCAB - 1, probs: probs };
+}
+
+function generateOneName(temp) {
+  temp = temp || samplingTemp;
+  var current = 0; // start token
+  var name = '';
+  var steps = [{ char: '.', row: -1, chosen: 0, probs: null }];
+  for (var i = 0; i < 20; i++) {
+    var result = sampleFromRow(current, temp);
+    var next = result.idx;
+    steps.push({ char: I2C[next], row: current, chosen: next, probs: result.probs });
+    if (next === 0) break; // end token
+    name += I2C[next];
+    current = next;
+  }
+  return { name: name, steps: steps };
+}
+
+function drawSamplingChart(probs, chosenIdx, currentChar) {
+  var canvas = document.getElementById('samplingCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  if (!probs) {
+    ctx.fillStyle = '#555';
+    ctx.font = '14px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Click "Generate One" to see the probability distribution for each step', W / 2, H / 2);
+    return;
+  }
+
+  var margin = { top: 50, bottom: 50, left: 60, right: 30 };
+  var chartW = W - margin.left - margin.right;
+  var chartH = H - margin.top - margin.bottom;
+  var barW = chartW / VOCAB - 2;
+
+  // Title
+  ctx.fillStyle = '#aaa';
+  ctx.font = '13px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('P(next | "' + currentChar + '") — probability distribution over next character', W / 2, 25);
+
+  var maxP = 0;
+  for (var i = 0; i < probs.length; i++) if (probs[i] > maxP) maxP = probs[i];
+  if (maxP < 0.01) maxP = 0.01;
+
+  for (var i = 0; i < VOCAB; i++) {
+    var x = margin.left + i * (barW + 2);
+    var h = (probs[i] / maxP) * chartH;
+    var y = margin.top + chartH - h;
+
+    ctx.fillStyle = i === chosenIdx ? '#ffd93d' : (i === 0 ? '#ff6b6b44' : '#4ecdc488');
+    ctx.fillRect(x, y, barW, h);
+
+    if (i === chosenIdx) {
+      ctx.fillStyle = '#ffd93d';
+      ctx.font = 'bold 10px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(probs[i].toFixed(3), x + barW / 2, y - 8);
+      // Arrow
+      ctx.fillText('\u25BC', x + barW / 2, y - 18);
+    }
+
+    ctx.fillStyle = i === 0 ? '#ffd93d' : '#777';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(I2C[i], x + barW / 2, margin.top + chartH + 16);
+  }
+
+  // Y axis
+  for (var i = 0; i <= 4; i++) {
+    var val = (maxP * i / 4);
+    var yy = margin.top + chartH - (chartH * i / 4);
+    ctx.fillStyle = '#555';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(val.toFixed(2), margin.left - 8, yy + 4);
+  }
+}
+
+var samplingAnimTimer = null;
+
+function sampleOneNameAnimated() {
+  if (samplingAnimTimer) clearTimeout(samplingAnimTimer);
+  var result = generateOneName();
+  var steps = result.steps;
+  var stepsEl = document.getElementById('samplingSteps');
+  var stepIdx = 0;
+
+  function showStep() {
+    if (stepIdx >= steps.length) {
+      document.getElementById('samplingOutput').innerHTML += '<span class="name-tag">' + result.name + '</span> ';
+      return;
+    }
+    var s = steps[stepIdx];
+    // Build step display
+    var html = '';
+    for (var i = 0; i <= stepIdx; i++) {
+      var cls = i === stepIdx ? 'current' : 'done';
+      html += '<span class="step-char ' + cls + '">' + steps[i].char + '</span>';
+    }
+    for (var i = stepIdx + 1; i < steps.length; i++) {
+      html += '<span class="step-char pending">?</span>';
+    }
+    stepsEl.innerHTML = html;
+
+    if (s.probs) {
+      drawSamplingChart(s.probs, s.chosen, I2C[s.row]);
+    }
+    stepIdx++;
+    samplingAnimTimer = setTimeout(showStep, 500);
+  }
+  showStep();
+}
+
+function sampleBatch() {
+  var output = document.getElementById('samplingOutput');
+  output.innerHTML = '';
+  for (var i = 0; i < 20; i++) {
+    var result = generateOneName();
+    output.innerHTML += '<span class="name-tag">' + result.name + '</span> ';
+  }
+}
+
+// ============================================================
+// VIZ 2.4: NEGATIVE LOG-LIKELIHOOD
+// ============================================================
+var nllState = {
+  name: 'anna', mode: 'good', step: 0, autoTimer: null,
+  chars: null, logProbs: null, nllValues: null
+};
+
+function setNLLName(mode) {
+  nllState.mode = mode;
+  nllState.name = mode === 'good' ? 'anna' : 'xzqw';
+  document.getElementById('nllGood').classList.toggle('active', mode === 'good');
+  document.getElementById('nllBad').classList.toggle('active', mode === 'bad');
+  resetNLL();
+}
+
+function prepareNLL() {
+  var chars = '.' + nllState.name + '.';
+  nllState.chars = chars;
+  nllState.logProbs = [];
+  nllState.nllValues = [];
+  var cumNLL = 0;
+  for (var i = 0; i < chars.length - 1; i++) {
+    var c1 = C2I[chars[i]], c2 = C2I[chars[i + 1]];
+    var p = bigramProbs[c1][c2];
+    var lp = Math.log(p);
+    var nll = -lp;
+    cumNLL += nll;
+    nllState.logProbs.push({ from: chars[i], to: chars[i + 1], prob: p, logProb: lp, nll: nll, cumNLL: cumNLL });
+  }
+}
+
+function resetNLL() {
+  if (nllState.autoTimer) clearInterval(nllState.autoTimer);
+  nllState.autoTimer = null;
+  nllState.step = 0;
+  prepareNLL();
+  drawNLL();
+}
+
+function stepNLL() {
+  if (nllState.step < nllState.logProbs.length) {
+    nllState.step++;
+    drawNLL();
+  }
+}
+
+function autoNLL() {
+  resetNLL();
+  nllState.autoTimer = setInterval(function() {
+    stepNLL();
+    if (nllState.step >= nllState.logProbs.length) {
+      clearInterval(nllState.autoTimer);
+      nllState.autoTimer = null;
+    }
+  }, 800);
+}
+
+function drawNLL() {
+  var canvas = document.getElementById('nllCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  var data = nllState.logProbs;
+  var n = data.length;
+  var step = nllState.step;
+
+  // Layout
+  var margin = { top: 50, bottom: 60, left: 80, right: 40 };
+  var chartW = W - margin.left - margin.right;
+  var chartH = (H - margin.top - margin.bottom) / 2 - 20;
+
+  // Title
+  ctx.fillStyle = '#aaa';
+  ctx.font = '13px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Stepping through "' + nllState.name + '" — NLL at each bigram', W / 2, 25);
+
+  // Top: probability bars
+  var barW = Math.min(80, chartW / n - 10);
+  var barGap = (chartW - barW * n) / (n + 1);
+
+  // Find max NLL for scaling
+  var maxNLL = 0;
+  for (var i = 0; i < n; i++) if (data[i].nll > maxNLL) maxNLL = data[i].nll;
+  if (maxNLL < 1) maxNLL = 1;
+
+  // Draw bigram NLL bars
+  ctx.fillStyle = '#555';
+  ctx.font = '11px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('-log P(next|current)', margin.left, margin.top - 5);
+
+  for (var i = 0; i < n; i++) {
+    var x = margin.left + barGap + i * (barW + barGap);
+    var barH = (data[i].nll / maxNLL) * chartH;
+    var y = margin.top + chartH - barH;
+    var active = i < step;
+
+    ctx.fillStyle = active ? (data[i].nll > 2.5 ? '#ff6b6b' : '#4ecdc4') : '#2a2a4a';
+    ctx.fillRect(x, y, barW, barH);
+
+    // Bigram label
+    ctx.fillStyle = active ? '#ffd93d' : '#555';
+    ctx.font = '11px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('"' + data[i].from + data[i].to + '"', x + barW / 2, margin.top + chartH + 16);
+
+    if (active) {
+      // P value
+      ctx.fillStyle = '#aaa';
+      ctx.font = '9px monospace';
+      ctx.fillText('P=' + data[i].prob.toFixed(3), x + barW / 2, margin.top + chartH + 30);
+      // NLL value on bar
+      ctx.fillStyle = '#fff';
+      ctx.font = '10px monospace';
+      ctx.fillText(data[i].nll.toFixed(2), x + barW / 2, y - 6);
+    }
+  }
+
+  // Bottom: cumulative NLL
+  var bottomTop = margin.top + chartH + 50;
+  ctx.fillStyle = '#555';
+  ctx.font = '11px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Cumulative NLL (loss bar)', margin.left, bottomTop - 5);
+
+  // Max cumulative
+  var maxCum = data[n - 1].cumNLL;
+  if (maxCum < 1) maxCum = 1;
+  var cumBarH = 30;
+
+  // Background bar
+  drawRoundRect(ctx, margin.left, bottomTop, chartW, cumBarH, 6, '#1a1a2e', '#2a2a4a');
+
+  // Fill bar
+  if (step > 0) {
+    var cumVal = data[step - 1].cumNLL;
+    var fillW = (cumVal / maxCum) * chartW;
+    var fillColor = cumVal / n > 2.5 ? '#ff6b6b' : '#4ecdc4';
+    drawRoundRect(ctx, margin.left, bottomTop, Math.max(fillW, 10), cumBarH, 6, fillColor, null);
+
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 12px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('Total NLL: ' + cumVal.toFixed(2) + ' | Avg: ' + (cumVal / step).toFixed(2), margin.left + chartW / 2, bottomTop + cumBarH / 2 + 5);
+  }
+
+  // Update step display
+  var stepsEl = document.getElementById('nllSteps');
+  var html = '<div style="color:#888;font-size:0.85em;margin-bottom:8px;">Step ' + step + ' / ' + n + '</div>';
+  for (var i = 0; i < n; i++) {
+    if (i < step) {
+      html += '<span class="step-char done">' + data[i].from + '&rarr;' + data[i].to + ' (-logP=' + data[i].nll.toFixed(2) + ')</span> ';
+    } else {
+      html += '<span class="step-char pending">' + data[i].from + '&rarr;' + data[i].to + '</span> ';
+    }
+  }
+  stepsEl.innerHTML = html;
+}
+
+// ============================================================
+// VIZ 2.5: N-GRAM CONTEXT WINDOW
+// ============================================================
+var ngramN = 1;
+
+function updateNgram() {
+  ngramN = parseInt(document.getElementById('ngramSlider').value);
+  var labels = ['1 (bigram)', '2 (trigram)', '3 (4-gram)', '4 (5-gram)', '5 (6-gram)'];
+  document.getElementById('ngramVal').textContent = labels[ngramN - 1];
+  drawNgramViz();
+}
+
+// Build n-gram tables on the fly
+function buildNgramTable(n) {
+  var table = {};
+  NAMES.forEach(function(name) {
+    var padded = '';
+    for (var i = 0; i < n; i++) padded += '.';
+    padded += name + '.';
+    for (var i = 0; i < padded.length - n; i++) {
+      var context = padded.substring(i, i + n);
+      var next = padded[i + n];
+      if (!table[context]) table[context] = {};
+      if (!table[context][next]) table[context][next] = 0;
+      table[context][next]++;
+    }
+  });
+  return table;
+}
+
+function sampleFromNgram(n) {
+  var table = buildNgramTable(n);
+  var context = '';
+  for (var i = 0; i < n; i++) context += '.';
+  var name = '';
+  for (var iter = 0; iter < 20; iter++) {
+    var dist = table[context];
+    if (!dist) { name += '?'; break; }
+    var total = 0;
+    for (var c in dist) total += dist[c];
+    var r = Math.random() * total;
+    var cum = 0;
+    var chosen = '.';
+    for (var c in dist) {
+      cum += dist[c];
+      if (r < cum) { chosen = c; break; }
+    }
+    if (chosen === '.') break;
+    name += chosen;
+    context = context.substring(1) + chosen;
+  }
+  return name;
+}
+
+function generateNgramNames() {
+  var output = document.getElementById('ngramOutput');
+  output.innerHTML = '';
+  for (var i = 0; i < 10; i++) {
+    var name = sampleFromNgram(ngramN);
+    output.innerHTML += '<span class="name-tag">' + name + '</span> ';
+  }
+}
+
+function drawNgramViz() {
+  var canvas = document.getElementById('ngramCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  var margin = { top: 40, bottom: 40, left: 60, right: 40 };
+
+  // Left panel: table size info
+  var sizes = [];
+  var nonzero = [];
+  for (var n = 1; n <= 5; n++) {
+    var tableSize = Math.pow(27, n);
+    sizes.push(tableSize);
+    var table = buildNgramTable(n);
+    var count = 0;
+    for (var key in table) count++;
+    nonzero.push(count);
+  }
+
+  // Draw bar chart of table sizes (log scale)
+  var barAreaW = W / 2 - margin.left - 20;
+  var barAreaH = H - margin.top - margin.bottom;
+  var barW = barAreaW / 5 - 10;
+  var maxLog = Math.log10(sizes[4]);
+
+  ctx.fillStyle = '#888';
+  ctx.font = '13px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Table Size (log scale) vs Context Length', W / 4, 22);
+
+  for (var n = 0; n < 5; n++) {
+    var x = margin.left + n * (barW + 10);
+    var logVal = Math.log10(sizes[n]);
+    var h = (logVal / maxLog) * barAreaH;
+    var y = margin.top + barAreaH - h;
+
+    // Total size bar
+    ctx.fillStyle = n === ngramN - 1 ? '#ffd93d' : '#4ecdc488';
+    ctx.fillRect(x, y, barW, h);
+
+    // Non-zero overlay
+    var logNZ = nonzero[n] > 0 ? Math.log10(nonzero[n]) : 0;
+    var hNZ = (logNZ / maxLog) * barAreaH;
+    ctx.fillStyle = n === ngramN - 1 ? '#ff6b6b' : '#ff6b6b66';
+    ctx.fillRect(x, margin.top + barAreaH - hNZ, barW, hNZ);
+
+    // Labels
+    ctx.fillStyle = n === ngramN - 1 ? '#ffd93d' : '#aaa';
+    ctx.font = '11px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('n=' + (n + 1), x + barW / 2, margin.top + barAreaH + 16);
+
+    ctx.fillStyle = '#fff';
+    ctx.font = '9px monospace';
+    if (sizes[n] < 1000) {
+      ctx.fillText(sizes[n].toString(), x + barW / 2, y - 6);
+    } else if (sizes[n] < 1000000) {
+      ctx.fillText(Math.round(sizes[n] / 1000) + 'K', x + barW / 2, y - 6);
+    } else {
+      ctx.fillText((sizes[n] / 1000000).toFixed(1) + 'M', x + barW / 2, y - 6);
+    }
+  }
+
+  // Right panel: sparsity heatmap (mini grid)
+  var rightX = W / 2 + 20;
+  ctx.fillStyle = '#888';
+  ctx.font = '13px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Sparsity Visualization (n=' + ngramN + ')', (W / 2 + W) / 2, 22);
+
+  var table = buildNgramTable(ngramN);
+  var contexts = Object.keys(table).sort();
+  var gridSize = Math.min(30, contexts.length);
+  var cellSize = Math.min(10, (W / 2 - 60) / gridSize, barAreaH / 27);
+
+  var gridStartX = rightX + (W / 2 - 60 - gridSize * cellSize) / 2;
+  var gridStartY = margin.top + (barAreaH - 27 * cellSize) / 2;
+
+  // Draw grid - rows are contexts, columns are next chars
+  for (var r = 0; r < gridSize; r++) {
+    var context = contexts[r];
+    var dist = table[context];
+    var total = 0;
+    for (var c in dist) total += dist[c];
+
+    for (var c = 0; c < VOCAB; c++) {
+      var ch = I2C[c];
+      var count = dist[ch] || 0;
+      var intensity = total > 0 ? count / total : 0;
+      var x = gridStartX + c * cellSize;
+      var y = gridStartY + r * cellSize;
+
+      if (count > 0) {
+        var alpha = Math.min(1, intensity * 3);
+        ctx.fillStyle = 'rgba(255,217,61,' + alpha + ')';
+      } else {
+        ctx.fillStyle = '#0d0d1a';
+      }
+      ctx.fillRect(x, y, cellSize - 0.5, cellSize - 0.5);
+    }
+  }
+
+  // Sparsity stats
+  var totalPossible = sizes[ngramN - 1];
+  var observed = contexts.length;
+  var sparsity = ((1 - observed / totalPossible) * 100).toFixed(1);
+  ctx.fillStyle = '#ff6b6b';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Observed: ' + observed + ' / ' + totalPossible + ' (' + sparsity + '% empty)', (W / 2 + W) / 2, H - 15);
+
+  // Legend
+  ctx.fillStyle = '#ffd93d';
+  ctx.fillRect(margin.left, H - 18, 10, 10);
+  ctx.fillStyle = '#aaa';
+  ctx.font = '10px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Total entries', margin.left + 14, H - 9);
+  ctx.fillStyle = '#ff6b6b';
+  ctx.fillRect(margin.left + 100, H - 18, 10, 10);
+  ctx.fillStyle = '#aaa';
+  ctx.fillText('Observed (non-zero)', margin.left + 114, H - 9);
+}
+
+// ============================================================
+// VIZ 2.6: CHARACTER EMBEDDINGS
+// ============================================================
+var embState = {
+  training: false, timer: null, step: 0,
+  embeddings: null, dimIdx: 0, dims: [2, 4, 8, 16],
+  lr: 0.1
+};
+
+function initEmbeddings() {
+  var dim = embState.dims[embState.dimIdx];
+  embState.embeddings = [];
+  var r = seededRandom(12345);
+  for (var i = 0; i < VOCAB; i++) {
+    var vec = [];
+    for (var d = 0; d < dim; d++) vec.push((r() - 0.5) * 2);
+    embState.embeddings.push(vec);
+  }
+  embState.step = 0;
+}
+
+function updateEmbDim() {
+  embState.dimIdx = parseInt(document.getElementById('embDimSlider').value);
+  document.getElementById('embDimVal').textContent = embState.dims[embState.dimIdx];
+  resetEmbeddings();
+}
+
+function resetEmbeddings() {
+  if (embState.timer) { clearInterval(embState.timer); embState.timer = null; }
+  embState.training = false;
+  document.getElementById('embTrainBtn').textContent = 'Train';
+  initEmbeddings();
+  drawEmbeddings();
+}
+
+function toggleEmbTraining() {
+  if (embState.training) {
+    embState.training = false;
+    if (embState.timer) { clearInterval(embState.timer); embState.timer = null; }
+    document.getElementById('embTrainBtn').textContent = 'Train';
+  } else {
+    embState.training = true;
+    document.getElementById('embTrainBtn').textContent = 'Pause';
+    embState.timer = setInterval(function() {
+      embTrainStep();
+      drawEmbeddings();
+    }, 50);
+  }
+}
+
+function embTrainStep() {
+  // Simple training: pull embeddings of characters that appear together closer,
+  // push apart those that don't, based on bigram statistics
+  var dim = embState.dims[embState.dimIdx];
+  var emb = embState.embeddings;
+  var lr = 0.02;
+
+  // Sample a few bigrams and do gradient-like updates
+  for (var iter = 0; iter < 10; iter++) {
+    // Pick a random name
+    var name = NAMES[Math.floor(Math.random() * NAMES.length)];
+    var chars = '.' + name + '.';
+    for (var i = 0; i < chars.length - 1; i++) {
+      var c1 = C2I[chars[i]], c2 = C2I[chars[i + 1]];
+      // Pull c1 and c2 embeddings closer (attractive force for co-occurring chars)
+      for (var d = 0; d < dim; d++) {
+        var diff = emb[c2][d] - emb[c1][d];
+        emb[c1][d] += lr * diff * 0.1;
+        emb[c2][d] -= lr * diff * 0.1;
+      }
+      // Push apart from a random negative sample
+      var neg = Math.floor(Math.random() * VOCAB);
+      for (var d = 0; d < dim; d++) {
+        var diff2 = emb[neg][d] - emb[c1][d];
+        var dist = 0;
+        for (var dd = 0; dd < dim; dd++) dist += (emb[neg][dd] - emb[c1][dd]) * (emb[neg][dd] - emb[c1][dd]);
+        dist = Math.sqrt(dist) + 0.01;
+        if (dist < 2) {
+          emb[c1][d] -= lr * diff2 / dist * 0.05;
+          emb[neg][d] += lr * diff2 / dist * 0.05;
+        }
+      }
+    }
+  }
+  embState.step++;
+  document.getElementById('embStepVal').textContent = embState.step;
+}
+
+function drawEmbeddings() {
+  var canvas = document.getElementById('embCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  var emb = embState.embeddings;
+  if (!emb) return;
+  var dim = embState.dims[embState.dimIdx];
+
+  // If dim > 2, do PCA to project to 2D
+  var points2d = [];
+  if (dim === 2) {
+    for (var i = 0; i < VOCAB; i++) points2d.push([emb[i][0], emb[i][1]]);
+  } else {
+    // Simple PCA: use first two principal components via power iteration on covariance
+    // For simplicity, just use first two dimensions as a projection
+    // Actually let's do proper mean-centered projection
+    var mean = new Array(dim).fill(0);
+    for (var i = 0; i < VOCAB; i++)
+      for (var d = 0; d < dim; d++) mean[d] += emb[i][d] / VOCAB;
+    var centered = [];
+    for (var i = 0; i < VOCAB; i++) {
+      var v = [];
+      for (var d = 0; d < dim; d++) v.push(emb[i][d] - mean[d]);
+      centered.push(v);
+    }
+    // Power iteration for top 2 eigenvectors of covariance
+    var pc1 = new Array(dim).fill(0);
+    var pc2 = new Array(dim).fill(0);
+    var r = seededRandom(99);
+    for (var d = 0; d < dim; d++) { pc1[d] = r() - 0.5; pc2[d] = r() - 0.5; }
+
+    for (var iter = 0; iter < 20; iter++) {
+      // Multiply by covariance
+      var newPC = new Array(dim).fill(0);
+      for (var i = 0; i < VOCAB; i++) {
+        var dot = 0;
+        for (var d = 0; d < dim; d++) dot += centered[i][d] * pc1[d];
+        for (var d = 0; d < dim; d++) newPC[d] += centered[i][d] * dot;
+      }
+      var norm = 0;
+      for (var d = 0; d < dim; d++) norm += newPC[d] * newPC[d];
+      norm = Math.sqrt(norm) + 1e-10;
+      for (var d = 0; d < dim; d++) pc1[d] = newPC[d] / norm;
+    }
+    // Second PC: orthogonalize then iterate
+    var dot1 = 0;
+    for (var d = 0; d < dim; d++) dot1 += pc2[d] * pc1[d];
+    for (var d = 0; d < dim; d++) pc2[d] -= dot1 * pc1[d];
+    for (var iter = 0; iter < 20; iter++) {
+      var newPC = new Array(dim).fill(0);
+      for (var i = 0; i < VOCAB; i++) {
+        var dot = 0;
+        for (var d = 0; d < dim; d++) dot += centered[i][d] * pc2[d];
+        for (var d = 0; d < dim; d++) newPC[d] += centered[i][d] * dot;
+      }
+      var dot1 = 0;
+      for (var d = 0; d < dim; d++) dot1 += newPC[d] * pc1[d];
+      for (var d = 0; d < dim; d++) newPC[d] -= dot1 * pc1[d];
+      var norm = 0;
+      for (var d = 0; d < dim; d++) norm += newPC[d] * newPC[d];
+      norm = Math.sqrt(norm) + 1e-10;
+      for (var d = 0; d < dim; d++) pc2[d] = newPC[d] / norm;
+    }
+    // Project
+    for (var i = 0; i < VOCAB; i++) {
+      var x = 0, y = 0;
+      for (var d = 0; d < dim; d++) { x += centered[i][d] * pc1[d]; y += centered[i][d] * pc2[d]; }
+      points2d.push([x, y]);
+    }
+  }
+
+  // Find bounds
+  var xMin = Infinity, xMax = -Infinity, yMin = Infinity, yMax = -Infinity;
+  for (var i = 0; i < points2d.length; i++) {
+    if (points2d[i][0] < xMin) xMin = points2d[i][0];
+    if (points2d[i][0] > xMax) xMax = points2d[i][0];
+    if (points2d[i][1] < yMin) yMin = points2d[i][1];
+    if (points2d[i][1] > yMax) yMax = points2d[i][1];
+  }
+  var pad = Math.max(xMax - xMin, yMax - yMin) * 0.15 + 0.1;
+  xMin -= pad; xMax += pad; yMin -= pad; yMax += pad;
+
+  var margin = { top: 50, bottom: 40, left: 50, right: 50 };
+  var plotW = W - margin.left - margin.right;
+  var plotH = H - margin.top - margin.bottom;
+
+  // Title
+  ctx.fillStyle = '#888';
+  ctx.font = '13px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Character Embedding Space (' + dim + 'D' + (dim > 2 ? ', PCA projection' : '') + ') — Step ' + embState.step, W / 2, 25);
+
+  // Grid
+  ctx.strokeStyle = '#1a1a2e';
+  ctx.lineWidth = 1;
+  for (var i = 0; i <= 4; i++) {
+    var x = margin.left + plotW * i / 4;
+    var y = margin.top + plotH * i / 4;
+    ctx.beginPath(); ctx.moveTo(x, margin.top); ctx.lineTo(x, margin.top + plotH); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(margin.left, y); ctx.lineTo(margin.left + plotW, y); ctx.stroke();
+  }
+
+  // Draw characters
+  var vowels = 'aeiou';
+  for (var i = 0; i < VOCAB; i++) {
+    var px = margin.left + (points2d[i][0] - xMin) / (xMax - xMin) * plotW;
+    var py = margin.top + (points2d[i][1] - yMin) / (yMax - yMin) * plotH;
+    var ch = I2C[i];
+    var isVowel = vowels.indexOf(ch) >= 0;
+    var color = i === 0 ? '#ffd93d' : (isVowel ? '#ff6b6b' : '#4ecdc4');
+
+    ctx.beginPath();
+    ctx.arc(px, py, 8, 0, Math.PI * 2);
+    ctx.fillStyle = color + '44';
+    ctx.fill();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.fillStyle = color;
+    ctx.font = 'bold 12px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(ch, px, py);
+  }
+  ctx.textBaseline = 'alphabetic';
+}
+
+// Embedding hover for tooltip
+(function() {
+  var canvas = document.getElementById('embCanvas');
+  var tooltip = document.getElementById('embTooltip');
+  canvas.addEventListener('mousemove', function(e) {
+    if (!embState.embeddings) return;
+    var rect = canvas.getBoundingClientRect();
+    var scaleX = canvas.width / rect.width;
+    var scaleY = canvas.height / rect.height;
+    var mx = (e.clientX - rect.left) * scaleX;
+    var my = (e.clientY - rect.top) * scaleY;
+
+    var dim = embState.dims[embState.dimIdx];
+    // Find nearest character
+    var emb = embState.embeddings;
+    // We need the 2D projected positions - recompute quickly
+    var margin = { top: 50, bottom: 40, left: 50, right: 50 };
+    var plotW = canvas.width - margin.left - margin.right;
+    var plotH = canvas.height - margin.top - margin.bottom;
+
+    var best = -1, bestDist = Infinity;
+    for (var i = 0; i < VOCAB; i++) {
+      // Approximate: just check if mouse is near the character position
+      // We'd need the projected positions stored - for simplicity, check screen distance
+      var px, py;
+      if (dim === 2) {
+        var xMin = Infinity, xMax = -Infinity, yMin = Infinity, yMax = -Infinity;
+        for (var j = 0; j < VOCAB; j++) {
+          if (emb[j][0] < xMin) xMin = emb[j][0]; if (emb[j][0] > xMax) xMax = emb[j][0];
+          if (emb[j][1] < yMin) yMin = emb[j][1]; if (emb[j][1] > yMax) yMax = emb[j][1];
+        }
+        var pad = Math.max(xMax - xMin, yMax - yMin) * 0.15 + 0.1;
+        xMin -= pad; xMax += pad; yMin -= pad; yMax += pad;
+        px = margin.left + (emb[i][0] - xMin) / (xMax - xMin) * plotW;
+        py = margin.top + (emb[i][1] - yMin) / (yMax - yMin) * plotH;
+      } else {
+        continue; // skip tooltip for higher dims
+      }
+      var d = Math.sqrt((mx - px) * (mx - px) + (my - py) * (my - py));
+      if (d < bestDist) { bestDist = d; best = i; }
+    }
+
+    if (best >= 0 && bestDist < 30 && dim === 2) {
+      var ch = I2C[best];
+      var vec = emb[best].map(function(v) { return v.toFixed(3); }).join(', ');
+      // Find nearest neighbors
+      var dists = [];
+      for (var j = 0; j < VOCAB; j++) {
+        if (j === best) continue;
+        var d = 0;
+        for (var dd = 0; dd < dim; dd++) d += (emb[j][dd] - emb[best][dd]) * (emb[j][dd] - emb[best][dd]);
+        dists.push({ idx: j, dist: Math.sqrt(d) });
+      }
+      dists.sort(function(a, b) { return a.dist - b.dist; });
+      var nn = dists.slice(0, 3).map(function(d) { return I2C[d.idx]; }).join(', ');
+
+      tooltip.innerHTML = '<div class="tt-title">Character: "' + ch + '"</div>' +
+        'Embedding: [' + vec + ']<br>Nearest: ' + nn;
+      tooltip.style.display = 'block';
+      tooltip.style.left = (e.clientX - canvas.parentElement.getBoundingClientRect().left + 15) + 'px';
+      tooltip.style.top = (e.clientY - canvas.parentElement.getBoundingClientRect().top - 10) + 'px';
+    } else {
+      tooltip.style.display = 'none';
+    }
+  });
+  canvas.addEventListener('mouseleave', function() { tooltip.style.display = 'none'; });
+})();
+
+// ============================================================
+// VIZ 2.7: MLP LANGUAGE MODEL
+// ============================================================
+var mlpState = {
+  training: false, timer: null, step: 0,
+  contextLen: 3, embDim: 4, hiddenSize: 64,
+  // Parameters
+  C: null, // embedding table: VOCAB x embDim
+  W1: null, b1: null, // hidden layer
+  W2: null, b2: null, // output layer
+  losses: [],
+  lr: 0.01
+};
+
+function initMlpParams() {
+  var cl = parseInt(document.getElementById('mlpContext').value);
+  mlpState.contextLen = cl;
+  var ed = mlpState.embDim;
+  var hs = mlpState.hiddenSize;
+  var r = seededRandom(777);
+
+  // Embedding table
+  mlpState.C = [];
+  for (var i = 0; i < VOCAB; i++) {
+    var row = [];
+    for (var d = 0; d < ed; d++) row.push((r() - 0.5) * 0.5);
+    mlpState.C.push(row);
+  }
+
+  // Hidden layer: (cl * ed) -> hs
+  var inSize = cl * ed;
+  mlpState.W1 = [];
+  for (var i = 0; i < hs; i++) {
+    var row = [];
+    for (var j = 0; j < inSize; j++) row.push((r() - 0.5) * Math.sqrt(2.0 / inSize));
+    mlpState.W1.push(row);
+  }
+  mlpState.b1 = new Array(hs).fill(0);
+
+  // Output layer: hs -> VOCAB
+  mlpState.W2 = [];
+  for (var i = 0; i < VOCAB; i++) {
+    var row = [];
+    for (var j = 0; j < hs; j++) row.push((r() - 0.5) * Math.sqrt(2.0 / hs));
+    mlpState.W2.push(row);
+  }
+  mlpState.b2 = new Array(VOCAB).fill(0);
+
+  mlpState.losses = [];
+  mlpState.step = 0;
+}
+
+function mlpForward(context) {
+  // context: array of character indices of length contextLen
+  var cl = mlpState.contextLen;
+  var ed = mlpState.embDim;
+
+  // Embedding lookup and concatenate
+  var input = [];
+  for (var i = 0; i < cl; i++) {
+    var idx = context[i];
+    for (var d = 0; d < ed; d++) input.push(mlpState.C[idx][d]);
+  }
+
+  // Hidden layer
+  var hidden = [];
+  for (var i = 0; i < mlpState.hiddenSize; i++) {
+    var sum = mlpState.b1[i];
+    for (var j = 0; j < input.length; j++) sum += mlpState.W1[i][j] * input[j];
+    hidden.push(Math.max(0, sum)); // ReLU
+  }
+
+  // Output layer
+  var logits = [];
+  for (var i = 0; i < VOCAB; i++) {
+    var sum = mlpState.b2[i];
+    for (var j = 0; j < mlpState.hiddenSize; j++) sum += mlpState.W2[i][j] * hidden[j];
+    logits.push(sum);
+  }
+
+  // Softmax
+  var maxL = -Infinity;
+  for (var i = 0; i < logits.length; i++) if (logits[i] > maxL) maxL = logits[i];
+  var exps = [];
+  var sumExp = 0;
+  for (var i = 0; i < logits.length; i++) {
+    var e = Math.exp(logits[i] - maxL);
+    exps.push(e);
+    sumExp += e;
+  }
+  var probs = exps.map(function(e) { return e / sumExp; });
+
+  return { input: input, hidden: hidden, logits: logits, probs: probs };
+}
+
+function mlpTrainBatch() {
+  var cl = mlpState.contextLen;
+  var ed = mlpState.embDim;
+  var hs = mlpState.hiddenSize;
+  var lr = mlpState.lr;
+  var eps = 1e-5;
+
+  // Build training examples
+  var examples = [];
+  NAMES.forEach(function(name) {
+    var padded = '';
+    for (var i = 0; i < cl; i++) padded += '.';
+    padded += name + '.';
+    for (var i = 0; i < padded.length - cl; i++) {
+      var ctx = [];
+      for (var j = 0; j < cl; j++) ctx.push(C2I[padded[i + j]]);
+      var target = C2I[padded[i + cl]];
+      examples.push({ ctx: ctx, target: target });
+    }
+  });
+
+  // Mini-batch: random subset
+  var batchSize = Math.min(32, examples.length);
+  var batch = [];
+  for (var i = 0; i < batchSize; i++) {
+    batch.push(examples[Math.floor(Math.random() * examples.length)]);
+  }
+
+  // Compute loss
+  var totalLoss = 0;
+  batch.forEach(function(ex) {
+    var result = mlpForward(ex.ctx);
+    totalLoss += -Math.log(result.probs[ex.target] + 1e-10);
+  });
+  var avgLoss = totalLoss / batchSize;
+  mlpState.losses.push(avgLoss);
+
+  // Numerical gradients for a few parameters (simplified training)
+  // In practice we'd do backprop, but for the viz we use finite differences on a small subset
+  function computeBatchLoss() {
+    var loss = 0;
+    batch.forEach(function(ex) {
+      var result = mlpForward(ex.ctx);
+      loss += -Math.log(result.probs[ex.target] + 1e-10);
+    });
+    return loss / batchSize;
+  }
+
+  // Update embeddings
+  for (var vi = 0; vi < VOCAB; vi++) {
+    for (var d = 0; d < ed; d++) {
+      var orig = mlpState.C[vi][d];
+      mlpState.C[vi][d] = orig + eps;
+      var lp = computeBatchLoss();
+      mlpState.C[vi][d] = orig - eps;
+      var lm = computeBatchLoss();
+      var grad = (lp - lm) / (2 * eps);
+      mlpState.C[vi][d] = orig - lr * grad;
+    }
+  }
+
+  // Update W1, b1 (only update a random subset for speed)
+  var inSize = cl * ed;
+  for (var i = 0; i < hs; i++) {
+    // Update a few random input connections
+    for (var iter = 0; iter < 3; iter++) {
+      var j = Math.floor(Math.random() * inSize);
+      var orig = mlpState.W1[i][j];
+      mlpState.W1[i][j] = orig + eps;
+      var lp = computeBatchLoss();
+      mlpState.W1[i][j] = orig - eps;
+      var lm = computeBatchLoss();
+      mlpState.W1[i][j] = orig - lr * (lp - lm) / (2 * eps);
+    }
+    var orig = mlpState.b1[i];
+    mlpState.b1[i] = orig + eps;
+    var lp = computeBatchLoss();
+    mlpState.b1[i] = orig - eps;
+    var lm = computeBatchLoss();
+    mlpState.b1[i] = orig - lr * (lp - lm) / (2 * eps);
+  }
+
+  // Update W2, b2
+  for (var i = 0; i < VOCAB; i++) {
+    for (var iter = 0; iter < 3; iter++) {
+      var j = Math.floor(Math.random() * hs);
+      var orig = mlpState.W2[i][j];
+      mlpState.W2[i][j] = orig + eps;
+      var lp = computeBatchLoss();
+      mlpState.W2[i][j] = orig - eps;
+      var lm = computeBatchLoss();
+      mlpState.W2[i][j] = orig - lr * (lp - lm) / (2 * eps);
+    }
+    var orig = mlpState.b2[i];
+    mlpState.b2[i] = orig + eps;
+    var lp = computeBatchLoss();
+    mlpState.b2[i] = orig - eps;
+    var lm = computeBatchLoss();
+    mlpState.b2[i] = orig - lr * (lp - lm) / (2 * eps);
+  }
+
+  mlpState.step++;
+  document.getElementById('mlpStepVal').textContent = mlpState.step;
+}
+
+function toggleMlpTraining() {
+  if (mlpState.training) {
+    mlpState.training = false;
+    if (mlpState.timer) { clearInterval(mlpState.timer); mlpState.timer = null; }
+    document.getElementById('mlpTrainBtn').textContent = 'Train MLP';
+  } else {
+    if (!mlpState.C) initMlpParams();
+    mlpState.training = true;
+    document.getElementById('mlpTrainBtn').textContent = 'Pause';
+    mlpState.timer = setInterval(function() {
+      mlpTrainBatch();
+      drawMlpPipeline();
+      drawMlpLoss();
+    }, 100);
+  }
+}
+
+function resetMlp() {
+  if (mlpState.timer) { clearInterval(mlpState.timer); mlpState.timer = null; }
+  mlpState.training = false;
+  document.getElementById('mlpTrainBtn').textContent = 'Train MLP';
+  initMlpParams();
+  drawMlpPipeline();
+  drawMlpLoss();
+}
+
+function mlpGenerateName() {
+  if (!mlpState.C) initMlpParams();
+  var cl = mlpState.contextLen;
+  var context = new Array(cl).fill(0); // all start tokens
+  var name = '';
+  for (var i = 0; i < 20; i++) {
+    var result = mlpForward(context);
+    // Sample from probs
+    var r = Math.random();
+    var cum = 0;
+    var next = 0;
+    for (var j = 0; j < VOCAB; j++) {
+      cum += result.probs[j];
+      if (r < cum) { next = j; break; }
+    }
+    if (next === 0) break;
+    name += I2C[next];
+    context.shift();
+    context.push(next);
+  }
+  return name;
+}
+
+function mlpGenerate() {
+  var output = document.getElementById('mlpNames');
+  output.innerHTML = '';
+  for (var i = 0; i < 10; i++) {
+    var name = mlpGenerateName();
+    output.innerHTML += '<span class="name-tag">' + name + '</span> ';
+  }
+}
+
+function drawMlpPipeline() {
+  var canvas = document.getElementById('mlpCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  if (!mlpState.C) {
+    ctx.fillStyle = '#555';
+    ctx.font = '14px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Click "Train MLP" to start training the model', W / 2, H / 2);
+    return;
+  }
+
+  var cl = mlpState.contextLen;
+  var ed = mlpState.embDim;
+  var hs = mlpState.hiddenSize;
+
+  // Show pipeline with example
+  var exampleCtx = [0]; // start with .
+  // Pick chars from "em" for example
+  var exName = 'em';
+  exampleCtx = [];
+  var padded = '';
+  for (var i = 0; i < cl; i++) padded += '.';
+  padded += exName;
+  for (var i = 0; i < cl; i++) exampleCtx.push(C2I[padded[i]]);
+
+  var result = mlpForward(exampleCtx);
+
+  // Layout: 5 stages across the width
+  var stages = [
+    { label: 'Input Chars', x: 30, w: 100 },
+    { label: 'Embeddings', x: 170, w: 130 },
+    { label: 'Concatenated', x: 340, w: 80 },
+    { label: 'Hidden (ReLU)', x: 460, w: 120 },
+    { label: 'Softmax Output', x: 630, w: 240 }
+  ];
+
+  var stageY = 50;
+  var boxH = H - 100;
+
+  // Draw stage labels
+  stages.forEach(function(s) {
+    ctx.fillStyle = '#ffd93d';
+    ctx.font = 'bold 11px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(s.label, s.x + s.w / 2, 25);
+  });
+
+  // Stage 1: Input chars
+  for (var i = 0; i < cl; i++) {
+    var ch = I2C[exampleCtx[i]];
+    var y = stageY + 40 + i * 60;
+    drawRoundRect(ctx, stages[0].x + 20, y, 60, 40, 8, '#1a1a3e', '#ffd93d');
+    ctx.fillStyle = '#ffd93d';
+    ctx.font = 'bold 18px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('"' + ch + '"', stages[0].x + 50, y + 26);
+  }
+
+  // Arrows 1->2
+  for (var i = 0; i < cl; i++) {
+    var y = stageY + 60 + i * 60;
+    drawArrow(ctx, stages[0].x + 85, y, stages[1].x + 5, y, '#ffd93d55', 1);
+  }
+
+  // Stage 2: Embeddings
+  for (var i = 0; i < cl; i++) {
+    var y = stageY + 40 + i * 60;
+    drawRoundRect(ctx, stages[1].x, y, stages[1].w, 40, 8, '#1a1a3e', '#4ecdc4');
+    var vec = '';
+    for (var d = 0; d < Math.min(ed, 3); d++) {
+      vec += result.input[i * ed + d].toFixed(1);
+      if (d < Math.min(ed, 3) - 1) vec += ', ';
+    }
+    if (ed > 3) vec += '...';
+    ctx.fillStyle = '#4ecdc4';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('[' + vec + ']', stages[1].x + stages[1].w / 2, y + 26);
+  }
+
+  // Arrow 2->3
+  drawArrow(ctx, stages[1].x + stages[1].w + 5, stageY + 60 + (cl - 1) * 30, stages[2].x - 5, stageY + 80, '#4ecdc455', 1);
+
+  // Stage 3: Concatenated
+  drawRoundRect(ctx, stages[2].x, stageY + 50, stages[2].w, 60, 8, '#1a1a3e', '#ff6b6b');
+  ctx.fillStyle = '#ff6b6b';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('dim=' + (cl * ed), stages[2].x + stages[2].w / 2, stageY + 85);
+
+  // Arrow 3->4
+  drawArrow(ctx, stages[2].x + stages[2].w + 5, stageY + 80, stages[3].x - 5, stageY + 80, '#ff6b6b55', 1);
+
+  // Stage 4: Hidden layer
+  var numShow = Math.min(8, hs);
+  for (var i = 0; i < numShow; i++) {
+    var y = stageY + 30 + i * 45;
+    var val = result.hidden[i];
+    var active = val > 0;
+    drawRoundRect(ctx, stages[3].x + 10, y, 100, 30, 6, active ? '#1a2a1a' : '#1a1a2e', active ? '#4ecdc4' : '#2a2a4a');
+    ctx.fillStyle = active ? '#4ecdc4' : '#555';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(val.toFixed(2) + (active ? ' [ReLU]' : ' [dead]'), stages[3].x + 60, y + 20);
+  }
+  if (hs > numShow) {
+    ctx.fillStyle = '#555';
+    ctx.font = '10px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('... +' + (hs - numShow) + ' more', stages[3].x + 60, stageY + 30 + numShow * 45);
+  }
+
+  // Arrow 4->5
+  drawArrow(ctx, stages[3].x + stages[3].w + 5, stageY + 80, stages[4].x - 5, stageY + 30, '#4ecdc455', 1);
+
+  // Stage 5: Softmax output (mini bar chart)
+  var maxP = 0;
+  for (var i = 0; i < VOCAB; i++) if (result.probs[i] > maxP) maxP = result.probs[i];
+
+  var barH = boxH - 40;
+  var barW = (stages[4].w - 10) / VOCAB - 1;
+
+  // Find top 5
+  var indexed = [];
+  for (var i = 0; i < VOCAB; i++) indexed.push({ idx: i, prob: result.probs[i] });
+  indexed.sort(function(a, b) { return b.prob - a.prob; });
+
+  for (var i = 0; i < VOCAB; i++) {
+    var x = stages[4].x + 5 + i * (barW + 1);
+    var h = (result.probs[i] / maxP) * barH;
+    var y = stageY + 20 + barH - h;
+
+    var isTop = false;
+    for (var t = 0; t < 3; t++) if (indexed[t].idx === i) isTop = true;
+
+    ctx.fillStyle = isTop ? '#ffd93d' : '#4ecdc488';
+    ctx.fillRect(x, y, barW, h);
+
+    if (isTop && barW > 3) {
+      ctx.fillStyle = '#ffd93d';
+      ctx.font = '7px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(I2C[i], x + barW / 2, stageY + 20 + barH + 12);
+    }
+  }
+
+  // Show top 3 predictions
+  ctx.fillStyle = '#aaa';
+  ctx.font = '10px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Top predictions:', stages[4].x, H - 40);
+  for (var t = 0; t < 3; t++) {
+    ctx.fillStyle = '#ffd93d';
+    ctx.fillText('"' + I2C[indexed[t].idx] + '": ' + (indexed[t].prob * 100).toFixed(1) + '%', stages[4].x + (t * 80), H - 22);
+  }
+
+  // Step / loss info
+  ctx.fillStyle = '#888';
+  ctx.font = '11px Inter, sans-serif';
+  ctx.textAlign = 'right';
+  var lastLoss = mlpState.losses.length > 0 ? mlpState.losses[mlpState.losses.length - 1].toFixed(3) : '?';
+  ctx.fillText('Step: ' + mlpState.step + ' | Loss: ' + lastLoss, W - 20, H - 10);
+}
+
+function drawMlpLoss() {
+  var canvas = document.getElementById('mlpLossCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  var losses = mlpState.losses;
+  if (losses.length < 2) {
+    ctx.fillStyle = '#555';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Loss curve will appear during training', W / 2, H / 2);
+    return;
+  }
+
+  var margin = { top: 30, bottom: 30, left: 50, right: 20 };
+  var plotW = W - margin.left - margin.right;
+  var plotH = H - margin.top - margin.bottom;
+
+  // Find loss range
+  var minL = Infinity, maxL = -Infinity;
+  for (var i = 0; i < losses.length; i++) {
+    if (losses[i] < minL) minL = losses[i];
+    if (losses[i] > maxL) maxL = losses[i];
+  }
+  if (maxL - minL < 0.1) maxL = minL + 0.1;
+
+  // Title
+  ctx.fillStyle = '#888';
+  ctx.font = '11px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Training Loss (NLL)', W / 2, 15);
+
+  // Draw loss curve
+  ctx.strokeStyle = '#ffd93d';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  for (var i = 0; i < losses.length; i++) {
+    var x = margin.left + (i / (losses.length - 1)) * plotW;
+    var y = margin.top + (1 - (losses[i] - minL) / (maxL - minL)) * plotH;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // Bigram baseline
+  // Compute average bigram NLL
+  var bigramNLL = 0;
+  var bigramCount = 0;
+  NAMES.forEach(function(name) {
+    var chars = '.' + name + '.';
+    for (var i = 0; i < chars.length - 1; i++) {
+      var c1 = C2I[chars[i]], c2 = C2I[chars[i + 1]];
+      bigramNLL += -Math.log(bigramProbs[c1][c2] + 1e-10);
+      bigramCount++;
+    }
+  });
+  bigramNLL /= bigramCount;
+
+  var bigramY = margin.top + (1 - (bigramNLL - minL) / (maxL - minL)) * plotH;
+  if (bigramY >= margin.top && bigramY <= margin.top + plotH) {
+    ctx.strokeStyle = '#ff6b6b55';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(margin.left, bigramY);
+    ctx.lineTo(margin.left + plotW, bigramY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#ff6b6b';
+    ctx.font = '9px Inter, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText('Bigram NLL: ' + bigramNLL.toFixed(2), margin.left + plotW, bigramY - 4);
+  }
+
+  // Y axis labels
+  for (var i = 0; i <= 3; i++) {
+    var val = minL + (maxL - minL) * i / 3;
+    var y = margin.top + plotH - plotH * i / 3;
+    ctx.fillStyle = '#555';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(val.toFixed(2), margin.left - 5, y + 3);
+  }
+}
+
+// ============================================================
+// QUIZ DATA — 35 questions (5 per viz)
+// ============================================================
+var quizData = [
+  {
+    topic: "2.1: The Dataset — Character Frequencies",
+    questions: [
+      { q: "What does the special '.' token represent in the character-level language model?", options: ["A) A space between words", "B) The start and end of a name", "C) A missing character", "D) A punctuation mark"], correct: 1, explanation: "The '.' token is a special sentinel that marks both the beginning and end of each name. It tells the model where names start and stop, which is essential for generating complete names rather than endless character streams." },
+      { q: "What is a character-level language model trying to learn?", options: ["A) The meaning of words", "B) The probability of the next character given the previous characters", "C) How to spell correctly", "D) The grammar of English"], correct: 1, explanation: "A character-level language model learns P(next_char | previous_chars). Given what it has seen so far, it predicts what character comes next. This is the fundamental task of all language models, whether at the character, subword, or word level." },
+      { q: "Why are characters like 'a', 'e', 'i' much more frequent than 'x', 'z', 'q' in English names?", options: ["A) They were added to the alphabet first", "B) Vowels appear in nearly every syllable, making them statistically dominant", "C) The dataset is biased", "D) Consonants are optional in names"], correct: 1, explanation: "English (and most languages) requires vowels in nearly every syllable. Since names are composed of syllables, vowels like 'a', 'e', 'i' appear far more frequently than rare consonants like 'x', 'z', 'q'." },
+      { q: "If we have 50 training names with average length 5, approximately how many bigrams (character pairs) do we extract?", options: ["A) 50", "B) 250", "C) 350 (including start/end tokens)", "D) 500"], correct: 2, explanation: "Each name of length L produces L+1 bigrams (including .→first and last→.). With 50 names of average length 5, that's approximately 50 * (5+1) = 300-350 bigrams. The start/end tokens add one extra pair per name." },
+      { q: "Why is character-level modeling pedagogically useful even though production LLMs use subword tokens?", options: ["A) It is faster to train", "B) The vocabulary is small (27 tokens), so every detail is visible and debuggable", "C) Character-level models are more accurate", "D) Subword tokens are obsolete"], correct: 1, explanation: "With only 27 tokens (26 letters + '.'), you can visualize the entire probability distribution, inspect every matrix entry, and understand exactly what the model has learned. The same principles (next-token prediction, softmax, NLL loss) apply identically to larger vocabularies." }
+    ]
+  },
+  {
+    topic: "2.2: Bigram Frequency Matrix",
+    questions: [
+      { q: "What does entry (i, j) in the bigram count matrix represent?", options: ["A) The probability of character i", "B) How many times character j appeared after character i in the training data", "C) The distance between characters i and j", "D) Whether characters i and j are similar"], correct: 1, explanation: "Entry (i, j) counts how many times character j immediately follows character i across all training names. For example, if 'th' appears 45 times in the dataset, the cell (t, h) contains 45." },
+      { q: "How do you convert the count matrix into a probability matrix?", options: ["A) Divide each entry by the total count in the matrix", "B) Divide each entry by its row sum (normalize each row independently)", "C) Take the square root of each entry", "D) Divide each entry by 27"], correct: 1, explanation: "Each row represents a conditional distribution P(next | current). To get valid probabilities, divide each entry by its row sum so that each row sums to 1. This is row-wise normalization, also called maximum likelihood estimation." },
+      { q: "Why is the bigram model called a 'first-order Markov model'?", options: ["A) Because it was invented first", "B) Because it assumes the next character depends only on the immediately preceding character", "C) Because it uses one hidden layer", "D) Because it processes names in first-to-last order"], correct: 1, explanation: "The Markov property states that the future depends only on the present, not the full history. A first-order Markov model conditions on exactly one previous token: P(next | current). A second-order model would condition on the last two tokens." },
+      { q: "What does smoothing (adding 1 to all counts) accomplish?", options: ["A) It makes the model more accurate", "B) It ensures no bigram has zero probability, preventing log(0) = -infinity", "C) It speeds up training", "D) It reduces the matrix size"], correct: 1, explanation: "Without smoothing, any bigram not seen in training has probability 0. When we encounter it at test time, log(0) = -infinity, making the loss infinite. Adding 1 to all counts (Laplace smoothing) ensures every bigram has at least a small positive probability." },
+      { q: "How many parameters does the bigram model have?", options: ["A) 27", "B) 27 x 27 = 729", "C) 27 x 26 = 702 (since each row must sum to 1)", "D) 52"], correct: 2, explanation: "The bigram model is a 27x27 matrix, but since each row is a probability distribution that must sum to 1, one entry per row is determined by the others. So the true degrees of freedom are 27 * 26 = 702. However, the full table has 729 entries." }
+    ]
+  },
+  {
+    topic: "2.3: Sampling from the Bigram Model",
+    questions: [
+      { q: "What happens when temperature approaches 0?", options: ["A) The output becomes completely random", "B) The model always picks the most probable next character (argmax/greedy decoding)", "C) The model stops generating", "D) All characters become equally likely"], correct: 1, explanation: "As temperature approaches 0, the softmax distribution becomes infinitely sharp — all probability mass concentrates on the single most likely character. This is equivalent to always picking argmax, producing deterministic but repetitive output." },
+      { q: "What happens when temperature is very high (e.g., 3.0)?", options: ["A) The model generates perfect names", "B) The distribution flattens toward uniform, producing more random/diverse output", "C) The model generates longer names", "D) Training speed increases"], correct: 1, explanation: "High temperature divides the logits by a large number before softmax, making all probabilities more similar. In the extreme, all 27 characters become equally likely (~3.7% each), producing random gibberish because the model's learned preferences are suppressed." },
+      { q: "In the sampling process, what triggers the end of a generated name?", options: ["A) After exactly 5 characters", "B) When the '.' (end) token is sampled", "C) When probability drops below a threshold", "D) After a fixed number of steps"], correct: 1, explanation: "Generation starts from '.' (start token) and continues sampling character by character until '.' is sampled again as the next character. This means names can be of variable length — the model learns when names typically end." },
+      { q: "Why do most names generated by the bigram model look like gibberish?", options: ["A) The temperature is too high", "B) The model only sees one character of context, which is insufficient to capture real name patterns", "C) The dataset is too small", "D) The random number generator is broken"], correct: 1, explanation: "Bigrams only condition on one previous character. Real names have patterns spanning 3-5+ characters (e.g., 'tion', 'ley', 'anna'). With only one character of context, the model cannot capture these longer patterns, producing mostly incoherent sequences." },
+      { q: "Temperature scaling modifies the logits as log(P)/tau before softmax. What is tau mathematically doing?", options: ["A) Scaling the learning rate", "B) Controlling the entropy (uncertainty) of the output distribution", "C) Changing the vocabulary size", "D) Adding noise to the weights"], correct: 1, explanation: "Temperature tau directly controls the entropy of the softmax output. Low tau = low entropy (confident, peaked distribution). High tau = high entropy (uncertain, flat distribution). It is a post-hoc way to trade off diversity vs. quality at inference time." }
+    ]
+  },
+  {
+    topic: "2.4: Measuring Quality — Negative Log-Likelihood",
+    questions: [
+      { q: "What does a lower NLL indicate about the model?", options: ["A) The model is worse", "B) The model assigns higher probability to the training data (better fit)", "C) The model is overfitting", "D) The model has more parameters"], correct: 1, explanation: "NLL = -average(log P(data)). Lower NLL means higher probability assigned to the data, which means the model's predictions better match reality. A perfect model would assign probability 1 to each correct next character, giving NLL = 0." },
+      { q: "For a uniform random model over 27 characters, what is the NLL?", options: ["A) 0", "B) 1.0", "C) log(27) approximately 3.30", "D) 27"], correct: 2, explanation: "A uniform model assigns P = 1/27 to every character. NLL = -log(1/27) = log(27) approximately 3.30. This is the worst possible NLL for a model that at least assigns non-zero probability to every character. Any trained model should do better than this baseline." },
+      { q: "What is the relationship between NLL and perplexity?", options: ["A) Perplexity = NLL squared", "B) Perplexity = exp(NLL)", "C) Perplexity = 1/NLL", "D) They are unrelated"], correct: 1, explanation: "Perplexity = exp(NLL). It can be interpreted as the effective number of equally likely choices the model is considering at each step. A uniform model over 27 chars has perplexity 27. A well-trained model might have perplexity 8-12, meaning it has effectively narrowed down to 8-12 plausible next characters." },
+      { q: "Why does 'xzqw' have much higher NLL than 'anna' under the bigram model?", options: ["A) It has more characters", "B) The bigrams 'xz', 'zq', 'qw' are extremely rare in English names, so their probabilities are near zero", "C) The model has not been trained on 'x'", "D) 'anna' is in the training set"], correct: 1, explanation: "The bigrams in 'xzqw' (like 'xz' and 'zq') almost never appear in English names, so the model assigns them very low probability. Since NLL = -log(P), low probability means high NLL. Meanwhile, 'anna' contains common bigrams like 'an', 'nn', 'na' that have high probability." },
+      { q: "NLL is equivalent to which common loss function used in classification?", options: ["A) Mean Squared Error", "B) Cross-entropy loss", "C) Hinge loss", "D) Huber loss"], correct: 1, explanation: "NLL and cross-entropy are mathematically identical for categorical distributions. Cross-entropy = -sum(target * log(predicted)). For one-hot targets (as in next-character prediction), this reduces to -log(P(correct_class)), which is exactly NLL." }
+    ]
+  },
+  {
+    topic: "2.5: Beyond Bigrams — N-gram Context Window",
+    questions: [
+      { q: "How many entries does a 5-gram table have for a 27-character vocabulary?", options: ["A) 27 * 5 = 135", "B) 27^5 = 14,348,907", "C) 5^27", "D) 27 + 5 = 32"], correct: 1, explanation: "An n-gram table needs one entry for every possible context of length n. With 27 characters and context length 5, there are 27^5 = 14,348,907 possible contexts. Each maps to a distribution over 27 next characters, so the full table has ~387 million entries." },
+      { q: "What is the 'curse of dimensionality' in the context of n-gram models?", options: ["A) The model becomes too slow to train", "B) The number of possible n-grams grows exponentially, but training data grows linearly, so most entries are unseen", "C) The embeddings become too high-dimensional", "D) The loss function has too many local minima"], correct: 1, explanation: "As context length n increases, the number of possible n-grams grows as 27^n (exponentially), while our training data is fixed. Most possible n-grams never appear in the training data, leaving most table entries at zero. The model cannot make predictions for these unseen contexts." },
+      { q: "Why does increasing context length improve name quality (at least initially)?", options: ["A) More parameters always means better models", "B) Longer context captures longer-range patterns (e.g., 'anna' requires seeing 'nn' follows 'a' in context of 'an')", "C) The table becomes more sparse", "D) Training becomes faster"], correct: 1, explanation: "Real name patterns span multiple characters. A bigram model cannot distinguish P(next | 'an') from P(next | 'en'). A trigram model sees two characters of context, capturing patterns like 'ann' → likely 'a' or 'e'. More context means more pattern discrimination." },
+      { q: "What is the fundamental limitation that n-gram models cannot overcome?", options: ["A) They are too slow", "B) They cannot generalize to unseen contexts because lookup tables have no notion of similarity", "C) They require too much memory", "D) They cannot handle uppercase letters"], correct: 1, explanation: "A lookup table treats every context as completely independent. Even if 'ann' and 'enn' are similar contexts, an n-gram model cannot share information between them. If 'ann' was seen 100 times but 'enn' was never seen, the model knows nothing about 'enn'. Neural networks solve this through learned representations." },
+      { q: "What motivated the transition from n-gram to neural language models historically?", options: ["A) GPUs became available", "B) The need to generalize to unseen word/character combinations using continuous representations", "C) N-gram models were too accurate", "D) Researchers wanted more complex models"], correct: 1, explanation: "Bengio et al. (2003) explicitly motivated neural LMs as a solution to the curse of dimensionality in n-gram models. By representing words/characters as continuous vectors (embeddings), the model can generalize: similar contexts produce similar predictions, even if one was never seen in training." }
+    ]
+  },
+  {
+    topic: "2.6: Character Embeddings",
+    questions: [
+      { q: "What is the key advantage of embeddings over one-hot representations?", options: ["A) Embeddings use less memory", "B) Embeddings encode similarity — characters in similar contexts get similar vectors", "C) Embeddings are faster to compute", "D) Embeddings are always 2-dimensional"], correct: 1, explanation: "One-hot vectors are orthogonal: every character is equally 'different' from every other (cosine similarity = 0). Embeddings learn a continuous space where characters that appear in similar contexts (like vowels 'a','e','i') end up close together, enabling generalization." },
+      { q: "Why do vowels tend to cluster together in the learned embedding space?", options: ["A) They are programmed to cluster", "B) They appear in similar contexts (between consonants, in syllable nuclei), so gradient descent pulls their embeddings together", "C) Vowels have similar ASCII codes", "D) The PCA projection creates artificial clusters"], correct: 1, explanation: "The distributional hypothesis: tokens that appear in similar contexts develop similar representations. Vowels all appear in similar positions (between consonants, as syllable nuclei), so the training signal pushes their embeddings to similar locations. The network discovers this structure without being told." },
+      { q: "If the embedding dimension is 16 but we visualize in 2D, what technique is used?", options: ["A) We just use the first 2 dimensions", "B) PCA (Principal Component Analysis) projects high-dimensional vectors to 2D while preserving maximum variance", "C) We average all 16 dimensions into 2", "D) Random projection"], correct: 1, explanation: "PCA finds the two directions in 16D space along which the data varies the most, then projects onto those axes. This preserves as much structure as possible in the 2D view. t-SNE is another popular technique that better preserves local neighborhoods." },
+      { q: "What is the embedding table in terms of linear algebra?", options: ["A) A bias vector", "B) A matrix of shape (vocab_size x embedding_dim) where row i is the embedding for character i", "C) A square matrix", "D) A diagonal matrix"], correct: 1, explanation: "The embedding table C is a matrix of shape (27 x d) where d is the embedding dimension. Looking up the embedding for character i is equivalent to multiplying a one-hot vector by this matrix: e_i = C[i] = onehot(i) * C. This is why embedding lookup is just a matrix row selection." },
+      { q: "How many learnable parameters are in an embedding table with 27 characters and dimension 8?", options: ["A) 27", "B) 8", "C) 27 x 8 = 216", "D) 27 + 8 = 35"], correct: 2, explanation: "The embedding table has one d-dimensional vector per character. With 27 characters and dimension 8, that's 27 * 8 = 216 learnable parameters. These are trained jointly with the rest of the network via backpropagation." }
+    ]
+  },
+  {
+    topic: "2.7: MLP Language Model",
+    questions: [
+      { q: "What is the full pipeline of the MLP language model?", options: ["A) Input -> Hidden -> Output", "B) Input chars -> Embedding lookup -> Concatenate -> Hidden layer (ReLU) -> Output layer -> Softmax -> Next char probabilities", "C) Input -> Attention -> Output", "D) Input -> Convolution -> Pooling -> Output"], correct: 1, explanation: "The MLP LM pipeline is: (1) Look up embedding for each input character, (2) Concatenate all context embeddings into one long vector, (3) Linear transform + ReLU activation (hidden layer), (4) Linear transform to logits (output layer), (5) Softmax to get probabilities over 27 characters." },
+      { q: "Why is concatenation of context embeddings important?", options: ["A) It reduces the dimensionality", "B) It creates a fixed-size input vector that encodes all context characters, allowing the hidden layer to detect patterns across positions", "C) It makes training faster", "D) It is not important, just convenient"], correct: 1, explanation: "The hidden layer needs a fixed-size input. By concatenating context embeddings (e.g., 3 chars x 4 dims = 12-dim input), we create a single vector that encodes which character is at which position. The hidden layer can then learn to detect patterns like 'a at position 1 AND n at position 2'." },
+      { q: "What role does ReLU play in the hidden layer?", options: ["A) It normalizes the output", "B) It introduces nonlinearity, allowing the model to learn non-linear patterns that a single linear layer cannot express", "C) It speeds up computation", "D) It prevents overfitting"], correct: 1, explanation: "Without nonlinearity, stacking linear layers would collapse to a single linear transformation (matrix multiplication is associative). ReLU(x) = max(0, x) introduces nonlinearity, enabling the network to learn complex, non-linear relationships between input characters and output predictions." },
+      { q: "Why does the MLP model achieve lower NLL than the bigram model?", options: ["A) It has more data", "B) It uses more context characters AND can generalize to unseen contexts via learned embeddings", "C) It uses a better random seed", "D) It trains for more epochs"], correct: 1, explanation: "The MLP model has two advantages over bigrams: (1) It sees multiple characters of context (e.g., 3 instead of 1), capturing longer patterns. (2) Through embeddings, it can generalize — even if it never saw 'xyz' in training, it can make reasonable predictions if 'x', 'y', 'z' have similar embeddings to characters it did see in that context." },
+      { q: "This MLP architecture was introduced by which landmark paper?", options: ["A) Attention Is All You Need (2017)", "B) Bengio et al. 'A Neural Probabilistic Language Model' (2003)", "C) Word2Vec (2013)", "D) GPT-3 (2020)"], correct: 1, explanation: "Bengio, Ducharme, Vincent, and Jauvin published 'A Neural Probabilistic Language Model' in 2003, introducing exactly this architecture: learned word embeddings + concatenation + hidden layer + softmax. It was the foundation for all neural language models that followed, including the transformer-based models we use today." }
+    ]
+  }
+];
+
+// ============================================================
+// QUIZ RENDERING
+// ============================================================
+var topicScores = {};
+var totalCorrect = 0;
+var totalAnswered = 0;
+var totalQ = 35;
+
+quizData.forEach(function(t, ti) { topicScores[ti] = { correct: 0, answered: 0, total: t.questions.length }; });
+
+function buildQuiz() {
+  var container = document.getElementById('quizQuestions');
+  container.innerHTML = '';
+  quizData.forEach(function(topic, ti) {
+    var topicDiv = document.createElement('div');
+    topicDiv.className = 'quiz-topic';
+    var header = document.createElement('div');
+    header.className = 'quiz-topic-header';
+    header.innerHTML = '<h3>' + topic.topic + '</h3><span class="quiz-topic-score" id="topicScore' + ti + '">0 / ' + topic.questions.length + '</span>';
+    header.onclick = function() {
+      var qDiv = topicDiv.querySelector('.quiz-topic-questions');
+      qDiv.classList.toggle('open');
+    };
+    topicDiv.appendChild(header);
+    var questionsDiv = document.createElement('div');
+    questionsDiv.className = 'quiz-topic-questions';
+
+    topic.questions.forEach(function(question, qi) {
+      var qDiv = document.createElement('div');
+      qDiv.className = 'quiz-question';
+      qDiv.innerHTML = '<h4>Q' + (qi+1) + ': ' + question.q + '</h4>';
+      question.options.forEach(function(opt, oi) {
+        var btn = document.createElement('button');
+        btn.className = 'quiz-option';
+        btn.textContent = opt;
+        btn.onclick = function() { checkAnswer(ti, qi, oi, qDiv); };
+        btn.id = 'qopt_' + ti + '_' + qi + '_' + oi;
+        qDiv.appendChild(btn);
+      });
+      var expDiv = document.createElement('div');
+      expDiv.className = 'quiz-explanation';
+      expDiv.id = 'qexp_' + ti + '_' + qi;
+      expDiv.textContent = question.explanation;
+      qDiv.appendChild(expDiv);
+      questionsDiv.appendChild(qDiv);
+    });
+    topicDiv.appendChild(questionsDiv);
+    container.appendChild(topicDiv);
+  });
+}
+
+function checkAnswer(ti, qi, oi, qDiv) {
+  var question = quizData[ti].questions[qi];
+  var buttons = qDiv.querySelectorAll('.quiz-option');
+  var expDiv = document.getElementById('qexp_' + ti + '_' + qi);
+  if (buttons[0].disabled) return;
+  buttons.forEach(function(b, i) {
+    b.disabled = true;
+    if (i === question.correct) b.classList.add('correct');
+    if (i === oi && oi !== question.correct) b.classList.add('wrong');
+  });
+  totalAnswered++;
+  topicScores[ti].answered++;
+  if (oi === question.correct) {
+    totalCorrect++;
+    topicScores[ti].correct++;
+    expDiv.className = 'quiz-explanation show correct-exp';
+  } else {
+    expDiv.className = 'quiz-explanation show wrong-exp';
+  }
+  document.getElementById('quizScore').textContent = totalCorrect;
+  document.getElementById('topicScore' + ti).textContent = topicScores[ti].correct + ' / ' + topicScores[ti].total;
+  document.getElementById('quizProgressBar').style.width = (totalAnswered / totalQ * 100) + '%';
+}
+
+function resetQuiz() {
+  totalCorrect = 0;
+  totalAnswered = 0;
+  quizData.forEach(function(t, ti) { topicScores[ti] = { correct: 0, answered: 0, total: t.questions.length }; });
+  buildQuiz();
+  document.getElementById('quizScore').textContent = '0';
+  document.getElementById('quizProgressBar').style.width = '0%';
+}
+
+function toggleQuiz() {
+  var section = document.getElementById('quizSection');
+  if (section.style.display === 'none') {
+    section.style.display = 'block';
+    section.scrollIntoView({ behavior: 'smooth' });
+  } else {
+    section.style.display = 'none';
+  }
+}
+
+// ============================================================
+// INITIALIZATION
+// ============================================================
+window.addEventListener('DOMContentLoaded', function() {
+  buildNameList();
+  drawFreqChart();
+  drawBigramMatrix();
+  drawSamplingChart(null, null, null);
+  prepareNLL();
+  drawNLL();
+  drawNgramViz();
+  initEmbeddings();
+  drawEmbeddings();
+  initMlpParams();
+  drawMlpPipeline();
+  drawMlpLoss();
+  buildQuiz();
+});
+
+</script>
+</body>
+</html>

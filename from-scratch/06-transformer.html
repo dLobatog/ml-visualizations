@@ -1,0 +1,2164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 6: Transformer from Scratch</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #0a0a0f; color: #e0e0e0; line-height: 1.6; }
+  .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; text-align: center; border-bottom: 1px solid #2a2a4a; }
+  .header h1 { font-size: 2.2em; background: linear-gradient(90deg, #01a3a4, #56d6d6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+  .header p { color: #888; font-size: 1.1em; }
+  .header a { color: #01a3a4; text-decoration: none; font-size: 0.9em; }
+  .header a:hover { text-decoration: underline; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+
+  /* Minimap */
+  .minimap { position: sticky; top: 0; z-index: 100; background: #0a0a0fee; backdrop-filter: blur(10px); border-bottom: 1px solid #2a2a4a; padding: 10px 20px; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }
+  .mm-step { padding: 4px 12px; border-radius: 6px; font-size: 0.75em; font-weight: 600; cursor: pointer; transition: all 0.2s; background: #151530; color: #555; border: 1px solid #2a2a4a; white-space: nowrap; }
+  .mm-step:hover { border-color: #01a3a4; color: #01a3a4; }
+  .mm-step.active { background: rgba(1,163,164,0.2); color: #01a3a4; border-color: rgba(1,163,164,0.5); }
+  .mm-step.done { background: rgba(1,163,164,0.1); color: #01a3a4; border-color: rgba(1,163,164,0.3); }
+  .mm-arrow { color: #333; font-size: 0.8em; }
+
+  .viz-section { background: #12121f; border: 1px solid #2a2a4a; border-radius: 16px; padding: 32px; margin-bottom: 40px; }
+  .viz-section h2 { font-size: 1.5em; color: #01a3a4; margin-bottom: 8px; }
+  .viz-section .subtitle { color: #888; margin-bottom: 24px; font-size: 0.95em; }
+  .viz-canvas { background: #0d0d1a; border-radius: 12px; position: relative; overflow: hidden; }
+  canvas { display: block; width: 100%; }
+  .controls { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; align-items: center; }
+  .control-group { display: flex; flex-direction: column; gap: 4px; }
+  .control-group label { font-size: 0.85em; color: #aaa; }
+  .control-group input[type="range"] { width: 160px; accent-color: #01a3a4; }
+  .control-group .value { font-size: 0.85em; color: #01a3a4; font-family: monospace; }
+  .btn { padding: 8px 16px; border: 1px solid #01a3a4; background: transparent; color: #01a3a4; border-radius: 8px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
+  .btn:hover { background: #01a3a422; }
+  .btn.active { background: #01a3a433; }
+  .tab-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+
+  .insight-box { background: linear-gradient(135deg, #1a1a3e 0%, #151530 100%); border-left: 4px solid #01a3a4; padding: 20px 24px; margin-top: 20px; border-radius: 0 12px 12px 0; font-size: 0.92em; color: #ccc; line-height: 1.8; }
+  .insight-box strong { color: #01a3a4; font-size: 1.05em; }
+  .insight-box .formula { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 12px 18px; margin: 12px 0; font-family: 'Courier New', monospace; color: #e8e8ff; font-size: 1.05em; text-align: center; letter-spacing: 0.5px; line-height: 1.9; }
+  .insight-box .key-point { display: flex; flex-wrap: wrap; gap: 4px 8px; margin: 8px 0; padding: 4px 0; align-items: baseline; }
+  .insight-box .key-point .label { color: #01a3a4; font-weight: 600; min-width: 160px; flex-shrink: 0; }
+  .insight-box .key-point .desc { color: #ddd; }
+  .insight-box .interview-tip { background: rgba(100, 255, 100, 0.05); border: 1px solid rgba(100, 255, 100, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #b0ffb0; font-size: 0.93em; line-height: 1.6; }
+  .insight-box .interview-tip::before { content: '\1F4A1  Interview Tip: '; font-weight: 700; color: #7fff7f; }
+  .insight-box .mnemonic { background: rgba(255, 150, 255, 0.05); border: 1px solid rgba(255, 150, 255, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #ffb0ff; font-size: 0.93em; line-height: 1.6; }
+  .insight-box .mnemonic::before { content: '\1F9E0  Remember: '; font-weight: 700; color: #ff7fff; }
+  .insight-box .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+  .insight-box .comparison .option { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 10px 14px; }
+  .insight-box .comparison .option .opt-title { color: #01a3a4; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
+  .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
+  .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
+
+  .katex { color: #e8e8ff; font-size: 1.1em; }
+  .formula .katex { font-size: 1.2em; }
+
+  .narrative-note { background: rgba(255,217,61,0.05); border-left: 3px solid #ffd93d; padding: 14px 18px; margin: 16px 0; border-radius: 0 8px 8px 0; font-size: 0.9em; color: #ccb866; }
+  .narrative-note strong { color: #ffd93d; }
+
+  select { padding: 6px 12px; border: 1px solid #2a2a4a; background: #0d0d1a; color: #e0e0e0; border-radius: 6px; font-size: 0.9em; cursor: pointer; }
+  select:focus { outline: none; border-color: #01a3a4; }
+
+  input[type="text"] { padding: 8px 14px; border: 1px solid #2a2a4a; background: #0d0d1a; color: #e0e0e0; border-radius: 8px; font-size: 0.95em; font-family: inherit; width: 100%; }
+  input[type="text"]:focus { outline: none; border-color: #01a3a4; }
+
+#quizToggle{position:fixed;top:20px;right:20px;z-index:1000;padding:12px 20px;background:#01a3a4;color:#0a0a0f;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:1em;box-shadow:0 4px 15px rgba(0,0,0,0.3);transition:transform 0.2s}
+#quizToggle:hover{transform:scale(1.05)}
+#quizSection{background:#0a0a0f;border-top:2px solid #01a3a4;padding:40px 20px;margin-top:40px}
+.quiz-container{max-width:900px;margin:0 auto}
+.quiz-topic{margin-bottom:30px}
+.quiz-topic-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:10px;cursor:pointer;margin-bottom:12px;user-select:none}
+.quiz-topic-header h3{color:#01a3a4;margin:0;font-size:1.15em}
+.quiz-topic-header:hover{background:#1f1f3a}
+.quiz-topic-score{color:#888;font-size:0.95em}
+.quiz-topic-questions{display:none}
+.quiz-topic-questions.open{display:block}
+.quiz-question{background:#12121f;border:1px solid #2a2a4a;border-radius:12px;padding:24px;margin-bottom:16px}
+.quiz-question h4{color:#e0e0e0;margin-bottom:16px;font-size:1.05em;line-height:1.5}
+.quiz-option{display:block;width:100%;padding:12px 16px;margin:8px 0;background:#0d0d1a;border:1px solid #2a2a4a;border-radius:8px;color:#e0e0e0;cursor:pointer;text-align:left;font-size:0.95em;transition:all 0.2s;font-family:inherit}
+.quiz-option:hover:not(:disabled){border-color:#01a3a4;background:#1a1a3e}
+.quiz-option.correct{background:#1a3a2a !important;border-color:#2ecc71 !important;color:#2ecc71 !important}
+.quiz-option.wrong{background:#3a1a1a !important;border-color:#e74c3c !important;color:#e74c3c !important}
+.quiz-option.reveal{border-color:#2ecc71 !important;color:#2ecc71 !important}
+.quiz-option:disabled{cursor:default}
+.quiz-explanation{margin-top:12px;padding:14px 18px;border-radius:8px;font-size:0.93em;line-height:1.6;display:none}
+.quiz-explanation.show{display:block}
+.quiz-explanation.correct-exp{border-left:4px solid #2ecc71;background:rgba(46,204,113,0.08);color:#b0ffb0}
+.quiz-explanation.wrong-exp{border-left:4px solid #e74c3c;background:rgba(231,76,60,0.08);color:#ffb0b0}
+.quiz-score{text-align:center;font-size:1.5em;color:#01a3a4;margin-bottom:30px}
+.quiz-actions{text-align:center;margin-top:30px;margin-bottom:20px}
+.quiz-actions button{padding:10px 24px;margin:0 8px;border-radius:8px;border:1px solid #01a3a4;background:transparent;color:#01a3a4;cursor:pointer;font-size:1em}
+.quiz-actions button:hover{background:rgba(1,163,164,0.1)}
+.quiz-progress{height:4px;background:#1a1a2e;border-radius:2px;margin-bottom:20px;overflow:hidden}
+.quiz-progress-bar{height:100%;background:#01a3a4;border-radius:2px;transition:width 0.3s}
+
+.break-toggle { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border: 1px solid #e74c3c; background: transparent; color: #e74c3c; border-radius: 8px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
+.break-toggle:hover { background: rgba(231,76,60,0.15); }
+.break-toggle.broken { background: rgba(231,76,60,0.25); border-color: #ff4444; color: #ff4444; }
+
+.legend { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.85em; color: #ccc; }
+.legend-dot { width: 12px; height: 12px; border-radius: 50%; }
+
+.token-box { display: inline-block; padding: 4px 10px; margin: 3px 2px; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 0.95em; cursor: default; transition: all 0.2s; }
+.token-box:hover { transform: translateY(-2px); }
+
+.heatmap-cell { display: inline-block; width: 22px; height: 22px; margin: 1px; border-radius: 3px; font-size: 0.6em; text-align: center; line-height: 22px; color: rgba(255,255,255,0.7); }
+
+.flow-box { background: #1a1a3e; border: 1px solid #3a3a6a; border-radius: 8px; padding: 10px 16px; margin: 6px 0; display: flex; align-items: center; gap: 12px; transition: all 0.3s; }
+.flow-box.active-step { border-color: #01a3a4; background: rgba(1,163,164,0.1); box-shadow: 0 0 12px rgba(1,163,164,0.2); }
+.flow-box .step-label { color: #01a3a4; font-weight: 600; font-size: 0.85em; min-width: 140px; }
+.flow-box .step-shape { color: #888; font-family: monospace; font-size: 0.8em; }
+.flow-arrow { text-align: center; color: #01a3a4; font-size: 1.2em; margin: 2px 0; }
+
+.prob-bar-container { display: flex; align-items: center; gap: 8px; margin: 3px 0; }
+.prob-bar-label { font-family: monospace; font-size: 0.85em; color: #ccc; min-width: 80px; text-align: right; }
+.prob-bar { height: 20px; border-radius: 4px; transition: width 0.3s; min-width: 2px; }
+.prob-bar-value { font-family: monospace; font-size: 0.8em; color: #888; min-width: 50px; }
+
+.arch-box { background: #1a1a3e; border: 2px solid #3a3a6a; border-radius: 10px; padding: 12px 18px; text-align: center; font-weight: 600; font-size: 0.9em; transition: all 0.3s; cursor: pointer; }
+.arch-box:hover { border-color: #01a3a4; transform: scale(1.02); }
+.arch-box .ch-ref { font-size: 0.7em; color: #888; font-weight: 400; display: block; margin-top: 4px; }
+
+.vocab-search { display: flex; gap: 8px; margin: 12px 0; align-items: center; }
+.vocab-search input { flex: 1; max-width: 300px; }
+.vocab-results { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; max-height: 120px; overflow-y: auto; padding: 8px; background: #0d0d1a; border-radius: 8px; }
+.vocab-item { background: #1a1a3e; border: 1px solid #2a2a4a; border-radius: 6px; padding: 4px 10px; font-family: monospace; font-size: 0.8em; color: #ccc; }
+.vocab-item .vid { color: #01a3a4; font-weight: 600; }
+
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '\\(', right: '\\)', display: false}]});"></script>
+</head>
+<body>
+<button id="quizToggle" onclick="toggleQuiz()">&#x1F9E0; Quiz Mode</button>
+
+<div class="header">
+  <a href="../index.html">&larr; Back to Index</a>
+  <h1>Chapter 6: Transformer from Scratch</h1>
+  <p>Assemble everything into a complete, working transformer &mdash; from raw text to generated output</p>
+</div>
+
+<div class="minimap" id="minimap">
+  <span class="mm-step active" data-section="viz61" onclick="scrollToViz('viz61')">1. Tokenizer</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz62" onclick="scrollToViz('viz62')">2. Embeddings</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz63" onclick="scrollToViz('viz63')">3. 1 Block</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz64" onclick="scrollToViz('viz64')">4. N Blocks</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz65" onclick="scrollToViz('viz65')">5. Output Head</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz66" onclick="scrollToViz('viz66')">6. Generation</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz67" onclick="scrollToViz('viz67')">7. Training</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz68" onclick="scrollToViz('viz68')">8. Full Arch</span>
+</div>
+
+<div class="container">
+
+<!-- ============================================================ -->
+<!-- VIZ 6.1: TOKENIZATION -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz61">
+  <h2>6.1 Tokenization: From Text to Numbers</h2>
+  <p class="subtitle">Before a transformer sees any text, it must be broken into tokens &mdash; subword units with integer IDs. Type any text and watch BPE tokenization in action.</p>
+  <div class="narrative-note"><strong>Callback to Ch 2:</strong> In makemore, our tokens were single characters (a-z). Real LLMs use subword tokens &mdash; same idea, bigger vocabulary (~50k tokens), much shorter sequences.</div>
+  <div style="margin-bottom:16px;">
+    <input type="text" id="tokenInput" value="The transformer architecture is unbelievably powerful!" placeholder="Type any text..." oninput="tokenize()">
+  </div>
+  <div class="viz-canvas" style="padding: 20px; min-height: 120px;">
+    <div style="margin-bottom:8px; color:#888; font-size:0.85em;">Tokens (colored by boundary):</div>
+    <div id="tokenDisplay" style="line-height: 2.2;"></div>
+    <div style="margin-top:12px; color:#888; font-size:0.85em;">Token IDs:</div>
+    <div id="tokenIds" style="font-family:monospace; color:#01a3a4; font-size:0.9em; margin-top:4px;"></div>
+    <div style="margin-top:12px; color:#888; font-size:0.85em;">Count: <span id="tokenCount" style="color:#01a3a4;">0</span> tokens from <span id="charCount" style="color:#ffd93d;">0</span> characters &mdash; compression ratio: <span id="compressionRatio" style="color:#01a3a4;">0</span>x</div>
+  </div>
+  <div style="margin-top:16px;">
+    <div style="color:#888; font-size:0.85em; margin-bottom:8px;">Vocabulary Explorer (search ~1000 common tokens):</div>
+    <div class="vocab-search">
+      <input type="text" id="vocabSearch" placeholder="Search tokens... (e.g., 'the', 'ing', 'un')" oninput="searchVocab()">
+    </div>
+    <div class="vocab-results" id="vocabResults"></div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> BPE (Byte-Pair Encoding) learns a vocabulary by repeatedly merging the most frequent character pairs.
+    <div class="formula">$$\text{"unbelievably"} \rightarrow [\text{"un"}, \text{"believ"}, \text{"ably"}] \rightarrow [348, 17023, 2901]$$</div>
+    <div class="key-point">
+      <span class="label">Why Subwords?</span>
+      <span class="desc">Character-level is too slow (sequences too long). Word-level can't handle new words. Subwords balance both: common words are single tokens, rare words split into known pieces.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Vocabulary Size:</span>
+      <span class="desc">GPT-2: 50,257 tokens. LLaMA: 32,000. Larger vocab = shorter sequences but bigger embedding table.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Tokenization happens BEFORE the model sees anything. A "token" is the fundamental unit the transformer processes. Different tokenizers can produce different results for the same text.</div>
+    <div class="mnemonic">Rare words split, common words stay whole. "the" = 1 token. "cryptocurrency" = "crypto" + "currency" = 2 tokens.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 6.2: TOKEN EMBEDDINGS + POSITIONAL ENCODING -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz62">
+  <h2>6.2 Token Embeddings + Positional Encoding</h2>
+  <p class="subtitle">Token IDs become dense vectors. Add position information so the model knows word order. Three rows: token embedding, positional encoding, and their sum.</p>
+  <div class="controls" style="margin-bottom:16px; margin-top:0;">
+    <button class="btn active" id="embShowAll" onclick="setEmbView('all')">Full View</button>
+    <button class="btn" id="embShowTok" onclick="setEmbView('tok')">Token Only</button>
+    <button class="btn" id="embShowPos" onclick="setEmbView('pos')">Position Only</button>
+    <button class="break-toggle" id="breakPos" onclick="toggleBreakPos()">Break It: Remove Positions</button>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="embCanvas" width="900" height="520"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>Embedding Dim</label>
+      <input type="range" id="embDim" min="8" max="64" value="32" step="8" oninput="drawEmbeddings()">
+      <span class="value" id="embDimVal">32</span>
+    </div>
+    <div class="control-group">
+      <label>Sequence Length</label>
+      <input type="range" id="embSeqLen" min="3" max="8" value="5" oninput="drawEmbeddings()">
+      <span class="value" id="embSeqLenVal">5</span>
+    </div>
+  </div>
+  <div id="breakPosMsg" style="display:none;" class="narrative-note">
+    <strong>Broken!</strong> Without positional encoding, "dog bites man" and "man bites dog" produce identical embeddings. The model cannot distinguish word order &mdash; it treats the input as a bag of words.
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> The input to a transformer is: token_embedding[token_id] + positional_encoding[position].
+    <div class="formula">$$\mathbf{x}_i = \mathbf{E}[\text{token}_i] + \mathbf{PE}[i]$$</div>
+    <div class="key-point">
+      <span class="label">Token Embedding:</span>
+      <span class="desc">A learnable lookup table of shape (vocab_size, d_model). Each token ID indexes one row.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Positional Encoding:</span>
+      <span class="desc">Sinusoidal waves at different frequencies. \(PE(pos, 2i) = \sin(pos / 10000^{2i/d})\), \(PE(pos, 2i+1) = \cos(pos / 10000^{2i/d})\).</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Unlike RNNs which process sequentially (inherently knowing position), transformers process all tokens in parallel. Positional encoding is the explicit signal that tells the model WHERE each token is.</div>
+    <div class="mnemonic">Token embedding = WHAT the token is. Positional encoding = WHERE it is. Sum them = the model knows both.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 6.3: ONE TRANSFORMER BLOCK -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz63">
+  <h2>6.3 One Transformer Block &mdash; Full Data Flow</h2>
+  <p class="subtitle">Trace data through a single transformer block. Every component from previous chapters assembled together: LayerNorm, Multi-Head Attention, FFN, Residuals.</p>
+  <div class="controls" style="margin-bottom:16px; margin-top:0;">
+    <button class="btn" id="blockStepBtn" onclick="blockStep()">Step Forward</button>
+    <button class="btn" onclick="blockReset()">Reset</button>
+    <button class="btn" onclick="blockAutoPlay()">Auto-Play</button>
+  </div>
+  <div class="viz-canvas" style="padding:20px;">
+    <div id="blockFlow" style="max-width:700px; margin:0 auto;"></div>
+  </div>
+  <div class="viz-canvas" style="margin-top:12px;">
+    <canvas id="blockHeatmap" width="900" height="200"></canvas>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:#01a3a4;"></span> Current step</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#4ecdc4;"></span> Completed</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#555;"></span> Upcoming</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> One transformer block = Attention + FFN, each wrapped with LayerNorm and a residual connection.
+    <div class="formula">$$\mathbf{h} = \mathbf{x} + \text{MHA}(\text{LN}(\mathbf{x})) \quad;\quad \mathbf{out} = \mathbf{h} + \text{FFN}(\text{LN}(\mathbf{h}))$$</div>
+    <div class="key-point">
+      <span class="label">LayerNorm [Ch 3.2]:</span>
+      <span class="desc">Normalizes each token's embedding to zero mean, unit variance. Stabilizes training.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Multi-Head Attention [Ch 4]:</span>
+      <span class="desc">Each token attends to all previous tokens (causal mask). Multiple heads capture different relationships.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">FFN (GELU) [Ch 3]:</span>
+      <span class="desc">Two linear layers with GELU activation. Expands to 4x dimension, then projects back. This is where "thinking" happens per-token.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Residual [Ch 3.3]:</span>
+      <span class="desc">Add the input back to the output. Enables gradient flow and lets the block learn "corrections" rather than full transformations.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">The pre-norm variant (LayerNorm BEFORE attention/FFN) is used in GPT-2+ and is more stable than post-norm. Know both variants.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 6.4: STACKING BLOCKS -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz64">
+  <h2>6.4 Stacking Blocks: Depth &amp; Representation Evolution</h2>
+  <p class="subtitle">What changes as we stack more blocks? Embedding similarity matrices evolve from local patterns (early layers) to semantic structure (deep layers).</p>
+  <div class="controls" style="margin-bottom:16px; margin-top:0;">
+    <div class="control-group">
+      <label>Number of Layers</label>
+      <input type="range" id="depthSlider" min="1" max="12" value="1" oninput="drawDepth()">
+      <span class="value" id="depthVal">1</span>
+    </div>
+    <button class="btn" onclick="animateDepth()">Animate Layers</button>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="depthCanvas" width="900" height="420"></canvas>
+  </div>
+  <div class="controls">
+    <div style="display:flex; gap:20px; flex-wrap:wrap;">
+      <div style="text-align:center;">
+        <div style="color:#888; font-size:0.8em; margin-bottom:4px;">Layer 1: Local patterns</div>
+        <div style="width:12px; height:12px; background:#01a3a4; border-radius:50%; display:inline-block;"></div>
+      </div>
+      <div style="text-align:center;">
+        <div style="color:#888; font-size:0.8em; margin-bottom:4px;">Layer 6: Dependencies</div>
+        <div style="width:12px; height:12px; background:#ffd93d; border-radius:50%; display:inline-block;"></div>
+      </div>
+      <div style="text-align:center;">
+        <div style="color:#888; font-size:0.8em; margin-bottom:4px;">Layer 12: Semantics</div>
+        <div style="width:12px; height:12px; background:#ff6b6b; border-radius:50%; display:inline-block;"></div>
+      </div>
+    </div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Each layer refines the representation. Early layers capture syntax, deep layers capture semantics.
+    <div class="key-point">
+      <span class="label">Layer 1-3:</span>
+      <span class="desc">Tokens attend to nearby tokens. Similarity is high for adjacent words. Local syntactic patterns (noun-verb agreement) emerge.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Layer 4-8:</span>
+      <span class="desc">Long-range dependencies form. Subject connects to its verb across clauses. Coreference resolution begins.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Layer 9-12:</span>
+      <span class="desc">High-level semantic structure. Tokens with similar meaning cluster. Task-relevant features crystallize.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">More layers = better performance, but with diminishing returns. GPT-2 Small (12 layers) vs GPT-2 Medium (24 layers): 2x layers gave ~15% perplexity improvement, not 100%.</div>
+    <div class="mnemonic">Shallow = syntax. Deep = semantics. The residual stream accumulates information layer by layer.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 6.5: OUTPUT HEAD -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz65">
+  <h2>6.5 The Output Head: Logits &rarr; Probabilities &rarr; Token</h2>
+  <p class="subtitle">The final hidden state projects back to vocabulary space. Softmax gives probabilities. Different sampling strategies yield different outputs.</p>
+  <div class="controls" style="margin-bottom:16px; margin-top:0;">
+    <div class="tab-bar">
+      <button class="btn active" id="sampGreedy" onclick="setSampling('greedy')">Greedy</button>
+      <button class="btn" id="sampTopK" onclick="setSampling('topk')">Top-k (k=5)</button>
+      <button class="btn" id="sampTopP" onclick="setSampling('topp')">Top-p (p=0.9)</button>
+      <button class="btn" id="sampTemp" onclick="setSampling('temp')">Temperature</button>
+    </div>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="outputCanvas" width="900" height="400"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>Temperature</label>
+      <input type="range" id="tempSlider" min="1" max="30" value="10" oninput="drawOutputHead()">
+      <span class="value" id="tempVal">1.0</span>
+    </div>
+    <div class="control-group">
+      <label>Top-k</label>
+      <input type="range" id="topkSlider" min="1" max="20" value="5" oninput="drawOutputHead()">
+      <span class="value" id="topkVal">5</span>
+    </div>
+    <button class="btn" onclick="resampleOutput()">Resample</button>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> The output head converts hidden states to a probability distribution over the entire vocabulary.
+    <div class="formula">$$\text{logits} = \mathbf{h}_{\text{last}} \cdot \mathbf{W}_{\text{vocab}}^T \quad;\quad P(\text{token}) = \text{softmax}(\text{logits} / T)$$</div>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title">Greedy (T=0)</div>
+        <div class="opt-desc">Always pick the highest probability token. Deterministic but repetitive.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title">Temperature</div>
+        <div class="opt-desc">T&lt;1 sharpens distribution (more confident). T&gt;1 flattens (more random).</div>
+      </div>
+    </div>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title">Top-k Sampling</div>
+        <div class="opt-desc">Sample only from the k most likely tokens. Prevents sampling very unlikely tokens.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title">Top-p (Nucleus)</div>
+        <div class="opt-desc">Sample from the smallest set of tokens whose cumulative probability exceeds p. Adaptive k.</div>
+      </div>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Temperature, top-k, and top-p are applied AFTER the model computes logits. They don't change what the model "thinks" &mdash; they change how we select from its predictions.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 6.6: AUTOREGRESSIVE GENERATION -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz66">
+  <h2>6.6 Autoregressive Generation: One Token at a Time</h2>
+  <p class="subtitle">Watch the transformer generate text token by token. The full loop: embed, attend, predict, append, repeat. See the KV-cache in action.</p>
+  <div class="controls" style="margin-bottom:16px; margin-top:0;">
+    <button class="btn" id="genStartBtn" onclick="startGeneration()">Generate</button>
+    <button class="btn" onclick="resetGeneration()">Reset</button>
+    <div class="tab-bar" style="margin-bottom:0;">
+      <button class="btn active" id="speedSlow" onclick="setGenSpeed('slow')">Slow</button>
+      <button class="btn" id="speedMed" onclick="setGenSpeed('med')">Medium</button>
+      <button class="btn" id="speedFast" onclick="setGenSpeed('fast')">Fast</button>
+    </div>
+  </div>
+  <div class="viz-canvas" style="padding:20px; min-height:200px;">
+    <div style="display:flex; gap:20px; flex-wrap:wrap;">
+      <div style="flex:1; min-width:300px;">
+        <div style="color:#888; font-size:0.85em; margin-bottom:8px;">Generated Sequence:</div>
+        <div id="genSequence" style="font-family:monospace; font-size:1.1em; line-height:2; min-height:60px; padding:12px; background:#0a0a15; border-radius:8px;"></div>
+        <div style="color:#888; font-size:0.8em; margin-top:8px;">Step: <span id="genStep" style="color:#01a3a4;">0</span> / <span id="genTotal">20</span></div>
+      </div>
+      <div style="flex:1; min-width:300px;">
+        <div style="color:#888; font-size:0.85em; margin-bottom:8px;">KV-Cache (keys reused vs new):</div>
+        <canvas id="kvCacheCanvas" width="400" height="180"></canvas>
+        <div class="legend" style="margin-top:6px;">
+          <div class="legend-item"><span class="legend-dot" style="background:#01a3a4;"></span> Cached (reused)</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#ffd93d;"></span> New computation</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="viz-canvas" style="margin-top:12px;">
+    <canvas id="genAttnCanvas" width="900" height="250"></canvas>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Autoregressive generation: each new token depends on ALL previous tokens. The KV-cache avoids recomputing past tokens.
+    <div class="formula">$$\text{token}_{t+1} = \text{sample}(P(\cdot | \text{token}_1, \text{token}_2, \ldots, \text{token}_t))$$</div>
+    <div class="key-point">
+      <span class="label">KV-Cache:</span>
+      <span class="desc">Store the Key and Value matrices from previous tokens. Only compute Q, K, V for the NEW token, then concatenate with cached K, V. Saves O(n) per step instead of O(n^2).</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Why Autoregressive?</span>
+      <span class="desc">The causal mask means each token can only see the past. Generation naturally follows: predict one, append, repeat.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Without KV-cache, generating n tokens costs O(n^3) total. With KV-cache, it costs O(n^2). This is why inference optimization matters so much for long sequences.</div>
+    <div class="mnemonic">Generate = greedy loop: forward pass on full sequence, sample last position, append, repeat. KV-cache = "don't recompute what you already know."</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 6.7: TRAINING: CROSS-ENTROPY -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz67">
+  <h2>6.7 Training: Cross-Entropy on Next-Token Prediction</h2>
+  <p class="subtitle">Every position in a sequence provides a training signal. One sequence of length N = N-1 training examples for free.</p>
+  <div class="controls" style="margin-bottom:16px; margin-top:0;">
+    <button class="btn" id="trainStartBtn" onclick="startTraining()">Train</button>
+    <button class="btn" onclick="resetTraining()">Reset</button>
+    <div class="control-group">
+      <label>Learning Rate</label>
+      <input type="range" id="trainLR" min="1" max="30" value="10" oninput="updateTrainLR()">
+      <span class="value" id="trainLRVal">0.01</span>
+    </div>
+  </div>
+  <div class="viz-canvas" style="padding:20px; min-height:180px;">
+    <div style="color:#888; font-size:0.85em; margin-bottom:8px;">Sequence: predictions at each position</div>
+    <div id="trainSequence"></div>
+    <div style="margin-top:16px; color:#888; font-size:0.85em;">Cross-entropy loss per position:</div>
+    <canvas id="lossBarCanvas" width="900" height="100"></canvas>
+    <div style="margin-top:8px; color:#888; font-size:0.85em;">Total loss: <span id="totalLoss" style="color:#01a3a4; font-weight:600;">0.00</span></div>
+  </div>
+  <div class="viz-canvas" style="margin-top:12px;">
+    <canvas id="lossCurveCanvas" width="900" height="220"></canvas>
+  </div>
+  <div style="margin-top:12px; padding:12px 16px; background:#0d0d1a; border-radius:8px;">
+    <div style="color:#888; font-size:0.85em; margin-bottom:8px;">Generated text over training (watch it improve):</div>
+    <div id="trainGenText" style="font-family:monospace; font-size:0.9em; color:#ccc;"></div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> The training objective is simple: predict the next token at every position. Cross-entropy measures how well the model's distribution matches the true next token.
+    <div class="formula">$$\mathcal{L} = -\frac{1}{N-1}\sum_{t=1}^{N-1} \log P_\theta(\text{token}_{t+1} | \text{token}_{1:t})$$</div>
+    <div class="key-point">
+      <span class="label">Free Training Data:</span>
+      <span class="desc">"The cat sat on the mat" (6 tokens) gives 5 training examples: predict "cat" from "The", predict "sat" from "The cat", etc.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Cross-Entropy:</span>
+      <span class="desc">-log(probability assigned to correct token). Low = model is confident and correct. High = model is surprised.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">This is why LLMs are so data-efficient: one document of N tokens provides N-1 supervised training examples. No labeling required &mdash; the text IS the label (shifted by one position).</div>
+    <div class="mnemonic">Self-supervised learning: the input IS the label. Position t predicts position t+1. Slide a window across all text ever written = unlimited training data.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 6.8: COMPLETE ARCHITECTURE -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz68">
+  <h2>6.8 The Complete Transformer &mdash; Architecture Overview</h2>
+  <p class="subtitle">Zoom out. See the entire transformer as one system. Every component links back to where it was introduced. You built all of this.</p>
+  <div class="viz-canvas">
+    <canvas id="archCanvas" width="900" height="560"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>d_model</label>
+      <input type="range" id="archDmodel" min="32" max="12288" value="64" step="32" oninput="drawArchitecture()">
+      <span class="value" id="archDmodelVal">64</span>
+    </div>
+    <div class="control-group">
+      <label>Layers</label>
+      <input type="range" id="archLayers" min="1" max="120" value="6" oninput="drawArchitecture()">
+      <span class="value" id="archLayersVal">6</span>
+    </div>
+    <div class="control-group">
+      <label>Heads</label>
+      <input type="range" id="archHeads" min="1" max="96" value="4" oninput="drawArchitecture()">
+      <span class="value" id="archHeadsVal">4</span>
+    </div>
+    <div class="control-group">
+      <label>Vocab Size</label>
+      <input type="range" id="archVocab" min="1000" max="100000" value="50257" step="1000" oninput="drawArchitecture()">
+      <span class="value" id="archVocabVal">50257</span>
+    </div>
+  </div>
+  <div style="margin-top:16px; padding:16px 20px; background:#0d0d1a; border-radius:12px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+      <div>
+        <div style="color:#888; font-size:0.85em;">Total Parameters</div>
+        <div id="paramCount" style="color:#01a3a4; font-size:2em; font-weight:700; font-family:monospace;">6.3M</div>
+      </div>
+      <div style="display:flex; gap:16px; flex-wrap:wrap;">
+        <button class="btn" onclick="setPreset('tiny')">Your Model (6L/4H/64d)</button>
+        <button class="btn" onclick="setPreset('gpt2')">GPT-2 (12L/12H/768d)</button>
+        <button class="btn" onclick="setPreset('gpt2xl')">GPT-2 XL (48L/25H/1600d)</button>
+        <button class="btn" onclick="setPreset('gpt3')">GPT-3 (96L/96H/12288d)</button>
+      </div>
+    </div>
+  </div>
+  <div class="narrative-note">
+    <strong>Chapter 6 payoff:</strong> You've built a complete transformer from scratch. Every component &mdash; embeddings, attention, normalization, residuals, FFN, output head &mdash; you constructed yourself in previous chapters. This same architecture, scaled up, powers GPT, Claude, Gemini, LLaMA, and every modern LLM. Same architecture. Just bigger.
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> The entire transformer is: Tokenize &rarr; Embed + Position &rarr; N x (LayerNorm + Attention + Residual + LayerNorm + FFN + Residual) &rarr; LayerNorm &rarr; Linear &rarr; Softmax.
+    <div class="key-point">
+      <span class="label">Scaling Laws:</span>
+      <span class="desc">Performance scales predictably with model size, data size, and compute. Doubling parameters gives consistent improvement &mdash; this is why the race to scale continues.</span>
+    </div>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title">Your Model</div>
+        <div class="opt-desc">6 layers, 4 heads, d=64. ~6M params. Can learn simple patterns on small data.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title">GPT-2</div>
+        <div class="opt-desc">12 layers, 12 heads, d=768. 117M params. Coherent paragraphs, basic reasoning.</div>
+      </div>
+    </div>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title">GPT-3</div>
+        <div class="opt-desc">96 layers, 96 heads, d=12288. 175B params. Few-shot learning, complex reasoning.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title">GPT-4 (estimated)</div>
+        <div class="opt-desc">~120 layers, ~96 heads. ~1.8T params (MoE). State-of-the-art across benchmarks.</div>
+      </div>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">When asked "what IS a transformer?", describe the data flow: text &rarr; tokens &rarr; embeddings + positions &rarr; N attention+FFN blocks with residuals &rarr; linear projection to vocab &rarr; softmax &rarr; next token. You built each piece.</div>
+    <div class="mnemonic">Same architecture at every scale. The only differences are d_model, n_layers, n_heads, and how much data/compute you throw at it.</div>
+  </div>
+</div>
+
+</div> <!-- end container -->
+
+<!-- ============================================================ -->
+<!-- QUIZ SECTION -->
+<!-- ============================================================ -->
+<div id="quizSection" style="display:none">
+<div class="quiz-container">
+  <h2 style="text-align:center;color:#01a3a4;margin-bottom:10px;font-size:1.8em;">Transformer from Scratch Quiz</h2>
+  <p style="text-align:center;color:#888;margin-bottom:20px;">5 questions per visualization &bull; 40 questions total &bull; Click answers to reveal explanations</p>
+  <div class="quiz-progress"><div class="quiz-progress-bar" id="quizProgressBar" style="width:0%"></div></div>
+  <div class="quiz-score">Score: <span id="quizScore">0</span> / <span id="quizTotal">40</span></div>
+  <div class="quiz-actions">
+    <button onclick="resetQuiz()">&#8634; Reset All</button>
+    <button onclick="toggleQuiz()">&#10005; Hide Quiz</button>
+  </div>
+  <div id="quizQuestions"></div>
+</div>
+</div>
+
+<div style="text-align:center; padding:40px; color:#555; font-size:0.85em; border-top:1px solid #1a1a2e;">
+  Chapter 6: Transformer from Scratch &bull; <a href="../index.html" style="color:#01a3a4; text-decoration:none;">From Scratch Series</a>
+</div>
+
+<script>
+// ============================================================
+// UTILITY FUNCTIONS
+// ============================================================
+function seededRandom(seed) {
+  let s = seed;
+  return function() {
+    s = (s * 16807 + 0) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
+}
+var rng = seededRandom(42);
+
+function scrollToViz(id) {
+  var el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Minimap scroll tracking
+var vizIds = ['viz61','viz62','viz63','viz64','viz65','viz66','viz67','viz68'];
+window.addEventListener('scroll', function() {
+  var scrollY = window.scrollY + 100;
+  var current = vizIds[0];
+  for (var i = 0; i < vizIds.length; i++) {
+    var el = document.getElementById(vizIds[i]);
+    if (el && el.offsetTop <= scrollY) current = vizIds[i];
+  }
+  var steps = document.querySelectorAll('.mm-step');
+  steps.forEach(function(s) {
+    s.classList.remove('active', 'done');
+    var sec = s.getAttribute('data-section');
+    if (sec === current) s.classList.add('active');
+    else if (vizIds.indexOf(sec) < vizIds.indexOf(current)) s.classList.add('done');
+  });
+});
+
+// ============================================================
+// 6.1 TOKENIZATION
+// ============================================================
+// Simulated BPE vocabulary (common English subwords)
+var bpeVocab = {};
+var vocabList = [];
+(function buildVocab() {
+  var common = [
+    "the","is","a","an","of","to","in","and","for","that","it","was","on","are","as","with",
+    "his","they","at","be","this","have","from","or","one","had","by","but","not","what",
+    "all","were","we","when","your","can","said","there","each","which","do","how","their",
+    "if","will","up","other","about","out","many","then","them","these","so","some","her",
+    "would","make","like","him","into","time","has","look","two","more","go","see","no",
+    "way","could","my","than","first","been","call","who","its","now","find","long","down",
+    "day","did","get","come","made","may","part","over","new","after","just","very","also",
+    "know","back","right","think","well","because","people","word","only","still","should",
+    " the"," is"," a"," an"," of"," to"," in"," and"," for"," that"," it"," was",
+    " on"," are"," as"," with"," they"," at"," be"," this"," have"," from"," or",
+    " not"," what"," all"," were"," we"," when"," your"," can"," said"," there",
+    "Trans","former","transform","er","trans","form","architect","ure","architecture",
+    "un","believ","ably","able","tion","sion","ment","ness","ful","less","ing","ed","ly","re","pre",
+    "power","ful","powerful","amaz","amazing","incred","ible","incredible",
+    "Hello",",","."," ","!","?","'","\"",":","(",")","[","]","-","_","/","\\",
+    "token","ize","ization","embed","ding","atten","tion","attention",
+    "neural","network","deep","learn","learning","model","train","data","input","output",
+    "weight","bias","gradient","loss","function","layer","hidden","param","eter",
+    "soft","max","softmax","prob","ability","probability","sample","random",
+    "The","A","In","On","It","We","They","This","That","But","And","Or","So","If",
+    "cat","sat","mat","dog","bites","man","bit","run","jump","walk",
+    "world","language","text","code","number","vector","matrix","dimension"
+  ];
+  var id = 0;
+  common.forEach(function(t) {
+    if (!bpeVocab.hasOwnProperty(t)) {
+      bpeVocab[t] = id;
+      vocabList.push({ token: t, id: id });
+      id++;
+    }
+  });
+  // Fill in individual characters
+  for (var c = 32; c < 127; c++) {
+    var ch = String.fromCharCode(c);
+    if (!bpeVocab.hasOwnProperty(ch)) {
+      bpeVocab[ch] = id;
+      vocabList.push({ token: ch, id: id });
+      id++;
+    }
+  }
+})();
+
+var tokenColors = ['#01a3a4','#e74c3c','#f39c12','#9b59b6','#2ecc71','#3498db','#e91e63','#00bcd4','#ff9800','#8bc34a','#673ab7','#009688'];
+
+function simpleTokenize(text) {
+  if (!text) return [];
+  var tokens = [];
+  var i = 0;
+  while (i < text.length) {
+    var best = '';
+    var bestLen = 0;
+    // Try longest match first (greedy BPE simulation)
+    for (var len = Math.min(12, text.length - i); len >= 1; len--) {
+      var sub = text.substring(i, i + len);
+      if (bpeVocab.hasOwnProperty(sub) && len > bestLen) {
+        best = sub;
+        bestLen = len;
+      }
+    }
+    if (bestLen === 0) {
+      // Single character fallback
+      best = text[i];
+      bestLen = 1;
+      if (!bpeVocab.hasOwnProperty(best)) {
+        bpeVocab[best] = vocabList.length;
+        vocabList.push({ token: best, id: vocabList.length });
+      }
+    }
+    tokens.push({ text: best, id: bpeVocab[best] });
+    i += bestLen;
+  }
+  return tokens;
+}
+
+function tokenize() {
+  var text = document.getElementById('tokenInput').value;
+  var tokens = simpleTokenize(text);
+  var display = document.getElementById('tokenDisplay');
+  var idsDiv = document.getElementById('tokenIds');
+  var html = '';
+  var ids = [];
+  tokens.forEach(function(t, i) {
+    var color = tokenColors[i % tokenColors.length];
+    var displayText = t.text.replace(/ /g, '\u2423').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    html += '<span class="token-box" style="background:' + color + '22; border:1px solid ' + color + '; color:' + color + ';" title="ID: ' + t.id + '">' + displayText + '</span>';
+    ids.push(t.id);
+  });
+  display.innerHTML = html || '<span style="color:#555;">Type text above...</span>';
+  idsDiv.textContent = '[' + ids.join(', ') + ']';
+  document.getElementById('tokenCount').textContent = tokens.length;
+  document.getElementById('charCount').textContent = text.length;
+  document.getElementById('compressionRatio').textContent = text.length > 0 ? (text.length / Math.max(1, tokens.length)).toFixed(1) : '0';
+}
+
+function searchVocab() {
+  var query = document.getElementById('vocabSearch').value.toLowerCase();
+  var results = document.getElementById('vocabResults');
+  if (!query) { results.innerHTML = '<span style="color:#555;">Type to search...</span>'; return; }
+  var matches = vocabList.filter(function(v) {
+    return v.token.toLowerCase().indexOf(query) >= 0;
+  }).slice(0, 40);
+  var html = '';
+  matches.forEach(function(v) {
+    var displayToken = v.token.replace(/ /g, '\u2423').replace(/</g, '&lt;');
+    html += '<div class="vocab-item"><span class="vid">' + v.id + '</span> "' + displayToken + '"</div>';
+  });
+  results.innerHTML = html || '<span style="color:#555;">No matches</span>';
+}
+
+// ============================================================
+// 6.2 EMBEDDINGS + POSITIONAL ENCODING
+// ============================================================
+var embView = 'all';
+var positionsBroken = false;
+
+function setEmbView(v) {
+  embView = v;
+  ['embShowAll','embShowTok','embShowPos'].forEach(function(id) {
+    document.getElementById(id).classList.remove('active');
+  });
+  if (v === 'all') document.getElementById('embShowAll').classList.add('active');
+  if (v === 'tok') document.getElementById('embShowTok').classList.add('active');
+  if (v === 'pos') document.getElementById('embShowPos').classList.add('active');
+  drawEmbeddings();
+}
+
+function toggleBreakPos() {
+  positionsBroken = !positionsBroken;
+  var btn = document.getElementById('breakPos');
+  btn.classList.toggle('broken');
+  document.getElementById('breakPosMsg').style.display = positionsBroken ? 'block' : 'none';
+  drawEmbeddings();
+}
+
+function sinPE(pos, i, d) {
+  var angle = pos / Math.pow(10000, (2 * Math.floor(i/2)) / d);
+  return (i % 2 === 0) ? Math.sin(angle) : Math.cos(angle);
+}
+
+function drawEmbeddings() {
+  var canvas = document.getElementById('embCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  var d = parseInt(document.getElementById('embDim').value);
+  var seqLen = parseInt(document.getElementById('embSeqLen').value);
+  document.getElementById('embDimVal').textContent = d;
+  document.getElementById('embSeqLenVal').textContent = seqLen;
+
+  var tokens = ['The','cat','sat','on','the','warm','mat','today'];
+  tokens = tokens.slice(0, seqLen);
+
+  var rng2 = seededRandom(123);
+  // Generate token embeddings
+  var tokEmb = [];
+  for (var t = 0; t < seqLen; t++) {
+    var row = [];
+    for (var j = 0; j < d; j++) row.push((rng2() - 0.5) * 2);
+    tokEmb.push(row);
+  }
+
+  // Positional encodings
+  var posEnc = [];
+  for (var t = 0; t < seqLen; t++) {
+    var row = [];
+    for (var j = 0; j < d; j++) row.push(sinPE(t, j, d));
+    posEnc.push(row);
+  }
+
+  // Sum
+  var finalEmb = [];
+  for (var t = 0; t < seqLen; t++) {
+    var row = [];
+    for (var j = 0; j < d; j++) {
+      row.push(tokEmb[t][j] + (positionsBroken ? 0 : posEnc[t][j]));
+    }
+    finalEmb.push(row);
+  }
+
+  var marginLeft = 120, marginTop = 30, marginRight = 30;
+  var cellW = Math.min(18, (W - marginLeft - marginRight) / d);
+  var cellH = 18;
+  var rowGap = 10;
+
+  function drawHeatmapRow(data, y, label, showLabel) {
+    if (showLabel) {
+      ctx.fillStyle = '#888';
+      ctx.font = '12px Inter, sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(label, marginLeft - 10, y + cellH / 2 + 4);
+    }
+    for (var j = 0; j < d; j++) {
+      var v = data[j];
+      var r, g, b;
+      if (v > 0) { r = 1; g = 163; b = 164; } else { r = 231; g = 76; b = 60; }
+      var alpha = Math.min(Math.abs(v), 1);
+      ctx.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + (0.15 + alpha * 0.85) + ')';
+      ctx.fillRect(marginLeft + j * cellW, y, cellW - 1, cellH - 1);
+    }
+  }
+
+  var sections = [];
+  if (embView === 'all' || embView === 'tok') sections.push({ data: tokEmb, title: 'Token Embeddings (E[token_id])' });
+  if (embView === 'all' || embView === 'pos') sections.push({ data: posEnc, title: 'Positional Encoding (sinusoidal)' });
+  if (embView === 'all') sections.push({ data: finalEmb, title: positionsBroken ? 'Final = Token Only (NO position!)' : 'Final = Token + Position' });
+  if (embView === 'tok') sections.push({ data: tokEmb, title: 'Token Embeddings Only' });
+  if (embView === 'pos') sections.push({ data: posEnc, title: 'Positional Encoding Only' });
+
+  // Remove duplicates
+  if (embView !== 'all') sections = sections.slice(0, 1);
+
+  var currentY = marginTop;
+  sections.forEach(function(sec, si) {
+    ctx.fillStyle = si === sections.length - 1 && embView === 'all' ? '#01a3a4' : '#aaa';
+    ctx.font = 'bold 13px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(sec.title, marginLeft, currentY);
+    currentY += 20;
+
+    for (var t = 0; t < seqLen; t++) {
+      drawHeatmapRow(sec.data[t], currentY, tokens[t], true);
+      currentY += cellH + 2;
+    }
+    currentY += rowGap;
+
+    // Draw + sign between rows
+    if (si < sections.length - 1 && embView === 'all') {
+      ctx.fillStyle = '#01a3a4';
+      ctx.font = 'bold 18px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(si === 0 ? '+' : '=', marginLeft + (d * cellW) / 2, currentY);
+      currentY += 20;
+    }
+  });
+
+  // Draw dimension labels
+  ctx.fillStyle = '#555';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  for (var j = 0; j < d; j += Math.max(1, Math.floor(d / 8))) {
+    ctx.fillText('d' + j, marginLeft + j * cellW + cellW / 2, currentY + 10);
+  }
+
+  // If positions broken, show warning
+  if (positionsBroken) {
+    ctx.fillStyle = 'rgba(231,76,60,0.15)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#e74c3c';
+    ctx.font = 'bold 14px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('POSITIONS REMOVED: word order is lost!', W / 2, H - 20);
+  }
+}
+
+// ============================================================
+// 6.3 ONE TRANSFORMER BLOCK
+// ============================================================
+var blockStepIndex = 0;
+var blockSteps = [
+  { label: 'Input Embeddings', shape: '(1, 6, 32)', desc: 'Token + positional embeddings', ref: 'Viz 6.2' },
+  { label: 'LayerNorm', shape: '(1, 6, 32)', desc: 'Normalize to zero mean, unit variance', ref: 'Ch 3.2' },
+  { label: 'Multi-Head Causal Attention', shape: '(1, 6, 32)', desc: '4 heads, d_k=8, causal mask', ref: 'Ch 4' },
+  { label: '+ Residual Connection', shape: '(1, 6, 32)', desc: 'Add input back: x + Attention(LN(x))', ref: 'Ch 3.3' },
+  { label: 'LayerNorm', shape: '(1, 6, 32)', desc: 'Normalize again before FFN', ref: 'Ch 3.2' },
+  { label: 'FFN: Linear(32 \u2192 128)', shape: '(1, 6, 128)', desc: 'Expand to 4x hidden dim', ref: 'Ch 1' },
+  { label: 'GELU Activation', shape: '(1, 6, 128)', desc: 'Smooth nonlinearity', ref: 'Ch 3' },
+  { label: 'FFN: Linear(128 \u2192 32)', shape: '(1, 6, 32)', desc: 'Project back to model dim', ref: 'Ch 1' },
+  { label: '+ Residual Connection', shape: '(1, 6, 32)', desc: 'Add pre-FFN input back', ref: 'Ch 3.3' },
+  { label: 'Block Output', shape: '(1, 6, 32)', desc: 'Ready for next block or output head', ref: '' }
+];
+
+function buildBlockFlow() {
+  var container = document.getElementById('blockFlow');
+  var html = '';
+  blockSteps.forEach(function(step, i) {
+    var cls = i === 0 ? 'active-step' : '';
+    html += '<div class="flow-box ' + cls + '" id="blockStep' + i + '">';
+    html += '<span class="step-label">' + step.label + '</span>';
+    html += '<span class="step-shape">' + step.shape + '</span>';
+    html += '<span style="color:#666; font-size:0.8em; flex:1;">' + step.desc + '</span>';
+    if (step.ref) html += '<span style="color:#01a3a4; font-size:0.7em; background:#01a3a411; padding:2px 8px; border-radius:4px; border:1px solid #01a3a433;">' + step.ref + '</span>';
+    html += '</div>';
+    if (i < blockSteps.length - 1) html += '<div class="flow-arrow">\u2193</div>';
+  });
+  container.innerHTML = html;
+}
+
+function blockStep() {
+  if (blockStepIndex >= blockSteps.length - 1) return;
+  blockStepIndex++;
+  updateBlockHighlight();
+  drawBlockHeatmap();
+}
+
+function blockReset() {
+  blockStepIndex = 0;
+  updateBlockHighlight();
+  drawBlockHeatmap();
+}
+
+function blockAutoPlay() {
+  blockReset();
+  var interval = setInterval(function() {
+    if (blockStepIndex >= blockSteps.length - 1) { clearInterval(interval); return; }
+    blockStep();
+  }, 600);
+}
+
+function updateBlockHighlight() {
+  for (var i = 0; i < blockSteps.length; i++) {
+    var el = document.getElementById('blockStep' + i);
+    el.classList.remove('active-step');
+    if (i === blockStepIndex) {
+      el.classList.add('active-step');
+      el.style.borderColor = '#01a3a4';
+      el.style.background = 'rgba(1,163,164,0.1)';
+    } else if (i < blockStepIndex) {
+      el.style.borderColor = 'rgba(78,205,196,0.4)';
+      el.style.background = 'rgba(78,205,196,0.05)';
+    } else {
+      el.style.borderColor = '#3a3a6a';
+      el.style.background = '#1a1a3e';
+    }
+  }
+}
+
+function drawBlockHeatmap() {
+  var canvas = document.getElementById('blockHeatmap');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  var rng3 = seededRandom(42 + blockStepIndex * 7);
+  var seqLen = 6, dim = 32;
+  var shape = blockSteps[blockStepIndex].shape;
+  // Parse dim from shape
+  var parts = shape.replace(/[()]/g, '').split(',').map(function(s) { return parseInt(s.trim()); });
+  var actualDim = parts[2] || 32;
+
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Tensor values at: ' + blockSteps[blockStepIndex].label + ' ' + shape, 20, 20);
+
+  var cellW = Math.min(12, (W - 100) / actualDim);
+  var cellH = 16;
+  var startX = 80, startY = 35;
+  var tokens = ['The','cat','sat','on','the','mat'];
+
+  for (var t = 0; t < seqLen; t++) {
+    ctx.fillStyle = '#777';
+    ctx.font = '11px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(tokens[t], startX - 8, startY + t * (cellH + 2) + cellH / 2 + 3);
+    for (var j = 0; j < Math.min(actualDim, 80); j++) {
+      var v = (rng3() - 0.5) * 2;
+      // Apply transforms based on step
+      if (blockStepIndex >= 1 && blockStepIndex <= 2) v *= 0.7; // LN reduces variance
+      if (blockStepIndex >= 5 && blockStepIndex <= 6) v *= 1.5; // FFN expand
+      var r, g, b;
+      if (v > 0) { r = 1; g = 163; b = 164; } else { r = 231; g = 76; b = 60; }
+      var alpha = Math.min(Math.abs(v), 1);
+      ctx.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + (0.1 + alpha * 0.9) + ')';
+      ctx.fillRect(startX + j * cellW, startY + t * (cellH + 2), cellW - 1, cellH - 1);
+    }
+  }
+}
+
+// ============================================================
+// 6.4 STACKING BLOCKS / DEPTH
+// ============================================================
+function drawDepth() {
+  var canvas = document.getElementById('depthCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  var depth = parseInt(document.getElementById('depthSlider').value);
+  document.getElementById('depthVal').textContent = depth;
+
+  var tokens = ['The','cat','sat','on','the','mat'];
+  var n = tokens.length;
+
+  // Title
+  ctx.fillStyle = '#aaa';
+  ctx.font = 'bold 14px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Embedding Similarity Matrix after Layer ' + depth, W / 2, 25);
+
+  // Generate similarity matrix that evolves with depth
+  var rng4 = seededRandom(77);
+  var sim = [];
+  for (var i = 0; i < n; i++) {
+    sim[i] = [];
+    for (var j = 0; j < n; j++) {
+      // Base: identity-ish
+      var base = i === j ? 1.0 : 0.1 + rng4() * 0.2;
+      // Layer 1-3: local adjacency
+      if (depth <= 3) {
+        if (Math.abs(i - j) <= 1) base = Math.max(base, 0.5 + rng4() * 0.3);
+      }
+      // Layer 4-8: syntactic groups (subject-verb, article-noun)
+      if (depth >= 4 && depth <= 8) {
+        // "The cat" pair, "sat on" pair, "the mat" pair
+        if ((i === 0 && j === 1) || (i === 1 && j === 0)) base = 0.7 + rng4() * 0.2;
+        if ((i === 2 && j === 3) || (i === 3 && j === 2)) base = 0.65 + rng4() * 0.2;
+        if ((i === 4 && j === 5) || (i === 5 && j === 4)) base = 0.7 + rng4() * 0.2;
+        // Long-range: cat-sat
+        if ((i === 1 && j === 2) || (i === 2 && j === 1)) base = 0.55 + rng4() * 0.15;
+      }
+      // Layer 9-12: semantic clusters
+      if (depth >= 9) {
+        // Nouns cluster: cat, mat
+        if ((i === 1 && j === 5) || (i === 5 && j === 1)) base = 0.75 + rng4() * 0.15;
+        // Articles cluster: The, the
+        if ((i === 0 && j === 4) || (i === 4 && j === 0)) base = 0.85 + rng4() * 0.1;
+        // Function words: on, the
+        if ((i === 3 && j === 4) || (i === 4 && j === 3)) base = 0.5 + rng4() * 0.2;
+      }
+      sim[i][j] = Math.min(1, Math.max(0, base));
+    }
+  }
+
+  // Draw matrix
+  var matSize = Math.min(280, H - 80);
+  var cellSize = matSize / n;
+  var matX = W / 2 - matSize / 2;
+  var matY = 50;
+
+  // Column labels
+  ctx.fillStyle = '#888';
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'center';
+  for (var j = 0; j < n; j++) {
+    ctx.save();
+    ctx.translate(matX + j * cellSize + cellSize / 2, matY - 5);
+    ctx.rotate(-0.5);
+    ctx.fillText(tokens[j], 0, 0);
+    ctx.restore();
+  }
+
+  // Row labels and cells
+  for (var i = 0; i < n; i++) {
+    ctx.fillStyle = '#888';
+    ctx.font = '11px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(tokens[i], matX - 8, matY + i * cellSize + cellSize / 2 + 4);
+
+    for (var j = 0; j < n; j++) {
+      var v = sim[i][j];
+      var hue, sat, light;
+      if (depth <= 3) { hue = 177; sat = 70; } // teal
+      else if (depth <= 8) { hue = 45; sat = 80; } // yellow
+      else { hue = 0; sat = 70; } // red
+
+      ctx.fillStyle = 'hsla(' + hue + ',' + sat + '%,50%,' + (0.1 + v * 0.9) + ')';
+      ctx.fillRect(matX + j * cellSize, matY + i * cellSize, cellSize - 2, cellSize - 2);
+
+      // Value text
+      ctx.fillStyle = v > 0.5 ? '#000' : '#aaa';
+      ctx.font = '10px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(v.toFixed(2), matX + j * cellSize + cellSize / 2, matY + i * cellSize + cellSize / 2 + 3);
+    }
+  }
+
+  // Color bar
+  var barX = matX + matSize + 30, barY = matY, barW = 20, barH = matSize;
+  for (var y = 0; y < barH; y++) {
+    var frac = 1 - y / barH;
+    var hue2 = depth <= 3 ? 177 : (depth <= 8 ? 45 : 0);
+    ctx.fillStyle = 'hsla(' + hue2 + ',70%,50%,' + (0.1 + frac * 0.9) + ')';
+    ctx.fillRect(barX, barY + y, barW, 1);
+  }
+  ctx.fillStyle = '#888';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('1.0', barX + barW + 5, barY + 8);
+  ctx.fillText('0.0', barX + barW + 5, barY + barH);
+
+  // Description
+  var descY = matY + matSize + 30;
+  ctx.fillStyle = '#aaa';
+  ctx.font = '13px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  var desc = '';
+  if (depth <= 3) desc = 'Early layers: tokens attend mostly to adjacent neighbors. Local syntactic patterns.';
+  else if (depth <= 8) desc = 'Middle layers: long-range dependencies form. Subject connects to verb across the sentence.';
+  else desc = 'Deep layers: semantic structure emerges. Similar meaning tokens cluster regardless of position.';
+  ctx.fillText(desc, W / 2, descY);
+
+  // Probing accuracy bars
+  var probeY = descY + 30;
+  var probes = [
+    { name: 'POS Tags', acc: Math.min(0.95, 0.3 + depth * 0.06) },
+    { name: 'NER', acc: Math.min(0.9, 0.15 + depth * 0.07) },
+    { name: 'Sentiment', acc: Math.min(0.85, 0.1 + depth * 0.065) }
+  ];
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Probing accuracy at layer ' + depth + ':', matX, probeY);
+  probeY += 20;
+  probes.forEach(function(p, pi) {
+    var barW2 = 200;
+    ctx.fillStyle = '#1a1a3e';
+    ctx.fillRect(matX + 80, probeY + pi * 25, barW2, 16);
+    ctx.fillStyle = pi === 0 ? '#01a3a4' : (pi === 1 ? '#ffd93d' : '#ff6b6b');
+    ctx.fillRect(matX + 80, probeY + pi * 25, barW2 * p.acc, 16);
+    ctx.fillStyle = '#ccc';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(p.name, matX + 74, probeY + pi * 25 + 12);
+    ctx.textAlign = 'left';
+    ctx.fillText((p.acc * 100).toFixed(0) + '%', matX + 80 + barW2 + 8, probeY + pi * 25 + 12);
+  });
+}
+
+var depthAnimInterval = null;
+function animateDepth() {
+  if (depthAnimInterval) { clearInterval(depthAnimInterval); depthAnimInterval = null; return; }
+  document.getElementById('depthSlider').value = 1;
+  drawDepth();
+  depthAnimInterval = setInterval(function() {
+    var slider = document.getElementById('depthSlider');
+    var v = parseInt(slider.value);
+    if (v >= 12) { clearInterval(depthAnimInterval); depthAnimInterval = null; return; }
+    slider.value = v + 1;
+    drawDepth();
+  }, 500);
+}
+
+// ============================================================
+// 6.5 OUTPUT HEAD
+// ============================================================
+var samplingMode = 'greedy';
+var outputVocab = ['the','cat','sat','on','mat','a','is','was','in','to','and','of','it','that','with','for','dog','man','world','happy','big','small','very','not','they','we','run','eat','see','will'];
+var outputLogits = [];
+var outputProbs = [];
+
+function setSampling(mode) {
+  samplingMode = mode;
+  ['sampGreedy','sampTopK','sampTopP','sampTemp'].forEach(function(id) {
+    document.getElementById(id).classList.remove('active');
+  });
+  if (mode === 'greedy') document.getElementById('sampGreedy').classList.add('active');
+  if (mode === 'topk') document.getElementById('sampTopK').classList.add('active');
+  if (mode === 'topp') document.getElementById('sampTopP').classList.add('active');
+  if (mode === 'temp') document.getElementById('sampTemp').classList.add('active');
+  drawOutputHead();
+}
+
+function generateLogits() {
+  var rng5 = seededRandom(Date.now() % 10000);
+  outputLogits = [];
+  for (var i = 0; i < outputVocab.length; i++) {
+    outputLogits.push((rng5() - 0.5) * 6);
+  }
+  // Make a few tokens more likely
+  outputLogits[0] = 3.5 + rng5(); // "the"
+  outputLogits[5] = 2.8 + rng5(); // "a"
+  outputLogits[1] = 2.2 + rng5(); // "cat"
+  outputLogits[3] = 1.8 + rng5(); // "on"
+}
+
+function softmax(logits, temperature) {
+  temperature = temperature || 1.0;
+  var scaled = logits.map(function(l) { return l / temperature; });
+  var max = Math.max.apply(null, scaled);
+  var exps = scaled.map(function(l) { return Math.exp(l - max); });
+  var sum = exps.reduce(function(a, b) { return a + b; }, 0);
+  return exps.map(function(e) { return e / sum; });
+}
+
+function resampleOutput() {
+  generateLogits();
+  drawOutputHead();
+}
+
+function drawOutputHead() {
+  var canvas = document.getElementById('outputCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  var temp = parseInt(document.getElementById('tempSlider').value) / 10;
+  var topk = parseInt(document.getElementById('topkSlider').value);
+  document.getElementById('tempVal').textContent = temp.toFixed(1);
+  document.getElementById('topkVal').textContent = topk;
+
+  if (outputLogits.length === 0) generateLogits();
+
+  // Compute probs based on sampling mode
+  var effectiveTemp = samplingMode === 'temp' ? temp : 1.0;
+  var probs = softmax(outputLogits, effectiveTemp);
+
+  // Sort indices by probability
+  var indices = [];
+  for (var i = 0; i < probs.length; i++) indices.push(i);
+  indices.sort(function(a, b) { return probs[b] - probs[a]; });
+
+  // Apply masking for top-k / top-p
+  var mask = new Array(probs.length).fill(true);
+  if (samplingMode === 'topk') {
+    for (var i = topk; i < indices.length; i++) mask[indices[i]] = false;
+  }
+  if (samplingMode === 'topp') {
+    var cumsum = 0;
+    for (var i = 0; i < indices.length; i++) {
+      cumsum += probs[indices[i]];
+      if (cumsum > 0.9 && i > 0) {
+        for (var j = i + 1; j < indices.length; j++) mask[indices[j]] = false;
+        break;
+      }
+    }
+  }
+
+  // Renormalize masked probs
+  var maskedProbs = probs.map(function(p, i) { return mask[i] ? p : 0; });
+  var maskedSum = maskedProbs.reduce(function(a, b) { return a + b; }, 0);
+  if (maskedSum > 0) maskedProbs = maskedProbs.map(function(p) { return p / maskedSum; });
+
+  // Pipeline visualization
+  var pipeY = 20;
+  ctx.fillStyle = '#aaa';
+  ctx.font = 'bold 12px Inter, sans-serif';
+  ctx.textAlign = 'left';
+
+  // Hidden state
+  ctx.fillStyle = '#1a1a3e';
+  ctx.strokeStyle = '#3a3a6a';
+  ctx.lineWidth = 1;
+  var boxW = 140, boxH = 30;
+  var pipe = [
+    { label: 'h_last (d=32)', x: 30 },
+    { label: 'Linear (32\u219230)', x: 200 },
+    { label: 'Logits (30)', x: 370 },
+    { label: 'Softmax', x: 540 },
+    { label: 'P(token)', x: 700 }
+  ];
+  pipe.forEach(function(p, i) {
+    ctx.fillStyle = '#1a1a3e';
+    ctx.strokeStyle = i === pipe.length - 1 ? '#01a3a4' : '#3a3a6a';
+    ctx.lineWidth = i === pipe.length - 1 ? 2 : 1;
+    ctx.beginPath();
+    ctx.roundRect(p.x, pipeY, boxW, boxH, 6);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = i === pipe.length - 1 ? '#01a3a4' : '#ccc';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(p.label, p.x + boxW / 2, pipeY + boxH / 2 + 4);
+    if (i < pipe.length - 1) {
+      ctx.strokeStyle = '#555';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(p.x + boxW + 5, pipeY + boxH / 2);
+      ctx.lineTo(pipe[i + 1].x - 5, pipeY + boxH / 2);
+      ctx.stroke();
+      ctx.fillStyle = '#555';
+      ctx.beginPath();
+      ctx.moveTo(pipe[i + 1].x - 5, pipeY + boxH / 2);
+      ctx.lineTo(pipe[i + 1].x - 12, pipeY + boxH / 2 - 4);
+      ctx.lineTo(pipe[i + 1].x - 12, pipeY + boxH / 2 + 4);
+      ctx.fill();
+    }
+  });
+
+  // Bar chart
+  var barStartY = pipeY + boxH + 20;
+  var barMaxH = H - barStartY - 40;
+  var barW2 = Math.min(28, (W - 120) / outputVocab.length - 2);
+  var startX = 60;
+
+  // Find selected token
+  var selectedIdx = indices[0]; // greedy default
+  if (samplingMode !== 'greedy') {
+    // Weighted random
+    var r = seededRandom(Date.now() % 1000)();
+    var cum = 0;
+    for (var i = 0; i < maskedProbs.length; i++) {
+      cum += maskedProbs[i];
+      if (r < cum) { selectedIdx = i; break; }
+    }
+  }
+
+  ctx.fillStyle = '#555';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Probability', 25, barStartY + barMaxH / 2);
+
+  for (var k = 0; k < indices.length; k++) {
+    var idx = indices[k];
+    var prob = probs[idx];
+    var masked = !mask[idx];
+    var x = startX + k * (barW2 + 2);
+    var barH = prob * barMaxH * 3; // Scale for visibility
+    barH = Math.min(barH, barMaxH - 10);
+
+    if (masked) {
+      ctx.fillStyle = 'rgba(100,100,100,0.2)';
+    } else if (k < 5) {
+      ctx.fillStyle = idx === selectedIdx ? '#01a3a4' : 'rgba(1,163,164,0.6)';
+    } else {
+      ctx.fillStyle = 'rgba(1,163,164,0.25)';
+    }
+    ctx.fillRect(x, barStartY + barMaxH - barH, barW2, barH);
+
+    // Token label
+    ctx.save();
+    ctx.translate(x + barW2 / 2, barStartY + barMaxH + 5);
+    ctx.rotate(0.6);
+    ctx.fillStyle = masked ? '#444' : (k < 5 ? '#ccc' : '#666');
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(outputVocab[idx], 0, 0);
+    ctx.restore();
+
+    // Prob value on top
+    if (k < 5) {
+      ctx.fillStyle = '#01a3a4';
+      ctx.font = '9px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText((prob * 100).toFixed(1) + '%', x + barW2 / 2, barStartY + barMaxH - barH - 5);
+    }
+
+    // Selected indicator
+    if (idx === selectedIdx) {
+      ctx.strokeStyle = '#01a3a4';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x - 1, barStartY + barMaxH - barH - 1, barW2 + 2, barH + 2);
+      ctx.fillStyle = '#01a3a4';
+      ctx.font = 'bold 11px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('\u2191 selected', x + barW2 / 2, barStartY + barMaxH - barH - 16);
+    }
+  }
+
+  // Sampling mode label
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.textAlign = 'right';
+  var modeLabel = samplingMode === 'greedy' ? 'Greedy: always pick top-1' :
+                  samplingMode === 'topk' ? 'Top-k: sample from top ' + topk :
+                  samplingMode === 'topp' ? 'Top-p: sample from top 90% mass' :
+                  'Temperature: ' + temp.toFixed(1) + ' (' + (temp < 1 ? 'sharper' : temp > 1 ? 'flatter' : 'normal') + ')';
+  ctx.fillText(modeLabel, W - 20, barStartY + 15);
+}
+
+// ============================================================
+// 6.6 AUTOREGRESSIVE GENERATION
+// ============================================================
+var genTokens = ['The','cat'];
+var genMaxTokens = 20;
+var genSpeed = 'slow';
+var genInterval = null;
+var genStep_val = 0;
+
+var genVocab = ['the','cat','sat','on','mat','a','is','was','in','to','and','warm','.','it','that','with','for','big','small','very','happy','soft','floor','next','day','all'];
+
+function setGenSpeed(s) {
+  genSpeed = s;
+  ['speedSlow','speedMed','speedFast'].forEach(function(id) { document.getElementById(id).classList.remove('active'); });
+  if (s === 'slow') document.getElementById('speedSlow').classList.add('active');
+  if (s === 'med') document.getElementById('speedMed').classList.add('active');
+  if (s === 'fast') document.getElementById('speedFast').classList.add('active');
+}
+
+function resetGeneration() {
+  if (genInterval) { clearInterval(genInterval); genInterval = null; }
+  genTokens = ['The','cat'];
+  genStep_val = 0;
+  renderGenSequence();
+  drawKVCache();
+  drawGenAttention();
+  document.getElementById('genStep').textContent = '0';
+}
+
+function startGeneration() {
+  if (genInterval) { clearInterval(genInterval); genInterval = null; }
+  resetGeneration();
+  var delay = genSpeed === 'slow' ? 800 : (genSpeed === 'med' ? 300 : 80);
+  genInterval = setInterval(function() {
+    if (genTokens.length >= genMaxTokens) { clearInterval(genInterval); genInterval = null; return; }
+    // Pick next token (simple Markov-ish)
+    var rng6 = seededRandom(genStep_val * 31 + 17);
+    var nextIdx = Math.floor(rng6() * genVocab.length);
+    // Bias towards coherent text
+    var last = genTokens[genTokens.length - 1].toLowerCase();
+    if (last === 'the' || last === 'a') nextIdx = [1, 4, 17, 18, 20, 21][Math.floor(rng6() * 6)]; // nouns
+    else if (last === 'cat' || last === 'mat' || last === 'dog') nextIdx = [2, 6, 7, 19][Math.floor(rng6() * 4)]; // verbs
+    else if (last === 'sat' || last === 'was' || last === 'is') nextIdx = [3, 8, 9, 14][Math.floor(rng6() * 4)]; // prepositions
+    else if (last === 'on' || last === 'in' || last === 'to') nextIdx = [0, 5, 11][Math.floor(rng6() * 3)]; // articles
+
+    genTokens.push(genVocab[nextIdx % genVocab.length]);
+    genStep_val++;
+    document.getElementById('genStep').textContent = genStep_val;
+    renderGenSequence();
+    drawKVCache();
+    drawGenAttention();
+  }, delay);
+}
+
+function renderGenSequence() {
+  var container = document.getElementById('genSequence');
+  var html = '';
+  genTokens.forEach(function(t, i) {
+    var isNew = i === genTokens.length - 1 && genStep_val > 0;
+    var color = isNew ? '#01a3a4' : '#ccc';
+    var bg = isNew ? 'rgba(1,163,164,0.2)' : 'transparent';
+    html += '<span style="color:' + color + '; background:' + bg + '; padding:2px 6px; border-radius:4px; transition:all 0.3s;">' + t + ' </span>';
+  });
+  container.innerHTML = html;
+}
+
+function drawKVCache() {
+  var canvas = document.getElementById('kvCacheCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  var n = genTokens.length;
+  var cellSize = Math.min(16, (W - 60) / Math.max(n, 1));
+
+  ctx.fillStyle = '#aaa';
+  ctx.font = '11px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('KV-Cache (Keys & Values stored per token):', 10, 16);
+
+  var startY = 30;
+  // Keys row
+  ctx.fillStyle = '#888';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'right';
+  ctx.fillText('Keys', 42, startY + cellSize / 2 + 3);
+  for (var i = 0; i < n; i++) {
+    var isCached = i < n - 1;
+    ctx.fillStyle = isCached ? 'rgba(1,163,164,0.5)' : 'rgba(255,217,61,0.7)';
+    ctx.fillRect(50 + i * (cellSize + 2), startY, cellSize, cellSize);
+  }
+
+  // Values row
+  var valY = startY + cellSize + 8;
+  ctx.fillStyle = '#888';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'right';
+  ctx.fillText('Vals', 42, valY + cellSize / 2 + 3);
+  for (var i = 0; i < n; i++) {
+    var isCached = i < n - 1;
+    ctx.fillStyle = isCached ? 'rgba(1,163,164,0.5)' : 'rgba(255,217,61,0.7)';
+    ctx.fillRect(50 + i * (cellSize + 2), valY, cellSize, cellSize);
+  }
+
+  // Token labels
+  ctx.font = '8px monospace';
+  ctx.textAlign = 'center';
+  for (var i = 0; i < n; i++) {
+    ctx.fillStyle = i < n - 1 ? '#01a3a4' : '#ffd93d';
+    var label = genTokens[i].length > 3 ? genTokens[i].substring(0, 3) : genTokens[i];
+    ctx.fillText(label, 50 + i * (cellSize + 2) + cellSize / 2, valY + cellSize + 12);
+  }
+
+  // Stats
+  var statsY = valY + cellSize + 28;
+  ctx.fillStyle = '#888';
+  ctx.font = '11px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  var cached = Math.max(0, n - 1);
+  ctx.fillText('Cached: ' + cached + ' tokens  |  New: 1 token  |  Saved: ' + (cached > 0 ? ((1 - 1/n) * 100).toFixed(0) : '0') + '% computation', 10, statsY);
+}
+
+function drawGenAttention() {
+  var canvas = document.getElementById('genAttnCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  var n = genTokens.length;
+  if (n < 2) return;
+  var maxShow = Math.min(n, 14);
+  var startIdx = Math.max(0, n - maxShow);
+
+  ctx.fillStyle = '#aaa';
+  ctx.font = 'bold 12px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Causal Attention Pattern (last ' + maxShow + ' tokens)', 20, 18);
+
+  var cellSize = Math.min(24, (Math.min(W, H) - 100) / maxShow);
+  var matX = 80, matY = 35;
+
+  // Row/col labels
+  for (var i = 0; i < maxShow; i++) {
+    var ti = startIdx + i;
+    ctx.fillStyle = ti === n - 1 ? '#01a3a4' : '#888';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(genTokens[ti], matX - 5, matY + i * cellSize + cellSize / 2 + 3);
+    ctx.textAlign = 'center';
+    ctx.save();
+    ctx.translate(matX + i * cellSize + cellSize / 2, matY - 3);
+    ctx.rotate(-0.5);
+    ctx.fillText(genTokens[ti], 0, 0);
+    ctx.restore();
+  }
+
+  // Attention matrix
+  var rng7 = seededRandom(55);
+  for (var i = 0; i < maxShow; i++) {
+    for (var j = 0; j < maxShow; j++) {
+      var qi = startIdx + i, ki = startIdx + j;
+      if (ki > qi) {
+        // Causal: future masked
+        ctx.fillStyle = 'rgba(50,50,50,0.3)';
+      } else {
+        // Attention weight: more to recent and self
+        var dist = qi - ki;
+        var attn = Math.exp(-dist * 0.3) * (0.5 + rng7() * 0.5);
+        if (qi === ki) attn = 0.6 + rng7() * 0.3;
+        attn = Math.min(1, attn);
+        ctx.fillStyle = 'rgba(1,163,164,' + (0.05 + attn * 0.95) + ')';
+      }
+      ctx.fillRect(matX + j * cellSize, matY + i * cellSize, cellSize - 1, cellSize - 1);
+    }
+  }
+
+  // Causal mask label
+  ctx.fillStyle = '#555';
+  ctx.font = '11px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Dark = masked (future tokens). Each row shows what that token attends to.', matX, matY + maxShow * cellSize + 18);
+}
+
+// ============================================================
+// 6.7 TRAINING
+// ============================================================
+var trainEpoch = 0;
+var trainLosses = [];
+var trainInterval = null;
+var trainSequence = ['The','cat','sat','on','the','mat'];
+
+function updateTrainLR() {
+  var lr = parseInt(document.getElementById('trainLR').value) / 1000;
+  document.getElementById('trainLRVal').textContent = lr.toFixed(3);
+}
+
+function resetTraining() {
+  if (trainInterval) { clearInterval(trainInterval); trainInterval = null; }
+  trainEpoch = 0;
+  trainLosses = [];
+  drawTrainSequence();
+  drawLossBars();
+  drawLossCurve();
+  drawTrainGenText();
+}
+
+function startTraining() {
+  if (trainInterval) { clearInterval(trainInterval); trainInterval = null; }
+  resetTraining();
+  trainInterval = setInterval(function() {
+    if (trainEpoch >= 200) { clearInterval(trainInterval); trainInterval = null; return; }
+    trainEpoch++;
+    // Simulate decreasing loss
+    var lr = parseInt(document.getElementById('trainLR').value) / 1000;
+    var baseLoss = 4.0 * Math.exp(-trainEpoch * lr * 0.5) + 0.5 + (seededRandom(trainEpoch)() - 0.5) * 0.3;
+    trainLosses.push(Math.max(0.3, baseLoss));
+    drawTrainSequence();
+    drawLossBars();
+    drawLossCurve();
+    drawTrainGenText();
+  }, 50);
+}
+
+function drawTrainSequence() {
+  var container = document.getElementById('trainSequence');
+  var html = '<div style="display:flex; gap:4px; flex-wrap:wrap; align-items:flex-start;">';
+  var rng8 = seededRandom(trainEpoch * 13 + 7);
+  var confidence = Math.min(0.95, trainEpoch * 0.005);
+
+  for (var i = 0; i < trainSequence.length - 1; i++) {
+    var input = trainSequence.slice(0, i + 1).join(' ');
+    var target = trainSequence[i + 1];
+    var isCorrect = rng8() < confidence;
+    var predicted = isCorrect ? target : genVocab[Math.floor(rng8() * genVocab.length)];
+    var color = isCorrect ? '#2ecc71' : '#e74c3c';
+
+    html += '<div style="background:#0a0a15; border:1px solid #2a2a4a; border-radius:8px; padding:8px 12px; min-width:120px;">';
+    html += '<div style="font-size:0.75em; color:#888;">Input: "' + input + '"</div>';
+    html += '<div style="font-size:0.75em; color:#888; margin-top:2px;">Target: <span style="color:#ffd93d;">' + target + '</span></div>';
+    html += '<div style="font-size:0.75em; margin-top:2px;">Pred: <span style="color:' + color + ';">' + predicted + '</span></div>';
+    html += '</div>';
+  }
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function drawLossBars() {
+  var canvas = document.getElementById('lossBarCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  var n = trainSequence.length - 1;
+  var barW = Math.min(100, (W - 40) / n - 10);
+  var rng9 = seededRandom(trainEpoch * 17);
+  var totalLoss = 0;
+
+  for (var i = 0; i < n; i++) {
+    var loss = Math.max(0.1, 4.0 * Math.exp(-trainEpoch * 0.02) + (rng9() - 0.5) * 0.5);
+    totalLoss += loss;
+    var barH = Math.min(H - 30, loss * (H - 30) / 5);
+
+    // Color: green = low loss, red = high loss
+    var frac = Math.min(1, loss / 4);
+    var r = Math.floor(46 + frac * (231 - 46));
+    var g = Math.floor(204 - frac * (204 - 76));
+    var b = Math.floor(113 - frac * (113 - 60));
+    ctx.fillStyle = 'rgb(' + r + ',' + g + ',' + b + ')';
+
+    var x = 20 + i * (barW + 10);
+    ctx.fillRect(x, H - 20 - barH, barW, barH);
+
+    ctx.fillStyle = '#888';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(loss.toFixed(2), x + barW / 2, H - 22 - barH);
+    ctx.fillText('pos ' + i, x + barW / 2, H - 6);
+  }
+
+  document.getElementById('totalLoss').textContent = (totalLoss / n).toFixed(2);
+}
+
+function drawLossCurve() {
+  var canvas = document.getElementById('lossCurveCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  if (trainLosses.length < 2) {
+    ctx.fillStyle = '#555';
+    ctx.font = '14px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Press "Train" to see loss curve', W / 2, H / 2);
+    return;
+  }
+
+  var marginL = 60, marginR = 30, marginT = 30, marginB = 40;
+  var plotW = W - marginL - marginR;
+  var plotH = H - marginT - marginB;
+
+  // Axes
+  ctx.strokeStyle = '#2a2a4a';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(marginL, marginT);
+  ctx.lineTo(marginL, marginT + plotH);
+  ctx.lineTo(marginL + plotW, marginT + plotH);
+  ctx.stroke();
+
+  // Labels
+  ctx.fillStyle = '#888';
+  ctx.font = '11px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Epoch', marginL + plotW / 2, H - 5);
+  ctx.save();
+  ctx.translate(15, marginT + plotH / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('Loss', 0, 0);
+  ctx.restore();
+
+  ctx.fillStyle = '#aaa';
+  ctx.font = 'bold 12px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Training Loss (Epoch ' + trainEpoch + ')', marginL, 18);
+
+  // Y-axis ticks
+  var maxLoss = 5;
+  for (var i = 0; i <= 5; i++) {
+    var y = marginT + plotH - (i / 5) * plotH;
+    ctx.fillStyle = '#555';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(i.toFixed(0), marginL - 8, y + 3);
+    ctx.strokeStyle = '#1a1a2e';
+    ctx.beginPath();
+    ctx.moveTo(marginL, y);
+    ctx.lineTo(marginL + plotW, y);
+    ctx.stroke();
+  }
+
+  // Loss curve
+  ctx.strokeStyle = '#01a3a4';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (var i = 0; i < trainLosses.length; i++) {
+    var x = marginL + (i / 200) * plotW;
+    var y = marginT + plotH - (trainLosses[i] / maxLoss) * plotH;
+    y = Math.max(marginT, Math.min(marginT + plotH, y));
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // Current point
+  if (trainLosses.length > 0) {
+    var lastX = marginL + ((trainLosses.length - 1) / 200) * plotW;
+    var lastY = marginT + plotH - (trainLosses[trainLosses.length - 1] / maxLoss) * plotH;
+    ctx.fillStyle = '#01a3a4';
+    ctx.beginPath();
+    ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawTrainGenText() {
+  var container = document.getElementById('trainGenText');
+  var rng10 = seededRandom(trainEpoch * 3);
+  var text = '';
+  if (trainEpoch < 10) {
+    var chars = 'asjdkqwemnxbv zptlr';
+    for (var i = 0; i < 30; i++) text += chars[Math.floor(rng10() * chars.length)];
+    text = 'Epoch ' + trainEpoch + ': "' + text + '..."';
+  } else if (trainEpoch < 50) {
+    var words = ['th','ca','saton','oon','te','mt','theat','casat'];
+    for (var i = 0; i < 8; i++) text += words[Math.floor(rng10() * words.length)] + ' ';
+    text = 'Epoch ' + trainEpoch + ': "' + text.trim() + '..."';
+  } else if (trainEpoch < 120) {
+    var words = ['the','cat','on','sat','mat','the','a','warm','is'];
+    for (var i = 0; i < 8; i++) text += words[Math.floor(rng10() * words.length)] + ' ';
+    text = 'Epoch ' + trainEpoch + ': "' + text.trim() + '."';
+  } else {
+    text = 'Epoch ' + trainEpoch + ': "the cat sat on the warm mat."';
+  }
+  container.textContent = text;
+}
+
+// ============================================================
+// 6.8 ARCHITECTURE
+// ============================================================
+function drawArchitecture() {
+  var canvas = document.getElementById('archCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  var dModel = parseInt(document.getElementById('archDmodel').value);
+  var nLayers = parseInt(document.getElementById('archLayers').value);
+  var nHeads = parseInt(document.getElementById('archHeads').value);
+  var vocabSize = parseInt(document.getElementById('archVocab').value);
+  document.getElementById('archDmodelVal').textContent = dModel;
+  document.getElementById('archLayersVal').textContent = nLayers;
+  document.getElementById('archHeadsVal').textContent = nHeads;
+  document.getElementById('archVocabVal').textContent = vocabSize.toLocaleString();
+
+  // Parameter count
+  var embParams = vocabSize * dModel + 1024 * dModel; // token + position
+  var attnParams = 4 * dModel * dModel; // Q,K,V,O
+  var ffnParams = 2 * dModel * (4 * dModel); // up + down
+  var lnParams = 4 * dModel; // 2 LN per block
+  var blockParams = attnParams + ffnParams + lnParams;
+  var totalParams = embParams + nLayers * blockParams + dModel + vocabSize * dModel; // final LN + output proj
+  var paramStr = '';
+  if (totalParams >= 1e9) paramStr = (totalParams / 1e9).toFixed(1) + 'B';
+  else if (totalParams >= 1e6) paramStr = (totalParams / 1e6).toFixed(1) + 'M';
+  else paramStr = (totalParams / 1e3).toFixed(0) + 'K';
+  document.getElementById('paramCount').textContent = paramStr;
+
+  // Draw architecture diagram
+  var centerX = W / 2;
+  var boxW = 220, boxH = 36, gap = 8;
+
+  var components = [
+    { label: 'Input Text', color: '#888', ref: '' },
+    { label: 'Tokenizer (BPE)', color: '#01a3a4', ref: 'Viz 6.1' },
+    { label: 'Token Embedding + Pos Enc', color: '#01a3a4', ref: 'Viz 6.2' },
+    { label: nLayers + 'x Transformer Blocks', color: '#ffd93d', ref: 'Viz 6.3-6.4', wide: true },
+    { label: 'Final LayerNorm', color: '#4ecdc4', ref: 'Ch 3.2' },
+    { label: 'Linear (' + dModel + ' \u2192 ' + vocabSize.toLocaleString() + ')', color: '#01a3a4', ref: 'Viz 6.5' },
+    { label: 'Softmax \u2192 Next Token', color: '#ff6b6b', ref: 'Viz 6.5' }
+  ];
+
+  var startY = 20;
+  var currentY = startY;
+
+  components.forEach(function(comp, i) {
+    var w = comp.wide ? boxW + 60 : boxW;
+    var x = centerX - w / 2;
+
+    // Box
+    ctx.fillStyle = '#12121f';
+    ctx.strokeStyle = comp.color;
+    ctx.lineWidth = comp.wide ? 3 : 2;
+    ctx.beginPath();
+    ctx.roundRect(x, currentY, w, boxH, 8);
+    ctx.fill();
+    ctx.stroke();
+
+    // Label
+    ctx.fillStyle = comp.color;
+    ctx.font = (comp.wide ? 'bold ' : '') + '13px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(comp.label, centerX, currentY + boxH / 2 + 4);
+
+    // Ref tag
+    if (comp.ref) {
+      ctx.fillStyle = '#555';
+      ctx.font = '9px Inter, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(comp.ref, x + w + 8, currentY + boxH / 2 + 3);
+    }
+
+    currentY += boxH + gap;
+
+    // Arrow
+    if (i < components.length - 1) {
+      ctx.strokeStyle = '#3a3a6a';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(centerX, currentY - gap);
+      ctx.lineTo(centerX, currentY);
+      ctx.stroke();
+      ctx.fillStyle = '#3a3a6a';
+      ctx.beginPath();
+      ctx.moveTo(centerX, currentY);
+      ctx.lineTo(centerX - 4, currentY - 6);
+      ctx.lineTo(centerX + 4, currentY - 6);
+      ctx.fill();
+    }
+  });
+
+  // Transformer block detail (right side)
+  var detailX = centerX + boxW / 2 + 80;
+  var detailY = startY + (boxH + gap) * 2.5;
+  ctx.fillStyle = '#888';
+  ctx.font = 'bold 11px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Inside each block:', detailX, detailY);
+
+  var blockDetail = [
+    'LayerNorm',
+    'Multi-Head Attention (' + nHeads + ' heads, d_k=' + Math.floor(dModel / Math.max(1, nHeads)) + ')',
+    '+ Residual',
+    'LayerNorm',
+    'FFN (' + dModel + ' \u2192 ' + (4 * dModel) + ' \u2192 ' + dModel + ')',
+    '+ Residual'
+  ];
+
+  blockDetail.forEach(function(line, i) {
+    ctx.fillStyle = line.startsWith('+') ? '#4ecdc4' : '#aaa';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(line, detailX + 10, detailY + 18 + i * 16);
+  });
+
+  // Scale comparison (bottom)
+  var scaleY = currentY + 30;
+  ctx.fillStyle = '#aaa';
+  ctx.font = 'bold 13px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Scale Comparison', centerX, scaleY);
+
+  var scales = [
+    { name: 'Your Model', layers: 6, heads: 4, d: 64, params: '~6M', color: '#01a3a4' },
+    { name: 'GPT-2', layers: 12, heads: 12, d: 768, params: '117M', color: '#ffd93d' },
+    { name: 'GPT-3', layers: 96, heads: 96, d: 12288, params: '175B', color: '#ff6b6b' }
+  ];
+
+  var scaleBarX = 100;
+  scaleY += 20;
+  scales.forEach(function(s, i) {
+    var logScale = Math.log10(parseFloat(s.params) * (s.params.endsWith('B') ? 1e9 : 1e6));
+    var barW3 = Math.max(30, (logScale / 12) * (W - 250));
+    ctx.fillStyle = s.color + '44';
+    ctx.fillRect(scaleBarX, scaleY + i * 28, barW3, 20);
+    ctx.strokeStyle = s.color;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(scaleBarX, scaleY + i * 28, barW3, 20);
+    ctx.fillStyle = s.color;
+    ctx.font = '11px Inter, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(s.name, scaleBarX - 8, scaleY + i * 28 + 14);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#ccc';
+    ctx.font = '10px monospace';
+    ctx.fillText(s.params + ' | ' + s.layers + 'L/' + s.heads + 'H/d=' + s.d, scaleBarX + barW3 + 8, scaleY + i * 28 + 14);
+  });
+
+  ctx.fillStyle = '#666';
+  ctx.font = '11px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Same architecture. Just bigger.', centerX, scaleY + 3 * 28 + 15);
+}
+
+function setPreset(name) {
+  var presets = {
+    tiny:   { d: 64,    l: 6,   h: 4,  v: 50257 },
+    gpt2:   { d: 768,   l: 12,  h: 12, v: 50257 },
+    gpt2xl: { d: 1600,  l: 48,  h: 25, v: 50257 },
+    gpt3:   { d: 12288, l: 96,  h: 96, v: 50257 }
+  };
+  var p = presets[name];
+  document.getElementById('archDmodel').value = p.d;
+  document.getElementById('archLayers').value = p.l;
+  document.getElementById('archHeads').value = p.h;
+  document.getElementById('archVocab').value = p.v;
+  drawArchitecture();
+}
+
+// ============================================================
+// QUIZ DATA: 40 questions (5 per visualization)
+// ============================================================
+var quizData = [
+  {
+    topic: "6.1: Tokenization",
+    questions: [
+      { q: "Why do modern LLMs use subword tokenization instead of character-level or word-level?", options: ["A) It is the only method that works with transformers", "B) Subwords balance sequence length and vocabulary coverage: common words are single tokens, rare words split into known pieces", "C) Character-level is more accurate but slower", "D) Word-level tokenization handles all languages equally well"], correct: 1, explanation: "Character-level creates very long sequences (slow for attention, which is O(n^2)). Word-level can't handle out-of-vocabulary words. Subword tokenization (BPE, WordPiece) strikes a balance: frequent words stay whole, rare words split into known subword units." },
+      { q: "In BPE tokenization, how is the vocabulary built?", options: ["A) By listing all English dictionary words", "B) By randomly sampling character sequences", "C) By iteratively merging the most frequent adjacent character pairs in the training corpus", "D) By using a neural network to learn token boundaries"], correct: 2, explanation: "BPE starts with individual characters, then repeatedly merges the most frequent pair of adjacent tokens. After 50k merges, you get a vocabulary of ~50k tokens. Common words like 'the' become single tokens early; rare words remain split." },
+      { q: "If the text 'unbelievable' is tokenized as ['un', 'believ', 'able'], how many token IDs are fed to the transformer?", options: ["A) 1", "B) 3", "C) 12 (one per character)", "D) It depends on the model architecture"], correct: 1, explanation: "Each subword piece becomes one token with its own integer ID. 'unbelievable' splits into 3 subword tokens, so 3 IDs are fed to the transformer. The sequence length is 3, not 1 or 12." },
+      { q: "What is the typical vocabulary size for GPT-2?", options: ["A) 26 (one per letter)", "B) ~1,000 words", "C) ~50,000 tokens", "D) ~1,000,000 tokens"], correct: 2, explanation: "GPT-2 uses a BPE vocabulary of 50,257 tokens. This includes individual characters, common subwords, and frequent whole words. Larger vocabularies mean shorter sequences but bigger embedding tables." },
+      { q: "How does tokenization in Ch 6 differ from the character-level approach in Ch 2 (makemore)?", options: ["A) They are identical", "B) Ch 2 used one character = one token (vocab ~27). Ch 6 uses subword tokens (vocab ~50k), giving much shorter sequences for the same text", "C) Ch 6 uses word-level tokenization", "D) Ch 2 didn't use tokenization at all"], correct: 1, explanation: "In makemore (Ch 2), each character was a token, giving a tiny vocabulary (~27 for a-z + '.') but long sequences. Real LLMs use subword tokens with ~50k vocabulary, making sequences much shorter while handling any text." }
+    ]
+  },
+  {
+    topic: "6.2: Embeddings + Positional Encoding",
+    questions: [
+      { q: "What is the input embedding to a transformer?", options: ["A) Just the token embedding", "B) Just the positional encoding", "C) The sum of the token embedding and the positional encoding", "D) The concatenation of token and position"], correct: 2, explanation: "The input is: x_i = E[token_i] + PE[i]. Token embedding encodes WHAT the token is. Positional encoding encodes WHERE it is. They are summed (not concatenated) to maintain the same dimension d_model." },
+      { q: "What happens if you remove positional encoding from a transformer?", options: ["A) Nothing changes", "B) The model can't distinguish word order: 'dog bites man' = 'man bites dog'", "C) The model becomes faster", "D) The model only works for short sequences"], correct: 1, explanation: "Without positional encoding, the transformer treats input as a bag of tokens with no order. It can't tell 'dog bites man' from 'man bites dog' because the same token embeddings appear regardless of position." },
+      { q: "In sinusoidal positional encoding, why are different frequencies used for different dimensions?", options: ["A) To save memory", "B) So the model can learn to attend to relative positions: each position has a unique pattern across dimensions", "C) It's arbitrary and doesn't matter", "D) To match the vocabulary size"], correct: 1, explanation: "Different frequencies across dimensions create a unique 'fingerprint' for each position. Low-frequency dimensions encode coarse position information, high-frequency dimensions encode fine position. This makes positions distinguishable and allows the model to learn relative position attention." },
+      { q: "What is the shape of the token embedding table?", options: ["A) (d_model, d_model)", "B) (seq_len, d_model)", "C) (vocab_size, d_model)", "D) (batch_size, vocab_size)"], correct: 2, explanation: "The embedding table has shape (vocab_size, d_model). Each of the ~50k tokens has its own d_model-dimensional vector. Token ID i indexes row i of this table. These embeddings are learned during training." },
+      { q: "Why do we add (not concatenate) token and positional embeddings?", options: ["A) Adding is computationally cheaper", "B) Concatenation would double d_model, breaking all subsequent layers that expect d_model dimensions", "C) The original paper proved adding is better", "D) Concatenation would cause gradient issues"], correct: 1, explanation: "If we concatenated, the dimension would be 2*d_model, requiring all weight matrices in attention and FFN to be resized. Addition keeps the dimension at d_model, which is cleaner. Empirically, addition works well because the model learns to separate the two signals." }
+    ]
+  },
+  {
+    topic: "6.3: One Transformer Block",
+    questions: [
+      { q: "In pre-norm transformers (GPT-2+), what is the order of operations?", options: ["A) Attention -> LayerNorm -> Residual -> FFN -> LayerNorm -> Residual", "B) LayerNorm -> Attention -> Residual -> LayerNorm -> FFN -> Residual", "C) Residual -> LayerNorm -> Attention -> Residual -> LayerNorm -> FFN", "D) Attention -> FFN -> LayerNorm -> Residual"], correct: 1, explanation: "Pre-norm: apply LayerNorm BEFORE each sub-layer (attention, FFN), then add the residual. This is: h = x + Attention(LN(x)), then out = h + FFN(LN(h)). This is more stable than post-norm." },
+      { q: "What does the FFN (feed-forward network) in a transformer block do?", options: ["A) It applies attention across tokens", "B) It processes each token independently: Linear(d -> 4d) -> GELU -> Linear(4d -> d)", "C) It computes the loss function", "D) It tokenizes the input"], correct: 1, explanation: "The FFN operates on each token position independently (no cross-token interaction). It expands the representation to 4x the dimension, applies GELU nonlinearity, then projects back. This is where per-token 'reasoning' happens." },
+      { q: "Why is the FFN hidden dimension typically 4x the model dimension?", options: ["A) It's an arbitrary convention", "B) The expansion creates a 'wider' space for the model to learn nonlinear transformations, then compresses back", "C) To match the number of attention heads", "D) To reduce computation"], correct: 1, explanation: "The 4x expansion gives the FFN a larger intermediate representation to work with. Think of it as: expand to a higher-dimensional space where complex features can be computed, then project back to d_model. The 4x ratio was found empirically to work well." },
+      { q: "What role do residual connections play in a transformer block?", options: ["A) They are optional decorations", "B) They add the input back to the output, enabling gradient flow and letting each block learn incremental 'corrections'", "C) They normalize the activations", "D) They reduce the number of parameters"], correct: 1, explanation: "Residual connections (from Ch 3.3) solve the vanishing gradient problem in deep networks. Each block learns a 'delta' or correction to add to its input, rather than learning the full transformation. This makes training much more stable as depth increases." },
+      { q: "If the input to a transformer block has shape (batch, seq, d_model), what is the output shape?", options: ["A) (batch, seq, 4*d_model)", "B) (batch, seq, d_model) - same as input", "C) (batch, seq, vocab_size)", "D) (batch, d_model)"], correct: 1, explanation: "A transformer block preserves the shape: (batch, seq, d_model) in, (batch, seq, d_model) out. The FFN temporarily expands to 4*d_model internally but projects back. This is what allows blocks to be stacked." }
+    ]
+  },
+  {
+    topic: "6.4: Stacking Blocks",
+    questions: [
+      { q: "How do representations change from early to deep layers?", options: ["A) They remain unchanged", "B) Early layers capture local/syntactic patterns, deep layers capture global/semantic patterns", "C) Deep layers only capture positional information", "D) Early layers are more semantic than deep layers"], correct: 1, explanation: "Research shows early layers capture surface-level features (POS tags, local dependencies), middle layers capture syntactic structure (subject-verb agreement across clauses), and deep layers capture high-level semantics (sentiment, topic, reasoning)." },
+      { q: "Why do deeper transformers have diminishing returns?", options: ["A) Each additional layer adds the same amount of new information", "B) Early layers handle the 'easy' patterns; later layers have less and less to add, so each layer provides smaller marginal improvement", "C) Deep layers just memorize the training data", "D) Deeper models always overfit"], correct: 1, explanation: "The first few layers capture the most important patterns. Each subsequent layer refines further but with less room for improvement. Going from 12 to 24 layers helps much more than going from 96 to 120." },
+      { q: "What is the 'residual stream' interpretation of transformers?", options: ["A) Each block writes to a shared residual stream, and the final output is the accumulation of all blocks' contributions", "B) Residuals are only used in the first block", "C) The residual stream replaces attention", "D) It refers to the loss function residuals"], correct: 0, explanation: "The 'residual stream' view (from Anthropic's research) sees the transformer as: each block reads from and writes to a shared d_model-dimensional stream via residual connections. The output is the sum of the input plus all blocks' contributions." },
+      { q: "If a transformer has 12 layers, how many times does each token interact with every other token?", options: ["A) 1 time total", "B) 12 times (once per attention layer)", "C) 144 times (12 * 12 heads)", "D) 0 times (tokens don't interact)"], correct: 1, explanation: "Each of the 12 layers has a multi-head attention sub-layer where tokens interact. So each token has 12 opportunities to attend to other tokens. Within each layer, multiple heads capture different aspects of the relationships." },
+      { q: "Why can transformer blocks be stacked identically (same architecture per block)?", options: ["A) Because each block preserves the input shape (batch, seq, d_model)", "B) Because each block has different weights", "C) Because residual connections make the input and output compatible", "D) All of the above"], correct: 3, explanation: "All three reasons are correct. Same shape (d_model in and out) makes stacking possible. Different learned weights mean each block captures different patterns. Residual connections make each block learn a refinement rather than a complete transformation." }
+    ]
+  },
+  {
+    topic: "6.5: Output Head",
+    questions: [
+      { q: "What does the output head of a transformer do?", options: ["A) It tokenizes the input", "B) It projects the last hidden state from d_model dimensions to vocab_size dimensions, then applies softmax to get probabilities", "C) It applies attention one more time", "D) It computes the loss"], correct: 1, explanation: "The output head: h_last (d_model) -> Linear(d_model, vocab_size) -> logits -> softmax -> probability over all tokens. This converts the model's internal representation into a prediction over the vocabulary." },
+      { q: "What is the effect of temperature on the softmax distribution?", options: ["A) T < 1 makes the distribution more uniform (flatter)", "B) T > 1 makes the distribution more peaked (sharper)", "C) T < 1 makes the distribution sharper (more confident), T > 1 makes it flatter (more random)", "D) Temperature has no effect on the distribution"], correct: 2, explanation: "softmax(logits/T): when T < 1, dividing by a small number magnifies differences -> sharper distribution. When T > 1, it shrinks differences -> flatter distribution. T -> 0 becomes argmax (greedy). T -> inf becomes uniform." },
+      { q: "How does top-p (nucleus) sampling differ from top-k?", options: ["A) Top-p always samples from exactly p tokens", "B) Top-p samples from the smallest set of tokens whose cumulative probability exceeds p, adapting the number of candidates based on the distribution", "C) Top-p is the same as top-k with k=p", "D) Top-p doesn't use probabilities"], correct: 1, explanation: "Top-k always considers exactly k tokens regardless of how probability is distributed. Top-p adapts: if one token has 95% probability and p=0.9, it samples from just 1 token. If probability is spread evenly, it considers many tokens. This adaptivity is why top-p is preferred." },
+      { q: "In greedy decoding, what token is selected at each step?", options: ["A) A random token from the vocabulary", "B) The token with the highest probability (argmax)", "C) The token with the lowest loss", "D) The token most similar to the input"], correct: 1, explanation: "Greedy decoding always selects argmax(P(token)): the single most likely token. It's deterministic (same input always gives same output) but can produce repetitive text because it never explores alternatives." },
+      { q: "Why is the output projection matrix often tied (shared) with the input embedding matrix?", options: ["A) To save memory: both are (vocab_size, d_model), so sharing halves the embedding parameters", "B) It doesn't work and is never done", "C) Because they serve the same function", "D) To increase the vocabulary size"], correct: 0, explanation: "Weight tying: the input embedding matrix E (vocab_size x d_model) and the output projection W_out (d_model x vocab_size) can be shared (W_out = E^T). This saves ~50M parameters in GPT-2 and acts as regularization. It works because the input and output operate in the same semantic space." }
+    ]
+  },
+  {
+    topic: "6.6: Autoregressive Generation",
+    questions: [
+      { q: "What makes generation 'autoregressive'?", options: ["A) The model generates all tokens simultaneously", "B) Each new token is conditioned on all previously generated tokens: predict one, append, repeat", "C) The model uses recurrent connections", "D) Autoregressive means the model auto-corrects errors"], correct: 1, explanation: "Autoregressive = each output depends on all previous outputs. The model predicts token t+1 given tokens 1..t, appends it to the sequence, then predicts t+2 given 1..t+1, and so on. This is why generation is sequential even though the forward pass is parallel." },
+      { q: "What is the KV-cache and why is it important?", options: ["A) A cache for storing the vocabulary", "B) It stores previously computed Key and Value matrices so they don't need to be recomputed at each generation step", "C) A cache for the tokenizer", "D) It stores the model weights"], correct: 1, explanation: "During generation, at step t you need K and V for all positions 1..t. Without caching, you'd recompute everything. The KV-cache stores K, V from previous steps and only computes new K, V for the latest token. This reduces per-step cost from O(n * d) to O(d)." },
+      { q: "Without KV-cache, what is the total computational cost of generating n tokens?", options: ["A) O(n)", "B) O(n^2)", "C) O(n^3)", "D) O(n * log n)"], correct: 2, explanation: "Without caching, step t requires processing all t tokens (O(t^2) for attention). Summing over n steps: sum of t^2 for t=1..n = O(n^3). With KV-cache, each step is O(t) instead of O(t^2), giving O(n^2) total." },
+      { q: "Why can't a transformer generate all tokens in parallel (without autoregression)?", options: ["A) It can, but the quality is worse", "B) The causal mask means each token can only attend to the past; generating token t+1 requires knowing token t, which must be generated first", "C) Hardware limitations prevent parallel generation", "D) The softmax function requires sequential processing"], correct: 1, explanation: "The causal attention mask enforces that position t can only see positions 1..t-1. Since token t hasn't been generated yet when predicting token t+1, we must generate sequentially. This is the fundamental bottleneck of autoregressive models." },
+      { q: "If a model has generated 100 tokens so far, what does the KV-cache contain?", options: ["A) 100 tokens of text", "B) The Key and Value tensors for all 100 previously computed positions, for every layer and head", "C) Only the last token's Key and Value", "D) The attention weights from all previous steps"], correct: 1, explanation: "The KV-cache stores the full K and V matrices from all 100 previous positions, for every layer and every head. When generating token 101, the new token's Query attends to all 100 cached Keys and Values plus its own new K, V." }
+    ]
+  },
+  {
+    topic: "6.7: Training (Cross-Entropy)",
+    questions: [
+      { q: "How many training examples does a sequence of length N provide for next-token prediction?", options: ["A) 1", "B) N", "C) N - 1", "D) N^2"], correct: 2, explanation: "A sequence of N tokens gives N-1 training examples: predict token 2 from token 1, predict token 3 from tokens 1-2, ..., predict token N from tokens 1 to N-1. This is why LLM training is so data-efficient." },
+      { q: "What does cross-entropy loss measure in the context of next-token prediction?", options: ["A) The distance between two token embeddings", "B) The negative log probability the model assigns to the correct next token", "C) The number of incorrect predictions", "D) The model's perplexity on a test set"], correct: 1, explanation: "Cross-entropy loss = -log(P_model(correct_token)). If the model assigns probability 0.9 to the correct token, loss = -log(0.9) = 0.105 (low, good). If it assigns 0.01, loss = -log(0.01) = 4.6 (high, bad)." },
+      { q: "Why is next-token prediction called 'self-supervised' learning?", options: ["A) Because the model trains itself without any data", "B) Because the labels come from the data itself: the next token in the sequence IS the label, no human annotation needed", "C) Because the model uses self-attention", "D) Because it doesn't use gradient descent"], correct: 1, explanation: "Self-supervised: the supervision signal comes from the data's own structure. In a sentence 'The cat sat', the fact that 'sat' follows 'The cat' IS the training signal. No human needs to label anything. This is why LLMs can train on trillions of tokens of raw text." },
+      { q: "During training, the causal mask ensures each position only sees previous positions. Why is this necessary?", options: ["A) To reduce memory usage", "B) To prevent information leakage: if position t could see the target (position t+1), it would trivially copy it instead of learning to predict", "C) To speed up training", "D) To match the architecture of RNNs"], correct: 1, explanation: "If the model could see the future token, the training task would be trivial: just copy the next position. The causal mask forces the model to actually PREDICT the next token using only past context, which is the same condition it faces during generation." },
+      { q: "What does the loss curve typically look like during transformer training?", options: ["A) Constant throughout training", "B) Starts high (model is random, assigns ~1/vocab_size to correct token) and decreases, with diminishing improvements over time", "C) Starts low and increases", "D) Oscillates without converging"], correct: 1, explanation: "Initially, a random model assigns ~1/50000 probability to each token, giving loss = -log(1/50000) = ~10.8. As training progresses, the model learns patterns and the loss decreases. Early improvements are large; later improvements are smaller (log-linear scaling)." }
+    ]
+  },
+  {
+    topic: "6.8: Complete Architecture",
+    questions: [
+      { q: "Approximately how many parameters does GPT-2 (small) have, and where do most of them live?", options: ["A) 117M parameters, mostly in the embedding table", "B) 117M parameters, mostly in the attention and FFN weight matrices across 12 layers", "C) 1 billion parameters in the output head", "D) 117M parameters, mostly in the positional encoding"], correct: 1, explanation: "GPT-2 small has ~117M parameters. The bulk are in the 12 transformer blocks: each block has attention (4 * 768^2 = 2.4M) and FFN (2 * 768 * 3072 = 4.7M) parameters. 12 blocks * ~7M/block = ~85M, plus ~38M for embeddings." },
+      { q: "What is the fundamental difference between GPT-2 and GPT-4 architecturally?", options: ["A) Completely different architectures", "B) Same core architecture (token embed + pos enc + N transformer blocks + output head), but GPT-4 is much larger (more layers, wider, more heads)", "C) GPT-4 uses RNNs instead of attention", "D) GPT-4 doesn't use tokenization"], correct: 1, explanation: "GPT-2 through GPT-4 all use the same fundamental decoder-only transformer architecture. The differences are scale: more layers, wider dimensions, more heads, and crucially, more training data and compute. GPT-4 also likely uses Mixture of Experts (MoE)." },
+      { q: "What are scaling laws in the context of LLMs?", options: ["A) Rules about how to scale the learning rate", "B) Empirical findings that model performance (loss) improves predictably as a power law of model size, dataset size, and compute", "C) Laws about the maximum model size", "D) Regulations about AI model sizes"], correct: 1, explanation: "Kaplan et al. (2020) showed that loss scales as a power law with model parameters (N), dataset size (D), and compute (C): L(N) ~ N^(-0.076). This means performance improvement is predictable and motivates scaling up models." },
+      { q: "Given d_model=768, n_layers=12, n_heads=12, and vocab_size=50257, approximately how many parameters are in the embedding layer alone?", options: ["A) About 768", "B) About 50,000", "C) About 38.6 million (50257 * 768)", "D) About 1 billion"], correct: 2, explanation: "The token embedding table has vocab_size * d_model = 50,257 * 768 = 38,597,376 ~ 38.6M parameters. This single lookup table accounts for about 33% of GPT-2's total 117M parameters." },
+      { q: "Which components of the transformer did you build in previous chapters?", options: ["A) Only the attention mechanism", "B) Backprop (Ch 1), embeddings (Ch 2), LayerNorm + residuals + activations (Ch 3), attention (Ch 4)", "C) Only the loss function", "D) None of them - Chapter 6 starts from scratch"], correct: 1, explanation: "Ch 1: backprop/autograd (the training engine). Ch 2: embeddings and character-level models. Ch 3: LayerNorm, residual connections, GELU activations. Ch 4: attention mechanism, multi-head attention, causal masking. Ch 6 assembles all of these into a complete transformer." }
+    ]
+  }
+];
+
+// ============================================================
+// QUIZ RENDERING
+// ============================================================
+var topicScores = {};
+var totalCorrect = 0;
+var totalAnswered = 0;
+var totalQ = 40;
+
+quizData.forEach(function(t, ti) { topicScores[ti] = { correct: 0, answered: 0, total: t.questions.length }; });
+
+function buildQuiz() {
+  var container = document.getElementById('quizQuestions');
+  container.innerHTML = '';
+  quizData.forEach(function(topic, ti) {
+    var topicDiv = document.createElement('div');
+    topicDiv.className = 'quiz-topic';
+    var header = document.createElement('div');
+    header.className = 'quiz-topic-header';
+    header.innerHTML = '<h3>' + topic.topic + '</h3><span class="quiz-topic-score" id="topicScore' + ti + '">0 / ' + topic.questions.length + '</span>';
+    header.onclick = function() {
+      var qDiv = topicDiv.querySelector('.quiz-topic-questions');
+      qDiv.classList.toggle('open');
+    };
+    topicDiv.appendChild(header);
+    var questionsDiv = document.createElement('div');
+    questionsDiv.className = 'quiz-topic-questions';
+
+    topic.questions.forEach(function(question, qi) {
+      var qDiv = document.createElement('div');
+      qDiv.className = 'quiz-question';
+      qDiv.innerHTML = '<h4>Q' + (qi+1) + ': ' + question.q + '</h4>';
+      question.options.forEach(function(opt, oi) {
+        var btn = document.createElement('button');
+        btn.className = 'quiz-option';
+        btn.textContent = opt;
+        btn.onclick = function() { checkAnswer(ti, qi, oi, qDiv); };
+        btn.id = 'qopt_' + ti + '_' + qi + '_' + oi;
+        qDiv.appendChild(btn);
+      });
+      var expDiv = document.createElement('div');
+      expDiv.className = 'quiz-explanation';
+      expDiv.id = 'qexp_' + ti + '_' + qi;
+      expDiv.textContent = question.explanation;
+      qDiv.appendChild(expDiv);
+      questionsDiv.appendChild(qDiv);
+    });
+    topicDiv.appendChild(questionsDiv);
+    container.appendChild(topicDiv);
+  });
+}
+
+function checkAnswer(ti, qi, oi, qDiv) {
+  var question = quizData[ti].questions[qi];
+  var buttons = qDiv.querySelectorAll('.quiz-option');
+  var expDiv = document.getElementById('qexp_' + ti + '_' + qi);
+  if (buttons[0].disabled) return;
+  buttons.forEach(function(b, i) {
+    b.disabled = true;
+    if (i === question.correct) b.classList.add('correct');
+    if (i === oi && oi !== question.correct) b.classList.add('wrong');
+  });
+  totalAnswered++;
+  topicScores[ti].answered++;
+  if (oi === question.correct) {
+    totalCorrect++;
+    topicScores[ti].correct++;
+    expDiv.className = 'quiz-explanation show correct-exp';
+  } else {
+    expDiv.className = 'quiz-explanation show wrong-exp';
+  }
+  document.getElementById('quizScore').textContent = totalCorrect;
+  document.getElementById('topicScore' + ti).textContent = topicScores[ti].correct + ' / ' + topicScores[ti].total;
+  document.getElementById('quizProgressBar').style.width = (totalAnswered / totalQ * 100) + '%';
+}
+
+function resetQuiz() {
+  totalCorrect = 0;
+  totalAnswered = 0;
+  quizData.forEach(function(t, ti) { topicScores[ti] = { correct: 0, answered: 0, total: t.questions.length }; });
+  buildQuiz();
+  document.getElementById('quizScore').textContent = '0';
+  document.getElementById('quizProgressBar').style.width = '0%';
+}
+
+function toggleQuiz() {
+  var section = document.getElementById('quizSection');
+  if (section.style.display === 'none') {
+    section.style.display = 'block';
+    section.scrollIntoView({ behavior: 'smooth' });
+  } else {
+    section.style.display = 'none';
+  }
+}
+
+// ============================================================
+// INITIALIZATION
+// ============================================================
+window.addEventListener('DOMContentLoaded', function() {
+  tokenize();
+  searchVocab();
+  drawEmbeddings();
+  buildBlockFlow();
+  drawBlockHeatmap();
+  drawDepth();
+  generateLogits();
+  drawOutputHead();
+  resetGeneration();
+  resetTraining();
+  drawArchitecture();
+  buildQuiz();
+});
+
+</script>
+</body>
+</html>
