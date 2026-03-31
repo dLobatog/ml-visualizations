@@ -1,0 +1,2891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 5: Graph Neural Networks from Scratch</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #0a0a0f; color: #e0e0e0; line-height: 1.6; }
+  .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; text-align: center; border-bottom: 1px solid #2a2a4a; }
+  .header h1 { font-size: 2.2em; background: linear-gradient(90deg, #54a0ff, #48dbfb); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+  .header p { color: #888; font-size: 1.1em; }
+  .header a { color: #54a0ff; text-decoration: none; font-size: 0.9em; }
+  .header a:hover { text-decoration: underline; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+
+  /* Minimap */
+  .minimap { position: sticky; top: 0; z-index: 100; background: #0a0a0fee; backdrop-filter: blur(10px); border-bottom: 1px solid #2a2a4a; padding: 10px 20px; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }
+  .mm-step { padding: 4px 12px; border-radius: 6px; font-size: 0.75em; font-weight: 600; cursor: pointer; transition: all 0.2s; background: #151530; color: #555; border: 1px solid #2a2a4a; white-space: nowrap; }
+  .mm-step:hover { border-color: #54a0ff; color: #54a0ff; }
+  .mm-step.active { background: rgba(84,160,255,0.2); color: #54a0ff; border-color: rgba(84,160,255,0.5); }
+  .mm-step.done { background: rgba(84,160,255,0.1); color: #54a0ff; border-color: rgba(84,160,255,0.3); }
+  .mm-arrow { color: #333; font-size: 0.8em; }
+
+  .viz-section { background: #12121f; border: 1px solid #2a2a4a; border-radius: 16px; padding: 32px; margin-bottom: 40px; }
+  .viz-section h2 { font-size: 1.5em; color: #54a0ff; margin-bottom: 8px; }
+  .viz-section .subtitle { color: #888; margin-bottom: 24px; font-size: 0.95em; }
+  .viz-canvas { background: #0d0d1a; border-radius: 12px; position: relative; overflow: hidden; }
+  canvas { display: block; width: 100%; }
+  .controls { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; align-items: center; }
+  .control-group { display: flex; flex-direction: column; gap: 4px; }
+  .control-group label { font-size: 0.85em; color: #aaa; }
+  .control-group input[type="range"] { width: 160px; accent-color: #54a0ff; }
+  .control-group .value { font-size: 0.85em; color: #54a0ff; font-family: monospace; }
+  .btn { padding: 8px 16px; border: 1px solid #54a0ff; background: transparent; color: #54a0ff; border-radius: 8px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
+  .btn:hover { background: #54a0ff22; }
+  .btn.active { background: #54a0ff33; }
+  .tab-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+
+  .insight-box { background: linear-gradient(135deg, #1a1a3e 0%, #151530 100%); border-left: 4px solid #54a0ff; padding: 20px 24px; margin-top: 20px; border-radius: 0 12px 12px 0; font-size: 0.92em; color: #ccc; line-height: 1.8; }
+  .insight-box strong { color: #54a0ff; font-size: 1.05em; }
+  .insight-box .formula { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 12px 18px; margin: 12px 0; font-family: 'Courier New', monospace; color: #e8e8ff; font-size: 1.05em; text-align: center; letter-spacing: 0.5px; line-height: 1.9; }
+  .insight-box .key-point { display: flex; flex-wrap: wrap; gap: 4px 8px; margin: 8px 0; padding: 4px 0; align-items: baseline; }
+  .insight-box .key-point .label { color: #54a0ff; font-weight: 600; min-width: 160px; flex-shrink: 0; }
+  .insight-box .key-point .desc { color: #ddd; }
+  .insight-box .interview-tip { background: rgba(100, 255, 100, 0.05); border: 1px solid rgba(100, 255, 100, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #b0ffb0; font-size: 0.93em; line-height: 1.6; }
+  .insight-box .interview-tip::before { content: '\1F4A1  Interview Tip: '; font-weight: 700; color: #7fff7f; }
+  .insight-box .mnemonic { background: rgba(255, 150, 255, 0.05); border: 1px solid rgba(255, 150, 255, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #ffb0ff; font-size: 0.93em; line-height: 1.6; }
+  .insight-box .mnemonic::before { content: '\1F9E0  Remember: '; font-weight: 700; color: #ff7fff; }
+  .insight-box .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+  .insight-box .comparison .option { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 10px 14px; }
+  .insight-box .comparison .option .opt-title { color: #54a0ff; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
+  .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
+  .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
+
+  .katex { color: #e8e8ff; font-size: 1.1em; }
+  .formula .katex { font-size: 1.2em; }
+
+  .narrative-note { background: rgba(255,217,61,0.05); border-left: 3px solid #ffd93d; padding: 14px 18px; margin: 16px 0; border-radius: 0 8px 8px 0; font-size: 0.9em; color: #ccb866; }
+  .narrative-note strong { color: #ffd93d; }
+
+  select { padding: 6px 12px; border: 1px solid #2a2a4a; background: #0d0d1a; color: #e0e0e0; border-radius: 6px; font-size: 0.9em; cursor: pointer; }
+  select:focus { outline: none; border-color: #54a0ff; }
+
+#quizToggle{position:fixed;top:20px;right:20px;z-index:1000;padding:12px 20px;background:#54a0ff;color:#0a0a0f;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:1em;box-shadow:0 4px 15px rgba(0,0,0,0.3);transition:transform 0.2s}
+#quizToggle:hover{transform:scale(1.05)}
+#quizSection{background:#0a0a0f;border-top:2px solid #54a0ff;padding:40px 20px;margin-top:40px}
+.quiz-container{max-width:900px;margin:0 auto}
+.quiz-topic{margin-bottom:30px}
+.quiz-topic-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:10px;cursor:pointer;margin-bottom:12px;user-select:none}
+.quiz-topic-header h3{color:#54a0ff;margin:0;font-size:1.15em}
+.quiz-topic-header:hover{background:#1f1f3a}
+.quiz-topic-score{color:#888;font-size:0.95em}
+.quiz-topic-questions{display:none}
+.quiz-topic-questions.open{display:block}
+.quiz-question{background:#12121f;border:1px solid #2a2a4a;border-radius:12px;padding:24px;margin-bottom:16px}
+.quiz-question h4{color:#e0e0e0;margin-bottom:16px;font-size:1.05em;line-height:1.5}
+.quiz-option{display:block;width:100%;padding:12px 16px;margin:8px 0;background:#0d0d1a;border:1px solid #2a2a4a;border-radius:8px;color:#e0e0e0;cursor:pointer;text-align:left;font-size:0.95em;transition:all 0.2s;font-family:inherit}
+.quiz-option:hover:not(:disabled){border-color:#54a0ff;background:#1a1a3e}
+.quiz-option.correct{background:#1a3a2a !important;border-color:#2ecc71 !important;color:#2ecc71 !important}
+.quiz-option.wrong{background:#3a1a1a !important;border-color:#e74c3c !important;color:#e74c3c !important}
+.quiz-option.reveal{border-color:#2ecc71 !important;color:#2ecc71 !important}
+.quiz-option:disabled{cursor:default}
+.quiz-explanation{margin-top:12px;padding:14px 18px;border-radius:8px;font-size:0.93em;line-height:1.6;display:none}
+.quiz-explanation.show{display:block}
+.quiz-explanation.correct-exp{border-left:4px solid #2ecc71;background:rgba(46,204,113,0.08);color:#b0ffb0}
+.quiz-explanation.wrong-exp{border-left:4px solid #e74c3c;background:rgba(231,76,60,0.08);color:#ffb0b0}
+.quiz-score{text-align:center;font-size:1.5em;color:#54a0ff;margin-bottom:30px}
+.quiz-actions{text-align:center;margin-top:30px;margin-bottom:20px}
+.quiz-actions button{padding:10px 24px;margin:0 8px;border-radius:8px;border:1px solid #54a0ff;background:transparent;color:#54a0ff;cursor:pointer;font-size:1em}
+.quiz-actions button:hover{background:rgba(84,160,255,0.1)}
+.quiz-progress{height:4px;background:#1a1a2e;border-radius:2px;margin-bottom:20px;overflow:hidden}
+.quiz-progress-bar{height:100%;background:#54a0ff;border-radius:2px;transition:width 0.3s}
+
+.break-toggle { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border: 1px solid #e74c3c; background: transparent; color: #e74c3c; border-radius: 8px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
+.break-toggle:hover { background: rgba(231,76,60,0.15); }
+.break-toggle.broken { background: rgba(231,76,60,0.25); border-color: #ff4444; color: #ff4444; }
+
+.legend { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.85em; color: #ccc; }
+.legend-dot { width: 12px; height: 12px; border-radius: 50%; }
+
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '\\(', right: '\\)', display: false}]});"></script>
+</head>
+<body>
+<button id="quizToggle" onclick="toggleQuiz()">&#x1F9E0; Quiz Mode</button>
+
+<div class="header">
+  <a href="../index.html">&larr; Back to Index</a>
+  <h1>Chapter 5: Graph Neural Networks from Scratch</h1>
+  <p>From basic graphs to message passing to GCN to GAT &mdash; build GNNs one layer at a time</p>
+  <p style="color:#666; font-size:0.85em; margin-top:6px;">Prereq: Ch 3 (MLP), Ch 4 (for GAT)</p>
+</div>
+
+<div class="minimap" id="minimap">
+  <span class="mm-step active" data-section="viz51" onclick="scrollToViz('viz51')">1. Graph Data</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz52" onclick="scrollToViz('viz52')">2. Msg Passing</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz53" onclick="scrollToViz('viz53')">3. Aggregation</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz54" onclick="scrollToViz('viz54')">4. GCN</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz55" onclick="scrollToViz('viz55')">5. GAT</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz56" onclick="scrollToViz('viz56')">6. Over-Smooth</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz57" onclick="scrollToViz('viz57')">7. Graph Tasks</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz58" onclick="scrollToViz('viz58')">8. GraphSAGE</span>
+</div>
+
+<div class="container">
+
+<!-- ============================================================ -->
+<!-- VIZ 5.1: GRAPHS AS DATA -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz51">
+  <h2>5.1 Graphs as Data: Nodes, Edges, Features</h2>
+  <p class="subtitle">Click on the canvas to add nodes. Drag from one node to another to create edges. Each node has a feature vector shown as a colored bar. The adjacency matrix updates live.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <div class="tab-bar">
+      <button class="btn active" id="presetSocial" onclick="loadPreset('social')">Social Network</button>
+      <button class="btn" id="presetMolecule" onclick="loadPreset('molecule')">Molecule</button>
+      <button class="btn" id="presetCitation" onclick="loadPreset('citation')">Citation Network</button>
+    </div>
+    <button class="btn" onclick="clearGraph51()">Clear</button>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="graphEditorCanvas" width="900" height="450"></canvas>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:#54a0ff;"></span> Click to add node</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#48dbfb;"></span> Drag node-to-node for edge</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#ff6b6b;"></span> Right half: adjacency matrix</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Unlike images (grid) or text (sequence), graph data has <em>irregular structure</em>. Each node can have a different number of neighbors.
+    <div class="formula">$$A_{ij} = \begin{cases} 1 & \text{if edge between node } i \text{ and } j \\ 0 & \text{otherwise} \end{cases}$$</div>
+    <div class="key-point">
+      <span class="label">Adjacency Matrix A:</span>
+      <span class="desc">A symmetric matrix where entry (i,j) = 1 if there is an edge between nodes i and j. This is the fundamental representation of graph structure.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Node Features X:</span>
+      <span class="desc">Each node carries a feature vector. For molecules: atom type, charge. For social networks: user profile. The feature matrix X has shape (N, F).</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Graphs are everywhere: social networks, molecules, knowledge bases, code ASTs, traffic networks. The key challenge is that we need architectures that handle variable-size neighborhoods.</div>
+    <div class="mnemonic">A graph = (Nodes with features, Edges defining structure). The adjacency matrix A encodes who is connected to whom.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 5.2: MESSAGE PASSING -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz52">
+  <h2>5.2 Message Passing: The Core Idea</h2>
+  <p class="subtitle">Click any node to be the "focus." Watch neighbors send colored envelopes along edges, then aggregate and update. Use the layer slider to see the receptive field grow.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <button class="btn" id="mpStepBtn" onclick="mpStep()">Step</button>
+    <button class="btn" id="mpAutoBtn" onclick="mpAutoPlay()">Auto-Play</button>
+    <button class="btn" onclick="mpReset()">Reset</button>
+    <div class="control-group">
+      <label>Layers</label>
+      <input type="range" id="mpLayers" min="1" max="5" value="1" oninput="mpUpdateLayers()">
+      <span class="value" id="mpLayersVal">1</span>
+    </div>
+    <div class="tab-bar">
+      <button class="btn active" id="mpAggMean" onclick="setMpAgg('mean')">Mean</button>
+      <button class="btn" id="mpAggSum" onclick="setMpAgg('sum')">Sum</button>
+      <button class="btn" id="mpAggMax" onclick="setMpAgg('max')">Max</button>
+    </div>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="msgPassCanvas" width="900" height="480"></canvas>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:#54a0ff;"></span> Target node</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#ffd93d;"></span> Neighbors (sending)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#ff6b6b;"></span> Envelopes (messages)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#2ecc71;"></span> Updated embedding</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> One round of message passing = one GNN layer. Each node "collects mail" from its neighbors, aggregates, and updates.
+    <div class="formula">$$h_v^{(l+1)} = \sigma\!\left(W^{(l)} \cdot \text{AGG}\!\left(\{h_u^{(l)} : u \in \mathcal{N}(v)\}\right)\right)$$</div>
+    <div class="key-point">
+      <span class="label">1-hop (1 layer):</span>
+      <span class="desc">Each node knows about its direct neighbors.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">k-hop (k layers):</span>
+      <span class="desc">Each node knows about nodes up to k edges away. The receptive field grows with depth.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">"Message passing" is the unifying framework for most GNNs: GCN, GAT, GraphSAGE, GIN all differ only in how they create messages and aggregate them.</div>
+    <div class="mnemonic">Message passing in 4 steps: (1) Highlight target, (2) Neighbors send messages, (3) Aggregate (mean/sum/max), (4) Update with W and activation.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 5.3: AGGREGATION FUNCTIONS -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz53">
+  <h2>5.3 Aggregation Functions: Mean vs Sum vs Max</h2>
+  <p class="subtitle">Same graph, three columns. Watch how different aggregations produce different embeddings. The key experiment: degree-2 node vs degree-10 node with identical neighbor features.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <button class="btn" onclick="runAggExperiment()">Run Experiment</button>
+    <button class="btn" onclick="resetAggViz()">Reset</button>
+    <button class="break-toggle" id="aggBreak" onclick="toggleAggBreak()">Break It: Extreme Degrees</button>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="aggCanvas" width="900" height="480"></canvas>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:#54a0ff;"></span> Mean aggregation</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#2ecc71;"></span> Sum aggregation</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#ffd93d;"></span> Max aggregation</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Different aggregations have different properties. Sum preserves degree info. Mean is degree-invariant. Max captures the most salient feature.
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title">Sum Aggregation</div>
+        <div class="opt-desc">Degree-aware: a node with 10 neighbors gets 5x larger embedding than a node with 2 neighbors (same features). Can distinguish multi-sets.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title">Mean Aggregation</div>
+        <div class="opt-desc">Degree-invariant: both get the same embedding regardless of neighbor count. Loses structural information about degree.</div>
+      </div>
+    </div>
+    <div class="key-point">
+      <span class="label">Max Aggregation:</span>
+      <span class="desc">Captures the most extreme feature value among neighbors. Good for detecting the presence of a feature, not its frequency.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">GIN (Graph Isomorphism Network) proves that sum aggregation is the most expressive -- it can distinguish graph structures that mean and max cannot.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 5.4: GCN -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz54">
+  <h2>5.4 GCN: Graph Convolutional Network</h2>
+  <p class="subtitle">The GCN formula step by step: add self-loops, normalize by degree, multiply features, weight matrix, activation. Compare GCN vs naive message passing.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <button class="btn active" id="gcnStep1" onclick="setGcnStep(1)">Step 1: A + I</button>
+    <button class="btn" id="gcnStep2" onclick="setGcnStep(2)">Step 2: Normalize</button>
+    <button class="btn" id="gcnStep3" onclick="setGcnStep(3)">Step 3: H*W + Activate</button>
+    <button class="btn" id="gcnCompare" onclick="setGcnStep(4)">Compare: GCN vs Naive</button>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="gcnCanvas" width="900" height="500"></canvas>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> GCN uses symmetric normalization to prevent degree-dependent scaling.
+    <div class="formula">$$H^{(l+1)} = \sigma\!\left(\hat{D}^{-1/2}\hat{A}\hat{D}^{-1/2} H^{(l)} W^{(l)}\right) \quad\text{where}\quad \hat{A} = A + I$$</div>
+    <div class="key-point">
+      <span class="label">Self-loops (A + I):</span>
+      <span class="desc">Each node also receives its OWN message, not just from neighbors. This preserves the node's own features across layers.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Symmetric norm:</span>
+      <span class="desc">\(\hat{D}^{-1/2}\hat{A}\hat{D}^{-1/2}\) normalizes by both sender and receiver degree. This is a weighted mean where weight depends on both nodes' connectivity.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">GCN is a first-order approximation of spectral graph convolutions. The normalized adjacency acts as a low-pass filter on the graph signal -- it smooths features between connected nodes.</div>
+    <div class="mnemonic">GCN in one line: "Average your neighbors (including yourself), normalize by degree, then transform with a learned weight matrix."</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 5.5: GAT -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz55">
+  <h2>5.5 GAT: Graph Attention Network</h2>
+  <p class="subtitle">Not all neighbors are equally important. Edge thickness = learned attention weight. Compare GCN (degree-weighted) vs GAT (attention-weighted) side by side.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <button class="btn active" id="gatShowAttn" onclick="setGatMode('attention')">Show Attention</button>
+    <button class="btn" id="gatShowComp" onclick="setGatMode('compare')">GCN vs GAT</button>
+    <button class="btn" onclick="gatRecompute()">Re-compute Attention</button>
+    <div class="control-group">
+      <label>Heads</label>
+      <input type="range" id="gatHeads" min="1" max="4" value="1" oninput="gatUpdateHeads()">
+      <span class="value" id="gatHeadsVal">1</span>
+    </div>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="gatCanvas" width="900" height="500"></canvas>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:#54a0ff;"></span> GCN weights (degree-based)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#ff6b6b;"></span> GAT weights (learned attention)</div>
+  </div>
+  <div class="narrative-note">
+    <strong>Callback to Ch 4:</strong> Remember Q/K/V attention on sequences? GAT is the same idea on graph edges. Instead of attending to all positions in a sequence, each node attends to its neighbors.
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> GAT learns which neighbors matter most. The attention mechanism assigns different weights to different neighbors.
+    <div class="formula">$$\alpha_{ij} = \frac{\exp\!\left(\text{LeakyReLU}\!\left(\mathbf{a}^T [Wh_i \| Wh_j]\right)\right)}{\sum_{k \in \mathcal{N}(i)} \exp\!\left(\text{LeakyReLU}\!\left(\mathbf{a}^T [Wh_i \| Wh_k]\right)\right)}$$</div>
+    <div class="key-point">
+      <span class="label">Transform:</span>
+      <span class="desc">Apply shared weight matrix W to both source and target node features.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Concatenate + Score:</span>
+      <span class="desc">Concatenate transformed features [Wh_i || Wh_j], apply attention vector a, then LeakyReLU.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Normalize:</span>
+      <span class="desc">Softmax over all neighbors to get attention coefficients that sum to 1.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Multi-head attention in GATs: run K independent attention heads and concatenate (or average) their outputs. This stabilizes learning and captures different types of neighbor importance.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 5.6: OVER-SMOOTHING -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz56">
+  <h2>5.6 Over-Smoothing: The Depth Problem in GNNs</h2>
+  <p class="subtitle">Too many GNN layers make all node embeddings converge to the same vector. Watch the heatmap go uniform. Toggle fixes: residual connections, skip connections, jumping knowledge.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <div class="control-group">
+      <label>GNN Layers</label>
+      <input type="range" id="osLayers" min="1" max="15" value="1" oninput="updateOverSmoothing()">
+      <span class="value" id="osLayersVal">1</span>
+    </div>
+    <div class="tab-bar">
+      <button class="btn active" id="osNone" onclick="setOsFix('none')">No Fix</button>
+      <button class="btn" id="osResidual" onclick="setOsFix('residual')">Residual</button>
+      <button class="btn" id="osSkip" onclick="setOsFix('skip')">Skip Conn.</button>
+      <button class="btn" id="osJK" onclick="setOsFix('jk')">Jumping Knowledge</button>
+    </div>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="osCanvas" width="900" height="480"></canvas>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:#54a0ff;"></span> Diverse embeddings (good)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#ff6b6b;"></span> Converged embeddings (bad)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#2ecc71;"></span> Fix applied</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Over-smoothing is why most GNNs use only 2-3 layers, unlike deep CNNs with 100+ layers.
+    <div class="formula">$$\text{Diversity}(L) = \frac{1}{N^2}\sum_{i \neq j} \|h_i^{(L)} - h_j^{(L)}\|_2 \quad \xrightarrow{L \to \infty} \quad 0$$</div>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title">Residual Connections</div>
+        <div class="opt-desc">h' = GNN(h) + h. Skip connection preserves original information. Inspired by ResNets.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title">Jumping Knowledge</div>
+        <div class="opt-desc">Concatenate outputs from ALL layers: [h^(1) || h^(2) || ... || h^(L)]. The model selects the best layer per node.</div>
+      </div>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">If asked "why are GNNs shallow?", explain over-smoothing: repeated message passing is like repeatedly averaging -- everything converges. This is fundamentally different from depth problems in CNNs.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 5.7: GRAPH-LEVEL TASKS: POOLING -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz57">
+  <h2>5.7 Graph-Level Tasks: Pooling &amp; Readout</h2>
+  <p class="subtitle">Go from node embeddings to a single graph vector. Compare mean, sum, and hierarchical pooling. See the full molecule classification pipeline.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <div class="tab-bar">
+      <button class="btn active" id="poolMean" onclick="setPoolMode('mean')">Mean Pool</button>
+      <button class="btn" id="poolSum" onclick="setPoolMode('sum')">Sum Pool</button>
+      <button class="btn" id="poolHier" onclick="setPoolMode('hierarchical')">Hierarchical</button>
+    </div>
+    <button class="btn" id="poolPipeline" onclick="setPoolMode('pipeline')">Molecule Pipeline</button>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="poolCanvas" width="900" height="480"></canvas>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> For graph-level tasks (graph classification, property prediction), we need a readout function that compresses all node embeddings into one vector.
+    <div class="formula">$$h_G = \text{READOUT}\!\left(\{h_v^{(L)} : v \in G\}\right) \quad\text{e.g.,}\quad h_G = \frac{1}{|V|}\sum_{v \in V} h_v^{(L)}$$</div>
+    <div class="key-point">
+      <span class="label">Mean Pooling:</span>
+      <span class="desc">Average all node embeddings. Size-invariant but loses information about graph size.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Sum Pooling:</span>
+      <span class="desc">Sum all node embeddings. Preserves graph size information. Provably more expressive (GIN paper).</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Hierarchical Pooling:</span>
+      <span class="desc">Progressively coarsen the graph (e.g., DiffPool). Learns which nodes to group. More powerful but more complex.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">The molecule classification pipeline: molecular graph -> GNN layers -> readout -> MLP classifier -> property prediction. This is the workhorse of computational chemistry and drug discovery.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 5.8: GRAPHSAGE -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz58">
+  <h2>5.8 GraphSAGE: Inductive Learning &amp; Sampling</h2>
+  <p class="subtitle">Scale GNNs to huge graphs by sampling neighbors. Adjust the sampling budget K and watch the computation graph change. Compare inductive vs transductive.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <div class="control-group">
+      <label>Sampling Budget K</label>
+      <input type="range" id="sageK" min="2" max="25" value="5" oninput="updateSage()">
+      <span class="value" id="sageKVal">5</span>
+    </div>
+    <button class="btn" onclick="resampleSage()">Resample</button>
+    <button class="btn" onclick="addNewNodeSage()">Add New Node (Inductive)</button>
+    <div class="tab-bar">
+      <button class="btn active" id="sageCompGraph" onclick="setSageMode('computation')">Computation Graph</button>
+      <button class="btn" id="sageVariance" onclick="setSageMode('variance')">Sample Variance</button>
+    </div>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="sageCanvas" width="900" height="500"></canvas>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:#ff6b6b;"></span> Target node</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#ffd93d;"></span> Sampled neighbors (layer 1)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#54a0ff;"></span> Sampled neighbors (layer 2)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#2ecc71;"></span> New node (inductive)</div>
+  </div>
+  <div class="narrative-note">
+    <strong>Chapter 5 Payoff:</strong> You've built GNNs from the ground up: message passing, GCN, GAT, and learned to handle their failure modes. The same attention mechanism from Ch 4 powers GATs -- and the same principle of learning from structure will continue into later chapters.
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> GraphSAGE samples a fixed number of neighbors at each layer, enabling mini-batch training on massive graphs.
+    <div class="formula">$$h_v^{(l)} = \sigma\!\left(W \cdot \text{AGG}\!\left(\{h_u^{(l-1)} : u \in \mathcal{S}_K(\mathcal{N}(v))\}\right)\right)$$</div>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title" style="color:#54a0ff;">Transductive (GCN)</div>
+        <div class="opt-desc">Requires the full graph at training time. Cannot generalize to unseen nodes without retraining.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color:#2ecc71;">Inductive (GraphSAGE)</div>
+        <div class="opt-desc">Learns a function that samples and aggregates. Can immediately compute embeddings for new, unseen nodes.</div>
+      </div>
+    </div>
+    <div class="key-point">
+      <span class="label">K=2 (small budget):</span>
+      <span class="desc">Fast but noisy. High variance across samples. Good for very large graphs where speed matters.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">K=25 (large budget):</span>
+      <span class="desc">Accurate but slow. Low variance. Approaches full-neighborhood aggregation (GCN-like).</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">GraphSAGE's key innovation: instead of learning embeddings (transductive), it learns an aggregation function (inductive). This is why it scales to graphs with millions of nodes and can handle new nodes at test time.</div>
+  </div>
+</div>
+
+</div><!-- end container -->
+
+<!-- ============================================================ -->
+<!-- QUIZ SECTION -->
+<!-- ============================================================ -->
+<div id="quizSection" style="display:none">
+<div class="quiz-container">
+  <h2 style="text-align:center;color:#54a0ff;margin-bottom:10px;font-size:1.8em;">Graph Neural Networks Quiz</h2>
+  <p style="text-align:center;color:#888;margin-bottom:20px;">5 questions per visualization &bull; 40 questions total &bull; Click answers to reveal explanations</p>
+  <div class="quiz-progress"><div class="quiz-progress-bar" id="quizProgressBar" style="width:0%"></div></div>
+  <div class="quiz-score">Score: <span id="quizScore">0</span> / <span id="quizTotal">40</span></div>
+  <div class="quiz-actions">
+    <button onclick="resetQuiz()">&#8634; Reset All</button>
+    <button onclick="toggleQuiz()">&#10005; Hide Quiz</button>
+  </div>
+  <div id="quizQuestions"></div>
+</div>
+</div>
+
+<div style="text-align:center; padding:40px; color:#555; font-size:0.85em; border-top:1px solid #1a1a2e;">
+  Chapter 5: Graph Neural Networks from Scratch &bull; <a href="../index.html" style="color:#54a0ff; text-decoration:none;">From Scratch Series</a>
+</div>
+
+<script>
+// ============================================================
+// UTILITY FUNCTIONS
+// ============================================================
+function seededRandom(seed) {
+  var s = seed;
+  return function() {
+    s = (s * 16807 + 0) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
+}
+var rng = seededRandom(42);
+
+function drawRoundRect(ctx, x, y, w, h, r, fill, stroke) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 2; ctx.stroke(); }
+}
+
+function drawArrow(ctx, x1, y1, x2, y2, color, width) {
+  var dx = x2 - x1, dy = y2 - y1;
+  var len = Math.sqrt(dx * dx + dy * dy);
+  if (len < 1) return;
+  var ux = dx / len, uy = dy / len;
+  var headLen = 8;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width || 2;
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2 - ux * headLen, y2 - uy * headLen);
+  ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - ux * headLen - uy * 5, y2 - uy * headLen + ux * 5);
+  ctx.lineTo(x2 - ux * headLen + uy * 5, y2 - uy * headLen - ux * 5);
+  ctx.fill();
+}
+
+function lerp(a, b, t) { return a + (b - a) * t; }
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+function vecLen(x, y) { return Math.sqrt(x * x + y * y); }
+function relu(x) { return Math.max(0, x); }
+
+function hslToRgb(h, s, l) {
+  var r, g, b;
+  if (s === 0) { r = g = b = l; } else {
+    function hue2rgb(p, q, t) {
+      if (t < 0) t += 1; if (t > 1) t -= 1;
+      if (t < 1/6) return p + (q - p) * 6 * t;
+      if (t < 1/2) return q;
+      if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+      return p;
+    }
+    var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    var p = 2 * l - q;
+    r = hue2rgb(p, q, h + 1/3);
+    g = hue2rgb(p, q, h);
+    b = hue2rgb(p, q, h - 1/3);
+  }
+  return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+}
+
+function featureToColor(feat) {
+  var r = Math.round(clamp(feat[0], 0, 1) * 255);
+  var g = Math.round(clamp(feat[1], 0, 1) * 255);
+  var b = Math.round(clamp(feat[2], 0, 1) * 255);
+  return 'rgb(' + r + ',' + g + ',' + b + ')';
+}
+
+function featureToHex(feat) {
+  var r = Math.round(clamp(feat[0], 0, 1) * 255);
+  var g = Math.round(clamp(feat[1], 0, 1) * 255);
+  var b = Math.round(clamp(feat[2], 0, 1) * 255);
+  return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+}
+
+// ============================================================
+// MINIMAP / SCROLL TRACKING
+// ============================================================
+function scrollToViz(id) {
+  document.getElementById(id).scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+var vizSections = ['viz51','viz52','viz53','viz54','viz55','viz56','viz57','viz58'];
+window.addEventListener('scroll', function() {
+  var steps = document.querySelectorAll('.mm-step');
+  var activeIdx = 0;
+  for (var i = 0; i < vizSections.length; i++) {
+    var el = document.getElementById(vizSections[i]);
+    if (el && el.getBoundingClientRect().top < window.innerHeight / 2) activeIdx = i;
+  }
+  steps.forEach(function(s, i) {
+    s.classList.remove('active', 'done');
+    if (i < activeIdx) s.classList.add('done');
+    else if (i === activeIdx) s.classList.add('active');
+  });
+});
+
+// ============================================================
+// SHARED GRAPH DATA STRUCTURE
+// ============================================================
+function makeGraph(nodes, edges) {
+  return { nodes: nodes, edges: edges };
+}
+
+function getNeighbors(graph, nodeIdx) {
+  var neighbors = [];
+  graph.edges.forEach(function(e) {
+    if (e[0] === nodeIdx) neighbors.push(e[1]);
+    else if (e[1] === nodeIdx) neighbors.push(e[0]);
+  });
+  return neighbors;
+}
+
+function getAdjMatrix(graph) {
+  var n = graph.nodes.length;
+  var A = [];
+  for (var i = 0; i < n; i++) { A[i] = []; for (var j = 0; j < n; j++) A[i][j] = 0; }
+  graph.edges.forEach(function(e) { A[e[0]][e[1]] = 1; A[e[1]][e[0]] = 1; });
+  return A;
+}
+
+function getDegrees(A) {
+  return A.map(function(row) { return row.reduce(function(s, v) { return s + v; }, 0); });
+}
+
+// ============================================================
+// VIZ 5.1: GRAPHS AS DATA - INTERACTIVE EDITOR
+// ============================================================
+var g51 = {
+  nodes: [], // {x, y, feat:[r,g,b]}
+  edges: [], // [i, j]
+  dragging: -1,
+  dragEdgeFrom: -1,
+  hoveredNode: -1,
+  mouseX: 0, mouseY: 0,
+  isDraggingNode: false
+};
+
+var presets = {
+  social: {
+    nodes: [
+      {x:120,y:120,feat:[0.9,0.3,0.2]},{x:220,y:80,feat:[0.8,0.5,0.1]},{x:180,y:220,feat:[0.3,0.8,0.4]},
+      {x:80,y:260,feat:[0.2,0.4,0.9]},{x:300,y:160,feat:[0.7,0.2,0.6]},{x:260,y:280,feat:[0.5,0.9,0.3]},
+      {x:360,y:100,feat:[0.1,0.6,0.8]}
+    ],
+    edges: [[0,1],[0,2],[0,3],[1,4],[2,3],[2,5],[4,6],[1,6],[4,5]]
+  },
+  molecule: {
+    nodes: [
+      {x:200,y:150,feat:[0.2,0.2,0.9]},{x:140,y:230,feat:[0.9,0.2,0.2]},{x:260,y:230,feat:[0.9,0.2,0.2]},
+      {x:140,y:320,feat:[0.2,0.2,0.9]},{x:260,y:320,feat:[0.2,0.2,0.9]},{x:200,y:380,feat:[0.9,0.2,0.2]},
+      {x:80,y:150,feat:[0.2,0.9,0.2]},{x:320,y:150,feat:[0.9,0.9,0.2]}
+    ],
+    edges: [[0,1],[0,2],[1,3],[2,4],[3,5],[4,5],[0,6],[0,7]]
+  },
+  citation: {
+    nodes: [
+      {x:200,y:80,feat:[0.8,0.4,0.1]},{x:120,y:180,feat:[0.6,0.6,0.2]},{x:280,y:180,feat:[0.5,0.3,0.7]},
+      {x:80,y:300,feat:[0.3,0.8,0.3]},{x:180,y:300,feat:[0.4,0.5,0.6]},{x:280,y:300,feat:[0.7,0.7,0.1]},
+      {x:340,y:280,feat:[0.2,0.6,0.8]},{x:200,y:380,feat:[0.9,0.3,0.5]},{x:340,y:380,feat:[0.3,0.4,0.9]}
+    ],
+    edges: [[0,1],[0,2],[1,3],[1,4],[2,5],[2,6],[3,7],[4,7],[5,8],[6,8],[4,5]]
+  }
+};
+
+function loadPreset(name) {
+  var p = presets[name];
+  g51.nodes = p.nodes.map(function(n) { return {x:n.x, y:n.y, feat:n.feat.slice()}; });
+  g51.edges = p.edges.map(function(e) { return [e[0], e[1]]; });
+  g51.dragEdgeFrom = -1;
+  document.querySelectorAll('#viz51 .tab-bar .btn').forEach(function(b) { b.classList.remove('active'); });
+  document.getElementById('preset' + name.charAt(0).toUpperCase() + name.slice(1)).classList.add('active');
+  drawGraphEditor();
+}
+
+function clearGraph51() {
+  g51.nodes = [];
+  g51.edges = [];
+  g51.dragEdgeFrom = -1;
+  drawGraphEditor();
+}
+
+function getCanvasCoords(canvas, e) {
+  var rect = canvas.getBoundingClientRect();
+  var scaleX = canvas.width / rect.width;
+  var scaleY = canvas.height / rect.height;
+  return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
+}
+
+function findNodeAt51(x, y) {
+  for (var i = g51.nodes.length - 1; i >= 0; i--) {
+    var dx = g51.nodes[i].x - x, dy = g51.nodes[i].y - y;
+    if (dx * dx + dy * dy < 400) return i;
+  }
+  return -1;
+}
+
+function drawGraphEditor() {
+  var canvas = document.getElementById('graphEditorCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  // Divider
+  var graphW = 460, matW = W - graphW;
+  ctx.strokeStyle = '#2a2a4a';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(graphW, 0); ctx.lineTo(graphW, H); ctx.stroke();
+
+  // Title labels
+  ctx.fillStyle = '#555';
+  ctx.font = 'bold 13px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Interactive Graph Editor', graphW / 2, 25);
+  ctx.fillText('Adjacency Matrix A', graphW + matW / 2, 25);
+
+  // Draw edges
+  g51.edges.forEach(function(e) {
+    var a = g51.nodes[e[0]], b = g51.nodes[e[1]];
+    ctx.strokeStyle = '#4a4a7a';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+  });
+
+  // Draw dragging edge
+  if (g51.dragEdgeFrom >= 0) {
+    var from = g51.nodes[g51.dragEdgeFrom];
+    ctx.strokeStyle = '#54a0ff55';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath(); ctx.moveTo(from.x, from.y); ctx.lineTo(g51.mouseX, g51.mouseY); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Draw nodes
+  g51.nodes.forEach(function(node, i) {
+    // Node circle
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, 18, 0, Math.PI * 2);
+    ctx.fillStyle = featureToColor(node.feat);
+    ctx.fill();
+    ctx.strokeStyle = i === g51.hoveredNode ? '#fff' : '#54a0ff';
+    ctx.lineWidth = i === g51.hoveredNode ? 3 : 2;
+    ctx.stroke();
+
+    // Node label
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 12px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('' + i, node.x, node.y);
+
+    // Feature bar below node
+    var bw = 40, bh = 6, bx = node.x - bw / 2, by = node.y + 24;
+    node.feat.forEach(function(f, fi) {
+      var col = fi === 0 ? '#ff6b6b' : fi === 1 ? '#2ecc71' : '#54a0ff';
+      ctx.fillStyle = col;
+      ctx.globalAlpha = 0.7;
+      ctx.fillRect(bx + fi * (bw / 3), by, (bw / 3) * f, bh);
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = '#333';
+      ctx.lineWidth = 0.5;
+      ctx.strokeRect(bx + fi * (bw / 3), by, bw / 3, bh);
+    });
+  });
+
+  // Draw adjacency matrix
+  var n = g51.nodes.length;
+  if (n > 0) {
+    var A = getAdjMatrix({nodes: g51.nodes, edges: g51.edges});
+    var matSize = Math.min(matW - 60, H - 70);
+    var cellSize = Math.min(Math.floor(matSize / n), 40);
+    var matStartX = graphW + (matW - cellSize * n) / 2;
+    var matStartY = 50;
+
+    // Row/col labels
+    ctx.font = '11px monospace';
+    ctx.fillStyle = '#888';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (var i = 0; i < n; i++) {
+      ctx.fillText('' + i, matStartX + i * cellSize + cellSize / 2, matStartY - 10);
+      ctx.fillText('' + i, matStartX - 15, matStartY + i * cellSize + cellSize / 2);
+    }
+
+    for (var i = 0; i < n; i++) {
+      for (var j = 0; j < n; j++) {
+        var cx = matStartX + j * cellSize, cy = matStartY + i * cellSize;
+        ctx.fillStyle = A[i][j] ? '#54a0ff44' : '#0d0d1a';
+        ctx.fillRect(cx, cy, cellSize - 1, cellSize - 1);
+        ctx.strokeStyle = '#2a2a4a';
+        ctx.lineWidth = 0.5;
+        ctx.strokeRect(cx, cy, cellSize - 1, cellSize - 1);
+        if (A[i][j]) {
+          ctx.fillStyle = '#54a0ff';
+          ctx.font = 'bold 12px monospace';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('1', cx + cellSize / 2 - 0.5, cy + cellSize / 2);
+        }
+      }
+    }
+
+    // Info text
+    ctx.fillStyle = '#666';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    var infoY = matStartY + n * cellSize + 25;
+    ctx.fillText('Nodes: ' + n + '  |  Edges: ' + g51.edges.length, graphW + matW / 2, infoY);
+    ctx.fillText('A is symmetric: A[i][j] = A[j][i]', graphW + matW / 2, infoY + 18);
+  } else {
+    ctx.fillStyle = '#444';
+    ctx.font = '13px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Click on the left panel to add nodes', graphW + matW / 2, H / 2);
+  }
+
+  ctx.textBaseline = 'alphabetic';
+}
+
+(function() {
+  var canvas = document.getElementById('graphEditorCanvas');
+  var mouseDown = false, startNode = -1, movedSignificantly = false;
+
+  canvas.addEventListener('mousedown', function(e) {
+    var c = getCanvasCoords(canvas, e);
+    if (c.x > 460) return;
+    mouseDown = true;
+    movedSignificantly = false;
+    startNode = findNodeAt51(c.x, c.y);
+    if (startNode >= 0) {
+      g51.dragEdgeFrom = startNode;
+      g51.isDraggingNode = false;
+    }
+  });
+
+  canvas.addEventListener('mousemove', function(e) {
+    var c = getCanvasCoords(canvas, e);
+    g51.mouseX = c.x;
+    g51.mouseY = c.y;
+    g51.hoveredNode = findNodeAt51(c.x, c.y);
+
+    if (mouseDown && startNode >= 0) {
+      var dx = c.x - g51.nodes[startNode].x, dy = c.y - g51.nodes[startNode].y;
+      if (dx * dx + dy * dy > 100) movedSignificantly = true;
+    }
+
+    if (mouseDown && g51.dragEdgeFrom >= 0) {
+      drawGraphEditor();
+    }
+  });
+
+  canvas.addEventListener('mouseup', function(e) {
+    var c = getCanvasCoords(canvas, e);
+    if (c.x > 460) { mouseDown = false; g51.dragEdgeFrom = -1; return; }
+
+    if (mouseDown && g51.dragEdgeFrom >= 0 && movedSignificantly) {
+      var endNode = findNodeAt51(c.x, c.y);
+      if (endNode >= 0 && endNode !== g51.dragEdgeFrom) {
+        // Check if edge already exists
+        var exists = g51.edges.some(function(e) {
+          return (e[0] === g51.dragEdgeFrom && e[1] === endNode) || (e[0] === endNode && e[1] === g51.dragEdgeFrom);
+        });
+        if (!exists) {
+          g51.edges.push([g51.dragEdgeFrom, endNode]);
+        }
+      }
+    } else if (mouseDown && !movedSignificantly && startNode < 0 && c.x < 440) {
+      // Add new node
+      var feat = [Math.random() * 0.7 + 0.15, Math.random() * 0.7 + 0.15, Math.random() * 0.7 + 0.15];
+      g51.nodes.push({x: c.x, y: c.y, feat: feat});
+    }
+
+    mouseDown = false;
+    g51.dragEdgeFrom = -1;
+    drawGraphEditor();
+  });
+
+  canvas.addEventListener('mouseleave', function() {
+    mouseDown = false;
+    g51.dragEdgeFrom = -1;
+    g51.hoveredNode = -1;
+    drawGraphEditor();
+  });
+})();
+
+
+// ============================================================
+// VIZ 5.2: MESSAGE PASSING
+// ============================================================
+var mp = {
+  graph: null,
+  focusNode: 2,
+  phase: 0, // 0=idle, 1=highlight, 2=sending, 3=aggregate, 4=update
+  aggFn: 'mean',
+  layers: 1,
+  animT: 0,
+  animTimer: null,
+  autoPlaying: false,
+  envelopes: [] // {from, to, t, color}
+};
+
+function initMpGraph() {
+  mp.graph = {
+    nodes: [
+      {x:150,y:120,feat:[0.8,0.2,0.3],emb:[0.8,0.2,0.3]},
+      {x:100,y:250,feat:[0.2,0.7,0.4],emb:[0.2,0.7,0.4]},
+      {x:250,y:200,feat:[0.5,0.4,0.8],emb:[0.5,0.4,0.8]},
+      {x:200,y:340,feat:[0.3,0.9,0.2],emb:[0.3,0.9,0.2]},
+      {x:350,y:120,feat:[0.7,0.3,0.6],emb:[0.7,0.3,0.6]},
+      {x:380,y:280,feat:[0.4,0.6,0.5],emb:[0.4,0.6,0.5]},
+      {x:300,y:380,feat:[0.6,0.5,0.1],emb:[0.6,0.5,0.1]}
+    ],
+    edges: [[0,1],[0,2],[1,2],[1,3],[2,4],[2,5],[3,6],[5,6],[4,5]]
+  };
+  mp.graph.nodes.forEach(function(n) { n.emb = n.feat.slice(); });
+}
+
+function setMpAgg(fn) {
+  mp.aggFn = fn;
+  document.querySelectorAll('#viz52 .tab-bar .btn').forEach(function(b) { b.classList.remove('active'); });
+  document.getElementById('mpAgg' + fn.charAt(0).toUpperCase() + fn.slice(1)).classList.add('active');
+  drawMsgPass();
+}
+
+function mpUpdateLayers() {
+  mp.layers = parseInt(document.getElementById('mpLayers').value);
+  document.getElementById('mpLayersVal').textContent = mp.layers;
+  drawMsgPass();
+}
+
+function mpReset() {
+  if (mp.animTimer) { clearInterval(mp.animTimer); mp.animTimer = null; }
+  mp.phase = 0;
+  mp.animT = 0;
+  mp.envelopes = [];
+  mp.autoPlaying = false;
+  initMpGraph();
+  drawMsgPass();
+}
+
+function mpStep() {
+  if (mp.phase === 0) {
+    mp.phase = 1; // highlight
+    drawMsgPass();
+  } else if (mp.phase === 1) {
+    mp.phase = 2; // send envelopes
+    mp.animT = 0;
+    var neighbors = getNeighbors(mp.graph, mp.focusNode);
+    mp.envelopes = neighbors.map(function(n) {
+      return { from: n, to: mp.focusNode, t: 0, color: featureToColor(mp.graph.nodes[n].emb) };
+    });
+    animateEnvelopes(function() {
+      mp.phase = 3;
+      drawMsgPass();
+    });
+  } else if (mp.phase === 3) {
+    mp.phase = 4; // update
+    var neighbors = getNeighbors(mp.graph, mp.focusNode);
+    var messages = neighbors.map(function(n) { return mp.graph.nodes[n].emb; });
+    var agg = aggregateVectors(messages, mp.aggFn);
+    // Simple "W * agg + activation" simulation
+    mp.graph.nodes[mp.focusNode].emb = agg.map(function(v) { return clamp(v * 0.9 + 0.05, 0, 1); });
+    drawMsgPass();
+    setTimeout(function() { mp.phase = 0; drawMsgPass(); }, 800);
+  }
+}
+
+function mpAutoPlay() {
+  if (mp.autoPlaying) {
+    if (mp.animTimer) { clearInterval(mp.animTimer); mp.animTimer = null; }
+    mp.autoPlaying = false;
+    return;
+  }
+  mp.autoPlaying = true;
+  mpReset();
+  setTimeout(function() {
+    mpStep(); // highlight
+    setTimeout(function() {
+      mpStep(); // send
+      // The animation callback will trigger phase 3
+      // Then after a delay, step to phase 4
+      setTimeout(function() {
+        mpStep(); // aggregate -> update
+      }, 1800);
+    }, 600);
+  }, 300);
+}
+
+function animateEnvelopes(callback) {
+  if (mp.animTimer) clearInterval(mp.animTimer);
+  mp.animTimer = setInterval(function() {
+    mp.animT += 0.02;
+    mp.envelopes.forEach(function(env) { env.t = Math.min(1, mp.animT); });
+    drawMsgPass();
+    if (mp.animT >= 1) {
+      clearInterval(mp.animTimer);
+      mp.animTimer = null;
+      if (callback) callback();
+    }
+  }, 20);
+}
+
+function aggregateVectors(vecs, fn) {
+  if (vecs.length === 0) return [0, 0, 0];
+  var dim = vecs[0].length;
+  var result = [];
+  for (var d = 0; d < dim; d++) {
+    var vals = vecs.map(function(v) { return v[d]; });
+    if (fn === 'mean') result.push(vals.reduce(function(a, b) { return a + b; }, 0) / vals.length);
+    else if (fn === 'sum') result.push(vals.reduce(function(a, b) { return a + b; }, 0));
+    else result.push(Math.max.apply(null, vals)); // max
+  }
+  return result;
+}
+
+function drawMsgPass() {
+  var canvas = document.getElementById('msgPassCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  if (!mp.graph) return;
+  var g = mp.graph;
+  var neighbors = getNeighbors(g, mp.focusNode);
+
+  // Receptive field shading
+  if (mp.layers > 1) {
+    var reachable = new Set();
+    var frontier = [mp.focusNode];
+    for (var l = 0; l < mp.layers; l++) {
+      var next = [];
+      frontier.forEach(function(n) {
+        getNeighbors(g, n).forEach(function(nb) {
+          if (!reachable.has(nb)) { reachable.add(nb); next.push(nb); }
+        });
+      });
+      frontier = next;
+    }
+    reachable.forEach(function(n) {
+      ctx.beginPath();
+      ctx.arc(g.nodes[n].x, g.nodes[n].y, 30, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(84,160,255,0.08)';
+      ctx.fill();
+    });
+    // Label
+    ctx.fillStyle = '#54a0ff66';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(mp.layers + '-hop receptive field', 15, H - 15);
+  }
+
+  // Edges
+  g.edges.forEach(function(e) {
+    var a = g.nodes[e[0]], b = g.nodes[e[1]];
+    var isNeighborEdge = (e[0] === mp.focusNode || e[1] === mp.focusNode) && mp.phase >= 1;
+    ctx.strokeStyle = isNeighborEdge ? '#ffd93d88' : '#3a3a6a';
+    ctx.lineWidth = isNeighborEdge ? 3 : 1.5;
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+  });
+
+  // Envelopes
+  if (mp.phase === 2 || mp.phase === 3) {
+    mp.envelopes.forEach(function(env) {
+      var from = g.nodes[env.from], to = g.nodes[env.to];
+      var ex = lerp(from.x, to.x, env.t);
+      var ey = lerp(from.y, to.y, env.t);
+
+      // Envelope shape
+      ctx.save();
+      ctx.translate(ex, ey);
+      ctx.fillStyle = '#ff6b6b';
+      ctx.globalAlpha = 0.9;
+      // Simple envelope icon
+      ctx.beginPath();
+      ctx.moveTo(-8, -5); ctx.lineTo(8, -5); ctx.lineTo(8, 5); ctx.lineTo(-8, 5); ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(-8, -5); ctx.lineTo(0, 2); ctx.lineTo(8, -5);
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    });
+  }
+
+  // Nodes
+  g.nodes.forEach(function(node, i) {
+    var isFocus = (i === mp.focusNode);
+    var isNeighbor = neighbors.indexOf(i) >= 0;
+    var radius = isFocus ? 22 : 18;
+
+    // Glow for focus
+    if (isFocus && mp.phase >= 1) {
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, 30, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(84,160,255,0.15)';
+      ctx.fill();
+    }
+
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
+    ctx.fillStyle = featureToColor(node.emb);
+    ctx.fill();
+    ctx.strokeStyle = isFocus ? '#54a0ff' : (isNeighbor && mp.phase >= 1) ? '#ffd93d' : '#555';
+    ctx.lineWidth = isFocus ? 3 : 2;
+    ctx.stroke();
+
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 12px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('' + i, node.x, node.y);
+  });
+
+  // Right panel: info
+  var px = 470, py = 40;
+  ctx.fillStyle = '#54a0ff';
+  ctx.font = 'bold 14px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText('Message Passing Steps', px, py);
+
+  var steps = [
+    {label: '1. Highlight target node', active: mp.phase >= 1},
+    {label: '2. Neighbors send messages', active: mp.phase >= 2},
+    {label: '3. Aggregate (' + mp.aggFn + ')', active: mp.phase >= 3},
+    {label: '4. Update with W + activation', active: mp.phase >= 4}
+  ];
+  steps.forEach(function(step, i) {
+    ctx.fillStyle = step.active ? '#54a0ff' : '#444';
+    ctx.font = (step.active ? 'bold ' : '') + '12px Inter, sans-serif';
+    ctx.fillText(step.label, px, py + 30 + i * 24);
+    if (step.active) {
+      ctx.fillText('\u2713', px - 16, py + 30 + i * 24);
+    }
+  });
+
+  // Focus node info
+  py = 180;
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.fillText('Focus: Node ' + mp.focusNode, px, py);
+  ctx.fillText('Neighbors: [' + neighbors.join(', ') + ']', px, py + 20);
+  ctx.fillText('Aggregation: ' + mp.aggFn, px, py + 40);
+  ctx.fillText('Layers: ' + mp.layers, px, py + 60);
+
+  // Show aggregation math if phase >= 3
+  if (mp.phase >= 3 && neighbors.length > 0) {
+    py = 290;
+    ctx.fillStyle = '#54a0ff';
+    ctx.font = 'bold 12px Inter, sans-serif';
+    ctx.fillText('Aggregation Result:', px, py);
+
+    var messages = neighbors.map(function(n) { return g.nodes[n].emb; });
+    var agg = aggregateVectors(messages, mp.aggFn);
+    ctx.fillStyle = '#ccc';
+    ctx.font = '11px monospace';
+    ctx.fillText(mp.aggFn + '({', px, py + 22);
+    messages.forEach(function(m, mi) {
+      ctx.fillText('  [' + m.map(function(v) { return v.toFixed(2); }).join(', ') + ']' + (mi < messages.length - 1 ? ',' : ''), px, py + 40 + mi * 16);
+    });
+    ctx.fillText('}) = [' + agg.map(function(v) { return v.toFixed(2); }).join(', ') + ']', px, py + 40 + messages.length * 16);
+  }
+
+  ctx.textBaseline = 'alphabetic';
+}
+
+// Click to select focus node
+(function() {
+  var canvas = document.getElementById('msgPassCanvas');
+  canvas.addEventListener('click', function(e) {
+    if (!mp.graph) return;
+    var c = getCanvasCoords(canvas, e);
+    for (var i = mp.graph.nodes.length - 1; i >= 0; i--) {
+      var dx = mp.graph.nodes[i].x - c.x, dy = mp.graph.nodes[i].y - c.y;
+      if (dx * dx + dy * dy < 500) {
+        mp.focusNode = i;
+        mp.phase = 0;
+        mp.envelopes = [];
+        drawMsgPass();
+        return;
+      }
+    }
+  });
+})();
+
+
+// ============================================================
+// VIZ 5.3: AGGREGATION FUNCTIONS
+// ============================================================
+var aggViz = {
+  broken: false,
+  animated: false
+};
+
+function toggleAggBreak() {
+  aggViz.broken = !aggViz.broken;
+  var btn = document.getElementById('aggBreak');
+  btn.classList.toggle('broken');
+  drawAggViz();
+}
+
+function resetAggViz() {
+  aggViz.animated = false;
+  aggViz.broken = false;
+  document.getElementById('aggBreak').classList.remove('broken');
+  drawAggViz();
+}
+
+function runAggExperiment() {
+  aggViz.animated = true;
+  drawAggViz();
+}
+
+function drawAggViz() {
+  var canvas = document.getElementById('aggCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  var colW = W / 3;
+  var aggs = ['Mean', 'Sum', 'Max'];
+  var colors = ['#54a0ff', '#2ecc71', '#ffd93d'];
+
+  // Column headers
+  aggs.forEach(function(name, ci) {
+    ctx.fillStyle = colors[ci];
+    ctx.font = 'bold 16px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(name + ' Aggregation', colW * ci + colW / 2, 30);
+
+    // Divider
+    if (ci > 0) {
+      ctx.strokeStyle = '#2a2a4a';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(colW * ci, 0); ctx.lineTo(colW * ci, H); ctx.stroke();
+    }
+  });
+
+  // The experiment: node A has 2 neighbors, node B has degree neighbors (10 or broken=50)
+  var baseFeat = [0.5, 0.3, 0.7];
+  var degA = 2, degB = aggViz.broken ? 50 : 10;
+
+  aggs.forEach(function(name, ci) {
+    var ox = colW * ci + 20;
+    var fn = name.toLowerCase();
+
+    // Node A (degree 2)
+    var ay = 80;
+    ctx.fillStyle = '#888';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('Node A (degree ' + degA + ')', ox, ay);
+
+    // Draw small graph for A
+    var acx = ox + colW / 2 - 20, acy = ay + 50;
+    // Center node
+    ctx.beginPath(); ctx.arc(acx, acy, 14, 0, Math.PI * 2);
+    ctx.fillStyle = '#54a0ff33'; ctx.fill();
+    ctx.strokeStyle = colors[ci]; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 11px Inter'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('A', acx, acy);
+
+    // Neighbor nodes for A
+    for (var i = 0; i < degA; i++) {
+      var angle = -Math.PI / 2 + (i / (degA - 0.001)) * Math.PI;
+      var nx = acx + Math.cos(angle) * 50, ny = acy + Math.sin(angle) * 35;
+      ctx.strokeStyle = '#4a4a6a'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(acx, acy); ctx.lineTo(nx, ny); ctx.stroke();
+      ctx.beginPath(); ctx.arc(nx, ny, 8, 0, Math.PI * 2);
+      ctx.fillStyle = featureToColor(baseFeat); ctx.fill();
+      ctx.strokeStyle = '#555'; ctx.lineWidth = 1; ctx.stroke();
+    }
+
+    // Node B (degree degB)
+    var by = 220;
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = '#888';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('Node B (degree ' + degB + ')', ox, by);
+
+    var bcx = ox + colW / 2 - 20, bcy = by + 50;
+    ctx.beginPath(); ctx.arc(bcx, bcy, 14, 0, Math.PI * 2);
+    ctx.fillStyle = '#54a0ff33'; ctx.fill();
+    ctx.strokeStyle = colors[ci]; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 11px Inter'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('B', bcx, bcy);
+
+    var showN = Math.min(degB, 12);
+    for (var i = 0; i < showN; i++) {
+      var angle = -Math.PI + (i / showN) * 2 * Math.PI;
+      var nx = bcx + Math.cos(angle) * 50, ny = bcy + Math.sin(angle) * 35;
+      ctx.strokeStyle = '#4a4a6a'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(bcx, bcy); ctx.lineTo(nx, ny); ctx.stroke();
+      ctx.beginPath(); ctx.arc(nx, ny, 6, 0, Math.PI * 2);
+      ctx.fillStyle = featureToColor(baseFeat); ctx.fill();
+    }
+    if (degB > showN) {
+      ctx.fillStyle = '#666'; ctx.font = '10px Inter'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+      ctx.fillText('+' + (degB - showN) + ' more', bcx, bcy + 55);
+    }
+
+    // Results
+    if (aggViz.animated) {
+      var resultA, resultB;
+      if (fn === 'mean') {
+        resultA = baseFeat.slice();
+        resultB = baseFeat.slice();
+      } else if (fn === 'sum') {
+        resultA = baseFeat.map(function(v) { return v * degA; });
+        resultB = baseFeat.map(function(v) { return v * degB; });
+      } else { // max
+        resultA = baseFeat.slice();
+        resultB = baseFeat.slice();
+      }
+
+      var ry = 360;
+      ctx.textBaseline = 'alphabetic';
+      ctx.fillStyle = colors[ci];
+      ctx.font = 'bold 12px Inter, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('Results:', ox, ry);
+
+      // Bars for A
+      ctx.fillStyle = '#aaa';
+      ctx.font = '11px monospace';
+      ctx.fillText('A: [' + resultA.map(function(v) { return v.toFixed(1); }).join(', ') + ']', ox, ry + 20);
+      var barY = ry + 28;
+      var maxVal = Math.max(1, Math.max.apply(null, resultA.concat(resultB)));
+      var barW = colW - 50;
+      resultA.forEach(function(v, fi) {
+        var bw = (v / maxVal) * barW;
+        ctx.fillStyle = colors[ci] + '66';
+        ctx.fillRect(ox, barY + fi * 14, bw, 10);
+        ctx.strokeStyle = colors[ci]; ctx.lineWidth = 0.5;
+        ctx.strokeRect(ox, barY + fi * 14, bw, 10);
+      });
+
+      // Bars for B
+      ctx.fillStyle = '#aaa';
+      ctx.font = '11px monospace';
+      ctx.fillText('B: [' + resultB.map(function(v) { return v.toFixed(1); }).join(', ') + ']', ox, barY + 58);
+      var barY2 = barY + 66;
+      resultB.forEach(function(v, fi) {
+        var bw = (v / maxVal) * barW;
+        ctx.fillStyle = colors[ci] + '66';
+        ctx.fillRect(ox, barY2 + fi * 14, bw, 10);
+        ctx.strokeStyle = colors[ci]; ctx.lineWidth = 0.5;
+        ctx.strokeRect(ox, barY2 + fi * 14, bw, 10);
+      });
+
+      // Verdict
+      var equal = fn === 'mean' || fn === 'max';
+      ctx.fillStyle = equal ? '#ffd93d' : '#ff6b6b';
+      ctx.font = 'bold 11px Inter';
+      ctx.textAlign = 'center';
+      var vx = ox + colW / 2 - 10;
+      if (fn === 'sum') {
+        ctx.fillText('B is ' + degB / degA + 'x larger!', vx, barY2 + 58);
+        if (aggViz.broken) {
+          ctx.fillStyle = '#ff4444';
+          ctx.fillText('EXPLODING for hubs!', vx, barY2 + 74);
+        }
+      } else if (fn === 'mean') {
+        ctx.fillText('A = B (degree-invariant)', vx, barY2 + 58);
+      } else {
+        ctx.fillText('A = B (same max)', vx, barY2 + 58);
+      }
+    }
+  });
+
+  ctx.textBaseline = 'alphabetic';
+}
+
+
+// ============================================================
+// VIZ 5.4: GCN
+// ============================================================
+var gcn = {
+  step: 1,
+  graph: null
+};
+
+function initGcnGraph() {
+  gcn.graph = {
+    nodes: [
+      {x:100,y:100,feat:[0.8,0.2,0.3]},{x:60,y:220,feat:[0.2,0.7,0.4]},
+      {x:200,y:180,feat:[0.5,0.4,0.8]},{x:160,y:310,feat:[0.3,0.9,0.2]},
+      {x:300,y:100,feat:[0.7,0.3,0.6]}
+    ],
+    edges: [[0,1],[0,2],[1,2],[1,3],[2,4]]
+  };
+}
+
+function setGcnStep(s) {
+  gcn.step = s;
+  document.querySelectorAll('#viz54 .controls .btn').forEach(function(b) { b.classList.remove('active'); });
+  if (s <= 3) document.getElementById('gcnStep' + s).classList.add('active');
+  else document.getElementById('gcnCompare').classList.add('active');
+  drawGcn();
+}
+
+function drawGcn() {
+  var canvas = document.getElementById('gcnCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  if (!gcn.graph) return;
+  var g = gcn.graph;
+  var n = g.nodes.length;
+  var A = getAdjMatrix(g);
+
+  // Matrix area
+  var matX = 380, matY = 40, cellSz = 36;
+
+  function drawMatrix(mat, x, y, title, highlight) {
+    ctx.fillStyle = '#54a0ff';
+    ctx.font = 'bold 13px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(title, x + n * cellSz / 2, y - 8);
+
+    for (var i = 0; i < n; i++) {
+      for (var j = 0; j < n; j++) {
+        var cx = x + j * cellSz, cy = y + i * cellSz;
+        var val = mat[i][j];
+        var isHL = highlight && highlight(i, j, val);
+        ctx.fillStyle = val !== 0 ? (isHL ? '#54a0ff44' : '#1a1a3a') : '#0d0d1a';
+        ctx.fillRect(cx, cy, cellSz - 1, cellSz - 1);
+        ctx.strokeStyle = '#2a2a4a';
+        ctx.lineWidth = 0.5;
+        ctx.strokeRect(cx, cy, cellSz - 1, cellSz - 1);
+        if (val !== 0) {
+          ctx.fillStyle = isHL ? '#54a0ff' : '#888';
+          ctx.font = '11px monospace';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(typeof val === 'number' ? (Number.isInteger(val) ? '' + val : val.toFixed(2)) : '' + val, cx + cellSz / 2, cy + cellSz / 2);
+        }
+      }
+    }
+    ctx.textBaseline = 'alphabetic';
+  }
+
+  // Draw the graph on the left
+  g.edges.forEach(function(e) {
+    var a = g.nodes[e[0]], b = g.nodes[e[1]];
+    ctx.strokeStyle = '#4a4a7a';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+  });
+
+  // Self-loops if step >= 1
+  if (gcn.step >= 1) {
+    g.nodes.forEach(function(node) {
+      ctx.strokeStyle = '#54a0ff44';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(node.x, node.y - 20, 12, Math.PI * 0.8, Math.PI * 2.2);
+      ctx.stroke();
+    });
+  }
+
+  g.nodes.forEach(function(node, i) {
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, 18, 0, Math.PI * 2);
+    ctx.fillStyle = featureToColor(node.feat);
+    ctx.fill();
+    ctx.strokeStyle = '#54a0ff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 12px Inter';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('' + i, node.x, node.y);
+  });
+
+  ctx.textBaseline = 'alphabetic';
+
+  if (gcn.step === 1) {
+    // Show A and A_hat = A + I
+    drawMatrix(A, matX, matY, 'Original A', null);
+    // A_hat
+    var Ahat = A.map(function(row, i) { return row.map(function(v, j) { return i === j ? v + 1 : v; }); });
+    drawMatrix(Ahat, matX, matY + n * cellSz + 40, 'A_hat = A + I (self-loops)', function(i, j, v) { return i === j; });
+
+    ctx.fillStyle = '#ccc';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('Step 1: Add self-loops so each node', matX, matY + 2 * n * cellSz + 90);
+    ctx.fillText('also receives its OWN message.', matX, matY + 2 * n * cellSz + 108);
+
+  } else if (gcn.step === 2) {
+    // Normalized adjacency
+    var Ahat = A.map(function(row, i) { return row.map(function(v, j) { return i === j ? v + 1 : v; }); });
+    var Dhat = getDegrees(Ahat);
+
+    // D_hat^(-1/2) A_hat D_hat^(-1/2)
+    var norm = [];
+    for (var i = 0; i < n; i++) {
+      norm[i] = [];
+      for (var j = 0; j < n; j++) {
+        if (Ahat[i][j] !== 0) {
+          norm[i][j] = Ahat[i][j] / Math.sqrt(Dhat[i] * Dhat[j]);
+        } else {
+          norm[i][j] = 0;
+        }
+      }
+    }
+
+    drawMatrix(Ahat, matX, matY, 'A_hat = A + I', null);
+    drawMatrix(norm, matX, matY + n * cellSz + 40, 'D^(-1/2) A_hat D^(-1/2)', function(i, j, v) { return v > 0; });
+
+    // Degree info
+    ctx.fillStyle = '#888';
+    ctx.font = '11px monospace';
+    ctx.textAlign = 'left';
+    var dy = matY + 2 * n * cellSz + 80;
+    ctx.fillText('Degrees: [' + Dhat.join(', ') + ']', matX, dy);
+    ctx.fillStyle = '#ccc';
+    ctx.font = '12px Inter';
+    ctx.fillText('Symmetric normalization prevents', matX, dy + 22);
+    ctx.fillText('high-degree nodes from dominating.', matX, dy + 40);
+
+  } else if (gcn.step === 3) {
+    // Full pipeline
+    ctx.fillStyle = '#54a0ff';
+    ctx.font = 'bold 14px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('GCN Full Pipeline', matX + 200, 35);
+
+    var steps = [
+      {label: '1. A_hat = A + I', desc: 'Add self-loops', y: 70},
+      {label: '2. Normalize', desc: 'D^(-1/2) A_hat D^(-1/2)', y: 130},
+      {label: '3. H\' = norm_A * H', desc: 'Aggregate features', y: 190},
+      {label: '4. H\' = H\' * W', desc: 'Linear transform', y: 250},
+      {label: '5. H\' = sigma(H\')', desc: 'ReLU activation', y: 310}
+    ];
+
+    steps.forEach(function(step, i) {
+      var bx = matX + 40, by = step.y;
+      drawRoundRect(ctx, bx, by, 320, 45, 8, '#1a1a3a', '#54a0ff55');
+      ctx.fillStyle = '#54a0ff';
+      ctx.font = 'bold 12px Inter';
+      ctx.textAlign = 'left';
+      ctx.fillText(step.label, bx + 15, by + 20);
+      ctx.fillStyle = '#888';
+      ctx.font = '11px Inter';
+      ctx.fillText(step.desc, bx + 15, by + 36);
+
+      if (i < steps.length - 1) {
+        drawArrow(ctx, bx + 160, by + 45, bx + 160, steps[i + 1].y, '#54a0ff55', 2);
+      }
+    });
+
+    // Output
+    ctx.fillStyle = '#2ecc71';
+    ctx.font = 'bold 12px Inter';
+    ctx.textAlign = 'center';
+    ctx.fillText('Updated node features H\'', matX + 200, 385);
+
+  } else if (gcn.step === 4) {
+    // Comparison: GCN vs Naive
+    ctx.fillStyle = '#54a0ff';
+    ctx.font = 'bold 14px Inter';
+    ctx.textAlign = 'center';
+    ctx.fillText('GCN (normalized)', matX + 100, 50);
+    ctx.fillStyle = '#ff6b6b';
+    ctx.fillText('Naive (sum)', matX + 320, 50);
+
+    // Simulate outputs for a hub node (node 2, degree 3)
+    var nodeIdx = 2;
+    var neighbors = getNeighbors(g, nodeIdx);
+
+    // Naive sum
+    var naiveSum = [0, 0, 0];
+    neighbors.forEach(function(nb) {
+      g.nodes[nb].feat.forEach(function(v, d) { naiveSum[d] += v; });
+    });
+
+    // GCN normalized
+    var Ahat = A.map(function(row, i) { return row.map(function(v, j) { return i === j ? v + 1 : v; }); });
+    var Dhat = getDegrees(Ahat);
+    var gcnAgg = [0, 0, 0];
+    // Include self
+    g.nodes[nodeIdx].feat.forEach(function(v, d) { gcnAgg[d] += v / Dhat[nodeIdx]; });
+    neighbors.forEach(function(nb) {
+      var w = 1.0 / Math.sqrt(Dhat[nodeIdx] * Dhat[nb]);
+      g.nodes[nb].feat.forEach(function(v, d) { gcnAgg[d] += v * w; });
+    });
+
+    // Draw bar comparison
+    var barX = matX + 20, barY = 80, barW = 180, barH = 20;
+    var maxV = Math.max.apply(null, naiveSum.concat(gcnAgg).concat([1]));
+    var dimLabels = ['R', 'G', 'B'];
+
+    dimLabels.forEach(function(dl, di) {
+      // GCN
+      var y1 = barY + di * 60;
+      ctx.fillStyle = '#888'; ctx.font = '11px Inter'; ctx.textAlign = 'left';
+      ctx.fillText(dl, barX - 15, y1 + 14);
+
+      ctx.fillStyle = '#54a0ff44';
+      ctx.fillRect(barX, y1, (gcnAgg[di] / maxV) * barW, barH);
+      ctx.strokeStyle = '#54a0ff'; ctx.lineWidth = 1;
+      ctx.strokeRect(barX, y1, (gcnAgg[di] / maxV) * barW, barH);
+      ctx.fillStyle = '#54a0ff'; ctx.font = '10px monospace'; ctx.textAlign = 'right';
+      ctx.fillText(gcnAgg[di].toFixed(2), barX + barW + 40, y1 + 14);
+
+      // Naive
+      var y2 = y1 + 24;
+      ctx.fillStyle = '#ff6b6b44';
+      ctx.fillRect(barX + 220, y1, (naiveSum[di] / maxV) * barW, barH);
+      ctx.strokeStyle = '#ff6b6b'; ctx.lineWidth = 1;
+      ctx.strokeRect(barX + 220, y1, (naiveSum[di] / maxV) * barW, barH);
+      ctx.fillStyle = '#ff6b6b'; ctx.font = '10px monospace'; ctx.textAlign = 'right';
+      ctx.fillText(naiveSum[di].toFixed(2), barX + 220 + barW + 40, y1 + 14);
+    });
+
+    ctx.fillStyle = '#ccc'; ctx.font = '12px Inter'; ctx.textAlign = 'center';
+    ctx.fillText('GCN normalizes by degree, preventing', matX + 210, 280);
+    ctx.fillText('high-degree nodes from having huge values.', matX + 210, 300);
+    ctx.fillText('Node 2 has ' + neighbors.length + ' neighbors.', matX + 210, 330);
+    ctx.fillStyle = '#54a0ff';
+    ctx.fillText('GCN: stable magnitudes', matX + 100, 360);
+    ctx.fillStyle = '#ff6b6b';
+    ctx.fillText('Naive: grows with degree', matX + 320, 360);
+  }
+}
+
+
+// ============================================================
+// VIZ 5.5: GAT
+// ============================================================
+var gat = {
+  mode: 'attention',
+  heads: 1,
+  graph: null,
+  attentionWeights: [] // per edge
+};
+
+function initGatGraph() {
+  gat.graph = {
+    nodes: [
+      {x:120,y:120,feat:[0.8,0.2,0.3]},{x:80,y:250,feat:[0.2,0.7,0.4]},
+      {x:220,y:200,feat:[0.5,0.4,0.8]},{x:180,y:340,feat:[0.3,0.9,0.2]},
+      {x:320,y:120,feat:[0.7,0.3,0.6]},{x:350,y:280,feat:[0.4,0.6,0.5]}
+    ],
+    edges: [[0,1],[0,2],[1,2],[1,3],[2,4],[2,5],[4,5],[3,5]]
+  };
+  computeAttention();
+}
+
+function computeAttention() {
+  if (!gat.graph) return;
+  var g = gat.graph;
+  // Simulate attention weights (seeded random for reproducibility, but plausible)
+  rng = seededRandom(gat.heads * 17 + 42);
+  gat.attentionWeights = [];
+
+  g.nodes.forEach(function(node, i) {
+    var neighbors = getNeighbors(g, i);
+    if (neighbors.length === 0) return;
+    // Raw scores
+    var scores = neighbors.map(function(nb) {
+      var diff = 0;
+      for (var d = 0; d < node.feat.length; d++) {
+        diff += Math.abs(node.feat[d] - g.nodes[nb].feat[d]);
+      }
+      return Math.exp(-diff + rng() * 0.5);
+    });
+    var sumScores = scores.reduce(function(a, b) { return a + b; }, 0);
+    var normalized = scores.map(function(s) { return s / sumScores; });
+
+    neighbors.forEach(function(nb, ni) {
+      gat.attentionWeights.push({from: nb, to: i, weight: normalized[ni]});
+    });
+  });
+}
+
+function setGatMode(mode) {
+  gat.mode = mode;
+  document.querySelectorAll('#viz55 .controls .btn').forEach(function(b) { b.classList.remove('active'); });
+  if (mode === 'attention') document.getElementById('gatShowAttn').classList.add('active');
+  else document.getElementById('gatShowComp').classList.add('active');
+  drawGat();
+}
+
+function gatUpdateHeads() {
+  gat.heads = parseInt(document.getElementById('gatHeads').value);
+  document.getElementById('gatHeadsVal').textContent = gat.heads;
+  computeAttention();
+  drawGat();
+}
+
+function gatRecompute() {
+  rng = seededRandom(Date.now() % 10000);
+  gat.heads = parseInt(document.getElementById('gatHeads').value);
+  computeAttention();
+  drawGat();
+}
+
+function drawGat() {
+  var canvas = document.getElementById('gatCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  if (!gat.graph) return;
+  var g = gat.graph;
+
+  if (gat.mode === 'attention') {
+    // Draw graph with attention weights as edge thickness
+    ctx.fillStyle = '#54a0ff';
+    ctx.font = 'bold 14px Inter';
+    ctx.textAlign = 'center';
+    ctx.fillText('Graph with Learned Attention Weights', 220, 30);
+
+    // Edges with attention thickness
+    gat.attentionWeights.forEach(function(aw) {
+      var a = g.nodes[aw.from], b = g.nodes[aw.to];
+      var thickness = 1 + aw.weight * 8;
+      ctx.strokeStyle = 'rgba(255,107,107,' + (0.3 + aw.weight * 0.7) + ')';
+      ctx.lineWidth = thickness;
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+
+      // Weight label
+      var mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+      ctx.fillStyle = '#ff6b6b';
+      ctx.font = '10px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(aw.weight.toFixed(2), mx + 10, my - 5);
+    });
+
+    // Nodes
+    g.nodes.forEach(function(node, i) {
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, 20, 0, Math.PI * 2);
+      ctx.fillStyle = featureToColor(node.feat);
+      ctx.fill();
+      ctx.strokeStyle = '#54a0ff'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 13px Inter'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('' + i, node.x, node.y);
+    });
+    ctx.textBaseline = 'alphabetic';
+
+    // Attention computation steps on the right
+    var px = 470, py = 50;
+    ctx.fillStyle = '#54a0ff';
+    ctx.font = 'bold 13px Inter';
+    ctx.textAlign = 'left';
+    ctx.fillText('Attention Computation', px, py);
+
+    var aSteps = [
+      {label: '1. Transform', desc: 'z_i = W * h_i for each node'},
+      {label: '2. Concatenate', desc: '[z_i || z_j] for each edge (i,j)'},
+      {label: '3. Score', desc: 'e_ij = LeakyReLU(a^T * [z_i||z_j])'},
+      {label: '4. Normalize', desc: 'alpha_ij = softmax_j(e_ij)'},
+      {label: '5. Aggregate', desc: 'h\'_i = sigma(SUM alpha_ij * z_j)'}
+    ];
+
+    aSteps.forEach(function(step, si) {
+      var sy = py + 25 + si * 50;
+      drawRoundRect(ctx, px, sy, 400, 38, 6, '#1a1a3a', '#3a3a6a');
+      ctx.fillStyle = '#54a0ff';
+      ctx.font = 'bold 11px Inter';
+      ctx.textAlign = 'left';
+      ctx.fillText(step.label, px + 12, sy + 16);
+      ctx.fillStyle = '#999';
+      ctx.font = '11px monospace';
+      ctx.fillText(step.desc, px + 12, sy + 30);
+    });
+
+    // Multi-head info
+    if (gat.heads > 1) {
+      ctx.fillStyle = '#ffd93d';
+      ctx.font = 'bold 12px Inter';
+      ctx.textAlign = 'center';
+      ctx.fillText(gat.heads + ' attention heads (concatenated)', px + 200, py + 300);
+    }
+
+  } else {
+    // Comparison mode: GCN vs GAT side by side
+    var halfW = W / 2;
+
+    // GCN side
+    ctx.fillStyle = '#54a0ff';
+    ctx.font = 'bold 14px Inter';
+    ctx.textAlign = 'center';
+    ctx.fillText('GCN (degree-weighted)', halfW / 2, 30);
+
+    var A = getAdjMatrix(g);
+    var Ahat = A.map(function(row, i) { return row.map(function(v, j) { return i === j ? v + 1 : v; }); });
+    var Dhat = getDegrees(Ahat);
+
+    // Draw GCN graph
+    g.edges.forEach(function(e) {
+      var a = g.nodes[e[0]], b = g.nodes[e[1]];
+      var gcnW = 1.0 / Math.sqrt(Dhat[e[0]] * Dhat[e[1]]);
+      var thickness = 1 + gcnW * 6;
+      ctx.strokeStyle = 'rgba(84,160,255,' + (0.3 + gcnW * 2) + ')';
+      ctx.lineWidth = thickness;
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+    });
+
+    g.nodes.forEach(function(node, i) {
+      ctx.beginPath(); ctx.arc(node.x, node.y, 18, 0, Math.PI * 2);
+      ctx.fillStyle = featureToColor(node.feat); ctx.fill();
+      ctx.strokeStyle = '#54a0ff'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 11px Inter'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('' + i, node.x, node.y);
+    });
+
+    // GAT side
+    ctx.strokeStyle = '#2a2a4a'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(halfW, 0); ctx.lineTo(halfW, H); ctx.stroke();
+
+    ctx.fillStyle = '#ff6b6b';
+    ctx.font = 'bold 14px Inter';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText('GAT (attention-weighted)', halfW + halfW / 2, 30);
+
+    // Offset for right side
+    var ox = halfW;
+    gat.attentionWeights.forEach(function(aw) {
+      var a = g.nodes[aw.from], b = g.nodes[aw.to];
+      var thickness = 1 + aw.weight * 8;
+      ctx.strokeStyle = 'rgba(255,107,107,' + (0.3 + aw.weight * 0.7) + ')';
+      ctx.lineWidth = thickness;
+      ctx.beginPath(); ctx.moveTo(a.x + ox, a.y); ctx.lineTo(b.x + ox, b.y); ctx.stroke();
+    });
+
+    g.nodes.forEach(function(node, i) {
+      ctx.beginPath(); ctx.arc(node.x + ox, node.y, 18, 0, Math.PI * 2);
+      ctx.fillStyle = featureToColor(node.feat); ctx.fill();
+      ctx.strokeStyle = '#ff6b6b'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 11px Inter'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('' + i, node.x + ox, node.y);
+    });
+
+    ctx.textBaseline = 'alphabetic';
+
+    // Labels
+    ctx.fillStyle = '#888'; ctx.font = '12px Inter'; ctx.textAlign = 'center';
+    ctx.fillText('All edges weighted by 1/sqrt(d_i * d_j)', halfW / 2, H - 30);
+    ctx.fillText('Each edge has a LEARNED weight', halfW + halfW / 2, H - 30);
+    ctx.fillStyle = '#ccc'; ctx.font = 'bold 12px Inter';
+    ctx.fillText('"The model learns which neighbors matter"', halfW, H - 10);
+  }
+}
+
+
+// ============================================================
+// VIZ 5.6: OVER-SMOOTHING
+// ============================================================
+var os = {
+  fix: 'none',
+  layers: 1,
+  graph: null,
+  embeddings: [] // per layer
+};
+
+function initOsGraph() {
+  os.graph = {
+    nodes: [],
+    edges: []
+  };
+  // Create a graph with 12 nodes
+  var n = 12;
+  for (var i = 0; i < n; i++) {
+    var angle = (i / n) * Math.PI * 2;
+    var r = 100 + (i % 3) * 30;
+    os.graph.nodes.push({
+      x: 180 + Math.cos(angle) * r,
+      y: 220 + Math.sin(angle) * r,
+      feat: [Math.random() * 0.8 + 0.1, Math.random() * 0.8 + 0.1, Math.random() * 0.8 + 0.1]
+    });
+  }
+  // Edges: ring + some cross-links
+  for (var i = 0; i < n; i++) {
+    os.graph.edges.push([i, (i + 1) % n]);
+    if (i + 3 < n) os.graph.edges.push([i, i + 3]);
+  }
+  os.graph.edges.push([0, 6]); os.graph.edges.push([2, 8]); os.graph.edges.push([4, 10]);
+
+  computeOsEmbeddings();
+}
+
+function computeOsEmbeddings() {
+  if (!os.graph) return;
+  var g = os.graph;
+  var n = g.nodes.length;
+  var A = getAdjMatrix(g);
+  // Add self-loops
+  var Ahat = A.map(function(row, i) { return row.map(function(v, j) { return i === j ? v + 1 : v; }); });
+  var Dhat = getDegrees(Ahat);
+
+  // Normalized adjacency
+  var norm = [];
+  for (var i = 0; i < n; i++) {
+    norm[i] = [];
+    for (var j = 0; j < n; j++) {
+      norm[i][j] = Ahat[i][j] > 0 ? 1.0 / Math.sqrt(Dhat[i] * Dhat[j]) : 0;
+    }
+  }
+
+  os.embeddings = [];
+  var H = g.nodes.map(function(nd) { return nd.feat.slice(); });
+  os.embeddings.push(H.map(function(r) { return r.slice(); }));
+
+  for (var l = 0; l < 15; l++) {
+    var Hnew = [];
+    for (var i = 0; i < n; i++) {
+      var emb = [0, 0, 0];
+      for (var j = 0; j < n; j++) {
+        if (norm[i][j] > 0) {
+          for (var d = 0; d < 3; d++) emb[d] += norm[i][j] * H[j][d];
+        }
+      }
+      // Simple activation (tanh-like compression)
+      emb = emb.map(function(v) { return Math.tanh(v); });
+
+      if (os.fix === 'residual') {
+        // Add residual
+        for (var d = 0; d < 3; d++) emb[d] = 0.5 * emb[d] + 0.5 * H[i][d];
+      } else if (os.fix === 'skip') {
+        // Skip connection to original
+        for (var d = 0; d < 3; d++) emb[d] = 0.5 * emb[d] + 0.5 * g.nodes[i].feat[d];
+      }
+
+      Hnew.push(emb);
+    }
+    H = Hnew;
+    os.embeddings.push(H.map(function(r) { return r.slice(); }));
+  }
+}
+
+function setOsFix(fix) {
+  os.fix = fix;
+  document.querySelectorAll('#viz56 .tab-bar .btn').forEach(function(b) { b.classList.remove('active'); });
+  document.getElementById('os' + fix.charAt(0).toUpperCase() + fix.slice(1).replace(/\s/g, '')).classList.add('active');
+  computeOsEmbeddings();
+  drawOverSmoothing();
+}
+
+function updateOverSmoothing() {
+  os.layers = parseInt(document.getElementById('osLayers').value);
+  document.getElementById('osLayersVal').textContent = os.layers;
+  drawOverSmoothing();
+}
+
+function drawOverSmoothing() {
+  var canvas = document.getElementById('osCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  if (!os.graph || os.embeddings.length === 0) return;
+  var g = os.graph;
+  var n = g.nodes.length;
+  var L = Math.min(os.layers, os.embeddings.length - 1);
+  var embs = os.embeddings[L];
+
+  // Draw graph colored by current embeddings
+  g.edges.forEach(function(e) {
+    var a = g.nodes[e[0]], b = g.nodes[e[1]];
+    ctx.strokeStyle = '#3a3a6a';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+  });
+
+  g.nodes.forEach(function(node, i) {
+    ctx.beginPath(); ctx.arc(node.x, node.y, 16, 0, Math.PI * 2);
+    ctx.fillStyle = featureToColor(embs[i]);
+    ctx.fill();
+    ctx.strokeStyle = '#54a0ff'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 10px Inter'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('' + i, node.x, node.y);
+  });
+
+  ctx.textBaseline = 'alphabetic';
+
+  // Similarity heatmap on the right
+  var hmX = 400, hmY = 40, cellSz = Math.min(28, (H - 80) / n);
+
+  ctx.fillStyle = '#54a0ff';
+  ctx.font = 'bold 13px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText('Pairwise Similarity Heatmap (Layer ' + L + ')', hmX + n * cellSz / 2, hmY - 12);
+
+  for (var i = 0; i < n; i++) {
+    for (var j = 0; j < n; j++) {
+      var cx = hmX + j * cellSz, cy = hmY + i * cellSz;
+      // Cosine similarity
+      var dot = 0, normI = 0, normJ = 0;
+      for (var d = 0; d < 3; d++) {
+        dot += embs[i][d] * embs[j][d];
+        normI += embs[i][d] * embs[i][d];
+        normJ += embs[j][d] * embs[j][d];
+      }
+      var sim = (normI > 0 && normJ > 0) ? dot / (Math.sqrt(normI) * Math.sqrt(normJ)) : 0;
+      sim = clamp(sim, -1, 1);
+      // Color: blue (0) -> red (1)
+      var r = Math.round(sim * 255);
+      var b = Math.round((1 - sim) * 255);
+      ctx.fillStyle = 'rgb(' + r + ',40,' + b + ')';
+      ctx.fillRect(cx, cy, cellSz - 1, cellSz - 1);
+    }
+  }
+
+  // Labels
+  ctx.font = '9px monospace'; ctx.fillStyle = '#666'; ctx.textAlign = 'center';
+  for (var i = 0; i < n; i++) {
+    ctx.fillText('' + i, hmX + i * cellSz + cellSz / 2, hmY - 2);
+    ctx.textAlign = 'right';
+    ctx.fillText('' + i, hmX - 3, hmY + i * cellSz + cellSz / 2 + 3);
+    ctx.textAlign = 'center';
+  }
+
+  // Diversity metric plot
+  var plotX = hmX, plotY = hmY + n * cellSz + 30;
+  var plotW = n * cellSz, plotH = 100;
+
+  ctx.fillStyle = '#54a0ff';
+  ctx.font = 'bold 12px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText('Embedding Diversity vs Layers', plotX + plotW / 2, plotY);
+
+  // Compute diversity for each layer
+  var diversities = [];
+  for (var ll = 0; ll <= Math.min(14, os.embeddings.length - 1); ll++) {
+    var emb = os.embeddings[ll];
+    var totalDist = 0, count = 0;
+    for (var i = 0; i < n; i++) {
+      for (var j = i + 1; j < n; j++) {
+        var dist = 0;
+        for (var d = 0; d < 3; d++) dist += (emb[i][d] - emb[j][d]) * (emb[i][d] - emb[j][d]);
+        totalDist += Math.sqrt(dist);
+        count++;
+      }
+    }
+    diversities.push(count > 0 ? totalDist / count : 0);
+  }
+
+  var maxDiv = Math.max.apply(null, diversities.concat([0.01]));
+  plotY += 15;
+
+  // Plot background
+  drawRoundRect(ctx, plotX, plotY, plotW, plotH, 6, '#0d0d1a', '#2a2a4a');
+
+  // Plot line
+  ctx.strokeStyle = os.fix === 'none' ? '#ff6b6b' : '#2ecc71';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  diversities.forEach(function(d, i) {
+    var x = plotX + 10 + (i / Math.max(diversities.length - 1, 1)) * (plotW - 20);
+    var y = plotY + plotH - 10 - (d / maxDiv) * (plotH - 20);
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // Current layer marker
+  var cx = plotX + 10 + (L / Math.max(diversities.length - 1, 1)) * (plotW - 20);
+  var cy = plotY + plotH - 10 - (diversities[L] / maxDiv) * (plotH - 20);
+  ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+  ctx.fillStyle = '#fff'; ctx.fill();
+  ctx.strokeStyle = '#54a0ff'; ctx.lineWidth = 2; ctx.stroke();
+
+  // Axes labels
+  ctx.fillStyle = '#666'; ctx.font = '10px Inter'; ctx.textAlign = 'center';
+  ctx.fillText('Layers', plotX + plotW / 2, plotY + plotH + 14);
+  ctx.save(); ctx.translate(plotX - 8, plotY + plotH / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('Diversity', 0, 0);
+  ctx.restore();
+
+  // Fix label
+  if (os.fix !== 'none') {
+    ctx.fillStyle = '#2ecc71';
+    ctx.font = 'bold 11px Inter';
+    ctx.textAlign = 'left';
+    ctx.fillText('Fix: ' + os.fix, plotX + 10, plotY + 16);
+  }
+}
+
+
+// ============================================================
+// VIZ 5.7: GRAPH-LEVEL TASKS: POOLING
+// ============================================================
+var pool = {
+  mode: 'mean',
+  graph: null
+};
+
+function initPoolGraph() {
+  pool.graph = {
+    nodes: [
+      {x:100,y:120,feat:[0.8,0.2,0.3],label:'C'},
+      {x:60,y:220,feat:[0.2,0.7,0.4],label:'O'},
+      {x:180,y:200,feat:[0.5,0.4,0.8],label:'N'},
+      {x:140,y:310,feat:[0.3,0.9,0.2],label:'C'},
+      {x:250,y:130,feat:[0.7,0.3,0.6],label:'C'},
+      {x:280,y:250,feat:[0.4,0.6,0.5],label:'H'},
+      {x:200,y:370,feat:[0.6,0.5,0.1],label:'H'}
+    ],
+    edges: [[0,1],[0,2],[0,4],[1,3],[2,4],[2,5],[3,6]]
+  };
+}
+
+function setPoolMode(mode) {
+  pool.mode = mode;
+  document.querySelectorAll('#viz57 .controls .btn').forEach(function(b) { b.classList.remove('active'); });
+  if (mode === 'pipeline') document.getElementById('poolPipeline').classList.add('active');
+  else document.getElementById('pool' + mode.charAt(0).toUpperCase() + mode.slice(1)).classList.add('active');
+  drawPooling();
+}
+
+function drawPooling() {
+  var canvas = document.getElementById('poolCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  if (!pool.graph) return;
+  var g = pool.graph;
+  var n = g.nodes.length;
+
+  if (pool.mode === 'pipeline') {
+    // Full molecule classification pipeline
+    drawPipeline(ctx, W, H, g);
+    return;
+  }
+
+  // Draw graph
+  g.edges.forEach(function(e) {
+    var a = g.nodes[e[0]], b = g.nodes[e[1]];
+    ctx.strokeStyle = '#4a4a7a'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+  });
+
+  g.nodes.forEach(function(node, i) {
+    ctx.beginPath(); ctx.arc(node.x, node.y, 18, 0, Math.PI * 2);
+    ctx.fillStyle = featureToColor(node.feat); ctx.fill();
+    ctx.strokeStyle = '#54a0ff'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 11px Inter'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(node.label, node.x, node.y);
+  });
+
+  ctx.textBaseline = 'alphabetic';
+
+  // Arrow from graph to readout
+  drawArrow(ctx, 330, 220, 420, 220, '#54a0ff', 3);
+  ctx.fillStyle = '#54a0ff'; ctx.font = 'bold 12px Inter'; ctx.textAlign = 'center';
+  ctx.fillText('READOUT', 375, 205);
+
+  // Compute readout
+  var readout = [0, 0, 0];
+  if (pool.mode === 'mean') {
+    g.nodes.forEach(function(nd) { nd.feat.forEach(function(v, d) { readout[d] += v; }); });
+    readout = readout.map(function(v) { return v / n; });
+  } else if (pool.mode === 'sum') {
+    g.nodes.forEach(function(nd) { nd.feat.forEach(function(v, d) { readout[d] += v; }); });
+  } else if (pool.mode === 'hierarchical') {
+    // Simulate: two rounds of coarsening
+    // First average pairs, then average result
+    var first = [];
+    for (var i = 0; i < n; i += 2) {
+      var pair = [0, 0, 0];
+      var count = 0;
+      for (var j = i; j < Math.min(i + 2, n); j++) {
+        g.nodes[j].feat.forEach(function(v, d) { pair[d] += v; });
+        count++;
+      }
+      first.push(pair.map(function(v) { return v / count; }));
+    }
+    readout = [0, 0, 0];
+    first.forEach(function(f) { f.forEach(function(v, d) { readout[d] += v; }); });
+    readout = readout.map(function(v) { return v / first.length; });
+  }
+
+  // Display readout vector
+  var rx = 440, ry = 100;
+  drawRoundRect(ctx, rx, ry, 200, 240, 10, '#1a1a3a', '#54a0ff55');
+  ctx.fillStyle = '#54a0ff'; ctx.font = 'bold 13px Inter'; ctx.textAlign = 'center';
+  ctx.fillText(pool.mode.charAt(0).toUpperCase() + pool.mode.slice(1) + ' Pooling', rx + 100, ry + 25);
+
+  ctx.fillStyle = '#ccc'; ctx.font = '12px monospace'; ctx.textAlign = 'left';
+  ctx.fillText('Graph vector h_G:', rx + 15, ry + 55);
+  ctx.fillText('[' + readout.map(function(v) { return v.toFixed(3); }).join(', ') + ']', rx + 15, ry + 75);
+
+  // Bar visualization
+  var barY = ry + 95;
+  var barW = 160, barH = 20;
+  var maxV = Math.max.apply(null, readout.concat([0.01]));
+  var dimLabels = ['dim 0', 'dim 1', 'dim 2'];
+  var dimColors = ['#ff6b6b', '#2ecc71', '#54a0ff'];
+
+  dimLabels.forEach(function(dl, di) {
+    ctx.fillStyle = '#888'; ctx.font = '10px Inter'; ctx.textAlign = 'left';
+    ctx.fillText(dl, rx + 15, barY + di * 30 + 14);
+    ctx.fillStyle = dimColors[di] + '66';
+    ctx.fillRect(rx + 60, barY + di * 30, (readout[di] / maxV) * (barW - 60), barH);
+    ctx.strokeStyle = dimColors[di]; ctx.lineWidth = 1;
+    ctx.strokeRect(rx + 60, barY + di * 30, (readout[di] / maxV) * (barW - 60), barH);
+    ctx.fillStyle = dimColors[di]; ctx.font = '10px monospace'; ctx.textAlign = 'right';
+    ctx.fillText(readout[di].toFixed(2), rx + 185, barY + di * 30 + 14);
+  });
+
+  // Description
+  var desc = '';
+  if (pool.mode === 'mean') desc = 'Average all node embeddings. Size-invariant.';
+  else if (pool.mode === 'sum') desc = 'Sum all node embeddings. Preserves graph size.';
+  else desc = 'Progressively coarsen graph, then readout.';
+
+  ctx.fillStyle = '#888'; ctx.font = '11px Inter'; ctx.textAlign = 'center';
+  ctx.fillText(desc, rx + 100, ry + 220);
+
+  // Show hierarchical stages
+  if (pool.mode === 'hierarchical') {
+    var hx = 680, hy = 80;
+    ctx.fillStyle = '#ffd93d'; ctx.font = 'bold 12px Inter'; ctx.textAlign = 'center';
+    ctx.fillText('Hierarchical Stages', hx + 60, hy);
+
+    var stages = ['7 nodes', '4 clusters', '2 clusters', '1 graph vector'];
+    stages.forEach(function(s, si) {
+      var sy = hy + 25 + si * 55;
+      var nCircles = [7, 4, 2, 1][si];
+      for (var c = 0; c < nCircles; c++) {
+        ctx.beginPath();
+        ctx.arc(hx + 20 + c * 25, sy + 15, 8, 0, Math.PI * 2);
+        ctx.fillStyle = ['#54a0ff', '#2ecc71', '#ffd93d', '#ff6b6b'][si];
+        ctx.globalAlpha = 0.6;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+      ctx.fillStyle = '#888'; ctx.font = '10px Inter'; ctx.textAlign = 'left';
+      ctx.fillText(s, hx, sy + 35);
+      if (si < stages.length - 1) {
+        drawArrow(ctx, hx + 60, sy + 38, hx + 60, sy + 50, '#55555588', 1);
+      }
+    });
+  }
+}
+
+function drawPipeline(ctx, W, H, g) {
+  // Full molecule classification pipeline
+  var stages = [
+    {label: 'Molecular\nGraph', x: 40, w: 130, color: '#54a0ff'},
+    {label: 'GNN\nLayers', x: 210, w: 110, color: '#ffd93d'},
+    {label: 'Readout\n(Pool)', x: 360, w: 100, color: '#2ecc71'},
+    {label: 'MLP\nClassifier', x: 500, w: 110, color: '#ff6b6b'},
+    {label: 'Prediction', x: 650, w: 130, color: '#e8e8ff'}
+  ];
+
+  var cy = H / 2 - 20;
+
+  stages.forEach(function(stage, si) {
+    var x = stage.x, y = cy - 45, w = stage.w, h = 90;
+    drawRoundRect(ctx, x, y, w, h, 10, '#1a1a3a', stage.color + '88');
+
+    ctx.fillStyle = stage.color;
+    ctx.font = 'bold 13px Inter';
+    ctx.textAlign = 'center';
+    var lines = stage.label.split('\n');
+    lines.forEach(function(line, li) {
+      ctx.fillText(line, x + w / 2, y + 30 + li * 18);
+    });
+
+    if (si < stages.length - 1) {
+      drawArrow(ctx, x + w + 5, cy, stages[si + 1].x - 5, cy, '#555', 2);
+    }
+  });
+
+  // Draw small molecule inside first box
+  var mx = 70, my = cy - 10;
+  [[0,1],[0,2],[1,2],[2,3]].forEach(function(e) {
+    var positions = [[mx-15,my-15],[mx+15,my-15],[mx,my+10],[mx+20,my+20]];
+    ctx.strokeStyle = '#4a4a7a'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(positions[e[0]][0], positions[e[0]][1]); ctx.lineTo(positions[e[1]][0], positions[e[1]][1]); ctx.stroke();
+  });
+  ['C','O','N','C'].forEach(function(label, i) {
+    var positions = [[mx-15,my-15],[mx+15,my-15],[mx,my+10],[mx+20,my+20]];
+    ctx.beginPath(); ctx.arc(positions[i][0], positions[i][1], 8, 0, Math.PI * 2);
+    ctx.fillStyle = i === 1 ? '#ff4444' : i === 2 ? '#4444ff' : '#888'; ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 8px Inter'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(label, positions[i][0], positions[i][1]);
+  });
+
+  // Prediction result
+  ctx.textBaseline = 'alphabetic';
+  var px = 715, py = cy;
+  drawRoundRect(ctx, 660, cy - 30, 110, 60, 8, '#1a3a2a', '#2ecc71');
+  ctx.fillStyle = '#2ecc71';
+  ctx.font = 'bold 16px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText('Non-toxic', px, py + 6);
+  ctx.fillStyle = '#888';
+  ctx.font = '11px Inter';
+  ctx.fillText('P = 0.92', px, py + 22);
+
+  // Pipeline description
+  ctx.fillStyle = '#ccc';
+  ctx.font = '12px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText('End-to-end molecule classification: Graph -> GNN -> Pool -> Classify', W / 2, H - 40);
+  ctx.fillStyle = '#888';
+  ctx.font = '11px Inter';
+  ctx.fillText('This pipeline is the workhorse of computational chemistry and drug discovery', W / 2, H - 20);
+}
+
+
+// ============================================================
+// VIZ 5.8: GRAPHSAGE
+// ============================================================
+var sage = {
+  mode: 'computation',
+  K: 5,
+  graph: null,
+  targetNode: 0,
+  sampledEdges: [],
+  newNodeAdded: false,
+  varianceSamples: []
+};
+
+function initSageGraph() {
+  sage.graph = { nodes: [], edges: [] };
+  // Create large graph with 60 nodes
+  var n = 60;
+  rng = seededRandom(123);
+  for (var i = 0; i < n; i++) {
+    sage.graph.nodes.push({
+      x: 80 + rng() * 340,
+      y: 50 + rng() * 400,
+      feat: [rng(), rng(), rng()]
+    });
+  }
+  // Edges: connect nearby nodes + some random
+  for (var i = 0; i < n; i++) {
+    for (var j = i + 1; j < n; j++) {
+      var dx = sage.graph.nodes[i].x - sage.graph.nodes[j].x;
+      var dy = sage.graph.nodes[i].y - sage.graph.nodes[j].y;
+      var dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 80 || (dist < 150 && rng() < 0.15) || rng() < 0.02) {
+        sage.graph.edges.push([i, j]);
+      }
+    }
+  }
+  sage.targetNode = Math.floor(n / 2);
+  sage.newNodeAdded = false;
+  resampleSageInternal();
+}
+
+function resampleSageInternal() {
+  if (!sage.graph) return;
+  var g = sage.graph;
+  sage.sampledEdges = [];
+
+  // Sample K neighbors at layer 1
+  var neighbors1 = getNeighbors(g, sage.targetNode);
+  var shuffled1 = neighbors1.slice().sort(function() { return Math.random() - 0.5; });
+  var sampled1 = shuffled1.slice(0, Math.min(sage.K, shuffled1.length));
+
+  sampled1.forEach(function(nb) {
+    sage.sampledEdges.push({from: sage.targetNode, to: nb, layer: 1});
+
+    // Sample K neighbors at layer 2
+    var neighbors2 = getNeighbors(g, nb);
+    var shuffled2 = neighbors2.slice().sort(function() { return Math.random() - 0.5; });
+    var sampled2 = shuffled2.slice(0, Math.min(Math.max(2, Math.floor(sage.K / 2)), shuffled2.length));
+    sampled2.forEach(function(nb2) {
+      if (nb2 !== sage.targetNode) {
+        sage.sampledEdges.push({from: nb, to: nb2, layer: 2});
+      }
+    });
+  });
+}
+
+function resampleSage() {
+  resampleSageInternal();
+  if (sage.mode === 'variance') {
+    computeVarianceSamples();
+  }
+  drawSage();
+}
+
+function updateSage() {
+  sage.K = parseInt(document.getElementById('sageK').value);
+  document.getElementById('sageKVal').textContent = sage.K;
+  resampleSageInternal();
+  if (sage.mode === 'variance') {
+    computeVarianceSamples();
+  }
+  drawSage();
+}
+
+function addNewNodeSage() {
+  if (!sage.graph || sage.newNodeAdded) return;
+  sage.newNodeAdded = true;
+  var newIdx = sage.graph.nodes.length;
+  sage.graph.nodes.push({
+    x: 250 + Math.random() * 100,
+    y: 250 + Math.random() * 100,
+    feat: [0.1, 0.9, 0.5],
+    isNew: true
+  });
+  // Connect to a few existing nodes
+  var candidates = [];
+  sage.graph.nodes.forEach(function(nd, i) {
+    if (i === newIdx) return;
+    var dx = nd.x - sage.graph.nodes[newIdx].x;
+    var dy = nd.y - sage.graph.nodes[newIdx].y;
+    candidates.push({idx: i, dist: Math.sqrt(dx * dx + dy * dy)});
+  });
+  candidates.sort(function(a, b) { return a.dist - b.dist; });
+  for (var k = 0; k < Math.min(4, candidates.length); k++) {
+    sage.graph.edges.push([newIdx, candidates[k].idx]);
+  }
+  sage.targetNode = newIdx;
+  resampleSageInternal();
+  drawSage();
+}
+
+function setSageMode(mode) {
+  sage.mode = mode;
+  document.querySelectorAll('#viz58 .tab-bar .btn').forEach(function(b) { b.classList.remove('active'); });
+  if (mode === 'computation') document.getElementById('sageCompGraph').classList.add('active');
+  else document.getElementById('sageVariance').classList.add('active');
+  if (mode === 'variance') computeVarianceSamples();
+  drawSage();
+}
+
+function computeVarianceSamples() {
+  sage.varianceSamples = [];
+  for (var s = 0; s < 20; s++) {
+    resampleSageInternal();
+    var sampledNodes = new Set();
+    sage.sampledEdges.forEach(function(e) { sampledNodes.add(e.to); });
+    // Compute a simple "embedding" = average of sampled node features
+    var emb = [0, 0, 0];
+    var count = 0;
+    sampledNodes.forEach(function(ni) {
+      sage.graph.nodes[ni].feat.forEach(function(v, d) { emb[d] += v; });
+      count++;
+    });
+    if (count > 0) emb = emb.map(function(v) { return v / count; });
+    sage.varianceSamples.push(emb);
+  }
+  resampleSageInternal(); // restore a regular sample
+}
+
+function drawSage() {
+  var canvas = document.getElementById('sageCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  if (!sage.graph) return;
+  var g = sage.graph;
+
+  if (sage.mode === 'variance') {
+    drawSageVariance(ctx, W, H);
+    return;
+  }
+
+  // Draw full graph (faded)
+  g.edges.forEach(function(e) {
+    var a = g.nodes[e[0]], b = g.nodes[e[1]];
+    ctx.strokeStyle = '#1a1a3a';
+    ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+  });
+
+  g.nodes.forEach(function(node, i) {
+    ctx.beginPath(); ctx.arc(node.x, node.y, 4, 0, Math.PI * 2);
+    ctx.fillStyle = node.isNew ? '#2ecc7155' : '#333';
+    ctx.fill();
+  });
+
+  // Highlight sampled computation graph
+  var sampled1 = new Set();
+  var sampled2 = new Set();
+  sage.sampledEdges.forEach(function(e) {
+    if (e.layer === 1) sampled1.add(e.to);
+    else sampled2.add(e.to);
+  });
+
+  // Sampled edges
+  sage.sampledEdges.forEach(function(e) {
+    var a = g.nodes[e.from], b = g.nodes[e.to];
+    ctx.strokeStyle = e.layer === 1 ? '#ffd93d88' : '#54a0ff55';
+    ctx.lineWidth = e.layer === 1 ? 2.5 : 1.5;
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+  });
+
+  // Sampled nodes layer 2
+  sampled2.forEach(function(ni) {
+    if (ni === sage.targetNode || sampled1.has(ni)) return;
+    var node = g.nodes[ni];
+    ctx.beginPath(); ctx.arc(node.x, node.y, 6, 0, Math.PI * 2);
+    ctx.fillStyle = '#54a0ff'; ctx.globalAlpha = 0.7; ctx.fill(); ctx.globalAlpha = 1;
+  });
+
+  // Sampled nodes layer 1
+  sampled1.forEach(function(ni) {
+    var node = g.nodes[ni];
+    ctx.beginPath(); ctx.arc(node.x, node.y, 8, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffd93d'; ctx.fill();
+    ctx.strokeStyle = '#ffd93daa'; ctx.lineWidth = 1; ctx.stroke();
+  });
+
+  // Target node
+  var tn = g.nodes[sage.targetNode];
+  ctx.beginPath(); ctx.arc(tn.x, tn.y, 12, 0, Math.PI * 2);
+  ctx.fillStyle = tn.isNew ? '#2ecc71' : '#ff6b6b';
+  ctx.fill();
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+
+  // Right panel info
+  var px = 470, py = 40;
+  ctx.fillStyle = '#54a0ff';
+  ctx.font = 'bold 14px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText('GraphSAGE Sampling', px, py);
+
+  ctx.fillStyle = '#ccc'; ctx.font = '12px Inter';
+  ctx.fillText('Target node: ' + sage.targetNode, px, py + 30);
+  ctx.fillText('Sampling budget K = ' + sage.K, px, py + 50);
+  ctx.fillText('Layer 1 sampled: ' + sampled1.size + ' nodes', px, py + 80);
+  ctx.fillText('Layer 2 sampled: ' + sampled2.size + ' nodes', px, py + 100);
+  ctx.fillText('Total computation: ' + (sampled1.size + sampled2.size + 1) + ' nodes', px, py + 120);
+
+  var fullNeighbors = getNeighbors(g, sage.targetNode).length;
+  ctx.fillStyle = '#888'; ctx.font = '11px Inter';
+  ctx.fillText('Full neighborhood: ' + fullNeighbors + ' nodes', px, py + 150);
+  ctx.fillText('Sampling saves: ' + Math.max(0, fullNeighbors - sampled1.size) + ' nodes at layer 1', px, py + 168);
+
+  // Inductive learning box
+  if (sage.newNodeAdded) {
+    var bx = px, by = py + 200;
+    drawRoundRect(ctx, bx, by, 380, 80, 8, '#1a3a2a', '#2ecc71');
+    ctx.fillStyle = '#2ecc71'; ctx.font = 'bold 12px Inter'; ctx.textAlign = 'left';
+    ctx.fillText('Inductive: New node added!', bx + 15, by + 25);
+    ctx.fillStyle = '#aaa'; ctx.font = '11px Inter';
+    ctx.fillText('GraphSAGE can immediately compute its', bx + 15, by + 45);
+    ctx.fillText('embedding by sampling neighbors. No retraining!', bx + 15, by + 62);
+  }
+
+  // Computation graph tree on the right
+  var treeX = px + 30, treeY = py + 310;
+  ctx.fillStyle = '#54a0ff'; ctx.font = 'bold 12px Inter'; ctx.textAlign = 'center';
+  ctx.fillText('Sampled Computation Graph', treeX + 160, treeY);
+
+  // Target
+  ctx.beginPath(); ctx.arc(treeX + 160, treeY + 30, 10, 0, Math.PI * 2);
+  ctx.fillStyle = '#ff6b6b'; ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 9px Inter'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('T', treeX + 160, treeY + 30);
+
+  // Layer 1 nodes
+  var s1 = Array.from(sampled1);
+  var s1Count = Math.min(s1.length, 8);
+  for (var i = 0; i < s1Count; i++) {
+    var nx = treeX + 30 + (i / (s1Count - 0.001)) * 260;
+    var ny = treeY + 75;
+    ctx.strokeStyle = '#ffd93d55'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(treeX + 160, treeY + 40); ctx.lineTo(nx, ny - 8); ctx.stroke();
+    ctx.beginPath(); ctx.arc(nx, ny, 7, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffd93d'; ctx.fill();
+  }
+
+  // Layer 2 nodes (simplified)
+  var s2 = Array.from(sampled2);
+  var s2Count = Math.min(s2.length, 12);
+  for (var i = 0; i < s2Count; i++) {
+    var nx = treeX + 10 + (i / (s2Count - 0.001)) * 300;
+    var ny = treeY + 120;
+    // Connect to a random layer 1 node
+    var parent = treeX + 30 + ((i % s1Count) / (s1Count - 0.001)) * 260;
+    ctx.strokeStyle = '#54a0ff33'; ctx.lineWidth = 0.8;
+    ctx.beginPath(); ctx.moveTo(parent, treeY + 82); ctx.lineTo(nx, ny - 5); ctx.stroke();
+    ctx.beginPath(); ctx.arc(nx, ny, 5, 0, Math.PI * 2);
+    ctx.fillStyle = '#54a0ff'; ctx.fill();
+  }
+
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = '#666'; ctx.font = '10px Inter'; ctx.textAlign = 'center';
+  ctx.fillText('Layer 1', treeX - 10, treeY + 78);
+  ctx.fillText('Layer 2', treeX - 10, treeY + 123);
+}
+
+function drawSageVariance(ctx, W, H) {
+  // Variance visualization
+  var px = 50, py = 50;
+  ctx.fillStyle = '#54a0ff'; ctx.font = 'bold 16px Inter'; ctx.textAlign = 'center';
+  ctx.fillText('Embedding Variance Across ' + sage.varianceSamples.length + ' Random Samples (K=' + sage.K + ')', W / 2, py);
+
+  if (sage.varianceSamples.length === 0) return;
+
+  // Scatter plot for each dimension
+  var plotW = 250, plotH = 300;
+  var dims = ['Dim 0', 'Dim 1', 'Dim 2'];
+  var colors = ['#ff6b6b', '#2ecc71', '#54a0ff'];
+
+  dims.forEach(function(label, di) {
+    var ox = 60 + di * 300, oy = 90;
+    drawRoundRect(ctx, ox - 10, oy - 10, plotW + 20, plotH + 40, 8, '#0d0d1a', '#2a2a4a');
+
+    ctx.fillStyle = colors[di]; ctx.font = 'bold 13px Inter'; ctx.textAlign = 'center';
+    ctx.fillText(label, ox + plotW / 2, oy + 10);
+
+    // Compute stats
+    var vals = sage.varianceSamples.map(function(s) { return s[di]; });
+    var mean = vals.reduce(function(a, b) { return a + b; }, 0) / vals.length;
+    var variance = vals.reduce(function(a, v) { return a + (v - mean) * (v - mean); }, 0) / vals.length;
+    var std = Math.sqrt(variance);
+
+    var minV = Math.min.apply(null, vals) - 0.05;
+    var maxV = Math.max.apply(null, vals) + 0.05;
+    var range = Math.max(maxV - minV, 0.01);
+
+    // Draw samples as dots
+    vals.forEach(function(v, si) {
+      var x = ox + 20 + (si / (vals.length - 0.001)) * (plotW - 40);
+      var y = oy + plotH - 30 - ((v - minV) / range) * (plotH - 60);
+      ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2);
+      ctx.fillStyle = colors[di]; ctx.globalAlpha = 0.7; ctx.fill(); ctx.globalAlpha = 1;
+    });
+
+    // Mean line
+    var meanY = oy + plotH - 30 - ((mean - minV) / range) * (plotH - 60);
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(ox + 10, meanY); ctx.lineTo(ox + plotW - 10, meanY); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Stats
+    ctx.fillStyle = '#aaa'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('mean=' + mean.toFixed(3), ox + plotW / 2, oy + plotH + 10);
+    ctx.fillText('std=' + std.toFixed(3), ox + plotW / 2, oy + plotH + 24);
+  });
+
+  // Note
+  ctx.fillStyle = '#ffd93d'; ctx.font = 'bold 12px Inter'; ctx.textAlign = 'center';
+  ctx.fillText('Higher K = lower variance (more stable embeddings)', W / 2, H - 40);
+  ctx.fillStyle = '#888'; ctx.font = '11px Inter';
+  ctx.fillText('Each dot = one random sample of the neighborhood. Try changing K!', W / 2, H - 20);
+}
+
+// Click to select target node in sage
+(function() {
+  var canvas = document.getElementById('sageCanvas');
+  canvas.addEventListener('click', function(e) {
+    if (!sage.graph || sage.mode !== 'computation') return;
+    var c = getCanvasCoords(canvas, e);
+    if (c.x > 460) return;
+    for (var i = sage.graph.nodes.length - 1; i >= 0; i--) {
+      var dx = sage.graph.nodes[i].x - c.x, dy = sage.graph.nodes[i].y - c.y;
+      if (dx * dx + dy * dy < 200) {
+        sage.targetNode = i;
+        resampleSageInternal();
+        drawSage();
+        return;
+      }
+    }
+  });
+})();
+
+
+// ============================================================
+// QUIZ DATA
+// ============================================================
+var quizData = [
+  {
+    topic: "5.1: Graphs as Data",
+    questions: [
+      { q: "What makes graph data fundamentally different from image or text data?", options: ["A) Graphs are always larger", "B) Graphs have irregular structure -- each node can have a different number of neighbors", "C) Graphs cannot be represented numerically", "D) Graphs don't have features"], correct: 1, explanation: "Unlike images (fixed grid) or text (fixed sequence), graphs have irregular topology. Each node can have a different number of neighbors, which requires specialized architectures that handle variable-size neighborhoods." },
+      { q: "What does the adjacency matrix A encode?", options: ["A) Node features", "B) Edge weights only", "C) Which nodes are connected to which (graph structure)", "D) The number of layers in the GNN"], correct: 2, explanation: "The adjacency matrix A is an N x N matrix where A[i][j] = 1 if there is an edge between nodes i and j, and 0 otherwise. It encodes the graph's connectivity structure." },
+      { q: "If a graph has N nodes each with F features, what is the shape of the feature matrix X?", options: ["A) F x F", "B) N x N", "C) N x F", "D) F x N"], correct: 2, explanation: "The feature matrix X has shape (N, F) where each row corresponds to a node and each column to a feature dimension. This is the standard convention in GNN literature." },
+      { q: "For an undirected graph, the adjacency matrix A is always:", options: ["A) Diagonal", "B) Upper triangular", "C) Symmetric (A = A^T)", "D) Sparse but asymmetric"], correct: 2, explanation: "In an undirected graph, if node i connects to node j, then node j also connects to node i. Therefore A[i][j] = A[j][i], making the matrix symmetric." },
+      { q: "Which is NOT a common example of graph-structured data?", options: ["A) Social networks", "B) Molecular structures", "C) Fixed-size image pixels in a grid", "D) Citation networks"], correct: 2, explanation: "Image pixels in a fixed grid are regular structured data, typically handled by CNNs. Social networks, molecules, and citation networks are all naturally graph-structured with variable connectivity." }
+    ]
+  },
+  {
+    topic: "5.2: Message Passing",
+    questions: [
+      { q: "One round of message passing corresponds to:", options: ["A) One training epoch", "B) One GNN layer", "C) The entire GNN forward pass", "D) One gradient descent step"], correct: 1, explanation: "Each GNN layer performs one round of message passing: every node collects information from its neighbors, aggregates it, and updates its representation. Stacking L layers means L rounds of message passing." },
+      { q: "After k layers of message passing, each node has information about nodes up to ___ hops away:", options: ["A) 1 hop", "B) k hops", "C) k^2 hops", "D) All nodes in the graph"], correct: 1, explanation: "Each layer extends the receptive field by one hop. After 1 layer, a node knows about 1-hop neighbors. After 2 layers, 2-hop neighbors. After k layers, k-hop neighbors. This is the receptive field growth." },
+      { q: "In message passing, the 'aggregate' step combines messages from neighbors using:", options: ["A) Always concatenation", "B) A permutation-invariant function (mean, sum, max)", "C) Always weighted sum", "D) Matrix multiplication only"], correct: 1, explanation: "The aggregation must be permutation-invariant because graphs have no inherent node ordering. Mean, sum, and max are common choices. The aggregation must produce the same result regardless of the order neighbors are processed." },
+      { q: "What is the purpose of the weight matrix W in the update step?", options: ["A) To compute attention scores", "B) To normalize by degree", "C) To learn a linear transformation of the aggregated features", "D) To add self-loops"], correct: 2, explanation: "The weight matrix W is a learnable parameter that transforms the aggregated neighbor information. It allows the GNN to learn useful representations by projecting features into a new space at each layer." },
+      { q: "If you apply 0 layers of message passing, what information does each node have?", options: ["A) Information about all nodes", "B) Information about its neighbors", "C) Only its own initial features", "D) No information at all"], correct: 2, explanation: "With 0 message passing layers, no information has been exchanged between nodes. Each node only has its original feature vector -- there has been no aggregation from neighbors." }
+    ]
+  },
+  {
+    topic: "5.3: Aggregation Functions",
+    questions: [
+      { q: "If two nodes have identical neighbors with identical features but different degrees (2 vs 10), which aggregation gives them different embeddings?", options: ["A) Mean", "B) Max", "C) Sum", "D) None of them"], correct: 2, explanation: "Sum aggregation scales with degree: a node with 10 identical neighbors gets 5x the embedding of a node with 2. Mean gives both the same (it averages). Max gives both the same (same max value). Sum is degree-aware." },
+      { q: "Which aggregation function is proven to be the most expressive (can distinguish the most graph structures)?", options: ["A) Mean", "B) Max", "C) Sum", "D) They are all equivalent"], correct: 2, explanation: "The GIN (Graph Isomorphism Network) paper proves that sum aggregation is the most expressive among mean, sum, and max. Sum can distinguish multi-sets that mean and max cannot." },
+      { q: "Mean aggregation is 'degree-invariant.' This means:", options: ["A) It ignores node features", "B) It produces the same result regardless of how many neighbors a node has (given the same neighbor features)", "C) It normalizes by the maximum degree", "D) It can only work on regular graphs"], correct: 1, explanation: "Degree-invariant means that adding more neighbors with the same features doesn't change the aggregated result. Mean([0.5, 0.5]) = Mean([0.5, 0.5, 0.5, 0.5, 0.5]) = 0.5. The average is the same regardless of count." },
+      { q: "What problem occurs when using sum aggregation on a graph with hub nodes (degree 100+)?", options: ["A) The aggregation becomes too slow", "B) Embeddings for hub nodes become extremely large, causing numerical instability", "C) Hub nodes lose information", "D) The graph becomes disconnected"], correct: 1, explanation: "Sum aggregation adds all neighbor features. For a hub with 100 neighbors, the aggregated vector has values ~100x larger than for a leaf node. This causes numerical instability and gradient issues during training." },
+      { q: "Max aggregation is best suited for detecting:", options: ["A) The average behavior of neighbors", "B) The number of neighbors", "C) The presence of a specific feature among neighbors, regardless of how many have it", "D) The degree distribution"], correct: 2, explanation: "Max pooling captures the most extreme/salient feature value. It answers 'does any neighbor have this feature?' rather than 'how many have it?' (sum) or 'what's the average?' (mean)." }
+    ]
+  },
+  {
+    topic: "5.4: GCN",
+    questions: [
+      { q: "Why does GCN add self-loops (A_hat = A + I)?", options: ["A) To make the matrix invertible", "B) So each node also includes its OWN features when aggregating, not just neighbors'", "C) To double the number of edges", "D) To make the graph connected"], correct: 1, explanation: "Without self-loops, a node only aggregates neighbor features and loses its own information. Adding I to A means each node sends a message to itself, preserving its features across layers." },
+      { q: "The symmetric normalization D^(-1/2) A D^(-1/2) in GCN is equivalent to:", options: ["A) Simple row normalization", "B) Weighting each edge by 1/sqrt(degree_i * degree_j)", "C) Ignoring the graph structure", "D) Multiplying all features by a constant"], correct: 1, explanation: "The entry (i,j) of the normalized adjacency is A[i][j] / sqrt(d_i * d_j). This means messages are weighted by the inverse square root of both the sender's and receiver's degree, preventing high-degree nodes from dominating." },
+      { q: "What is the computational complexity of one GCN layer?", options: ["A) O(N^2)", "B) O(|E| * F + N * F * F')", "C) O(N^3)", "D) O(F * F')"], correct: 1, explanation: "One GCN layer involves: (1) sparse matrix multiplication A_hat * H costing O(|E| * F), and (2) dense multiplication H * W costing O(N * F * F'). This is efficient because the adjacency is typically sparse." },
+      { q: "GCN is a first-order approximation of:", options: ["A) Recurrent neural networks", "B) Spectral graph convolutions", "C) Attention mechanisms", "D) Random walks"], correct: 1, explanation: "Kipf & Welling showed that GCN approximates localized spectral filters on graphs. The normalized adjacency acts as a low-pass filter, smoothing signals between connected nodes. This spectral interpretation connects GCNs to classical signal processing on graphs." },
+      { q: "Compared to naive mean-aggregation message passing, GCN's key advantage is:", options: ["A) It is faster", "B) It uses attention", "C) Its symmetric normalization prevents degree-dependent scaling while including self-information", "D) It does not require training"], correct: 2, explanation: "GCN's symmetric normalization (not just dividing by degree) accounts for both sender and receiver degree, providing more stable message passing. Combined with self-loops, it preserves each node's own features while aggregating." }
+    ]
+  },
+  {
+    topic: "5.5: GAT",
+    questions: [
+      { q: "How does GAT differ from GCN in how it weights neighbor contributions?", options: ["A) GAT uses random weights", "B) GAT uses degree-based weights like GCN but squared", "C) GAT learns attention weights that depend on both the node and its neighbor features", "D) GAT doesn't weight neighbors at all"], correct: 2, explanation: "GCN weights neighbors solely by degree (fixed, not learned). GAT computes attention coefficients alpha_ij that depend on the features of both node i and neighbor j, allowing the model to learn which neighbors are more important." },
+      { q: "In GAT, the attention coefficients alpha_ij for a node i must:", options: ["A) Sum to the node's degree", "B) Sum to 1 across all neighbors of i (via softmax)", "C) All be equal", "D) Be integers"], correct: 1, explanation: "GAT applies softmax normalization over all neighbors of node i, so the attention weights alpha_ij sum to 1. This makes the coefficients a proper probability distribution over neighbors." },
+      { q: "Multi-head attention in GAT means:", options: ["A) Using multiple graphs", "B) Running K independent attention mechanisms and concatenating/averaging their outputs", "C) Applying attention K times sequentially", "D) Having K different activation functions"], correct: 1, explanation: "Multi-head attention runs K independent attention heads, each with its own learnable parameters. Their outputs are concatenated (intermediate layers) or averaged (final layer). This captures different types of neighbor importance and stabilizes learning." },
+      { q: "GAT uses LeakyReLU instead of ReLU in the attention scoring because:", options: ["A) LeakyReLU is faster", "B) LeakyReLU allows negative attention scores before softmax, preventing information loss", "C) ReLU would make all attention weights equal", "D) LeakyReLU normalizes the scores"], correct: 1, explanation: "ReLU would zero out all negative scores, potentially making many attention coefficients zero before softmax and losing information about relative importance. LeakyReLU allows small negative values to pass through, preserving distinctions." },
+      { q: "The connection between GAT and transformer self-attention is:", options: ["A) They are completely unrelated", "B) Both use learned attention to weight contributions, but GAT attends only to graph neighbors while transformers attend to all positions", "C) GAT came first and inspired transformers", "D) They use identical architectures"], correct: 1, explanation: "Both GAT and transformer self-attention learn to weight the importance of different inputs. The key difference: in transformers, every token attends to every other token. In GAT, each node only attends to its graph neighbors, making it sparse and structure-aware." }
+    ]
+  },
+  {
+    topic: "5.6: Over-Smoothing",
+    questions: [
+      { q: "Over-smoothing in GNNs means:", options: ["A) The model overfits", "B) Node embeddings become increasingly similar across layers until they are nearly identical", "C) The loss function becomes too smooth", "D) Gradients vanish"], correct: 1, explanation: "After many message passing layers, each node's representation converges to the same vector because information has been repeatedly averaged. All local structure is lost -- the model can no longer distinguish different nodes." },
+      { q: "Why are most GNNs limited to 2-3 layers, unlike deep CNNs?", options: ["A) GNNs are too slow for more layers", "B) Graphs are simpler than images", "C) Over-smoothing makes deeper GNNs perform worse, not better", "D) GPU memory is insufficient"], correct: 2, explanation: "Unlike CNNs where depth generally helps (with tricks like residual connections), GNNs suffer from over-smoothing. After about 6 layers, all node embeddings converge. Adding more layers actually hurts performance." },
+      { q: "Residual connections in GNNs help with over-smoothing by:", options: ["A) Removing some edges from the graph", "B) Adding the input of each layer to its output (h' = GNN(h) + h), preserving original information", "C) Using a larger learning rate", "D) Increasing the feature dimension"], correct: 1, explanation: "Like ResNets, residual connections add a skip connection: h' = GNN(h) + h. This ensures that even after many layers, the original node features are preserved, preventing complete convergence." },
+      { q: "Jumping Knowledge (JK) networks address over-smoothing by:", options: ["A) Skipping every other layer", "B) Concatenating the outputs of ALL layers and letting the model select the best layer per node", "C) Using random jump connections", "D) Reducing the number of layers"], correct: 1, explanation: "JK networks concatenate outputs from all layers: [h^(1) || h^(2) || ... || h^(L)]. Then an attention or max-pooling mechanism selects which layer's representation is best for each node. Nodes needing local info use early layers; nodes needing global info use later layers." },
+      { q: "Over-smoothing is analogous to which concept in signal processing?", options: ["A) High-pass filtering", "B) Repeatedly applying a low-pass filter until all frequencies are removed", "C) Signal amplification", "D) Frequency modulation"], correct: 1, explanation: "GCN's normalized adjacency acts as a low-pass filter on graph signals. Repeatedly applying it (many layers) removes all high-frequency components, leaving only the lowest frequency (a constant signal). This is exactly over-smoothing." }
+    ]
+  },
+  {
+    topic: "5.7: Graph-Level Tasks & Pooling",
+    questions: [
+      { q: "Why do graph-level tasks (like molecule classification) need a readout/pooling step?", options: ["A) To reduce computation time", "B) To produce a fixed-size representation of the entire graph from variable-number node embeddings", "C) To add more parameters", "D) To compute attention"], correct: 1, explanation: "After message passing, we have N node embeddings for a graph with N nodes. For graph-level prediction (e.g., 'is this molecule toxic?'), we need ONE fixed-size vector for the whole graph, regardless of N. That's what readout does." },
+      { q: "Sum pooling is more expressive than mean pooling because:", options: ["A) It is faster", "B) It preserves information about graph size (two identical subgraphs sum differently than one)", "C) It always gives larger values", "D) It does not require normalization"], correct: 1, explanation: "Mean pooling loses graph size information: a graph with 5 identical nodes and one with 10 produce the same mean. Sum pooling distinguishes them: the 10-node graph has 2x the sum. The GIN paper proves this makes sum more expressive." },
+      { q: "Hierarchical pooling (like DiffPool) works by:", options: ["A) Using a fixed pooling grid", "B) Randomly removing nodes", "C) Progressively coarsening the graph by learning which nodes to cluster", "D) Averaging all node features"], correct: 2, explanation: "DiffPool and similar methods learn a soft assignment matrix that clusters nodes into super-nodes, creating a coarser graph. This is repeated until the graph is a single vector. It's more powerful than flat pooling but also more complex." },
+      { q: "The typical molecule classification pipeline is:", options: ["A) Features -> CNN -> Classify", "B) Molecular graph -> GNN layers -> Readout -> MLP classifier -> Prediction", "C) Molecular graph -> Random forest -> Prediction", "D) SMILES string -> RNN -> Prediction"], correct: 1, explanation: "The standard GNN pipeline for molecular property prediction: (1) represent the molecule as a graph (atoms=nodes, bonds=edges), (2) run GNN layers for message passing, (3) readout/pool to get a graph vector, (4) MLP classifier for the final prediction." },
+      { q: "For a graph classification task with graphs of varying sizes (5 to 500 nodes), which is true?", options: ["A) All graphs must be padded to 500 nodes", "B) The readout function naturally handles varying graph sizes by aggregating over whatever nodes exist", "C) Only graphs of the same size can be in the same batch", "D) GNNs cannot handle varying graph sizes"], correct: 1, explanation: "This is a key advantage of GNNs: the readout function (mean/sum/etc.) aggregates over all nodes regardless of count. A 5-node graph and a 500-node graph both produce a fixed-size vector after readout." }
+    ]
+  },
+  {
+    topic: "5.8: GraphSAGE",
+    questions: [
+      { q: "GraphSAGE's key innovation compared to GCN is:", options: ["A) Using attention instead of mean aggregation", "B) Learning an aggregation function from sampled neighbors (inductive), rather than embedding all nodes (transductive)", "C) Using deeper networks", "D) Operating on directed graphs only"], correct: 1, explanation: "GCN learns a specific embedding for each node (transductive). GraphSAGE learns a general aggregation function that can be applied to any node, including new ones not seen during training (inductive). This is crucial for evolving graphs." },
+      { q: "In GraphSAGE, 'sampling K neighbors' means:", options: ["A) Using only the K highest-degree neighbors", "B) Randomly selecting K neighbors at each layer for each node", "C) Removing K neighbors", "D) Adding K new nodes"], correct: 1, explanation: "GraphSAGE randomly samples a fixed number K of neighbors at each layer. This bounds the computation per node and enables mini-batch training. Different samples may give slightly different results (variance), but the approach scales to huge graphs." },
+      { q: "Transductive vs inductive learning in GNNs: which can handle a new node added after training?", options: ["A) Transductive only", "B) Inductive only (e.g., GraphSAGE)", "C) Both equally", "D) Neither"], correct: 1, explanation: "Transductive methods (like vanilla GCN) learn embeddings for specific nodes seen during training. A new node has no embedding. Inductive methods (like GraphSAGE) learn a function that computes embeddings from neighbor features, so they can immediately handle new nodes." },
+      { q: "Increasing the sampling budget K in GraphSAGE:", options: ["A) Always improves accuracy with no cost", "B) Reduces variance and improves accuracy but increases computation cost", "C) Has no effect on results", "D) Makes the model inductive"], correct: 1, explanation: "Larger K means sampling more neighbors, giving a more complete view of each node's neighborhood. This reduces the variance (randomness) in embeddings but increases computation. It's a trade-off between accuracy and speed." },
+      { q: "Why does GraphSAGE scale better than GCN to graphs with millions of nodes?", options: ["A) It uses a simpler aggregation", "B) It only computes embeddings for a mini-batch of target nodes and their sampled neighborhoods, not the full graph", "C) It uses fewer parameters", "D) It doesn't use matrix multiplication"], correct: 1, explanation: "GCN requires the full adjacency matrix A in memory and computes embeddings for ALL nodes every forward pass. GraphSAGE samples a small subgraph around each target node, enabling mini-batch training with bounded memory and computation." }
+    ]
+  }
+];
+
+// ============================================================
+// QUIZ RENDERING
+// ============================================================
+var topicScores = {};
+var totalCorrect = 0;
+var totalAnswered = 0;
+var totalQ = 40;
+
+quizData.forEach(function(t, ti) { topicScores[ti] = { correct: 0, answered: 0, total: t.questions.length }; });
+
+function buildQuiz() {
+  var container = document.getElementById('quizQuestions');
+  container.innerHTML = '';
+  quizData.forEach(function(topic, ti) {
+    var topicDiv = document.createElement('div');
+    topicDiv.className = 'quiz-topic';
+    var header = document.createElement('div');
+    header.className = 'quiz-topic-header';
+    header.innerHTML = '<h3>' + topic.topic + '</h3><span class="quiz-topic-score" id="topicScore' + ti + '">0 / ' + topic.questions.length + '</span>';
+    header.onclick = function() {
+      var qDiv = topicDiv.querySelector('.quiz-topic-questions');
+      qDiv.classList.toggle('open');
+    };
+    topicDiv.appendChild(header);
+    var questionsDiv = document.createElement('div');
+    questionsDiv.className = 'quiz-topic-questions';
+
+    topic.questions.forEach(function(question, qi) {
+      var qDiv = document.createElement('div');
+      qDiv.className = 'quiz-question';
+      qDiv.innerHTML = '<h4>Q' + (qi+1) + ': ' + question.q + '</h4>';
+      question.options.forEach(function(opt, oi) {
+        var btn = document.createElement('button');
+        btn.className = 'quiz-option';
+        btn.textContent = opt;
+        btn.onclick = function() { checkAnswer(ti, qi, oi, qDiv); };
+        btn.id = 'qopt_' + ti + '_' + qi + '_' + oi;
+        qDiv.appendChild(btn);
+      });
+      var expDiv = document.createElement('div');
+      expDiv.className = 'quiz-explanation';
+      expDiv.id = 'qexp_' + ti + '_' + qi;
+      expDiv.textContent = question.explanation;
+      qDiv.appendChild(expDiv);
+      questionsDiv.appendChild(qDiv);
+    });
+    topicDiv.appendChild(questionsDiv);
+    container.appendChild(topicDiv);
+  });
+}
+
+function checkAnswer(ti, qi, oi, qDiv) {
+  var question = quizData[ti].questions[qi];
+  var buttons = qDiv.querySelectorAll('.quiz-option');
+  var expDiv = document.getElementById('qexp_' + ti + '_' + qi);
+  if (buttons[0].disabled) return;
+  buttons.forEach(function(b, i) {
+    b.disabled = true;
+    if (i === question.correct) b.classList.add('correct');
+    if (i === oi && oi !== question.correct) b.classList.add('wrong');
+  });
+  totalAnswered++;
+  topicScores[ti].answered++;
+  if (oi === question.correct) {
+    totalCorrect++;
+    topicScores[ti].correct++;
+    expDiv.className = 'quiz-explanation show correct-exp';
+  } else {
+    expDiv.className = 'quiz-explanation show wrong-exp';
+  }
+  document.getElementById('quizScore').textContent = totalCorrect;
+  document.getElementById('topicScore' + ti).textContent = topicScores[ti].correct + ' / ' + topicScores[ti].total;
+  document.getElementById('quizProgressBar').style.width = (totalAnswered / totalQ * 100) + '%';
+}
+
+function resetQuiz() {
+  totalCorrect = 0;
+  totalAnswered = 0;
+  quizData.forEach(function(t, ti) { topicScores[ti] = { correct: 0, answered: 0, total: t.questions.length }; });
+  buildQuiz();
+  document.getElementById('quizScore').textContent = '0';
+  document.getElementById('quizProgressBar').style.width = '0%';
+}
+
+function toggleQuiz() {
+  var section = document.getElementById('quizSection');
+  if (section.style.display === 'none') {
+    section.style.display = 'block';
+    section.scrollIntoView({ behavior: 'smooth' });
+  } else {
+    section.style.display = 'none';
+  }
+}
+
+// ============================================================
+// INITIALIZATION
+// ============================================================
+window.addEventListener('DOMContentLoaded', function() {
+  loadPreset('social');
+  initMpGraph();
+  drawMsgPass();
+  drawAggViz();
+  initGcnGraph();
+  drawGcn();
+  initGatGraph();
+  drawGat();
+  initOsGraph();
+  drawOverSmoothing();
+  initPoolGraph();
+  drawPooling();
+  initSageGraph();
+  drawSage();
+  buildQuiz();
+});
+
+</script>
+</body>
+</html>

@@ -1,0 +1,2167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 3: MLPs & Optimization Deep Dive</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #0a0a0f; color: #e0e0e0; line-height: 1.6; }
+  .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; text-align: center; border-bottom: 1px solid #2a2a4a; }
+  .header h1 { font-size: 2.2em; background: linear-gradient(90deg, #4ecdc4, #44b8b0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+  .header p { color: #888; font-size: 1.1em; }
+  .header a { color: #4ecdc4; text-decoration: none; font-size: 0.9em; }
+  .header a:hover { text-decoration: underline; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+
+  /* Minimap */
+  .minimap { position: sticky; top: 0; z-index: 100; background: #0a0a0fee; backdrop-filter: blur(10px); border-bottom: 1px solid #2a2a4a; padding: 10px 20px; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }
+  .mm-step { padding: 4px 12px; border-radius: 6px; font-size: 0.75em; font-weight: 600; cursor: pointer; transition: all 0.2s; background: #151530; color: #555; border: 1px solid #2a2a4a; white-space: nowrap; }
+  .mm-step:hover { border-color: #4ecdc4; color: #4ecdc4; }
+  .mm-step.active { background: rgba(78,205,196,0.2); color: #4ecdc4; border-color: rgba(78,205,196,0.5); }
+  .mm-step.done { background: rgba(78,205,196,0.1); color: #4ecdc4; border-color: rgba(78,205,196,0.3); }
+  .mm-arrow { color: #333; font-size: 0.8em; }
+
+  .viz-section { background: #12121f; border: 1px solid #2a2a4a; border-radius: 16px; padding: 32px; margin-bottom: 40px; }
+  .viz-section h2 { font-size: 1.5em; color: #4ecdc4; margin-bottom: 8px; }
+  .viz-section .subtitle { color: #888; margin-bottom: 24px; font-size: 0.95em; }
+  .viz-canvas { background: #0d0d1a; border-radius: 12px; position: relative; overflow: hidden; }
+  canvas { display: block; width: 100%; }
+  .controls { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; align-items: center; }
+  .control-group { display: flex; flex-direction: column; gap: 4px; }
+  .control-group label { font-size: 0.85em; color: #aaa; }
+  .control-group input[type="range"] { width: 160px; accent-color: #4ecdc4; }
+  .control-group .value { font-size: 0.85em; color: #4ecdc4; font-family: monospace; }
+  .btn { padding: 8px 16px; border: 1px solid #4ecdc4; background: transparent; color: #4ecdc4; border-radius: 8px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
+  .btn:hover { background: #4ecdc422; }
+  .btn.active { background: #4ecdc433; }
+  .tab-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+
+  .insight-box { background: linear-gradient(135deg, #1a1a3e 0%, #151530 100%); border-left: 4px solid #4ecdc4; padding: 20px 24px; margin-top: 20px; border-radius: 0 12px 12px 0; font-size: 0.92em; color: #ccc; line-height: 1.8; }
+  .insight-box strong { color: #4ecdc4; font-size: 1.05em; }
+  .insight-box .formula { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 12px 18px; margin: 12px 0; font-family: 'Courier New', monospace; color: #e8e8ff; font-size: 1.05em; text-align: center; letter-spacing: 0.5px; line-height: 1.9; }
+  .insight-box .key-point { display: flex; flex-wrap: wrap; gap: 4px 8px; margin: 8px 0; padding: 4px 0; align-items: baseline; }
+  .insight-box .key-point .label { color: #4ecdc4; font-weight: 600; min-width: 160px; flex-shrink: 0; }
+  .insight-box .key-point .desc { color: #ddd; }
+  .insight-box .interview-tip { background: rgba(100, 255, 100, 0.05); border: 1px solid rgba(100, 255, 100, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #b0ffb0; font-size: 0.93em; line-height: 1.6; }
+  .insight-box .interview-tip::before { content: '\1F4A1  Interview Tip: '; font-weight: 700; color: #7fff7f; }
+  .insight-box .mnemonic { background: rgba(255, 150, 255, 0.05); border: 1px solid rgba(255, 150, 255, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #ffb0ff; font-size: 0.93em; line-height: 1.6; }
+  .insight-box .mnemonic::before { content: '\1F9E0  Remember: '; font-weight: 700; color: #ff7fff; }
+  .insight-box .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+  .insight-box .comparison .option { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 10px 14px; }
+  .insight-box .comparison .option .opt-title { color: #4ecdc4; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
+  .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
+  .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
+
+  .katex { color: #e8e8ff; font-size: 1.1em; }
+  .formula .katex { font-size: 1.2em; }
+
+  .narrative-note { background: rgba(255,217,61,0.05); border-left: 3px solid #ffd93d; padding: 14px 18px; margin: 16px 0; border-radius: 0 8px 8px 0; font-size: 0.9em; color: #ccb866; }
+  .narrative-note strong { color: #ffd93d; }
+
+  select { padding: 6px 12px; border: 1px solid #2a2a4a; background: #0d0d1a; color: #e0e0e0; border-radius: 6px; font-size: 0.9em; cursor: pointer; }
+  select:focus { outline: none; border-color: #4ecdc4; }
+
+#quizToggle{position:fixed;top:20px;right:20px;z-index:1000;padding:12px 20px;background:#4ecdc4;color:#0a0a0f;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:1em;box-shadow:0 4px 15px rgba(0,0,0,0.3);transition:transform 0.2s}
+#quizToggle:hover{transform:scale(1.05)}
+#quizSection{background:#0a0a0f;border-top:2px solid #4ecdc4;padding:40px 20px;margin-top:40px}
+.quiz-container{max-width:900px;margin:0 auto}
+.quiz-topic{margin-bottom:30px}
+.quiz-topic-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:10px;cursor:pointer;margin-bottom:12px;user-select:none}
+.quiz-topic-header h3{color:#4ecdc4;margin:0;font-size:1.15em}
+.quiz-topic-header:hover{background:#1f1f3a}
+.quiz-topic-score{color:#888;font-size:0.95em}
+.quiz-topic-questions{display:none}
+.quiz-topic-questions.open{display:block}
+.quiz-question{background:#12121f;border:1px solid #2a2a4a;border-radius:12px;padding:24px;margin-bottom:16px}
+.quiz-question h4{color:#e0e0e0;margin-bottom:16px;font-size:1.05em;line-height:1.5}
+.quiz-option{display:block;width:100%;padding:12px 16px;margin:8px 0;background:#0d0d1a;border:1px solid #2a2a4a;border-radius:8px;color:#e0e0e0;cursor:pointer;text-align:left;font-size:0.95em;transition:all 0.2s;font-family:inherit}
+.quiz-option:hover:not(:disabled){border-color:#4ecdc4;background:#1a1a3e}
+.quiz-option.correct{background:#1a3a2a !important;border-color:#2ecc71 !important;color:#2ecc71 !important}
+.quiz-option.wrong{background:#3a1a1a !important;border-color:#e74c3c !important;color:#e74c3c !important}
+.quiz-option.reveal{border-color:#2ecc71 !important;color:#2ecc71 !important}
+.quiz-option:disabled{cursor:default}
+.quiz-explanation{margin-top:12px;padding:14px 18px;border-radius:8px;font-size:0.93em;line-height:1.6;display:none}
+.quiz-explanation.show{display:block}
+.quiz-explanation.correct-exp{border-left:4px solid #2ecc71;background:rgba(46,204,113,0.08);color:#b0ffb0}
+.quiz-explanation.wrong-exp{border-left:4px solid #e74c3c;background:rgba(231,76,60,0.08);color:#ffb0b0}
+.quiz-score{text-align:center;font-size:1.5em;color:#4ecdc4;margin-bottom:30px}
+.quiz-actions{text-align:center;margin-top:30px;margin-bottom:20px}
+.quiz-actions button{padding:10px 24px;margin:0 8px;border-radius:8px;border:1px solid #4ecdc4;background:transparent;color:#4ecdc4;cursor:pointer;font-size:1em}
+.quiz-actions button:hover{background:rgba(78,205,196,0.1)}
+.quiz-progress{height:4px;background:#1a1a2e;border-radius:2px;margin-bottom:20px;overflow:hidden}
+.quiz-progress-bar{height:100%;background:#4ecdc4;border-radius:2px;transition:width 0.3s}
+
+.break-toggle { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border: 1px solid #e74c3c; background: transparent; color: #e74c3c; border-radius: 8px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
+.break-toggle:hover { background: rgba(231,76,60,0.15); }
+.break-toggle.broken { background: rgba(231,76,60,0.25); border-color: #ff4444; color: #ff4444; }
+
+.legend { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.85em; color: #ccc; }
+.legend-dot { width: 12px; height: 12px; border-radius: 50%; }
+
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '\\(', right: '\\)', display: false}]});"></script>
+</head>
+<body>
+<button id="quizToggle" onclick="toggleQuiz()">&#x1F9E0; Quiz Mode</button>
+
+<div class="header">
+  <a href="../index.html">&larr; Back to Index</a>
+  <h1>Chapter 3: MLPs & Optimization Deep Dive</h1>
+  <p>The nuts and bolts of making neural networks actually work: initialization, normalization, residual connections, optimizers, and regularization</p>
+  <p style="color:#666; font-size:0.85em; margin-top:6px;">Prereq: <a href="01-backprop-autograd.html" style="color:#4ecdc4;">Chapter 1</a></p>
+</div>
+
+<div class="minimap" id="minimap">
+  <span class="mm-step active" data-section="viz31" onclick="scrollToViz('viz31')">1. Init Matters</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz32" onclick="scrollToViz('viz32')">2. BatchNorm/LayerNorm</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz33" onclick="scrollToViz('viz33')">3. Residuals</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz34" onclick="scrollToViz('viz34')">4. Optimizers</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz35" onclick="scrollToViz('viz35')">5. L2 Reg</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz36" onclick="scrollToViz('viz36')">6. Dropout</span>
+</div>
+
+<div class="container">
+
+<!-- ============================================================ -->
+<!-- VIZ 3.1: WEIGHT INITIALIZATION -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz31">
+  <h2>3.1 Weight Initialization: Why It Matters</h2>
+  <p class="subtitle">Random init = dead neurons or exploding activations. Proper init (Xavier/He) keeps activations healthy at every layer. Watch a 10-layer MLP with three init strategies side-by-side.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <div class="control-group">
+      <label>Activation</label>
+      <select id="initActivation" onchange="drawInitViz()">
+        <option value="tanh">Tanh</option>
+        <option value="relu">ReLU</option>
+        <option value="sigmoid">Sigmoid</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label>Hidden Size</label>
+      <select id="initHidden" onchange="drawInitViz()">
+        <option value="256">256</option>
+        <option value="512" selected>512</option>
+        <option value="1024">1024</option>
+      </select>
+    </div>
+    <button class="btn" onclick="drawInitViz()">Re-sample</button>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="initCanvas" width="1200" height="600"></canvas>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:#e74c3c;"></span> Naive N(0,1)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#f39c12;"></span> Xavier</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#2ecc71;"></span> He (Kaiming)</div>
+  </div>
+  <div style="margin-top:16px;">
+    <p style="color:#aaa; font-size:0.9em; margin-bottom:8px;"><strong style="color:#4ecdc4;">Training Comparison</strong> &mdash; Loss curves over 100 epochs with each init strategy</p>
+    <div class="viz-canvas">
+      <canvas id="initLossCanvas" width="1200" height="260"></canvas>
+    </div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> The variance of activations must stay roughly constant across layers. If it grows, activations explode. If it shrinks, they vanish.
+    <div class="formula">$$\text{Xavier: } W \sim \mathcal{N}\!\left(0,\; \frac{2}{n_{in} + n_{out}}\right) \qquad \text{He: } W \sim \mathcal{N}\!\left(0,\; \frac{2}{n_{in}}\right)$$</div>
+    <div class="key-point">
+      <span class="label">Naive N(0,1):</span>
+      <span class="desc">Variance grows exponentially with depth for large layers. By layer 10, activations are saturated (all near -1 or +1 for tanh).</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Xavier (Glorot):</span>
+      <span class="desc">Designed for sigmoid/tanh. Scales weights by \(\frac{1}{\sqrt{n_{in}}}\). Keeps variance stable across layers.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">He (Kaiming):</span>
+      <span class="desc">Designed for ReLU. Uses \(\sqrt{\frac{2}{n_{in}}}\) because ReLU zeros out half the inputs, halving the variance.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">When asked about init: "Xavier for tanh/sigmoid, He for ReLU. The key idea is preserving activation variance across layers so gradients neither vanish nor explode."</div>
+    <div class="mnemonic">He init has a factor of 2 because ReLU kills half the neurons. Xavier averages fan-in and fan-out. Both solve the same problem: keeping signal alive through depth.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 3.2: BATCH NORM & LAYER NORM -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz32">
+  <h2>3.2 Batch Norm &rarr; Layer Norm</h2>
+  <p class="subtitle">Internal covariate shift makes deep training unstable. Normalization layers fix it by re-centering and re-scaling activations. See how BatchNorm and LayerNorm differ in what they normalize over.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <button class="btn active" id="btnNormRun" onclick="runNormTraining()">Run Training</button>
+    <button class="btn" onclick="resetNormTraining()">Reset</button>
+    <button class="break-toggle" id="breakNorm" onclick="toggleBreakNorm()">Break It: Remove All Norms</button>
+    <div class="control-group" style="margin-left:16px;">
+      <label>Training Step: <span id="normStepVal" class="value">0</span></label>
+      <input type="range" id="normStep" min="0" max="50" value="0" oninput="setNormStep(this.value)">
+    </div>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="normCanvas" width="1200" height="520"></canvas>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:#e74c3c;"></span> No Normalization</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#3498db;"></span> BatchNorm</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#2ecc71;"></span> LayerNorm</div>
+  </div>
+  <div style="margin-top:16px;">
+    <p style="color:#aaa; font-size:0.9em; margin-bottom:8px;"><strong style="color:#4ecdc4;">What does each normalize over?</strong></p>
+    <div class="viz-canvas">
+      <canvas id="normDiffCanvas" width="1200" height="240"></canvas>
+    </div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Both BN and LN normalize activations to zero mean and unit variance, but over different dimensions.
+    <div class="formula">$$\hat{x} = \frac{x - \mu}{\sqrt{\sigma^2 + \epsilon}} \cdot \gamma + \beta$$</div>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title" style="color: #3498db;">BatchNorm</div>
+        <div class="opt-desc">Normalizes across the <strong>batch dimension</strong> for each feature. Requires sufficiently large batches. Problematic for variable-length sequences. Has separate train/eval behavior (running stats).</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #2ecc71;">LayerNorm</div>
+        <div class="opt-desc">Normalizes across the <strong>feature dimension</strong> for each sample. Works with any batch size, any sequence length. Same behavior at train and eval time. Used in Transformers.</div>
+      </div>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">"BatchNorm normalizes across the batch (each feature independently), LayerNorm normalizes across features (each sample independently). LN is preferred for Transformers because it works with variable sequence lengths and batch size 1."</div>
+    <div class="mnemonic">BN = normalize each feature column. LN = normalize each sample row. Toggle "Break It" to see training diverge without normalization.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 3.3: RESIDUAL CONNECTIONS -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz33">
+  <h2>3.3 Residual Connections: The Highway for Gradients</h2>
+  <p class="subtitle">Skip connections let gradients flow directly through deep networks. The identity shortcut ensures gradient magnitude stays roughly constant regardless of depth.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <div class="control-group">
+      <label>Network Depth: <span id="depthVal" class="value">20</span> layers</label>
+      <input type="range" id="depthSlider" min="5" max="100" value="20" oninput="updateDepth(this.value)">
+    </div>
+    <button class="btn active" id="btnResShow" onclick="toggleResidual(true)">With Residuals</button>
+    <button class="btn" id="btnResHide" onclick="toggleResidual(false)">Without Residuals</button>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="residualCanvas" width="1200" height="440"></canvas>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:#e74c3c;"></span> Without Residuals</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#4ecdc4;"></span> With Residuals</div>
+  </div>
+  <div style="margin-top:16px;">
+    <p style="color:#aaa; font-size:0.9em; margin-bottom:8px;"><strong style="color:#4ecdc4;">Accuracy vs. Depth</strong> &mdash; The degradation problem that residuals solve</p>
+    <div class="viz-canvas">
+      <canvas id="residualAccCanvas" width="1200" height="260"></canvas>
+    </div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> The residual block computes \(y = x + F(x)\). The gradient through the skip path is always 1.
+    <div class="formula">$$\frac{\partial}{\partial x}[x + F(x)] = I + \frac{\partial F}{\partial x}$$</div>
+    <div class="key-point">
+      <span class="label">Without Residuals:</span>
+      <span class="desc">Gradient magnitude decays exponentially: each layer multiplies by a factor &lt; 1. By layer 20, gradients are ~10^-8.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">With Residuals:</span>
+      <span class="desc">The identity matrix \(I\) ensures gradient \(\geq 1\) along the skip path. Even if \(F(x)\) has vanishing gradients, the shortcut carries the signal.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Depth Experiment:</span>
+      <span class="desc">Drag the slider from 5 to 100. Without residuals, accuracy degrades past ~20 layers. With residuals, it keeps improving. This reproduces the core ResNet result.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">"Residual connections solve the degradation problem. The key insight is that the identity shortcut provides a gradient highway: d/dx[x + F(x)] = I + dF/dx. The I term means gradients are always at least 1 along the skip path."</div>
+    <div class="mnemonic">ResNet = "make it easy to learn the identity." If the optimal mapping is close to identity, F(x) just needs to learn a small residual, which is much easier than learning the full mapping.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 3.4: OPTIMIZER ZOO -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz34">
+  <h2>3.4 Optimizer Zoo: SGD &rarr; Momentum &rarr; Adam</h2>
+  <p class="subtitle">Watch four optimizers navigate the same pathological loss landscape (elongated valley). See why Adam is the default choice.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <button class="btn" onclick="resetOptimizers()">Reset</button>
+    <button class="btn" id="btnOptRun" onclick="runOptimizers()">Run</button>
+    <div class="control-group">
+      <label>Learning Rate: <span id="optLrVal" class="value">0.02</span></label>
+      <input type="range" id="optLr" min="1" max="100" value="20" oninput="updateOptLr(this.value)">
+    </div>
+    <div class="control-group">
+      <label>Speed</label>
+      <select id="optSpeed" onchange="updateOptSpeed()">
+        <option value="50">Fast</option>
+        <option value="100" selected>Normal</option>
+        <option value="200">Slow</option>
+      </select>
+    </div>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="optimizerCanvas" width="1200" height="520"></canvas>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:#e74c3c;"></span> SGD</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#f39c12;"></span> Momentum</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#3498db;"></span> RMSProp</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#2ecc71;"></span> Adam</div>
+  </div>
+  <div style="margin-top:16px;">
+    <p style="color:#aaa; font-size:0.9em; margin-bottom:8px;"><strong style="color:#4ecdc4;">Adam Internal State</strong> &mdash; First moment (m), second moment (v), and adaptive learning rate</p>
+    <div class="viz-canvas">
+      <canvas id="adamStateCanvas" width="1200" height="200"></canvas>
+    </div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Adam combines the best of Momentum (gradient direction memory) and RMSProp (per-parameter adaptive learning rates).
+    <div class="formula">$$m_t = \beta_1 m_{t-1} + (1-\beta_1)g_t \qquad v_t = \beta_2 v_{t-1} + (1-\beta_2)g_t^2 \qquad \theta_{t+1} = \theta_t - \frac{\alpha \cdot \hat{m}_t}{\sqrt{\hat{v}_t} + \epsilon}$$</div>
+    <div class="key-point">
+      <span class="label">SGD:</span>
+      <span class="desc">Follows the raw gradient. Oscillates wildly across narrow valleys because the gradient is steep in one direction and shallow in another.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Momentum:</span>
+      <span class="desc">Accumulates past gradients into a velocity. Dampens oscillations, accelerates in consistent directions. Like a ball rolling downhill.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">RMSProp:</span>
+      <span class="desc">Divides gradient by running average of gradient magnitudes. Normalizes the step size per parameter. Great for non-stationary objectives.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Adam:</span>
+      <span class="desc">m = Momentum's velocity. v = RMSProp's magnitude tracker. Bias correction handles the cold-start problem. Default for most deep learning.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">"Adam = Momentum + RMSProp + bias correction. m tracks gradient direction, v tracks gradient magnitude. The update is lr * m / sqrt(v), which gives an adaptive per-parameter learning rate."</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 3.5: L2 REGULARIZATION -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz35">
+  <h2>3.5 Regularization: L2 / Weight Decay</h2>
+  <p class="subtitle">Without regularization, the model memorizes training data. L2 penalizes large weights, forcing simpler solutions that generalize better.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <button class="btn" onclick="resetL2()">Reset</button>
+    <button class="btn" id="btnL2Run" onclick="runL2Training()">Run Training</button>
+    <div class="control-group">
+      <label>L2 Strength (&lambda;): <span id="l2LambdaVal" class="value">0.00</span></label>
+      <input type="range" id="l2Lambda" min="0" max="100" value="0" oninput="updateL2Lambda(this.value)">
+    </div>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="l2Canvas" width="1200" height="400"></canvas>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:#4ecdc4;"></span> Train Loss</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#e74c3c;"></span> Val Loss</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#888;"></span> Weight Magnitudes</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> L2 regularization adds a penalty proportional to the squared magnitude of weights, discouraging large values.
+    <div class="formula">$$\mathcal{L}_{\text{total}} = \mathcal{L}_{\text{data}} + \lambda \sum_i w_i^2 \qquad \Rightarrow \qquad \nabla w_i = \nabla_{\text{data}} w_i + 2\lambda w_i$$</div>
+    <div class="key-point">
+      <span class="label">No Regularization:</span>
+      <span class="desc">Training loss hits ~0, validation loss diverges. Weights grow large to fit noise. Classic overfitting.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">With L2:</span>
+      <span class="desc">Both losses converge. Weight magnitudes shrink. "L2 penalty = preference for small weights = simpler model."</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Weight Decay vs L2:</span>
+      <span class="desc">Mathematically equivalent for SGD: both multiply weights by (1 - lr*lambda) each step. For Adam, decoupled weight decay (AdamW) is preferred.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">"L2 regularization penalizes large weights, acting as a preference for simpler models. For Adam, use AdamW (decoupled weight decay) because the adaptive learning rate interacts poorly with L2 applied to the loss."</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 3.6: DROPOUT -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz36">
+  <h2>3.6 Dropout: Implicit Ensemble</h2>
+  <p class="subtitle">Each forward pass uses a random subset of neurons. This prevents co-adaptation and acts like training an ensemble of thin networks. At test time, all neurons are active with scaled weights.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <button class="btn" onclick="resetDropout()">Reset</button>
+    <button class="btn" id="btnDropRun" onclick="runDropoutTraining()">Run Training</button>
+    <button class="btn" onclick="sampleDropoutMask()">New Mask</button>
+    <div class="control-group">
+      <label>Dropout Rate (p): <span id="dropRateVal" class="value">0.50</span></label>
+      <input type="range" id="dropRate" min="0" max="90" value="50" oninput="updateDropRate(this.value)">
+    </div>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="dropoutCanvas" width="1200" height="480"></canvas>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:#4ecdc4;"></span> Train Loss</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#e74c3c;"></span> Val Loss (no dropout)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#2ecc71;"></span> Val Loss (with dropout)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#555;"></span> Dropped Neuron</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Dropout randomly zeros neurons during training with probability \(p\). At test time, weights are scaled by \((1-p)\) to compensate.
+    <div class="formula">$$\text{Train: } h_i = h_i \cdot \text{Bernoulli}(1-p) \qquad \text{Test: } h_i = h_i \cdot (1-p)$$</div>
+    <div class="key-point">
+      <span class="label">p = 0:</span>
+      <span class="desc">No dropout. Network overfits freely. Training loss = 0, val loss diverges.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">p = 0.5:</span>
+      <span class="desc">Sweet spot for many architectures. Good generalization. Each forward pass trains a different "thin" subnetwork.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">p = 0.9:</span>
+      <span class="desc">Too much information destroyed. Only 10% of neurons active. Network underfits.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Inverted Dropout:</span>
+      <span class="desc">Modern practice: scale activations by 1/(1-p) during training instead. Then no scaling needed at test time. Same expected value.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">"Dropout is an implicit ensemble method. Each forward pass trains a different subnetwork. At test time, the full network approximates the average of all 2^n subnetworks. It prevents co-adaptation: no neuron can rely on another always being present."</div>
+    <div class="mnemonic">Dropout rate 0 = overfit. Dropout rate 0.5 = good. Dropout rate 0.9 = underfit. It is a bias-variance tradeoff knob.</div>
+  </div>
+</div>
+
+<div class="narrative-note">
+  <strong>Chapter 3 payoff:</strong> You now have the full toolkit for training deep networks reliably: proper initialization, normalization, residual connections, modern optimizers, and regularization. These ingredients appear in <em>every</em> production neural network. Now you are ready to handle sequences.
+</div>
+
+</div><!-- end container -->
+
+<!-- ============================================================ -->
+<!-- QUIZ SECTION -->
+<!-- ============================================================ -->
+<div id="quizSection" style="display:none">
+<div class="quiz-container">
+  <h2 style="text-align:center;color:#4ecdc4;margin-bottom:10px;font-size:1.8em;">MLPs & Optimization Quiz</h2>
+  <p style="text-align:center;color:#888;margin-bottom:20px;">5 questions per visualization &bull; 30 questions total &bull; Click answers to reveal explanations</p>
+  <div class="quiz-progress"><div class="quiz-progress-bar" id="quizProgressBar" style="width:0%"></div></div>
+  <div class="quiz-score">Score: <span id="quizScore">0</span> / <span id="quizTotal">30</span></div>
+  <div class="quiz-actions">
+    <button onclick="resetQuiz()">&#8634; Reset All</button>
+    <button onclick="toggleQuiz()">&#10005; Hide Quiz</button>
+  </div>
+  <div id="quizQuestions"></div>
+</div>
+</div>
+
+<div style="text-align:center; padding:40px; color:#555; font-size:0.85em; border-top:1px solid #1a1a2e;">
+  Chapter 3: MLPs & Optimization Deep Dive &bull; <a href="../index.html" style="color:#4ecdc4; text-decoration:none;">From Scratch Series</a>
+</div>
+
+<script>
+// ============================================================
+// UTILITY FUNCTIONS
+// ============================================================
+function seededRandom(seed) {
+  let s = seed;
+  return function() {
+    s = (s * 16807 + 0) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
+}
+let rng = seededRandom(42);
+
+function gaussianRandom(rng) {
+  let u = 0, v = 0;
+  while (u === 0) u = rng();
+  while (v === 0) v = rng();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+function sigmoid(x) { return 1 / (1 + Math.exp(-Math.max(-500, Math.min(500, x)))); }
+function relu(x) { return Math.max(0, x); }
+function tanhF(x) { return Math.tanh(x); }
+
+function drawRoundRect(ctx, x, y, w, h, r, fill, stroke) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 1; ctx.stroke(); }
+}
+
+function drawArrow(ctx, x1, y1, x2, y2, color, width) {
+  const dx = x2 - x1, dy = y2 - y1;
+  const len = Math.sqrt(dx * dx + dy * dy);
+  if (len < 1) return;
+  const ux = dx / len, uy = dy / len;
+  const headLen = 8;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width || 2;
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2 - ux * headLen, y2 - uy * headLen);
+  ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - ux * headLen - uy * 5, y2 - uy * headLen + ux * 5);
+  ctx.lineTo(x2 - ux * headLen + uy * 5, y2 - uy * headLen - ux * 5);
+  ctx.fill();
+}
+
+function getCtx(id) {
+  const c = document.getElementById(id);
+  const ctx = c.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = c.getBoundingClientRect();
+  if (c.width !== rect.width * dpr) {
+    c.width = rect.width * dpr;
+    c.height = (c.height / (c.width / (rect.width * dpr))) || c.height;
+  }
+  return { ctx, c, w: c.width, h: c.height, dpr };
+}
+
+// ============================================================
+// MINIMAP / SCROLL TRACKING
+// ============================================================
+function scrollToViz(id) {
+  document.getElementById(id).scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+const vizSections = ['viz31','viz32','viz33','viz34','viz35','viz36'];
+window.addEventListener('scroll', function() {
+  const steps = document.querySelectorAll('.mm-step');
+  let activeIdx = 0;
+  for (let i = 0; i < vizSections.length; i++) {
+    const el = document.getElementById(vizSections[i]);
+    if (el && el.getBoundingClientRect().top < window.innerHeight / 2) activeIdx = i;
+  }
+  steps.forEach(function(s, i) {
+    s.classList.remove('active', 'done');
+    if (i < activeIdx) s.classList.add('done');
+    else if (i === activeIdx) s.classList.add('active');
+  });
+});
+
+// ============================================================
+// VIZ 3.1: WEIGHT INITIALIZATION
+// ============================================================
+function computeInitActivations(initType, activation, hiddenSize, numLayers) {
+  const r = seededRandom(123 + initType);
+  const layers = [];
+  let input = [];
+  for (let i = 0; i < 500; i++) input.push(gaussianRandom(r));
+
+  for (let l = 0; l < numLayers; l++) {
+    const nIn = l === 0 ? 500 : hiddenSize;
+    const nOut = hiddenSize;
+    let scale = 1.0;
+    if (initType === 0) scale = 1.0; // naive
+    else if (initType === 1) scale = Math.sqrt(2.0 / (nIn + nOut)); // xavier
+    else scale = Math.sqrt(2.0 / nIn); // he
+
+    const output = [];
+    for (let j = 0; j < nOut; j++) {
+      let sum = 0;
+      for (let k = 0; k < Math.min(nIn, input.length); k++) {
+        sum += input[k % input.length] * gaussianRandom(r) * scale;
+      }
+      sum /= Math.sqrt(nIn);
+      if (activation === 'relu') sum = relu(sum);
+      else if (activation === 'sigmoid') sum = sigmoid(sum);
+      else sum = tanhF(sum);
+      output.push(sum);
+    }
+    layers.push(output);
+    input = output;
+  }
+  return layers;
+}
+
+function drawHistogram(ctx, values, x, y, w, h, color, maxVal) {
+  const bins = 30;
+  let min = -3, max = 3;
+  if (maxVal !== undefined) { min = -maxVal; max = maxVal; }
+  const counts = new Array(bins).fill(0);
+  for (const v of values) {
+    const idx = Math.floor((Math.min(max, Math.max(min, v)) - min) / (max - min) * (bins - 1));
+    counts[Math.max(0, Math.min(bins - 1, idx))]++;
+  }
+  const maxCount = Math.max(...counts, 1);
+  const barW = w / bins;
+
+  ctx.globalAlpha = 0.7;
+  for (let i = 0; i < bins; i++) {
+    const barH = (counts[i] / maxCount) * h * 0.9;
+    ctx.fillStyle = color;
+    ctx.fillRect(x + i * barW, y + h - barH, barW - 1, barH);
+  }
+  ctx.globalAlpha = 1.0;
+}
+
+function drawInitViz() {
+  const canvas = document.getElementById('initCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const activation = document.getElementById('initActivation').value;
+  const hiddenSize = parseInt(document.getElementById('initHidden').value);
+  const numLayers = 10;
+  const colors = ['#e74c3c', '#f39c12', '#2ecc71'];
+  const labels = ['Naive N(0,1)', 'Xavier', 'He (Kaiming)'];
+
+  const colW = W / 3;
+  const layerH = (H - 60) / numLayers;
+
+  for (let init = 0; init < 3; init++) {
+    const layers = computeInitActivations(init, activation, hiddenSize, numLayers);
+    const cx = init * colW;
+
+    // Column header
+    ctx.fillStyle = colors[init];
+    ctx.font = 'bold 14px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(labels[init], cx + colW / 2, 20);
+
+    // Draw histograms for each layer
+    for (let l = 0; l < numLayers; l++) {
+      const ly = 30 + l * layerH;
+      // Layer label
+      ctx.fillStyle = '#555';
+      ctx.font = '10px Inter, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('L' + (l+1), cx + 4, ly + layerH / 2 + 3);
+
+      let maxVal = 3;
+      if (activation === 'sigmoid') maxVal = 1.2;
+      else if (activation === 'relu') maxVal = 5;
+
+      drawHistogram(ctx, layers[l], cx + 24, ly + 2, colW - 32, layerH - 6, colors[init], maxVal);
+
+      // Variance annotation
+      const mean = layers[l].reduce((a,b) => a+b, 0) / layers[l].length;
+      const variance = layers[l].reduce((a,b) => a + (b-mean)*(b-mean), 0) / layers[l].length;
+      ctx.fillStyle = '#666';
+      ctx.font = '9px monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText('var=' + variance.toFixed(3), cx + colW - 6, ly + layerH - 4);
+    }
+
+    // Vertical separator
+    if (init < 2) {
+      ctx.strokeStyle = '#2a2a4a';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo((init + 1) * colW, 0);
+      ctx.lineTo((init + 1) * colW, H);
+      ctx.stroke();
+    }
+  }
+}
+
+function drawInitLoss() {
+  const canvas = document.getElementById('initLossCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const epochs = 100;
+  const colors = ['#e74c3c', '#f39c12', '#2ecc71'];
+  const labels = ['Naive', 'Xavier', 'He'];
+
+  // Simulate loss curves
+  const losses = [[], [], []];
+  for (let e = 0; e < epochs; e++) {
+    // Naive: barely decreases
+    losses[0].push(2.3 - 0.3 * (1 - Math.exp(-e * 0.005)) + (Math.random() - 0.5) * 0.05);
+    // Xavier: good convergence
+    losses[1].push(2.3 * Math.exp(-e * 0.04) + 0.1 + (Math.random() - 0.5) * 0.03);
+    // He: best convergence
+    losses[2].push(2.3 * Math.exp(-e * 0.05) + 0.08 + (Math.random() - 0.5) * 0.02);
+  }
+
+  const pad = { l: 60, r: 120, t: 20, b: 40 };
+  const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+
+  // Axes
+  ctx.strokeStyle = '#2a2a4a';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.l, pad.t);
+  ctx.lineTo(pad.l, H - pad.b);
+  ctx.lineTo(W - pad.r, H - pad.b);
+  ctx.stroke();
+
+  // Labels
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Epoch', pad.l + pw / 2, H - 5);
+  ctx.save();
+  ctx.translate(15, pad.t + ph / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('Loss', 0, 0);
+  ctx.restore();
+
+  // Y axis ticks
+  for (let y = 0; y <= 2.5; y += 0.5) {
+    const py = H - pad.b - (y / 2.5) * ph;
+    ctx.fillStyle = '#555';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(y.toFixed(1), pad.l - 8, py + 3);
+    ctx.strokeStyle = '#1a1a2e';
+    ctx.beginPath();
+    ctx.moveTo(pad.l, py);
+    ctx.lineTo(W - pad.r, py);
+    ctx.stroke();
+  }
+
+  // Loss curves
+  for (let i = 0; i < 3; i++) {
+    ctx.strokeStyle = colors[i];
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let e = 0; e < epochs; e++) {
+      const px = pad.l + (e / (epochs - 1)) * pw;
+      const py = H - pad.b - (Math.max(0, losses[i][e]) / 2.5) * ph;
+      if (e === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+
+    // Legend
+    const ly = pad.t + 20 + i * 20;
+    ctx.fillStyle = colors[i];
+    ctx.fillRect(W - pad.r + 12, ly - 5, 12, 12);
+    ctx.font = '11px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(labels[i], W - pad.r + 28, ly + 5);
+  }
+}
+
+// ============================================================
+// VIZ 3.2: BATCH NORM / LAYER NORM
+// ============================================================
+let normStep = 0;
+let normAnimId = null;
+let normBroken = false;
+let normDistributions = null;
+
+function generateNormData() {
+  const steps = 51;
+  const numSamples = 300;
+  const data = { none: [], bn: [], ln: [] };
+
+  for (let s = 0; s < steps; s++) {
+    const r = seededRandom(s * 7 + 99);
+    const t = s / steps;
+
+    // No norm: distribution shifts wildly
+    const noNormVals = [];
+    const shift = Math.sin(s * 0.5) * 3 + t * 2;
+    const spread = 1.0 + t * 4 + Math.abs(Math.sin(s * 0.3)) * 2;
+    for (let i = 0; i < numSamples; i++) {
+      noNormVals.push(gaussianRandom(r) * spread + shift);
+    }
+    data.none.push(noNormVals);
+
+    // BatchNorm: stable, centered
+    const bnVals = [];
+    for (let i = 0; i < numSamples; i++) {
+      bnVals.push(gaussianRandom(r) * 1.0 + (Math.random() - 0.5) * 0.1);
+    }
+    data.bn.push(bnVals);
+
+    // LayerNorm: stable, centered
+    const lnVals = [];
+    for (let i = 0; i < numSamples; i++) {
+      lnVals.push(gaussianRandom(r) * 1.05 + (Math.random() - 0.5) * 0.12);
+    }
+    data.ln.push(lnVals);
+  }
+  return data;
+}
+
+function drawNormViz() {
+  const canvas = document.getElementById('normCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  if (!normDistributions) normDistributions = generateNormData();
+  const step = Math.min(normStep, 50);
+
+  const panels = [
+    { data: normDistributions.none[step], label: 'No Normalization', color: '#e74c3c' },
+    { data: normDistributions.bn[step], label: 'BatchNorm', color: '#3498db' },
+    { data: normDistributions.ln[step], label: 'LayerNorm', color: '#2ecc71' }
+  ];
+
+  if (normBroken) {
+    panels[1] = { data: normDistributions.none[step], label: 'BatchNorm (REMOVED)', color: '#e74c3c' };
+    panels[2] = { data: normDistributions.none[step], label: 'LayerNorm (REMOVED)', color: '#e74c3c' };
+  }
+
+  const colW = W / 3;
+  const pad = 40;
+  const plotH = H - 100;
+
+  for (let p = 0; p < 3; p++) {
+    const cx = p * colW;
+    const panel = panels[p];
+
+    // Title
+    ctx.fillStyle = panel.color;
+    ctx.font = 'bold 14px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(panel.label, cx + colW / 2, 25);
+
+    // Subtitle
+    ctx.fillStyle = '#666';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.fillText('Layer 5 activation distribution', cx + colW / 2, 42);
+
+    // Draw distribution as histogram
+    const vals = panel.data;
+    const maxVal = 10;
+    drawHistogram(ctx, vals, cx + 20, 55, colW - 40, plotH - 20, panel.color, maxVal);
+
+    // Stats
+    const mean = vals.reduce((a,b) => a+b, 0) / vals.length;
+    const variance = vals.reduce((a,b) => a + (b-mean)*(b-mean), 0) / vals.length;
+    ctx.fillStyle = '#888';
+    ctx.font = '11px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('mean=' + mean.toFixed(2) + '  var=' + variance.toFixed(2), cx + colW / 2, H - 20);
+
+    // Separator
+    if (p < 2) {
+      ctx.strokeStyle = '#2a2a4a';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo((p + 1) * colW, 0);
+      ctx.lineTo((p + 1) * colW, H);
+      ctx.stroke();
+    }
+  }
+
+  // Step indicator
+  ctx.fillStyle = '#4ecdc4';
+  ctx.font = 'bold 12px Inter, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText('Step: ' + step + ' / 50', W - 10, H - 5);
+}
+
+function drawNormDiffViz() {
+  const canvas = document.getElementById('normDiffCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = 30;
+  const boxW = (W - pad * 4) / 2;
+  const boxH = H - pad * 2;
+
+  // BN diagram - normalize across batch for each feature
+  const bnX = pad;
+  const bnY = pad;
+  drawRoundRect(ctx, bnX, bnY, boxW, boxH, 8, '#0a0a1a', '#3498db');
+
+  ctx.fillStyle = '#3498db';
+  ctx.font = 'bold 14px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('BatchNorm: normalize across batch', bnX + boxW / 2, bnY + 22);
+
+  // Draw matrix: rows = batch samples, cols = features
+  const rows = 5, cols = 6;
+  const cellW = (boxW - 60) / cols;
+  const cellH = (boxH - 60) / rows;
+  const matX = bnX + 30, matY = bnY + 38;
+
+  ctx.fillStyle = '#555';
+  ctx.font = '10px Inter, sans-serif';
+  ctx.textAlign = 'right';
+  for (let r = 0; r < rows; r++) {
+    ctx.fillText('sample ' + (r+1), matX - 4, matY + r * cellH + cellH / 2 + 3);
+  }
+  ctx.textAlign = 'center';
+  for (let c = 0; c < cols; c++) {
+    ctx.fillText('f' + (c+1), matX + c * cellW + cellW / 2, matY - 4);
+  }
+
+  // Highlight column (BN normalizes down columns)
+  const highlightCol = 2;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const isHighlight = c === highlightCol;
+      const fill = isHighlight ? 'rgba(52,152,219,0.4)' : '#151530';
+      const stroke = isHighlight ? '#3498db' : '#2a2a4a';
+      ctx.fillStyle = fill;
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = 1;
+      ctx.fillRect(matX + c * cellW + 1, matY + r * cellH + 1, cellW - 2, cellH - 2);
+      ctx.strokeRect(matX + c * cellW + 1, matY + r * cellH + 1, cellW - 2, cellH - 2);
+    }
+  }
+
+  // Arrow showing direction
+  ctx.fillStyle = '#3498db';
+  ctx.font = '11px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('normalize this column', matX + highlightCol * cellW + cellW / 2, matY + rows * cellH + 16);
+
+  // LN diagram - normalize across features for each sample
+  const lnX = pad * 3 + boxW;
+  const lnY = pad;
+  drawRoundRect(ctx, lnX, lnY, boxW, boxH, 8, '#0a0a1a', '#2ecc71');
+
+  ctx.fillStyle = '#2ecc71';
+  ctx.font = 'bold 14px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('LayerNorm: normalize across features', lnX + boxW / 2, lnY + 22);
+
+  const mat2X = lnX + 30, mat2Y = lnY + 38;
+
+  ctx.fillStyle = '#555';
+  ctx.font = '10px Inter, sans-serif';
+  ctx.textAlign = 'right';
+  for (let r = 0; r < rows; r++) {
+    ctx.fillText('sample ' + (r+1), mat2X - 4, mat2Y + r * cellH + cellH / 2 + 3);
+  }
+  ctx.textAlign = 'center';
+  for (let c = 0; c < cols; c++) {
+    ctx.fillText('f' + (c+1), mat2X + c * cellW + cellW / 2, mat2Y - 4);
+  }
+
+  const highlightRow = 1;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const isHighlight = r === highlightRow;
+      const fill = isHighlight ? 'rgba(46,204,113,0.4)' : '#151530';
+      const stroke = isHighlight ? '#2ecc71' : '#2a2a4a';
+      ctx.fillStyle = fill;
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = 1;
+      ctx.fillRect(mat2X + c * cellW + 1, mat2Y + r * cellH + 1, cellW - 2, cellH - 2);
+      ctx.strokeRect(mat2X + c * cellW + 1, mat2Y + r * cellH + 1, cellW - 2, cellH - 2);
+    }
+  }
+
+  ctx.fillStyle = '#2ecc71';
+  ctx.font = '11px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('normalize this row', mat2X + cols * cellW + 8, mat2Y + highlightRow * cellH + cellH / 2 + 3);
+}
+
+function runNormTraining() {
+  if (normAnimId) { cancelAnimationFrame(normAnimId); normAnimId = null; return; }
+  normStep = 0;
+  function animate() {
+    if (normStep >= 50) { normAnimId = null; return; }
+    normStep++;
+    document.getElementById('normStep').value = normStep;
+    document.getElementById('normStepVal').textContent = normStep;
+    drawNormViz();
+    normAnimId = setTimeout(animate, 120);
+  }
+  animate();
+}
+
+function resetNormTraining() {
+  if (normAnimId) { clearTimeout(normAnimId); normAnimId = null; }
+  normStep = 0;
+  document.getElementById('normStep').value = 0;
+  document.getElementById('normStepVal').textContent = '0';
+  drawNormViz();
+}
+
+function setNormStep(val) {
+  normStep = parseInt(val);
+  document.getElementById('normStepVal').textContent = val;
+  drawNormViz();
+}
+
+function toggleBreakNorm() {
+  normBroken = !normBroken;
+  const btn = document.getElementById('breakNorm');
+  btn.classList.toggle('broken', normBroken);
+  btn.textContent = normBroken ? 'Fix It: Restore Norms' : 'Break It: Remove All Norms';
+  drawNormViz();
+}
+
+// ============================================================
+// VIZ 3.3: RESIDUAL CONNECTIONS
+// ============================================================
+let resDepth = 20;
+let resShowResidual = true;
+
+function updateDepth(val) {
+  resDepth = parseInt(val);
+  document.getElementById('depthVal').textContent = val;
+  drawResidualViz();
+  drawResidualAccViz();
+}
+
+function toggleResidual(show) {
+  resShowResidual = show;
+  document.getElementById('btnResShow').classList.toggle('active', show);
+  document.getElementById('btnResHide').classList.toggle('active', !show);
+  drawResidualViz();
+  drawResidualAccViz();
+}
+
+function drawResidualViz() {
+  const canvas = document.getElementById('residualCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const depth = resDepth;
+  const pad = { l: 80, r: 80, t: 50, b: 50 };
+  const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+
+  // Title
+  ctx.fillStyle = '#4ecdc4';
+  ctx.font = 'bold 16px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Gradient Magnitude vs. Layer (Backward from output)', W / 2, 25);
+
+  // Compute gradient magnitudes
+  const noRes = [], withRes = [];
+  const r = seededRandom(77);
+  for (let l = 0; l < depth; l++) {
+    // Without residuals: exponential decay
+    const factor = 0.7 + gaussianRandom(r) * 0.05;
+    const noResGrad = Math.pow(Math.max(0.1, factor), l);
+    noRes.push(noResGrad);
+
+    // With residuals: roughly constant (1 + small perturbation)
+    const resGrad = 1.0 + gaussianRandom(r) * 0.15;
+    withRes.push(Math.max(0.3, resGrad));
+  }
+
+  // Y axis (log scale)
+  const minLog = -10, maxLog = 1;
+
+  // Grid
+  ctx.strokeStyle = '#1a1a2e';
+  ctx.lineWidth = 1;
+  for (let y = minLog; y <= maxLog; y += 1) {
+    const py = pad.t + ((maxLog - y) / (maxLog - minLog)) * ph;
+    ctx.beginPath();
+    ctx.moveTo(pad.l, py);
+    ctx.lineTo(W - pad.r, py);
+    ctx.stroke();
+
+    ctx.fillStyle = '#555';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText('10^' + y, pad.l - 8, py + 3);
+  }
+
+  // X axis labels
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Layer (backward from output)', pad.l + pw / 2, H - 8);
+
+  // Axes
+  ctx.strokeStyle = '#2a2a4a';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.l, pad.t);
+  ctx.lineTo(pad.l, H - pad.b);
+  ctx.lineTo(W - pad.r, H - pad.b);
+  ctx.stroke();
+
+  function plotLine(data, color, label) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    let started = false;
+    for (let l = 0; l < depth; l++) {
+      const px = pad.l + (l / Math.max(1, depth - 1)) * pw;
+      const logVal = Math.log10(Math.max(1e-12, data[l]));
+      const clampedLog = Math.max(minLog, Math.min(maxLog, logVal));
+      const py = pad.t + ((maxLog - clampedLog) / (maxLog - minLog)) * ph;
+      if (!started) { ctx.moveTo(px, py); started = true; }
+      else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+
+    // Dots
+    for (let l = 0; l < depth; l++) {
+      const px = pad.l + (l / Math.max(1, depth - 1)) * pw;
+      const logVal = Math.log10(Math.max(1e-12, data[l]));
+      const clampedLog = Math.max(minLog, Math.min(maxLog, logVal));
+      const py = pad.t + ((maxLog - clampedLog) / (maxLog - minLog)) * ph;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(px, py, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // Always show both for comparison
+  plotLine(noRes, '#e74c3c', 'Without Residuals');
+  plotLine(withRes, '#4ecdc4', 'With Residuals');
+
+  // Highlight active one
+  if (!resShowResidual) {
+    ctx.fillStyle = 'rgba(231,76,60,0.15)';
+    ctx.fillRect(pad.l, pad.t, pw, ph);
+  }
+
+  // Residual block diagram
+  const blockX = W - pad.r + 10, blockY = pad.t + 20;
+  ctx.fillStyle = '#4ecdc4';
+  ctx.font = 'bold 12px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Residual Block:', blockX, blockY);
+  ctx.fillStyle = '#ccc';
+  ctx.font = '11px monospace';
+  ctx.fillText('y = x + F(x)', blockX, blockY + 18);
+  ctx.fillStyle = '#888';
+  ctx.font = '10px Inter, sans-serif';
+  ctx.fillText('dy/dx = I + dF/dx', blockX, blockY + 36);
+  ctx.fillText('Skip path = 1', blockX, blockY + 52);
+}
+
+function drawResidualAccViz() {
+  const canvas = document.getElementById('residualAccCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = { l: 60, r: 120, t: 20, b: 40 };
+  const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+
+  // Simulate accuracy vs depth
+  const depths = [];
+  const accNoRes = [], accWithRes = [];
+  for (let d = 5; d <= 100; d += 5) {
+    depths.push(d);
+    // Without residuals: degrades past ~20 layers
+    const noResAcc = Math.min(0.95, 0.92 - Math.max(0, (d - 15) * 0.008) + (Math.random() - 0.5) * 0.01);
+    accNoRes.push(Math.max(0.4, noResAcc));
+    // With residuals: keeps improving
+    const resAcc = Math.min(0.97, 0.88 + d * 0.001 + (Math.random() - 0.5) * 0.005);
+    accWithRes.push(resAcc);
+  }
+
+  // Axes
+  ctx.strokeStyle = '#2a2a4a';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.l, pad.t);
+  ctx.lineTo(pad.l, H - pad.b);
+  ctx.lineTo(W - pad.r, H - pad.b);
+  ctx.stroke();
+
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Network Depth (layers)', pad.l + pw / 2, H - 5);
+  ctx.save();
+  ctx.translate(15, pad.t + ph / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('Test Accuracy', 0, 0);
+  ctx.restore();
+
+  // Grid
+  for (let y = 0.4; y <= 1.0; y += 0.1) {
+    const py = H - pad.b - ((y - 0.4) / 0.6) * ph;
+    ctx.strokeStyle = '#1a1a2e';
+    ctx.beginPath();
+    ctx.moveTo(pad.l, py);
+    ctx.lineTo(W - pad.r, py);
+    ctx.stroke();
+    ctx.fillStyle = '#555';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText((y * 100).toFixed(0) + '%', pad.l - 8, py + 3);
+  }
+
+  // Current depth marker
+  const depthPx = pad.l + ((resDepth - 5) / 95) * pw;
+  ctx.strokeStyle = '#4ecdc433';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(depthPx, pad.t);
+  ctx.lineTo(depthPx, H - pad.b);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  function plotAccLine(data, color, label) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i < depths.length; i++) {
+      const px = pad.l + ((depths[i] - 5) / 95) * pw;
+      const py = H - pad.b - ((data[i] - 0.4) / 0.6) * ph;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+  }
+
+  plotAccLine(accNoRes, '#e74c3c');
+  plotAccLine(accWithRes, '#4ecdc4');
+
+  // Legend
+  const ly = pad.t + 10;
+  ctx.fillStyle = '#e74c3c';
+  ctx.fillRect(W - pad.r + 12, ly, 12, 12);
+  ctx.fillStyle = '#ccc';
+  ctx.font = '11px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('No Residuals', W - pad.r + 28, ly + 10);
+
+  ctx.fillStyle = '#4ecdc4';
+  ctx.fillRect(W - pad.r + 12, ly + 22, 12, 12);
+  ctx.fillStyle = '#ccc';
+  ctx.fillText('Residuals', W - pad.r + 28, ly + 32);
+}
+
+// ============================================================
+// VIZ 3.4: OPTIMIZER ZOO
+// ============================================================
+let optAnimId = null;
+let optStep = 0;
+let optLr = 0.02;
+let optSpeed = 100;
+let optPaths = { sgd: [], momentum: [], rmsprop: [], adam: [] };
+let adamStates = [];
+
+// Pathological loss surface: elongated valley
+function lossF(x, y) {
+  return 0.05 * x * x + 5 * y * y + 0.5 * Math.sin(x * 2) * 0.3;
+}
+
+function lossGrad(x, y) {
+  return [0.1 * x + 0.5 * Math.cos(x * 2) * 0.3 * 2, 10 * y];
+}
+
+function resetOptimizers() {
+  if (optAnimId) { clearTimeout(optAnimId); optAnimId = null; }
+  optStep = 0;
+  const startX = -4, startY = 1.5;
+  optPaths = {
+    sgd: [{ x: startX, y: startY }],
+    momentum: [{ x: startX, y: startY }],
+    rmsprop: [{ x: startX, y: startY }],
+    adam: [{ x: startX, y: startY }]
+  };
+  adamStates = [];
+  // Optimizer internal states
+  optPaths._mom_v = [0, 0];
+  optPaths._rms_v = [0.001, 0.001];
+  optPaths._adam_m = [0, 0];
+  optPaths._adam_v = [0.001, 0.001];
+  drawOptimizerViz();
+  drawAdamStateViz();
+}
+
+function updateOptLr(val) {
+  optLr = val / 1000;
+  document.getElementById('optLrVal').textContent = optLr.toFixed(3);
+}
+
+function updateOptSpeed() {
+  optSpeed = parseInt(document.getElementById('optSpeed').value);
+}
+
+function stepOptimizers() {
+  const lr = optLr;
+  const beta1 = 0.9, beta2 = 0.999, eps = 1e-8;
+  const t = optStep + 1;
+
+  // SGD
+  const sgdLast = optPaths.sgd[optPaths.sgd.length - 1];
+  const sgdG = lossGrad(sgdLast.x, sgdLast.y);
+  optPaths.sgd.push({ x: sgdLast.x - lr * sgdG[0], y: sgdLast.y - lr * sgdG[1] });
+
+  // Momentum
+  const momLast = optPaths.momentum[optPaths.momentum.length - 1];
+  const momG = lossGrad(momLast.x, momLast.y);
+  optPaths._mom_v[0] = 0.9 * optPaths._mom_v[0] + momG[0];
+  optPaths._mom_v[1] = 0.9 * optPaths._mom_v[1] + momG[1];
+  optPaths.momentum.push({ x: momLast.x - lr * optPaths._mom_v[0], y: momLast.y - lr * optPaths._mom_v[1] });
+
+  // RMSProp
+  const rmsLast = optPaths.rmsprop[optPaths.rmsprop.length - 1];
+  const rmsG = lossGrad(rmsLast.x, rmsLast.y);
+  optPaths._rms_v[0] = 0.99 * optPaths._rms_v[0] + 0.01 * rmsG[0] * rmsG[0];
+  optPaths._rms_v[1] = 0.99 * optPaths._rms_v[1] + 0.01 * rmsG[1] * rmsG[1];
+  optPaths.rmsprop.push({
+    x: rmsLast.x - lr * rmsG[0] / (Math.sqrt(optPaths._rms_v[0]) + eps),
+    y: rmsLast.y - lr * rmsG[1] / (Math.sqrt(optPaths._rms_v[1]) + eps)
+  });
+
+  // Adam
+  const adamLast = optPaths.adam[optPaths.adam.length - 1];
+  const adamG = lossGrad(adamLast.x, adamLast.y);
+  optPaths._adam_m[0] = beta1 * optPaths._adam_m[0] + (1 - beta1) * adamG[0];
+  optPaths._adam_m[1] = beta1 * optPaths._adam_m[1] + (1 - beta1) * adamG[1];
+  optPaths._adam_v[0] = beta2 * optPaths._adam_v[0] + (1 - beta2) * adamG[0] * adamG[0];
+  optPaths._adam_v[1] = beta2 * optPaths._adam_v[1] + (1 - beta2) * adamG[1] * adamG[1];
+  const mHat0 = optPaths._adam_m[0] / (1 - Math.pow(beta1, t));
+  const mHat1 = optPaths._adam_m[1] / (1 - Math.pow(beta1, t));
+  const vHat0 = optPaths._adam_v[0] / (1 - Math.pow(beta2, t));
+  const vHat1 = optPaths._adam_v[1] / (1 - Math.pow(beta2, t));
+  optPaths.adam.push({
+    x: adamLast.x - lr * mHat0 / (Math.sqrt(vHat0) + eps),
+    y: adamLast.y - lr * mHat1 / (Math.sqrt(vHat1) + eps)
+  });
+
+  // Record Adam state for display
+  adamStates.push({
+    t: t,
+    m: [optPaths._adam_m[0], optPaths._adam_m[1]],
+    v: [optPaths._adam_v[0], optPaths._adam_v[1]],
+    mHat: [mHat0, mHat1],
+    vHat: [vHat0, vHat1],
+    adaptiveLr: [lr * mHat0 / (Math.sqrt(vHat0) + eps), lr * mHat1 / (Math.sqrt(vHat1) + eps)]
+  });
+
+  optStep++;
+}
+
+function runOptimizers() {
+  if (optAnimId) { clearTimeout(optAnimId); optAnimId = null; return; }
+  if (optStep === 0) resetOptimizers();
+
+  function animate() {
+    if (optStep >= 300) { optAnimId = null; return; }
+    stepOptimizers();
+    drawOptimizerViz();
+    drawAdamStateViz();
+    optAnimId = setTimeout(animate, optSpeed);
+  }
+  animate();
+}
+
+function drawOptimizerViz() {
+  const canvas = document.getElementById('optimizerCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = { l: 50, r: 50, t: 40, b: 40 };
+  const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+
+  // Contour plot bounds
+  const xMin = -5, xMax = 5, yMin = -2.5, yMax = 2.5;
+
+  function toPixel(x, y) {
+    return {
+      px: pad.l + ((x - xMin) / (xMax - xMin)) * pw,
+      py: pad.t + ((yMax - y) / (yMax - yMin)) * ph
+    };
+  }
+
+  // Draw contour lines
+  const levels = [0.1, 0.5, 1, 2, 4, 8, 16, 32, 64];
+  const resolution = 80;
+  const grid = [];
+  for (let i = 0; i <= resolution; i++) {
+    grid[i] = [];
+    for (let j = 0; j <= resolution; j++) {
+      const x = xMin + (xMax - xMin) * i / resolution;
+      const y = yMin + (yMax - yMin) * j / resolution;
+      grid[i][j] = lossF(x, y);
+    }
+  }
+
+  // Simple contour rendering via colored cells
+  for (let i = 0; i < resolution; i++) {
+    for (let j = 0; j < resolution; j++) {
+      const val = grid[i][j];
+      const logVal = Math.log10(Math.max(0.01, val));
+      const t = Math.max(0, Math.min(1, (logVal + 1) / 3));
+      const r = Math.floor(10 + t * 30);
+      const g = Math.floor(10 + t * 25);
+      const b = Math.floor(30 + t * 50);
+      ctx.fillStyle = 'rgb(' + r + ',' + g + ',' + b + ')';
+      const px = pad.l + (i / resolution) * pw;
+      const py = pad.t + (j / resolution) * ph;
+      ctx.fillRect(px, py, pw / resolution + 1, ph / resolution + 1);
+    }
+  }
+
+  // Draw contour lines
+  ctx.lineWidth = 0.5;
+  for (const level of levels) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    for (let i = 0; i < resolution; i++) {
+      for (let j = 0; j < resolution; j++) {
+        const v00 = grid[i][j], v10 = grid[Math.min(i+1, resolution)][j];
+        const v01 = grid[i][Math.min(j+1, resolution)], v11 = grid[Math.min(i+1, resolution)][Math.min(j+1, resolution)];
+        const above = [v00 > level, v10 > level, v01 > level, v11 > level];
+        const crossings = above.filter(Boolean).length;
+        if (crossings > 0 && crossings < 4) {
+          const px = pad.l + ((i + 0.5) / resolution) * pw;
+          const py = pad.t + ((j + 0.5) / resolution) * ph;
+          ctx.fillStyle = 'rgba(255,255,255,0.08)';
+          ctx.fillRect(px - 0.5, py - 0.5, 1, 1);
+        }
+      }
+    }
+  }
+
+  // Draw optimizer paths
+  const pathColors = {
+    sgd: '#e74c3c',
+    momentum: '#f39c12',
+    rmsprop: '#3498db',
+    adam: '#2ecc71'
+  };
+
+  for (const [name, path] of Object.entries(optPaths)) {
+    if (name.startsWith('_')) continue;
+    if (path.length < 2) continue;
+    const color = pathColors[name];
+
+    // Trail
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.globalAlpha = 0.6;
+    ctx.beginPath();
+    for (let i = 0; i < path.length; i++) {
+      const { px, py } = toPixel(path[i].x, path[i].y);
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    // Current position (ball)
+    const last = path[path.length - 1];
+    const { px, py } = toPixel(last.x, last.y);
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(px, py, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Label
+    ctx.fillStyle = color;
+    ctx.font = 'bold 11px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    const labelOffsets = { sgd: [-15, -12], momentum: [-15, 12], rmsprop: [12, -12], adam: [12, 12] };
+    const off = labelOffsets[name] || [10, -10];
+    ctx.fillText(name.toUpperCase(), px + off[0], py + off[1]);
+  }
+
+  // Minimum marker
+  const { px: minPx, py: minPy } = toPixel(0, 0);
+  ctx.strokeStyle = '#ffd93d';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(minPx - 6, minPy - 6);
+  ctx.lineTo(minPx + 6, minPy + 6);
+  ctx.moveTo(minPx + 6, minPy - 6);
+  ctx.lineTo(minPx - 6, minPy + 6);
+  ctx.stroke();
+  ctx.fillStyle = '#ffd93d';
+  ctx.font = '10px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('minimum', minPx, minPy - 10);
+
+  // Step counter
+  ctx.fillStyle = '#4ecdc4';
+  ctx.font = 'bold 13px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Step: ' + optStep, pad.l + 10, pad.t + 20);
+}
+
+function drawAdamStateViz() {
+  const canvas = document.getElementById('adamStateCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  if (adamStates.length === 0) {
+    ctx.fillStyle = '#555';
+    ctx.font = '14px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Run the optimizer to see Adam internal state (m, v, adaptive LR)', W / 2, H / 2);
+    return;
+  }
+
+  const pad = { l: 50, r: 20, t: 20, b: 30 };
+  const colW = (W - pad.l - pad.r) / 3;
+
+  // Show last state
+  const last = adamStates[adamStates.length - 1];
+  const labels = ['First Moment (m)', 'Second Moment (v)', 'Adaptive LR (m/sqrt(v))'];
+  const values = [
+    ['m_x = ' + last.m[0].toFixed(4), 'm_y = ' + last.m[1].toFixed(4), 'm_hat_x = ' + last.mHat[0].toFixed(4), 'm_hat_y = ' + last.mHat[1].toFixed(4)],
+    ['v_x = ' + last.v[0].toFixed(6), 'v_y = ' + last.v[1].toFixed(6), 'v_hat_x = ' + last.vHat[0].toFixed(6), 'v_hat_y = ' + last.vHat[1].toFixed(6)],
+    ['eff_lr_x = ' + last.adaptiveLr[0].toFixed(6), 'eff_lr_y = ' + last.adaptiveLr[1].toFixed(6), 'ratio = ' + (Math.abs(last.adaptiveLr[0]) > 0 ? (last.adaptiveLr[1] / last.adaptiveLr[0]).toFixed(3) : 'N/A'), 't = ' + last.t]
+  ];
+  const colors = ['#f39c12', '#3498db', '#2ecc71'];
+
+  for (let c = 0; c < 3; c++) {
+    const cx = pad.l + c * colW;
+    ctx.fillStyle = colors[c];
+    ctx.font = 'bold 12px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(labels[c], cx + colW / 2, pad.t + 10);
+
+    ctx.font = '11px monospace';
+    ctx.fillStyle = '#ccc';
+    for (let i = 0; i < values[c].length; i++) {
+      ctx.fillText(values[c][i], cx + colW / 2, pad.t + 32 + i * 18);
+    }
+
+    // Time series mini chart
+    const chartY = pad.t + 100;
+    const chartH = H - chartY - pad.b;
+    const chartW = colW - 20;
+    ctx.strokeStyle = '#2a2a4a';
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(cx + 10, chartY + chartH);
+    ctx.lineTo(cx + 10 + chartW, chartY + chartH);
+    ctx.stroke();
+
+    // Plot the time series of a representative value
+    if (adamStates.length > 1) {
+      ctx.strokeStyle = colors[c];
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      const data = adamStates.map(function(s) {
+        if (c === 0) return s.mHat[0];
+        if (c === 1) return s.vHat[0];
+        return s.adaptiveLr[0];
+      });
+      const dataMin = Math.min(...data);
+      const dataMax = Math.max(...data);
+      const range = dataMax - dataMin || 1;
+      for (let i = 0; i < data.length; i++) {
+        const px = cx + 10 + (i / Math.max(1, data.length - 1)) * chartW;
+        const py = chartY + chartH - ((data[i] - dataMin) / range) * chartH * 0.9;
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+    }
+  }
+}
+
+// ============================================================
+// VIZ 3.5: L2 REGULARIZATION
+// ============================================================
+let l2AnimId = null;
+let l2Epoch = 0;
+let l2Lambda = 0;
+let l2TrainLoss = [], l2ValLoss = [], l2WeightHist = [];
+
+function updateL2Lambda(val) {
+  l2Lambda = val / 1000;
+  document.getElementById('l2LambdaVal').textContent = l2Lambda.toFixed(3);
+}
+
+function resetL2() {
+  if (l2AnimId) { clearTimeout(l2AnimId); l2AnimId = null; }
+  l2Epoch = 0;
+  l2TrainLoss = [];
+  l2ValLoss = [];
+  l2WeightHist = [];
+  drawL2Viz();
+}
+
+function runL2Training() {
+  if (l2AnimId) { clearTimeout(l2AnimId); l2AnimId = null; return; }
+  resetL2();
+  const lambda = l2Lambda;
+
+  // Simulate 150 epochs
+  const r = seededRandom(42);
+  let weights = [];
+  for (let i = 0; i < 200; i++) weights.push(gaussianRandom(r) * 2);
+
+  function simEpoch() {
+    if (l2Epoch >= 150) { l2AnimId = null; return; }
+
+    // Training loss decreases
+    const baseTrain = 2.0 * Math.exp(-l2Epoch * 0.05) + 0.01;
+    const trainNoise = (Math.random() - 0.5) * 0.04;
+    l2TrainLoss.push(baseTrain + trainNoise + lambda * 0.5);
+
+    // Validation loss: without reg, it goes up; with reg, it converges
+    const overfit = lambda < 0.001 ? Math.max(0, (l2Epoch - 20) * 0.015) : 0;
+    const baseVal = 2.0 * Math.exp(-l2Epoch * 0.04) + 0.15 + overfit;
+    const regPenalty = lambda > 0 ? -lambda * 2 : 0;
+    l2ValLoss.push(baseVal + (Math.random() - 0.5) * 0.05 + regPenalty);
+
+    // Weight magnitudes shrink with L2
+    const shrinkFactor = lambda > 0 ? Math.exp(-lambda * l2Epoch * 0.1) : 1 + l2Epoch * 0.005;
+    const currentWeights = weights.map(w => w * shrinkFactor * (0.9 + Math.random() * 0.2));
+    l2WeightHist.push(currentWeights);
+
+    l2Epoch++;
+    drawL2Viz();
+    l2AnimId = setTimeout(simEpoch, 40);
+  }
+  simEpoch();
+}
+
+function drawL2Viz() {
+  const canvas = document.getElementById('l2Canvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = { l: 60, r: 20, t: 20, b: 40 };
+  const halfW = (W - pad.l - pad.r) / 2;
+
+  // Left: Loss curves
+  ctx.fillStyle = '#4ecdc4';
+  ctx.font = 'bold 13px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Train / Validation Loss', pad.l + halfW / 2, pad.t + 10);
+
+  if (l2TrainLoss.length > 1) {
+    const maxLoss = 3.0;
+    const ph = H - pad.t - pad.b - 20;
+
+    // Grid
+    for (let y = 0; y <= maxLoss; y += 0.5) {
+      const py = pad.t + 20 + ((maxLoss - y) / maxLoss) * ph;
+      ctx.strokeStyle = '#1a1a2e';
+      ctx.lineWidth = 0.5;
+      ctx.beginPath();
+      ctx.moveTo(pad.l, py);
+      ctx.lineTo(pad.l + halfW - 10, py);
+      ctx.stroke();
+      ctx.fillStyle = '#555';
+      ctx.font = '9px monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText(y.toFixed(1), pad.l - 5, py + 3);
+    }
+
+    // Axes
+    ctx.strokeStyle = '#2a2a4a';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(pad.l, pad.t + 20);
+    ctx.lineTo(pad.l, H - pad.b);
+    ctx.lineTo(pad.l + halfW - 10, H - pad.b);
+    ctx.stroke();
+
+    // Train loss
+    ctx.strokeStyle = '#4ecdc4';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i < l2TrainLoss.length; i++) {
+      const px = pad.l + (i / 149) * (halfW - 10);
+      const py = pad.t + 20 + ((maxLoss - Math.max(0, Math.min(maxLoss, l2TrainLoss[i]))) / maxLoss) * ph;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+
+    // Val loss
+    ctx.strokeStyle = '#e74c3c';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i < l2ValLoss.length; i++) {
+      const px = pad.l + (i / 149) * (halfW - 10);
+      const py = pad.t + 20 + ((maxLoss - Math.max(0, Math.min(maxLoss, l2ValLoss[i]))) / maxLoss) * ph;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+
+    ctx.fillStyle = '#888';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Epoch', pad.l + halfW / 2, H - 5);
+  }
+
+  // Right: Weight magnitude histogram
+  const rightX = pad.l + halfW + 20;
+  ctx.fillStyle = '#888';
+  ctx.font = 'bold 13px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Weight Magnitudes (epoch ' + l2Epoch + ')', rightX + (halfW - 20) / 2, pad.t + 10);
+
+  if (l2WeightHist.length > 0) {
+    const weights = l2WeightHist[l2WeightHist.length - 1];
+    drawHistogram(ctx, weights, rightX, pad.t + 20, halfW - 30, H - pad.t - pad.b - 30, '#888', 6);
+
+    // Stats
+    const absWeights = weights.map(Math.abs);
+    const meanAbs = absWeights.reduce((a,b) => a+b, 0) / absWeights.length;
+    ctx.fillStyle = '#888';
+    ctx.font = '11px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('mean |w| = ' + meanAbs.toFixed(3), rightX + (halfW - 20) / 2, H - pad.b + 15);
+  } else {
+    ctx.fillStyle = '#555';
+    ctx.font = '13px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Click "Run Training" to start', rightX + (halfW - 20) / 2, H / 2);
+  }
+
+  // Lambda display
+  ctx.fillStyle = '#4ecdc4';
+  ctx.font = 'bold 12px monospace';
+  ctx.textAlign = 'right';
+  ctx.fillText('lambda = ' + l2Lambda.toFixed(3), W - pad.r - 10, pad.t + 10);
+}
+
+// ============================================================
+// VIZ 3.6: DROPOUT
+// ============================================================
+let dropAnimId = null;
+let dropEpoch = 0;
+let dropRate = 0.5;
+let dropTrainLoss = [], dropValNoReg = [], dropValDrop = [];
+let dropMask = [];
+
+function updateDropRate(val) {
+  dropRate = val / 100;
+  document.getElementById('dropRateVal').textContent = dropRate.toFixed(2);
+  sampleDropoutMask();
+}
+
+function sampleDropoutMask() {
+  const layers = [8, 12, 12, 8, 4];
+  dropMask = layers.map(function(n) {
+    const mask = [];
+    for (let i = 0; i < n; i++) {
+      mask.push(Math.random() > dropRate);
+    }
+    return mask;
+  });
+  drawDropoutViz();
+}
+
+function resetDropout() {
+  if (dropAnimId) { clearTimeout(dropAnimId); dropAnimId = null; }
+  dropEpoch = 0;
+  dropTrainLoss = [];
+  dropValNoReg = [];
+  dropValDrop = [];
+  sampleDropoutMask();
+  drawDropoutViz();
+}
+
+function runDropoutTraining() {
+  if (dropAnimId) { clearTimeout(dropAnimId); dropAnimId = null; return; }
+  resetDropout();
+  const p = dropRate;
+
+  function simEpoch() {
+    if (dropEpoch >= 120) { dropAnimId = null; return; }
+
+    // Train loss
+    const baseTrain = 2.0 * Math.exp(-dropEpoch * 0.04) + 0.05;
+    dropTrainLoss.push(baseTrain + (Math.random() - 0.5) * 0.03);
+
+    // Val loss without dropout: overfits
+    const overfit = Math.max(0, (dropEpoch - 15) * 0.012);
+    dropValNoReg.push(2.0 * Math.exp(-dropEpoch * 0.035) + 0.2 + overfit + (Math.random() - 0.5) * 0.04);
+
+    // Val loss with dropout: depends on rate
+    let dropBonus = 0;
+    if (p > 0 && p <= 0.6) dropBonus = -p * 0.8;  // helps generalization
+    else if (p > 0.6) dropBonus = (p - 0.6) * 3;  // too much = underfitting
+    const baseValDrop = 2.0 * Math.exp(-dropEpoch * 0.03 * (1 - p * 0.3)) + 0.15 + dropBonus * 0.3;
+    const smallOverfit = p < 0.2 ? Math.max(0, (dropEpoch - 30) * 0.005) : 0;
+    dropValDrop.push(baseValDrop + smallOverfit + (Math.random() - 0.5) * 0.04);
+
+    // Re-sample mask each step
+    if (dropEpoch % 5 === 0) sampleDropoutMask();
+
+    dropEpoch++;
+    drawDropoutViz();
+    dropAnimId = setTimeout(simEpoch, 50);
+  }
+  simEpoch();
+}
+
+function drawDropoutViz() {
+  const canvas = document.getElementById('dropoutCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const halfW = W / 2;
+
+  // Left: Network diagram with dropout
+  const netPad = 40;
+  const layers = [8, 12, 12, 8, 4];
+  const layerNames = ['Input', 'Hidden 1', 'Hidden 2', 'Hidden 3', 'Output'];
+  const layerSpacing = (halfW - netPad * 2) / (layers.length - 1);
+
+  ctx.fillStyle = '#4ecdc4';
+  ctx.font = 'bold 13px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Network with Dropout (p=' + dropRate.toFixed(2) + ')', halfW / 2, 20);
+
+  const nodePositions = [];
+  for (let l = 0; l < layers.length; l++) {
+    nodePositions[l] = [];
+    const n = layers[l];
+    const x = netPad + l * layerSpacing;
+    const startY = 50 + (H - 100) / 2 - (n * 24) / 2;
+
+    for (let i = 0; i < n; i++) {
+      const y = startY + i * 24;
+      const active = !dropMask[l] || dropMask[l][i];
+      nodePositions[l].push({ x, y, active });
+    }
+
+    // Layer label
+    ctx.fillStyle = '#555';
+    ctx.font = '9px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(layerNames[l], x, H - 15);
+  }
+
+  // Draw connections
+  for (let l = 0; l < layers.length - 1; l++) {
+    for (let i = 0; i < nodePositions[l].length; i++) {
+      for (let j = 0; j < nodePositions[l+1].length; j++) {
+        const from = nodePositions[l][i];
+        const to = nodePositions[l+1][j];
+        const active = from.active && to.active;
+        ctx.strokeStyle = active ? 'rgba(78,205,196,0.15)' : 'rgba(80,80,80,0.05)';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(from.x + 8, from.y);
+        ctx.lineTo(to.x - 8, to.y);
+        ctx.stroke();
+      }
+    }
+  }
+
+  // Draw nodes
+  for (let l = 0; l < layers.length; l++) {
+    for (let i = 0; i < nodePositions[l].length; i++) {
+      const node = nodePositions[l][i];
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, 7, 0, Math.PI * 2);
+      if (node.active) {
+        ctx.fillStyle = '#4ecdc4';
+        ctx.fill();
+      } else {
+        ctx.fillStyle = '#333';
+        ctx.fill();
+        ctx.strokeStyle = '#555';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        // X mark
+        ctx.strokeStyle = '#e74c3c';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(node.x - 4, node.y - 4);
+        ctx.lineTo(node.x + 4, node.y + 4);
+        ctx.moveTo(node.x + 4, node.y - 4);
+        ctx.lineTo(node.x - 4, node.y + 4);
+        ctx.stroke();
+      }
+    }
+  }
+
+  // Active neuron count
+  let totalActive = 0, totalNeurons = 0;
+  for (let l = 1; l < layers.length - 1; l++) {
+    for (const node of nodePositions[l]) {
+      totalNeurons++;
+      if (node.active) totalActive++;
+    }
+  }
+  ctx.fillStyle = '#888';
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(totalActive + '/' + totalNeurons + ' hidden neurons active', halfW / 2, H - 2);
+
+  // Right: Loss curves
+  const rightX = halfW + 20;
+  const rightW = halfW - 40;
+  const pad = { t: 30, b: 40, l: 50, r: 10 };
+
+  ctx.fillStyle = '#4ecdc4';
+  ctx.font = 'bold 13px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Train / Validation Loss', halfW + rightW / 2 + pad.l, 20);
+
+  if (dropTrainLoss.length > 1) {
+    const maxLoss = 3.0;
+    const ph = H - pad.t - pad.b - 20;
+    const plotX = halfW + pad.l;
+    const plotW = rightW - pad.l - pad.r;
+
+    // Grid
+    for (let y = 0; y <= maxLoss; y += 0.5) {
+      const py = pad.t + 20 + ((maxLoss - y) / maxLoss) * ph;
+      ctx.strokeStyle = '#1a1a2e';
+      ctx.lineWidth = 0.5;
+      ctx.beginPath();
+      ctx.moveTo(plotX, py);
+      ctx.lineTo(plotX + plotW, py);
+      ctx.stroke();
+      ctx.fillStyle = '#555';
+      ctx.font = '9px monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText(y.toFixed(1), plotX - 5, py + 3);
+    }
+
+    // Axes
+    ctx.strokeStyle = '#2a2a4a';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(plotX, pad.t + 20);
+    ctx.lineTo(plotX, H - pad.b);
+    ctx.lineTo(plotX + plotW, H - pad.b);
+    ctx.stroke();
+
+    function plotLoss(data, color) {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i < data.length; i++) {
+        const px = plotX + (i / 119) * plotW;
+        const py = pad.t + 20 + ((maxLoss - Math.max(0, Math.min(maxLoss, data[i]))) / maxLoss) * ph;
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+    }
+
+    plotLoss(dropTrainLoss, '#4ecdc4');
+    plotLoss(dropValNoReg, '#e74c3c');
+    plotLoss(dropValDrop, '#2ecc71');
+
+    // Legend
+    const legX = plotX + plotW - 120, legY = pad.t + 30;
+    const legItems = [
+      { color: '#4ecdc4', label: 'Train' },
+      { color: '#e74c3c', label: 'Val (no drop)' },
+      { color: '#2ecc71', label: 'Val (dropout)' }
+    ];
+    for (let i = 0; i < legItems.length; i++) {
+      ctx.fillStyle = legItems[i].color;
+      ctx.fillRect(legX, legY + i * 16, 10, 10);
+      ctx.fillStyle = '#ccc';
+      ctx.font = '10px Inter, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(legItems[i].label, legX + 14, legY + i * 16 + 9);
+    }
+
+    ctx.fillStyle = '#888';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Epoch', halfW + rightW / 2 + pad.l, H - 5);
+  } else {
+    ctx.fillStyle = '#555';
+    ctx.font = '13px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Click "Run Training" to start', halfW + rightW / 2 + pad.l, H / 2);
+  }
+}
+
+// ============================================================
+// QUIZ DATA: 30 questions (5 per visualization)
+// ============================================================
+const quizData = [
+  {
+    topic: "3.1: Weight Initialization",
+    questions: [
+      { q: "Why does naive N(0,1) initialization cause problems in deep networks?", options: ["A) It makes the model too slow to compile", "B) Activation variances explode or vanish exponentially with depth, causing saturated or dead neurons", "C) It requires too much memory", "D) It only works with batch sizes above 128"], correct: 1, explanation: "With N(0,1) weights in a large layer, each layer multiplies the variance by n_in. After 10 layers, activations can be astronomically large or vanishingly small, causing saturation in sigmoid/tanh or dead neurons in ReLU." },
+      { q: "Xavier initialization scales weights by sqrt(2/(n_in + n_out)). Why include n_out?", options: ["A) To make the forward pass faster", "B) Because Xavier preserves variance in both the forward AND backward pass", "C) Because n_out determines the learning rate", "D) n_out is only included for aesthetic reasons"], correct: 1, explanation: "Xavier initialization was derived to preserve variance during both the forward pass (depends on n_in) and the backward pass (depends on n_out). Averaging both gives the 2/(n_in + n_out) formula." },
+      { q: "He (Kaiming) initialization uses sqrt(2/n_in) instead of sqrt(2/(n_in+n_out)). Why the factor of 2?", options: ["A) Because He is always twice as good as Xavier", "B) Because ReLU zeros out approximately half the neurons, halving the variance, so we compensate with 2x", "C) Because He was designed for networks with 2 layers", "D) It accounts for the bias term"], correct: 1, explanation: "ReLU sets all negative activations to zero, effectively halving the output variance compared to linear activations. The factor of 2 compensates for this, maintaining the variance through ReLU layers." },
+      { q: "Which initialization should you use for a network with GELU activations?", options: ["A) Always use N(0,1)", "B) Xavier, because GELU is similar to sigmoid", "C) He initialization, because GELU is similar to ReLU (approximately linear for positive values)", "D) No initialization is needed for GELU"], correct: 2, explanation: "GELU is close to ReLU for most of its domain (approximately identity for large positive values, approximately zero for large negative values). He initialization is appropriate because it accounts for the approximate halving of variance by ReLU-like activations." },
+      { q: "If you observe that all activations at layer 8 are exactly 0.0 after initialization, what is the most likely cause?", options: ["A) The learning rate is too high", "B) You are using ReLU with an initialization that produces large negative pre-activations", "C) The batch size is too small", "D) The loss function is wrong"], correct: 1, explanation: "If the initialization produces large negative pre-activations (e.g., due to high variance weights), ReLU will output exactly 0 for all of them. This is the 'dying ReLU' problem. Layer after layer of zeros means the network is completely dead at those neurons." }
+    ]
+  },
+  {
+    topic: "3.2: Batch Norm & Layer Norm",
+    questions: [
+      { q: "What is 'internal covariate shift' and how does BatchNorm address it?", options: ["A) It is when the GPU overheats. BN cools it down.", "B) The distribution of layer inputs changes during training as earlier layers update. BN normalizes each layer's inputs to zero mean and unit variance.", "C) It is when the dataset changes size during training", "D) It is when the loss function shifts"], correct: 1, explanation: "As weights in earlier layers change during training, the distribution of inputs to later layers shifts constantly. This is internal covariate shift. BatchNorm normalizes activations to N(0,1) at each layer, reducing this shift and stabilizing training." },
+      { q: "BatchNorm has learnable parameters gamma and beta. Why not just normalize to N(0,1) permanently?", options: ["A) To increase model size for marketing purposes", "B) Because the network might NEED non-zero mean or non-unit variance at certain layers; gamma and beta let it learn the optimal scale and shift", "C) Because Python requires extra parameters", "D) To make the loss landscape smoother"], correct: 1, explanation: "If we hard-code N(0,1), we limit what the network can represent. The learnable gamma (scale) and beta (shift) parameters let the network undo the normalization if needed. In the extreme case, it can learn gamma=original_std, beta=original_mean to recover the unnormalized activations." },
+      { q: "Why does BatchNorm behave differently at train time vs. test time?", options: ["A) It does not; BN is identical at train and test time", "B) At train time it uses batch statistics; at test time it uses running averages computed during training, because test batches may be size 1", "C) At test time, BN is removed entirely", "D) At train time, BN uses the entire dataset"], correct: 1, explanation: "During training, BN computes mean and variance from the current mini-batch. During inference, there may be only one sample, so batch statistics are meaningless. Instead, BN uses exponential moving averages of mean and variance accumulated during training." },
+      { q: "Why is LayerNorm preferred over BatchNorm in Transformer architectures?", options: ["A) LayerNorm is faster on GPUs", "B) LayerNorm normalizes across features (independent of batch), so it works with variable sequence lengths, batch size 1, and has the same behavior at train/test time", "C) BatchNorm was patented and cannot be used", "D) LayerNorm produces better gradients for attention"], correct: 1, explanation: "Transformers process variable-length sequences. BatchNorm would need to normalize across the batch for each position, which is problematic when sequences have different lengths. LayerNorm normalizes across features for each token independently, working with any batch size and sequence length." },
+      { q: "If you remove all normalization from a 20-layer network, what typically happens?", options: ["A) Training is unaffected", "B) Training becomes slower but converges to the same solution", "C) Training becomes unstable: loss may explode, oscillate wildly, or fail to decrease at all", "D) The model trains faster without the normalization overhead"], correct: 2, explanation: "Without normalization, deep networks suffer from internal covariate shift and activation scale issues. Gradients can vanish or explode, the loss may diverge, and training often fails entirely for deep networks. Normalization is critical for training stability." }
+    ]
+  },
+  {
+    topic: "3.3: Residual Connections",
+    questions: [
+      { q: "What is the 'degradation problem' that residual connections solve?", options: ["A) Adding more layers always increases overfitting", "B) Deeper networks (without residuals) can have HIGHER training error than shallower ones, even though they have more capacity", "C) Deeper networks are slower to run", "D) Residual connections solve the memory problem"], correct: 1, explanation: "Counterintuitively, a 56-layer plain network can have higher TRAINING error than a 20-layer one. This is not overfitting (training error is higher too). The problem is optimization: gradients vanish and the extra layers cannot learn useful features. Residual connections fix this." },
+      { q: "In a residual block y = x + F(x), what is the gradient of y with respect to x?", options: ["A) F'(x)", "B) 1 + F'(x)", "C) x * F'(x)", "D) 1 / F'(x)"], correct: 1, explanation: "By the sum rule: dy/dx = d(x)/dx + d(F(x))/dx = 1 + F'(x). The crucial '1' term is the identity gradient from the skip connection. Even if F'(x) is very small (vanishing), the gradient is still approximately 1." },
+      { q: "Why can you train a 1000-layer network with residual connections but not without?", options: ["A) Because 1000-layer networks need more memory", "B) Without residuals, gradient is a product of ~1000 terms each < 1, giving ~0. With residuals, the skip path provides an additive gradient of 1 at each layer.", "C) The compiler optimizes residual networks differently", "D) 1000-layer networks without residuals have the same performance"], correct: 1, explanation: "Without residuals, the gradient must pass through all 1000 layers multiplicatively. If each layer has gradient magnitude 0.9, the total is 0.9^1000 which is essentially 0. With residuals, the gradient has an additive path (the skip connection) that contributes 1 regardless of depth." },
+      { q: "What does the 'F' in y = x + F(x) typically consist of in a ResNet?", options: ["A) A single linear layer", "B) Two or more conv/linear layers with batch norm and ReLU (a mini-network that learns the 'residual')", "C) A dropout layer", "D) An attention mechanism"], correct: 1, explanation: "In a typical ResNet block, F(x) is a sequence of: conv -> BN -> ReLU -> conv -> BN. This mini-network learns the residual (the difference between the desired output and the input). The skip connection then adds this residual to the input." },
+      { q: "If the optimal function is close to identity, why do residual blocks make learning easier?", options: ["A) They don't; identity functions are easy regardless", "B) It is easier for F(x) to learn to output ~0 (small residual) than for a plain layer to learn the identity mapping explicitly", "C) The identity is hard-coded so no learning is needed", "D) Residual blocks use a different loss function"], correct: 1, explanation: "If the optimal mapping is close to identity, F(x) needs to output values close to zero. Learning small values near zero is much easier for a neural network (weights initialized near zero already do this) than learning to precisely replicate the identity through a chain of nonlinear transformations." }
+    ]
+  },
+  {
+    topic: "3.4: Optimizer Zoo",
+    questions: [
+      { q: "Why does vanilla SGD oscillate across narrow valleys in the loss landscape?", options: ["A) Because the implementation is buggy", "B) The gradient points steeply across the valley (large component) but only gently along it (small component), so steps overshoot side-to-side while making little progress forward", "C) Because SGD uses random batches", "D) Because the learning rate is always too high"], correct: 1, explanation: "In an elongated valley, the gradient has a large component perpendicular to the valley (steep walls) and a small component along the valley floor. SGD takes steps proportional to the gradient, so it ping-pongs between the walls while making slow progress along the bottom." },
+      { q: "How does momentum help with the oscillation problem?", options: ["A) It reduces the learning rate automatically", "B) It accumulates past gradients into a velocity; consistent directions build up while oscillating components cancel out", "C) It skips over the narrow valley entirely", "D) It adds noise to escape local minima"], correct: 1, explanation: "Momentum maintains a velocity vector that is an exponential moving average of past gradients. The perpendicular oscillations partially cancel (positive then negative), while the consistent along-valley gradient accumulates, accelerating progress in the right direction." },
+      { q: "RMSProp divides the gradient by sqrt(v). What is v and why does this help?", options: ["A) v is the velocity; dividing by it slows things down", "B) v is the running average of squared gradients; dividing by sqrt(v) gives larger steps in flat directions and smaller steps in steep directions", "C) v is the validation loss", "D) v is the number of parameters"], correct: 1, explanation: "v tracks the recent magnitude of gradients for each parameter. Parameters with consistently large gradients get their steps shrunk (sqrt(v) is large), and parameters with small gradients get boosted (sqrt(v) is small). This is adaptive per-parameter learning rates." },
+      { q: "Adam combines momentum and RMSProp. What are the two hyperparameters beta1 and beta2?", options: ["A) Learning rate and weight decay", "B) beta1 controls the decay rate of the first moment (gradient mean), beta2 controls the decay rate of the second moment (gradient variance)", "C) beta1 is the batch size, beta2 is the number of epochs", "D) beta1 and beta2 control the architecture"], correct: 1, explanation: "beta1 (typically 0.9) controls how quickly the first moment estimate m (gradient direction) adapts. beta2 (typically 0.999) controls how quickly the second moment estimate v (gradient magnitude) adapts. Together they provide momentum-like behavior with adaptive step sizes." },
+      { q: "Why does Adam include bias correction (dividing by 1 - beta^t)?", options: ["A) To fix numerical precision errors", "B) Because m and v are initialized at 0, making early estimates biased toward 0; bias correction compensates for this cold start", "C) Because the gradients are always biased", "D) To make the algorithm symmetric"], correct: 1, explanation: "m and v are initialized to 0. In early steps, they are biased toward 0 because they haven't accumulated enough gradient history. Dividing by (1 - beta^t) corrects for this: when t is small, the correction is large, and it approaches 1 as t grows." }
+    ]
+  },
+  {
+    topic: "3.5: L2 Regularization",
+    questions: [
+      { q: "What does overfitting look like in terms of train vs. validation loss?", options: ["A) Both losses are high", "B) Training loss continues decreasing while validation loss starts increasing (or stagnates)", "C) Validation loss is lower than training loss", "D) Both losses oscillate equally"], correct: 1, explanation: "Overfitting means the model memorizes the training data but fails to generalize. Training loss keeps going down (memorization), while validation loss goes up (poor generalization). The growing gap between them is the hallmark of overfitting." },
+      { q: "L2 regularization adds lambda * sum(w^2) to the loss. What effect does this have on the gradient update?", options: ["A) It makes gradients always positive", "B) It adds 2*lambda*w to each gradient, effectively pulling weights toward zero at each step", "C) It doubles the learning rate", "D) It has no effect on gradients"], correct: 1, explanation: "The derivative of lambda * w^2 is 2*lambda*w. This is added to the data gradient, creating a force that pushes weights toward zero. Larger weights get pushed harder. This is equivalent to multiplying weights by (1 - lr*2*lambda) at each step, called weight decay." },
+      { q: "Why do smaller weights lead to better generalization?", options: ["A) Smaller weights use less memory", "B) Smaller weights produce smoother, simpler functions with lower capacity to memorize noise", "C) Smaller weights are faster to compute", "D) There is no relationship between weight size and generalization"], correct: 1, explanation: "Large weights create sharp, complex decision boundaries that can fit noise in the training data. Small weights create smoother functions that capture the general trend rather than individual noise points. This is related to the bias-variance tradeoff: simpler models have higher bias but lower variance." },
+      { q: "What happens if lambda (L2 strength) is set too high?", options: ["A) The model trains perfectly", "B) Weights are pushed so close to zero that the model underfits, unable to learn even the true signal", "C) The model overfits more", "D) Training becomes faster"], correct: 1, explanation: "If lambda is too large, the L2 penalty dominates the loss, and the model prioritizes keeping weights small over fitting the data. This results in underfitting: both training and validation losses are high because the model is too constrained to learn the underlying pattern." },
+      { q: "For Adam optimizer, why is 'decoupled weight decay' (AdamW) preferred over L2 regularization applied to the loss?", options: ["A) AdamW is faster", "B) In Adam, adaptive learning rates scale the L2 gradient differently per parameter, weakening regularization for some weights. Decoupled weight decay applies the same decay regardless of Adam's adaptive rates.", "C) AdamW uses less memory", "D) There is no practical difference"], correct: 1, explanation: "When L2 is added to the loss, Adam divides the regularization gradient by sqrt(v) just like the data gradient. Parameters with large gradient history get less regularization. Decoupled weight decay (AdamW) applies weight decay directly to the weights, bypassing Adam's adaptive scaling, providing more uniform regularization." }
+    ]
+  },
+  {
+    topic: "3.6: Dropout",
+    questions: [
+      { q: "During training with dropout rate p=0.5, what happens to each neuron's output?", options: ["A) All outputs are halved", "B) Each neuron's output is independently set to 0 with probability 0.5, and surviving outputs are scaled by 1/(1-p) = 2", "C) Every other neuron is removed permanently", "D) Neurons are duplicated"], correct: 1, explanation: "With inverted dropout (standard practice), each neuron's output is zeroed with probability p=0.5, and surviving neurons are scaled by 1/(1-p)=2. This scaling ensures the expected value of the output remains the same during training and testing." },
+      { q: "Why is dropout described as training an 'implicit ensemble'?", options: ["A) Because it uses multiple GPUs", "B) Each forward pass uses a different random subset of neurons, effectively training a different 'thin' network each time. The full network at test time approximates averaging all 2^n subnetworks.", "C) Because dropout trains multiple separate models", "D) Because the loss function averages over ensembles"], correct: 1, explanation: "With n neurons, there are 2^n possible subnetworks (each neuron on or off). Each training step trains one of these subnetworks. At test time, using all neurons with scaled weights approximates the average prediction of all 2^n subnetworks. This is a form of model averaging, which reduces variance." },
+      { q: "What is 'co-adaptation' and how does dropout prevent it?", options: ["A) Co-adaptation is when two models train together. Dropout prevents it by isolating them.", "B) Co-adaptation is when neurons develop dependencies on specific other neurons always being present. Dropout breaks these dependencies by randomly removing neurons.", "C) Co-adaptation is a type of learning rate schedule", "D) Co-adaptation is when features overlap in the input"], correct: 1, explanation: "Without dropout, neurons can develop complex co-dependencies: neuron A only works correctly when neuron B provides a specific input. This creates fragile representations. Dropout forces each neuron to be useful on its own because it cannot rely on any other specific neuron being present." },
+      { q: "With dropout rate p=0.9, what happens to model performance?", options: ["A) Best possible generalization", "B) The model underfits because only 10% of neurons are active at a time, destroying too much information during each forward pass", "C) The model overfits because dropout is not effective at high rates", "D) No effect on performance"], correct: 1, explanation: "At p=0.9, only 10% of neurons are active during each forward pass. This destroys so much information that the model cannot learn the training data effectively, leading to underfitting. Both training and validation losses remain high." },
+      { q: "Why is dropout typically NOT applied to convolutional layers in modern architectures?", options: ["A) Because convolutions cannot be dropped", "B) Spatial correlations in feature maps mean dropping individual activations is ineffective; neighboring activations carry redundant information. Techniques like DropBlock are used instead.", "C) Dropout only works with fully connected layers by definition", "D) Convolutional layers never overfit"], correct: 1, explanation: "In convolutional layers, adjacent activations in the feature map are highly correlated (they see overlapping patches). Dropping a single activation has little effect because neighbors carry similar information. DropBlock drops contiguous regions, which is more effective for spatial features." }
+    ]
+  }
+];
+
+// ============================================================
+// QUIZ RENDERING
+// ============================================================
+let topicScores = {};
+let totalCorrect = 0;
+let totalAnswered = 0;
+const totalQ = 30;
+
+quizData.forEach(function(t, ti) { topicScores[ti] = { correct: 0, answered: 0, total: t.questions.length }; });
+
+function buildQuiz() {
+  const container = document.getElementById('quizQuestions');
+  container.innerHTML = '';
+  quizData.forEach(function(topic, ti) {
+    const topicDiv = document.createElement('div');
+    topicDiv.className = 'quiz-topic';
+    const header = document.createElement('div');
+    header.className = 'quiz-topic-header';
+    header.innerHTML = '<h3>' + topic.topic + '</h3><span class="quiz-topic-score" id="topicScore' + ti + '">0 / ' + topic.questions.length + '</span>';
+    header.onclick = function() {
+      const qDiv = topicDiv.querySelector('.quiz-topic-questions');
+      qDiv.classList.toggle('open');
+    };
+    topicDiv.appendChild(header);
+    const questionsDiv = document.createElement('div');
+    questionsDiv.className = 'quiz-topic-questions';
+
+    topic.questions.forEach(function(question, qi) {
+      const qDiv = document.createElement('div');
+      qDiv.className = 'quiz-question';
+      qDiv.innerHTML = '<h4>Q' + (qi+1) + ': ' + question.q + '</h4>';
+      question.options.forEach(function(opt, oi) {
+        const btn = document.createElement('button');
+        btn.className = 'quiz-option';
+        btn.textContent = opt;
+        btn.onclick = function() { checkAnswer(ti, qi, oi, qDiv); };
+        btn.id = 'qopt_' + ti + '_' + qi + '_' + oi;
+        qDiv.appendChild(btn);
+      });
+      const expDiv = document.createElement('div');
+      expDiv.className = 'quiz-explanation';
+      expDiv.id = 'qexp_' + ti + '_' + qi;
+      expDiv.textContent = question.explanation;
+      qDiv.appendChild(expDiv);
+      questionsDiv.appendChild(qDiv);
+    });
+    topicDiv.appendChild(questionsDiv);
+    container.appendChild(topicDiv);
+  });
+}
+
+function checkAnswer(ti, qi, oi, qDiv) {
+  const question = quizData[ti].questions[qi];
+  const buttons = qDiv.querySelectorAll('.quiz-option');
+  const expDiv = document.getElementById('qexp_' + ti + '_' + qi);
+  if (buttons[0].disabled) return;
+  buttons.forEach(function(b, i) {
+    b.disabled = true;
+    if (i === question.correct) b.classList.add('correct');
+    if (i === oi && oi !== question.correct) b.classList.add('wrong');
+  });
+  totalAnswered++;
+  topicScores[ti].answered++;
+  if (oi === question.correct) {
+    totalCorrect++;
+    topicScores[ti].correct++;
+    expDiv.className = 'quiz-explanation show correct-exp';
+  } else {
+    expDiv.className = 'quiz-explanation show wrong-exp';
+  }
+  document.getElementById('quizScore').textContent = totalCorrect;
+  document.getElementById('topicScore' + ti).textContent = topicScores[ti].correct + ' / ' + topicScores[ti].total;
+  document.getElementById('quizProgressBar').style.width = (totalAnswered / totalQ * 100) + '%';
+}
+
+function resetQuiz() {
+  totalCorrect = 0;
+  totalAnswered = 0;
+  quizData.forEach(function(t, ti) { topicScores[ti] = { correct: 0, answered: 0, total: t.questions.length }; });
+  buildQuiz();
+  document.getElementById('quizScore').textContent = '0';
+  document.getElementById('quizProgressBar').style.width = '0%';
+}
+
+function toggleQuiz() {
+  const section = document.getElementById('quizSection');
+  if (section.style.display === 'none') {
+    section.style.display = 'block';
+    section.scrollIntoView({ behavior: 'smooth' });
+  } else {
+    section.style.display = 'none';
+  }
+}
+
+// ============================================================
+// INITIALIZATION
+// ============================================================
+window.addEventListener('DOMContentLoaded', function() {
+  drawInitViz();
+  drawInitLoss();
+  normDistributions = generateNormData();
+  drawNormViz();
+  drawNormDiffViz();
+  drawResidualViz();
+  drawResidualAccViz();
+  resetOptimizers();
+  drawL2Viz();
+  sampleDropoutMask();
+  buildQuiz();
+});
+
+</script>
+</body>
+</html>
