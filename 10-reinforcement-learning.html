@@ -453,6 +453,22 @@
                     </div>
                 </div>
                 <hr class="divider">
+                <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                <div class="comparison">
+                  <div class="option">
+                    <div class="opt-title" style="color: #ff9f43;">Value Iteration</div>
+                    <div class="opt-desc">When state space is small and model (transitions, rewards) is known. E.g., grid worlds, simple game AI, routing problems. Guaranteed optimal policy via dynamic programming. Scales poorly beyond ~10K states.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #feca57;">Policy Iteration</div>
+                    <div class="opt-desc">When convergence speed matters and policy evaluation is cheap. E.g., inventory management, resource allocation. Converges in fewer iterations than value iteration but each iteration costs more (full policy eval).</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #ff6b6b;">Model-Free Methods</div>
+                    <div class="opt-desc">When transition dynamics are unknown or state space is too large for tabular methods. E.g., robotics, game playing, real-world control. Use Q-learning, policy gradients, or actor-critic instead.</div>
+                  </div>
+                </div>
+                <hr class="divider">
                 <div class="interview-tip">Why does Markov assumption matter? It enables dynamic programming solutions; without it, you'd need full history, making problems intractable.</div>
                 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: In the MDP visualization, verify Markov property: P(s'|s, a) depends only on s and a, not history. This independence enables Bellman equations, value iteration, and policy gradients. Without Markov: infinite history needed (intractable).</div>
                 <div class="mnemonic">Think: Bellman = backwards induction. Each state's value = what you get now + discounted value of successor states.</div>
@@ -530,6 +546,22 @@
                         <div class="opt-title">SARSA (On-Policy)</div>
                         <div class="opt-desc">Uses actual action taken; pessimistic; slower but safer</div>
                     </div>
+                </div>
+                <hr class="divider">
+                <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                <div class="comparison">
+                  <div class="option">
+                    <div class="opt-title" style="color: #ff9f43;">Q-Learning / DQN</div>
+                    <div class="opt-desc">When action space is discrete and moderate-sized. E.g., Atari games, board games, recommendation systems with finite actions. Off-policy enables experience replay for sample efficiency. DQN scales to visual inputs.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #feca57;">SARSA (On-Policy)</div>
+                    <div class="opt-desc">When safety during learning matters (cliff-walking scenarios). E.g., robot navigation near hazards, trading systems where exploration cost is high. More conservative than Q-learning -- avoids risky actions during training.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #ff6b6b;">Policy Gradient Instead</div>
+                    <div class="opt-desc">When action space is continuous or very large. E.g., robotic arm control (joint angles), autonomous driving (steering), dialogue systems. Q-learning fails with continuous actions (cannot compute max_a Q).</div>
+                  </div>
                 </div>
                 <hr class="divider">
                 <div class="interview-tip">Q-learning converges in tabular case if every s,a pair visited infinitely often with decaying learning rate. In practice, function approximation breaks these guarantees.</div>
@@ -617,6 +649,22 @@
                     </div>
                 </div>
                 <hr class="divider">
+                <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                <div class="comparison">
+                  <div class="option">
+                    <div class="opt-title" style="color: #ff9f43;">REINFORCE</div>
+                    <div class="opt-desc">When simplicity is valued and sample efficiency is not critical. E.g., quick prototypes, episodic tasks with short horizons, NLP fine-tuning with SCST. Simple to implement but high variance -- add baseline to reduce it.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #feca57;">PPO (Proximal Policy Optimization)</div>
+                    <div class="opt-desc">Default choice for most continuous control and LLM alignment tasks. E.g., RLHF for ChatGPT, robotic locomotion, game AI. Clipped objective prevents catastrophic updates. Best stability-performance tradeoff in practice.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #ff6b6b;">Actor-Critic (A2C/A3C)</div>
+                    <div class="opt-desc">When you need lower variance than REINFORCE with moderate complexity. E.g., real-time game playing, multi-agent environments. Critic provides per-step advantage estimates via GAE, reducing variance at cost of critic bias.</div>
+                  </div>
+                </div>
+                <hr class="divider">
                 <div class="interview-tip">Log-probability trick is key: you can't backprop through stochasticity, but you can backprop through log(π)—differentiate the log, then multiply by the result.</div>
                 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: REINFORCE uses ∇_θ log π(a|s) · R (score function estimator). This works because ∇ log π = (∇π) / π—clever algebraic trick. High-variance (full trajectory return). Modern methods: A3C reduces variance with baseline (critic). Proximal Policy Optimization uses clipped objective instead.</div>
                 <div class="mnemonic">Actor-Critic = actor (policy) makes decisions, critic (value) evaluates them. Critic reduces variance of policy gradients via advantage estimation.</div>
@@ -699,6 +747,22 @@
                     </div>
                 </div>
                 <hr class="divider">
+                <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                <div class="comparison">
+                  <div class="option">
+                    <div class="opt-title" style="color: #ff9f43;">Thompson Sampling</div>
+                    <div class="opt-desc">Best default for most bandit problems. E.g., A/B testing, ad selection, clinical trials, recommendation ranking. Bayesian posterior naturally balances exploration/exploitation. Easy to explain to stakeholders. O(log T) regret.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #feca57;">UCB (Upper Confidence Bound)</div>
+                    <div class="opt-desc">When deterministic behavior is preferred and theoretical guarantees matter. E.g., resource allocation with strict audit requirements, systematic exploration. No randomness in action selection -- easier to debug and verify.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #ff6b6b;">Contextual Bandits</div>
+                    <div class="opt-desc">When side information (context) is available per decision. E.g., personalized recommendations (user features), news article selection, dynamic pricing. LinUCB or neural contextual bandits leverage features for better decisions.</div>
+                  </div>
+                </div>
+                <hr class="divider">
                 <div class="interview-tip">Lower bound on regret is \(\Omega(\log T)\). Only UCB and Thompson Sampling achieve this; ε-greedy is fundamentally suboptimal (linear waste term).</div>
                 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Switch between ε-greedy (fixed exploration) and UCB. ε-greedy with ε=0.1 wastes 10% of budget on suboptimal arms (linear regret). UCB allocates adaptively—arms with high uncertainty get more trials. Cumulative regret log(T) vs T—huge difference at scale.</div>
                 <div class="mnemonic">UCB = empirical mean + exploration bonus that shrinks as arm is played. Thompson = posterior samples naturally balance exploration (high uncertainty) and exploitation (posterior peaks).</div>
@@ -759,6 +823,22 @@
                 <div class="key-point"><span class="label">\(R(x,y)\):</span><span class="desc">Scalar reward difference from learned reward model; \(R(x,y) = r_\theta(y) - r_\theta(x)\)</span></div>
                 <div class="key-point"><span class="label">\(r_\theta\):</span><span class="desc">Learned reward model (neural network); outputs scalar reward for text pair</span></div>
                 <p style="margin: 8px 0; font-size: 0.93em;">Preference probability = sigmoid of reward difference; trainable via cross-entropy</p>
+                <hr class="divider">
+                <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                <div class="comparison">
+                  <div class="option">
+                    <div class="opt-title" style="color: #ff9f43;">RLHF (Full Pipeline)</div>
+                    <div class="opt-desc">When aligning LLMs to human preferences at scale. E.g., ChatGPT, Claude, Gemini. Three-stage: SFT then reward model then PPO. Gold standard for instruction-following and helpfulness. Expensive but most proven approach.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #feca57;">DPO (Direct Preference Optimization)</div>
+                    <div class="opt-desc">When you want alignment without training a separate reward model. E.g., smaller-scale fine-tuning, faster iteration cycles. Directly optimizes policy from preferences. Simpler pipeline, fewer hyperparameters, but less flexible than full RLHF.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #ff6b6b;">Constitutional AI Instead</div>
+                    <div class="opt-desc">When human annotation is too expensive or slow to scale. E.g., rapid safety iteration, principle-based alignment. Model self-critiques using constitution principles. No human labelers needed after principles are defined.</div>
+                  </div>
+                </div>
                 <hr class="divider">
                 <div class="interview-tip">KL penalty is crucial: without it, the language model mode-collapses to trivial outputs that maximally exploit the reward model. KL keeps it close to the supervised fine-tuning baseline.</div>
                 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set KL coefficient = 0 (reward-only optimization). The language model exploits reward model, outputs degenerate (e.g., repeat "yes" forever if human likes agreement). KL=0.1: balanced Pareto frontier. KL=1.0: plays it safe, boring outputs. Find your coefficient based on alignment criticality.</div>

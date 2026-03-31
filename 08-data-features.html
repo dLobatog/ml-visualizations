@@ -359,6 +359,23 @@
                 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Use Log Transform on income-like data (right-skewed). Watch how it stabilizes variance compared to raw scaling. Then increase kurtosis—see which scaling handles heavy tails best.</div>
 
                 <hr class="divider">
+                <strong style="color: #5f27cd; font-size: 1.05em;">When to Use</strong>
+                <div class="comparison">
+                    <div class="option">
+                        <div class="opt-title" style="color: #5f27cd;">Z-Score (StandardScaler)</div>
+                        <div class="opt-desc">Gaussian-ish features with no hard bounds. Linear regression, logistic regression, SVMs, neural networks. E.g., user age, temperature readings, stock returns. Required when using L1/L2 regularization.</div>
+                    </div>
+                    <div class="option">
+                        <div class="opt-title" style="color: #ff6b6b;">Min-Max Scaling</div>
+                        <div class="opt-desc">Features with known bounds or when you need [0,1] range. Image pixel values (0-255), probabilities, percentage features. Sensitive to outliers -- one extreme value distorts entire scale.</div>
+                    </div>
+                    <div class="option">
+                        <div class="opt-title" style="color: #00d2d3;">Robust Scaler</div>
+                        <div class="opt-desc">Data with significant outliers that are real (not errors). Income data, insurance claims, web traffic spikes. Uses median/IQR instead of mean/std, so outliers do not distort the scaling.</div>
+                    </div>
+                </div>
+
+                <hr class="divider">
 
                 <div class="key-point">
                     <span class="label">Log transform:</span>
@@ -429,6 +446,23 @@
                     <div class="option">
                         <div class="opt-title">Embeddings</div>
                         <div class="opt-desc">Learn low-rank dense vectors. For very high cardinality (millions of values). Replaces one-hot.</div>
+                    </div>
+                </div>
+
+                <hr class="divider">
+                <strong style="color: #5f27cd; font-size: 1.05em;">When to Use</strong>
+                <div class="comparison">
+                    <div class="option">
+                        <div class="opt-title" style="color: #5f27cd;">One-Hot Encoding</div>
+                        <div class="opt-desc">Low cardinality (< 20 categories), no natural ordering. E.g., color (red/blue/green), country, browser type. Use with linear models, DNNs. Drop one column to avoid multicollinearity.</div>
+                    </div>
+                    <div class="option">
+                        <div class="opt-title" style="color: #ff6b6b;">Label / Ordinal Encoding</div>
+                        <div class="opt-desc">Natural ordering exists OR tree-based models only. E.g., education level (HS < BS < MS < PhD), satisfaction (low/med/high). Trees handle arbitrary integers; linear models will misinterpret ordering.</div>
+                    </div>
+                    <div class="option">
+                        <div class="opt-title" style="color: #00d2d3;">Target / Embedding Encoding</div>
+                        <div class="opt-desc">High cardinality (100+ categories). ZIP codes, user IDs, product SKUs. Target encoding: fast but needs CV to prevent leakage. Embeddings: learn dense representations in DNNs, best for millions of categories.</div>
                     </div>
                 </div>
 
@@ -514,6 +548,23 @@
 
                 <div class="interview-tip">What if data is MNAR? Create binary missing indicator feature (is_missing=1/0). Then impute. Lets model learn missingness is predictive.</div>
                 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Toggle between original (has missing) and Forward Fill methods. For MNAR data (e.g., high-income hiding income), the missing pattern itself is predictive—create an is_missing feature alongside imputation.</div>
+
+                <hr class="divider">
+                <strong style="color: #5f27cd; font-size: 1.05em;">When to Use</strong>
+                <div class="comparison">
+                    <div class="option">
+                        <div class="opt-title" style="color: #5f27cd;">Mean/Median Imputation</div>
+                        <div class="opt-desc">MCAR mechanism, < 5% missing, quick baseline. E.g., a few sensor readings dropped randomly. Median for skewed data (income), mean for symmetric (height). Fast, but underestimates variance.</div>
+                    </div>
+                    <div class="option">
+                        <div class="opt-title" style="color: #ff6b6b;">KNN / Model-Based</div>
+                        <div class="opt-desc">MAR mechanism, features are correlated. E.g., missing blood pressure predicted from age + weight. KNN for < 50 features; regression-based for structured relationships. Expensive but preserves feature correlations.</div>
+                    </div>
+                    <div class="option">
+                        <div class="opt-title" style="color: #00d2d3;">Indicator + Impute (MNAR)</div>
+                        <div class="opt-desc">Missingness itself is informative. E.g., high earners hide income, sick patients skip follow-ups. Add binary is_missing column, then impute with any method. Lets model learn that absence = signal.</div>
+                    </div>
+                </div>
 
                 <hr class="divider">
 
@@ -606,6 +657,23 @@
                 </div>
 
                 <hr class="divider">
+                <strong style="color: #5f27cd; font-size: 1.05em;">When to Use</strong>
+                <div class="comparison">
+                    <div class="option">
+                        <div class="opt-title" style="color: #5f27cd;">SMOTE / Oversampling</div>
+                        <div class="opt-desc">Small datasets where losing majority samples hurts. E.g., rare disease detection with 500 total samples. SMOTE creates synthetic minority examples via interpolation. Avoid in high dimensions (> 50 features).</div>
+                    </div>
+                    <div class="option">
+                        <div class="opt-title" style="color: #ff6b6b;">Undersampling</div>
+                        <div class="opt-desc">Large datasets where majority class is abundant. E.g., click prediction with 10M negatives, 100K positives. Randomly remove majority samples. Fast training, but discards potentially useful data.</div>
+                    </div>
+                    <div class="option">
+                        <div class="opt-title" style="color: #00d2d3;">Class Weights / Focal Loss</div>
+                        <div class="opt-desc">Any dataset size, preferred for DNNs. E.g., fraud detection (1:1000), set class_weight="balanced" in sklearn or focal loss in PyTorch. No data modification, no synthetic artifacts. Mathematically equivalent to oversampling.</div>
+                    </div>
+                </div>
+
+                <hr class="divider">
 
                 <div class="interview-tip">Oversample before or after train/test split? ALWAYS AFTER. Before = leakage (duplicate in both sets inflates metrics).</div>
                 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Drag the Imbalance Ratio slider to 1:50. Watch what happens with "None"—majority class dominates. Switch to SMOTE and observe synthetic samples between minority neighbors. Now try Class Weight to see the penalty trade-off without data duplication.</div>
@@ -667,6 +735,23 @@
                     <div class="option">
                         <div class="opt-title">K-Fold CV</div>
                         <div class="opt-desc">k=5 or 10. Partition into k subsets, train k-1, test 1, average. Reduces variance, expensive compute.</div>
+                    </div>
+                </div>
+
+                <hr class="divider">
+                <strong style="color: #5f27cd; font-size: 1.05em;">When to Use</strong>
+                <div class="comparison">
+                    <div class="option">
+                        <div class="opt-title" style="color: #5f27cd;">Random Split (70/15/15)</div>
+                        <div class="opt-desc">i.i.d. tabular data, sufficient samples (> 10K). E.g., customer churn prediction, house price regression. Fast, simple. High variance on small data -- use K-Fold instead if < 5K samples.</div>
+                    </div>
+                    <div class="option">
+                        <div class="opt-title" style="color: #ff6b6b;">Time-Based Split</div>
+                        <div class="opt-desc">Any temporal / sequential data. Stock prediction, demand forecasting, user behavior over time. Train on past, validate on near-future, test on far-future. Prevents temporal leakage. Mandatory for production realism.</div>
+                    </div>
+                    <div class="option">
+                        <div class="opt-title" style="color: #00d2d3;">Stratified K-Fold CV</div>
+                        <div class="opt-desc">Small datasets (< 5K) or imbalanced classes. E.g., rare disease classification with 200 positive samples. Preserves class ratios in each fold. k=5 for speed, k=10 for lower variance. Use nested CV if also tuning hyperparameters.</div>
                     </div>
                 </div>
 
@@ -741,6 +826,23 @@
                     <div class="option">
                         <div class="opt-title">Domain Leakage</div>
                         <div class="opt-desc">Proxy variables (e.g., collection date) only available at training. Correlates with outcome due to distribution shift.</div>
+                    </div>
+                </div>
+
+                <hr class="divider">
+                <strong style="color: #5f27cd; font-size: 1.05em;">When to Use</strong>
+                <div class="comparison">
+                    <div class="option">
+                        <div class="opt-title" style="color: #5f27cd;">Leakage Audit Checklist</div>
+                        <div class="opt-desc">Run before every model deployment. Check: (1) preprocessing fit on train only? (2) No future data in features? (3) No target-derived features? (4) Offline-online gap < 5%? If any fail, investigate before shipping.</div>
+                    </div>
+                    <div class="option">
+                        <div class="opt-title" style="color: #ff6b6b;">Suspect Leakage When...</div>
+                        <div class="opt-desc">Test AUC > 0.95 on first try (too good to be true). Offline metrics far exceed online. One feature dominates importance (may encode target). Performance drops when retrained on new data window.</div>
+                    </div>
+                    <div class="option">
+                        <div class="opt-title" style="color: #00d2d3;">Prevention Strategy</div>
+                        <div class="opt-desc">Time-based splits for temporal data. Pipeline unit tests (no timestamp overlap). Feature availability audit (is this feature available at inference time?). Shadow mode deployment before launch to compare offline vs online.</div>
                     </div>
                 </div>
 
@@ -832,6 +934,23 @@
                 </div>
 
                 <hr class="divider">
+                <strong style="color: #5f27cd; font-size: 1.05em;">When to Use</strong>
+                <div class="comparison">
+                    <div class="option">
+                        <div class="opt-title" style="color: #5f27cd;">Geometric / Color (Images)</div>
+                        <div class="opt-desc">Image classification, object detection, segmentation. Flip, rotate, crop, color jitter. E.g., medical imaging (rotate X-rays), autonomous driving (brightness changes). Use RandAugment for auto-selected ops.</div>
+                    </div>
+                    <div class="option">
+                        <div class="opt-title" style="color: #ff6b6b;">MixUp / CutMix</div>
+                        <div class="opt-desc">When you need smoother decision boundaries and better calibration. Image classification (CIFAR, ImageNet). Creates soft labels that act as regularization. CutMix better for localization tasks (forces model to use all regions).</div>
+                    </div>
+                    <div class="option">
+                        <div class="opt-title" style="color: #00d2d3;">Text Augmentation</div>
+                        <div class="opt-desc">NLP with limited labeled data. Back-translation for paraphrasing, synonym replacement for diversity, random deletion for robustness. E.g., sentiment analysis with 1K labeled reviews. Validate augmented text preserves original label.</div>
+                    </div>
+                </div>
+
+                <hr class="divider">
 
                 <div class="interview-tip">Augment test set? No—test must be fixed, representative of deployment. Augmenting test inflates estimates.</div>
                 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Drag Intensity slider from 10% to 100% and watch augmentations strengthen. At 10%, subtle rotations; at 100%, aggressive warping. Find the sweet spot where augmentations remain label-preserving (flip yes, invert no). Only augment training data.</div>
@@ -918,6 +1037,23 @@
                 </div>
 
                 <hr class="divider">
+                <strong style="color: #5f27cd; font-size: 1.05em;">When to Use</strong>
+                <div class="comparison">
+                    <div class="option">
+                        <div class="opt-title" style="color: #5f27cd;">Cyclical Encoding (sin/cos)</div>
+                        <div class="opt-desc">Periodic features: hour-of-day, day-of-week, month-of-year, wind direction. E.g., ride-share demand prediction (hour 23 near hour 0). Always use sin+cos pair together -- one alone loses phase information.</div>
+                    </div>
+                    <div class="option">
+                        <div class="opt-title" style="color: #ff6b6b;">Lag Features</div>
+                        <div class="opt-desc">Autoregressive patterns where recent past predicts future. E.g., stock price (lag-1), daily sales (lag-7 for weekly pattern), energy consumption (lag-24 for daily cycle). Select lags via ACF/PACF plots.</div>
+                    </div>
+                    <div class="option">
+                        <div class="opt-title" style="color: #00d2d3;">Rolling Statistics</div>
+                        <div class="opt-desc">Capturing trends and volatility. Moving average (smooth noise), rolling std (detect regime changes), rolling sum (accumulation). E.g., 7-day rolling avg for COVID case trends, 30-day rolling volume for stock trading signals.</div>
+                    </div>
+                </div>
+
+                <hr class="divider">
 
                 <div class="interview-tip">One-hot hour-of-day? Creates 24 sparse columns, treats 23 far from 0 (wrong). Sin/cos naturally wraps circle.</div>
                 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Select Cyclical feature type and watch the sin/cos encode hours on a circle. Hour 23 and Hour 0 are neighbors (nearby in Euclidean space). Lag-24 captures daily seasonality (tomorrow looks like today). Rolling average smooths noise—watch standard deviation shrink.</div>
@@ -976,6 +1112,23 @@
                 <div class="key-point">
                     <span class="label">LF requirements:</span>
                     <span class="desc">Better than random (>50% accuracy). Independent errors ideal. Abstain on uncertain samples. 3-10 well-designed LFs typical. Diminishing returns >20.</span>
+                </div>
+
+                <hr class="divider">
+                <strong style="color: #5f27cd; font-size: 1.05em;">When to Use</strong>
+                <div class="comparison">
+                    <div class="option">
+                        <div class="opt-title" style="color: #5f27cd;">Weak Supervision (Snorkel)</div>
+                        <div class="opt-desc">Tons of unlabeled data + domain experts who can write heuristics. E.g., labeling 1M medical notes for diagnosis, classifying 500K support tickets. 5-10 labeling functions from domain rules, regex patterns, knowledge bases. Cost: 10x cheaper than manual labeling.</div>
+                    </div>
+                    <div class="option">
+                        <div class="opt-title" style="color: #ff6b6b;">Active Learning Instead</div>
+                        <div class="opt-desc">When you have budget for some human labels and want max label efficiency. E.g., 10K images, budget for 500 labels. Model selects most uncertain/informative samples for human review. Complements weak supervision (seed with weak labels, refine with active learning).</div>
+                    </div>
+                    <div class="option">
+                        <div class="opt-title" style="color: #00d2d3;">Manual Labeling Instead</div>
+                        <div class="opt-desc">Small datasets (< 1K), high-stakes domains (legal, medical diagnosis), or when heuristics cannot capture label semantics. E.g., annotating radiology images requires trained physicians. Use when label quality matters more than quantity.</div>
+                    </div>
                 </div>
 
                 <hr class="divider">

@@ -386,6 +386,22 @@
                     <div class="key-point"><span class="label">Critical challenge:</span><span class="desc">Training/serving skew—models trained on historic data encounter distribution shifts at serving time</span></div>
                     <div class="key-point"><span class="label">Mitigation:</span><span class="desc">Feature engineering (ensure computable at serving time), validation (distributions match), monitoring (drift detection), circuit breakers (fallback)</span></div>
                     <hr class="divider">
+                    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                    <div class="comparison">
+                      <div class="option">
+                        <div class="opt-title" style="color: #54a0ff;">Offline-Heavy Pipeline</div>
+                        <div class="opt-desc">Best when prediction freshness is not critical (e.g., daily email recommendations, weekly churn predictions). Batch process overnight, serve pre-computed results. Simpler infrastructure, lower cost.</div>
+                      </div>
+                      <div class="option">
+                        <div class="opt-title" style="color: #48dbfb;">Online-Heavy Pipeline</div>
+                        <div class="opt-desc">Use when real-time context matters (e.g., fraud detection at checkout, search ranking with live session signals). Requires low-latency feature stores and model serving infrastructure.</div>
+                      </div>
+                      <div class="option">
+                        <div class="opt-title" style="color: #ff6b6b;">Hybrid Pipeline</div>
+                        <div class="opt-desc">Most production systems: batch-compute expensive features (user embeddings, historical aggregations) offline, combine with lightweight real-time signals (current session clicks) at serving time.</div>
+                      </div>
+                    </div>
+                    <hr class="divider">
                     <div class="interview-tip">Data quality is foundational: bad labels (late feedback, label noise) propagate through retraining cycles, degrading all downstream models. Implement data quality checks early.</div>
                     <div class="interview-tip">Feedback loops can amplify biases: popular items get more exposure → more training data → stronger model → more exposure (rich-get-richer problem). Monitor for feedback loop amplification.</div>
                     <div class="mnemonic">Offline = preparation (take time to validate); Online = execution (must be fast); feedback loop = learning (continuously improve).</div>
@@ -443,6 +459,22 @@
                     <div class="key-point"><span class="label">MDE (Minimum Detectable Effect):</span><span class="desc">Smallest effect size worth detecting given traffic and target power. Example: 1M users, \(\alpha=0.05\), power=80% \(\rightarrow\) detect 0.2% CTR lift, not 0.01%</span></div>
                     <div class="key-point"><span class="label">Test duration:</span><span class="desc">1-2 weeks minimum; captures daily/weekly/seasonal cycles; shorter tests inflate Type I error due to temporal variations</span></div>
                     <div class="key-point"><span class="label">Production gotchas:</span><span class="desc">Multiple comparisons (inflate false positive rate—use Bonferroni); peeking (early stopping biases estimates); network effects (users not independent)</span></div>
+                    <hr class="divider">
+                    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                    <div class="comparison">
+                      <div class="option">
+                        <div class="opt-title" style="color: #54a0ff;">Classical A/B Test</div>
+                        <div class="opt-desc">Use for large-traffic products (e.g., Google search, Netflix homepage) where you can run tests for 1-2 weeks with millions of users. Best for measuring CTR lifts, conversion rate changes, or revenue impact of a new model.</div>
+                      </div>
+                      <div class="option">
+                        <div class="opt-title" style="color: #48dbfb;">Interleaving / Multi-Armed Bandit</div>
+                        <div class="opt-desc">Use when traffic is limited or you need faster signal (e.g., startup with 10K DAU). Bandits allocate more traffic to better-performing variants dynamically. Interleaving mixes results from two rankers on the same page for sensitive ranking comparisons.</div>
+                      </div>
+                      <div class="option">
+                        <div class="opt-title" style="color: #ff6b6b;">Offline Evaluation Only</div>
+                        <div class="opt-desc">Use when online experiments are too expensive or risky (e.g., medical ML, autonomous driving). Rely on holdout sets, replay-based evaluation, or counterfactual estimation. Always validate offline gains translate online before full rollout.</div>
+                      </div>
+                    </div>
                     <hr class="divider">
                     <div class="interview-tip">Practical vs statistical significance: 0.01% CTR lift may be statistically significant with millions of users but business impact negligible. Always compute MDE and business impact before running.</div>
                     <div class="interview-tip">Why not run tests until significance? That's p-hacking. You must pre-register sample size and duration; stopping early when results look good biases estimates toward false positives.</div>
@@ -510,6 +542,22 @@
                     <div class="key-point"><span class="label">Online computation:</span><span class="desc">Real-time services (compute incrementally or fetch pre-computed); must match offline logic exactly</span></div>
                     <div class="key-point"><span class="label">Versioning:</span><span class="desc">Critical: if feature definition changes (7 days → 14 days), offline and online must sync simultaneously to avoid skew</span></div>
                     <div class="key-point"><span class="label">Architecture decisions:</span><span class="desc">Which features compute offline (expensive joins) vs online (lightweight aggregations); late data handling; in-memory caching (Redis)</span></div>
+                    <hr class="divider">
+                    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                    <div class="comparison">
+                      <div class="option">
+                        <div class="opt-title" style="color: #54a0ff;">Centralized Feature Store (Feast, Tecton)</div>
+                        <div class="opt-desc">Use when multiple teams share features across models (e.g., "user_lifetime_value" used by ads, recommendations, and fraud). Prevents duplication, ensures consistency, and reduces onboarding time for new models.</div>
+                      </div>
+                      <div class="option">
+                        <div class="opt-title" style="color: #48dbfb;">Ad-hoc Feature Pipelines</div>
+                        <div class="opt-desc">Acceptable for early-stage teams with 1-2 models and small feature sets. Faster to build initially, but creates tech debt as feature logic diverges between training and serving. Migrate to feature store once you have 3+ models sharing features.</div>
+                      </div>
+                      <div class="option">
+                        <div class="opt-title" style="color: #ff6b6b;">Real-time Feature Computation Only</div>
+                        <div class="opt-desc">Use when features are purely session-based (e.g., "items viewed in last 5 minutes") and have no historical component. No need for offline store, but still version feature logic to prevent train/serve skew.</div>
+                      </div>
+                    </div>
                     <hr class="divider">
                     <div class="interview-tip">Train/serve skew example: Training uses "user_past_10_days" but online serves "user_past_7_days"; model trained on 10 days behavior performs poorly on 7-day patterns.</div>
                     <div class="interview-tip">Tools: Feast (open-source, K8s-native), Tecton (enterprise, seamless offline/online), Hopsworks (distributed, MLOps-focused). Choose based on latency/scale requirements.</div>
@@ -592,6 +640,22 @@
                     <div class="key-point"><span class="label">Model complexity:</span><span class="desc">Heavy models (BERT, XGBoost) exceed online budgets; light models (logistic regression) fit; Batch has no latency constraints</span></div>
                     <div class="key-point"><span class="label">Hybrid approach:</span><span class="desc">Batch expensive computations (CF candidates, long-sequence encoding); online lightweight ranking on batch results (fresh + fast)</span></div>
                     <hr class="divider">
+                    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                    <div class="comparison">
+                      <div class="option">
+                        <div class="opt-title" style="color: #54a0ff;">Online Serving</div>
+                        <div class="opt-desc">Choose when user context changes rapidly and stale predictions hurt (e.g., real-time fraud detection at payment, search ranking with live query context, dynamic pricing). Requires always-on GPU infrastructure and sub-100ms latency SLAs.</div>
+                      </div>
+                      <div class="option">
+                        <div class="opt-title" style="color: #48dbfb;">Batch Serving</div>
+                        <div class="opt-desc">Choose when predictions can be hours old without business impact (e.g., next-day product recommendations via email, weekly churn risk scores for sales teams, nightly content moderation sweeps). Cheaper infrastructure, simpler to debug.</div>
+                      </div>
+                      <div class="option">
+                        <div class="opt-title" style="color: #ff6b6b;">Hybrid (Batch + Online)</div>
+                        <div class="opt-desc">Most large-scale recommendation systems: batch pre-compute candidate embeddings and top-K candidates offline, then online re-rank with fresh session signals. Example: YouTube batches video embeddings, online ranks by watch-time prediction.</div>
+                      </div>
+                    </div>
+                    <hr class="divider">
                     <div class="interview-tip">Choose based on freshness requirements: hourly-changing user preferences → online; daily-changing → batch; stable preferences → batch with weekly refresh.</div>
                     <div class="interview-tip">Hybrid sweet spot: batch pre-compute embeddings (expensive, static); online compute lightweight scores (fresh, fast). Example: batch BERT embeddings, online dot-product ranking.</div>
                     <div class="mnemonic">Online = fresh but expensive; Batch = cheap but stale; Hybrid = batch for expensive, online for fresh.</div>
@@ -652,6 +716,22 @@
                     <div class="key-point"><span class="label">PSI (Population Stability Index):</span><span class="desc">Symmetric variant; \(&lt; 0.1\) = little change; \(0.1\text{-}0.25\) = moderate (investigate); \(&gt; 0.25\) = significant (action required)</span></div>
                     <div class="key-point"><span class="label">Kolmogorov-Smirnov test:</span><span class="desc">Statistical hypothesis test for distribution differences; p-value indicates significance</span></div>
                     <div class="key-point"><span class="label">Response actions:</span><span class="desc">Retrain on recent data (capture new distribution); data augmentation (diversify); model adjustment (re-weight drifted regions)</span></div>
+                    <hr class="divider">
+                    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                    <div class="comparison">
+                      <div class="option">
+                        <div class="opt-title" style="color: #54a0ff;">Scheduled Retraining</div>
+                        <div class="opt-desc">Use when data distribution shifts gradually (e.g., user taste evolution, seasonal patterns). Retrain weekly or monthly on a sliding window. Simple to implement, low operational overhead. Example: e-commerce recommendation models retrained weekly.</div>
+                      </div>
+                      <div class="option">
+                        <div class="opt-title" style="color: #48dbfb;">Drift-Triggered Retraining</div>
+                        <div class="opt-desc">Use when sudden distribution shifts occur unpredictably (e.g., COVID-19 impact on travel models, viral trends in content). Monitor PSI/KL-divergence; auto-retrain when thresholds breached. More responsive but requires robust monitoring infrastructure.</div>
+                      </div>
+                      <div class="option">
+                        <div class="opt-title" style="color: #ff6b6b;">Online Learning (Continuous Update)</div>
+                        <div class="opt-desc">Use when data arrives as a stream and rapid adaptation is critical (e.g., click-through rate prediction in ads, stock price prediction). Update model weights incrementally per mini-batch. Risk of catastrophic forgetting; requires careful regularization.</div>
+                      </div>
+                    </div>
                     <hr class="divider">
                     <div class="interview-tip">Critical gotcha: drift ≠ causation. Feature drift might correlate with accuracy loss, but root cause could be missing features or label quality decay. Investigate root cause before responding.</div>
                     <div class="interview-tip">When to retrain vs accept: Seasonal variations (expected, monitor but don't panic); unexpected drifts (investigate and retrain). Set baselines for normal drift ranges.</div>

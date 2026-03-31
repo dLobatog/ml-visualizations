@@ -402,6 +402,22 @@
                 <div class="key-point"><span class="label">When to use model parallelism:</span><span class="desc">Only when model exceeds single GPU memory; trade compute-per-device for communication cost (rarely worth it)</span></div>
                 <div class="key-point"><span class="label">Scaling efficiency:</span><span class="desc">N-GPU training should be ~N times faster; if slower, communication or I/O bottlenecked (not compute-bound)</span></div>
                 <hr class="divider">
+                <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                <div class="comparison">
+                  <div class="option">
+                    <div class="opt-title" style="color: #01a3a4;">Data Parallelism</div>
+                    <div class="opt-desc">Default choice when the model fits in a single GPU memory (e.g., ResNet-50 at 100MB, BERT-base at 400MB). Scale to 8-64 GPUs with near-linear speedup. Used by most production training jobs at Google, Meta, etc.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #48dbfb;">Model Parallelism (Tensor/Pipeline)</div>
+                    <div class="opt-desc">Use only when a single model exceeds GPU memory (e.g., GPT-3 175B at ~350GB, Llama-70B at ~140GB). Split layers or tensors across GPUs. Higher communication overhead; requires NVLink or InfiniBand for acceptable throughput.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #feca57;">Hybrid (3D Parallelism)</div>
+                    <div class="opt-desc">State-of-the-art for frontier models: combine data parallelism (across nodes), tensor parallelism (within node), and pipeline parallelism (across stages). Used by Megatron-LM, DeepSpeed for 100B+ parameter training runs.</div>
+                  </div>
+                </div>
+                <hr class="divider">
                 <div class="interview-tip">Communication vs computation ratio: If model has X FLOPs and communication transfers Y bytes, ratio = Y/X. High ratio = communication-bound; low ratio = compute-bound.</div>
                 <div class="interview-tip">Reduce synchronization: Gradient accumulation (accumulate over k batches before sync), communication-computation overlap (compute while communicating), reduce precision (FP16 transfers 2x less data).</div>
                     <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set k=64 and toggle data parallelism ON with 4 GPUs. Observe all-reduce overhead. Increase k to 512 and notice per-GPU gradient communication cost. Then try model parallelism with k=2048 and watch different GPUs become communication bottlenecks.</div>
@@ -472,6 +488,22 @@
                 <div class="key-point"><span class="label">Decay (Annealing):</span><span class="desc">Reduce LR as training progresses for fine-grained updates near convergence; cosine annealing smooth (avoid sudden disruptions)</span></div>
                 <div class="key-point"><span class="label">LR finder:</span><span class="desc">Train for epoch, exponentially increase LR (\(10^{-5}\) to \(10\)), plot loss vs LR, choose LR in steep descent region (not minimum)</span></div>
                 <div class="key-point"><span class="label">Sharp vs flat minima:</span><span class="desc">Sharp (high curvature) = overfits, generalizes poorly; flat (low curvature) = robust. Schedules help escape sharp minima.</span></div>
+                <hr class="divider">
+                <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                <div class="comparison">
+                  <div class="option">
+                    <div class="opt-title" style="color: #01a3a4;">Cosine Annealing</div>
+                    <div class="opt-desc">Default for most Transformer and vision training (BERT, GPT, ViT). Smooth decay avoids sudden LR drops that destabilize training. Use with warmup for LLM pre-training runs of 100K+ steps.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #48dbfb;">Step Decay</div>
+                    <div class="opt-desc">Classic choice for CNNs (ResNet, VGG) and fine-tuning. Drop LR by 10x at fixed milestones (e.g., epochs 30, 60, 90). Simple to tune but causes transient loss spikes at each drop. Good for shorter training runs.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #feca57;">OneCycleLR / Warmup+Linear Decay</div>
+                    <div class="opt-desc">Use for fast convergence when compute budget is limited. OneCycleLR works well with SGD+momentum for vision tasks. Linear warmup + linear decay is standard for BERT/GPT fine-tuning (3-5 epochs, warmup 6-10% of steps).</div>
+                  </div>
+                </div>
                 <hr class="divider">
                 <div class="interview-tip">Warmup necessity: Large-batch training destabilizes early iterations (gradient norms vary wildly); warmup smooths initial gradient flow. Without it, loss explodes.</div>
                 <div class="interview-tip">Validate schedule: Plot training loss curve. Does earlier decay help (lower final loss) or hurt (slower convergence)? Validate on final validation metric.</div>
@@ -549,6 +581,22 @@
                 <div class="key-point"><span class="label">Gradient underflow:</span><span class="desc">FP16 gradients \(< 6 \times 10^{-5}\) become zero \(\rightarrow\) no gradient update \(\rightarrow\) training stalled. Loss scaling prevents by enlarging gradients.</span></div>
                 <div class="key-point"><span class="label">Production preference:</span><span class="desc">TPUs use BF16 natively (hardware-efficient); GPUs A100+ prefer BF16 (better stability than FP16); older GPUs default to FP16</span></div>
                 <hr class="divider">
+                <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                <div class="comparison">
+                  <div class="option">
+                    <div class="opt-title" style="color: #01a3a4;">BF16 Mixed Precision</div>
+                    <div class="opt-desc">Preferred on A100/H100 GPUs and TPUs. Same dynamic range as FP32 so no loss scaling needed. Use for LLM pre-training (GPT, Llama), large vision models (ViT-L), and any training where gradient underflow has been problematic with FP16.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #48dbfb;">FP16 Mixed Precision + Loss Scaling</div>
+                    <div class="opt-desc">Use on older GPUs (V100, T4) that lack BF16 support. Requires dynamic loss scaling to prevent gradient underflow. Standard for most vision training (ResNet, EfficientNet) and NLP fine-tuning where gradients are well-behaved.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #feca57;">Full FP32 (No Mixed Precision)</div>
+                    <div class="opt-desc">Use only when numerical precision is critical and memory is not a constraint (e.g., scientific simulations, reinforcement learning with very small reward signals, debugging NaN issues). 2x slower and 2x more memory than mixed precision.</div>
+                  </div>
+                </div>
+                <hr class="divider">
                 <div class="interview-tip">Debug numerical instabilities: Monitor loss and gradient norms across iterations. Exploding norms → reduce LR or increase loss scaling. NaN/Inf → investigate data or loss function.</div>
                 <div class="interview-tip">When to use BF16 vs FP16: BF16 has range advantage (prefer unless hardware accelerates FP16). If gradient norms are very small (< 1e-4), loss scaling must be more aggressive.</div>
                     <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Train with FP32 and watch memory usage and speed. Switch to FP16 and see 2x speedup, half memory. Try BF16 (faster overflow protection) and compare stability. Set loss scaling to 1.0 with FP16 and watch gradients underflow; increase scaling to 1024 and recover.</div>
@@ -620,6 +668,22 @@
                 <div class="key-point"><span class="label">Convergence benefit:</span><span class="desc">Larger effective batch size improves generalization and gradient stability; empirically often converges better than single micro-batch</span></div>
                 <div class="key-point"><span class="label">Critical implementation:</span><span class="desc">Do NOT zero between accumulation steps (loses accumulated gradients); with autocast, scale/unscale correctly; gradient clipping after full accumulation</span></div>
                 <div class="key-point"><span class="label">Batch normalization:</span><span class="desc">Computed per micro-batch (not full batch); causes biased estimates; synchronized batch norm across accumulation complex (usually ignored)</span></div>
+                <hr class="divider">
+                <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                <div class="comparison">
+                  <div class="option">
+                    <div class="opt-title" style="color: #01a3a4;">Gradient Accumulation (Single GPU)</div>
+                    <div class="opt-desc">Use when you need large effective batch size but only have 1 GPU (e.g., fine-tuning BERT-large on a single A100, want batch 256 but only 64 fits in memory). Set accumulation steps = 4. Training is 4x slower but equivalent to batch 256.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #48dbfb;">Distributed Data Parallelism (Multi-GPU)</div>
+                    <div class="opt-desc">Prefer when multiple GPUs are available and batch fits per-GPU. 4 GPUs with batch 64 each = effective batch 256, with near-linear speedup. Faster wall-clock time than accumulation. Use DDP (PyTorch) or tf.distribute.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #feca57;">Accumulation + DDP Combined</div>
+                    <div class="opt-desc">Use for very large effective batch sizes in LLM pre-training (e.g., batch 2048 across 8 GPUs, each accumulating 32 steps with micro-batch 8). Common in GPT/Llama training where large batches improve throughput and convergence stability.</div>
+                  </div>
+                </div>
                 <hr class="divider">
                 <div class="interview-tip">Batch size for stable training: Typical rule is 32-256 for vision, 64-512 for NLP. If loss noisy, increase batch size; if gradient updates too conservative, decrease.</div>
                 <div class="interview-tip">Choose accumulation steps: If effective batch B needed but GPU memory only holds B/N, use N accumulation steps. Example: want batch 512, GPU holds 128 → N=4 steps.</div>
@@ -696,6 +760,22 @@
                 <div class="key-point"><span class="label">CPU offloading:</span><span class="desc">Store partitions in pinned CPU RAM, asynchronously transfer to GPU; further GPU memory reduction; requires high PCIe bandwidth</span></div>
                 <div class="key-point"><span class="label">Trade-off tiers:</span><span class="desc">Stage 1-2: cost-effective (10-20% overhead); Stage 3: necessary for extreme scale but requires high-bandwidth interconnects (NVLink, RoCE)</span></div>
                 <hr class="divider">
+                <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                <div class="comparison">
+                  <div class="option">
+                    <div class="opt-title" style="color: #01a3a4;">ZeRO Stage 1-2</div>
+                    <div class="opt-desc">Default for models that almost fit in GPU memory (e.g., 7B model on 8x A100-40GB). Low communication overhead (10-20%). Stage 1 alone often sufficient for fine-tuning; Stage 2 adds gradient partitioning for pre-training larger models.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #48dbfb;">ZeRO Stage 3 (+ CPU Offload)</div>
+                    <div class="opt-desc">Use for models that cannot fit even optimizer states in GPU memory (e.g., 70B model on 8x A100-80GB). Partitions everything including parameters. CPU offload extends further but requires high PCIe bandwidth. Essential for training Llama-65B, Falcon-180B.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #feca57;">FSDP (PyTorch Native)</div>
+                    <div class="opt-desc">PyTorch's built-in alternative to ZeRO Stage 3. Prefer when already in PyTorch ecosystem without DeepSpeed dependency. Equivalent memory savings, integrated with torch.compile. Use for models 13B-70B parameters on moderate GPU clusters.</div>
+                  </div>
+                </div>
+                <hr class="divider">
                 <div class="interview-tip">Communication overhead analysis: If bandwidth is B GB/s and gather 1TB parameters, overhead = 1TB / B seconds per iteration. Example: 100 GB/s × 1TB = 10s overhead—significant.</div>
                 <div class="interview-tip">When to offload to CPU: GPU memory < 10GB available; trade GPU-CPU PCIe bandwidth for GPU VRAM. Typical: CPU offloading worthwhile only if PCIe bandwidth > 50 GB/s.</div>
                     <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Stage 0 (no sharding) baseline—see full optimizer/gradient/param memory. Stage 1: optimizer state splits (25% memory). Stage 2: gradients split (50% total). Stage 3: parameters split (75% total, all-gather on backward). Watch memory drop and communication increase.</div>
@@ -756,6 +836,22 @@
                 <div class="key-point"><span class="label">When worthwhile:</span><span class="desc">Deep networks (\(L > 100\), e.g., ResNet-200, GPT-3); memory-constrained hardware; compute cheaper than memory bandwidth</span></div>
                 <div class="key-point"><span class="label">Production use:</span><span class="desc">Checkpointing + ZeRO-3 enables training 100B+ parameter models on 8-16 GPUs with 20-30% slowdown (acceptable)</span></div>
                 <hr class="divider">
+                <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                <div class="comparison">
+                  <div class="option">
+                    <div class="opt-title" style="color: #01a3a4;">Selective Checkpointing (sqrt(L))</div>
+                    <div class="opt-desc">Best trade-off for most deep networks. Checkpoint every sqrt(L) layers (e.g., every 7th layer in a 48-layer Transformer). Reduces activation memory by 7x with only 20-30% compute overhead. Standard for GPT/Llama pre-training.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #48dbfb;">Full Recomputation</div>
+                    <div class="opt-desc">Use when memory is extremely constrained and you need maximum batch size (e.g., training 70B model on limited GPUs). ~33% slower but activation memory drops to O(1). Combine with ZeRO-3 for training models that otherwise would not fit.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #feca57;">No Checkpointing</div>
+                    <div class="opt-desc">Use for small models (ResNet-18, DistilBERT) or when GPU memory is abundant relative to model size. Avoids recomputation overhead entirely. Fine-tuning small models on A100-80GB rarely needs checkpointing.</div>
+                  </div>
+                </div>
+                <hr class="divider">
                 <div class="interview-tip">Debug checkpointing: Verify gradients match between checkpointed and non-checkpointed via numerical differentiation (finite differences); catches recomputation errors.</div>
                 <div class="interview-tip">Choose k (checkpoint frequency): Start k=√L; if still OOM, increase k (less checkpoints, more recompute). If mostly memory-bound, decrease k (more checkpoints, less recompute).</div>
                     <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Batch=32 without checkpointing—set as baseline memory. Enable checkpointing and memory drops 50%. Now increase batch to 64 with checkpointing (same peak memory as original batch 32). Observe speed slowdown (recomputation overhead) vs memory savings.</div>
@@ -806,6 +902,22 @@
                 <div class="key-point"><span class="label">Throughput:</span><span class="desc">tokens/sec (LLMs), examples/sec (others); sudden drops → hardware issues or I/O bottleneck</span></div>
                 <div class="key-point"><span class="label">Response actions:</span><span class="desc">Exploding gradients → clip (max_norm=1.0) or reduce LR; NaN/Inf → halt (unrecoverable), investigate mixed precision; Plateau → increase LR or verify data</span></div>
                 <div class="key-point"><span class="label">LLM-specific:</span><span class="desc">Monitor perplexity (exp(-log-likelihood)); check loss spikes correlate with data changes (new language); track token accuracy</span></div>
+                <hr class="divider">
+                <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                <div class="comparison">
+                  <div class="option">
+                    <div class="opt-title" style="color: #01a3a4;">Gradient Clipping (max_norm)</div>
+                    <div class="opt-desc">Always enable for Transformer training (GPT, BERT, ViT). Set max_norm=1.0 as default. Prevents catastrophic gradient explosions from bad data batches or learning rate spikes. Low overhead, high safety value.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #48dbfb;">EMA Checkpointing (Save Best Model)</div>
+                    <div class="opt-desc">Use for any training run longer than a few hours. Save model weights at best validation metric, not just the last checkpoint. EMA (exponential moving average) of weights often generalizes better than final weights. Standard in LLM and diffusion model training.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #feca57;">Automated Alerting (W&B, MLflow)</div>
+                    <div class="opt-desc">Essential for multi-day training runs (LLM pre-training, large-scale distributed jobs). Set alerts on: loss spike > 2x EMA, gradient norm > 100, throughput drop > 20%. Saves thousands of GPU-hours by catching failures early instead of discovering them days later.</div>
+                  </div>
+                </div>
                 <hr class="divider">
                 <div class="interview-tip">Leading indicators of failure: Gradient norms explode 1-2 iterations before NaN loss; catch early via norm thresholds (alert if >100).</div>
                 <div class="interview-tip">Monitoring architecture: Central logging (W&B, TensorBoard, MLflow) with alerting thresholds; saves best validation model (not last); enables post-hoc analysis.</div>
@@ -869,6 +981,22 @@
                 <div class="key-point"><span class="label">Memory-bound:</span><span class="desc">Memory bandwidth saturates first; increasing compute doesn't help (still limited by BW); examples: element-wise ops, normalization</span></div>
                 <div class="key-point"><span class="label">Flash Attention:</span><span class="desc">Standard attention memory-bound (softmax \(O(n^2)\) HBM passes); Flash computes in SRAM (tiling, recomputing) \(\rightarrow O(n)\) passes \(\rightarrow\) compute-bound</span></div>
                 <div class="key-point"><span class="label">Kernel fusion:</span><span class="desc">Combine operations to avoid intermediate HBM writes/reads; 2-10× speedup vs naive implementation</span></div>
+                <hr class="divider">
+                <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                <div class="comparison">
+                  <div class="option">
+                    <div class="opt-title" style="color: #01a3a4;">Flash Attention / Kernel Fusion</div>
+                    <div class="opt-desc">Use for any Transformer model with long sequences (>512 tokens). Flash Attention reduces attention from O(n^2) HBM access to O(n) via SRAM tiling. 2-4x speedup on GPT, Llama, and diffusion model training. Enable via xformers or PyTorch 2.0 SDPA.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #48dbfb;">Operator Fusion (torch.compile)</div>
+                    <div class="opt-desc">Use when your model has many element-wise operations (layer norm, GELU, dropout) that are individually memory-bound. torch.compile fuses them into single GPU kernels, reducing HBM round-trips. 10-30% speedup on typical Transformer training with zero code changes.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #feca57;">Hardware-Aware Batch Size Tuning</div>
+                    <div class="opt-desc">Use when GPU utilization is below 70%. Increase batch size until compute-bound (matmul saturates GPU). For memory-bound workloads, profile with nsight/nvprof to find the bottleneck. Example: doubling batch size on A100 may not increase wall-clock time if memory-bound.</div>
+                  </div>
+                </div>
                 <hr class="divider">
                 <div class="interview-tip">Calculate AI for your model: Count FLOPs (matrix multiplications, convolutions) and memory transfers (gradient updates, batch norm). High AI = compute-bound (optimize compute); low AI = memory-bound (optimize memory access).</div>
                 <div class="interview-tip">Quantization effect: Lower precision reduces memory traffic (good for memory-bound ops) but reduces compute (hurts compute-bound ops). Analyze AI before and after quantization.</div>

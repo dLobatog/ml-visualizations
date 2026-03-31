@@ -454,6 +454,23 @@
                     <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set threshold to 0.1—TPR soars near 1.0, FPR near 1.0. Drag to 0.9—TPR drops to 0.1, FPR to 0.01. Watch the red dot trace the curve. At 0.5, is it above or below diagonal? Drag to find where AUC=0.75 line would intersect.</div>
 
                     <hr class="divider">
+                    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                    <div class="comparison">
+                        <div class="option">
+                            <div class="opt-title" style="color: #ffd93d;">ROC-AUC</div>
+                            <div class="opt-desc">Balanced classes or when you care equally about positives and negatives. E.g., email spam vs ham (roughly balanced), medical screening where both FP and FN matter. Good for model comparison across thresholds.</div>
+                        </div>
+                        <div class="option">
+                            <div class="opt-title" style="color: #ff6b6b;">PR-AUC Instead</div>
+                            <div class="opt-desc">Imbalanced data (fraud 0.1%, rare disease 1%). ROC-AUC inflated by large TN count. PR-AUC focuses on minority class only. Always prefer PR-AUC when positive class is rare.</div>
+                        </div>
+                        <div class="option">
+                            <div class="opt-title" style="color: #00ff88;">Fixed Threshold Metrics</div>
+                            <div class="opt-desc">When deployment requires a single operating point. E.g., "block if fraud score > 0.7." Report precision/recall at that threshold, not AUC. AUC is for development, threshold metrics for production.</div>
+                        </div>
+                    </div>
+
+                    <hr class="divider">
 
                     <p><strong>Key insight:</strong> AUC = probability that model ranks a random positive higher than a random negative. For AUC=0.85, 85% of positive-negative pairs are ranked correctly.</p>
 
@@ -531,6 +548,23 @@
                     <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set confidence threshold to 0.1 and watch recall spike (catch all positives) but precision tank. Drag to 0.9 and precision rises but recall crashes. Find the 'sweet spot' at 0.5. Does this curve show class imbalance?</div>
 
                     <hr class="divider">
+                    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                    <div class="comparison">
+                        <div class="option">
+                            <div class="opt-title" style="color: #ffd93d;">Optimize Precision</div>
+                            <div class="opt-desc">When false positives are expensive. Spam filtering (users hate misclassified legit email), content moderation (wrongly removing posts), ad targeting (wasted ad spend on wrong users). Raise threshold to 0.8+.</div>
+                        </div>
+                        <div class="option">
+                            <div class="opt-title" style="color: #ff6b6b;">Optimize Recall</div>
+                            <div class="opt-desc">When false negatives are dangerous. Cancer screening (missing a tumor), fraud detection (letting fraud through), security alerts (missing an intrusion). Lower threshold to 0.2-0.3.</div>
+                        </div>
+                        <div class="option">
+                            <div class="opt-title" style="color: #00ff88;">Use F1 Score</div>
+                            <div class="opt-desc">When precision and recall equally important, or as a single-number summary. Information retrieval, NER tagging, document classification. Use F-beta with beta>1 to weight recall more.</div>
+                        </div>
+                    </div>
+
+                    <hr class="divider">
 
                     <div class="key-point">
                         <span class="label">F1 interpretation:</span>
@@ -604,6 +638,23 @@
                     <div class="interview-tip">When do false positives cost more than false negatives? When alerting users with false positives is expensive/annoying (spam), or triggers costly human review.</div>
 
                     <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Toggle threshold from 0.1 to 0.9 and watch TP+TN peak at different thresholds than FP+FN. Notice when Accuracy=95% but Recall=10%—model predicts too many negatives. Find the threshold matching your business cost (FP vs FN).</div>
+
+                    <hr class="divider">
+                    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                    <div class="comparison">
+                        <div class="option">
+                            <div class="opt-title" style="color: #ffd93d;">Accuracy</div>
+                            <div class="opt-desc">ONLY for balanced classes (50/50 split). Image classification (ImageNet), sentiment analysis with balanced datasets. Never for imbalanced problems like fraud or disease detection.</div>
+                        </div>
+                        <div class="option">
+                            <div class="opt-title" style="color: #ff6b6b;">Macro F1</div>
+                            <div class="opt-desc">Multiclass with imbalanced classes where all classes matter equally. E.g., multi-label document classification, intent detection with rare intents. Treats each class equally regardless of support.</div>
+                        </div>
+                        <div class="option">
+                            <div class="opt-title" style="color: #00ff88;">Micro F1 / Weighted F1</div>
+                            <div class="opt-desc">Multiclass where frequent classes matter more. E.g., NER tagging (common entity types matter most), large-scale classification. Weighted by class support, reflects overall performance.</div>
+                        </div>
+                    </div>
 
                     <hr class="divider">
 
@@ -694,6 +745,23 @@
                     <div class="key-point">
                         <span class="label">Post-hoc fixes:</span>
                         <span class="desc"><strong>Temperature scaling</strong>: \(p_{\text{cal}} = \text{softmax}(\text{logits}/T)\), \(T>1\) reduces overconfidence. <strong>Isotonic regression</strong>: fit monotonic mapping, preserves ranking.</span>
+                    </div>
+
+                    <hr class="divider">
+                    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                    <div class="comparison">
+                        <div class="option">
+                            <div class="opt-title" style="color: #ffd93d;">Temperature Scaling</div>
+                            <div class="opt-desc">Post-hoc fix for overconfident DNNs. Single parameter, fast. Use when: model already trained, need better probabilities for downstream decisions (credit scoring, insurance pricing). Fit T on held-out calibration set.</div>
+                        </div>
+                        <div class="option">
+                            <div class="opt-title" style="color: #ff6b6b;">Platt Scaling</div>
+                            <div class="opt-desc">Fit logistic regression on model logits. Best for SVMs or models with uncalibrated scores. Use when: converting raw scores to probabilities for the first time. Needs held-out data (not train).</div>
+                        </div>
+                        <div class="option">
+                            <div class="opt-title" style="color: #00ff88;">Isotonic Regression</div>
+                            <div class="opt-desc">Non-parametric monotonic mapping. More flexible than Platt but needs more data (1000+ samples). Use when: calibration curve is non-sigmoid shaped. Good for tree ensembles (Random Forest, XGBoost).</div>
+                        </div>
                     </div>
 
                     <hr class="divider">
@@ -790,6 +858,23 @@
                     <div class="key-point">
                         <span class="label">MAP vs NDCG:</span>
                         <span class="desc"><strong>MAP</strong> = no position discount, just average precision at relevant positions. <strong>NDCG</strong> = position-weighted. NDCG more sensitive to ranking order.</span>
+                    </div>
+
+                    <hr class="divider">
+                    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                    <div class="comparison">
+                        <div class="option">
+                            <div class="opt-title" style="color: #ffd93d;">NDCG</div>
+                            <div class="opt-desc">Graded relevance (0/1/2/3 levels). Search engines, recommendation systems, e-commerce product ranking. Position-weighted: top-1 error costs more than top-10. Use NDCG@5 for mobile, NDCG@10 for desktop.</div>
+                        </div>
+                        <div class="option">
+                            <div class="opt-title" style="color: #ff6b6b;">MAP</div>
+                            <div class="opt-desc">Binary relevance only (relevant/not). Document retrieval, image search, FAQ matching. No position discount -- treats position 1 and 10 equally. Simpler to interpret but less realistic for user behavior.</div>
+                        </div>
+                        <div class="option">
+                            <div class="opt-title" style="color: #00ff88;">MRR (Mean Reciprocal Rank)</div>
+                            <div class="opt-desc">Only care about first relevant result. QA systems, autocomplete, "I'm feeling lucky" queries. MRR = 1/rank of first correct answer. Use when one good result suffices.</div>
+                        </div>
                     </div>
 
                     <hr class="divider">

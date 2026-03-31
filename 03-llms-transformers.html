@@ -82,6 +82,22 @@
     <div class="key-point"><span class="label">Why it works:</span><span class="desc">Common words become single tokens ("the" = 1 token). Rare words decompose into subwords ("unforgettable" = "un" + "forget" + "table"). New words always representable by falling back to bytes.</span></div>
     <div class="key-point"><span class="label">Vocab size tradeoff:</span><span class="desc">Larger vocab = shorter sequences (faster inference) but bigger embedding table (more memory). GPT-4 uses ~100K tokens. LLaMA uses ~32K.</span></div>
     <hr class="divider">
+    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title" style="color: #4ecdc4;">BPE (Byte Pair Encoding)</div>
+        <div class="opt-desc">Best for general-purpose LLMs and multilingual models. Used by GPT-4, LLaMA, and most modern models. Handles unknown words gracefully by decomposing to subwords. Choose when you need a single tokenizer across many languages or domains.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #45b7aa;">WordPiece</div>
+        <div class="opt-desc">Preferred for encoder models like BERT and electra-style architectures. Uses likelihood-based merging instead of frequency. Choose for classification, NER, or sentence-level tasks where subword consistency matters more than generation quality.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #3aa89e;">SentencePiece / Unigram</div>
+        <div class="opt-desc">Language-agnostic, works directly on raw text without pre-tokenization. Used by T5, mBART, and XLNet. Choose when building multilingual systems or when you cannot assume whitespace-delimited words (e.g., Chinese, Japanese).</div>
+      </div>
+    </div>
+    <hr class="divider">
     <div class="interview-tip">"Why not just use words as tokens?" → Unknown words break the model. "ChatGPT" isn't in any dictionary. BPE decomposes it to known subwords. Also: multilingual models need subword tokenization to share tokens across languages.</div>
     <div class="mnemonic">BPE = greedy compression. Most frequent pair → merge → repeat. Common things get short codes, rare things decompose. Like zip compression for language.</div>
     <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click "Next Merge" repeatedly. Watch vocabulary grow from characters to common subwords. Notice how "the", "ing", "tion" emerge early — these are the most frequent patterns in English.</div>
@@ -137,6 +153,22 @@
       <span class="desc">Prevent attending to future tokens. Set attention weights to -∞ for future positions before softmax.</span>
     </div>
     <hr class="divider">
+    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title" style="color: #4ecdc4;">Full Self-Attention</div>
+        <div class="opt-desc">Standard for most Transformer models (GPT, BERT, LLaMA). Use when sequence length is manageable (under 8K tokens) and you need maximum quality. Every token attends to every other token. E.g., text generation, summarization, translation.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #45b7aa;">Sparse / Local Attention</div>
+        <div class="opt-desc">Use for very long sequences (documents, books, genomics) where O(n^2) is prohibitive. Longformer uses local + global patterns, BigBird adds random attention. E.g., processing 16K+ token documents, long-form QA.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #3aa89e;">Cross-Attention</div>
+        <div class="opt-desc">Use when the model needs to attend to a different sequence (encoder-decoder). Queries come from decoder, keys/values from encoder. E.g., machine translation (attend to source), image captioning (attend to image features), RAG (attend to retrieved docs).</div>
+      </div>
+    </div>
+    <hr class="divider">
 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Select different tokens (try 'cat' vs 'sat'). Watch attention weights change—what does each token attend to? Lower Temperature to 1, then raise to 50. Notice how attention becomes sharp (one token dominates) vs spread (distributed across many). This is temperature controlling softmax concentration.</div>
     <div class="interview-tip">Why Q, K, V not just use input directly? Learned projections provide flexibility. Different heads can attend differently.</div>
     <div class="mnemonic">Self-attention = compare all positions with each other. Learn what to pay attention to. Q asks, K answers, V provides info.</div>
@@ -183,6 +215,22 @@
       <span class="desc">Add input to output of each sublayer. Enables training of deep Transformers. Stabilizes gradients.</span>
     </div>
     <hr class="divider">
+    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title" style="color: #4ecdc4;">Pre-Norm (GPT-2+, LLaMA)</div>
+        <div class="opt-desc">Apply LayerNorm before attention and FFN sublayers. Stabilizes training for very deep models (50+ layers). Easier to train without learning rate warmup. Use for most modern LLM architectures. E.g., GPT-3, LLaMA, PaLM.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #45b7aa;">Post-Norm (Original Transformer)</div>
+        <div class="opt-desc">Apply LayerNorm after residual addition. Can achieve slightly better final performance but harder to train (needs careful warmup). Use when training stability is not a concern and you want to squeeze out marginal gains. E.g., original BERT, T5.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #3aa89e;">RMSNorm (LLaMA 2/3)</div>
+        <div class="opt-desc">Simplified LayerNorm that only normalizes by root mean square (no mean centering). 10-15% faster than LayerNorm with comparable quality. Use in large-scale training where compute savings matter. E.g., LLaMA 2, Mistral, Gemma.</div>
+      </div>
+    </div>
+    <hr class="divider">
 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Move the "Number of Heads" slider from 1 to 8. At 1 head, you see one attention pattern. At 4 heads, you see 4 parallel patterns emerging. At 8, it's more complex. Try comparing a low-entropy head (one token gets all weight) vs high-entropy (spread across many). Which is more useful depends on the task.</div>
     <div class="interview-tip">Transformer depth comes from stacking. Each layer adds computational power but also parameters and memory.</div>
     <div class="mnemonic">LayerNorm normalizes each example independently. FFN expands then contracts. Residual connections = skip highways.</div>
@@ -222,6 +270,22 @@
     <div class="key-point">
       <span class="label">Special tokens:</span>
       <span class="desc">[CLS] = classification (BERT). [SEP] = separator. [PAD] = padding. [UNK] = unknown word. Handle these during tokenization.</span>
+    </div>
+    <hr class="divider">
+    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title" style="color: #4ecdc4;">Sinusoidal (Fixed)</div>
+        <div class="opt-desc">Deterministic sin/cos encodings at different frequencies. No learned parameters. Generalizes to unseen sequence lengths in theory. Use for smaller models or when you want zero extra parameters. E.g., original Transformer, some encoder-only models.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #45b7aa;">RoPE (Rotary Position Embeddings)</div>
+        <div class="opt-desc">Encodes relative position by rotating Q and K vectors. Extrapolates better to longer sequences than trained on. Industry standard for modern LLMs. Use for any autoregressive model needing long-context support. E.g., LLaMA, Mistral, GPT-NeoX, Qwen.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #3aa89e;">Learned Absolute Embeddings</div>
+        <div class="opt-desc">Trainable embedding per position. Simple but cannot generalize beyond max training length. Use when sequence length is fixed and known at training time. E.g., GPT-2 (1024 positions), BERT (512 positions), ViT (fixed patch count).</div>
+      </div>
     </div>
     <hr class="divider">
 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click "Sinusoidal" and "RoPE" tabs to compare. Sinusoidal uses sin/cos waves at different frequencies. RoPE rotates embeddings. Increase Max Position to 256. Notice RoPE maintains better distance preservation at long sequences—this is why modern models prefer RoPE. Watch the rotation pattern change.</div>
@@ -267,6 +331,22 @@
       <span class="desc">Optimal allocation: train to model convergence (2T tokens, where T = model parameters). LLaMA follows this principle.</span>
     </div>
     <hr class="divider">
+    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title" style="color: #4ecdc4;">KV-Cache (Always for Inference)</div>
+        <div class="opt-desc">Essential for any autoregressive generation. Caches computed keys and values from previous tokens so each new token only computes one new Q, K, V instead of recomputing the full sequence. Use always during inference. Without it, generating 1000 tokens is ~500x slower.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #45b7aa;">Grouped-Query Attention (GQA)</div>
+        <div class="opt-desc">Shares KV heads across multiple query heads, reducing KV-cache memory by 4-8x. Use when deploying large models with long contexts where cache memory is the bottleneck. E.g., LLaMA 2 70B uses 8 KV heads for 64 query heads, cutting cache from 20GB to 2.5GB at 32K context.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #3aa89e;">Multi-Query Attention (MQA)</div>
+        <div class="opt-desc">Extreme version: all query heads share one KV head. Maximum cache reduction but slight quality loss. Use for latency-critical applications like real-time chat or code completion. E.g., PaLM, Falcon, StarCoder use MQA for faster serving.</div>
+      </div>
+    </div>
+    <hr class="divider">
 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click "Generate Next Token" repeatedly and watch cache grow (should see increasing bars for K and V). Turn on "Show Cache Memory" to see total memory. Then toggle "Without Cache" and watch inference slow down—each token must recompute all previous keys and values. For 100-token sequence, cache is ~100x faster.</div>
     <div class="interview-tip">Pretraining is expensive but transfer learning is powerful. Fine-tuning on specific task often very effective. Few-shot prompting often works!</div>
     <div class="mnemonic">LM pretraining = predict next token from massive unlabeled text. Learns grammar, facts, reasoning. Scale → emergent abilities.</div>
@@ -301,6 +381,22 @@
     <div class="key-point">
       <span class="label">RL loss:</span>
       <span class="desc">PPO or similar policy gradient. Maximize: \(E[\text{reward}] - D_{KL}(\pi_{\text{new}} \| \pi_{\text{old}})\). KL term prevents diverging from pretrained model.</span>
+    </div>
+    <hr class="divider">
+    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title" style="color: #4ecdc4;">Instruction Tuning (SFT)</div>
+        <div class="opt-desc">Simplest alignment method. Fine-tune on curated (instruction, response) pairs. Use as the first step after pretraining, or when you have high-quality demonstration data. Sufficient for many production use cases. E.g., Alpaca, Vicuna, domain-specific chatbots.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #45b7aa;">RLHF with PPO</div>
+        <div class="opt-desc">Full pipeline: SFT, then train reward model on human preferences, then optimize with PPO. Use when you need nuanced alignment (safety, helpfulness, tone) beyond what SFT alone achieves. Complex but powerful. E.g., ChatGPT, Claude, Gemini.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #3aa89e;">DPO (Direct Preference Optimization)</div>
+        <div class="opt-desc">Skips the reward model entirely. Learns directly from preference pairs using a classification-like loss. Simpler, faster, more stable training than PPO. Use when you have preference data but want to avoid RL complexity. E.g., Zephyr, many open-source alignment efforts.</div>
+      </div>
     </div>
     <hr class="divider">
 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click "Step Through" to animate data flow. Pause at each stage: after Attention, watch residual add. After FFN, watch residual add again. These skips are critical—they let gradients flow back unobstructed. Toggle "Remove Residuals" to see training collapse. This is why Transformers can be 100+ layers deep.</div>
@@ -347,6 +443,22 @@
       <span class="desc">Pretraining on diverse data teaches patterns. Transformers learn what comes next. Context updates hidden state toward task.</span>
     </div>
     <hr class="divider">
+    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title" style="color: #4ecdc4;">Zero-Shot Prompting</div>
+        <div class="opt-desc">Give the model a task description with no examples. Use when the task is straightforward and the model is large enough (70B+). Fastest to iterate. E.g., "Translate this to French:", simple classification, formatting tasks.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #45b7aa;">Few-Shot Prompting</div>
+        <div class="opt-desc">Include 3-8 examples in the prompt. Use when the task has a specific format the model needs to learn or when zero-shot quality is insufficient. No training needed. E.g., custom entity extraction, structured output generation, style matching.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #3aa89e;">Chain-of-Thought (CoT)</div>
+        <div class="opt-desc">Prompt the model to reason step-by-step before answering. Use for math, logic, multi-step reasoning, or any task where intermediate steps improve accuracy. Can combine with few-shot. E.g., word problems, code debugging, complex QA.</div>
+      </div>
+    </div>
+    <hr class="divider">
 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Toggle between "Full Fine-Tune", "LoRA", "QLoRA". Watch Parameters and Memory metrics. Full tune = 7B params, 28GB memory. LoRA = 0.1B params, 3GB memory. QLoRA = 0.1B params + 4-bit base = 1GB memory. All achieve 85–90% of full tuning performance. This is why LoRA dominates in practice.</div>
     <div class="interview-tip">In-context learning is remarkable emergent ability of large models. Scaling laws: bigger models learn from fewer examples.</div>
     <div class="mnemonic">In-context learning = pattern matching via sequence completion. No parameter update. Examples are powerful context.</div>
@@ -381,6 +493,22 @@
     <div class="key-point">
       <span class="label">Long context techniques:</span>
       <span class="desc">Sparse attention patterns. Local + global attention. Linear attention approximations. Hierarchical attention.</span>
+    </div>
+    <hr class="divider">
+    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title" style="color: #4ecdc4;">Short Context (2K-8K tokens)</div>
+        <div class="opt-desc">Standard attention, no special handling needed. Sufficient for single-turn QA, short summarization, and classification. Most cost-effective. E.g., chatbot responses, sentiment analysis, code completion of single functions.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #45b7aa;">Medium Context (8K-32K tokens)</div>
+        <div class="opt-desc">Use RoPE with position interpolation or NTK-aware scaling to extend pretrained context. Good for multi-page documents, long conversations, and code files. E.g., document QA, meeting summarization, full-file code review.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #3aa89e;">Long Context (32K-1M+ tokens)</div>
+        <div class="opt-desc">Requires architectural changes: sparse attention, sliding window (Mistral), or ring attention. Use for entire codebases, book-length documents, or multi-document reasoning. Memory and cost scale significantly. E.g., repository-level code analysis, legal document review.</div>
+      </div>
     </div>
     <hr class="divider">
 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click "Play Pipeline" to step through SFT → Reward Model → PPO. Watch reward scores improve at each stage. Then compare "DPO" (Direct Preference Optimization)—it skips reward model, learning from pairwise preferences directly. DPO is simpler, faster, nearly same quality. Slide "λ regularization" to see KL divergence control.</div>
@@ -418,6 +546,22 @@
     <div class="key-point">
       <span class="label">Mixed precision:</span>
       <span class="desc">Keep critical layers (embeddings, attention output) in higher precision. Quantize feed-forward networks heavily. Optimal quality/speed.</span>
+    </div>
+    <hr class="divider">
+    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title" style="color: #4ecdc4;">FP16 / BF16 (Half Precision)</div>
+        <div class="opt-desc">Standard for training and high-quality inference. 2x memory reduction vs FP32 with negligible quality loss. BF16 preferred for training (larger dynamic range). Use as your default. E.g., GPU training with mixed precision, production serving on A100/H100.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #45b7aa;">INT8 Quantization</div>
+        <div class="opt-desc">4x memory reduction vs FP32. Minimal quality degradation (less than 1% on most benchmarks). Use for cost-effective production serving. Works well with post-training quantization (no retraining needed). E.g., serving 7B-13B models on consumer GPUs, API endpoints.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #3aa89e;">INT4 / GPTQ / AWQ</div>
+        <div class="opt-desc">8x memory reduction vs FP32. Enables 70B models on a single 24GB GPU. Some quality loss (1-3%), especially on reasoning tasks. Use for local inference, edge deployment, or when GPU memory is severely constrained. E.g., running LLaMA 70B on RTX 4090, mobile deployment.</div>
+      </div>
     </div>
     <hr class="divider">
 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Drag Quantization slider FP32 → INT4. Watch memory drop (28GB → 7GB) and speed increase. But quality metric drops too. Then toggle "Use Draft Model"—watch it generate 5 tokens, main model verifies them. If all correct: 5x speedup. If wrong: resample. Try draft_scale=0.3 (faster but riskier) vs 0.7 (slower, more accurate).</div>
@@ -461,6 +605,22 @@
       <span class="desc">Predicting loss on held-out data. Choosing model size. Budget allocation (compute, parameters, data).</span>
     </div>
     <hr class="divider">
+    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title" style="color: #4ecdc4;">Continuous Batching (vLLM, TGI)</div>
+        <div class="opt-desc">Dynamically adds/removes requests from the batch as they complete. Increases GPU utilization from ~60% to 95%+. Use for any production LLM serving with variable-length requests. E.g., chatbot APIs, code completion services, any multi-user deployment.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #45b7aa;">PagedAttention (vLLM)</div>
+        <div class="opt-desc">Manages KV-cache memory in non-contiguous blocks (like OS virtual memory). Eliminates fragmentation, supports 2-4x more concurrent requests. Use when serving many concurrent users with varying context lengths. E.g., high-throughput API serving, shared GPU clusters.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #3aa89e;">Speculative Decoding</div>
+        <div class="opt-desc">Small draft model generates candidate tokens, large model verifies in parallel. 2-3x speedup for latency-sensitive applications with no quality loss (mathematically equivalent). Use when latency matters more than throughput. E.g., interactive chat, real-time code suggestions.</div>
+      </div>
+    </div>
+    <hr class="divider">
 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Toggle "Traditional Batching" vs "Continuous Batching". Traditional waits for slowest request (maybe stuck on hard prompt). Continuous removes completed requests mid-batch, adds new ones. Watch GPU utilization jump from 60% to 95%. Then view "PagedAttention"—notice how variable-length blocks prevent memory waste compared to fixed allocations.</div>
     <div class="interview-tip">Scaling laws are empirical (fit from data) not proven. But remarkably consistent across orders of magnitude. Useful for planning.</div>
     <div class="mnemonic">Scaling laws = loss improves as power law with model/data size. Chinchilla = balance model and data. Bigger = better.</div>
@@ -496,6 +656,22 @@
     <div class="key-point">
       <span class="label">Results:</span>
       <span class="desc">Student can match large part of teacher performance at much smaller size. 10x compression: ~5-10% quality loss.</span>
+    </div>
+    <hr class="divider">
+    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title" style="color: #4ecdc4;">RAG (Retrieval-Augmented Generation)</div>
+        <div class="opt-desc">Retrieve relevant documents at inference time and include them in the prompt. Use when knowledge must be up-to-date, domain-specific, or verifiable with citations. No retraining required. E.g., enterprise QA over internal docs, customer support, legal research, medical knowledge bases.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #45b7aa;">Fine-Tuning (Full or LoRA)</div>
+        <div class="opt-desc">Update model weights on your domain data. Use when you need the model to learn new behaviors, formats, or domain-specific reasoning patterns that prompting cannot achieve. E.g., code generation in a proprietary language, medical report writing, structured data extraction.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #3aa89e;">Knowledge Distillation</div>
+        <div class="opt-desc">Train a small student model to mimic a large teacher. Use when you need production deployment on edge devices or strict latency budgets. Trade quality for speed/cost. E.g., on-device autocomplete, mobile assistants, real-time classification where 70B is too slow.</div>
+      </div>
     </div>
     <hr class="divider">
 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click "Step Through" RAG pipeline. At Retrieve step, toggle "Fixed vs Semantic chunking". Fixed chunks are dumb (mid-sentence breaks). Semantic chunks respect meaning boundaries. Watch retrieval quality improve. Then try "Recursive chunking"—multi-level hierarchy for hierarchical reasoning. Compare retrieval accuracy at each strategy.</div>
@@ -540,6 +716,22 @@
     <div class="key-point">
       <span class="label">Trade-offs:</span>
       <span class="desc">MoE: higher memory (all experts loaded), better scaling. Merging: simpler, but capacity limited by individual models.</span>
+    </div>
+    <hr class="divider">
+    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title" style="color: #4ecdc4;">Dense Models</div>
+        <div class="opt-desc">All parameters active for every token. Simpler to train, serve, and debug. Use when you have sufficient compute for your target size and want predictable behavior. Best for smaller deployments. E.g., LLaMA 7B-70B, GPT-4 (rumored dense), Mistral 7B for single-GPU serving.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #45b7aa;">Mixture of Experts (MoE)</div>
+        <div class="opt-desc">Only 2 of 8 experts active per token. 4-8x more total parameters but same inference cost as a smaller dense model. Use when you need maximum capability at fixed inference budget. Requires more memory (all experts loaded). E.g., Mixtral 8x7B, Gemini, GPT-4 (rumored MoE).</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #3aa89e;">Model Merging</div>
+        <div class="opt-desc">Average or interpolate weights from multiple fine-tuned models. No additional training needed. Use when you want to combine capabilities from specialist models cheaply. E.g., merge a code model + chat model + math model into one generalist, quick prototyping of multi-skill models.</div>
+      </div>
     </div>
     <hr class="divider">
 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Toggle "HNSW vs Brute-Force" search. HNSW (hierarchical navigable small world) visits ~50 nodes to find nearest neighbor. Brute-force checks all 1M points. Watch latency: HNSW 1–5ms, brute-force 50–200ms. Increase Query Dimension. HNSW scales beautifully (still ~5ms), brute-force explodes (→ 500ms). This is why HNSW powers modern vector DBs.</div>

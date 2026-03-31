@@ -351,6 +351,23 @@
                         <div class="mnemonic">β=1 baseline. High β = disentangled (each z dimension independent). Low β = good reconstruction. Can't have both.</div>
 
                         <hr class="divider">
+                        <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                        <div class="comparison">
+                          <div class="option">
+                            <div class="opt-title" style="color: #e056fd;">VAE (Standard, β=1)</div>
+                            <div class="opt-desc">When you need smooth latent interpolation and reconstruction quality matters. E.g., image editing, face morphing, data augmentation. Balanced reconstruction-regularization tradeoff.</div>
+                          </div>
+                          <div class="option">
+                            <div class="opt-title" style="color: #a29bfe;">β-VAE (β>1)</div>
+                            <div class="opt-desc">When interpretable, disentangled representations are critical. E.g., drug discovery (isolate molecular properties), style transfer (separate content/style), scientific data analysis where each latent should encode one factor.</div>
+                          </div>
+                          <div class="option">
+                            <div class="opt-title" style="color: #fd79a8;">VAE with β<1</div>
+                            <div class="opt-desc">When reconstruction fidelity is paramount over latent structure. E.g., autoencoder-style compression, pre-training for downstream tasks where latent quality matters less than output quality.</div>
+                          </div>
+                        </div>
+
+                        <hr class="divider">
 
                         <div class="key-point">
                             <span class="label">Disentanglement:</span>
@@ -442,6 +459,23 @@
                         <div class="key-point"><span class="label">\(\theta\):</span><span class="desc">Neural network parameters (typically UNet or transformer); learned during training</span></div>
 
                         <div class="mnemonic">Closed-form diffusion: add noise → learn to reverse → sample via T denoising steps. More stable than adversarial training.</div>
+
+                        <hr class="divider">
+                        <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                        <div class="comparison">
+                          <div class="option">
+                            <div class="opt-title" style="color: #e056fd;">Diffusion Models</div>
+                            <div class="opt-desc">When sample quality is top priority and latency is acceptable (1-10 sec). E.g., text-to-image (DALL-E 2, Stable Diffusion), high-fidelity image synthesis, inpainting, super-resolution. Best FID scores among generative models.</div>
+                          </div>
+                          <div class="option">
+                            <div class="opt-title" style="color: #a29bfe;">GANs Instead</div>
+                            <div class="opt-desc">When real-time generation is required (<100ms). E.g., video game texture synthesis, real-time style transfer, interactive applications. Faster sampling but harder to train and lower diversity.</div>
+                          </div>
+                          <div class="option">
+                            <div class="opt-title" style="color: #fd79a8;">Flow Models Instead</div>
+                            <div class="opt-desc">When exact likelihood computation is needed. E.g., anomaly detection, density estimation, scientific applications requiring calibrated probabilities. Slower but mathematically exact.</div>
+                          </div>
+                        </div>
 
                         <hr class="divider">
 
@@ -540,6 +574,23 @@
                         <div class="mnemonic">Generator wants D to say "real". Discriminator wants to separate. If training converges = Nash Eq = D output 1/2 everywhere (can't distinguish).</div>
 
                         <hr class="divider">
+                        <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                        <div class="comparison">
+                          <div class="option">
+                            <div class="opt-title" style="color: #e056fd;">Standard GAN</div>
+                            <div class="opt-desc">When real-time generation is critical and quality can be moderate. E.g., live video filters, game asset generation, real-time style transfer. Sub-100ms sampling is the key advantage over diffusion.</div>
+                          </div>
+                          <div class="option">
+                            <div class="opt-title" style="color: #a29bfe;">WGAN / WGAN-GP</div>
+                            <div class="opt-desc">When training stability matters more than speed. E.g., medical image synthesis, scientific data generation where mode coverage is critical. Wasserstein distance provides meaningful loss signal and gradient stability.</div>
+                          </div>
+                          <div class="option">
+                            <div class="opt-title" style="color: #fd79a8;">StyleGAN</div>
+                            <div class="opt-desc">When controllable high-resolution face/object generation is needed. E.g., synthetic data for privacy-preserving datasets, digital art tools, latent space editing. SOTA for faces; progressive training enables 1024x1024+.</div>
+                          </div>
+                        </div>
+
+                        <hr class="divider">
 
                         <div class="key-point">
                             <span class="label">Mode collapse:</span>
@@ -604,6 +655,23 @@
                         <div class="mnemonic">w=7.5 is Stable Diffusion default. w>15 = artifacts. Trade w for diversity-vs-fidelity. Cannot invent info not in training.</div>
 
                         <hr class="divider">
+                        <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                        <div class="comparison">
+                          <div class="option">
+                            <div class="opt-title" style="color: #e056fd;">Low Guidance (w=1-5)</div>
+                            <div class="opt-desc">When diversity and creative variation matter. E.g., artistic image generation, brainstorming visual concepts, generating training data augmentations. Samples are diverse but less adherent to prompt.</div>
+                          </div>
+                          <div class="option">
+                            <div class="opt-title" style="color: #a29bfe;">Medium Guidance (w=7-12)</div>
+                            <div class="opt-desc">Sweet spot for most production use cases. E.g., text-to-image products (Stable Diffusion default w=7.5), photorealistic generation, marketing content. Balances fidelity to prompt with visual quality.</div>
+                          </div>
+                          <div class="option">
+                            <div class="opt-title" style="color: #fd79a8;">High Guidance (w=12-20)</div>
+                            <div class="opt-desc">When strict adherence to condition is critical despite quality tradeoff. E.g., precise text rendering, logo generation, technical diagrams. Risk of artifacts and oversaturation above w=15.</div>
+                          </div>
+                        </div>
+
+                        <hr class="divider">
 
                         <div class="key-point">
                             <span class="label">Training requirement:</span>
@@ -665,6 +733,23 @@
                         <div class="key-point"><span class="label">Compression ratio:</span><span class="desc">50-100x total (accounting for spatial + channel reduction); enables 10-50x speedup in diffusion sampling</span></div>
 
                         <div class="mnemonic">VAE compresses semantically (learns important features). Diffusion then structures instead of pixels. Latent space smoother, more stable.</div>
+
+                        <hr class="divider">
+                        <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                        <div class="comparison">
+                          <div class="option">
+                            <div class="opt-title" style="color: #e056fd;">Latent Diffusion</div>
+                            <div class="opt-desc">Default choice for production image generation. 10-50x faster than pixel-space diffusion. E.g., Stable Diffusion, SDXL for text-to-image, inpainting, img2img. Use when balancing quality and compute cost.</div>
+                          </div>
+                          <div class="option">
+                            <div class="opt-title" style="color: #a29bfe;">Pixel-Space Diffusion</div>
+                            <div class="opt-desc">When maximum quality is needed and compute is unlimited. E.g., research benchmarks, small-image tasks (32x32 CIFAR), or when VAE artifacts are unacceptable. Slower but avoids VAE compression artifacts.</div>
+                          </div>
+                          <div class="option">
+                            <div class="opt-title" style="color: #fd79a8;">Cascaded Models</div>
+                            <div class="opt-desc">When generating very high resolution (1024x1024+). E.g., Imagen uses base model + super-resolution stages. Combines latent efficiency at low res with pixel-level refinement at high res.</div>
+                          </div>
+                        </div>
 
                         <hr class="divider">
 
@@ -740,6 +825,23 @@
                         <div class="mnemonic">Discrete tokens = H×W grid of K-way choices. Transformers better at scaling than diffusion on tokens. Used in DALL-E, Jukebox.</div>
 
                         <hr class="divider">
+                        <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                        <div class="comparison">
+                          <div class="option">
+                            <div class="opt-title" style="color: #e056fd;">VQ-VAE + Autoregressive</div>
+                            <div class="opt-desc">When leveraging Transformer scaling laws for generation. E.g., DALL-E 1 (text-to-image via discrete tokens), Jukebox (music generation), video tokenization. Enables LLM-style generation on non-text modalities.</div>
+                          </div>
+                          <div class="option">
+                            <div class="opt-title" style="color: #a29bfe;">Continuous VAE Instead</div>
+                            <div class="opt-desc">When smooth interpolation in latent space is needed. E.g., face morphing, latent editing, style mixing. Continuous z allows gradient-based optimization in latent space. Simpler training (no codebook collapse).</div>
+                          </div>
+                          <div class="option">
+                            <div class="opt-title" style="color: #fd79a8;">RQ-VAE / FSQ</div>
+                            <div class="opt-desc">When codebook collapse is a problem or higher compression needed. Residual quantization stacks multiple codebooks for finer granularity. Finite Scalar Quantization avoids learned codebooks entirely. E.g., audio codecs (SoundStream, Encodec).</div>
+                          </div>
+                        </div>
+
+                        <hr class="divider">
 
                         <div class="key-point">
                             <span class="label">Gradient flow:</span>
@@ -799,6 +901,23 @@
                                 <div class="opt-title">DiT</div>
                                 <div class="opt-desc">\(O((HW)^2 \cdot D)\) memory (quadratic bottleneck). Global receptive field. More compute but scales like LLMs. Init critical for stability.</div>
                             </div>
+                        </div>
+
+                        <hr class="divider">
+                        <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                        <div class="comparison">
+                          <div class="option">
+                            <div class="opt-title" style="color: #e056fd;">U-Net Architecture</div>
+                            <div class="opt-desc">When latency and deployment efficiency matter. E.g., production image generation APIs (<512x512), mobile/edge diffusion, real-time applications. Proven architecture with fast training and inference. Best under 300M params.</div>
+                          </div>
+                          <div class="option">
+                            <div class="opt-title" style="color: #a29bfe;">DiT (Diffusion Transformer)</div>
+                            <div class="opt-desc">When maximum quality at scale is the goal and compute budget is large. E.g., Stable Diffusion 3, Sora (video), research pushing SOTA. Follows LLM scaling laws -- quality keeps improving with more compute. Future-proof architecture.</div>
+                          </div>
+                          <div class="option">
+                            <div class="opt-title" style="color: #fd79a8;">Hybrid U-Net + Attention</div>
+                            <div class="opt-desc">When you need efficiency with some global reasoning. E.g., SDXL uses U-Net with Transformer blocks at select resolutions. Balances local inductive bias (conv) with global context (attention) at bottleneck layers.</div>
+                          </div>
                         </div>
 
                         <hr class="divider">
@@ -900,6 +1019,23 @@
                         <div class="key-point"><span class="label">\(O(d)\) complexity:</span><span class="desc">Computing determinant = O(d) vs \(O(d^3)\) for general Jacobian; huge speedup enables efficient exact likelihood</span></div>
 
                         <div class="mnemonic">Invertibility constraint = exact likelihood but architectures restrictive. Triangular Jacobian = O(d) not O(d³) det. Bidirectional: encode x→z, modify, decode z→x.</div>
+
+                        <hr class="divider">
+                        <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                        <div class="comparison">
+                          <div class="option">
+                            <div class="opt-title" style="color: #e056fd;">Flow-Based Models</div>
+                            <div class="opt-desc">When exact likelihood is required (not just a lower bound). E.g., anomaly detection (threshold on log p(x)), density estimation for scientific data, lossless compression. Bidirectional mapping enables both generation and inference.</div>
+                          </div>
+                          <div class="option">
+                            <div class="opt-title" style="color: #a29bfe;">Diffusion Instead</div>
+                            <div class="opt-desc">When sample quality matters more than exact likelihood. E.g., image/video generation, creative applications. Diffusion has fewer architectural constraints and produces higher-quality samples at the cost of approximate likelihood.</div>
+                          </div>
+                          <div class="option">
+                            <div class="opt-title" style="color: #fd79a8;">VAE Instead</div>
+                            <div class="opt-desc">When you need a latent space for downstream tasks and exact likelihood is not critical. E.g., representation learning, data augmentation, latent-space optimization. Simpler architecture with ELBO approximation.</div>
+                          </div>
+                        </div>
 
                         <hr class="divider">
 

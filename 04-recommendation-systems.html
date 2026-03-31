@@ -97,6 +97,18 @@
     <div class="key-point"><span class="label">Algorithms:</span><span class="desc">SGD or Alternating Least Squares (ALS) instead of explicit eigendecomposition</span></div>
     <div class="key-point"><span class="label">Production detail:</span><span class="desc">L2 regularization \(\lambda\|U\|^2 + \lambda\|V\|^2\) prevents overfitting; normalize random initialization</span></div>
     <hr class="divider">
+    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title" style="color: #ff9ff3;">SVD / Matrix Factorization</div>
+        <div class="opt-desc">Best when you have a large, sparse user-item interaction matrix with explicit ratings. Classic use: Netflix movie ratings, Amazon product ratings. Works well when item catalog is stable and you need interpretable latent factors (e.g., genre, mood).</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #f368e0;">Implicit Feedback ALS</div>
+        <div class="opt-desc">Use when you only have implicit signals (clicks, views, purchases) without explicit ratings. Classic use: Spotify play counts, YouTube watch history. ALS scales better on distributed systems (Spark MLlib) for billion-scale interactions.</div>
+      </div>
+    </div>
+    <hr class="divider">
 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Slide k from 1 to 50. At k=1, reconstruction is poor (RMSE high). At k=10–15, quality plateaus—diminishing returns. At k=50, you're overfitting (perfect train but bad test). The sweet spot is k=10–20. Also watch rank: smaller k = simpler model = generalizes better. This is the bias-variance tradeoff in dimensionality reduction.</div>
     <div class="interview-tip">Why does sparse data require different algorithms? Explicit SVD solvers (eigendecomposition) cannot handle missing values; SGD/ALS gracefully skip unobserved entries by computing only on observed pairs.</div>
     <div class="interview-tip">How do you choose k? Via cross-validation: lower k is faster at serving (fewer parameters) but less accurate; higher k improves NDCG but increases latency—typical production range is k=64-512.</div>
@@ -133,6 +145,18 @@
     <div class="key-point"><span class="label">Serving advantage:</span><span class="desc">Pre-compute all item embeddings offline, index in HNSW/LSH/IVF for sub-millisecond retrieval over millions of items</span></div>
     <div class="key-point"><span class="label">Limitation:</span><span class="desc">Cannot capture fine-grained user-item interactions (specific feature combinations); requires ranking model for precision</span></div>
     <hr class="divider">
+    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title" style="color: #ff9ff3;">Two-Tower for Candidate Generation</div>
+        <div class="opt-desc">Use as Stage 1 retrieval when catalog is massive (millions of items). Classic use: YouTube video candidate generation, Pinterest pin retrieval, LinkedIn job recommendations. Pre-compute item embeddings offline and serve via ANN index (FAISS/ScaNN).</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #f368e0;">Single-Tower / Cross-Attention for Ranking</div>
+        <div class="opt-desc">Use when you need fine-grained feature interactions between user and item (Stage 2 ranking). Classic use: Netflix final ranking of 100 candidates, Amazon product detail page "similar items". Slower but more precise than two-tower.</div>
+      </div>
+    </div>
+    <hr class="divider">
 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Toggle "Exact vs Approximate Search". Exact computes dot product for all items (slow, accurate). Approximate uses HNSW indexing (fast, slight accuracy loss). Watch latency: exact scales with catalog size (100K items = 100ms), approximate stays 1–5ms. Then increase Embedding Dimension to 256. Exact gets slower, approximate barely changes. This is why two-tower dominates.</div>
     <div class="interview-tip">Why pre-compute item embeddings? User tower requires online inference (live user context), but item embeddings are static—pre-computing and indexing eliminates real-time item inference cost.</div>
     <div class="interview-tip">Why dot product over cosine? Cosine similarity requires L2 normalization at serving time; dot product is faster in FAISS/Annoy libraries and achieves similar ranking when embeddings are approximately normalized.</div>
@@ -166,6 +190,18 @@
     <div class="key-point"><span class="label">Mechanism:</span><span class="desc">Training maximizes dot-product similarity for relevant pairs, pushing them close; loss on negatives pushes them apart</span></div>
     <div class="key-point"><span class="label">Production monitoring:</span><span class="desc">Recall@k metric (fraction of true positives in top-k nearest neighbors) tracks embedding quality over time</span></div>
     <div class="key-point"><span class="label">Drift concern:</span><span class="desc">As item catalog grows or user preferences evolve, embeddings degrade; periodic retraining required</span></div>
+    <hr class="divider">
+    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title" style="color: #ff9ff3;">t-SNE for Local Structure</div>
+        <div class="opt-desc">Use when debugging embedding quality and verifying local clusters. Classic use: checking if Netflix genre clusters are coherent, verifying Spotify song embeddings group by mood/tempo. Best for small-to-medium datasets (under 100K items).</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #f368e0;">UMAP for Global Structure</div>
+        <div class="opt-desc">Use when you need to see global relationships between clusters (e.g., how Action and Thriller relate). Classic use: Amazon product taxonomy validation, YouTube content moderation (detecting toxic clusters). Faster than t-SNE on large datasets.</div>
+      </div>
+    </div>
     <hr class="divider">
 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Toggle between "t-SNE" and "UMAP" visualizations. Both reduce 100D embeddings to 2D for visualization but use different algorithms. t-SNE preserves local clusters better. UMAP preserves global structure better. Click different items and watch KNN neighbors appear. Notice items cluster by content (genre, rating), even though model never explicitly optimized for that.</div>
     <div class="interview-tip">How do you onboard new items without retraining? Use content-based initialization: compute embeddings from item metadata/category features, then fine-tune with user interaction signals.</div>
@@ -223,6 +259,18 @@
     <div class="key-point"><span class="label">Layer 3: Bandit algorithms:</span><span class="desc">Thompson sampling or UCB to balance exploration (diverse items to learn preferences) vs exploitation (good recommendations)</span></div>
     <div class="key-point"><span class="label">Layer 4: Fallback:</span><span class="desc">Popularity or recency ranking when all else fails; simple but safe</span></div>
     <hr class="divider">
+    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title" style="color: #ff9ff3;">Content-Based (Cold Start)</div>
+        <div class="opt-desc">Use when new users/items have zero interaction history. Classic use: new user signs up on Spotify (recommend based on genre preferences from onboarding), new product listed on Amazon (recommend based on category/description). Essential for marketplace platforms with high item churn.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #f368e0;">Hybrid + Bandit Exploration</div>
+        <div class="opt-desc">Use when you need to rapidly learn user preferences while maintaining quality. Classic use: TikTok's "For You" page for new users (explore diverse content, exploit early signals), Netflix new subscriber onboarding. Thompson sampling balances exploration vs exploitation.</div>
+      </div>
+    </div>
+    <hr class="divider">
 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Slide "New User Data Points" to 0 (new user, no history). Watch Collaborative Filtering fail (score = unknown). Content-Based works (uses item features). Click "Hybrid" and watch it blend: content-based provides cold-start, collaborative kicks in once user has history. Slide the mixing weight: all-content is safe but boring; all-collab explores more. 70/30 split usually best.</div>
     <div class="interview-tip">Practical trick: When user embedding is unavailable, find nearest neighbor in content-feature space (demographics), copy their embedding until interactions accumulate—leverages collaborative signal from similar users.</div>
     <div class="interview-tip">How do you evaluate cold-start? Separately: measure NDCG on users/items with age < 7 days (cold metrics) vs age > 30 days (warm metrics). A/B test changes on cold users only to isolate impact.</div>
@@ -267,6 +315,18 @@
     <div class="key-point"><span class="label">Regularization:</span><span class="desc">L2 on wide weights (prevent overfit to specific user-item pairs); dropout on deep layers (prevent co-adaptation)</span></div>
     <div class="key-point"><span class="label">Shared embeddings:</span><span class="desc">Both paths share embedding tables; deep path learns better representations, improving wide path</span></div>
     <hr class="divider">
+    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title" style="color: #ff9ff3;">Wide & Deep</div>
+        <div class="opt-desc">Use when you have known important feature crosses and want both memorization and generalization. Classic use: Google Play app recommendations (memorize "user installed game X, show game Y" + generalize from app category embeddings). Best when domain experts can identify key feature crosses.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #f368e0;">Deep-Only Models</div>
+        <div class="opt-desc">Use when feature engineering is too expensive or catalog changes rapidly. Classic use: YouTube video recommendations (massive feature space, too many crosses to enumerate). Simpler architecture, easier to maintain, but may miss specific memorization patterns.</div>
+      </div>
+    </div>
+    <hr class="divider">
 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Drag features into model. Put "user_id" and "item_id" in Wide path (memorization—remember exact user-item pairs). Put "user_age" and "item_category" in Deep path (learn embeddings). Watch prediction change. Remove features from Wide, add to Deep—prediction becomes more generalized but misses specific user patterns. 60/40 split (by param count) usually works well.</div>
     <div class="interview-tip">How do you choose wide-path features? High-dimensional, expensive to hand-engineer. Start with top-k frequent feature crosses (identified via statistical tests), then iteratively add new crosses based on model analysis.</div>
     <div class="interview-tip">Compare to baselines: Deep-only struggles with memorization (e.g., specific promo combos); Wide-only cannot generalize. Wide&Deep achieves both—validate via A/B test: Deep-only vs Wide-only vs Wide&Deep.</div>
@@ -306,6 +366,18 @@
     <div class="key-point"><span class="label">Architecture:</span><span class="desc">Cross network (automatic feature crosses) + Deep network (embeddings + MLPs) in parallel; concatenate outputs for final classification layer</span></div>
     <div class="key-point"><span class="label">Serving cost:</span><span class="desc">Minimal latency overhead (simple dot products and element-wise ops); ideal for production constraints</span></div>
     <hr class="divider">
+    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title" style="color: #ff9ff3;">DCN (Deep & Cross Network)</div>
+        <div class="opt-desc">Use when you want automatic feature crossing without manual engineering. Classic use: Google Ads CTR prediction (hundreds of sparse features, too many crosses to hand-craft), Amazon product ranking with rich categorical features. Replaces Wide & Deep's manual wide path with learned crosses.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #f368e0;">Manual Feature Crosses (Wide & Deep)</div>
+        <div class="opt-desc">Use when you have strong domain knowledge about which feature interactions matter. Classic use: e-commerce where "brand x price_range" is a known strong signal. More interpretable but requires ongoing feature engineering as catalog evolves.</div>
+      </div>
+    </div>
+    <hr class="divider">
 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Increase "Cross Layers" from 1 to 5. Watch Cross Network learn feature interactions. Layer 1 learns pairwise crosses (age × gender). Layer 2 learns order-3 crosses. Layer 4+ very high-order. Increase too much and you overfit. Slide "DCN Strength" to see regularization effect. The cross network is remarkably sample-efficient—beats traditional feature engineering with 10x fewer parameters.</div>
     <div class="interview-tip">Why more efficient than hand-crafted crosses? Exponential feature explosion: to get 4th-order interactions manually, you need \(O(d^4)\) features. DCN achieves it with \(O(4d)\) parameters via automatic layer-wise composition.</div>
     <div class="interview-tip">Interpretability trade-off? Unlike Wide & Deep (you can inspect wide weights to see which crosses matter), DCN cross layers are learned implicitly—harder to debug but more automated.</div>
@@ -344,6 +416,18 @@
     <div class="key-point"><span class="label">vs Average pooling:</span><span class="desc">Average treats all history equally (loses context); attention weights history adaptively based on candidate</span></div>
     <div class="key-point"><span class="label">Computational cost:</span><span class="desc">O(sequence_length) per candidate; can be prohibitive if sequences are long (100+ items)</span></div>
     <div class="key-point"><span class="label">Extensions:</span><span class="desc">Multi-head attention (k separate relevance functions); Transformers (parallel all-pairs attention); attention-over-attention (hierarchical)</span></div>
+    <hr class="divider">
+    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title" style="color: #ff9ff3;">DIN (Attention-Based)</div>
+        <div class="opt-desc">Use when users have diverse, multi-interest behavior histories and you need candidate-aware user representations. Classic use: Alibaba product recommendations (user browses electronics AND clothing -- attention activates relevant history per candidate), Amazon "customers who viewed this also viewed".</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #f368e0;">Average Pooling (No Attention)</div>
+        <div class="opt-desc">Use when user histories are short (under 10 items) or interests are homogeneous. Classic use: niche e-commerce (single-category store), early-stage startups with limited history data. Simpler, faster, and sufficient when attention overhead is not justified.</div>
+      </div>
+    </div>
     <hr class="divider">
 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click "Show User History" to see past items. Select a query item. Watch attention weights light up—which past items influence this prediction? Toggle "Temporal Weighting". With temporal weighting ON, recent items dominate (1 week ago = 10x weight of 1 month ago). Toggle OFF, uniform weighting. Notice predictions change: temporal is more accurate for short-term trends.</div>
     <div class="interview-tip">Why better than average? Example: User watched [Romance, Romance, Romance, Action]. Average gives little weight to Action preference. Attention on Action candidate upweights the Action history item.</div>
@@ -385,6 +469,18 @@
     <div class="key-point"><span class="label">Fundamental trade-off:</span><span class="desc">More stages enable accuracy improvements but consume latency; fewer stages are faster but may discard relevant items too early</span></div>
     <div class="key-point"><span class="label">Variations:</span><span class="desc">Batch pre-compute scores offline; use LambdaMART to optimize ranking metrics directly; different models for head vs tail items</span></div>
     <hr class="divider">
+    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title" style="color: #ff9ff3;">Multi-Stage Pipeline</div>
+        <div class="opt-desc">Use for any production system with large catalog (100K+ items) and strict latency SLA (under 500ms). Classic use: YouTube (100M videos, 3-stage funnel), Netflix homepage (10K titles, 2-stage), Spotify Discover Weekly (70M tracks). Essential when single-model scoring of full catalog is infeasible.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #f368e0;">Single-Stage Ranking</div>
+        <div class="opt-desc">Use when catalog is small (under 10K items) and latency budget is generous. Classic use: small e-commerce stores, curated content feeds, enterprise internal search. Simpler to debug and maintain; no recall loss from candidate generation filtering.</div>
+      </div>
+    </div>
+    <hr class="divider">
 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click "Trace Request" through funnel. Stage 1 (Candidate Gen): 100ms latency, simple model (LogisticRegression), finds top-1000 from millions. Stage 2 (Ranking): 200ms, complex model (DeepCTR), ranks top-1000. Stage 3 (Reranking): 50ms, adds diversity/freshness. Total: 350ms. Watch: decrease Stage 1 budget to 50ms (misses good items), overall quality drops. Each stage's latency budget matters critically.</div>
     <div class="interview-tip">Validate candidate generation recall: If top-100 candidates always miss relevant items (measured offline), increase recall@k during Stage 1—trade some latency for accuracy.</div>
     <div class="interview-tip">Parallelize if bottlenecked: Stage 1 (ANN search) and business logic (re-ranking) are parallelizable; Stage 2 (sequential scoring) is harder to parallelize.</div>
@@ -423,6 +519,18 @@
     <div class="key-point"><span class="label">vs RNNs/LSTMs:</span><span class="desc">Parallel training (no sequential bottleneck), better gradient flow (no vanishing gradients), scales to longer sequences (100+ items)</span></div>
     <div class="key-point"><span class="label">Learned patterns:</span><span class="desc">Item transitions (shoe → sock → laces); recency bias (softmax places higher weight on recent items) emerges naturally</span></div>
     <div class="key-point"><span class="label">Engineering details:</span><span class="desc">Position embeddings (absolute or relative) encode temporal order; layer-normalization stabilizes; multi-head attention learns k separate relevance functions</span></div>
+    <hr class="divider">
+    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title" style="color: #ff9ff3;">SASRec / Transformer-Based Sequential</div>
+        <div class="opt-desc">Use when temporal order of user actions matters and histories are long (50+ items). Classic use: Spotify playlist continuation (next song depends on sequence context), Amazon "frequently bought together" sequences, TikTok next-video prediction. Captures long-range dependencies that RNNs miss.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #f368e0;">GRU4Rec / RNN-Based Sequential</div>
+        <div class="opt-desc">Use when sequences are short (under 20 items) and training resources are limited. Classic use: session-based recommendations on e-commerce (anonymous users with short browsing sessions), news article recommendations. Lighter weight, faster training, sufficient for short sequences.</div>
+      </div>
+    </div>
     <hr class="divider">
 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click "Play Sequence" and step through user actions. Watch self-attention heatmap highlight which past actions most influence the next prediction. Toggle "Attention Mask": with mask, can't look at future actions (causal). Without mask, can (violates time order). Increase sequence length to 50 items. Transformers scale gracefully; RNNs would forget early items. This is why Transformers dominate sequence modeling.</div>
     <div class="interview-tip">Variable-length sequences: Pad to max length with special tokens, use attention mask to ignore padding. Alternatively, truncate to recent k items (e.g., last 50 items).</div>
@@ -465,6 +573,18 @@
     <div class="key-point"><span class="label">Joint loss:</span><span class="desc">\(L = \alpha \cdot L_{\text{ctr}} + \beta \cdot L_{\text{cvr}} + \gamma \cdot L_{\text{watch}}\), where \(\alpha, \beta, \gamma\) reflect business priorities (tune on validation set)</span></div>
     <div class="key-point"><span class="label">Production gotchas:</span><span class="desc">Task calibration (different loss scales → gradient dominance); label delay (CVR takes days, CTR immediate); negative transfer (tasks conflict)</span></div>
     <hr class="divider">
+    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title" style="color: #ff9ff3;">MMOE Multi-Task</div>
+        <div class="opt-desc">Use when optimizing multiple correlated but distinct objectives simultaneously. Classic use: YouTube ranking (optimize CTR + watch time + satisfaction jointly), Uber Eats (optimize order rate + delivery time + restaurant quality). Shared experts improve data efficiency when tasks share underlying patterns.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #f368e0;">Separate Single-Task Models</div>
+        <div class="opt-desc">Use when tasks are weakly correlated or conflicting (negative transfer risk). Classic use: when CTR optimization hurts long-term retention, or when ad revenue goals conflict with user satisfaction. Easier to debug, tune, and deploy independently per objective.</div>
+      </div>
+    </div>
+    <hr class="divider">
 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click task tabs (CTR, CVR, Watch-Time). Each has its own gating network that selects from shared experts. Watch "Expert Utilization" bars: does CTR prefer certain experts? Click "Shared = 0%" (no sharing, 3 separate models). Now "Shared = 100%" (one shared expert). Shared usually gives 5–10% improvement despite sharing—tasks are correlated. Slide "Task Weighting" to balance importance.</div>
     <div class="interview-tip">Handle label imbalance: CVR is ~1% (rarer than CTR ~10%). Use weighted sampling or loss weighting to balance task gradients; monitor which task dominates training.</div>
     <div class="interview-tip">Validate improvements: Compare multi-task vs CTR-only baseline. Measure both task accuracy (does each task improve?) and correlation (do tasks help each other?).</div>
@@ -506,6 +626,18 @@
     <div class="key-point"><span class="label">LambdaMART:</span><span class="desc">Computes pairwise gradients but weights by NDCG improvement (lambda gradient weighting); efficient listwise optimization</span></div>
     <div class="key-point"><span class="label">Accuracy vs Computation:</span><span class="desc">Pointwise (fast) << Pairwise (medium) << Listwise (slow but best); production typically uses LambdaMART via XGBoost/LightGBM</span></div>
     <hr class="divider">
+    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title" style="color: #ff9ff3;">Pairwise / LambdaMART</div>
+        <div class="opt-desc">Use for production ranking where NDCG optimization matters and you have graded relevance labels. Classic use: Google Search ranking, Bing web search, Airbnb search ranking. LambdaMART (via XGBoost/LightGBM) is the industry standard -- fast training, handles missing features, excellent NDCG.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #f368e0;">Pointwise (Classification/Regression)</div>
+        <div class="opt-desc">Use as a simple baseline or when you only have binary labels (relevant/not). Classic use: email spam ranking, simple content feeds with thumbs up/down. Fast to train and debug, but ignores position bias and ranking structure -- upgrade to pairwise when quality matters.</div>
+      </div>
+    </div>
+    <hr class="divider">
 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Toggle "Pointwise", "Pairwise", "Listwise" loss functions. Pointwise (simplest): treats each doc independently, ignores ranking. Pairwise: learns 'doc A > doc B'. Listwise: directly optimizes NDCG (ranking metric). Compare convergence: Pointwise converges fast but gives mediocre ranking. Listwise is harder to optimize but produces best final ranking. Click "Show Metrics" to see NDCG, MRR, MAP differences.</div>
     <div class="interview-tip">Why does pointwise fail on ranked outputs? Position bias: top-ranked docs receive more clicks regardless of relevance. Evaluation metric mismatch: classification loss doesn't align with NDCG/MRR metrics.</div>
     <div class="interview-tip">Variable-length lists: Pad with negative labels (rank 0) to uniform length. LambdaMART handles missing labels gracefully (skips pairs with missing labels).</div>
@@ -536,6 +668,18 @@
     <div class="key-point"><span class="label">Strategy-proof:</span><span class="desc">Advertisers cannot benefit from misreporting bids; dominant strategy is truthful bidding (game theory property)</span></div>
     <div class="key-point"><span class="label">Attribution:</span><span class="desc">Last-click (simple, biased); linear (fair); time-decay (recent ads more credit); Shapley value (game-theory fair, expensive)</span></div>
     <div class="key-point"><span class="label">Production risks:</span><span class="desc">Feedback loops (ads affect exposure → clicks → retraining); position bias (top ads get more clicks); brand safety (toxic adjacencies); budget constraints</span></div>
+    <hr class="divider">
+    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title" style="color: #ff9ff3;">Second-Price Auction + pCTR Ranking</div>
+        <div class="opt-desc">Use for standard display/search ad serving where truthful bidding is desired. Classic use: Google Ads search results, Facebook News Feed ads, Amazon Sponsored Products. Bid x pCTR x quality ensures relevant ads rank higher regardless of bid amount alone.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #f368e0;">Multi-Touch Attribution (Shapley)</div>
+        <div class="opt-desc">Use when advertisers need fair credit allocation across touchpoints in a conversion funnel. Classic use: measuring impact of YouTube pre-roll ads vs Google Search ads vs display retargeting in a purchase journey. Essential for budget allocation across channels.</div>
+      </div>
+    </div>
     <hr class="divider">
 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Adjust Bid, pCTR, Quality Score sliders. Watch Rank = Bid × pCTR × Quality change. High bid doesn't guarantee rank if quality is low. Then toggle "Attribution": Last-Click gives all credit to final touchpoint (impression before conversion). Multi-Touch spreads credit across all impressions. Watch how budget allocation changes. Multi-Touch is fairer, reveals which channels truly drive conversions.</div>
     <div class="interview-tip">Budget constraints: Advertisers cap daily spend; challenge is allocating limited budget across ads. Use online optimization (bid adjustment) to respect budgets while maximizing CTR.</div>
@@ -576,6 +720,18 @@
     <div class="key-point"><span class="label">vs BM25:</span><span class="desc">BM25 lexical matching cheap and handles rare terms; dense retrieval semantic matching better for paraphrases and out-of-vocabulary</span></div>
     <div class="key-point"><span class="label">Production hybrid:</span><span class="desc">BM25 (cheap retrieval) → bi-encoder re-rank (efficient) → cross-encoder/ColBERT refine top-k (accurate); multi-signal fusion</span></div>
     <div class="key-point"><span class="label">Cold-start new docs:</span><span class="desc">Compute embeddings from content (metadata, title, body); no user interaction history required; fine-tune as signals accumulate</span></div>
+    <hr class="divider">
+    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title" style="color: #ff9ff3;">Bi-Encoder + ANN Index</div>
+        <div class="opt-desc">Use for first-stage retrieval over massive corpora (millions of documents). Classic use: Google Search candidate retrieval, Spotify podcast search, LinkedIn people search. Pre-compute document embeddings in FAISS/ScaNN for sub-millisecond retrieval at scale.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #f368e0;">Cross-Encoder / ColBERT Re-ranking</div>
+        <div class="opt-desc">Use for re-ranking top-k candidates (50-200) where precision matters more than speed. Classic use: Google Search final ranking of top-100 results, Bing passage ranking, legal document search (accuracy critical). ColBERT offers the best speed-accuracy tradeoff for mid-size candidate sets.</div>
+      </div>
+    </div>
     <hr class="divider">
 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Toggle "Bi-Encoder" (fast), "Cross-Encoder" (accurate), "ColBERT" (hybrid). Bi-Encoder: encodes query and doc separately, scores by dot product. Latency: 1ms per doc (fast). Cross-Encoder: encodes query+doc jointly, slow (100ms per doc) but 10% more accurate. ColBERT: token-level late interaction—fast (10ms), nearly cross-encoder quality. For candidate gen, use Bi-Encoder. For reranking top-100, use Cross-Encoder. ColBERT is sweet spot.</div>
     <div class="interview-tip">Why does ColBERT avoid early-interaction bottleneck? Standard dense matching locks in interaction decision at embedding time; ColBERT defers to serving (per-token flexibility).</div>

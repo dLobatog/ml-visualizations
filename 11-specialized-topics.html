@@ -310,6 +310,22 @@
                 <div class="key-point"><span class="label">InfoNCE Loss:</span><span class="desc">N image-text pairs; each image's matched text is positive, N-1 others are negatives</span></div>
                 <div class="key-point"><span class="label">Temperature \(\tau\):</span><span class="desc">Controls distribution sharpness; higher \(\tau\) makes hard negatives easier to distinguish</span></div>
                 <hr class="divider">
+                <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                <div class="comparison">
+                  <div class="option">
+                    <div class="opt-title" style="color: #00d2d3;">CLIP for Zero-Shot Classification</div>
+                    <div class="opt-desc">When labeled data for target classes is unavailable. E.g., classify rare objects, new product categories, long-tail visual concepts. Embed class names as text, find nearest image embedding. No training on target classes required.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #48dbfb;">CLIP for Image-Text Retrieval</div>
+                    <div class="opt-desc">When building cross-modal search systems. E.g., image search engines, content moderation, visual question answering preprocessing. Pre-compute image embeddings with FAISS for sub-millisecond retrieval at scale.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #ff6b6b;">Fine-Tuned Classifier Instead</div>
+                    <div class="opt-desc">When you have labeled data and need maximum accuracy on a fixed set of classes. E.g., medical imaging, defect detection, production classification. CLIP underperforms fine-tuned models on domain-specific tasks by 5-15%.</div>
+                  </div>
+                </div>
+                <hr class="divider">
                 <div class="interview-tip">Why does CLIP work zero-shot? Text embeddings naturally encode semantic information about classes—classifier emerges without seeing those classes during training.</div>
                 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Give CLIP a class it never saw (e.g., "zebra" if trained on birds). It classifies zero-shot because text encoder learns semantic features. Temperature τ controls confidence—low τ = sharp predictions, high τ = uncertain. Typical τ=0.07.</div>
                 <div class="mnemonic">CLIP = two encoders in a joint space. Align image-text pairs; text carries semantic labels. At test time, embed class names, find nearest image.</div>
@@ -358,6 +374,22 @@
                 <div class="opt-title">Variable Size Images</div>
                 <div class="opt-desc">Interpolate position embeddings or use relative position bias</div>
                 </div>
+                </div>
+                <hr class="divider">
+                <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                <div class="comparison">
+                  <div class="option">
+                    <div class="opt-title" style="color: #00d2d3;">ViT (Vision Transformer)</div>
+                    <div class="opt-desc">When you have large-scale data (ImageNet-21K+) and compute budget. E.g., foundation model pre-training, transfer learning backbone, tasks needing global context (scene understanding, document analysis). Scales better than CNNs with data/compute.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #48dbfb;">CNN (ResNet/EfficientNet)</div>
+                    <div class="opt-desc">When data is limited or latency is critical. E.g., mobile deployment, medical imaging with small datasets, edge devices. Built-in translation equivariance requires less data. More efficient at small scale.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #ff6b6b;">Hybrid (ConvNeXt, Swin)</div>
+                    <div class="opt-desc">When you want the best of both worlds. E.g., Swin Transformer for detection/segmentation (hierarchical + attention), ConvNeXt for modern CNN efficiency. Good for medium data regimes and dense prediction tasks.</div>
+                  </div>
                 </div>
                 <hr class="divider">
                 <div class="interview-tip">ViT needs more data than CNNs because it has no convolutional inductive bias. It must learn spatial relationships purely from data.</div>
@@ -417,6 +449,22 @@
                 <div class="key-point"><span class="label">Attention_out:</span><span class="desc">Text-attended-to-image output; each text token updated with relevant image info</span></div>
                 <p style="margin: 8px 0; font-size: 0.93em; text-align: center;">Cross-attention: one modality queries, other provides keys/values</p>
                 <hr class="divider">
+                <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                <div class="comparison">
+                  <div class="option">
+                    <div class="opt-title" style="color: #00d2d3;">Early Fusion</div>
+                    <div class="opt-desc">When deployment latency is critical and modalities are similar in structure. E.g., mobile multi-modal apps, real-time captioning, edge devices. Concatenate tokens before transformer -- simple and fast (1x latency).</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #48dbfb;">Cross-Attention Fusion</div>
+                    <div class="opt-desc">Best default for most multi-modal tasks. E.g., visual question answering, image-grounded dialogue, document understanding. Text attends to relevant image regions. Used in GPT-4V, Gemini, LLaVA. Good accuracy-latency tradeoff.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #ff6b6b;">Late Fusion</div>
+                    <div class="opt-desc">When modalities are very different or pre-trained encoders must stay frozen. E.g., audio-visual speech recognition, sensor fusion in autonomous driving. Process independently, fuse decisions. Maximum accuracy, highest compute.</div>
+                  </div>
+                </div>
+                <hr class="divider">
                 <div class="interview-tip">Early fusion is efficient for deployment; late fusion maximizes accuracy; cross-attention balances both. Choose based on latency vs accuracy tradeoff.</div>
                 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Early fusion (concatenate) = fast (1x latency). Late fusion (separate encoders) = accurate but slow (3x). Cross-attention (ViLBERT, ALBEF) = 1.5x latency, 2.8x accuracy. For mobile: early. For research: late or cross-attention.</div>
                 <div class="mnemonic">Early = blend quickly. Late = process separately. Cross = one modality "looks at" the other. Each has pros/cons.</div>
@@ -473,6 +521,22 @@
                 </div>
                 </div>
                 <hr class="divider">
+                <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                <div class="comparison">
+                  <div class="option">
+                    <div class="opt-title" style="color: #00d2d3;">SimCLR</div>
+                    <div class="opt-desc">When you have access to large GPU clusters (batch size 4K-8K needed). E.g., pre-training visual encoders on unlabeled image datasets, learning representations for downstream tasks. Simple framework, strong results, but compute-intensive.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #48dbfb;">MoCo Instead</div>
+                    <div class="opt-desc">When GPU memory is limited. E.g., single-GPU training, academic research budgets. Memory bank provides negatives without large batches. Achieves comparable results to SimCLR with smaller batch sizes (B=256 sufficient).</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #ff6b6b;">BYOL/DINO Instead</div>
+                    <div class="opt-desc">When you want simpler training without negative pairs. E.g., limited compute, ViT pre-training (DINO), tasks where augmentation design is easier than batch size tuning. More robust hyperparameters, less sensitivity to batch size.</div>
+                  </div>
+                </div>
+                <hr class="divider">
                 <div class="interview-tip">Why contrastive learning works: augmentations preserve semantics. Training to match embeddings forces encoder to learn semantic features, not visual artifacts.</div>
                 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Batch size B=256 minimum (needs many negatives). B=4096 (modern GPU). Larger B = more negatives = easier training. Temperature τ=0.07 standard (sharp contrast). Increase to 0.5—softer, easier but weaker signal. Decrease to 0.01—very sharp, training harder but better features.</div>
                 <div class="mnemonic">SimCLR = two cropped views of same image should agree. The bigger the batch, the harder they have to work to be similar (more negatives to beat).</div>
@@ -519,6 +583,22 @@
                 <div class="opt-title">MoCo</div>
                 <div class="opt-desc">Needs queue_size negatives; smaller batches sufficient</div>
                 </div>
+                </div>
+                <hr class="divider">
+                <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                <div class="comparison">
+                  <div class="option">
+                    <div class="opt-title" style="color: #00d2d3;">MoCo (v2/v3)</div>
+                    <div class="opt-desc">When training self-supervised models on limited hardware. E.g., single-GPU pre-training for vision, academic research, domain-specific representation learning. Queue of 65K negatives replaces need for huge batch size. Production-friendly.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #48dbfb;">SimCLR Instead</div>
+                    <div class="opt-desc">When you have multi-GPU clusters and want simpler code. E.g., industry-scale pre-training with 8+ GPUs. No momentum encoder or queue to manage. Conceptually cleaner. Slightly better results at very large batch sizes.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #ff6b6b;">Supervised Pre-training Instead</div>
+                    <div class="opt-desc">When labeled data is abundant and task is well-defined. E.g., ImageNet classification, domain with existing large labeled datasets. Supervised pre-training still outperforms SSL when labels are plentiful and task-specific.</div>
+                  </div>
                 </div>
                 <hr class="divider">
                 <div class="interview-tip">Momentum update prevents collapse: if you updated key encoder by gradient, queue would have stale embeddings (from different model state) and collapse.</div>
@@ -572,6 +652,22 @@
                 <div class="opt-title">Standard Distill</div>
                 <div class="opt-desc">Fixed teacher; BYOL updates teacher from student (key difference)</div>
                 </div>
+                </div>
+                <hr class="divider">
+                <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                <div class="comparison">
+                  <div class="option">
+                    <div class="opt-title" style="color: #00d2d3;">BYOL</div>
+                    <div class="opt-desc">When simplicity and stability matter. E.g., CNN pre-training with limited compute, domain adaptation without labels, medical imaging where augmentation design is constrained. No negatives needed, less hyperparameter sensitivity than contrastive methods.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #48dbfb;">DINO / DINOv2</div>
+                    <div class="opt-desc">When using Vision Transformers and need emergent properties. E.g., semantic segmentation without pixel labels, object discovery, ViT-based foundation models. DINO produces attention maps that naturally segment objects. DINOv2 is SOTA for visual features.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #ff6b6b;">Contrastive (SimCLR/MoCo) Instead</div>
+                    <div class="opt-desc">When you need explicit negative separation guarantees. E.g., retrieval tasks where dissimilar items must be far apart, face verification, fine-grained recognition. Contrastive loss explicitly pushes negatives apart.</div>
+                  </div>
                 </div>
                 <hr class="divider">
                 <div class="interview-tip">BYOL's big finding: negative samples aren't essential for learning good representations. Paradigm shift from contrastive to self-distillation methods.</div>
@@ -632,6 +728,22 @@
                 </div>
                 </div>
                 <hr class="divider">
+                <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                <div class="comparison">
+                  <div class="option">
+                    <div class="opt-title" style="color: #00d2d3;">SHAP (TreeSHAP)</div>
+                    <div class="opt-desc">Default for tree-based models (XGBoost, LightGBM, Random Forest). E.g., credit scoring, fraud detection, healthcare risk models. Polynomial-time exact computation. Regulatory-friendly (game-theory foundation). Use for compliance audits.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #48dbfb;">SHAP (KernelSHAP)</div>
+                    <div class="opt-desc">When explaining any black-box model. E.g., neural networks, ensemble models, third-party APIs. Model-agnostic via regression approximation. Slower than TreeSHAP but works with any model. Use 100-1000 background samples.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #ff6b6b;">LIME Instead</div>
+                    <div class="opt-desc">When speed matters more than theoretical guarantees. E.g., real-time debugging, quick model inspection, prototyping. Faster than KernelSHAP but less stable (different runs give different explanations). Good for initial investigation.</div>
+                  </div>
+                </div>
+                <hr class="divider">
                 <div class="interview-tip">Shapley values are uniquely determined by symmetry, dummy, and linearity axioms. This axiomatic foundation makes SHAP more principled than alternative explainability methods.</div>
                 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: SHAP = game theory (Shapley value). Feature i's contribution = its marginal value across all coalitions. Computationally expensive (2^d), so use approximations (TreeSHAP=O(d·T), KernelSHAP=O(m·d)). Perfect for model debugging, feature importance ranking, fairness audits.</div>
                 <div class="mnemonic">SHAP = each feature gets a "contribution score." Game theory ensures it's fair: sums to difference from baseline. Every possible coalition considered.</div>
@@ -688,6 +800,22 @@
                 <div class="opt-title">Model-Agnostic</div>
                 <div class="opt-desc">Works with any black-box model</div>
                 </div>
+                </div>
+                <hr class="divider">
+                <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                <div class="comparison">
+                  <div class="option">
+                    <div class="opt-title" style="color: #00d2d3;">LIME for Text/Images</div>
+                    <div class="opt-desc">When explaining NLP or vision model predictions locally. E.g., "why did the model flag this email as spam?" (highlight words), "what region triggered this diagnosis?" (superpixel masks). Intuitive visual explanations for non-technical stakeholders.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #48dbfb;">LIME for Quick Debugging</div>
+                    <div class="opt-desc">When you need fast, approximate explanations during development. E.g., model failure analysis, sanity-checking feature importance, validating model behavior on edge cases. Faster than SHAP for one-off investigations.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #ff6b6b;">SHAP Instead</div>
+                    <div class="opt-desc">When consistency and theoretical guarantees matter. E.g., regulatory compliance, production monitoring, global feature importance. SHAP is more stable across runs and has additive consistency guarantees that LIME lacks.</div>
+                  </div>
                 </div>
                 <hr class="divider">
                 <div class="interview-tip">Key insight: you don't need to understand the whole model, just the local behavior around one prediction. Linear model works because of local linearity.</div>
@@ -747,6 +875,22 @@
                 </div>
                 </div>
                 <hr class="divider">
+                <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                <div class="comparison">
+                  <div class="option">
+                    <div class="opt-title" style="color: #00d2d3;">Probing Classifiers</div>
+                    <div class="opt-desc">When investigating what information is encoded in representations. E.g., "does BERT layer 6 encode syntax?", "does this vision model encode color?" Train linear classifier on frozen activations. Fast, scalable, but only shows correlation.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #48dbfb;">Causal Intervention (Ablation)</div>
+                    <div class="opt-desc">When you need to prove a component is causally important. E.g., "does this attention head cause gender bias?", safety auditing, identifying critical circuits. Zero out neurons/heads, measure output change. Gold standard for causation.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #ff6b6b;">Sparse Autoencoders</div>
+                    <div class="opt-desc">When dealing with superposition (multiple features per neuron). E.g., understanding LLM internals at scale, decomposing polysemantic neurons into monosemantic features. Newer technique that handles the superposition problem directly.</div>
+                  </div>
+                </div>
+                <hr class="divider">
                 <div class="interview-tip">Probing ≠ causation. Classifier on activations shows info exists, but intervention (ablation) proves components matter for output.</div>
                 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Linear probe: train classifier on neuron activations to predict labels. High accuracy = neuron encodes info. Ablation: set neuron to 0, measure performance drop. Only ablation proves causation. Neurons often multiplex (encode many features at once)—interpretation hard.</div>
                 <div class="mnemonic">Mechanistic = understand the gears. Feature decomposition answers "what do neurons care about." Circuits answer "how do they talk." Intervention answers "what actually matters."</div>
@@ -799,6 +943,22 @@
                 </div>
                 </div>
                 <hr class="divider">
+                <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                <div class="comparison">
+                  <div class="option">
+                    <div class="opt-title" style="color: #00d2d3;">Outer Alignment Focus</div>
+                    <div class="opt-desc">When designing objectives for new systems. E.g., reward model design for RLHF, defining safety specifications, writing constitutions for CAI. Ask: "does our loss function capture what we actually want?" Reward hacking is the primary risk.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #48dbfb;">Inner Alignment Focus</div>
+                    <div class="opt-desc">When evaluating trained model behavior. E.g., distributional shift testing, shortcut detection, adversarial robustness evaluation. Ask: "did the model learn our objective or a proxy?" Monitor for mesa-optimization and spurious correlations.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #ff6b6b;">Both (Production Systems)</div>
+                    <div class="opt-desc">Any deployed system needs both. E.g., LLM deployment: specify objectives (outer) via RLHF/CAI, then verify behavior (inner) via red teaming, OOD testing, behavioral audits. Alignment is ongoing -- monitor continuously post-deployment.</div>
+                  </div>
+                </div>
+                <hr class="divider">
                 <div class="interview-tip">As models scale, both become harder. We know less what we want (outer). Shortcuts become harder to find but easier to exploit globally (inner).</div>
                 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Outer alignment is philosophical (reward hacking risk). Inner alignment is technical (shortcut learning). Example: optimize for human happiness → AI wireheads (self-stimulation). Solution: specify objective robustly (RLHF, Constitutional AI), test distribution shift, audit shortcuts.</div>
                 <div class="mnemonic">Outer = what do we ask? Inner = what did they learn? Both can fail independently. Advanced systems need both right.</div>
@@ -829,6 +989,22 @@
                         <div class="key-point"><span class="label">Pipeline:</span><span class="desc">Generate → Self-critique vs constitution → Revise → Train on improved outputs</span></div>
                         <div class="key-point"><span class="label">Constitution:</span><span class="desc">Set of principles (helpfulness, honesty, harmlessness); model evaluates compliance</span></div>
                         <div class="key-point"><span class="label">Self-Play Loop:</span><span class="desc">No human labels; model generates training data via critique-revise cycles</span></div>
+                        <hr class="divider">
+                        <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                        <div class="comparison">
+                          <div class="option">
+                            <div class="opt-title" style="color: #00d2d3;">Constitutional AI</div>
+                            <div class="opt-desc">When scaling alignment beyond human annotation capacity. E.g., rapid safety iteration, aligning models in many languages, continuous improvement loops. Define principles once, apply at scale. No per-example human labels needed.</div>
+                          </div>
+                          <div class="option">
+                            <div class="opt-title" style="color: #48dbfb;">RLHF Instead</div>
+                            <div class="opt-desc">When human judgment is nuanced and hard to codify in principles. E.g., helpfulness calibration, tone/style preferences, subjective quality judgments. Human feedback captures implicit preferences that explicit principles may miss.</div>
+                          </div>
+                          <div class="option">
+                            <div class="opt-title" style="color: #ff6b6b;">Combined Approach</div>
+                            <div class="opt-desc">Production best practice: use CAI for broad safety guardrails, RLHF for fine-grained preference learning. E.g., Claude uses constitutional principles for harmlessness plus human feedback for helpfulness tuning.</div>
+                          </div>
+                        </div>
                         <hr class="divider">
                         <div class="interview-tip">LLMs strong enough to evaluate their own outputs for alignment. Removes human labeling bottleneck.</div>
                         <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Constitutional AI = scalable alignment. Model critiques own outputs using constitution (e.g., "is this helpful, harmless, honest?"). Revise based on critique. No human loop needed. Constitution is key—design it carefully (vague = ineffective, over-constrained = boring).</div>
@@ -861,6 +1037,22 @@
                 <div class="key-point"><span class="label">Process:</span><span class="desc">Humans/AIs attempt to break model; document failures; feed back to improve training</span></div>
                 <div class="key-point"><span class="label">Techniques:</span><span class="desc">Prompt injection, contradiction, role-play, hypothetical harm, adversarial examples</span></div>
                 <div class="key-point"><span class="label">Red Team:</span><span class="desc">Security mindset: think like attacker. More effective than passive evaluation</span></div>
+                <hr class="divider">
+                <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                <div class="comparison">
+                  <div class="option">
+                    <div class="opt-title" style="color: #00d2d3;">Manual Red Teaming</div>
+                    <div class="opt-desc">When deploying high-stakes models. E.g., pre-launch safety testing for chatbots, medical AI validation, financial model auditing. Human creativity finds edge cases automated tools miss. Essential before any public-facing deployment.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #48dbfb;">Automated Red Teaming</div>
+                    <div class="opt-desc">When scaling adversarial testing beyond human capacity. E.g., continuous integration safety checks, regression testing after model updates, systematic coverage of attack categories. Use LLMs to generate adversarial prompts at scale.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #ff6b6b;">Adversarial Training</div>
+                    <div class="opt-desc">When hardening models against known attack patterns. E.g., adversarial examples in vision, prompt injection defense, robustness to distribution shift. Train on adversarial samples to build resilience. Complements red teaming with proactive defense.</div>
+                  </div>
+                </div>
                 <hr class="divider">
                 <div class="interview-tip">Finds vulnerabilities before real users do. Security testing mindset is essential.</div>
                 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Red teaming = adversarial testing. Jailbreak (bypass safety rules), prompt injection (override instructions), OOD inputs (adversarial examples). For each category, design defenses. Always assume an adversary will try to break your system. Continuous red team = continuous improvement.</div>
@@ -897,6 +1089,22 @@
                 <div class="key-point"><span class="label">Gating Network:</span><span class="desc">Learns routing: \(g_i(x) = \text{softmax}(W_g \cdot x)\); selects which experts compute</span></div>
                 <div class="key-point"><span class="label">Conditional Computation:</span><span class="desc">Only active experts compute; huge parameter count with efficient inference</span></div>
                 <hr class="divider">
+                <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                <div class="comparison">
+                  <div class="option">
+                    <div class="opt-title" style="color: #00d2d3;">Mixture of Experts (MoE)</div>
+                    <div class="opt-desc">When scaling model capacity without proportional compute increase. E.g., Mixtral 8x7B (47B params, 13B active), Switch Transformer. Ideal when serving cost per token matters more than total parameter count. Expert specialization emerges naturally.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #48dbfb;">Dense Model Instead</div>
+                    <div class="opt-desc">When training stability and simplicity matter. E.g., smaller models (under 7B), fine-tuning workflows, deployment on single GPU. Dense models are easier to train, debug, and serve. No load balancing or routing complexity.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #ff6b6b;">Distilled Dense Model</div>
+                    <div class="opt-desc">When deploying to resource-constrained environments. E.g., mobile, edge, latency-critical APIs. Distill MoE knowledge into smaller dense model for efficient inference. Captures expert knowledge without routing overhead.</div>
+                  </div>
+                </div>
+                <hr class="divider">
                 <div class="interview-tip">Massive parameters but sparse activation: trade compute for capacity. Expert specialization.</div>
                 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: MoE scales parameter count without compute cost (sparse activation). 1.6T parameter Mixtral = 13B per token. Load balance importance: if tokens all route to one expert, others unused. Auxiliary loss enforces diversity. Expert specialization emerges (e.g., one expert for pronouns, another for syntax).</div>
                 <div class="mnemonic">MoE = different experts for different inputs. Router decides. Only selected experts activate.</div>
@@ -929,6 +1137,22 @@
                 <div class="key-point"><span class="label">Magnitude Pruning:</span><span class="desc">Remove small absolute value weights; assumes small = unimportant</span></div>
                 <div class="key-point"><span class="label">Structured Pruning:</span><span class="desc">Remove entire neurons/channels/heads; preserves structure for hardware efficiency</span></div>
                 <div class="key-point"><span class="label">Lottery Ticket Hypothesis:</span><span class="desc">Random init contains "winning tickets" (subnetworks that train well)</span></div>
+                <hr class="divider">
+                <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                <div class="comparison">
+                  <div class="option">
+                    <div class="opt-title" style="color: #00d2d3;">Magnitude Pruning</div>
+                    <div class="opt-desc">Simplest approach for quick model compression. E.g., reduce model size for deployment, mobile inference. Remove small weights, fine-tune to recover accuracy. 50-90% sparsity achievable. Unstructured -- needs sparse hardware for speedup.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #48dbfb;">Structured Pruning</div>
+                    <div class="opt-desc">When actual inference speedup on standard hardware is needed. E.g., remove entire conv filters, attention heads, or layers. GPU-friendly (dense submatrices). 2-4x speedup achievable. Use for production deployment on standard GPUs/TPUs.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #ff6b6b;">Quantization Instead</div>
+                    <div class="opt-desc">When memory reduction is the primary goal. E.g., INT8/INT4 gives 2-4x compression with minimal accuracy loss and works on all hardware. Easier to implement than pruning. Often combined with pruning for maximum compression.</div>
+                  </div>
+                </div>
                 <hr class="divider">
                 <div class="interview-tip">50-90% sparsity achievable. Retrain after pruning to recover performance.</div>
                 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Magnitude pruning: remove weights |w| < threshold. 50% sparsity = half weights removed (but dense—poor HW utilization). Structured: remove filters (dense submatrix, GPU-efficient). Lottery ticket: find "winning" subnetwork that trains well standalone. Retraining essential (magnitude pruning ≈ 5% accuracy loss, recover with fine-tune).</div>
@@ -967,6 +1191,22 @@
                 <div class="key-point"><span class="label">Graph Types:</span><span class="desc">Directed, undirected, heterogeneous (multi-type nodes/edges), dynamic</span></div>
                 <div class="key-point"><span class="label">Locality Bias:</span><span class="desc">Neighbors matter; inductive bias matches many domains naturally</span></div>
                 <hr class="divider">
+                <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                <div class="comparison">
+                  <div class="option">
+                    <div class="opt-title" style="color: #00d2d3;">GNN (Message Passing)</div>
+                    <div class="opt-desc">When data has natural graph structure. E.g., molecular property prediction (atoms=nodes, bonds=edges), social network analysis, fraud detection in transaction graphs, recommendation systems (user-item bipartite graph).</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #48dbfb;">Graph Transformer</div>
+                    <div class="opt-desc">When long-range dependencies in graphs matter. E.g., large molecule interactions, knowledge graph reasoning, traffic flow prediction. Full attention over nodes captures global structure but is O(N^2). Use for smaller graphs or with sparse attention.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #ff6b6b;">Tabular/Sequence Models Instead</div>
+                    <div class="opt-desc">When graph structure is not meaningful or data is naturally tabular/sequential. E.g., time series forecasting, standard classification, text processing. Do not force data into graph form -- GNNs add complexity without benefit if edges are not informative.</div>
+                  </div>
+                </div>
+                <hr class="divider">
                 <div class="interview-tip">Leverages relational structure. More efficient than fully-connected networks for sparse graphs.</div>
                 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: GNN layer: h_i^{l+1} = σ(W · AGG({h_j^l : j ∈ N(i)})). Message passing = aggregation of neighbor info. Sparse edges = low compute. Deep GNNs (L>6) risk over-smoothing (all nodes become similar). Solution: residual connections, skip connections, or shallow networks.</div>
                 <div class="mnemonic">GNN = aggregate neighbor features. Update nodes. Repeat. Powerful for relational data.</div>
@@ -1003,6 +1243,22 @@
                 <div class="key-point"><span class="label">Temperature T:</span><span class="desc">Controls softness of outputs; higher T = softer targets = easier learning for student</span></div>
                 <div class="key-point"><span class="label">Dark Knowledge:</span><span class="desc">Soft targets encode class relationships teacher learned; more informative than hard labels</span></div>
                 <hr class="divider">
+                <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                <div class="comparison">
+                  <div class="option">
+                    <div class="opt-title" style="color: #00d2d3;">Knowledge Distillation</div>
+                    <div class="opt-desc">When deploying large models to resource-constrained environments. E.g., compress BERT-large to TinyBERT for mobile, GPT-4 to smaller student for API cost reduction. Student often outperforms same-size model trained from scratch by 3-5%.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #48dbfb;">LoRA/PEFT Instead</div>
+                    <div class="opt-desc">When you want to adapt (not compress) a large model efficiently. E.g., task-specific fine-tuning, multi-task serving with adapter switching. LoRA keeps the full model but trains only low-rank updates. Different goal: adaptation vs compression.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #ff6b6b;">Pruning + Quantization Instead</div>
+                    <div class="opt-desc">When you want to compress without a teacher model. E.g., post-training compression, edge deployment, latency optimization. Simpler pipeline (no teacher needed). Often combined with distillation for maximum compression (distill then quantize).</div>
+                  </div>
+                </div>
+                <hr class="divider">
                 <div class="interview-tip">Student learns "dark knowledge"—soft targets embed class similarities that hard labels don't convey.</div>
                 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Loss = α·KL(student, teacher) + (1-α)·CE(student, labels). Temperature τ softens teacher logits: p_soft = softmax(z/τ). High τ (e.g., 10) = soft targets (smooth probability, easier gradient). Low τ (e.g., 1) = sharp targets (hard contrast). Typical τ=4-20.</div>
                 <div class="mnemonic">Distillation = teacher transfers knowledge to student. Soft targets better than hard labels.</div>
@@ -1034,6 +1290,22 @@
                 <div class="key-point"><span class="label">Privacy:</span><span class="desc">Raw data never leaves device; only gradients transmitted (but still vulnerable to gradient attacks)</span></div>
                 <div class="key-point"><span class="label">Communication Cost:</span><span class="desc">Dominates computation; gradient compression essential for efficiency</span></div>
                 <hr class="divider">
+                <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                <div class="comparison">
+                  <div class="option">
+                    <div class="opt-title" style="color: #00d2d3;">Federated Learning</div>
+                    <div class="opt-desc">When data cannot leave user devices due to privacy/regulation. E.g., mobile keyboard prediction (Gboard), hospital networks sharing models not patient data, financial institutions under GDPR/HIPAA. Privacy-preserving by design.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #48dbfb;">Centralized Training Instead</div>
+                    <div class="opt-desc">When data can be aggregated centrally. E.g., company-internal data, public datasets, cloud-based training. Always simpler, faster convergence, fewer failure modes. Use federated only when centralization is impossible.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #ff6b6b;">Differential Privacy Instead</div>
+                    <div class="opt-desc">When privacy is needed but data can be centralized with noise. E.g., census data, aggregated analytics. Add calibrated noise to queries/gradients. Simpler than federated learning. Can combine both for strongest privacy guarantees.</div>
+                  </div>
+                </div>
+                <hr class="divider">
                 <div class="interview-tip">Communication bandwidth > computation time bottleneck. Requires careful optimization.</div>
                 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Federated Averaging: 1) local SGD, 2) send updates (not data), 3) server aggregates, 4) broadcast. Non-IID data = convergence slower (clients see different distributions). Gradient compression (quantization, sparsification) reduces bandwidth 10-100x. Communication >> computation—optimize first.</div>
                 <div class="mnemonic">Federated = distributed training. Data local. Gradients to server. Privacy-first ML.</div>
@@ -1063,6 +1335,22 @@
                 <div class="key-point"><span class="label">Post-Training Quantization:</span><span class="desc">Quantize after training; fast but may lose 1-2% accuracy</span></div>
                 <div class="key-point"><span class="label">Quantization-Aware Training:</span><span class="desc">Simulate quantization during training; recover accuracy via gradient updates</span></div>
                 <div class="key-point"><span class="label">Mixed Precision:</span><span class="desc">Different layers at different precisions; balance accuracy and efficiency</span></div>
+                <hr class="divider">
+                <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                <div class="comparison">
+                  <div class="option">
+                    <div class="opt-title" style="color: #00d2d3;">INT8 Post-Training Quantization</div>
+                    <div class="opt-desc">Default for production deployment. E.g., serving LLMs (GPTQ, AWQ), mobile inference, cloud API cost reduction. 4x memory reduction, 2-4x speed improvement, less than 2% accuracy loss. Calibrate on 100-1000 representative samples.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #48dbfb;">INT4/NF4 Quantization</div>
+                    <div class="opt-desc">When extreme compression is needed. E.g., running 70B models on consumer GPUs (QLoRA), edge deployment, memory-constrained environments. 8x compression with 2-5% accuracy loss. Use NF4 (normalized float4) for better accuracy than uniform INT4.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #ff6b6b;">Quantization-Aware Training (QAT)</div>
+                    <div class="opt-desc">When post-training quantization loses too much accuracy. E.g., sensitive tasks (medical, safety-critical), very low bit-width (binary/ternary). Simulate quantization during training, recover accuracy via gradient updates. More effort but better results.</div>
+                  </div>
+                </div>
                 <hr class="divider">
                 <div class="interview-tip">Neural networks surprisingly robust to low precision. Often <2% accuracy loss with int8.</div>
                 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: INT8 = 128 levels (vs FP32 = billions). Activation quantization (per-channel) more forgiving than weight quantization. Calibration: collect statistics on representative samples. QAT (quantization-aware training) beats post-training quantization. INT8: mobile-ready, 4x faster. INT4: extreme compression, needs tuning.</div>
@@ -1100,6 +1388,22 @@
                 <div class="key-point"><span class="label">Parameter Efficient:</span><span class="desc">Only \(r \cdot (n+m)\) params vs \(n \cdot m\) full; r ≈ 8-64 typical = 10-100x fewer params</span></div>
                 <div class="key-point"><span class="label">Composable:</span><span class="desc">Multiple LoRAs combine for different tasks; switch without reloading weights</span></div>
                 <div class="key-point"><span class="label">Hypothesis:</span><span class="desc">Fine-tuning changes live in low-dimensional subspace; LoRA exploits this</span></div>
+                <hr class="divider">
+                <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                <div class="comparison">
+                  <div class="option">
+                    <div class="opt-title" style="color: #00d2d3;">LoRA</div>
+                    <div class="opt-desc">Default for fine-tuning large models on specific tasks. E.g., fine-tune LLaMA for customer support, adapt Stable Diffusion for specific art style, domain-specific LLM adaptation. 10-100x fewer trainable params. Merge at inference for zero latency cost.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #48dbfb;">QLoRA</div>
+                    <div class="opt-desc">When fine-tuning on consumer hardware. E.g., fine-tune 70B model on single 24GB GPU. Combines 4-bit quantized base model with LoRA adapters. Enables large model fine-tuning on limited hardware. Slight quality tradeoff vs full LoRA.</div>
+                  </div>
+                  <div class="option">
+                    <div class="opt-title" style="color: #ff6b6b;">Full Fine-Tuning Instead</div>
+                    <div class="opt-desc">When maximum adaptation quality is needed and compute budget allows. E.g., domain shift is large (medical, legal), task requires fundamentally different capabilities, or model is small enough. Full fine-tuning still outperforms LoRA by 1-3% on specialized tasks.</div>
+                  </div>
+                </div>
                 <hr class="divider">
                 <div class="interview-tip">Low-rank hypothesis: weight updates during fine-tuning don't need full rank. Major efficiency win.</div>
                 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: LoRA rank r=8 or 16 typical (1% params vs full fine-tune). r=4 too constraining, r=64 unnecessary for most tasks. Inference: merge LoRA into base W (no latency cost). Multiple tasks: train separate LoRA modules, share base (switch modules per task). Merging enables efficient deployment.</div>

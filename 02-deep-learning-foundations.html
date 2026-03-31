@@ -105,6 +105,25 @@
       <span class="desc">Introduces non-linearity. Without it, network is just linear transformation. ReLU, tanh, sigmoid common choices.</span>
     </div>
     <hr class="divider">
+    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <div class="comparison" style="grid-template-columns: 1fr 1fr 1fr; margin-top: 10px;">
+      <div class="option">
+        <div class="opt-title" style="color: #ff6b6b;">Shallow Networks (1-3 layers)</div>
+        <div class="opt-desc">Tabular data, simple regression/classification where features are already meaningful. Faster to train, less prone to overfitting on small datasets.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Credit scoring, click-through prediction, structured data with &lt;100 features.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #4ecdc4;">Deep Networks (5-50 layers)</div>
+        <div class="opt-desc">Tasks requiring hierarchical feature learning from raw inputs. Need enough data to justify depth. Use residual connections for 20+ layers.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Image classification (ResNet), speech recognition, NLP embeddings, medical imaging.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #ffd93d;">Very Deep / Foundation Models (50+ layers)</div>
+        <div class="opt-desc">Large-scale pretraining on massive datasets. Requires careful initialization, normalization, and residual connections. Billions of parameters.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> GPT/LLaMA (Transformers), Vision Transformers (ViT), diffusion models for image generation.</div>
+      </div>
+    </div>
+    <hr class="divider">
     <div class="interview-tip">Why deep networks? Deeper networks learn more abstract representations. Trade-off: harder to train, need more data.</div>
     <div class="mnemonic">Neural network = function composition. Each layer learns a transformation. Depth = abstraction hierarchy.
     <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: During forward pass, hover over an output node — activation = 0.7 (result of ReLU(0.1 * input)). During backward pass, hover over same node — gradient = 0.03 (chain rule: local gradient × upstream gradient). Change an input and watch activations and gradients update.</div>
@@ -151,6 +170,30 @@
       <span class="desc">Gradients multiply, grow exponentially. Weights become NaN/Inf. Solution: gradient clipping.</span>
     </div>
     <hr class="divider">
+    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <div class="comparison" style="grid-template-columns: 1fr 1fr; margin-top: 10px;">
+      <div class="option">
+        <div class="opt-title" style="color: #ff6b6b;">ReLU / Leaky ReLU</div>
+        <div class="opt-desc">Default choice for hidden layers in most networks. Fast to compute, avoids vanishing gradients. Use Leaky ReLU if you encounter dead neurons.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> CNNs (ResNet, VGG), MLPs, any deep feedforward network. Leaky ReLU for GANs.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #4ecdc4;">GELU / SiLU (Swish)</div>
+        <div class="opt-desc">Smooth approximations of ReLU used in modern Transformers. Slightly better performance due to non-zero gradients for negative inputs. GELU is standard in BERT/GPT.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> GELU in Transformers (BERT, GPT, ViT). SiLU/Swish in EfficientNet, LLaMA.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #ffd93d;">Sigmoid</div>
+        <div class="opt-desc">Output layer only for binary classification (outputs probability 0-1). Never use in hidden layers of deep networks (vanishing gradients). Also used in gates (LSTM, attention).</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Binary classifiers, LSTM gate activations, logistic regression output.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #c4b5fd;">Tanh</div>
+        <div class="opt-desc">Zero-centered output (-1 to 1). Used in RNN hidden states and when you need bounded, centered outputs. Better than sigmoid for hidden layers but still suffers from saturation.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> RNN/LSTM hidden state activations, actor outputs in reinforcement learning (bounded actions).</div>
+      </div>
+    </div>
+    <hr class="divider">
     <div class="interview-tip">Use ReLU instead of sigmoid/tanh to avoid vanishing gradients. Use batch normalization to stabilize gradient flow.</div>
     <div class="mnemonic">Backpropagation = chain rule applied recursively. Efficient but suffers from vanishing/exploding gradients in deep networks.
     <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click Sigmoid. At extremes (x=-10, x=10), derivative ≈ 0 (white/flat). In the middle (x=0), derivative = 0.25 (steepest). Switch to ReLU — derivative is constant 1 for x>0 (no vanishing!). This is why ReLU enabled deep networks.</div>
@@ -187,6 +230,25 @@
     <div class="key-point"><span class="label">Why depth matters:</span><span class="desc">More layers = more multiplied factors. A 5-layer network with sigmoid barely trains. A 50-layer network with sigmoid is dead.</span></div>
     <div class="key-point"><span class="label">ReLU helps:</span><span class="desc">ReLU derivative = 1 for positive inputs (no shrinkage!). But "dead ReLU" problem: if input is always negative, gradient = 0 permanently.</span></div>
     <div class="key-point"><span class="label">Residual connections fix it:</span><span class="desc">y = F(x) + x. Gradient of skip connection = 1. Even if F's gradient vanishes, the gradient flows through the skip. This is why ResNets can be 100+ layers deep.</span></div>
+    <hr class="divider">
+    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <div class="comparison" style="grid-template-columns: 1fr 1fr 1fr; margin-top: 10px;">
+      <div class="option">
+        <div class="opt-title" style="color: #ff6b6b;">Gradient Clipping</div>
+        <div class="opt-desc">When gradients explode (loss spikes, NaN weights). Clips gradient norm to a max value. Essential for RNNs and Transformer training. Does not help vanishing gradients.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> RNN/LSTM training (clip at 1.0-5.0), LLM pretraining (clip at 1.0), any unstable training run.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #4ecdc4;">Residual Connections</div>
+        <div class="opt-desc">When building networks deeper than ~10 layers. Skip connections add identity path so gradient = 1 minimum. Enables 100+ layer networks. No downsides -- always use in deep nets.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> ResNet, Transformers (every layer), U-Net (encoder-decoder skips), DenseNet.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #ffd93d;">Careful Initialization (He/Xavier)</div>
+        <div class="opt-desc">Always. Xavier init for tanh/sigmoid layers (preserves variance). He init for ReLU layers (accounts for half-zeroed outputs). Wrong init = dead or exploding network from step 1.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> He init for all ReLU CNNs. Xavier for Transformer linear layers. Orthogonal init for RNNs.</div>
+      </div>
+    </div>
     <hr class="divider">
     <div class="interview-tip">"Why can't we train a 50-layer sigmoid network?" → Chain rule multiplies derivatives. Sigmoid max derivative = 0.25. After 50 layers: 0.25⁵⁰ ≈ 10⁻³⁰. Gradient is effectively zero. Solution: ReLU + residual connections + careful initialization (He/Xavier).</div>
     <div class="mnemonic">Vanishing = multiplying numbers &lt; 1 repeatedly. Exploding = multiplying numbers &gt; 1 repeatedly. Residual connections = adding a highway that always carries gradient = 1.</div>
@@ -239,6 +301,30 @@
       <span class="desc">No dropout! Use all activations. Scaling: multiply by (1-p) during training, OR divide by (1-p) at test (depends on implementation).</span>
     </div>
     <hr class="divider">
+    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <div class="comparison" style="grid-template-columns: 1fr 1fr; margin-top: 10px;">
+      <div class="option">
+        <div class="opt-title" style="color: #ff6b6b;">Small Kernels (3x3)</div>
+        <div class="opt-desc">Default choice for modern CNNs. Two stacked 3x3 convs have the same receptive field as one 5x5 but with fewer parameters (18 vs 25) and more non-linearity. VGGNet proved this.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> ResNet, VGG, U-Net, most modern vision architectures. Use 1x1 convs for channel mixing (Inception).</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #4ecdc4;">Large Kernels / Dilated Convolutions</div>
+        <div class="opt-desc">When you need large receptive fields without deep stacking. Dilated convolutions increase field without adding parameters. Large kernels (7x7) used in first layer to capture low-level features.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> ResNet first layer (7x7), WaveNet (dilated), semantic segmentation (DeepLab), ConvNeXt (7x7 depthwise).</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #ffd93d;">Depthwise Separable Convolutions</div>
+        <div class="opt-desc">Mobile/edge deployment where compute is limited. Splits into depthwise (spatial) + pointwise (channel mixing). ~8-9x fewer FLOPs than standard convolutions with minimal accuracy loss.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> MobileNet, EfficientNet, on-device inference, real-time video processing.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #c4b5fd;">Stride 2 Conv vs Pooling</div>
+        <div class="opt-desc">Use stride-2 convolutions for learned downsampling (modern default). Max pooling for translation invariance. Average pooling for global feature aggregation before classifier head.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Stride 2 in ResNet downsampling. Global average pooling before final FC layer. Max pool in older architectures (AlexNet).</div>
+      </div>
+    </div>
+    <hr class="divider">
     <div class="interview-tip">Dropout is a simple, powerful regularizer. Less important with batch norm, but still useful together. Monitor train vs test error.</div>
     <div class="mnemonic">Dropout = train multiple nets simultaneously, average at test time. Prevents co-adaptation. Ensemble effect = better generalization.
     <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click "Next Step" 5 times — kernel slides from left to right. After each step, output value = (sum of element-wise products). Try "Prev Step" to backtrack. This simple sliding dot product is the entire CNN operation — applied millions of times.</div>
@@ -285,6 +371,30 @@
       <span class="desc">Max/average pooling reduces spatial dimensions. Provides small translation invariance. Reduces parameters.</span>
     </div>
     <hr class="divider">
+    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <div class="comparison" style="grid-template-columns: 1fr 1fr; margin-top: 10px;">
+      <div class="option">
+        <div class="opt-title" style="color: #ff6b6b;">Batch Normalization</div>
+        <div class="opt-desc">CNNs and fixed-batch training. Normalizes across the batch dimension. Requires sufficiently large batches (32+). Behaves differently at train vs test time (uses running stats at test). Do not use with small batches or variable-length sequences.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> ResNet, EfficientNet, any CNN with batch size >= 32. Standard in computer vision pipelines.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #4ecdc4;">Layer Normalization</div>
+        <div class="opt-desc">Transformers and sequence models. Normalizes across features for each sample independently. Batch-size independent -- works with batch=1. Same behavior at train and test time.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> All Transformer models (GPT, BERT, ViT), RNNs, online/streaming inference, any variable-length input.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #ffd93d;">RMSNorm</div>
+        <div class="opt-desc">Modern LLMs. Like LayerNorm but skips mean-centering -- only normalizes by root-mean-square. ~10-15% faster with comparable quality. Simpler gradient computation.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> LLaMA, Gemma, Mistral, PaLM. Preferred in large-scale language model pretraining.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #c4b5fd;">Group Normalization</div>
+        <div class="opt-desc">When batch size must be small (1-8) but you still want normalization. Divides channels into groups and normalizes within each group. Batch-size independent like LayerNorm.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Object detection (small batches due to large images), video models, 3D medical imaging, distributed training with small local batches.</div>
+      </div>
+    </div>
+    <hr class="divider">
     <div class="interview-tip">CNNs are the backbone of computer vision. Receptive field grows with depth. Understand how filter size and stride affect output dimensions.</div>
     <div class="mnemonic">CNN = local pattern matching with weight sharing. Captures spatial hierarchies. Deep = large receptive fields = global context.
     <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Select Batch Norm. Colored region highlights entire column (normalize across batch). Batch size = 32 activations, all scaled together. Switch to Layer Norm — colored region is entire row (normalize across features for each sample independently). RMSNorm normalizes only by variance, not mean.</div>
@@ -296,7 +406,7 @@
 <div class="viz-section">
   <h2>RNN/LSTM/GRU: Recurrence & Gating</h2>
   <p class="subtitle">Toggle between Vanilla RNN, LSTM, and GRU. For Vanilla RNN, trace the hidden state flow and see it accumulate (or vanish) through timesteps. For LSTM, watch the cell state bypass (straight arrow) — this is the "memory" that avoids vanishing gradients. Gates control what flows.</p>
-  <canvas id="rnnCanvas" width="900" height="560"></canvas>
+  <canvas id="rnnCanvas" width="900" height="390"></canvas>
   <div class="controls">
     <div class="tab-bar">
       <button class="btn active" id="rnnTypeRNN" onclick="setRNNType('rnn')">Vanilla RNN</button>
@@ -339,9 +449,49 @@
       <span class="desc">Gated mechanisms control information flow. Cell state = long-term memory. Much better at learning long-range dependencies.</span>
     </div>
     <hr class="divider">
-    <div class="interview-tip">LSTMs widely used in practice. But Transformers (attention) often better for many tasks now. Sequence length matters: quadratic memory for attention.</div>
-    <div class="mnemonic">RNN = process sequence step-by-step, carrying memory. Long dependencies = vanishing gradients. LSTM = gates solve this via cell state.
-    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Vanilla RNN, 20 timesteps: hidden state accumulates or decays rapidly (recurrent arrow shows values exploding or vanishing). LSTM, same setup: hidden state flows through cell state (long straight arrow bypasses gates), gradients survive 20 steps. GRU: simpler than LSTM but similar solution.</div>
+    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use Each Architecture</strong>
+    <div class="comparison" style="grid-template-columns: 1fr 1fr 1fr; margin-top: 10px;">
+      <div class="option">
+        <div class="opt-title" style="color: #ff6b6b;">Vanilla RNN</div>
+        <div class="opt-desc">Short sequences where long-range memory isn't critical. Rarely used in practice today due to vanishing gradients.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Simple character-level language models, short time-series with &lt;10 steps, toy sequence tasks for learning.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #4ecdc4;">LSTM</div>
+        <div class="opt-desc">Long sequences requiring memory over hundreds of steps. The go-to RNN before Transformers. Cell state acts as a "conveyor belt" for long-range information.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Machine translation (seq2seq), speech recognition, music generation, handwriting synthesis, time-series forecasting (stock prices, weather).</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #ffd93d;">GRU</div>
+        <div class="opt-desc">Similar tasks to LSTM but when you want faster training and fewer parameters. 2 gates instead of 3 = ~25% fewer weights. Often matches LSTM quality.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Real-time speech synthesis, chatbot response generation, sensor data on edge devices, any LSTM task where compute budget is tight.</div>
+      </div>
+    </div>
+    <hr class="divider">
+    <strong style="color: #ffd93d; font-size: 1.05em;">RNNs vs. Transformers: When Does Each Win?</strong>
+    <div class="comparison" style="margin-top: 10px;">
+      <div class="option">
+        <div class="opt-title" style="color: #ff6b6b;">Use RNNs (LSTM/GRU) When...</div>
+        <div class="opt-desc">
+          &bull; Streaming/online inference — processing one token at a time with O(1) memory per step<br>
+          &bull; Very long sequences where quadratic attention is too expensive (e.g., continuous sensor data, audio waveforms)<br>
+          &bull; Low-resource or edge deployment — much smaller model footprint<br>
+          &bull; Sequential decision-making where order strictly matters (robotics control loops)
+        </div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #64ffda;">Use Transformers When...</div>
+        <div class="opt-desc">
+          &bull; You need to capture dependencies across the full sequence simultaneously (not just left-to-right)<br>
+          &bull; Parallelizable training matters — Transformers train on all positions at once, RNNs are sequential<br>
+          &bull; You have large data and compute — Transformers scale better with more parameters<br>
+          &bull; Most NLP tasks today (LLMs, BERT, GPT) — Transformers dominate
+        </div>
+      </div>
+    </div>
+    <div class="interview-tip">In interviews, know that LSTMs were the gold standard before 2017 (Attention Is All You Need). Today Transformers dominate NLP, but RNNs still appear in streaming, on-device, and time-series settings. State Space Models (Mamba, S4) are a modern alternative that combine RNN-like O(1) inference with Transformer-like parallelism during training.</div>
+    <div class="mnemonic">Vanilla RNN = broken for long sequences. LSTM = gold standard RNN (3 gates + cell state). GRU = cheaper LSTM (2 gates, no cell state). Transformer = parallel + global attention but O(n²). Pick based on sequence length, latency needs, and compute budget.</div>
+    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set sequence length to 10, step through all timesteps in Vanilla RNN — watch the gradient bars collapse to near-zero. Switch to LSTM — same 10 steps but gradients stay healthy. That's the entire reason LSTMs exist.</div>
   </div>
 </div>
   </div>
@@ -386,6 +536,30 @@
     <div class="key-point">
       <span class="label">Backward pass:</span>
       <span class="desc">Recomputes attention from blocks during backward pass instead of storing it. Trades extra compute for reduced memory.</span>
+    </div>
+    <hr class="divider">
+    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <div class="comparison" style="grid-template-columns: 1fr 1fr; margin-top: 10px;">
+      <div class="option">
+        <div class="opt-title" style="color: #ff6b6b;">Flash Attention</div>
+        <div class="opt-desc">Default choice for any Transformer training or inference. Always use when available -- it is exact (not approximate) and strictly faster. Especially critical for long sequences (4K+ tokens) where standard attention runs out of memory.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> LLM pretraining (GPT-4, LLaMA), long-context models (100K+ tokens), ViT training, any model using self-attention on modern GPUs (A100, H100).</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #4ecdc4;">Standard Attention</div>
+        <div class="opt-desc">Only when Flash Attention is unavailable (unsupported hardware, custom attention patterns like sparse/cross-attention with complex masking). Also useful for debugging since the full attention matrix is materialized and inspectable.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Prototyping/debugging attention patterns, older GPUs without Flash support, non-standard attention masks, attention visualization/interpretability research.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #ffd93d;">Multi-Query / Grouped-Query Attention</div>
+        <div class="opt-desc">Inference optimization. MQA shares one K,V head across all query heads. GQA uses a few K,V groups (between MQA and MHA). Reduces KV-cache memory at inference with minimal quality loss.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> GQA in LLaMA 2/3, Mistral. MQA in PaLM, Falcon. Critical for serving LLMs at scale with long contexts.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #c4b5fd;">Sparse / Linear Attention</div>
+        <div class="opt-desc">Extremely long sequences (10K-1M+ tokens) where even Flash Attention's O(N^2) compute is too expensive. Trades some quality for sub-quadratic complexity. Active research area.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Longformer (local + global), BigBird (sparse), Mamba/S4 (state-space, linear), genomics (100K+ base pairs), full-document retrieval.</div>
+      </div>
     </div>
     <hr class="divider">
     <div class="interview-tip">Flash Attention is IO-aware: it optimizes data movement between fast SRAM and slow HBM, not the number of FLOPs. Same math, fewer memory transfers.</div>
@@ -436,6 +610,30 @@
     <div class="key-point">
       <span class="label">Practical impact:</span>
       <span class="desc">Scaling laws enable predicting large model performance from small runs. Guides billion-dollar training decisions before committing full compute.</span>
+    </div>
+    <hr class="divider">
+    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <div class="comparison" style="grid-template-columns: 1fr 1fr; margin-top: 10px;">
+      <div class="option">
+        <div class="opt-title" style="color: #ff6b6b;">Chinchilla Scaling (Balanced)</div>
+        <div class="opt-desc">When training cost is your main constraint and you want the lowest loss per FLOP. Allocate compute equally to model size and data tokens. Train smaller models on more data. Best for one-time training runs.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Chinchilla (70B, 1.4T tokens), LLaMA 1 (65B, 1.4T tokens). Research labs optimizing training efficiency.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #4ecdc4;">Over-Training (Inference-Optimized)</div>
+        <div class="opt-desc">When inference cost matters more than training cost. Train a smaller model on far more data than Chinchilla-optimal. Higher training cost per FLOP, but cheaper to serve. Dominant strategy for production LLMs.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> LLaMA 2 (70B, 2T tokens), LLaMA 3 (8B, 15T tokens -- 200x overtrained). Phi-3 (3.8B, 3.3T tokens). Any model deployed at scale.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #ffd93d;">Scaling Law Extrapolation</div>
+        <div class="opt-desc">Before committing to a large training run, train small models (1M-1B params) at various compute budgets and fit power laws. Predict large model performance without training it. Saves millions in compute.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> OpenAI scaling papers, Chinchilla study, any team planning a 10B+ parameter training run. Used to set hyperparameters and estimate final loss.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #c4b5fd;">Compute-Optimal Architecture Search</div>
+        <div class="opt-desc">Use scaling laws to compare architectures at small scale before scaling up. If architecture A has better scaling exponent than B, it will dominate at large scale even if worse at small scale.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Comparing MoE vs dense models, choosing attention variants, depth vs width trade-offs, deciding between Transformer and SSM architectures.</div>
+      </div>
     </div>
     <hr class="divider">
     <div class="interview-tip">Chinchilla showed most large models were undertrained (too many params, too little data). Optimal: ~20 tokens per parameter. Scaling laws let you predict loss before training.</div>
@@ -1241,6 +1439,109 @@ function resetRNN() {
   drawRNN();
 }
 
+// Seeded random for reproducible RNN weights
+function rnnSeededRandom(seed) {
+  let s = seed;
+  return function() {
+    s = (s * 16807 + 0) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
+}
+
+// Sigmoid function
+function sigmoid(x) { return 1 / (1 + Math.exp(-Math.max(-10, Math.min(10, x)))); }
+
+// Precomputed RNN simulation data
+let rnnSimData = null;
+
+function computeRNNSim() {
+  const seqLen = parseInt(document.getElementById('rnnLen').value);
+  const rand = rnnSeededRandom(42);
+
+  // Generate random weights and inputs
+  const Wh = (rand() - 0.5) * 1.6 + 0.3; // slightly positive to show clear vanishing
+  const Wx = (rand() - 0.5) * 1.0;
+  const b = (rand() - 0.5) * 0.2;
+  const inputs = [];
+  for (let t = 0; t < seqLen; t++) inputs.push(Math.round((rand() * 2 - 1) * 100) / 100);
+
+  const data = { inputs, seqLen, timesteps: [] };
+
+  if (rnnType === 'rnn') {
+    // Vanilla RNN: h(t) = tanh(Wh*h(t-1) + Wx*x(t) + b)
+    let h = 0;
+    let gradMag = 1.0;
+    for (let t = 0; t < seqLen; t++) {
+      const z = Wh * h + Wx * inputs[t] + b;
+      const hNew = Math.tanh(z);
+      const tanhDeriv = 1 - hNew * hNew; // d(tanh)/dz
+      gradMag *= Math.abs(tanhDeriv * Wh);
+      data.timesteps.push({
+        x: inputs[t],
+        hPrev: h,
+        z: Math.round(z * 1000) / 1000,
+        h: Math.round(hNew * 1000) / 1000,
+        tanhDeriv: Math.round(tanhDeriv * 1000) / 1000,
+        gradMag: gradMag
+      });
+      h = hNew;
+    }
+  } else if (rnnType === 'lstm') {
+    // LSTM with proper gate computations
+    const Wf = rand() * 0.5 + 0.5, Wi = rand() * 0.5 + 0.3;
+    const Wo = rand() * 0.5 + 0.3, Wc = rand() * 0.5 + 0.3;
+    let h = 0, C = 0;
+    let gradMag = 1.0;
+    for (let t = 0; t < seqLen; t++) {
+      const concat = h + inputs[t];
+      const ft = sigmoid(Wf * concat + 1.5); // bias toward remembering (like real LSTMs)
+      const it = sigmoid(Wi * concat + 0.2);
+      const cHat = Math.tanh(Wc * concat);
+      const Cnew = ft * C + it * cHat;
+      const ot = sigmoid(Wo * concat + 0.1);
+      const hNew = ot * Math.tanh(Cnew);
+      gradMag *= Math.abs(ft); // Cell state gradient: dC(t)/dC(t-1) = f(t)
+      data.timesteps.push({
+        x: inputs[t],
+        hPrev: h, cPrev: C,
+        ft: Math.round(ft * 1000) / 1000,
+        it: Math.round(it * 1000) / 1000,
+        ot: Math.round(ot * 1000) / 1000,
+        cHat: Math.round(cHat * 1000) / 1000,
+        C: Math.round(Cnew * 1000) / 1000,
+        h: Math.round(hNew * 1000) / 1000,
+        gradMag: gradMag
+      });
+      h = hNew; C = Cnew;
+    }
+  } else {
+    // GRU
+    const Wr = rand() * 0.5 + 0.3, Wz = rand() * 0.5 + 0.3;
+    const Wh2 = rand() * 0.5 + 0.3;
+    let h = 0;
+    let gradMag = 1.0;
+    for (let t = 0; t < seqLen; t++) {
+      const concat = h + inputs[t];
+      const rt = sigmoid(Wr * concat + 0.3);
+      const zt = sigmoid(Wz * concat - 0.3); // bias toward keeping old state (1-z path)
+      const hHat = Math.tanh(Wh2 * (rt * h + inputs[t]));
+      const hNew = (1 - zt) * h + zt * hHat;
+      gradMag *= Math.abs(1 - zt); // gradient through the interpolation
+      data.timesteps.push({
+        x: inputs[t],
+        hPrev: h,
+        rt: Math.round(rt * 1000) / 1000,
+        zt: Math.round(zt * 1000) / 1000,
+        hHat: Math.round(hHat * 1000) / 1000,
+        h: Math.round(hNew * 1000) / 1000,
+        gradMag: gradMag
+      });
+      h = hNew;
+    }
+  }
+  rnnSimData = data;
+}
+
 function drawRNN() {
   const canvas = document.getElementById('rnnCanvas');
   const ctx = canvas.getContext('2d');
@@ -1249,298 +1550,393 @@ function drawRNN() {
   document.getElementById('rnnLenVal').textContent = seqLen;
   ctx.clearRect(0, 0, W, H);
 
+  // Recompute simulation
+  computeRNNSim();
+  const sim = rnnSimData;
+
   const fullNames = {
-    rnn: 'Vanilla RNN (Recurrent Neural Network)',
+    rnn: 'Vanilla RNN',
     lstm: 'LSTM (Long Short-Term Memory)',
     gru: 'GRU (Gated Recurrent Unit)'
   };
-  const title = fullNames[rnnType];
   ctx.fillStyle = '#ff6b6b';
-  ctx.font = '18px Inter';
+  ctx.font = 'bold 16px Inter';
   ctx.textAlign = 'center';
-  ctx.fillText(title, W / 2, 28);
+  ctx.fillText(fullNames[rnnType], W / 2, 22);
 
-  // Subtitle explaining architecture
-  const subtitles = {
-    rnn: 'Simple recurrence: hidden state is updated each step. Suffers from vanishing gradients for long sequences.',
-    lstm: '3 gates (forget, input, output) + cell state. Cell state acts as long-term memory highway.',
-    gru: '2 gates (reset, update). Simpler than LSTM but similarly effective at capturing long-range dependencies.'
-  };
-  ctx.fillStyle = '#b0b0c0';
-  ctx.font = '15px Inter';
-  ctx.fillText(subtitles[rnnType], W / 2, 50);
+  // Layout
+  const maxCells = Math.min(seqLen, 7);
+  const gap = 10;
+  const cellW = Math.min(120, (W - 40 - gap * (maxCells - 1)) / maxCells);
+  const cellH = rnnType === 'rnn' ? 110 : 145;
+  const startX = (W - (cellW * maxCells + gap * (maxCells - 1))) / 2;
+  const cellTop = 38;
 
-  const cellW = 140, cellH = 160;
-  const startX = 30, startY = 70;
+  // ---- DRAW CELLS ----
+  for (let t = 0; t < maxCells; t++) {
+    const x = startX + t * (cellW + gap);
+    const isActive = t <= rnnStep;
+    const isCurrent = t === rnnStep;
+    const ts = sim.timesteps[t];
 
-  // Draw color-coded legend for gates
-  const legendY = 65;
-  if (rnnType === 'lstm') {
-    ctx.font = '15px Inter';
-    ctx.textAlign = 'left';
-    ctx.fillStyle = '#ff6b6b'; ctx.fillRect(430, legendY - 10, 12, 12); ctx.fillText('Forget Gate', 448, legendY);
-    ctx.fillStyle = '#4ecdc4'; ctx.fillRect(560, legendY - 10, 12, 12); ctx.fillText('Input Gate', 578, legendY);
-    ctx.fillStyle = '#ffd93d'; ctx.fillRect(680, legendY - 10, 12, 12); ctx.fillText('Output Gate', 698, legendY);
-    ctx.fillStyle = '#c0a0ff'; ctx.fillRect(800, legendY - 10, 12, 12); ctx.fillText('Cell State', 818, legendY);
-  } else if (rnnType === 'gru') {
-    ctx.font = '15px Inter';
-    ctx.textAlign = 'left';
-    ctx.fillStyle = '#ff6b6b'; ctx.fillRect(500, legendY - 10, 12, 12); ctx.fillText('Reset Gate', 518, legendY);
-    ctx.fillStyle = '#4ecdc4'; ctx.fillRect(630, legendY - 10, 12, 12); ctx.fillText('Update Gate', 648, legendY);
-    ctx.fillStyle = '#ffd93d'; ctx.fillRect(770, legendY - 10, 12, 12); ctx.fillText('Candidate', 788, legendY);
-  }
-
-  const maxVisibleCells = Math.min(seqLen, 5);
-  const actualCellW = Math.min(cellW, (W - 60) / maxVisibleCells - 20);
-
-  for (let t = 0; t < maxVisibleCells; t++) {
-    const x = startX + t * (actualCellW + 20);
-    const isActive = t === rnnStep;
-
-    // Main cell background
-    ctx.fillStyle = isActive ? '#ff6b6b22' : '#1a1a3e';
-    ctx.fillRect(x, startY + 20, actualCellW, cellH);
-    ctx.strokeStyle = isActive ? '#ff6b6b' : '#2a2a4a';
-    ctx.lineWidth = isActive ? 2 : 1;
-    ctx.strokeRect(x, startY + 20, actualCellW, cellH);
-
-    // Time step label
-    ctx.fillStyle = isActive ? '#ffd93d' : '#b0b0c0';
-    ctx.font = 'bold 17px Inter';
-    ctx.textAlign = 'center';
-    ctx.fillText(`t=${t}`, x + actualCellW / 2, startY + 40);
-
-    // Input arrow from below
-    ctx.strokeStyle = '#64ffda';
-    ctx.lineWidth = 2;
+    // Cell box
+    const alpha = isActive ? 1.0 : 0.35;
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = isCurrent ? '#ff6b6b18' : '#1a1a3e';
     ctx.beginPath();
-    ctx.moveTo(x + actualCellW / 2, startY + 20 + cellH);
-    ctx.lineTo(x + actualCellW / 2, startY + 20 + cellH + 20);
+    ctx.roundRect(x, cellTop, cellW, cellH, 8);
+    ctx.fill();
+    ctx.strokeStyle = isCurrent ? '#ff6b6b' : '#2a2a4a';
+    ctx.lineWidth = isCurrent ? 2.5 : 1;
     ctx.stroke();
-    ctx.fillStyle = '#64ffda';
-    ctx.font = '15px monospace';
-    ctx.fillText(`x(${t})`, x + actualCellW / 2, startY + 20 + cellH + 36);
 
-    if (rnnType === 'lstm') {
-      // LSTM cell internals with gate visualization
-      const gateY = startY + 55;
-      const gateH = 18;
-      const gateW = actualCellW - 16;
-      const gateX = x + 8;
+    // t= label
+    ctx.fillStyle = isCurrent ? '#ffd93d' : '#888';
+    ctx.font = 'bold 13px Inter';
+    ctx.textAlign = 'center';
+    ctx.fillText(`t=${t}`, x + cellW / 2, cellTop + 16);
 
-      // Forget gate (red)
-      ctx.fillStyle = '#ff6b6b33';
-      ctx.fillRect(gateX, gateY, gateW, gateH);
-      ctx.strokeStyle = '#ff6b6b';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(gateX, gateY, gateW, gateH);
-      ctx.fillStyle = '#ff6b6b';
-      ctx.font = '13px Inter';
-      ctx.textAlign = 'center';
-      ctx.fillText('f: forget gate', x + actualCellW / 2, gateY + 14);
+    const cx = x + cellW / 2;
 
-      // Input gate (teal)
-      ctx.fillStyle = '#4ecdc433';
-      ctx.fillRect(gateX, gateY + gateH + 4, gateW, gateH);
-      ctx.strokeStyle = '#4ecdc4';
-      ctx.strokeRect(gateX, gateY + gateH + 4, gateW, gateH);
-      ctx.fillStyle = '#4ecdc4';
-      ctx.font = '13px Inter';
-      ctx.fillText('i: input gate', x + actualCellW / 2, gateY + gateH + 18);
-
-      // Cell state (purple)
-      ctx.fillStyle = '#c0a0ff33';
-      ctx.fillRect(gateX, gateY + 2*(gateH + 4), gateW, gateH);
-      ctx.strokeStyle = '#c0a0ff';
-      ctx.strokeRect(gateX, gateY + 2*(gateH + 4), gateW, gateH);
-      ctx.fillStyle = '#c0a0ff';
-      ctx.font = '13px Inter';
-      ctx.fillText('C: cell state', x + actualCellW / 2, gateY + 2*(gateH + 4) + 14);
-
-      // Output gate (yellow)
-      ctx.fillStyle = '#ffd93d33';
-      ctx.fillRect(gateX, gateY + 3*(gateH + 4), gateW, gateH);
-      ctx.strokeStyle = '#ffd93d';
-      ctx.strokeRect(gateX, gateY + 3*(gateH + 4), gateW, gateH);
-      ctx.fillStyle = '#ffd93d';
-      ctx.font = '13px Inter';
-      ctx.fillText('o: output gate', x + actualCellW / 2, gateY + 3*(gateH + 4) + 14);
-
-      // Hidden state output
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 15px monospace';
-      ctx.fillText('h(t)', x + actualCellW / 2, gateY + 4*(gateH + 4) + 10);
-
-    } else if (rnnType === 'gru') {
-      // GRU cell internals
-      const gateY = startY + 58;
-      const gateH = 22;
-      const gateW = actualCellW - 16;
-      const gateX = x + 8;
-
-      // Reset gate (red)
-      ctx.fillStyle = '#ff6b6b33';
-      ctx.fillRect(gateX, gateY, gateW, gateH);
-      ctx.strokeStyle = '#ff6b6b';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(gateX, gateY, gateW, gateH);
-      ctx.fillStyle = '#ff6b6b';
-      ctx.font = '13px Inter';
-      ctx.textAlign = 'center';
-      ctx.fillText('r: reset gate', x + actualCellW / 2, gateY + 16);
-
-      // Update gate (teal)
-      ctx.fillStyle = '#4ecdc433';
-      ctx.fillRect(gateX, gateY + gateH + 6, gateW, gateH);
-      ctx.strokeStyle = '#4ecdc4';
-      ctx.strokeRect(gateX, gateY + gateH + 6, gateW, gateH);
-      ctx.fillStyle = '#4ecdc4';
-      ctx.font = '13px Inter';
-      ctx.fillText('z: update gate', x + actualCellW / 2, gateY + gateH + 22);
-
-      // Candidate hidden (yellow)
-      ctx.fillStyle = '#ffd93d33';
-      ctx.fillRect(gateX, gateY + 2*(gateH + 6), gateW, gateH);
-      ctx.strokeStyle = '#ffd93d';
-      ctx.strokeRect(gateX, gateY + 2*(gateH + 6), gateW, gateH);
-      ctx.fillStyle = '#ffd93d';
-      ctx.font = '13px Inter';
-      ctx.fillText('h~: candidate', x + actualCellW / 2, gateY + 2*(gateH + 6) + 16);
-
-      // Hidden state
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 15px monospace';
-      ctx.fillText('h(t)', x + actualCellW / 2, gateY + 3*(gateH + 6) + 14);
-
-    } else {
-      // Vanilla RNN (Recurrent Neural Network)
-      const stateY = startY + 60;
-
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '15px Inter';
-      ctx.textAlign = 'center';
-      ctx.fillText('Compute:', x + actualCellW / 2, stateY);
-
+    if (rnnType === 'rnn') {
+      // Show computed z and h values
       ctx.fillStyle = '#64ffda';
-      ctx.font = '13px monospace';
-      ctx.fillText('z = Wh·h + Wx·x + b', x + actualCellW / 2, stateY + 22);
+      ctx.font = '11px monospace';
+      ctx.fillText(`x=${ts.x.toFixed(2)}`, cx, cellTop + 34);
+      ctx.fillStyle = '#b0b0c0';
+      ctx.font = '10px monospace';
+      ctx.fillText(`z=${ts.z.toFixed(2)}`, cx, cellTop + 50);
 
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 15px monospace';
-      ctx.fillText('h(t) = tanh(z)', x + actualCellW / 2, stateY + 46);
-
-      ctx.fillStyle = '#ff6b6b';
-      ctx.font = '15px Inter';
-      ctx.fillText('Vanishing grad!', x + actualCellW / 2, stateY + 70);
-
-      // Explanation for active cell
-      if (isActive) {
-        ctx.fillStyle = '#b0b0c0';
-        ctx.font = '13px Inter';
-        ctx.fillText('tanh squashes to [-1,1]', x + actualCellW / 2, stateY + 90);
-        ctx.fillText('gradient <= 0.25 per step', x + actualCellW / 2, stateY + 106);
+      // tanh activation bar
+      const barW = cellW - 20;
+      const barH = 14;
+      const barX = x + 10;
+      const barY = cellTop + 56;
+      ctx.fillStyle = '#1a1a2e';
+      ctx.fillRect(barX, barY, barW, barH);
+      ctx.strokeStyle = '#3a3a5a';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(barX, barY, barW, barH);
+      // Fill proportional to |h| with color based on sign
+      const hNorm = Math.abs(ts.h);
+      const fillW = hNorm * barW;
+      ctx.fillStyle = ts.h >= 0 ? '#64ffda' : '#ff6b6b';
+      if (ts.h >= 0) {
+        ctx.fillRect(barX + barW / 2, barY + 1, fillW / 2, barH - 2);
+      } else {
+        ctx.fillRect(barX + barW / 2 - fillW / 2, barY + 1, fillW / 2, barH - 2);
       }
-    }
-
-    // Hidden state carry-over arrow
-    if (t < maxVisibleCells - 1) {
-      const arrowX1 = x + actualCellW;
-      const arrowY1 = startY + 20 + cellH / 2;
-      const arrowX2 = x + actualCellW + 16;
-      const arrowY2 = arrowY1;
-
-      ctx.strokeStyle = isActive ? '#64ffda' : '#555';
-      ctx.lineWidth = isActive ? 3 : 2;
+      // Center line
+      ctx.strokeStyle = '#666';
       ctx.beginPath();
-      ctx.moveTo(arrowX1, arrowY1);
-      ctx.lineTo(arrowX2, arrowY2);
+      ctx.moveTo(barX + barW / 2, barY);
+      ctx.lineTo(barX + barW / 2, barY + barH);
       ctx.stroke();
 
-      // Arrow head
-      ctx.fillStyle = isActive ? '#64ffda' : '#555';
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 12px monospace';
+      ctx.fillText(`h=${ts.h.toFixed(3)}`, cx, cellTop + 88);
+
+      // Gradient magnitude indicator
+      const gColor = ts.gradMag > 0.01 ? '#ffd93d' : '#ff6b6b';
+      ctx.fillStyle = gColor;
+      ctx.font = '9px monospace';
+      const gText = ts.gradMag < 0.0001 ? '∇≈0' : `∇=${ts.gradMag.toExponential(1)}`;
+      ctx.fillText(gText, cx, cellTop + 102);
+
+    } else if (rnnType === 'lstm') {
+      ctx.fillStyle = '#64ffda';
+      ctx.font = '10px monospace';
+      ctx.fillText(`x=${ts.x.toFixed(2)}`, cx, cellTop + 32);
+
+      // Gate activation bars
+      const gates = [
+        { label: 'f', val: ts.ft, color: '#ff6b6b' },
+        { label: 'i', val: ts.it, color: '#4ecdc4' },
+        { label: 'o', val: ts.ot, color: '#ffd93d' }
+      ];
+      const barW = cellW - 16;
+      const barH = 10;
+      gates.forEach((g, gi) => {
+        const by = cellTop + 40 + gi * 16;
+        const bx = x + 8;
+        // Bar background
+        ctx.fillStyle = '#1a1a2e';
+        ctx.fillRect(bx, by, barW, barH);
+        // Fill
+        ctx.fillStyle = g.color + '99';
+        ctx.fillRect(bx, by, barW * g.val, barH);
+        ctx.strokeStyle = g.color + '66';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(bx, by, barW, barH);
+        // Label + value inside bar
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 9px monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText(`${g.label}=${g.val.toFixed(2)}`, bx + 2, by + 9);
+        ctx.textAlign = 'center';
+      });
+
+      // Cell state
+      ctx.fillStyle = '#c0a0ff';
+      ctx.font = 'bold 10px monospace';
+      ctx.fillText(`C=${ts.C.toFixed(3)}`, cx, cellTop + 100);
+      // Hidden state
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 11px monospace';
+      ctx.fillText(`h=${ts.h.toFixed(3)}`, cx, cellTop + 115);
+
+      // Gradient
+      const gColor = ts.gradMag > 0.1 ? '#64ffda' : '#ffd93d';
+      ctx.fillStyle = gColor;
+      ctx.font = '9px monospace';
+      ctx.fillText(`∇=${ts.gradMag.toFixed(3)}`, cx, cellTop + 130);
+
+    } else {
+      // GRU
+      ctx.fillStyle = '#64ffda';
+      ctx.font = '10px monospace';
+      ctx.fillText(`x=${ts.x.toFixed(2)}`, cx, cellTop + 32);
+
+      const gates = [
+        { label: 'r', val: ts.rt, color: '#ff6b6b' },
+        { label: 'z', val: ts.zt, color: '#4ecdc4' }
+      ];
+      const barW = cellW - 16;
+      const barH = 12;
+      gates.forEach((g, gi) => {
+        const by = cellTop + 40 + gi * 18;
+        const bx = x + 8;
+        ctx.fillStyle = '#1a1a2e';
+        ctx.fillRect(bx, by, barW, barH);
+        ctx.fillStyle = g.color + '99';
+        ctx.fillRect(bx, by, barW * g.val, barH);
+        ctx.strokeStyle = g.color + '66';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(bx, by, barW, barH);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 9px monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText(`${g.label}=${g.val.toFixed(2)}`, bx + 2, by + 10);
+        ctx.textAlign = 'center';
+      });
+
+      // Candidate
+      ctx.fillStyle = '#ffd93d';
+      ctx.font = '10px monospace';
+      ctx.fillText(`h~=${ts.hHat.toFixed(3)}`, cx, cellTop + 90);
+      // Hidden
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 11px monospace';
+      ctx.fillText(`h=${ts.h.toFixed(3)}`, cx, cellTop + 107);
+      // Gradient
+      const gColor = ts.gradMag > 0.1 ? '#64ffda' : '#ffd93d';
+      ctx.fillStyle = gColor;
+      ctx.font = '9px monospace';
+      ctx.fillText(`∇=${ts.gradMag.toFixed(3)}`, cx, cellTop + 122);
+    }
+    ctx.globalAlpha = 1.0;
+
+    // Input arrow from below
+    ctx.globalAlpha = isActive ? 1.0 : 0.35;
+    ctx.strokeStyle = '#64ffda';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(cx, cellTop + cellH);
+    ctx.lineTo(cx, cellTop + cellH + 14);
+    ctx.stroke();
+    // Arrow head
+    ctx.fillStyle = '#64ffda';
+    ctx.beginPath();
+    ctx.moveTo(cx, cellTop + cellH);
+    ctx.lineTo(cx - 4, cellTop + cellH + 6);
+    ctx.lineTo(cx + 4, cellTop + cellH + 6);
+    ctx.closePath();
+    ctx.fill();
+    ctx.font = '11px monospace';
+    ctx.fillText(`x(${t})`, cx, cellTop + cellH + 26);
+    ctx.globalAlpha = 1.0;
+
+    // Hidden state arrow to next cell
+    if (t < maxCells - 1) {
+      const arrowAlpha = isActive ? 1.0 : 0.25;
+      ctx.globalAlpha = arrowAlpha;
+      const ax1 = x + cellW;
+      const ax2 = x + cellW + gap;
+      const ay = cellTop + cellH / 2;
+
+      // Arrow line
+      ctx.strokeStyle = isCurrent ? '#64ffda' : '#555';
+      ctx.lineWidth = isCurrent ? 2.5 : 1.5;
       ctx.beginPath();
-      ctx.moveTo(arrowX2, arrowY2);
-      ctx.lineTo(arrowX2 - 6, arrowY2 - 5);
-      ctx.lineTo(arrowX2 - 6, arrowY2 + 5);
+      ctx.moveTo(ax1, ay);
+      ctx.lineTo(ax2, ay);
+      ctx.stroke();
+      // Arrow head
+      ctx.fillStyle = isCurrent ? '#64ffda' : '#555';
+      ctx.beginPath();
+      ctx.moveTo(ax2, ay);
+      ctx.lineTo(ax2 - 5, ay - 4);
+      ctx.lineTo(ax2 - 5, ay + 4);
       ctx.closePath();
       ctx.fill();
 
-      ctx.fillStyle = '#64ffda';
-      ctx.font = '15px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText('h(t)', (arrowX1 + arrowX2) / 2, arrowY2 - 12);
+      // h value on arrow if active
+      if (isCurrent) {
+        ctx.fillStyle = '#64ffda';
+        ctx.font = '9px monospace';
+        ctx.fillText(ts.h.toFixed(2), (ax1 + ax2) / 2, ay - 7);
+      }
 
-      // For LSTM, also show cell state arrow above
+      // LSTM cell state arrow (top highway)
       if (rnnType === 'lstm') {
-        const cellArrowY = startY + 30;
-        ctx.strokeStyle = isActive ? '#c0a0ff' : '#555';
-        ctx.lineWidth = isActive ? 3 : 2;
+        const cay = cellTop + 8;
+        ctx.strokeStyle = isCurrent ? '#c0a0ff' : '#444';
+        ctx.lineWidth = isCurrent ? 2.5 : 1.5;
+        ctx.setLineDash(isCurrent ? [] : [4, 3]);
         ctx.beginPath();
-        ctx.moveTo(arrowX1, cellArrowY);
-        ctx.lineTo(arrowX2, cellArrowY);
+        ctx.moveTo(ax1, cay);
+        ctx.lineTo(ax2, cay);
         ctx.stroke();
-        ctx.fillStyle = isActive ? '#c0a0ff' : '#555';
+        ctx.setLineDash([]);
+        ctx.fillStyle = isCurrent ? '#c0a0ff' : '#444';
         ctx.beginPath();
-        ctx.moveTo(arrowX2, cellArrowY);
-        ctx.lineTo(arrowX2 - 6, cellArrowY - 5);
-        ctx.lineTo(arrowX2 - 6, cellArrowY + 5);
+        ctx.moveTo(ax2, cay);
+        ctx.lineTo(ax2 - 5, cay - 4);
+        ctx.lineTo(ax2 - 5, cay + 4);
         ctx.closePath();
         ctx.fill();
-        ctx.fillStyle = '#c0a0ff';
-        ctx.font = '13px monospace';
-        ctx.fillText('C(t)', (arrowX1 + arrowX2) / 2, cellArrowY - 10);
       }
+      ctx.globalAlpha = 1.0;
     }
   }
 
-  // If more cells than visible, show ellipsis
-  if (seqLen > maxVisibleCells) {
-    ctx.fillStyle = '#b0b0c0';
-    ctx.font = '17px Inter';
+  // Ellipsis for extra cells
+  if (seqLen > maxCells) {
+    ctx.fillStyle = '#666';
+    ctx.font = '14px Inter';
     ctx.textAlign = 'left';
-    ctx.fillText(`... (${seqLen - maxVisibleCells} more timesteps)`, startX + maxVisibleCells * (actualCellW + 20), startY + 20 + cellH / 2);
+    const ellX = startX + maxCells * (cellW + gap);
+    ctx.fillText(`+${seqLen - maxCells} more`, ellX, cellTop + cellH / 2 + 4);
   }
 
-  // Equations panel - detailed and explanatory
-  const eqX = 40, eqY = startY + cellH + 68;
+  // ---- GRADIENT MAGNITUDE CHART (bottom section) ----
+  const chartTop = cellTop + cellH + 42;
+  const chartH = 100;
+  const chartLeft = startX + 10;
+  const chartRight = startX + maxCells * (cellW + gap) - gap - 10;
+  const chartW = chartRight - chartLeft;
+
+  // Title
   ctx.fillStyle = '#ffd93d';
-  ctx.font = '17px Inter';
-  ctx.textAlign = 'left';
-  ctx.fillText('Key Equations:', eqX, eqY);
+  ctx.font = 'bold 13px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText('Gradient Magnitude Through Time (backpropagation)', W / 2, chartTop - 4);
 
-  ctx.font = '15px monospace';
-  let formulas = [];
-  if (rnnType === 'rnn') {
-    formulas = [
-      { text: 'z(t) = Wh\u00B7h(t-1) + Wx\u00B7x(t) + b', color: '#64ffda' },
-      { text: 'h(t) = tanh(z(t))                         -- hidden state', color: '#ffffff' },
-      { text: 'y(t) = Wy\u00B7h(t) + b                        -- output', color: '#ffffff' },
-      { text: 'Problem: d(tanh)/dz <= 0.25, gradients shrink exponentially!', color: '#ff6b6b' },
-      { text: 'After 20 steps: 0.25^20 = 9e-13 (gradient is essentially 0)', color: '#ff6b6b' }
-    ];
-  } else if (rnnType === 'lstm') {
-    formulas = [
-      { text: 'f(t) = \u03C3(Wf\u00B7[h(t-1), x(t)] + bf)  -- Forget gate: what to discard', color: '#ff6b6b' },
-      { text: 'i(t) = \u03C3(Wi\u00B7[h(t-1), x(t)] + bi)  -- Input gate: what new info to store', color: '#4ecdc4' },
-      { text: 'C(t) = f(t)\u00B7C(t-1) + i(t)\u00B7tanh(Wc\u00B7[h,x]) -- Cell: additive!', color: '#c0a0ff' },
-      { text: 'o(t) = \u03C3(Wo\u00B7[h(t-1), x(t)] + bo)  -- Output gate: what to expose', color: '#ffd93d' },
-      { text: 'h(t) = o(t) \u00B7 tanh(C(t))                -- Hidden state output', color: '#ffffff' },
-      { text: 'Key: dC(t)/dC(t-1) = f(t) ~ 0.5-1.0 (not 0.25!), gradients survive!', color: '#64ffda' }
-    ];
-  } else {
-    formulas = [
-      { text: 'r(t) = \u03C3(Wr\u00B7[h(t-1), x(t)] + br)    -- Reset gate: forget past', color: '#ff6b6b' },
-      { text: 'z(t) = \u03C3(Wz\u00B7[h(t-1), x(t)] + bz)    -- Update gate: blend old/new', color: '#4ecdc4' },
-      { text: 'h~(t) = tanh(Wh\u00B7[r(t)\u00B7h(t-1), x(t)] + b) -- Candidate state', color: '#ffd93d' },
-      { text: 'h(t) = (1-z(t))\u00B7h(t-1) + z(t)\u00B7h~(t)      -- Interpolate old/new', color: '#ffffff' },
-      { text: 'Simpler than LSTM (2 gates vs 3), trains faster, similar performance', color: '#64ffda' }
-    ];
+  // Chart background
+  ctx.fillStyle = '#0d0d1a';
+  ctx.beginPath();
+  ctx.roundRect(chartLeft - 5, chartTop, chartW + 10, chartH + 5, 6);
+  ctx.fill();
+
+  // Y-axis
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(chartLeft, chartTop);
+  ctx.lineTo(chartLeft, chartTop + chartH);
+  ctx.lineTo(chartRight, chartTop + chartH);
+  ctx.stroke();
+
+  // Y labels
+  ctx.fillStyle = '#666';
+  ctx.font = '9px monospace';
+  ctx.textAlign = 'right';
+  ctx.fillText('1.0', chartLeft - 4, chartTop + 10);
+  ctx.fillText('0', chartLeft - 4, chartTop + chartH);
+
+  // Find max gradient for scaling
+  const maxGrad = Math.max(1.0, ...sim.timesteps.slice(0, maxCells).map(ts => ts.gradMag));
+
+  // Draw bars
+  const barGap = 6;
+  const barW = Math.min(30, (chartW - barGap * maxCells) / maxCells);
+  for (let t = 0; t < maxCells; t++) {
+    const ts = sim.timesteps[t];
+    const isActive = t <= rnnStep;
+    const bx = chartLeft + (chartW / maxCells) * t + (chartW / maxCells - barW) / 2;
+    const normalizedH = Math.min(ts.gradMag / maxGrad, 1.0);
+    const bh = normalizedH * (chartH - 8);
+
+    ctx.globalAlpha = isActive ? 1.0 : 0.3;
+
+    // Color: green if healthy, yellow if declining, red if vanishing
+    let barColor;
+    if (ts.gradMag > 0.3) barColor = '#64ffda';
+    else if (ts.gradMag > 0.05) barColor = '#ffd93d';
+    else barColor = '#ff6b6b';
+
+    // Bar
+    ctx.fillStyle = barColor;
+    ctx.beginPath();
+    ctx.roundRect(bx, chartTop + chartH - bh, barW, bh, [3, 3, 0, 0]);
+    ctx.fill();
+
+    // Value above bar
+    ctx.fillStyle = barColor;
+    ctx.font = '8px monospace';
+    ctx.textAlign = 'center';
+    const gText = ts.gradMag < 0.001 ? ts.gradMag.toExponential(0) : ts.gradMag.toFixed(3);
+    ctx.fillText(gText, bx + barW / 2, chartTop + chartH - bh - 4);
+
+    // t label
+    ctx.fillStyle = '#888';
+    ctx.font = '9px monospace';
+    ctx.fillText(`t${t}`, bx + barW / 2, chartTop + chartH + 12);
+
+    ctx.globalAlpha = 1.0;
   }
 
-  formulas.forEach((f, i) => {
-    ctx.fillStyle = f.color;
-    ctx.fillText(f.text, eqX, eqY + 25 + i * 22);
-  });
+  // Verdict label
+  const lastGrad = sim.timesteps[Math.min(rnnStep, maxCells - 1)].gradMag;
+  ctx.font = 'bold 12px Inter';
+  ctx.textAlign = 'center';
+  if (rnnType === 'rnn') {
+    ctx.fillStyle = '#ff6b6b';
+    if (lastGrad < 0.01) {
+      ctx.fillText('⚠ Gradient vanished — early timesteps get no learning signal!', W / 2, chartTop + chartH + 28);
+    } else {
+      ctx.fillText('Gradient shrinking... keep stepping to see it vanish', W / 2, chartTop + chartH + 28);
+    }
+  } else {
+    ctx.fillStyle = '#64ffda';
+    const mechanism = rnnType === 'lstm' ? 'Cell state highway preserves gradients (additive, not multiplicative)' : 'Update gate interpolation preserves gradients';
+    ctx.fillText('✓ ' + mechanism, W / 2, chartTop + chartH + 28);
+  }
+
+  // Key equation at bottom
+  const eqY = chartTop + chartH + 46;
+  ctx.font = '12px monospace';
+  ctx.textAlign = 'center';
+  if (rnnType === 'rnn') {
+    ctx.fillStyle = '#b0b0c0';
+    ctx.fillText('h(t) = tanh(Wh·h(t-1) + Wx·x(t) + b)    |    ∂h(t)/∂h(t-1) = (1-tanh²)·Wh ≤ 0.25', W / 2, eqY);
+    ctx.fillStyle = '#ff6b6b';
+    ctx.font = '11px Inter';
+    ctx.fillText(`After ${seqLen} steps: 0.25^${seqLen} = ${Math.pow(0.25, seqLen).toExponential(1)} — gradient is essentially zero`, W / 2, eqY + 18);
+  } else if (rnnType === 'lstm') {
+    ctx.fillStyle = '#b0b0c0';
+    ctx.fillText('C(t) = f(t)·C(t-1) + i(t)·tanh(Wc·[h,x])    |    ∂C(t)/∂C(t-1) = f(t) ≈ 0.5-1.0', W / 2, eqY);
+    ctx.fillStyle = '#64ffda';
+    ctx.font = '11px Inter';
+    ctx.fillText('Forget gate f(t) close to 1 → gradients flow through cell state unattenuated', W / 2, eqY + 18);
+  } else {
+    ctx.fillStyle = '#b0b0c0';
+    ctx.fillText('h(t) = (1-z)·h(t-1) + z·h~(t)    |    ∂h(t)/∂h(t-1) = (1-z(t)) ≈ 0.3-0.7', W / 2, eqY);
+    ctx.fillStyle = '#64ffda';
+    ctx.font = '11px Inter';
+    ctx.fillText('Update gate z(t) controls interpolation — gradients flow through (1-z) path', W / 2, eqY + 18);
+  }
 }
 
 // ==================== FLASH ATTENTION ====================
