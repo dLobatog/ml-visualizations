@@ -382,7 +382,7 @@
                     <div style="margin-bottom: 10px;">
                         <strong style="color: #e056fd;">Forward Process (Add Noise) → Reverse Process (Denoise)</strong>
                     </div>
-                    <canvas id="diffusionCanvas" width="480" height="350"></canvas>
+                    <canvas id="diffusionCanvas" width="480" height="270"></canvas>
                     <div class="stats-grid">
                         <div class="stat-card">
                             <div class="stat-label">Signal Ratio</div>
@@ -480,7 +480,7 @@
                     <div style="margin-bottom: 10px;">
                         <strong style="color: #e056fd;">Loss Curves & Mode Collapse</strong>
                     </div>
-                    <canvas id="ganCanvas" width="480" height="350"></canvas>
+                    <canvas id="ganCanvas" width="480" height="290"></canvas>
                     <div class="stats-grid">
                         <div class="stat-card">
                             <div class="stat-label">Gen Loss</div>
@@ -637,7 +637,7 @@
             <p style="color: #a0a0b0; margin-bottom: 15px;">Diffusion in latent space (not pixel space) enables fast generation. Increase Latent Scale to compress representations; the VAE reconstructs after denoising. Watch reconstruction quality vs speed tradeoff. CLIP text embeddings condition the process—adjust to see semantic control.</p>
             <div class="section-content">
                 <div class="visualization">
-                    <canvas id="latentDiffCanvas" width="480" height="300"></canvas>
+                    <canvas id="latentDiffCanvas" width="480" height="185"></canvas>
                 </div>
                 <div class="controls">
                     <div class="control-group">
@@ -837,7 +837,7 @@
                     <div style="margin-bottom: 10px;">
                         <strong style="color: #e056fd;">Invertible Transformations: Z → ... → X</strong>
                     </div>
-                    <canvas id="flowCanvas" width="480" height="350"></canvas>
+                    <canvas id="flowCanvas" width="480" height="260"></canvas>
                     <div class="stats-grid">
                         <div class="stat-card">
                             <div class="stat-label">Layers</div>
@@ -1145,15 +1145,15 @@
 
             // Title
             ctx.fillStyle = '#e056fd';
-            ctx.font = 'bold 17px Arial';
-            ctx.fillText('FORWARD PROCESS (Add Noise)', 20, 25);
-            ctx.fillText('REVERSE PROCESS (Denoise)', 20, 163);
+            ctx.font = 'bold 15px Arial';
+            ctx.fillText('FORWARD PROCESS (Add Noise)', 20, 22);
+            ctx.fillText('REVERSE PROCESS (Denoise)', 260, 22);
 
             // Forward process visualization
-            const gridSize = 8;
-            const cellSize = 30;
-            const startX = 40;
-            const startY = 40;
+            const gridSize = 6;
+            const cellSize = 22;
+            const startX = 30;
+            const startY = 35;
 
             // Clean image (t=0)
             for (let i = 0; i < gridSize; i++) {
@@ -1189,24 +1189,13 @@
 
             // Labels and arrows
             ctx.fillStyle = '#e056fd';
-            ctx.font = '15px Arial';
-            ctx.fillText('t=0', 40, startY + gridSize * cellSize + 20);
-            ctx.fillText(`t=${t}`, 40 + gridSize * cellSize / 2, startY + gridSize * cellSize + 20);
-
-            // Arrow
-            ctx.strokeStyle = '#e056fd';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(startX + 150, startY + gridSize * cellSize + 30);
-            ctx.lineTo(startX + 180, startY + gridSize * cellSize + 30);
-            ctx.stroke();
-            ctx.fillStyle = '#e056fd';
-            ctx.font = '15px Arial';
-            ctx.fillText('Add Noise (Forward)', 190, startY + gridSize * cellSize + 35);
+            ctx.font = '12px Arial';
+            ctx.fillText('t=0', startX, startY + gridSize * cellSize + 15);
+            ctx.fillText(`t=${t}`, startX + gridSize * cellSize / 2, startY + gridSize * cellSize + 15);
 
             // Reverse process (mirror visualization)
-            const revStartX = 280;
-            const revStartY = 175;
+            const revStartX = 260;
+            const revStartY = 35;
             for (let i = 0; i < gridSize; i++) {
                 for (let j = 0; j < gridSize; j++) {
                     const x = revStartX + i * cellSize;
@@ -1236,20 +1225,21 @@
             }
 
             ctx.fillStyle = '#e056fd';
-            ctx.font = '15px Arial';
-            ctx.fillText(`t=${t}`, revStartX, revStartY + gridSize * cellSize + 20);
-            ctx.fillText('t=0 (Clean)', revStartX + gridSize * cellSize / 2, revStartY + gridSize * cellSize + 20);
+            ctx.font = '12px Arial';
+            ctx.fillText(`t=${t}`, revStartX, revStartY + gridSize * cellSize + 15);
+            ctx.fillText('t=0 (Clean)', revStartX + gridSize * cellSize / 2, revStartY + gridSize * cellSize + 15);
 
             // Noise schedule curve
+            const scheduleY = startY + gridSize * cellSize + 30;
             ctx.fillStyle = '#1a1a28';
-            ctx.fillRect(20, 270, 440, 60);
+            ctx.fillRect(20, scheduleY, 440, 60);
             ctx.strokeStyle = '#e056fd';
             ctx.lineWidth = 2;
-            ctx.strokeRect(20, 270, 440, 60);
+            ctx.strokeRect(20, scheduleY, 440, 60);
 
             ctx.fillStyle = '#e056fd';
-            ctx.font = '15px Arial';
-            ctx.fillText('Noise Schedule (α)', 30, 288);
+            ctx.font = '13px Arial';
+            ctx.fillText('Noise Schedule (\u03b1)', 30, scheduleY + 16);
 
             // Draw schedule curve
             ctx.strokeStyle = '#ff6600';
@@ -1260,7 +1250,7 @@
                 const schedT = (i / schedulePoints) * diffusionState.maxTimesteps;
                 const schedNoise = getNoiseSchedule(schedT, diffusionState.schedule);
                 const px = 30 + (i / schedulePoints) * 420;
-                const py = 320 - schedNoise * 40;
+                const py = (scheduleY + 50) - schedNoise * 40;
                 if (i === 0) ctx.moveTo(px, py);
                 else ctx.lineTo(px, py);
             }
@@ -1268,7 +1258,7 @@
 
             // Current position on schedule
             const currentX = 30 + (t / diffusionState.maxTimesteps) * 420;
-            const currentY = 320 - noiseLevel * 40;
+            const currentY = (scheduleY + 50) - noiseLevel * 40;
             ctx.fillStyle = '#e056fd';
             ctx.beginPath();
             ctx.arc(currentX, currentY, 4, 0, Math.PI * 2);
@@ -1334,12 +1324,12 @@
 
             // Title
             ctx.fillStyle = '#e056fd';
-            ctx.font = 'bold 17px Arial';
-            ctx.fillText('GAN (Generative Adversarial Network) Min-Max Game', 20, 25);
+            ctx.font = 'bold 15px Arial';
+            ctx.fillText('GAN Min-Max Game', 20, 20);
 
             // Mode collapse visualization
-            const modeAreaX = 40;
-            const modeAreaY = 45;
+            const modeAreaX = 20;
+            const modeAreaY = 55;
             const modeAreaW = 200;
             const modeAreaH = 200;
 
@@ -1349,8 +1339,8 @@
 
             // Real data modes
             ctx.fillStyle = '#5dade2';
-            ctx.font = '15px Arial';
-            ctx.fillText('Real Modes', modeAreaX + 5, modeAreaY - 5);
+            ctx.font = '12px Arial';
+            ctx.fillText('Real Modes', modeAreaX + 5, modeAreaY - 8);
             for (let mode of ganState.modes) {
                 ctx.fillStyle = 'rgba(64, 128, 255, 0.3)';
                 ctx.beginPath();
@@ -1361,10 +1351,10 @@
                 ctx.stroke();
             }
 
-            // Generated samples
+            // Generated samples label (inside mode area)
             ctx.fillStyle = '#f0b27a';
-            ctx.font = '15px Arial';
-            ctx.fillText('Generated', modeAreaX + modeAreaW + 20, modeAreaY - 5);
+            ctx.font = '12px Arial';
+            ctx.fillText('Generated (orange)', modeAreaX + 5, modeAreaY + modeAreaH + 15);
 
             const activeModes = ganState.modes.filter(m => m.active);
             if (ganState.mode === 'normal') {
@@ -1405,10 +1395,10 @@
             }
 
             // Loss curves
-            const graphX = 280;
-            const graphY = 45;
-            const graphW = 190;
-            const graphH = 200;
+            const graphX = 260;
+            const graphY = 55;
+            const graphW = 200;
+            const graphH = 190;
 
             ctx.fillStyle = '#1a1a28';
             ctx.fillRect(graphX, graphY, graphW, graphH);
@@ -1417,8 +1407,8 @@
             ctx.strokeRect(graphX, graphY, graphW, graphH);
 
             ctx.fillStyle = '#e056fd';
-            ctx.font = '15px Arial';
-            ctx.fillText('Loss Curves', graphX + 10, graphY - 10);
+            ctx.font = '12px Arial';
+            ctx.fillText('Loss Curves', graphX + 10, graphY - 8);
 
             // Grid
             ctx.strokeStyle = 'rgba(224, 86, 253, 0.1)';
@@ -1466,15 +1456,15 @@
 
             // Legend
             ctx.fillStyle = '#58d68d';
-            ctx.fillRect(graphX + 10, graphY + graphH + 10, 10, 10);
+            ctx.fillRect(graphX + 5, graphY + graphH + 12, 10, 10);
             ctx.fillStyle = '#58d68d';
-            ctx.font = '13px Arial';
-            ctx.fillText('Generator', graphX + 24, graphY + graphH + 20);
+            ctx.font = '11px Arial';
+            ctx.fillText('Generator', graphX + 19, graphY + graphH + 22);
 
             ctx.fillStyle = '#ec7063';
-            ctx.fillRect(graphX + 100, graphY + graphH + 10, 10, 10);
+            ctx.fillRect(graphX + 95, graphY + graphH + 12, 10, 10);
             ctx.fillStyle = '#ec7063';
-            ctx.fillText('Discriminator', graphX + 114, graphY + graphH + 20);
+            ctx.fillText('Discriminator', graphX + 109, graphY + graphH + 22);
 
             // Stats
             document.getElementById('ganGenLossValue').textContent = ganState.genLoss.toFixed(2);
@@ -1662,24 +1652,24 @@
 
             // Change of variables visualization
             ctx.fillStyle = '#1a1a28';
-            ctx.fillRect(20, 160, 440, 60);
+            ctx.fillRect(20, 150, 440, 55);
             ctx.strokeStyle = '#e056fd';
             ctx.lineWidth = 2;
-            ctx.strokeRect(20, 160, 440, 60);
+            ctx.strokeRect(20, 150, 440, 55);
 
             ctx.fillStyle = '#e056fd';
-            ctx.font = 'bold 13px monospace';
-            ctx.fillText('log p(x) = log p(z) - \u03A3 log|det(dfi/dxi-1)|', 30, 182);
+            ctx.font = 'bold 12px monospace';
+            ctx.fillText('log p(x) = log p(z) - \u03A3 log|det(dfi/dxi-1)|', 30, 170);
 
             ctx.fillStyle = '#b0b0c0';
-            ctx.font = '13px monospace';
-            ctx.fillText(`log|det(J)| = ${flowState.determinant.toFixed(3)}    Likelihood = ${flowState.likelihood.toFixed(2)}`, 30, 205);
+            ctx.font = '12px monospace';
+            ctx.fillText(`log|det(J)| = ${flowState.determinant.toFixed(3)}    Likelihood = ${flowState.likelihood.toFixed(2)}`, 30, 192);
 
             // Additional explanation
             ctx.fillStyle = '#8080a0';
-            ctx.font = '12px Arial';
-            ctx.fillText('Invertible transforms: Z (simple) \u2192 f1 \u2192 f2 \u2192 ... \u2192 X (complex)', 30, 240);
-            ctx.fillText('Exact likelihood via change of variables + Jacobian determinant', 30, 260);
+            ctx.font = '11px Arial';
+            ctx.fillText('Invertible transforms: Z (simple) \u2192 f1 \u2192 f2 \u2192 ... \u2192 X (complex)', 30, 222);
+            ctx.fillText('Exact likelihood via change of variables + Jacobian determinant', 30, 238);
 
             // Update determinant based on transformations
             flowState.determinant = Math.exp(-numLayers * 0.2);
@@ -1780,70 +1770,114 @@
             cfgCtx.fillRect(0, 0, cfgCanvas.width, cfgCanvas.height);
 
             cfgCtx.fillStyle = '#e056fd';
-            cfgCtx.font = 'bold 17px Arial';
-            cfgCtx.fillText('CFG (Classifier-Free Guidance) Scale Effect: w = ' + w.toFixed(1), 20, 25);
+            cfgCtx.font = 'bold 14px Arial';
+            cfgCtx.textAlign = 'left';
+            cfgCtx.fillText('Classifier-Free Guidance: w = ' + w.toFixed(1), 20, 20);
 
-            const pad = 40;
-            const graphW = cfgCanvas.width - pad * 2;
-            const graphH = cfgCanvas.height - 100;
+            // Formula
+            cfgCtx.fillStyle = '#b0b0c0';
+            cfgCtx.font = '11px monospace';
+            cfgCtx.fillText('guided = cond + w * (cond - uncond)', 20, 38);
 
-            // Draw guidance scale vs output quality
-            cfgCtx.strokeStyle = '#e056fd';
-            cfgCtx.lineWidth = 2;
-            cfgCtx.beginPath();
-            for (let x = 0; x <= graphW; x += 10) {
-                const scale = (x / graphW) * 20;
-                let quality = 0.2 * scale + 0.3 * Math.sin(scale / 3);
-                if (scale > 15) quality = 1.0 - (scale - 15) * 0.05;
-
-                const y = cfgCanvas.height - 60 - quality * (graphH - 20);
-                if (x === 0) cfgCtx.moveTo(pad + x, y);
-                else cfgCtx.lineTo(pad + x, y);
-            }
-            cfgCtx.stroke();
-
-            // Current position
-            const currentX = (w / 20) * graphW;
-            const currentY = cfgCanvas.height - 60 - (0.2 * w + 0.3 * Math.sin(w / 3)) * (graphH - 20);
-            cfgCtx.fillStyle = '#e056fd';
-            cfgCtx.beginPath();
-            cfgCtx.arc(pad + currentX, currentY, 6, 0, Math.PI * 2);
-            cfgCtx.fill();
+            const pad = 50;
+            const graphW = cfgCanvas.width - pad - 30;
+            const graphH = 180;
+            const baselineY = pad + graphH + 15;
+            const graphTop = pad + 15;
 
             // Axes
-            cfgCtx.strokeStyle = '#888';
+            cfgCtx.strokeStyle = '#555';
             cfgCtx.lineWidth = 1;
             cfgCtx.beginPath();
-            cfgCtx.moveTo(pad, cfgCanvas.height - 60);
-            cfgCtx.lineTo(cfgCanvas.width - pad, cfgCanvas.height - 60);
-            cfgCtx.moveTo(pad, cfgCanvas.height - 60);
-            cfgCtx.lineTo(pad, pad + 20);
+            cfgCtx.moveTo(pad, baselineY);
+            cfgCtx.lineTo(pad + graphW, baselineY);
+            cfgCtx.moveTo(pad, baselineY);
+            cfgCtx.lineTo(pad, graphTop);
             cfgCtx.stroke();
 
-            // Labels
-            cfgCtx.fillStyle = '#b0b0c0';
-            cfgCtx.font = '15px Arial';
+            // Axis labels
+            cfgCtx.fillStyle = '#888';
+            cfgCtx.font = '11px Arial';
             cfgCtx.textAlign = 'center';
-            cfgCtx.fillText('Guidance Scale (w)', cfgCanvas.width / 2, cfgCanvas.height - 8);
+            cfgCtx.fillText('x (sample space)', pad + graphW / 2, baselineY + 18);
             cfgCtx.save();
-            cfgCtx.translate(15, cfgCanvas.height / 2);
+            cfgCtx.translate(15, graphTop + graphH / 2);
             cfgCtx.rotate(-Math.PI / 2);
-            cfgCtx.fillText('Quality / Adherence', 0, 0);
+            cfgCtx.fillText('score density', 0, 0);
             cfgCtx.restore();
 
-            // Regions
-            cfgCtx.fillStyle = '#7c4dff33';
-            cfgCtx.fillRect(pad, pad + 20, graphW * 0.1, graphH);
-            cfgCtx.fillStyle = '#64ffda33';
-            cfgCtx.fillRect(pad + graphW * 0.1, pad + 20, graphW * 0.4, graphH);
-            cfgCtx.fillStyle = '#ff6b6b33';
-            cfgCtx.fillRect(pad + graphW * 0.5, pad + 20, graphW * 0.5, graphH);
+            // Gaussian helper
+            function gaussian(x, mu, sigma) {
+                return Math.exp(-0.5 * Math.pow((x - mu) / sigma, 2)) / (sigma * Math.sqrt(2 * Math.PI));
+            }
 
-            cfgCtx.fillStyle = '#b0b0c0';
-            cfgCtx.font = '13px Arial';
-            cfgCtx.fillText('w<1', pad + 10, pad + 15);
-            cfgCtx.fillText('1-10 (optimal)', pad + graphW * 0.25, pad + 15);
-            cfgCtx.fillText('w>10 (artifacts)', pad + graphW * 0.7, pad + 15);
+            const centerX = 0.55; // target class center (shifted right of center)
+            const uncondSigma = 0.25; // broad unconditional
+            const condSigma = 0.12;  // narrower conditional
+            // Guided sigma shrinks with guidance weight
+            const guidedSigma = Math.max(0.02, condSigma / (1 + (w - 1) * 0.3));
+
+            // Compute max height for normalization
+            const uncondMax = gaussian(centerX, 0.5, uncondSigma);
+            const condMax = gaussian(centerX, centerX, condSigma);
+            const guidedMax = gaussian(centerX, centerX, guidedSigma);
+            const maxVal = Math.max(uncondMax, condMax, guidedMax) * 1.15;
+
+            // Draw curves
+            function drawCurve(mu, sigma, color, dashed) {
+                cfgCtx.strokeStyle = color;
+                cfgCtx.lineWidth = 2.5;
+                if (dashed) cfgCtx.setLineDash([6, 4]);
+                else cfgCtx.setLineDash([]);
+                cfgCtx.beginPath();
+                for (let px = 0; px <= graphW; px++) {
+                    const xVal = px / graphW; // 0 to 1
+                    const yVal = gaussian(xVal, mu, sigma);
+                    const screenY = baselineY - (yVal / maxVal) * graphH;
+                    if (px === 0) cfgCtx.moveTo(pad + px, screenY);
+                    else cfgCtx.lineTo(pad + px, screenY);
+                }
+                cfgCtx.stroke();
+                cfgCtx.setLineDash([]);
+            }
+
+            // Unconditional: broad, centered
+            drawCurve(0.5, uncondSigma, '#5dade2', true);
+            // Conditional: peaked at target
+            drawCurve(centerX, condSigma, '#58d68d', false);
+            // Guided: more peaked at target
+            drawCurve(centerX, guidedSigma, '#e056fd', false);
+
+            // Legend
+            const legendY = baselineY + 30;
+            cfgCtx.font = '11px Arial';
+            cfgCtx.textAlign = 'left';
+            cfgCtx.setLineDash([6, 4]);
+            cfgCtx.strokeStyle = '#5dade2';
+            cfgCtx.beginPath();
+            cfgCtx.moveTo(30, legendY);
+            cfgCtx.lineTo(55, legendY);
+            cfgCtx.stroke();
+            cfgCtx.setLineDash([]);
+            cfgCtx.fillStyle = '#5dade2';
+            cfgCtx.fillText('Unconditional', 60, legendY + 4);
+
+            cfgCtx.strokeStyle = '#58d68d';
+            cfgCtx.lineWidth = 2.5;
+            cfgCtx.beginPath();
+            cfgCtx.moveTo(170, legendY);
+            cfgCtx.lineTo(195, legendY);
+            cfgCtx.stroke();
+            cfgCtx.fillStyle = '#58d68d';
+            cfgCtx.fillText('Conditional', 200, legendY + 4);
+
+            cfgCtx.strokeStyle = '#e056fd';
+            cfgCtx.beginPath();
+            cfgCtx.moveTo(300, legendY);
+            cfgCtx.lineTo(325, legendY);
+            cfgCtx.stroke();
+            cfgCtx.fillStyle = '#e056fd';
+            cfgCtx.fillText('Guided (w=' + w.toFixed(1) + ')', 330, legendY + 4);
         }
         drawCFG();
 
@@ -1861,46 +1895,49 @@
             latentDiffCtx.fillRect(0, 0, latentDiffCanvas.width, latentDiffCanvas.height);
 
             latentDiffCtx.fillStyle = '#e056fd';
-            latentDiffCtx.font = 'bold 17px Arial';
-            latentDiffCtx.fillText('Latent Diffusion Pipeline', 20, 25);
+            latentDiffCtx.font = 'bold 15px Arial';
+            latentDiffCtx.fillText('Latent Diffusion Pipeline', 20, 22);
 
+            const stageW = 65;
+            const stageGap = 10;
             const stages = [
-                { name: 'Image', w: 60, x: 20, color: '#64ffda' },
-                { name: 'VAE Encode', w: 60, x: 90, color: '#ffd93d' },
-                { name: 'Latent z', w: 60, x: 160, color: '#ff6b6b' },
-                { name: 'Denoise ('+steps+')', w: 60, x: 230, color: '#7c4dff' },
-                { name: 'Decode', w: 60, x: 300, color: '#ffd93d' },
-                { name: 'Image', w: 60, x: 370, color: '#64ffda' }
+                { name: 'Image', color: '#64ffda' },
+                { name: 'VAE Enc', color: '#ffd93d' },
+                { name: 'Latent z', color: '#ff6b6b' },
+                { name: 'Denoise('+steps+')', color: '#7c4dff' },
+                { name: 'Decode', color: '#ffd93d' },
+                { name: 'Image', color: '#64ffda' }
             ];
 
-            let y = 80;
+            let y = 55;
             stages.forEach((stage, i) => {
+                const stageX = 10 + i * (stageW + stageGap);
                 latentDiffCtx.fillStyle = stage.color + '33';
-                latentDiffCtx.fillRect(stage.x, y, stage.w, 60);
+                latentDiffCtx.fillRect(stageX, y, stageW, 50);
                 latentDiffCtx.strokeStyle = stage.color;
                 latentDiffCtx.lineWidth = 2;
-                latentDiffCtx.strokeRect(stage.x, y, stage.w, 60);
+                latentDiffCtx.strokeRect(stageX, y, stageW, 50);
 
                 latentDiffCtx.fillStyle = stage.color;
-                latentDiffCtx.font = '13px Arial';
+                latentDiffCtx.font = '11px Arial';
                 latentDiffCtx.textAlign = 'center';
-                latentDiffCtx.fillText(stage.name, stage.x + stage.w / 2, y + 35);
+                latentDiffCtx.fillText(stage.name, stageX + stageW / 2, y + 30);
 
                 if (i < stages.length - 1) {
                     latentDiffCtx.strokeStyle = '#999';
                     latentDiffCtx.lineWidth = 1;
                     latentDiffCtx.beginPath();
-                    latentDiffCtx.moveTo(stage.x + stage.w, y + 30);
-                    latentDiffCtx.lineTo(stage.x + stage.w + 15, y + 30);
+                    latentDiffCtx.moveTo(stageX + stageW, y + 25);
+                    latentDiffCtx.lineTo(stageX + stageW + stageGap, y + 25);
                     latentDiffCtx.stroke();
                 }
             });
 
             latentDiffCtx.fillStyle = '#b0b0c0';
-            latentDiffCtx.font = '15px Arial';
+            latentDiffCtx.font = '13px Arial';
             latentDiffCtx.textAlign = 'left';
-            latentDiffCtx.fillText('Speed-up: 10-50x faster than pixel-space diffusion', 20, 200);
-            latentDiffCtx.fillText('Quality: Minimal loss vs pixel-space (VAE ensures good reconstruction)', 20, 225);
+            latentDiffCtx.fillText('Speed-up: 10-50x faster than pixel-space diffusion', 20, 140);
+            latentDiffCtx.fillText('Quality: Minimal loss vs pixel-space (VAE reconstruction)', 20, 162);
         }
         drawLatentDiff();
 
@@ -1992,46 +2029,79 @@
             architectureCtx.fillText(archType === 'unet' ? 'U-Net (CNN-based)' : 'DiT (Diffusion Transformer)', 20, 25);
 
             if (archType === 'unet') {
-                // U-Net structure
-                const layers = ['Input', 'Conv↓', 'Conv↓', 'Conv↓', 'Bottleneck', 'Conv↑', 'Conv↑', 'Conv↑', 'Output'];
-                let x = 20;
-                const boxW = 35;
-                const y = 60;
+                // U-Net encoder-decoder structure
+                const encLayers = ['Input', 'Conv\u2193', 'Conv\u2193', 'Conv\u2193', 'Bottleneck'];
+                const decLayers = ['Conv\u2191', 'Conv\u2191', 'Conv\u2191', 'Output'];
+                const dims = ['64\u00d764', '32\u00d732', '16\u00d716', '8\u00d78', '4\u00d74', '8\u00d78', '16\u00d716', '32\u00d732', '64\u00d764'];
+                const boxW = 38;
+                const boxH = 22;
+                const stepDown = 28;
+                const baseY = 45;
+                const startX = 12;
+                const xStep = boxW + 12;
 
-                layers.slice(0, 5).forEach((layer, i) => {
+                // Draw encoder (going down)
+                encLayers.forEach((layer, i) => {
+                    const bx = startX + i * xStep;
+                    const by = baseY + i * stepDown;
                     architectureCtx.fillStyle = '#64ffda33';
-                    architectureCtx.fillRect(x, y + (4 - i) * 25, boxW, 20);
+                    architectureCtx.fillRect(bx, by, boxW, boxH);
                     architectureCtx.strokeStyle = '#64ffda';
-                    architectureCtx.strokeRect(x, y + (4 - i) * 25, boxW, 20);
-                    x += boxW + 5;
+                    architectureCtx.strokeRect(bx, by, boxW, boxH);
+                    architectureCtx.fillStyle = '#64ffda';
+                    architectureCtx.font = '9px Arial';
+                    architectureCtx.textAlign = 'center';
+                    architectureCtx.fillText(layer, bx + boxW/2, by + 14);
+                    architectureCtx.fillStyle = '#8080a0';
+                    architectureCtx.font = '8px Arial';
+                    architectureCtx.fillText(dims[i], bx + boxW/2, by + boxH + 10);
                 });
 
-                x = 20;
-                layers.slice(4).forEach((layer, i) => {
+                // Draw decoder (going up)
+                decLayers.forEach((layer, i) => {
+                    const bx = startX + (5 + i) * xStep;
+                    const by = baseY + (3 - i) * stepDown;
                     architectureCtx.fillStyle = '#4ecdc433';
-                    architectureCtx.fillRect(x, y - i * 25, boxW, 20);
+                    architectureCtx.fillRect(bx, by, boxW, boxH);
                     architectureCtx.strokeStyle = '#4ecdc4';
-                    architectureCtx.strokeRect(x, y - i * 25, boxW, 20);
-                    x += boxW + 5;
+                    architectureCtx.strokeRect(bx, by, boxW, boxH);
+                    architectureCtx.fillStyle = '#4ecdc4';
+                    architectureCtx.font = '9px Arial';
+                    architectureCtx.textAlign = 'center';
+                    architectureCtx.fillText(layer, bx + boxW/2, by + 14);
+                    architectureCtx.fillStyle = '#8080a0';
+                    architectureCtx.font = '8px Arial';
+                    architectureCtx.fillText(dims[5 + i], bx + boxW/2, by + boxH + 10);
                 });
 
-                // Skip connections
+                // Skip connections (horizontal dashed lines connecting encoder to decoder at same level)
                 architectureCtx.strokeStyle = '#ffd93d';
                 architectureCtx.setLineDash([3, 3]);
-                for (let i = 0; i < 3; i++) {
-                    const startX = 90 + i * 40;
-                    const endX = 320 - i * 40;
+                architectureCtx.lineWidth = 1.5;
+                for (let i = 0; i < 4; i++) {
+                    const encBoxX = startX + i * xStep + boxW;
+                    const decBoxX = startX + (8 - i) * xStep;
+                    const connY = baseY + i * stepDown + boxH / 2;
                     architectureCtx.beginPath();
-                    architectureCtx.moveTo(startX, 75);
-                    architectureCtx.lineTo(endX, 75);
+                    architectureCtx.moveTo(encBoxX, connY);
+                    architectureCtx.lineTo(encBoxX + 5, connY - 15);
+                    architectureCtx.lineTo(decBoxX - 5, connY - 15);
+                    architectureCtx.lineTo(decBoxX, connY);
                     architectureCtx.stroke();
                 }
                 architectureCtx.setLineDash([]);
 
+                // Legend
+                architectureCtx.fillStyle = '#ffd93d';
+                architectureCtx.font = '9px Arial';
+                architectureCtx.textAlign = 'left';
+                architectureCtx.fillText('--- Skip connections', 350, 50);
+
                 architectureCtx.fillStyle = '#888';
                 architectureCtx.font = '10px Arial';
-                architectureCtx.fillText('Skip connections preserve spatial detail', 20, 220);
-                architectureCtx.fillText('Time/text injection via FiLM or cross-attention', 20, 235);
+                architectureCtx.textAlign = 'left';
+                architectureCtx.fillText('Skip connections preserve spatial detail', 20, 210);
+                architectureCtx.fillText('Time/text injection via FiLM or cross-attention', 20, 225);
             } else {
                 // DiT structure
                 architectureCtx.fillStyle = '#888';

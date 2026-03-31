@@ -71,8 +71,8 @@
     <button class="btn" onclick="resetBPE()">↺ Reset</button>
     <div class="control-group">
       <label>Target Vocab Size</label>
-      <input type="range" id="bpeTarget" min="50" max="256" value="100" oninput="drawBPE()">
-      <span class="value" id="bpeTargetVal">100</span>
+      <input type="range" id="bpeTarget" min="270" max="512" value="300" oninput="updateBPETarget()">
+      <span class="value" id="bpeTargetVal">300</span>
     </div>
   </div>
   <div class="insight-box">
@@ -277,7 +277,7 @@
 <div class="viz-section">
   <h2>Transformer Block Architecture</h2>
   <p class="subtitle">Click 'Step Through' to follow data flow through each sub-layer. Watch the signal pass through LayerNorm → Attention → residual add, then LayerNorm → FFN → residual add. Toggle the 'Visualize Residuals' checkbox to highlight skip connections. These shortcuts are why deep Transformers can train effectively.</p>
-  <canvas id="blockCanvas" width="900" height="560"></canvas>
+  <canvas id="blockCanvas" width="900" height="640"></canvas>
   <div class="controls">
     <div class="tab-bar">
       <button class="btn active" id="blockPre" onclick="setBlockType('pre')">Pre-Norm (GPT-2+, LLaMA)</button>
@@ -573,9 +573,30 @@ function initBPE() {
                     'mp', 'ps', 'the', 'qu', 'ick', 'bro', 'own', 'fox', 'jum', 'mps'];
   bpeState.mergePairs = [];
   bpeState.mergeCounts = [];
-  for (let i = 0; i < bpeState.maxMerges + 5; i++) {
+  const numPairs = Math.max(bpeState.maxMerges + 5, 30);
+  for (let i = 0; i < numPairs; i++) {
     bpeState.mergePairs.push(allPairs[i % allPairs.length]);
     bpeState.mergeCounts.push(Math.max(5, 50 - i * 2));
+  }
+  drawBPE();
+}
+
+function updateBPETarget() {
+  const target = parseInt(document.getElementById('bpeTarget').value);
+  bpeState.maxMerges = target - 256;
+  // Re-init merge pairs if we need more
+  const allPairs = ['th', 'he', 'e▁', '▁q', 'qu', 'ui', 'ic', 'ck', 'k▁', 'br',
+                    'ow', 'wn', 'n▁', '▁f', 'fo', 'ox', 'x▁', '▁j', 'ju', 'um',
+                    'mp', 'ps', 'the', 'qu', 'ick', 'bro', 'own', 'fox', 'jum', 'mps'];
+  const numPairs = Math.max(bpeState.maxMerges + 5, 30);
+  while (bpeState.mergePairs.length < numPairs) {
+    const i = bpeState.mergePairs.length;
+    bpeState.mergePairs.push(allPairs[i % allPairs.length]);
+    bpeState.mergeCounts.push(Math.max(5, 50 - i * 2));
+  }
+  // Clamp mergeIdx if it exceeds new maxMerges
+  if (bpeState.mergeIdx > bpeState.maxMerges) {
+    bpeState.mergeIdx = bpeState.maxMerges;
   }
   drawBPE();
 }
@@ -903,12 +924,12 @@ function drawAttn() {
   ctx.fillStyle = '#ffffff';
   ctx.font = '15px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('Attention(Q,K,V)', formulaX, formulaY);
-  ctx.fillText('  = softmax(QK^T / sqrt(d_k)) * V', formulaX, formulaY + 24);
+  ctx.fillText('Attention(Q, K, V)', formulaX, formulaY);
+  ctx.fillText('  = softmax(Q\u00B7K\u1D40 / \u221Ad\u2096) \u00B7 V', formulaX, formulaY + 24);
 
   ctx.fillStyle = '#4ecdc4';
   ctx.font = '15px monospace';
-  ctx.fillText(`sqrt(d_k) = sqrt(${dk}) = ${Math.sqrt(dk).toFixed(2)}`, formulaX, formulaY + 60);
+  ctx.fillText(`\u221Ad\u2096 = \u221A${dk} = ${Math.sqrt(dk).toFixed(2)}`, formulaX, formulaY + 60);
   ctx.fillText(`Temperature: ${temp.toFixed(1)}`, formulaX, formulaY + 84);
 
   ctx.fillStyle = '#b0b0c0';
@@ -1163,9 +1184,9 @@ function drawKV() {
   ctx.fillText('Key-Value (KV) Cache State (grows with each token generated):', 40, cacheStartY);
 
   // Draw cache boxes for each step -- cached (green) vs fresh (cyan)
-  const boxW = 100;
-  const boxH = 55;
-  const boxSpacing = 14;
+  const boxW = 110;
+  const boxH = 60;
+  const boxSpacing = 18;
   const boxStartX = 60;
   const boxY = cacheStartY + 28;
 
@@ -1173,7 +1194,7 @@ function drawKV() {
     const x = boxStartX + s * (boxW + boxSpacing);
 
     // Cached portion
-    const cachedH = s > 0 ? 28 : 0;
+    const cachedH = s > 0 ? 30 : 0;
     if (cachedH > 0) {
       ctx.fillStyle = '#44bd3233';
       ctx.strokeStyle = '#44bd32';
@@ -1183,9 +1204,9 @@ function drawKV() {
       ctx.fill();
       ctx.stroke();
       ctx.fillStyle = '#44bd32';
-      ctx.font = '13px Inter';
+      ctx.font = '11px Inter';
       ctx.textAlign = 'center';
-      ctx.fillText(`Cached 0-${s - 1}`, x + boxW / 2, boxY + 18);
+      ctx.fillText(`KV 0\u2013${s - 1}`, x + boxW / 2, boxY + 19);
     }
 
     // Fresh computation portion
@@ -1197,14 +1218,14 @@ function drawKV() {
     ctx.fill();
     ctx.stroke();
     ctx.fillStyle = '#4ecdc4';
-    ctx.font = '13px Inter';
+    ctx.font = '12px Inter';
     ctx.textAlign = 'center';
-    ctx.fillText(`New: ${s}`, x + boxW / 2, boxY + cachedH + (boxH - cachedH) / 2 + 5);
+    ctx.fillText(`New: ${kvTokens[s] || s}`, x + boxW / 2, boxY + cachedH + (boxH - cachedH) / 2 + 5);
 
     // Step label
     ctx.fillStyle = '#b0b0c0';
-    ctx.font = '13px Inter';
-    ctx.fillText(`Step ${s + 1}`, x + boxW / 2, boxY + boxH + 16);
+    ctx.font = '12px Inter';
+    ctx.fillText(`Step ${s + 1}`, x + boxW / 2, boxY + boxH + 18);
   }
 
   // Cache computation explanation
@@ -1304,151 +1325,252 @@ function drawBlock() {
 
   // Title
   ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 15px Inter';
+  ctx.font = 'bold 17px Inter';
   ctx.textAlign = 'center';
   ctx.fillText(`Transformer ${isPre ? 'Pre' : 'Post'}-Norm Block Architecture`, W / 2, 30);
 
-  // Input label
-  ctx.fillStyle = '#4ecdc4';
-  ctx.font = 'bold 13px Inter';
-  ctx.textAlign = 'center';
-  ctx.fillText('Input: x', W / 2, 60);
+  // Layout constants
+  const blockW = 260;
+  const blockH = 50;
+  const gap = 22;
+  const centerX = W / 2;
+  const blockX = centerX - blockW / 2;
+  const residualOffset = blockW / 2 + 50; // how far right the skip arrow goes
 
-  // Draw blocks in a vertical stack
-  const blockW = 240;
-  const blockH = 45;
-  const spacing = 18;
-  const blockX = W / 2 - blockW / 2;
-  let y = 85;
+  // Helper: draw a rounded block
+  function drawBox(x, y, w, h, label, subtitle, color) {
+    ctx.fillStyle = color + '22';
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, 8);
+    ctx.fill();
+    ctx.stroke();
 
-  if (isPre) {
-    // Pre-Norm: Norm -> Attn -> Add -> Norm -> FFN -> Add
-    const blocks = [
-      { label: 'Layer Normalization (Norm)', subtitle: 'Normalize input', color: '#ff6b6b' },
-      { label: 'Multi-Head Self-Attention', subtitle: 'Compute Q, K, V and attend', color: '#4ecdc4' },
-      { label: 'Residual Add (x + Attention)', subtitle: 'Skip connection', color: '#7c7c9c' },
-      { label: 'Layer Normalization (Norm)', subtitle: 'Normalize for Feed-Forward', color: '#ff6b6b' },
-      { label: 'Feed-Forward Network (FFN)', subtitle: 'Two linear layers with GELU', color: '#ffd93d' },
-      { label: 'Residual Add (x + FFN)', subtitle: 'Final skip connection', color: '#7c7c9c' }
-    ];
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 14px Inter';
+    ctx.textAlign = 'center';
+    ctx.fillText(label, x + w / 2, y + 20);
 
-    for (let i = 0; i < blocks.length; i++) {
-      const block = blocks[i];
-
-      // Draw box
-      ctx.fillStyle = block.color + '22';
-      ctx.strokeStyle = block.color;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.roundRect(blockX, y, blockW, blockH, 6);
-      ctx.fill();
-      ctx.stroke();
-
-      // Draw label
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 13px Inter';
-      ctx.textAlign = 'center';
-      ctx.fillText(block.label, W / 2, y + 18);
-
-      // Draw subtitle
-      ctx.fillStyle = '#b0b0c0';
-      ctx.font = '11px Inter';
-      ctx.fillText(block.subtitle, W / 2, y + 34);
-
-      // Draw arrow
-      if (i < blocks.length - 1) {
-        ctx.strokeStyle = '#4ecdc4';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(W / 2, y + blockH);
-        ctx.lineTo(W / 2, y + blockH + spacing);
-        ctx.stroke();
-
-        // Arrow head
-        ctx.fillStyle = '#4ecdc4';
-        ctx.beginPath();
-        ctx.moveTo(W / 2, y + blockH + spacing + 4);
-        ctx.lineTo(W / 2 - 4, y + blockH + spacing - 2);
-        ctx.lineTo(W / 2 + 4, y + blockH + spacing - 2);
-        ctx.fill();
-      }
-
-      y += blockH + spacing;
-    }
-
-    // Pre-Norm note
-    ctx.fillStyle = '#44bd32';
-    ctx.font = '11px Inter';
-    ctx.textAlign = 'left';
-    ctx.fillText('Pre-Norm advantage: More stable training, no learning rate warmup needed', 40, y + 10);
-
-  } else {
-    // Post-Norm: Attn -> Norm -> Add -> FFN -> Norm -> Add
-    const blocks = [
-      { label: 'Multi-Head Self-Attention', subtitle: 'Compute Q, K, V and attend', color: '#4ecdc4' },
-      { label: 'Layer Normalization (Norm)', subtitle: 'Normalize attention output', color: '#ff6b6b' },
-      { label: 'Residual Add (x + Attention)', subtitle: 'Skip connection', color: '#7c7c9c' },
-      { label: 'Feed-Forward Network (FFN)', subtitle: 'Two linear layers with GELU', color: '#ffd93d' },
-      { label: 'Layer Normalization (Norm)', subtitle: 'Normalize for next block', color: '#ff6b6b' },
-      { label: 'Residual Add (x + FFN)', subtitle: 'Final skip connection', color: '#7c7c9c' }
-    ];
-
-    for (let i = 0; i < blocks.length; i++) {
-      const block = blocks[i];
-
-      // Draw box
-      ctx.fillStyle = block.color + '22';
-      ctx.strokeStyle = block.color;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.roundRect(blockX, y, blockW, blockH, 6);
-      ctx.fill();
-      ctx.stroke();
-
-      // Draw label
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 13px Inter';
-      ctx.textAlign = 'center';
-      ctx.fillText(block.label, W / 2, y + 18);
-
-      // Draw subtitle
-      ctx.fillStyle = '#b0b0c0';
-      ctx.font = '11px Inter';
-      ctx.fillText(block.subtitle, W / 2, y + 34);
-
-      // Draw arrow
-      if (i < blocks.length - 1) {
-        ctx.strokeStyle = '#4ecdc4';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(W / 2, y + blockH);
-        ctx.lineTo(W / 2, y + blockH + spacing);
-        ctx.stroke();
-
-        // Arrow head
-        ctx.fillStyle = '#4ecdc4';
-        ctx.beginPath();
-        ctx.moveTo(W / 2, y + blockH + spacing + 4);
-        ctx.lineTo(W / 2 - 4, y + blockH + spacing - 2);
-        ctx.lineTo(W / 2 + 4, y + blockH + spacing - 2);
-        ctx.fill();
-      }
-
-      y += blockH + spacing;
-    }
-
-    // Post-Norm note
-    ctx.fillStyle = '#ff6b6b';
-    ctx.font = '11px Inter';
-    ctx.textAlign = 'left';
-    ctx.fillText('Post-Norm (original paper): Less stable, requires learning rate warmup', 40, y + 10);
+    ctx.fillStyle = '#b0b0c0';
+    ctx.font = '12px Inter';
+    ctx.fillText(subtitle, x + w / 2, y + 36);
   }
 
-  // Output label
+  // Helper: draw a downward arrow between blocks
+  function drawArrow(fromY, toY, x) {
+    x = x || centerX;
+    ctx.strokeStyle = '#4ecdc4';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x, fromY);
+    ctx.lineTo(x, toY);
+    ctx.stroke();
+    // Arrow head
+    ctx.fillStyle = '#4ecdc4';
+    ctx.beginPath();
+    ctx.moveTo(x, toY + 2);
+    ctx.lineTo(x - 5, toY - 5);
+    ctx.lineTo(x + 5, toY - 5);
+    ctx.fill();
+  }
+
+  // Helper: draw a residual (skip) connection arrow
+  // Goes from startY right side, curves out and comes back to addY right side
+  function drawResidualArrow(startY, addY, label) {
+    const rx = blockX + blockW + 12;
+    const curveX = rx + 40;
+    ctx.strokeStyle = '#ff9f43';
+    ctx.lineWidth = 2.5;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    ctx.moveTo(rx, startY);
+    ctx.bezierCurveTo(curveX, startY, curveX, addY, rx, addY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // Arrow head pointing left into the add block
+    ctx.fillStyle = '#ff9f43';
+    ctx.beginPath();
+    ctx.moveTo(rx - 2, addY);
+    ctx.lineTo(rx + 6, addY - 5);
+    ctx.lineTo(rx + 6, addY + 5);
+    ctx.fill();
+    // Label
+    ctx.fillStyle = '#ff9f43';
+    ctx.font = 'bold 12px Inter';
+    ctx.textAlign = 'left';
+    ctx.fillText(label, curveX + 6, (startY + addY) / 2 + 4);
+  }
+
+  // Helper: draw a "+" circle for residual add
+  function drawAddCircle(y) {
+    const cy = y + blockH / 2;
+    const r = 16;
+    ctx.fillStyle = '#ff9f4333';
+    ctx.strokeStyle = '#ff9f43';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(centerX, cy, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#ff9f43';
+    ctx.font = 'bold 18px Inter';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('+', centerX, cy);
+    ctx.textBaseline = 'alphabetic';
+    // Label
+    ctx.font = '12px Inter';
+    ctx.fillText('Residual Add', centerX, cy + r + 14);
+    return cy;
+  }
+
+  // Input label
+  let y = 55;
   ctx.fillStyle = '#4ecdc4';
-  ctx.font = 'bold 13px Inter';
+  ctx.font = 'bold 14px Inter';
   ctx.textAlign = 'center';
-  ctx.fillText('Output: y', W / 2, y + 50);
+  ctx.fillText('Input: x', centerX, y);
+  const inputY = y;
+  y += 18;
+
+  if (isPre) {
+    // Pre-Norm: Input -> Norm -> Attn -> (+Add) -> Norm -> FFN -> (+Add) -> Output
+    //           |___ residual skip ______|       |____ residual skip _____|
+
+    // Norm 1
+    drawArrow(y, y + gap - 4, centerX);
+    y += gap;
+    const norm1Y = y;
+    drawBox(blockX, y, blockW, blockH, 'Layer Normalization', 'Normalize activations', '#ff6b6b');
+    y += blockH;
+
+    // Attention
+    drawArrow(y, y + gap - 4, centerX);
+    y += gap;
+    const attnY = y;
+    drawBox(blockX, y, blockW, blockH, 'Multi-Head Self-Attention', 'Q, K, V projections + scaled dot-product', '#4ecdc4');
+    y += blockH;
+
+    // Add circle 1
+    drawArrow(y, y + gap - 4, centerX);
+    y += gap;
+    const add1Y = y;
+    const add1CY = drawAddCircle(y - 8);
+    y += 40;
+
+    // Residual arrow 1: from input to add1
+    drawResidualArrow(inputY + 6, add1CY, 'skip (x)');
+
+    // Norm 2
+    drawArrow(add1CY + 30, y + gap - 4, centerX);
+    y += gap;
+    const norm2Y = y;
+    drawBox(blockX, y, blockW, blockH, 'Layer Normalization', 'Normalize for FFN', '#ff6b6b');
+    y += blockH;
+
+    // FFN
+    drawArrow(y, y + gap - 4, centerX);
+    y += gap;
+    const ffnY = y;
+    drawBox(blockX, y, blockW, blockH, 'Feed-Forward Network (FFN)', 'Linear \u2192 GELU \u2192 Linear (4x expand)', '#ffd93d');
+    y += blockH;
+
+    // Add circle 2
+    drawArrow(y, y + gap - 4, centerX);
+    y += gap;
+    const add2Y = y;
+    const add2CY = drawAddCircle(y - 8);
+    y += 40;
+
+    // Residual arrow 2: from after add1 to add2
+    drawResidualArrow(add1CY + 16, add2CY, 'skip');
+
+    // Output
+    drawArrow(add2CY + 30, y + gap - 4, centerX);
+    y += gap;
+    ctx.fillStyle = '#4ecdc4';
+    ctx.font = 'bold 14px Inter';
+    ctx.textAlign = 'center';
+    ctx.fillText('Output: y', centerX, y);
+
+    // Note
+    ctx.fillStyle = '#44bd32';
+    ctx.font = '13px Inter';
+    ctx.textAlign = 'left';
+    ctx.fillText('Pre-Norm: more stable training, no learning rate warmup needed (GPT-2+, LLaMA)', 40, H - 20);
+
+  } else {
+    // Post-Norm: Input -> Attn -> (+Add) -> Norm -> FFN -> (+Add) -> Norm -> Output
+
+    // Attention
+    drawArrow(y, y + gap - 4, centerX);
+    y += gap;
+    const attnY = y;
+    drawBox(blockX, y, blockW, blockH, 'Multi-Head Self-Attention', 'Q, K, V projections + scaled dot-product', '#4ecdc4');
+    y += blockH;
+
+    // Add circle 1
+    drawArrow(y, y + gap - 4, centerX);
+    y += gap;
+    const add1Y = y;
+    const add1CY = drawAddCircle(y - 8);
+    y += 40;
+
+    // Residual arrow 1
+    drawResidualArrow(inputY + 6, add1CY, 'skip (x)');
+
+    // Norm 1
+    drawArrow(add1CY + 30, y + gap - 4, centerX);
+    y += gap;
+    drawBox(blockX, y, blockW, blockH, 'Layer Normalization', 'Normalize after attention + residual', '#ff6b6b');
+    y += blockH;
+
+    // FFN
+    drawArrow(y, y + gap - 4, centerX);
+    y += gap;
+    const ffnStartY = y;
+    drawBox(blockX, y, blockW, blockH, 'Feed-Forward Network (FFN)', 'Linear \u2192 GELU \u2192 Linear (4x expand)', '#ffd93d');
+    y += blockH;
+
+    // Add circle 2
+    drawArrow(y, y + gap - 4, centerX);
+    y += gap;
+    const add2CY = drawAddCircle(y - 8);
+    y += 40;
+
+    // Residual arrow 2
+    drawResidualArrow(add1CY + 16, add2CY, 'skip');
+
+    // Norm 2
+    drawArrow(add2CY + 30, y + gap - 4, centerX);
+    y += gap;
+    drawBox(blockX, y, blockW, blockH, 'Layer Normalization', 'Normalize for next block', '#ff6b6b');
+    y += blockH;
+
+    // Output
+    drawArrow(y, y + gap - 4, centerX);
+    y += gap;
+    ctx.fillStyle = '#4ecdc4';
+    ctx.font = 'bold 14px Inter';
+    ctx.textAlign = 'center';
+    ctx.fillText('Output: y', centerX, y);
+
+    // Note
+    ctx.fillStyle = '#ff6b6b';
+    ctx.font = '13px Inter';
+    ctx.textAlign = 'left';
+    ctx.fillText('Post-Norm (original Transformer): less stable, requires learning rate warmup', 40, H - 20);
+  }
+
+  // Legend
+  ctx.textAlign = 'left';
+  ctx.font = '12px Inter';
+  const legX = 30, legY = 60;
+  ctx.fillStyle = '#ff9f43';
+  ctx.fillText('\u2500\u2500 Residual (skip) connection', legX, legY);
+  ctx.fillStyle = '#4ecdc4';
+  ctx.fillText('\u2500\u2500 Data flow', legX, legY + 18);
 }
 
 // ==================== LoRA & PEFT ====================

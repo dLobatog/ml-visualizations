@@ -368,33 +368,29 @@
     </div>
   </div>
   <div class="insight-box">
-    <strong>Key Insight:</strong> ResNets add skip connections that allow direct gradient flow and enable training of very deep networks.
-    <div class="formula">$$y = F(x) + \color{#ff6b6b}{x} \quad \text{(instead of just } y = F(x)\text{)}$$</div>
-    <div class="key-point"><span class="label">x:</span><span class="desc">Input to residual block. Shape: (batch_size, feature_dim)</span></div>
-    <div class="key-point"><span class="label">F(x):</span><span class="desc">Transformation by residual block—typically 2-3 layers (conv, norm, activation). Learns feature changes.</span></div>
-    <div class="key-point"><span class="label">+ x:</span><span class="desc">Skip/shortcut connection. Identity mapping directly adds input to output. Enables information to bypass block.</span></div>
-    <div class="key-point"><span class="label">y = F(x) + x:</span><span class="desc">Output is residual transformation F(x) PLUS identity. Network learns F(x) = (desired_output - x), i.e., the residual/difference.</span></div>
-    <div class="key-point"><span class="label">Dimension requirement:</span><span class="desc">F(x) and x must have same shape for addition. If different, use 1×1 conv to match dimensions.</span></div>
+    <strong>Key Insight:</strong> Flash Attention is an IO-aware algorithm that computes exact attention while dramatically reducing memory reads/writes to slow GPU memory (HBM).
+    <div class="formula">$$\text{Standard: } O(N^2) \text{ HBM memory} \quad \Rightarrow \quad \text{Flash: } O(N) \text{ HBM memory}$$</div>
+    <div class="key-point"><span class="label">The bottleneck:</span><span class="desc">Standard attention materializes the full \(N \times N\) attention matrix in HBM (slow GPU memory). Memory, not compute, is the bottleneck.</span></div>
+    <div class="key-point"><span class="label">Memory hierarchy:</span><span class="desc">GPU SRAM is fast (~19 TB/s) but small (~20 MB). HBM is large (~40 GB) but slow (~1.5 TB/s). Flash Attention exploits this gap.</span></div>
+    <div class="key-point"><span class="label">Tiling strategy:</span><span class="desc">Splits Q, K, V into blocks that fit in SRAM. Computes attention tile-by-tile, never materializing the full \(N \times N\) matrix in HBM.</span></div>
+    <div class="key-point"><span class="label">Online softmax:</span><span class="desc">Uses online softmax trick to compute exact softmax across tiles without storing full attention scores. Rescales running max and normalizer.</span></div>
+    <div class="key-point"><span class="label">IO complexity:</span><span class="desc">Standard attention: \(O(N^2)\) HBM reads/writes. Flash Attention: \(O(N^2 d / M)\) where M = SRAM size. Fewer HBM accesses by factor of M/d.</span></div>
     <div class="key-point">
-      <span class="label">Skip connection benefit:</span>
-      <span class="desc">Gradients bypass blocks, flow directly through identity connection. Solves vanishing gradient for deep networks.</span>
+      <span class="label">Same result:</span>
+      <span class="desc">Flash Attention produces mathematically identical output to standard attention. It is an exact algorithm, not an approximation.</span>
     </div>
     <div class="key-point">
-      <span class="label">Training depth:</span>
-      <span class="desc">Without residuals: hard to train networks >50 layers. With residuals: can train 150+ layers easily.</span>
+      <span class="label">Wall-clock speedup:</span>
+      <span class="desc">2-4x faster than standard attention in practice. Enables training with much longer sequences (4K to 64K+ tokens).</span>
     </div>
     <div class="key-point">
-      <span class="label">Residual block interpretation:</span>
-      <span class="desc">F(x) learns the residual (difference from identity). Network learns what to add/change, not entire function from scratch.</span>
-    </div>
-    <div class="key-point">
-      <span class="label">Dimensions matching:</span>
-      <span class="desc">If F changes dimensions (stride or filters), use 1×1 projection convolution for x. Or zero-pad/subsample x.</span>
+      <span class="label">Backward pass:</span>
+      <span class="desc">Recomputes attention from blocks during backward pass instead of storing it. Trades extra compute for reduced memory.</span>
     </div>
     <hr class="divider">
-    <div class="interview-tip">ResNets revolutionized deep learning. Skip connections are now standard everywhere (Transformers, dense nets, etc.).</div>
-    <div class="mnemonic">ResNet = learn residuals, not full function. Skip connection = highway for gradients. Enables very deep networks.
-    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Sequence length = 100. Standard Attention materializes 100×100 matrix (10K values in slow memory). Flash Attention: tiles into 4×4 blocks (only 25 values in fast memory at a time). Result is identical, but memory bandwidth drops 4-10x. This is why Flash Attention made long sequences practical.</div>
+    <div class="interview-tip">Flash Attention is IO-aware: it optimizes data movement between fast SRAM and slow HBM, not the number of FLOPs. Same math, fewer memory transfers.</div>
+    <div class="mnemonic">Flash = tiling + online softmax + recomputation. Never stores full N x N matrix. Exact, not approximate.</div>
+    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">Try this: Sequence length = 100. Standard Attention materializes 100x100 matrix (10K values in slow memory). Flash Attention: tiles into 4x4 blocks (only 25 values in fast memory at a time). Result is identical, but memory bandwidth drops 4-10x. This is why Flash Attention made long sequences practical.</div>
   </div>
 </div>
   </div>
@@ -419,35 +415,32 @@
     <button class="btn" onclick="setCompute()">Maximize Params</button>
   </div>
   <div class="insight-box">
-    <strong>Key Insight:</strong> Attention mechanisms compute weighted combinations of values based on query-key similarities, enabling long-range dependencies.
-    <div class="formula">$$\text{Attention}(Q,K,V) = \text{softmax}\!\left(\frac{QK^T}{\sqrt{d_k}}\right)V$$</div>
-    <div class="key-point"><span class="label">\(Q\) (Query):</span><span class="desc">Matrix of query vectors, shape \((\text{seq\_len}, d_k)\). "What am I looking for?" Linear projection of input.</span></div>
-    <div class="key-point"><span class="label">\(K\) (Key):</span><span class="desc">Matrix of key vectors, shape \((\text{seq\_len}, d_k)\). "What does each position represent?" Compared against queries.</span></div>
-    <div class="key-point"><span class="label">\(V\) (Value):</span><span class="desc">Matrix of value vectors, shape \((\text{seq\_len}, d_v)\). "What to output?" Weighted by attention scores.</span></div>
-    <div class="key-point"><span class="label">\(QK^T\):</span><span class="desc">Dot product of queries and keys. Shape: (seq_len, seq_len). Measures similarity between each query and all keys. Unnormalized attention scores.</span></div>
-    <div class="key-point"><span class="label">\(\sqrt{d_k}\):</span><span class="desc">Scaling factor. \(d_k\) = dimension of keys (usually 64). Prevents attention scores from becoming too large (softmax gradient issues).</span></div>
-    <div class="key-point"><span class="label">\(\text{softmax}(QK^T/\sqrt{d_k})\):</span><span class="desc">Convert scaled scores to probability distribution over sequence positions. Each query sums to 1 across all keys. Attention weights.</span></div>
-    <div class="key-point"><span class="label">\(\text{softmax}(\ldots) \cdot V\):</span><span class="desc">Weighted sum of values. Each value is weighted by its corresponding attention score. Output shape: \((\text{seq\_len}, d_v)\)</span></div>
+    <strong>Key Insight:</strong> Neural scaling laws reveal power-law relationships between loss, model size (N), and data (D), enabling compute-optimal training.
+    <div class="formula">$$L(N, D) \approx \left(\frac{N_c}{N}\right)^{\alpha} + \left(\frac{D_c}{D}\right)^{\beta} + L_{\infty}$$</div>
+    <div class="key-point"><span class="label">\(L(N, D)\):</span><span class="desc">Test loss as a function of parameters N and data tokens D. Follows smooth power laws over many orders of magnitude.</span></div>
+    <div class="key-point"><span class="label">\(\alpha \approx 0.34\):</span><span class="desc">Exponent for model size scaling. Loss decreases as \(N^{-0.34}\). Diminishing returns: 10x params gives ~2x loss reduction.</span></div>
+    <div class="key-point"><span class="label">\(\beta \approx 0.28\):</span><span class="desc">Exponent for data scaling. Loss decreases as \(D^{-0.28}\). Data scaling is slightly less efficient than parameter scaling.</span></div>
+    <div class="key-point"><span class="label">\(L_{\infty}\):</span><span class="desc">Irreducible loss (entropy of natural language). Even infinite model + data cannot go below this floor (~1.69 nats).</span></div>
     <div class="key-point">
-      <span class="label">Query, Key, Value:</span>
-      <span class="desc">Q = what we're looking for. K = what each position represents. V = what to output. Learned linear projections of input.</span>
+      <span class="label">Chinchilla optimal:</span>
+      <span class="desc">For a fixed compute budget C, allocate roughly equal compute to parameters and data. Optimal N and D both scale as \(C^{0.5}\). Train a smaller model on more data.</span>
     </div>
     <div class="key-point">
-      <span class="label">Attention weights:</span>
-      <span class="desc">Softmax(QK^T) = probability of attending to each position. Learned during training based on query-key similarity.</span>
+      <span class="label">Compute relation:</span>
+      <span class="desc">\(C \approx 6ND\) (FLOPs for a forward+backward pass). Doubling compute should double both N and D for optimal training.</span>
     </div>
     <div class="key-point">
-      <span class="label">Multi-head attention:</span>
-      <span class="desc">Multiple attention heads attend to different aspects. Concatenate outputs. Richer representations than single attention.</span>
+      <span class="label">Chinchilla vs GPT-3:</span>
+      <span class="desc">GPT-3 (175B params, 300B tokens) was undertrained. Chinchilla (70B params, 1.4T tokens) matched its performance with 4x less compute at inference.</span>
     </div>
     <div class="key-point">
-      <span class="label">Computational cost:</span>
-      <span class="desc">Attention is \(O(n^2)\) in sequence length. For long sequences, use approximations: local attention, sparse attention, linear attention.</span>
+      <span class="label">Practical impact:</span>
+      <span class="desc">Scaling laws enable predicting large model performance from small runs. Guides billion-dollar training decisions before committing full compute.</span>
     </div>
     <hr class="divider">
-    <div class="interview-tip">Attention is core of Transformers. Self-attention: each position attends to all positions. Enables parallelization unlike RNNs.</div>
-    <div class="mnemonic">Attention = soft selection of values based on relevance. Queries ask questions, keys match queries, values are answers.
-    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Move compute budget left (favor parameters, 80/20 split) — loss plateaus (data bottleneck). Move right (80/20 data favoring) — loss plateaus (parameter bottleneck). The diagonal (50/50 split) is optimal. Chinchilla discovered this: equal compute to parameters and data.</div>
+    <div class="interview-tip">Chinchilla showed most large models were undertrained (too many params, too little data). Optimal: ~20 tokens per parameter. Scaling laws let you predict loss before training.</div>
+    <div class="mnemonic">Scaling = power laws. More params + more data = lower loss, but diminishing returns. Chinchilla = balance params and data equally.</div>
+    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">Try this: Move compute budget left (favor parameters, 80/20 split) -- loss plateaus (data bottleneck). Move right (80/20 data favoring) -- loss plateaus (parameter bottleneck). The diagonal (50/50 split) is optimal. Chinchilla discovered this: equal compute to parameters and data.</div>
   </div>
 </div>
   </div>
@@ -535,13 +528,15 @@ function drawNN() {
         ctx.lineTo(layerX[l + 1] - 25, y2);
         ctx.stroke();
 
-        // Draw weight value on edge
+        // Draw weight value on edge (offset per connection to avoid overlap)
         const midX = (layerX[l] + 25 + layerX[l + 1] - 25) / 2;
         const midY = (y1 + y2) / 2;
+        const offsetX = (i - (n1 - 1) / 2) * 18;
+        const offsetY = (j - (n2 - 1) / 2) * 10 - 8;
         ctx.fillStyle = '#b0b0c0';
-        ctx.font = '11px monospace';
+        ctx.font = '10px monospace';
         ctx.textAlign = 'center';
-        ctx.fillText(`w=${weight.toFixed(2)}`, midX, midY - 8);
+        ctx.fillText(`${weight.toFixed(2)}`, midX + offsetX, midY + offsetY);
       }
     }
   }
@@ -612,17 +607,19 @@ function drawNN() {
         ctx.fillText(`ŷ = softmax(z) = ${layer.values[i].toFixed(3)}`, layerX[l], y + 56);
       }
 
-      // For backward pass: show gradient computation with detail
+      // For backward pass: show gradient computation (abbreviated to avoid overflow)
       if (phase === 'backward' && isActiveBwd && l === 2) {
         ctx.fillStyle = '#ff6b6b';
-        ctx.font = '13px monospace';
-        ctx.fillText(`∂L/∂z₂ = ŷ-y = ${layer.grads[i].toFixed(3)}`, layerX[l], y + 40);
+        ctx.font = '12px monospace';
+        const bwdX2 = Math.min(layerX[l], W - 20);
+        ctx.fillText(`dL/dz = ${layer.grads[i].toFixed(3)}`, bwdX2, y + 40);
       }
       if (phase === 'backward' && isActiveBwd && l === 1) {
         ctx.fillStyle = '#ff6b6b';
-        ctx.font = '13px monospace';
-        ctx.fillText(`∂L/∂h = wᵀ·∂L/∂z₂ = ${vals.da1[i].toFixed(3)}`, layerX[l], y + 40);
-        ctx.fillText(`∂L/∂z = ${vals.da1[i].toFixed(3)}*${reluDeriv(vals.z1[i])} = ${layer.grads[i].toFixed(3)}`, layerX[l], y + 56);
+        ctx.font = '12px monospace';
+        const bwdX1 = Math.min(layerX[l], W - 20);
+        ctx.fillText(`dL/dh = ${vals.da1[i].toFixed(3)}`, bwdX1, y + 40);
+        ctx.fillText(`dL/dz = ${layer.grads[i].toFixed(3)}`, bwdX1, y + 56);
       }
     }
   }
@@ -646,10 +643,10 @@ function drawNN() {
   ctx.fillText('Backward:', formulaX, formulaY + 120);
 
   ctx.fillStyle = '#ffffff';
-  ctx.font = '15px monospace';
-  ctx.fillText('∂L/∂z₂ = ŷ - y_true', formulaX, formulaY + 142);
-  ctx.fillText('∂L/∂w = ∂L/∂z · ∂z/∂w', formulaX, formulaY + 162);
-  ctx.fillText('∂L/∂h₁ = wᵀ · ∂L/∂z₂', formulaX, formulaY + 182);
+  ctx.font = '13px monospace';
+  ctx.fillText('dL/dz₂ = y\u0302 - y', formulaX, formulaY + 142);
+  ctx.fillText('dL/dw = dL/dz \u00B7 dz/dw', formulaX, formulaY + 162);
+  ctx.fillText('dL/dh₁ = w\u1D40 \u00B7 dL/dz₂', formulaX, formulaY + 182);
 
   ctx.fillStyle = '#ffd93d';
   ctx.font = '15px monospace';
@@ -1322,7 +1319,7 @@ function drawRNN() {
     ctx.stroke();
     ctx.fillStyle = '#64ffda';
     ctx.font = '15px monospace';
-    ctx.fillText(`x_${t}`, x + actualCellW / 2, startY + 20 + cellH + 36);
+    ctx.fillText(`x(${t})`, x + actualCellW / 2, startY + 20 + cellH + 36);
 
     if (rnnType === 'lstm') {
       // LSTM cell internals with gate visualization
@@ -1372,7 +1369,7 @@ function drawRNN() {
       // Hidden state output
       ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 15px monospace';
-      ctx.fillText('h_t', x + actualCellW / 2, gateY + 4*(gateH + 4) + 10);
+      ctx.fillText('h(t)', x + actualCellW / 2, gateY + 4*(gateH + 4) + 10);
 
     } else if (rnnType === 'gru') {
       // GRU cell internals
@@ -1413,7 +1410,7 @@ function drawRNN() {
       // Hidden state
       ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 15px monospace';
-      ctx.fillText('h_t', x + actualCellW / 2, gateY + 3*(gateH + 6) + 14);
+      ctx.fillText('h(t)', x + actualCellW / 2, gateY + 3*(gateH + 6) + 14);
 
     } else {
       // Vanilla RNN (Recurrent Neural Network)
@@ -1471,7 +1468,7 @@ function drawRNN() {
       ctx.fillStyle = '#64ffda';
       ctx.font = '15px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText('h_t', (arrowX1 + arrowX2) / 2, arrowY2 - 12);
+      ctx.fillText('h(t)', (arrowX1 + arrowX2) / 2, arrowY2 - 12);
 
       // For LSTM, also show cell state arrow above
       if (rnnType === 'lstm') {
@@ -1491,7 +1488,7 @@ function drawRNN() {
         ctx.fill();
         ctx.fillStyle = '#c0a0ff';
         ctx.font = '13px monospace';
-        ctx.fillText('C_t', (arrowX1 + arrowX2) / 2, cellArrowY - 10);
+        ctx.fillText('C(t)', (arrowX1 + arrowX2) / 2, cellArrowY - 10);
       }
     }
   }
@@ -1515,27 +1512,27 @@ function drawRNN() {
   let formulas = [];
   if (rnnType === 'rnn') {
     formulas = [
-      { text: 'z_t = W_hh * h_{t-1} + W_xh * x_t + b_h', color: '#64ffda' },
-      { text: 'h_t = tanh(z_t)                             -- hidden state', color: '#ffffff' },
-      { text: 'y_t = W_hy * h_t + b_y                      -- output', color: '#ffffff' },
+      { text: 'z(t) = Wh\u00B7h(t-1) + Wx\u00B7x(t) + b', color: '#64ffda' },
+      { text: 'h(t) = tanh(z(t))                         -- hidden state', color: '#ffffff' },
+      { text: 'y(t) = Wy\u00B7h(t) + b                        -- output', color: '#ffffff' },
       { text: 'Problem: d(tanh)/dz <= 0.25, gradients shrink exponentially!', color: '#ff6b6b' },
       { text: 'After 20 steps: 0.25^20 = 9e-13 (gradient is essentially 0)', color: '#ff6b6b' }
     ];
   } else if (rnnType === 'lstm') {
     formulas = [
-      { text: 'f_t = sigma(W_f*[h_{t-1}, x_t] + b_f)  -- Forget gate: what to discard', color: '#ff6b6b' },
-      { text: 'i_t = sigma(W_i*[h_{t-1}, x_t] + b_i)  -- Input gate: what new info to store', color: '#4ecdc4' },
-      { text: 'C_t = f_t*C_{t-1} + i_t*tanh(W_c*[h,x]) -- Cell state: additive! No vanishing!', color: '#c0a0ff' },
-      { text: 'o_t = sigma(W_o*[h_{t-1}, x_t] + b_o)  -- Output gate: what to expose', color: '#ffd93d' },
-      { text: 'h_t = o_t * tanh(C_t)                   -- Hidden state output', color: '#ffffff' },
-      { text: 'Key: dC_t/dC_{t-1} = f_t ~ 0.5-1.0 (not 0.25!), gradients survive!', color: '#64ffda' }
+      { text: 'f(t) = \u03C3(Wf\u00B7[h(t-1), x(t)] + bf)  -- Forget gate: what to discard', color: '#ff6b6b' },
+      { text: 'i(t) = \u03C3(Wi\u00B7[h(t-1), x(t)] + bi)  -- Input gate: what new info to store', color: '#4ecdc4' },
+      { text: 'C(t) = f(t)\u00B7C(t-1) + i(t)\u00B7tanh(Wc\u00B7[h,x]) -- Cell: additive!', color: '#c0a0ff' },
+      { text: 'o(t) = \u03C3(Wo\u00B7[h(t-1), x(t)] + bo)  -- Output gate: what to expose', color: '#ffd93d' },
+      { text: 'h(t) = o(t) \u00B7 tanh(C(t))                -- Hidden state output', color: '#ffffff' },
+      { text: 'Key: dC(t)/dC(t-1) = f(t) ~ 0.5-1.0 (not 0.25!), gradients survive!', color: '#64ffda' }
     ];
   } else {
     formulas = [
-      { text: 'r_t = sigma(W_r*[h_{t-1}, x_t] + b_r)    -- Reset gate: how much past to forget', color: '#ff6b6b' },
-      { text: 'z_t = sigma(W_z*[h_{t-1}, x_t] + b_z)    -- Update gate: blend old/new state', color: '#4ecdc4' },
-      { text: 'h~_t = tanh(W_h*[r_t*h_{t-1}, x_t] + b)  -- Candidate new hidden state', color: '#ffd93d' },
-      { text: 'h_t = (1-z_t)*h_{t-1} + z_t*h~_t          -- Interpolate old and new', color: '#ffffff' },
+      { text: 'r(t) = \u03C3(Wr\u00B7[h(t-1), x(t)] + br)    -- Reset gate: forget past', color: '#ff6b6b' },
+      { text: 'z(t) = \u03C3(Wz\u00B7[h(t-1), x(t)] + bz)    -- Update gate: blend old/new', color: '#4ecdc4' },
+      { text: 'h~(t) = tanh(Wh\u00B7[r(t)\u00B7h(t-1), x(t)] + b) -- Candidate state', color: '#ffd93d' },
+      { text: 'h(t) = (1-z(t))\u00B7h(t-1) + z(t)\u00B7h~(t)      -- Interpolate old/new', color: '#ffffff' },
       { text: 'Simpler than LSTM (2 gates vs 3), trains faster, similar performance', color: '#64ffda' }
     ];
   }
@@ -1704,60 +1701,138 @@ function drawScaling() {
 
   ctx.clearRect(0, 0, W, H);
 
-  const pad = { l: 80, r: 40, t: 60, b: 60 };
+  const pad = { l: 80, r: 200, t: 60, b: 60 };
   const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
 
   ctx.fillStyle = '#ff6b6b';
   ctx.font = '15px Inter';
   ctx.textAlign = 'center';
-  ctx.fillText('Chinchilla Scaling Laws: Loss vs Model Size & Data', W / 2, 30);
+  ctx.fillText('Chinchilla Scaling Laws: Loss vs Model Size', W / 2 - 60, 28);
 
-  const xRange = [0.5, 200], yRange = [0.5, 5];
+  const xRange = [0.1, 500], yRange = [1.0, 6.0];
 
   function toScreen(x, y) {
-    return [
-      pad.l + Math.log(x / xRange[0]) / Math.log(xRange[1] / xRange[0]) * pw,
-      pad.t + (1 - Math.log(y / yRange[0]) / Math.log(yRange[1] / yRange[0])) * ph
-    ];
+    const sx = pad.l + Math.log10(x / xRange[0]) / Math.log10(xRange[1] / xRange[0]) * pw;
+    const sy = pad.t + (1 - (y - yRange[0]) / (yRange[1] - yRange[0])) * ph;
+    return [sx, sy];
   }
 
-  ctx.strokeStyle = '#222';
+  // Grid lines
+  ctx.strokeStyle = '#1a1a3a';
   ctx.lineWidth = 1;
   ctx.setLineDash([4, 4]);
-  for (let logX = -1; logX <= 2.5; logX++) {
+  for (let logX = -1; logX <= 3; logX++) {
     const x = Math.pow(10, logX);
     const [sx] = toScreen(x, 1);
-    ctx.beginPath(); ctx.moveTo(sx, pad.t); ctx.lineTo(sx, H - pad.b); ctx.stroke();
+    if (sx >= pad.l && sx <= W - pad.r) {
+      ctx.beginPath(); ctx.moveTo(sx, pad.t); ctx.lineTo(sx, H - pad.b); ctx.stroke();
+    }
   }
-  for (let logY = -1; logY <= 1; logY++) {
-    const y = Math.pow(10, logY);
-    const [, sy] = toScreen(1, y);
+  for (let yVal = 1.0; yVal <= 6.0; yVal += 0.5) {
+    const [, sy] = toScreen(1, yVal);
     ctx.beginPath(); ctx.moveTo(pad.l, sy); ctx.lineTo(W - pad.r, sy); ctx.stroke();
   }
   ctx.setLineDash([]);
 
-  const alpha = 0.35, beta = 0.35;
-  const params = Math.pow(10, compute / 3.33);
+  const alpha = 0.34, beta = 0.28;
+
+  // Draw multiple data-budget curves (different token budgets)
+  const curveColors = ['#4ecdc4', '#64ffda', '#ffd93d', '#ff6b6b', '#c0a0ff'];
+  const curveLabels = ['10B tokens', '50B tokens', '200B tokens', '1T tokens', '5T tokens'];
+  const tokenBudgets = [10, 50, 200, 1000, 5000];
+
+  // Current user curve
+  const params = Math.pow(10, compute / 5.0) * 0.5;
   const tokens = params * ratio;
 
-  ctx.strokeStyle = '#64ffda';
-  ctx.lineWidth = 2.5;
+  // Draw reference curves for different data budgets
+  for (let c = 0; c < tokenBudgets.length; c++) {
+    const D = tokenBudgets[c];
+    ctx.strokeStyle = curveColors[c];
+    ctx.lineWidth = 2;
+    ctx.globalAlpha = 0.5;
+    ctx.beginPath();
+    let started = false;
+    for (let logX = -1; logX <= 2.7; logX += 0.03) {
+      const N = Math.pow(10, logX);
+      const loss = 1.69 + 3.0 / Math.pow(N, alpha) + 4.0 / Math.pow(D, beta);
+      const [sx, sy] = toScreen(N, Math.min(Math.max(loss, yRange[0]), yRange[1]));
+      if (sx < pad.l || sx > W - pad.r) continue;
+      if (!started) { ctx.moveTo(sx, sy); started = true; } else ctx.lineTo(sx, sy);
+    }
+    ctx.stroke();
+    ctx.globalAlpha = 1.0;
+  }
+
+  // Legend for reference curves
+  for (let c = 0; c < tokenBudgets.length; c++) {
+    const ly = pad.t + 10 + c * 18;
+    ctx.fillStyle = curveColors[c];
+    ctx.globalAlpha = 0.7;
+    ctx.fillRect(W - pad.r + 14, ly - 5, 14, 3);
+    ctx.globalAlpha = 1.0;
+    ctx.font = '11px Inter';
+    ctx.textAlign = 'left';
+    ctx.fillText(curveLabels[c], W - pad.r + 34, ly);
+  }
+
+  // Draw the user's current curve (bright, thick)
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 3;
   ctx.beginPath();
-  for (let logX = -0.5; logX <= 2.3; logX += 0.05) {
+  let started = false;
+  let minLoss = Infinity, minN = params;
+  for (let logX = -1; logX <= 2.7; logX += 0.02) {
     const N = Math.pow(10, logX);
-    const loss = 1.0 + 0.5 / Math.pow(N, alpha) + 0.5 / Math.pow(tokens / N, beta);
-    const [sx, sy] = toScreen(N, Math.max(loss, 0.5));
-    if (logX === -0.5) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+    const D = tokens / N;
+    const loss = 1.69 + 3.0 / Math.pow(N, alpha) + 4.0 / Math.pow(Math.max(D, 0.01), beta);
+    if (loss < minLoss) { minLoss = loss; minN = N; }
+    const clampedLoss = Math.min(Math.max(loss, yRange[0]), yRange[1]);
+    const [sx, sy] = toScreen(N, clampedLoss);
+    if (sx < pad.l || sx > W - pad.r) continue;
+    if (!started) { ctx.moveTo(sx, sy); started = true; } else ctx.lineTo(sx, sy);
   }
   ctx.stroke();
 
-  const [optX, optY] = toScreen(params, 1.0 + 0.5/Math.pow(params, alpha) + 0.5/Math.pow(tokens/params, beta));
-  ctx.fillStyle = '#ff6b6b';
+  // Current curve label
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 11px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText('Current budget', W - pad.r + 14, pad.t + 10 + tokenBudgets.length * 18 + 8);
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 3;
   ctx.beginPath();
-  ctx.arc(optX, optY, 6, 0, Math.PI * 2);
+  ctx.moveTo(W - pad.r + 14, pad.t + 5 + tokenBudgets.length * 18 + 8);
+  ctx.lineTo(W - pad.r + 28, pad.t + 5 + tokenBudgets.length * 18 + 8);
+  ctx.stroke();
+
+  // Optimal point (Chinchilla) - prominent marker
+  const optLoss = 1.69 + 3.0 / Math.pow(minN, alpha) + 4.0 / Math.pow(Math.max(tokens / minN, 0.01), beta);
+  const [optSx, optSy] = toScreen(minN, Math.min(Math.max(optLoss, yRange[0]), yRange[1]));
+
+  // Glow effect
+  ctx.beginPath();
+  ctx.arc(optSx, optSy, 14, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,107,107,0.2)';
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(optSx, optSy, 9, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,107,107,0.4)';
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(optSx, optSy, 5, 0, Math.PI * 2);
+  ctx.fillStyle = '#ff6b6b';
   ctx.fill();
 
-  ctx.strokeStyle = '#444';
+  // Label for optimal point
+  ctx.fillStyle = '#ffd93d';
+  ctx.font = 'bold 12px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText('Chinchilla', optSx + 12, optSy - 8);
+  ctx.fillText('Optimal', optSx + 12, optSy + 6);
+
+  // Axes
+  ctx.strokeStyle = '#555';
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(pad.l, pad.t);
@@ -1765,30 +1840,45 @@ function drawScaling() {
   ctx.lineTo(W - pad.r, H - pad.b);
   ctx.stroke();
 
+  // X axis labels
   ctx.fillStyle = '#888';
   ctx.font = '11px monospace';
   ctx.textAlign = 'center';
   for (let logX = 0; logX <= 2; logX++) {
     const x = Math.pow(10, logX);
     const [sx] = toScreen(x, 1);
-    ctx.fillText(`10^${logX}`, sx, H - pad.b + 18);
+    if (sx >= pad.l && sx <= W - pad.r) {
+      ctx.fillText(`${logX === 0 ? '1B' : logX === 1 ? '10B' : '100B'}`, sx, H - pad.b + 18);
+    }
+  }
+
+  // Y axis labels
+  ctx.textAlign = 'right';
+  for (let yVal = 1.5; yVal <= 5.5; yVal += 1.0) {
+    const [, sy] = toScreen(1, yVal);
+    ctx.fillText(yVal.toFixed(1), pad.l - 8, sy + 4);
   }
 
   ctx.save();
-  ctx.translate(20, H / 2);
+  ctx.translate(18, H / 2);
   ctx.rotate(-Math.PI / 2);
   ctx.textAlign = 'center';
-  ctx.fillText('Loss (log scale)', 0, 0);
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter';
+  ctx.fillText('Loss', 0, 0);
   ctx.restore();
 
   ctx.textAlign = 'center';
-  ctx.fillText('Model size (log scale)', W / 2, H - 10);
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter';
+  ctx.fillText('Model Size (parameters)', (pad.l + W - pad.r) / 2, H - 10);
 
+  // Info text well below title
   ctx.fillStyle = '#ccc';
   ctx.font = '12px Inter';
   ctx.textAlign = 'left';
-  ctx.fillText(`Optimal: ${Math.round(params)}B params × ${Math.round(tokens / 1e9)}B tokens = 10^${compute} FLOPs`, pad.l, pad.t - 10);
-  ctx.fillText(`Ratio: ${ratio}x data:params`, pad.l, pad.t + 8);
+  const infoY = H - 18;
+  ctx.fillText(`Optimal: ~${minN.toFixed(1)}B params, Loss=${optLoss.toFixed(2)}  |  Budget: ${tokens.toFixed(0)}B tokens  |  Ratio: ${ratio}x data:params`, pad.l, infoY);
 }
 
 // ==================== INIT ====================
