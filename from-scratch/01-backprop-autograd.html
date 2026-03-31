@@ -52,6 +52,17 @@
   .insight-box .comparison .option .opt-title { color: #ff6b6b; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
   .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
   .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
+  .code-example { margin-top: 12px; border: 1px solid #2a2a4a; border-radius: 8px; overflow: hidden; }
+  .code-toggle { width: 100%; background: #1a1a2e; color: #ff6b6b; border: none; padding: 10px 16px; text-align: left; cursor: pointer; font-size: 0.9em; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .code-toggle:hover { background: #22223a; }
+  .code-toggle-icon { display: inline-block; transition: transform 0.2s; font-size: 0.7em; }
+  .code-example.open .code-toggle-icon { transform: rotate(90deg); }
+  .code-content { display: none; padding: 14px 16px; background: #0a0a14; }
+  .code-example.open .code-content { display: block; }
+  .code-content pre { margin: 0; overflow-x: auto; white-space: pre; }
+  .code-content code { color: #e0e0e0; font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.82em; line-height: 1.6; }
+  .code-content .code-note { color: #888; font-size: 0.82em; margin-top: 8px; font-style: italic; }
+
 
   .katex { color: #e8e8ff; font-size: 1.1em; }
   .formula .katex { font-size: 1.2em; }
@@ -165,6 +176,23 @@
     <hr class="divider">
     <div class="interview-tip">When asked "how does autograd work?", start here: every operation records its inputs and outputs in a DAG. Backprop walks this DAG in reverse.</div>
     <div class="mnemonic">Forward pass = evaluate the graph left-to-right. Backward pass = differentiate right-to-left. Same graph, two directions.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Building a Computation Graph in PyTorch
+      </button>
+      <div class="code-content">
+        <pre><code>import torch
+
+a = torch.tensor(2.0, requires_grad=True)
+b = torch.tensor(3.0, requires_grad=True)
+c = torch.tensor(1.0, requires_grad=True)
+
+y = a * b + c  # PyTorch builds the DAG automatically
+print(y)       # tensor(7., grad_fn=&lt;AddBackward0&gt;)
+print(y.grad_fn.next_functions)  # shows the graph edges</code></pre>
+        <p class="code-note">Every operation on tensors with requires_grad=True is recorded in a dynamic computation graph.</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -200,6 +228,26 @@
     <hr class="divider">
     <div class="interview-tip">The chain rule is backprop. There is no separate algorithm. Backpropagation is just the chain rule applied systematically from output to input through the computation graph.</div>
     <div class="mnemonic">At each node: (gradient flowing in) times (local derivative) = (gradient flowing out to each parent).</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Backpropagation with backward()
+      </button>
+      <div class="code-content">
+        <pre><code>import torch
+
+x = torch.tensor(2.0, requires_grad=True)
+w = torch.tensor(3.0, requires_grad=True)
+b = torch.tensor(1.0, requires_grad=True)
+
+y = x * w + b
+y.backward()  # chain rule applied automatically
+
+print(w.grad)  # dy/dw = x = 2.0
+print(x.grad)  # dy/dx = w = 3.0
+print(b.grad)  # dy/db = 1.0</code></pre>
+        <p class="code-note">backward() walks the DAG in reverse, applying the chain rule at each node.</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -243,6 +291,27 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">Reverse-mode autodiff (backprop) is efficient because one backward pass gives gradients for ALL parameters. This is why we can train models with millions of parameters.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Autograd with requires_grad and Gradient Accumulation
+      </button>
+      <div class="code-content">
+        <pre><code>import torch
+
+x = torch.randn(3, requires_grad=True)
+y = (x ** 2).sum()  # scalar loss
+
+y.backward()
+print(x.grad)  # dy/dx = 2*x for each element
+
+# Gradients accumulate! Always zero them:
+x.grad.zero_()
+z = (x ** 3).sum()
+z.backward()
+print(x.grad)  # now dz/dx = 3*x^2</code></pre>
+        <p class="code-note">Always call .zero_() before backward() in training loops to prevent gradient accumulation across steps.</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -319,6 +388,26 @@
     <hr class="divider">
     <div class="interview-tip">A single neuron can only learn linearly separable patterns (like AND, OR). It cannot learn XOR. That is why we need multiple neurons and layers.</div>
     <div class="mnemonic">Weights = direction of the boundary. Bias = offset from origin. Activation = the nonlinear "squish."</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: A Single Neuron with nn.Module
+      </button>
+      <div class="code-content">
+        <pre><code>import torch
+import torch.nn as nn
+
+neuron = nn.Linear(2, 1)  # 2 inputs, 1 output (includes bias)
+relu = nn.ReLU()
+
+x = torch.tensor([[1.0, 0.5]])
+out = relu(neuron(x))  # y = ReLU(w1*x1 + w2*x2 + b)
+
+print(f"Weights: {neuron.weight.data}")
+print(f"Bias: {neuron.bias.data}")
+print(f"Output: {out.item():.4f}")</code></pre>
+        <p class="code-note">nn.Linear computes the weighted sum + bias. Wrap it with an activation for a complete neuron.</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -354,6 +443,27 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">If asked "why do we need activation functions?", demonstrate: without them, any deep network collapses to a single linear transformation. Compose N linear maps = still one linear map.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: MLP Forward Pass with nn.Sequential
+      </button>
+      <div class="code-content">
+        <pre><code>import torch
+import torch.nn as nn
+
+mlp = nn.Sequential(
+    nn.Linear(2, 16),
+    nn.ReLU(),
+    nn.Linear(16, 1),
+)
+
+x = torch.randn(1, 2)
+y = mlp(x)  # forward pass through all layers
+print(f"Output: {y.item():.4f}")
+print(f"Parameters: {sum(p.numel() for p in mlp.parameters())}")</code></pre>
+        <p class="code-note">nn.Sequential chains layers. Without ReLU, this collapses to a single linear layer.</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -392,6 +502,28 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">Vanishing gradients was the main obstacle to training deep networks before ReLU (Glorot & Bengio 2010) and residual connections (He et al. 2015).</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Checking for Vanishing Gradients
+      </button>
+      <div class="code-content">
+        <pre><code>import torch
+import torch.nn as nn
+
+# Deep sigmoid network
+layers = [nn.Linear(64, 64) for _ in range(10)]
+model = nn.Sequential(*[m for l in layers for m in (l, nn.Sigmoid())])
+
+x = torch.randn(1, 64)
+loss = model(x).sum()
+loss.backward()
+
+for i, layer in enumerate(layers):
+    grad_norm = layer.weight.grad.norm().item()
+    print(f"Layer {i}: grad norm = {grad_norm:.6f}")</code></pre>
+        <p class="code-note">Gradient norms shrink exponentially with sigmoid. Replace with ReLU to fix.</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -432,6 +564,26 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">When asked about learning rate tuning: start with 1e-3 (Adam default). Use learning rate schedulers (cosine, warmup) in practice. LR is the single most important hyperparameter.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Gradient Descent Step by Step
+      </button>
+      <div class="code-content">
+        <pre><code>import torch
+
+w = torch.tensor([5.0, -3.0], requires_grad=True)
+lr = 0.1
+
+for step in range(5):
+    loss = (w[0] - 1)**2 + 10*(w[1] - 2)**2  # elongated valley
+    loss.backward()
+    with torch.no_grad():
+        w -= lr * w.grad
+        w.grad.zero_()
+    print(f"Step {step}: w={w.data.tolist()}, loss={loss.item():.4f}")</code></pre>
+        <p class="code-note">This is the core update rule. In practice, use torch.optim instead of manual updates.</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -503,6 +655,30 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">When asked "walk me through training a neural network": forward pass, compute loss, backward pass (backprop), weight update (optimizer step), repeat. That is the entire loop.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: The Complete Training Loop
+      </button>
+      <div class="code-content">
+        <pre><code>import torch
+import torch.nn as nn
+
+model = nn.Sequential(nn.Linear(2, 16), nn.ReLU(), nn.Linear(16, 1))
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+loss_fn = nn.MSELoss()
+
+X = torch.randn(100, 2)
+y = (X[:, 0] * X[:, 1]).unsqueeze(1)
+
+for epoch in range(100):
+    pred = model(X)           # 1. Forward
+    loss = loss_fn(pred, y)   # 2. Loss
+    loss.backward()           # 3. Backward
+    optimizer.step()          # 4. Update
+    optimizer.zero_grad()     # Reset grads</code></pre>
+        <p class="code-note">Four steps repeated: forward, loss, backward, update. This loop trains every neural network.</p>
+      </div>
+    </div>
   </div>
 </div>
 

@@ -49,6 +49,17 @@
   .katex { color: #e8e8ff; font-size: 1.1em; }
   .formula .katex { font-size: 1.2em; }
 
+  .code-example { margin-top: 12px; border: 1px solid #2a2a4a; border-radius: 8px; overflow: hidden; }
+  .code-toggle { width: 100%; background: #1a1a2e; color: #ff6b6b; border: none; padding: 10px 16px; text-align: left; cursor: pointer; font-size: 0.9em; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .code-toggle:hover { background: #22223a; }
+  .code-toggle-icon { display: inline-block; transition: transform 0.2s; font-size: 0.7em; }
+  .code-example.open .code-toggle-icon { transform: rotate(90deg); }
+  .code-content { display: none; padding: 14px 16px; background: #0a0a14; }
+  .code-example.open .code-content { display: block; }
+  .code-content pre { margin: 0; overflow-x: auto; white-space: pre; }
+  .code-content code { color: #e0e0e0; font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.82em; line-height: 1.6; }
+  .code-content .code-note { color: #888; font-size: 0.82em; margin-top: 8px; font-style: italic; }
+
 </style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -127,6 +138,30 @@
     <div class="interview-tip">Why deep networks? Deeper networks learn more abstract representations. Trade-off: harder to train, need more data.</div>
     <div class="mnemonic">Neural network = function composition. Each layer learns a transformation. Depth = abstraction hierarchy.
     <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: During forward pass, hover over an output node — activation = 0.7 (result of ReLU(0.1 * input)). During backward pass, hover over same node — gradient = 0.03 (chain rule: local gradient × upstream gradient). Change an input and watch activations and gradients update.</div>
+  
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Simple Neural Network
+      </button>
+      <div class="code-content">
+        <pre><code>import torch
+import torch.nn as nn
+
+model = nn.Sequential(
+    nn.Linear(784, 256),
+    nn.ReLU(),
+    nn.Linear(256, 64),
+    nn.ReLU(),
+    nn.Linear(64, 10)
+)
+
+x = torch.randn(32, 784)  # batch of 32 images
+logits = model(x)          # forward pass
+loss = nn.CrossEntropyLoss()(logits, torch.randint(0, 10, (32,)))
+loss.backward()            # backward pass computes all gradients</code></pre>
+        <p class="code-note">nn.Sequential stacks layers. CrossEntropyLoss combines LogSoftmax + NLLLoss.</p>
+      </div>
+    </div>
   </div>
 </div>
   </div>
@@ -197,6 +232,25 @@
     <div class="interview-tip">Use ReLU instead of sigmoid/tanh to avoid vanishing gradients. Use batch normalization to stabilize gradient flow.</div>
     <div class="mnemonic">Backpropagation = chain rule applied recursively. Efficient but suffers from vanishing/exploding gradients in deep networks.
     <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click Sigmoid. At extremes (x=-10, x=10), derivative ≈ 0 (white/flat). In the middle (x=0), derivative = 0.25 (steepest). Switch to ReLU — derivative is constant 1 for x>0 (no vanishing!). This is why ReLU enabled deep networks.</div>
+  
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Activation Functions in PyTorch
+      </button>
+      <div class="code-content">
+        <pre><code>import torch
+import torch.nn.functional as F
+
+x = torch.linspace(-3, 3, 7)
+print(f"ReLU:    {F.relu(x).tolist()}")
+print(f"Sigmoid: {torch.sigmoid(x).round(decimals=2).tolist()}")
+print(f"GELU:    {F.gelu(x).round(decimals=2).tolist()}")
+print(f"SiLU:    {F.silu(x).round(decimals=2).tolist()}")
+# GELU/SiLU used in modern transformers (GPT, LLaMA)
+# ReLU still standard for CNNs and simple networks</code></pre>
+        <p class="code-note">GELU is the default for transformers. ReLU for CNNs. Sigmoid/tanh mostly legacy except in gates.</p>
+      </div>
+    </div>
   </div>
 </div>
   </div>
@@ -253,6 +307,30 @@
     <div class="interview-tip">"Why can't we train a 50-layer sigmoid network?" → Chain rule multiplies derivatives. Sigmoid max derivative = 0.25. After 50 layers: 0.25⁵⁰ ≈ 10⁻³⁰. Gradient is effectively zero. Solution: ReLU + residual connections + careful initialization (He/Xavier).</div>
     <div class="mnemonic">Vanishing = multiplying numbers &lt; 1 repeatedly. Exploding = multiplying numbers &gt; 1 repeatedly. Residual connections = adding a highway that always carries gradient = 1.</div>
     <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set depth to 5 with Sigmoid — gradients are okay. Now drag to 25 — watch them collapse. Switch to ReLU — they stabilize. Switch to Residual — rock solid even at depth 30.</div>
+  
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Weight Initialization
+      </button>
+      <div class="code-content">
+        <pre><code>import torch.nn as nn
+
+# He initialization (for ReLU networks)
+linear = nn.Linear(256, 128)
+nn.init.kaiming_normal_(linear.weight, mode='fan_in', nonlinearity='relu')
+
+# Xavier initialization (for tanh/sigmoid)
+nn.init.xavier_uniform_(linear.weight)
+
+# Check gradient flow in a deep network
+model = nn.Sequential(*[nn.Sequential(nn.Linear(64, 64), nn.ReLU()) for _ in range(20)])
+x = torch.randn(8, 64, requires_grad=True)
+loss = model(x).sum()
+loss.backward()
+print(f"Input grad norm: {x.grad.norm().item():.6f}")</code></pre>
+        <p class="code-note">He init for ReLU, Xavier for tanh. Proper init prevents vanishing/exploding gradients at startup.</p>
+      </div>
+    </div>
   </div>
   </div>
 
@@ -328,6 +406,30 @@
     <div class="interview-tip">Dropout is a simple, powerful regularizer. Less important with batch norm, but still useful together. Monitor train vs test error.</div>
     <div class="mnemonic">Dropout = train multiple nets simultaneously, average at test time. Prevents co-adaptation. Ensemble effect = better generalization.
     <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click "Next Step" 5 times — kernel slides from left to right. After each step, output value = (sum of element-wise products). Try "Prev Step" to backtrack. This simple sliding dot product is the entire CNN operation — applied millions of times.</div>
+  
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: CNN Architecture
+      </button>
+      <div class="code-content">
+        <pre><code>import torch.nn as nn
+
+model = nn.Sequential(
+    nn.Conv2d(3, 32, kernel_size=3, padding=1),
+    nn.ReLU(),
+    nn.MaxPool2d(2),
+    nn.Conv2d(32, 64, kernel_size=3, padding=1),
+    nn.ReLU(),
+    nn.AdaptiveAvgPool2d(1),
+    nn.Flatten(),
+    nn.Linear(64, 10)
+)
+import torch
+x = torch.randn(8, 3, 32, 32)  # batch of 8 RGB 32x32 images
+print(model(x).shape)           # torch.Size([8, 10])</code></pre>
+        <p class="code-note">Conv2d(in, out, kernel) + ReLU + Pool is the classic CNN pattern. AdaptiveAvgPool handles variable input sizes.</p>
+      </div>
+    </div>
   </div>
 </div>
   </div>
@@ -398,6 +500,32 @@
     <div class="interview-tip">CNNs are the backbone of computer vision. Receptive field grows with depth. Understand how filter size and stride affect output dimensions.</div>
     <div class="mnemonic">CNN = local pattern matching with weight sharing. Captures spatial hierarchies. Deep = large receptive fields = global context.
     <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Select Batch Norm. Colored region highlights entire column (normalize across batch). Batch size = 32 activations, all scaled together. Switch to Layer Norm — colored region is entire row (normalize across features for each sample independently). RMSNorm normalizes only by variance, not mean.</div>
+  
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Normalization Layers
+      </button>
+      <div class="code-content">
+        <pre><code>import torch
+import torch.nn as nn
+
+batch, seq_len, features = 32, 10, 256
+
+# BatchNorm: normalize across batch dimension (for CNNs)
+bn = nn.BatchNorm1d(features)
+x = torch.randn(batch, features)
+print(f"BatchNorm output mean: {bn(x).mean(dim=0).abs().max():.4f}")
+
+# LayerNorm: normalize across feature dimension (for transformers)
+ln = nn.LayerNorm(features)
+x = torch.randn(batch, seq_len, features)
+print(f"LayerNorm output mean: {ln(x).mean(dim=-1).abs().max():.4f}")
+
+# RMSNorm: LayerNorm without mean centering (LLaMA, Gemma)
+rms = nn.RMSNorm(features)</code></pre>
+        <p class="code-note">BatchNorm for CNNs, LayerNorm for transformers, RMSNorm for modern LLMs. Never use BatchNorm with variable batch sizes.</p>
+      </div>
+    </div>
   </div>
 </div>
   </div>
@@ -492,6 +620,28 @@
     <div class="interview-tip">In interviews, know that LSTMs were the gold standard before 2017 (Attention Is All You Need). Today Transformers dominate NLP, but RNNs still appear in streaming, on-device, and time-series settings. State Space Models (Mamba, S4) are a modern alternative that combine RNN-like O(1) inference with Transformer-like parallelism during training.</div>
     <div class="mnemonic">Vanilla RNN = broken for long sequences. LSTM = gold standard RNN (3 gates + cell state). GRU = cheaper LSTM (2 gates, no cell state). Transformer = parallel + global attention but O(n²). Pick based on sequence length, latency needs, and compute budget.</div>
     <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set sequence length to 10, step through all timesteps in Vanilla RNN — watch the gradient bars collapse to near-zero. Switch to LSTM — same 10 steps but gradients stay healthy. That's the entire reason LSTMs exist.</div>
+  
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: LSTM in PyTorch
+      </button>
+      <div class="code-content">
+        <pre><code>import torch
+import torch.nn as nn
+
+lstm = nn.LSTM(input_size=128, hidden_size=256, num_layers=2,
+               batch_first=True, dropout=0.1)
+x = torch.randn(32, 10, 128)  # batch=32, seq_len=10, features=128
+output, (h_n, c_n) = lstm(x)
+# output: (32, 10, 256) - all hidden states
+# h_n: (2, 32, 256) - final hidden state per layer
+
+# GRU: same API, no cell state
+gru = nn.GRU(128, 256, num_layers=2, batch_first=True)
+output, h_n = gru(x)  # no c_n returned</code></pre>
+        <p class="code-note">LSTM has 3 gates (forget, input, output) + cell state. GRU has 2 gates (reset, update), fewer params.</p>
+      </div>
+    </div>
   </div>
 </div>
   </div>
@@ -565,6 +715,31 @@
     <div class="interview-tip">Flash Attention is IO-aware: it optimizes data movement between fast SRAM and slow HBM, not the number of FLOPs. Same math, fewer memory transfers.</div>
     <div class="mnemonic">Flash = tiling + online softmax + recomputation. Never stores full N x N matrix. Exact, not approximate.</div>
     <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">Try this: Sequence length = 100. Standard Attention materializes 100x100 matrix (10K values in slow memory). Flash Attention: tiles into 4x4 blocks (only 25 values in fast memory at a time). Result is identical, but memory bandwidth drops 4-10x. This is why Flash Attention made long sequences practical.</div>
+  
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Scaled Dot-Product Attention
+      </button>
+      <div class="code-content">
+        <pre><code>import torch
+import torch.nn.functional as F
+
+# Standard attention (what Flash Attention optimizes)
+def attention(Q, K, V):
+    d_k = Q.size(-1)
+    scores = Q @ K.transpose(-2, -1) / d_k**0.5
+    weights = F.softmax(scores, dim=-1)
+    return weights @ V
+
+batch, heads, seq_len, d_k = 2, 8, 64, 64
+Q = K = V = torch.randn(batch, heads, seq_len, d_k)
+out = attention(Q, K, V)  # (2, 8, 64, 64)
+
+# PyTorch built-in Flash Attention (auto-selects best kernel)
+out_flash = F.scaled_dot_product_attention(Q, K, V)</code></pre>
+        <p class="code-note">F.scaled_dot_product_attention auto-uses Flash Attention when available. O(n) memory vs O(n^2).</p>
+      </div>
+    </div>
   </div>
 </div>
   </div>
@@ -639,6 +814,30 @@
     <div class="interview-tip">Chinchilla showed most large models were undertrained (too many params, too little data). Optimal: ~20 tokens per parameter. Scaling laws let you predict loss before training.</div>
     <div class="mnemonic">Scaling = power laws. More params + more data = lower loss, but diminishing returns. Chinchilla = balance params and data equally.</div>
     <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">Try this: Move compute budget left (favor parameters, 80/20 split) -- loss plateaus (data bottleneck). Move right (80/20 data favoring) -- loss plateaus (parameter bottleneck). The diagonal (50/50 split) is optimal. Chinchilla discovered this: equal compute to parameters and data.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Training Loop with LR Schedule
+      </button>
+      <div class="code-content">
+        <pre><code>import torch
+import torch.nn as nn
+
+model = nn.Linear(256, 10)
+optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=0.01)
+scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=100)
+
+for epoch in range(100):
+    x = torch.randn(32, 256)
+    loss = nn.CrossEntropyLoss()(model(x), torch.randint(0, 10, (32,)))
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+    scheduler.step()
+    if epoch % 25 == 0:
+        print(f"Epoch {epoch}: loss={loss.item():.3f}, lr={scheduler.get_last_lr()[0]:.6f}")</code></pre>
+        <p class="code-note">AdamW + cosine LR schedule is the standard training recipe for modern deep learning.</p>
+      </div>
+    </div>
   </div>
 </div>
   </div>

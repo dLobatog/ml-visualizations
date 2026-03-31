@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>From Scratch Series — Roadmap & Wireframes</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #0a0a0f; color: #e0e0e0; line-height: 1.7; }
+
+  .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); padding: 60px 40px 50px; text-align: center; border-bottom: 1px solid #2a2a4a; position: relative; overflow: hidden; }
+  .header::before { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle at 30% 50%, rgba(100, 255, 218, 0.03) 0%, transparent 50%), radial-gradient(circle at 70% 50%, rgba(255, 107, 107, 0.03) 0%, transparent 50%); }
+  .header h1 { font-size: 2.6em; background: linear-gradient(90deg, #ff6b6b, #ffd93d, #64ffda, #4ecdc4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 12px; position: relative; }
+  .header p { color: #999; font-size: 1.1em; max-width: 700px; margin: 0 auto 6px; position: relative; }
+  .header .subtitle { color: #666; font-size: 0.88em; }
+
+  .container { max-width: 1000px; margin: 0 auto; padding: 40px 20px; }
+
+  /* Philosophy section */
+  .philosophy { background: linear-gradient(135deg, #1a1a3e 0%, #151530 100%); border: 1px solid #3a3a6a; border-radius: 16px; padding: 32px; margin-bottom: 40px; }
+  .philosophy h2 { color: #ffd93d; font-size: 1.4em; margin-bottom: 16px; }
+  .philosophy p { color: #bbb; margin-bottom: 12px; font-size: 0.95em; }
+  .philosophy .principle { display: flex; gap: 14px; margin: 14px 0; align-items: flex-start; }
+  .philosophy .principle .icon { font-size: 1.4em; flex-shrink: 0; margin-top: 2px; }
+  .philosophy .principle .text { color: #ccc; font-size: 0.93em; }
+  .philosophy .principle .text strong { color: #ffd93d; }
+
+  /* Dependency graph */
+  .dep-graph { background: #12121f; border: 1px solid #2a2a4a; border-radius: 16px; padding: 32px; margin-bottom: 40px; text-align: center; }
+  .dep-graph h2 { color: #64ffda; font-size: 1.4em; margin-bottom: 20px; }
+  .dep-graph svg { max-width: 100%; }
+
+  /* Chapter cards */
+  .chapter { background: #12121f; border: 1px solid #2a2a4a; border-radius: 16px; margin-bottom: 32px; overflow: hidden; }
+  .chapter-header { padding: 28px 32px 20px; border-bottom: 1px solid #1a1a3a; }
+  .chapter-header .ch-num { font-size: 0.78em; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px; }
+  .chapter-header h2 { font-size: 1.6em; margin-bottom: 6px; }
+  .chapter-header .ch-desc { color: #999; font-size: 0.93em; }
+  .chapter-header .ch-meta { display: flex; gap: 14px; margin-top: 12px; flex-wrap: wrap; }
+  .ch-badge { font-size: 0.75em; padding: 3px 10px; border-radius: 12px; font-weight: 600; }
+  .badge-viz { background: rgba(100,255,218,0.1); color: #64ffda; border: 1px solid rgba(100,255,218,0.2); }
+  .badge-quiz { background: rgba(255,217,61,0.1); color: #ffd93d; border: 1px solid rgba(255,217,61,0.2); }
+  .badge-prereq { background: rgba(255,107,107,0.08); color: #ff6b6b; border: 1px solid rgba(255,107,107,0.2); }
+  .badge-new { background: rgba(255,159,243,0.1); color: #ff9ff3; border: 1px solid rgba(255,159,243,0.2); }
+
+  /* Section within chapter */
+  .ch-body { padding: 24px 32px 32px; }
+  .viz-wireframe { background: #0d0d1a; border: 1px solid #2a2a4a; border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+  .viz-wireframe .viz-num { font-size: 0.75em; color: #555; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px; }
+  .viz-wireframe h3 { font-size: 1.15em; margin-bottom: 4px; }
+  .viz-wireframe .viz-goal { color: #aaa; font-size: 0.88em; margin-bottom: 14px; font-style: italic; }
+
+  .wireframe-canvas { background: #08081a; border: 1px dashed #333; border-radius: 10px; padding: 20px; margin-bottom: 14px; min-height: 120px; position: relative; }
+  .wireframe-canvas .wf-label { position: absolute; top: 8px; right: 12px; font-size: 0.7em; color: #444; text-transform: uppercase; letter-spacing: 1px; }
+  .wireframe-canvas p { color: #777; font-size: 0.85em; line-height: 1.7; }
+  .wireframe-canvas .wf-element { background: #151530; border: 1px solid #333; border-radius: 6px; padding: 8px 14px; margin: 6px 0; font-size: 0.83em; color: #888; }
+  .wireframe-canvas .wf-element strong { color: #aaa; }
+
+  .interactions { margin-top: 10px; }
+  .interactions h4 { font-size: 0.82em; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .interaction-item { display: flex; gap: 10px; margin: 6px 0; align-items: flex-start; font-size: 0.87em; color: #999; }
+  .interaction-item .int-icon { color: #64ffda; flex-shrink: 0; }
+
+  .builds-on { background: rgba(255,107,107,0.05); border: 1px solid rgba(255,107,107,0.15); border-radius: 8px; padding: 12px 16px; margin-top: 14px; font-size: 0.85em; color: #cc8888; }
+  .builds-on strong { color: #ff6b6b; }
+
+  .narrative-note { background: rgba(255,217,61,0.05); border-left: 3px solid #ffd93d; padding: 14px 18px; margin: 16px 0; border-radius: 0 8px 8px 0; font-size: 0.88em; color: #ccb866; }
+  .narrative-note strong { color: #ffd93d; }
+
+  .expert-hook { background: rgba(100,255,218,0.05); border-left: 3px solid #64ffda; padding: 14px 18px; margin: 16px 0; border-radius: 0 8px 8px 0; font-size: 0.88em; color: #88ccbb; }
+  .expert-hook strong { color: #64ffda; }
+
+  /* Minimap component */
+  .minimap-spec { background: #0d0d1a; border: 1px solid #2a2a4a; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+  .minimap-spec h4 { font-size: 0.9em; color: #64ffda; margin-bottom: 10px; }
+  .minimap-spec .mm-stages { display: flex; gap: 4px; flex-wrap: wrap; }
+  .minimap-spec .mm-stage { padding: 4px 12px; border-radius: 6px; font-size: 0.78em; font-weight: 600; }
+  .mm-done { background: rgba(100,255,218,0.15); color: #64ffda; border: 1px solid rgba(100,255,218,0.3); }
+  .mm-current { background: rgba(255,217,61,0.2); color: #ffd93d; border: 1px solid rgba(255,217,61,0.4); animation: pulse-border 2s infinite; }
+  .mm-future { background: #151530; color: #555; border: 1px solid #2a2a4a; }
+  @keyframes pulse-border { 0%,100% { border-color: rgba(255,217,61,0.4); } 50% { border-color: rgba(255,217,61,0.8); } }
+  .mm-arrow { color: #333; font-size: 0.9em; display: flex; align-items: center; }
+
+  .section-divider { text-align: center; padding: 30px 0; color: #333; font-size: 1.5em; letter-spacing: 8px; }
+
+  .footer { text-align: center; padding: 40px; color: #555; font-size: 0.85em; border-top: 1px solid #1a1a2e; }
+  .footer a { color: #64ffda; text-decoration: none; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>From Scratch Series</h1>
+  <p>Build-up educational narratives: each visualization adds exactly one concept, constructing complete systems step by step</p>
+  <p class="subtitle">Roadmap &amp; Wireframes &bull; 7 Chapters &bull; ~55 Visualizations &bull; For experts and newcomers alike</p>
+</div>
+
+<div class="container">
+
+<!-- ============================================================ -->
+<!-- PHILOSOPHY -->
+<!-- ============================================================ -->
+<div class="philosophy">
+  <h2>Design Philosophy</h2>
+  <p>This series borrows the build-up narrative from Karpathy's "from scratch" lectures and adapts it to the interactive canvas format. The key difference from the existing interview-prep pages: instead of standalone visualizations that each explain one concept, every visualization in a chapter is a <strong>layer</strong> that builds on the previous one. The learner watches a complete working system assemble piece by piece.</p>
+
+  <div class="principle">
+    <span class="icon">&#x1F9F1;</span>
+    <div class="text"><strong>Incremental Construction.</strong> Each viz adds exactly one new idea to the system built so far. The running system is always visible — new parts light up, old parts stay but are dimmed. A "minimap" at the top of the page shows where you are in the build.</div>
+  </div>
+  <div class="principle">
+    <span class="icon">&#x1F6A8;</span>
+    <div class="text"><strong>"Break It" Toggles.</strong> Every major component can be disabled. Remove LayerNorm? Watch gradients explode. Zero out residuals? See training stall. Use sum instead of mean aggregation in a GNN? Watch node features blow up on high-degree nodes. This is how experts engage — they already know what attention <em>is</em>, but seeing it break <em>in context</em> deepens understanding.</div>
+  </div>
+  <div class="principle">
+    <span class="icon">&#x1F50D;</span>
+    <div class="text"><strong>Dual-Depth Content.</strong> Each viz has a <em>newcomer layer</em> (plain-language "what" + animated arrows) and an <em>expert layer</em> (KaTeX formulas, gradient flow analysis, complexity annotations). Toggle between them or show both.</div>
+  </div>
+  <div class="principle">
+    <span class="icon">&#x1F517;</span>
+    <div class="text"><strong>Cross-Chapter Callbacks.</strong> When a concept from an earlier chapter appears, show a link/thumbnail back. "This attention mechanism? You built it in Ch3. Now we're putting it on graph edges (GAT)." Reinforces connections, makes the curriculum feel like a web rather than a list.</div>
+  </div>
+  <div class="principle">
+    <span class="icon">&#x1F3AF;</span>
+    <div class="text"><strong>Live-Coded Feel.</strong> Where possible, show actual numbers flowing through. Not "here's the formula" — instead: "input = [0.2, -0.5, 0.8], W = [[...]], matmul = [...], ReLU = [...], loss = 2.34." The learner traces concrete values end-to-end.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- DEPENDENCY GRAPH -->
+<!-- ============================================================ -->
+<div class="dep-graph">
+  <h2>Chapter Dependency Graph</h2>
+  <svg viewBox="0 0 800 420" style="max-width:800px;">
+    <!-- Nodes -->
+    <rect x="280" y="10" width="240" height="44" rx="10" fill="#1a1a3e" stroke="#ff6b6b" stroke-width="2"/>
+    <text x="400" y="38" text-anchor="middle" fill="#ff6b6b" font-size="14" font-weight="bold">Ch 1: Backprop &amp; Autograd</text>
+
+    <rect x="60" y="100" width="240" height="44" rx="10" fill="#1a1a3e" stroke="#ffd93d" stroke-width="2"/>
+    <text x="180" y="128" text-anchor="middle" fill="#ffd93d" font-size="14" font-weight="bold">Ch 2: Makemore (NLP)</text>
+
+    <rect x="500" y="100" width="240" height="44" rx="10" fill="#1a1a3e" stroke="#4ecdc4" stroke-width="2"/>
+    <text x="620" y="128" text-anchor="middle" fill="#4ecdc4" font-size="14" font-weight="bold">Ch 3: MLPs &amp; Optimization</text>
+
+    <rect x="60" y="200" width="240" height="44" rx="10" fill="#1a1a3e" stroke="#ff9ff3" stroke-width="2"/>
+    <text x="180" y="228" text-anchor="middle" fill="#ff9ff3" font-size="14" font-weight="bold">Ch 4: Attention &amp; Sequence</text>
+
+    <rect x="500" y="200" width="240" height="44" rx="10" fill="#1a1a3e" stroke="#54a0ff" stroke-width="2"/>
+    <text x="620" y="228" text-anchor="middle" fill="#54a0ff" font-size="14" font-weight="bold">Ch 5: GNNs from Scratch</text>
+
+    <rect x="60" y="300" width="240" height="44" rx="10" fill="#1a1a3e" stroke="#01a3a4" stroke-width="2"/>
+    <text x="180" y="328" text-anchor="middle" fill="#01a3a4" font-size="14" font-weight="bold">Ch 6: Transformer from Scratch</text>
+
+    <rect x="500" y="300" width="240" height="44" rx="10" fill="#1a1a3e" stroke="#e056fd" stroke-width="2"/>
+    <text x="620" y="328" text-anchor="middle" fill="#e056fd" font-size="14" font-weight="bold">Ch 7: Distillation &amp; Compression</text>
+
+    <!-- Edges -->
+    <defs>
+      <marker id="arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#555"/></marker>
+    </defs>
+    <!-- Ch1 -> Ch2 -->
+    <line x1="340" y1="54" x2="220" y2="100" stroke="#555" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <!-- Ch1 -> Ch3 -->
+    <line x1="460" y1="54" x2="580" y2="100" stroke="#555" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <!-- Ch2 -> Ch4 -->
+    <line x1="180" y1="144" x2="180" y2="200" stroke="#555" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <!-- Ch3 -> Ch4 (cross) -->
+    <line x1="500" y1="144" x2="260" y2="200" stroke="#444" stroke-width="1" stroke-dasharray="6,4" marker-end="url(#arrow)"/>
+    <!-- Ch3 -> Ch5 -->
+    <line x1="620" y1="144" x2="620" y2="200" stroke="#555" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <!-- Ch4 -> Ch6 -->
+    <line x1="180" y1="244" x2="180" y2="300" stroke="#555" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <!-- Ch4 -> Ch5 (cross — attention reuse for GAT) -->
+    <line x1="300" y1="222" x2="500" y2="222" stroke="#444" stroke-width="1" stroke-dasharray="6,4" marker-end="url(#arrow)"/>
+    <!-- Ch5 -> Ch7 -->
+    <line x1="620" y1="244" x2="620" y2="300" stroke="#555" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <!-- Ch6 -> Ch7 (cross) -->
+    <line x1="300" y1="322" x2="500" y2="322" stroke="#444" stroke-width="1" stroke-dasharray="6,4" marker-end="url(#arrow)"/>
+
+    <!-- Legend -->
+    <line x1="60" y1="390" x2="100" y2="390" stroke="#555" stroke-width="1.5"/>
+    <text x="108" y="394" fill="#777" font-size="11">required prerequisite</text>
+    <line x1="280" y1="390" x2="320" y2="390" stroke="#444" stroke-width="1" stroke-dasharray="6,4"/>
+    <text x="328" y="394" fill="#777" font-size="11">concepts reused (optional path)</text>
+  </svg>
+</div>
+
+<div class="section-divider">· · ·</div>
+
+<!-- ============================================================ -->
+<!-- CHAPTER 1: BACKPROP & AUTOGRAD -->
+<!-- ============================================================ -->
+<div class="chapter">
+  <div class="chapter-header">
+    <div class="ch-num" style="color:#ff6b6b;">Chapter 1</div>
+    <h2 style="color:#ff6b6b;">Backpropagation &amp; Autograd from Scratch</h2>
+    <div class="ch-desc">Start from a single scalar operation. Build a computation graph. Derive gradients by hand. Then automate it — the learner constructs a tiny autograd engine, just like micrograd.</div>
+    <div class="ch-meta">
+      <span class="ch-badge badge-viz">8 visualizations</span>
+      <span class="ch-badge badge-quiz">30+ quiz questions</span>
+      <span class="ch-badge badge-new">No prerequisites</span>
+    </div>
+  </div>
+  <div class="ch-body">
+
+    <div class="minimap-spec">
+      <h4>Chapter Minimap (persistent top-of-page component)</h4>
+      <div class="mm-stages">
+        <span class="mm-stage mm-done">Scalar ops</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-done">Comp. graph</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-current">Chain rule</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-future">Autograd</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-future">Neuron</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-future">MLP fwd</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-future">MLP bwd</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-future">Training loop</span>
+      </div>
+    </div>
+
+    <!-- Viz 1.1 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 1.1</div>
+      <h3 style="color:#ff6b6b;">Scalar Operations &amp; the Computation Graph</h3>
+      <div class="viz-goal">Goal: The learner sees that every expression (a*b + c) is secretly a tree of simple operations.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>Left half:</strong> An expression editor. User types or picks from presets: <code>a*b + c</code>, <code>sigmoid(w*x + b)</code>, <code>(a-b)^2</code>. Concrete values shown: a=2.0, b=-3.0, c=10.0.</p>
+        <p><strong>Right half:</strong> A DAG builds node-by-node as the expression is parsed. Each node shows its operation (+, *, etc.) and its current value. Edges show data flow. Animate: nodes appear one at a time, values propagate left-to-right with a traveling "pulse" along edges.</p>
+        <div class="wf-element"><strong>Interactive:</strong> User drags slider for any input value &rarr; all downstream nodes recompute in real-time with animated pulses.</div>
+      </div>
+      <div class="interactions">
+        <h4>User Interactions</h4>
+        <div class="interaction-item"><span class="int-icon">&#x25B6;</span> Preset expression selector (dropdown or buttons)</div>
+        <div class="interaction-item"><span class="int-icon">&#x1F3DA;</span> Sliders for each input variable (a, b, c, w, x)</div>
+        <div class="interaction-item"><span class="int-icon">&#x1F441;</span> Hover any node &rarr; tooltip shows "value = 6.0, operation = multiply"</div>
+      </div>
+      <div class="narrative-note"><strong>Narrative beat:</strong> "Every neural network — even GPT — is just a giant version of this computation graph. Before we build anything, let's understand this tiny one perfectly."</div>
+    </div>
+
+    <!-- Viz 1.2 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 1.2</div>
+      <h3 style="color:#ff6b6b;">The Chain Rule — Backpropagation by Hand</h3>
+      <div class="viz-goal">Goal: Watch gradients flow backward through the graph. See the chain rule multiply local derivatives at each node.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>Same graph from 1.1</strong>, but now in "backward mode." A <span style="color:#ff6b6b;">red pulse</span> starts at the output node (grad = 1.0) and flows backward along edges.</p>
+        <p>At each node: show the <em>local derivative</em> (e.g., for multiply: d(a*b)/da = b = -3.0) and the <em>upstream gradient</em>. Multiply them &rarr; show the result propagating further backward. Numbers appear step by step.</p>
+        <div class="wf-element"><strong>Split-screen option:</strong> Left = forward values (blue). Right = backward gradients (red). Same graph, two passes side by side.</div>
+      </div>
+      <div class="interactions">
+        <h4>User Interactions</h4>
+        <div class="interaction-item"><span class="int-icon">&#x23EF;</span> Step-by-step button: advance one node at a time through backprop</div>
+        <div class="interaction-item"><span class="int-icon">&#x1F504;</span> "Auto-play" toggle: animate the full backward pass continuously</div>
+        <div class="interaction-item"><span class="int-icon">&#x1F441;</span> Hover any edge &rarr; tooltip: "local grad = -3.0 &times; upstream grad = 1.0 &rarr; passed grad = -3.0"</div>
+      </div>
+      <div class="expert-hook"><strong>Expert layer:</strong> Show the Jacobian for each node. For multiply: show the 2&times;2 Jacobian. For vector operations (later): show how this generalizes. Link to matrix calculus.</div>
+    </div>
+
+    <!-- Viz 1.3 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 1.3</div>
+      <h3 style="color:#ff6b6b;">Autograd Engine — Automatic Differentiation</h3>
+      <div class="viz-goal">Goal: Show that we don't need to derive gradients by hand — the graph structure encodes everything we need.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>Left:</strong> Pseudo-code of a Value class (like micrograd) — shows __add__, __mul__, backward(). Highlight the active line as the viz runs.</p>
+        <p><strong>Right:</strong> The same computation graph, but now each node has a <code>.grad</code> attribute. Calling <code>output.backward()</code> triggers topological sort + reverse traversal. Animate: nodes light up in topo-sorted order, .grad fills in.</p>
+        <div class="wf-element"><strong>Key moment:</strong> User sees that <code>a.grad</code> matches what they computed by hand in Viz 1.2. "The machine gets the same answer!"</div>
+      </div>
+      <div class="interactions">
+        <h4>User Interactions</h4>
+        <div class="interaction-item"><span class="int-icon">&#x25B6;</span> "Run backward()" button triggers the animation</div>
+        <div class="interaction-item"><span class="int-icon">&#x1F50D;</span> Toggle: "Show topological sort order" — numbers appear on nodes showing execution order</div>
+        <div class="interaction-item"><span class="int-icon">&#x26A0;</span> "Break it" toggle: disable topological sort &rarr; show nodes processing in wrong order &rarr; wrong gradients. Demonstrates why topo-sort matters.</div>
+      </div>
+    </div>
+
+    <!-- Viz 1.4 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 1.4</div>
+      <h3 style="color:#ff6b6b;">A Single Neuron</h3>
+      <div class="viz-goal">Goal: One neuron = weighted sum + bias + activation. Build it from the primitives we just learned.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p>Show a neuron as a computation graph: inputs x1, x2 &rarr; multiply by w1, w2 &rarr; sum &rarr; add bias &rarr; activation (ReLU/sigmoid/tanh toggle). Every step shows the concrete number.</p>
+        <p><strong>Bottom panel:</strong> A 2D decision boundary plot. As the user changes w1, w2, b with sliders, the decision line rotates/shifts in real-time. "One neuron = one linear boundary."</p>
+        <div class="wf-element"><strong>Activation toggle:</strong> Switch between ReLU, sigmoid, tanh. Show how the output range changes. With sigmoid: output is between 0 and 1 (probability interpretation).</div>
+      </div>
+      <div class="interactions">
+        <h4>User Interactions</h4>
+        <div class="interaction-item"><span class="int-icon">&#x1F3DA;</span> Sliders: w1, w2, bias, input x1, input x2</div>
+        <div class="interaction-item"><span class="int-icon">&#x1F504;</span> Activation function selector (ReLU / sigmoid / tanh)</div>
+        <div class="interaction-item"><span class="int-icon">&#x1F441;</span> Hover decision boundary plot to see neuron output at any (x1, x2) point</div>
+      </div>
+    </div>
+
+    <!-- Viz 1.5 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 1.5</div>
+      <h3 style="color:#ff6b6b;">Stacking Neurons: The MLP Forward Pass</h3>
+      <div class="viz-goal">Goal: Multiple neurons in a layer, multiple layers. Watch data transform layer by layer.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>Network diagram:</strong> 2 inputs &rarr; hidden layer (3 neurons) &rarr; hidden layer (3 neurons) &rarr; 1 output. All weights shown as edge thickness/color (positive=green, negative=red).</p>
+        <p><strong>Animated forward pass:</strong> Blue "data pulse" moves left to right. At each layer, show the matrix multiply happening: input vector &times; weight matrix = pre-activation, then activation function applied. Numbers visible at each neuron.</p>
+        <p><strong>Bottom panel:</strong> 2D decision boundary of the full network. Non-linear! "Multiple neurons = curved boundaries."</p>
+        <div class="wf-element"><strong>Layer-by-layer view:</strong> Show intermediate feature space at each layer. 2D scatter plot per layer. Watch data get "untangled" as it flows deeper. Classic XOR / spiral dataset.</div>
+      </div>
+      <div class="interactions">
+        <h4>User Interactions</h4>
+        <div class="interaction-item"><span class="int-icon">&#x1F3DA;</span> Slider: number of hidden neurons (1 to 8). Watch decision boundary become more complex.</div>
+        <div class="interaction-item"><span class="int-icon">&#x1F3DA;</span> Slider: number of hidden layers (1 to 4). Watch feature transformations deepen.</div>
+        <div class="interaction-item"><span class="int-icon">&#x1F4CA;</span> Dataset selector: linearly separable / XOR / circle / spiral</div>
+        <div class="interaction-item"><span class="int-icon">&#x26A0;</span> "Break it": remove activation functions &rarr; decision boundary becomes linear regardless of depth</div>
+      </div>
+    </div>
+
+    <!-- Viz 1.6 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 1.6</div>
+      <h3 style="color:#ff6b6b;">MLP Backward Pass &amp; Gradient Flow</h3>
+      <div class="viz-goal">Goal: Watch backpropagation through the full network. See how gradients shrink/grow layer by layer.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p>Same network from 1.5. After forward pass, compute loss (MSE). Red gradient pulse flows backward. At each layer, show gradient magnitude as color intensity on edges. Key insight: with sigmoid activations and 5+ layers, the first layer's gradients become invisibly small.</p>
+        <div class="wf-element"><strong>Gradient histogram per layer:</strong> Bar charts below the network show gradient distribution at each layer. With sigmoid: bars shrink exponentially going backward. Switch to ReLU: bars stay stable. Visual proof of vanishing gradients.</div>
+      </div>
+      <div class="interactions">
+        <h4>User Interactions</h4>
+        <div class="interaction-item"><span class="int-icon">&#x1F504;</span> Activation toggle: sigmoid vs ReLU vs tanh — watch gradient histograms change dramatically</div>
+        <div class="interaction-item"><span class="int-icon">&#x1F3DA;</span> Depth slider: add more layers, watch vanishing gradients get worse</div>
+        <div class="interaction-item"><span class="int-icon">&#x26A0;</span> "Break it": set all weights to large values &rarr; exploding gradients. Set to tiny values &rarr; vanishing.</div>
+      </div>
+      <div class="expert-hook"><strong>Expert layer:</strong> Show why sigmoid causes vanishing gradients mathematically: max derivative = 0.25, so after L layers, gradient &le; 0.25^L. For L=10, that's 0.000001. Annotate with actual gradient norms.</div>
+    </div>
+
+    <!-- Viz 1.7 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 1.7</div>
+      <h3 style="color:#ff6b6b;">Loss Landscape &amp; Gradient Descent</h3>
+      <div class="viz-goal">Goal: Visualize the loss surface and watch gradient descent navigate it.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>3D surface plot</strong> (isometric or interactive rotate) of loss as a function of two weights. Show contour lines below. A ball representing current weights rolls downhill following gradients.</p>
+        <p>Each step: show gradient vector (arrow), learning rate scaling, new position. Trace the optimization path.</p>
+        <div class="wf-element"><strong>Learning rate comparison:</strong> 3 balls with different LRs — too small (barely moves), just right (smooth descent), too large (overshoots, oscillates or diverges).</div>
+      </div>
+      <div class="interactions">
+        <h4>User Interactions</h4>
+        <div class="interaction-item"><span class="int-icon">&#x1F3DA;</span> Learning rate slider (0.001 to 10.0, log scale)</div>
+        <div class="interaction-item"><span class="int-icon">&#x25B6;</span> Step / auto-play gradient descent</div>
+        <div class="interaction-item"><span class="int-icon">&#x1F5FA;</span> Click anywhere on the loss surface to set starting point</div>
+        <div class="interaction-item"><span class="int-icon">&#x1F504;</span> Loss function selector: MSE / cross-entropy (different landscape shapes)</div>
+      </div>
+    </div>
+
+    <!-- Viz 1.8 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 1.8</div>
+      <h3 style="color:#ff6b6b;">The Training Loop — Putting It All Together</h3>
+      <div class="viz-goal">Goal: See the full loop: forward &rarr; loss &rarr; backward &rarr; update &rarr; repeat. Watch the network learn.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>Four-panel layout:</strong></p>
+        <p>&#x2460; Network diagram with current weights (edge thickness updates each step)</p>
+        <p>&#x2461; Decision boundary evolving in real-time over the training data</p>
+        <p>&#x2462; Loss curve (loss vs. epoch) growing as training progresses</p>
+        <p>&#x2463; Status bar showing current phase: "Forward Pass" &rarr; "Computing Loss" &rarr; "Backward Pass" &rarr; "Updating Weights"</p>
+        <div class="wf-element"><strong>Speed control:</strong> Slow (see every step), Medium (watch convergence), Fast (just see the result).</div>
+      </div>
+      <div class="interactions">
+        <h4>User Interactions</h4>
+        <div class="interaction-item"><span class="int-icon">&#x25B6;</span> Train / Pause / Reset buttons</div>
+        <div class="interaction-item"><span class="int-icon">&#x1F3DA;</span> Learning rate, batch size, epochs sliders</div>
+        <div class="interaction-item"><span class="int-icon">&#x1F504;</span> Optimizer: SGD / SGD+Momentum / Adam</div>
+        <div class="interaction-item"><span class="int-icon">&#x26A0;</span> "Break it": set LR too high &rarr; loss diverges. Set LR to 0 &rarr; nothing happens.</div>
+      </div>
+      <div class="narrative-note"><strong>Chapter 1 payoff:</strong> "You've built a complete neural network training system from scratch. Everything that follows — transformers, GNNs, language models — is variations on this same loop: forward, loss, backward, update."</div>
+    </div>
+
+  </div>
+</div>
+
+<div class="section-divider">· · ·</div>
+
+<!-- ============================================================ -->
+<!-- CHAPTER 2: MAKEMORE -->
+<!-- ============================================================ -->
+<div class="chapter">
+  <div class="chapter-header">
+    <div class="ch-num" style="color:#ffd93d;">Chapter 2</div>
+    <h2 style="color:#ffd93d;">Makemore — Character-Level Language Models</h2>
+    <div class="ch-desc">Build a character-level name generator, starting from bigram counting and progressing to an MLP language model. Same build-up philosophy: each viz extends the previous model and shows why the improvement was needed.</div>
+    <div class="ch-meta">
+      <span class="ch-badge badge-viz">7 visualizations</span>
+      <span class="ch-badge badge-quiz">25+ quiz questions</span>
+      <span class="ch-badge badge-prereq">Prereq: Ch 1</span>
+    </div>
+  </div>
+  <div class="ch-body">
+
+    <div class="minimap-spec">
+      <h4>Chapter Minimap</h4>
+      <div class="mm-stages">
+        <span class="mm-stage mm-done">Dataset</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-current">Bigrams</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-future">Sampling</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-future">Loss (NLL)</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-future">Trigrams+</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-future">Embeddings</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-future">MLP LM</span>
+      </div>
+    </div>
+
+    <!-- Viz 2.1 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 2.1</div>
+      <h3 style="color:#ffd93d;">The Dataset — Character Frequencies</h3>
+      <div class="viz-goal">Goal: See the raw data. Understand what a character-level language model is trying to learn.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>Left:</strong> Scrolling list of training names (e.g., "emma", "olivia", "ava"...). User can paste their own dataset.</p>
+        <p><strong>Right:</strong> Character frequency bar chart — which letters appear most? Show special tokens: "." for start/end of name. Histogram updates as user changes dataset.</p>
+        <div class="wf-element"><strong>Key insight moment:</strong> "A language model must learn: given what I've seen so far, what character comes next? That's it. That's the whole game."</div>
+      </div>
+    </div>
+
+    <!-- Viz 2.2 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 2.2</div>
+      <h3 style="color:#ffd93d;">Bigram Frequency Matrix</h3>
+      <div class="viz-goal">Goal: Count character pairs. See the simplest possible language model: P(next | current) = count(pair) / count(current).</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>Heatmap:</strong> 27&times;27 matrix (26 letters + "."). Rows = current char, columns = next char. Color intensity = count. Hover any cell to see: "After 'a', 'n' appears 1234 times (probability: 0.12)".</p>
+        <p><strong>Animated fill:</strong> As each training name is "processed," cells in the matrix increment with a flash. Fast-forward through the whole dataset.</p>
+        <div class="wf-element"><strong>Normalization toggle:</strong> Switch between raw counts and probabilities (each row sums to 1). Show the normalization step explicitly.</div>
+      </div>
+      <div class="interactions">
+        <h4>User Interactions</h4>
+        <div class="interaction-item"><span class="int-icon">&#x1F5B1;</span> Hover any cell &rarr; show count, probability, and example names containing that bigram</div>
+        <div class="interaction-item"><span class="int-icon">&#x1F504;</span> Toggle: raw counts / row-normalized probabilities / log-probabilities</div>
+        <div class="interaction-item"><span class="int-icon">&#x25B6;</span> "Process names" animation: watch the matrix build up name by name</div>
+      </div>
+    </div>
+
+    <!-- Viz 2.3 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 2.3</div>
+      <h3 style="color:#ffd93d;">Sampling from the Bigram Model</h3>
+      <div class="viz-goal">Goal: Generate names! See how sampling from the probability distribution produces "name-like" text (sort of).</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>Left:</strong> The bigram matrix from 2.2. Current row highlighted.</p>
+        <p><strong>Center:</strong> Probability distribution bar chart for the current character. A "roulette wheel" animation picks the next char. The selected bar flashes.</p>
+        <p><strong>Right:</strong> The generated name builds character by character. "." = &lt;start&gt;, sample first char, sample second given first, ... until "." again.</p>
+        <div class="wf-element"><strong>Output panel:</strong> Generate 20 names at once. Some look plausible ("amma"), most are gibberish ("xqr"). "Why so bad? Because bigrams only see <em>one character of context</em>."</div>
+      </div>
+      <div class="interactions">
+        <h4>User Interactions</h4>
+        <div class="interaction-item"><span class="int-icon">&#x25B6;</span> "Generate one name" (step-by-step, animated)</div>
+        <div class="interaction-item"><span class="int-icon">&#x23E9;</span> "Generate 20 names" (batch, instant)</div>
+        <div class="interaction-item"><span class="int-icon">&#x1F3DA;</span> Temperature slider: low = always pick most likely char (repetitive), high = random (gibberish)</div>
+      </div>
+    </div>
+
+    <!-- Viz 2.4 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 2.4</div>
+      <h3 style="color:#ffd93d;">Measuring Quality: Negative Log-Likelihood</h3>
+      <div class="viz-goal">Goal: Introduce the loss function. "How do we know our model is any good?"</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p>Take a specific name (e.g., "emma"). Step through each bigram: P(e|.) = 0.04, P(m|e) = 0.08, P(m|m) = 0.02, P(a|m) = 0.15, P(.|a) = 0.06.</p>
+        <p>Show: log(P) for each step, sum of log-probs, average NLL. Visualize as a "cost bar" that grows at each step. Low-probability transitions make the bar jump a lot.</p>
+        <div class="wf-element"><strong>Comparison:</strong> Show NLL for a "good" name ("anna" — common patterns) vs a "bad" name ("xzqw" — rare patterns). Clear visual difference.</div>
+      </div>
+    </div>
+
+    <!-- Viz 2.5 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 2.5</div>
+      <h3 style="color:#ffd93d;">Beyond Bigrams: N-gram Context Window</h3>
+      <div class="viz-goal">Goal: Show that more context = better predictions. Motivate moving to a neural approach.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>Context window slider:</strong> drag from 1 (bigram) to 2 (trigram) to 3 to 5. For each setting, show: the context table size (27^n entries!), sample generated names, and NLL on a held-out set.</p>
+        <p><strong>Key tension:</strong> Quality improves with more context, but the table grows <em>exponentially</em>. At n=5, the table has 27^5 = 14M entries, most of which are zero (unseen). "We need a way to generalize. We need a neural network."</p>
+        <div class="wf-element"><strong>Table sparsity viz:</strong> Show a heatmap of the n-gram table. As n grows, it becomes almost entirely black (zeros). "Counting can't generalize to unseen contexts."</div>
+      </div>
+    </div>
+
+    <!-- Viz 2.6 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 2.6</div>
+      <h3 style="color:#ffd93d;">Character Embeddings</h3>
+      <div class="viz-goal">Goal: Replace one-hot vectors with learned embeddings. Watch similar characters cluster in embedding space.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>Left:</strong> One-hot representation of 'a' = [1,0,0,...,0] — sparse, 27-dimensional, no notion of similarity.</p>
+        <p><strong>Right:</strong> 2D embedding space (project from learned embeddings via PCA/t-SNE). Initially random positions. As training progresses, watch vowels cluster together, consonants cluster, similar-sounding letters approach each other.</p>
+        <div class="wf-element"><strong>Training animation:</strong> Scatter plot where dots are characters. Each training step, dots shift slightly. Over time, structure emerges. "The network learned that 'a' and 'e' are similar — without being told."</div>
+      </div>
+      <div class="interactions">
+        <h4>User Interactions</h4>
+        <div class="interaction-item"><span class="int-icon">&#x25B6;</span> Train / pause. Watch embedding space evolve.</div>
+        <div class="interaction-item"><span class="int-icon">&#x1F3DA;</span> Embedding dimension slider (2, 4, 8, 16). Show: 2D = directly visible, higher dims = PCA projection.</div>
+        <div class="interaction-item"><span class="int-icon">&#x1F441;</span> Hover character dot &rarr; show its embedding vector and nearest neighbors.</div>
+      </div>
+    </div>
+
+    <!-- Viz 2.7 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 2.7</div>
+      <h3 style="color:#ffd93d;">MLP Language Model — The Full Picture</h3>
+      <div class="viz-goal">Goal: Wire it all together. Context window of embeddings &rarr; concatenate &rarr; MLP &rarr; softmax &rarr; next character prediction.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>Full pipeline visualization:</strong> Input characters &rarr; embedding lookup &rarr; concatenate context embeddings into one vector &rarr; hidden layer (ReLU) &rarr; output layer &rarr; softmax &rarr; probability distribution over 27 characters &rarr; sample next char.</p>
+        <p>Show concrete numbers flowing through at each stage. Generated names now significantly better than bigram model.</p>
+        <p><strong>Three-panel bottom:</strong> &#x2460; Generated names (now much more plausible). &#x2461; Loss curve during training. &#x2462; Comparison: bigram NLL vs MLP NLL — clear improvement.</p>
+        <div class="wf-element"><strong>Context window comparison:</strong> Side-by-side generation from context=1, context=3, context=5. Hear/see the quality jump.</div>
+      </div>
+      <div class="narrative-note"><strong>Chapter 2 payoff:</strong> "You've built a language model from counting bigrams to a neural network that understands character patterns. But characters are limiting — to model real language, we need to handle <em>sequences</em> of varying length and learn <em>long-range dependencies</em>. Next: the attention mechanism."</div>
+    </div>
+
+  </div>
+</div>
+
+<div class="section-divider">· · ·</div>
+
+<!-- ============================================================ -->
+<!-- CHAPTER 3: MLPs & OPTIMIZATION -->
+<!-- ============================================================ -->
+<div class="chapter">
+  <div class="chapter-header">
+    <div class="ch-num" style="color:#4ecdc4;">Chapter 3</div>
+    <h2 style="color:#4ecdc4;">MLPs &amp; Optimization Deep Dive</h2>
+    <div class="ch-desc">The nuts and bolts of making neural networks actually work: initialization, normalization, regularization, and optimizers. Each viz demonstrates a training pathology, then introduces the fix.</div>
+    <div class="ch-meta">
+      <span class="ch-badge badge-viz">6 visualizations</span>
+      <span class="ch-badge badge-quiz">25+ quiz questions</span>
+      <span class="ch-badge badge-prereq">Prereq: Ch 1</span>
+    </div>
+  </div>
+  <div class="ch-body">
+
+    <div class="minimap-spec">
+      <h4>Chapter Minimap</h4>
+      <div class="mm-stages">
+        <span class="mm-stage mm-done">Init matters</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-current">BatchNorm</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-future">LayerNorm</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-future">Residuals</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-future">Optimizers</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-future">Regularization</span>
+      </div>
+    </div>
+
+    <!-- Viz 3.1 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 3.1</div>
+      <h3 style="color:#4ecdc4;">Weight Initialization: Why It Matters</h3>
+      <div class="viz-goal">Goal: Show that random init = dead neurons or exploding activations. Proper init (Xavier/He) fixes it.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>Activation distribution histograms per layer.</strong> 10-layer MLP. With naive init (N(0,1)): activations saturate (all near 0 or 1). With Xavier: activations stay roughly N(0,1) at every layer. With He: same for ReLU.</p>
+        <p>Side-by-side: three columns for three init strategies. Each column shows a stack of 10 histograms (one per layer). The difference is visually striking.</p>
+        <div class="wf-element"><strong>Animated training:</strong> Watch what happens over 100 epochs. Bad init: loss barely decreases. Good init: loss drops quickly.</div>
+      </div>
+    </div>
+
+    <!-- Viz 3.2 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 3.2</div>
+      <h3 style="color:#4ecdc4;">Batch Normalization &rarr; Layer Normalization</h3>
+      <div class="viz-goal">Goal: Why normalize? Show internal covariate shift, then fix it. Then show why LN works better for sequences.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>Three-panel:</strong> Activation distributions at layer 5 of a 10-layer MLP across training steps.</p>
+        <p>&#x2460; No normalization: distribution shifts wildly between steps. &#x2461; BatchNorm: stable, centered at 0, std ~1. &#x2462; LayerNorm: similar stability.</p>
+        <p><strong>Key difference panel:</strong> Show what BN and LN normalize <em>over</em>. BN: normalizes across batch dimension (problematic for varying sequence lengths). LN: normalizes across feature dimension (works for any batch size, any sequence length).</p>
+        <div class="wf-element"><strong>"Break it":</strong> Remove normalization from a deep network &rarr; training diverges after a few epochs. Add it back &rarr; smooth training.</div>
+      </div>
+    </div>
+
+    <!-- Viz 3.3 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 3.3</div>
+      <h3 style="color:#4ecdc4;">Residual Connections: The Highway for Gradients</h3>
+      <div class="viz-goal">Goal: Show that skip connections let gradients flow directly through deep networks.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>Gradient flow diagram:</strong> 20-layer network. Without residuals: gradient magnitude plot shows exponential decay. With residuals: gradient stays roughly constant across all layers.</p>
+        <p><strong>Architecture toggle:</strong> Show the residual block: x + F(x). The "+" is the key — it provides a gradient highway (d/dx of x = 1, always). Even if F(x) has vanishing gradients, the shortcut carries the signal.</p>
+        <div class="wf-element"><strong>Depth experiment:</strong> Slider from 5 to 100 layers. Without residuals: accuracy degrades past ~20 layers. With residuals: accuracy keeps improving. Reproduces the core result from the ResNet paper.</div>
+      </div>
+      <div class="expert-hook"><strong>Expert layer:</strong> Annotate the gradient path: &nabla;L = &nabla;L &middot; (I + &nabla;F). The identity matrix I ensures gradient &ge; 1 along the skip path. This is why you can train 1000-layer networks with residuals.</div>
+    </div>
+
+    <!-- Viz 3.4 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 3.4</div>
+      <h3 style="color:#4ecdc4;">Optimizer Zoo: SGD &rarr; Momentum &rarr; Adam</h3>
+      <div class="viz-goal">Goal: Watch different optimizers navigate the same loss landscape. See why Adam is the default.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>Contour plot</strong> of a pathological loss landscape (elongated valley, saddle point). Four colored balls, one per optimizer: SGD (red), SGD+Momentum (orange), RMSProp (blue), Adam (green).</p>
+        <p>All start at the same point. Watch their paths diverge. SGD oscillates across the valley. Momentum overshoots but converges faster. Adam navigates smoothly.</p>
+        <div class="wf-element"><strong>Internal state view:</strong> For Adam, show the running mean (m) and variance (v) for each parameter. Show how the adaptive LR is computed: LR * m / (&radic;v + &epsilon;). Concrete numbers.</div>
+      </div>
+    </div>
+
+    <!-- Viz 3.5 + 3.6: Regularization + Dropout -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 3.5 — 3.6</div>
+      <h3 style="color:#4ecdc4;">Regularization: L2 &amp; Dropout</h3>
+      <div class="viz-goal">Goal: Overfitting is visible. Watch regularization prevent it.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>Viz 3.5 — L2/Weight Decay:</strong> Train/val loss curves. Without regularization: training loss hits 0, val loss diverges (overfitting). With L2: both converge. Show weight magnitude histogram shrinking with L2. "L2 penalty = preference for small weights = simpler model."</p>
+        <p><strong>Viz 3.6 — Dropout:</strong> Network diagram where neurons randomly disappear during training (grayed out). Each forward pass uses a different random subset. "It's like training an ensemble of thin networks." At test time: all neurons active, weights scaled by (1-p).</p>
+        <div class="wf-element"><strong>Interactive:</strong> Dropout rate slider (0 to 0.9). At 0: overfits. At 0.5: good generalization. At 0.9: underfits (too much information destroyed).</div>
+      </div>
+      <div class="narrative-note"><strong>Chapter 3 payoff:</strong> "You now have the full toolkit for training deep networks reliably: proper init, normalization, residual connections, modern optimizers, and regularization. These ingredients appear in <em>every</em> production neural network. Now let's use them to handle sequences."</div>
+    </div>
+
+  </div>
+</div>
+
+<div class="section-divider">· · ·</div>
+
+<!-- ============================================================ -->
+<!-- CHAPTER 4: ATTENTION & SEQUENCE MODELING -->
+<!-- ============================================================ -->
+<div class="chapter">
+  <div class="chapter-header">
+    <div class="ch-num" style="color:#ff9ff3;">Chapter 4</div>
+    <h2 style="color:#ff9ff3;">Attention &amp; Sequence Modeling from Scratch</h2>
+    <div class="ch-desc">From the limitations of fixed-context MLPs to the attention mechanism. Build intuition for Q/K/V as a soft dictionary, then multi-head attention, then the full attention block with masking.</div>
+    <div class="ch-meta">
+      <span class="ch-badge badge-viz">7 visualizations</span>
+      <span class="ch-badge badge-quiz">30+ quiz questions</span>
+      <span class="ch-badge badge-prereq">Prereq: Ch 1, Ch 2</span>
+    </div>
+  </div>
+  <div class="ch-body">
+
+    <div class="minimap-spec">
+      <h4>Chapter Minimap</h4>
+      <div class="mm-stages">
+        <span class="mm-stage mm-done">Why sequences?</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-current">Soft lookup</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-future">Q, K, V</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-future">Scaling</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-future">Multi-head</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-future">Causal mask</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-future">Full block</span>
+      </div>
+    </div>
+
+    <!-- Viz 4.1 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 4.1</div>
+      <h3 style="color:#ff9ff3;">The Problem: Why MLPs Struggle with Sequences</h3>
+      <div class="viz-goal">Goal: Show that fixed-size context windows miss long-range dependencies. Motivate a new mechanism.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>Example sentence:</strong> "The cat that sat on the mat by the door was ___"</p>
+        <p>Show an MLP with context=3 trying to predict "was." It only sees "the door ___" — not enough! It needs to know about "The cat" (8 tokens back). Highlight the dependency with an arc.</p>
+        <p>Show increasingly large context windows: 3, 5, 10, 20. Each time, more dependencies become reachable. But the model size grows quadratically with context. "We need a mechanism that can <em>selectively</em> look at any position."</p>
+      </div>
+    </div>
+
+    <!-- Viz 4.2 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 4.2</div>
+      <h3 style="color:#ff9ff3;">Attention as Soft Dictionary Lookup</h3>
+      <div class="viz-goal">Goal: Build intuition BEFORE the math. Attention = "soft" version of a dictionary/hashtable.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>Left: Hard lookup.</strong> A Python dictionary: {"cat": "animal", "Paris": "city"}. Query "cat" &rarr; exact match &rarr; returns "animal". Query "kitten" &rarr; KeyError!</p>
+        <p><strong>Right: Soft lookup.</strong> Same keys, but now query "kitten" returns a <em>weighted blend</em>: 0.7&times;"animal" + 0.2&times;"pet" + 0.1&times;"city". The weights come from how similar the query is to each key.</p>
+        <p>Animate: show similarity scores, softmax, weighted sum. "This is attention. The rest is just making the similarity scores learnable."</p>
+        <div class="wf-element"><strong>Interactive:</strong> User types a query word, sees it compared against all keys, watches the softmax weights form, sees the blended output. Change the query &rarr; different blend.</div>
+      </div>
+    </div>
+
+    <!-- Viz 4.3 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 4.3</div>
+      <h3 style="color:#ff9ff3;">Self-Attention: Q, K, V Projections</h3>
+      <div class="viz-goal">Goal: Show that Q, K, V are just learned linear projections that make the "soft lookup" trainable.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p>Sentence: "The cat sat." Each token starts as an embedding vector. Show the three projections: x &times; W_Q = query, x &times; W_K = key, x &times; W_V = value.</p>
+        <p>For the token "cat": its query says "I'm looking for subjects/verbs related to me." Its key says "I'm an animal noun." Its value says "Here's my semantic content."</p>
+        <p><strong>Matrix view:</strong> Show the actual weight matrices W_Q, W_K, W_V (small, e.g., 4&times;4). Show the matmul happening. All numbers visible.</p>
+        <div class="wf-element"><strong>"Break it":</strong> Set W_Q = W_K = W_V = Identity. Now there's no learned transformation — attention becomes simple dot-product similarity of raw embeddings. Show that this is much weaker.</div>
+      </div>
+      <div class="builds-on"><strong>Callback:</strong> "Remember the soft dictionary from Viz 4.2? Q is the query, K is the key, V is the value. We've just made all three <em>learnable</em>."</div>
+    </div>
+
+    <!-- Viz 4.4 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 4.4</div>
+      <h3 style="color:#ff9ff3;">Scaling &amp; Softmax: Why &radic;d<sub>k</sub> Matters</h3>
+      <div class="viz-goal">Goal: Show that without scaling, softmax saturates and gradients vanish. A small fix with big impact.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p>Show QK^T scores for a 6-token sequence. With d_k = 64 and no scaling: scores are huge (e.g., 45.2, -38.7, 51.0). After softmax: one value is ~1.0, rest are ~0.0. "The model can only attend to one token — no blending!"</p>
+        <p>Now divide by &radic;64 = 8. Scores become moderate (5.6, -4.8, 6.4). Softmax gives a smooth distribution. "Now the model can attend to multiple tokens."</p>
+        <div class="wf-element"><strong>Slider:</strong> Scale factor from 1 (no scaling) to 16. Watch the attention distribution go from one-hot to uniform as scaling increases. Sweet spot = &radic;d_k.</div>
+      </div>
+    </div>
+
+    <!-- Viz 4.5 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 4.5</div>
+      <h3 style="color:#ff9ff3;">Multi-Head Attention: Parallel Perspectives</h3>
+      <div class="viz-goal">Goal: Multiple heads learn different attention patterns — one for syntax, one for coreference, etc.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>Grid of attention heatmaps:</strong> 1 row per head (2, 4, or 8 heads). Each heatmap shows which tokens attend to which. Color-coded. The patterns are visibly different across heads.</p>
+        <p>Example: Head 1 focuses on adjacent tokens (local syntax). Head 2 connects "cat" to "was" (long-range agreement). Head 3 attends to punctuation.</p>
+        <p><strong>Concatenation step:</strong> Show all head outputs concatenated, then projected through W_O. "Each head sees a different aspect. The output layer blends them."</p>
+        <div class="wf-element"><strong>Interactive:</strong> Num heads slider (1, 2, 4, 8). With 1 head: one pattern must capture everything. With 8: specialization emerges.</div>
+      </div>
+    </div>
+
+    <!-- Viz 4.6 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 4.6</div>
+      <h3 style="color:#ff9ff3;">Causal Masking: No Peeking at the Future</h3>
+      <div class="viz-goal">Goal: For autoregressive generation, position i can only attend to positions &le; i.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>Attention matrix</strong> with the upper triangle masked (set to -&infin;). Show: before masking (full attention), after masking (lower-triangular), after softmax (proper causal attention).</p>
+        <p><strong>"Why?"</strong> panel: Show what happens WITHOUT the mask during generation. Token 3 can see token 5 — which is the answer it's trying to predict! "That's cheating. The mask prevents information leakage from the future."</p>
+        <div class="wf-element"><strong>"Break it":</strong> Remove the causal mask during training. Training loss drops to ~0 immediately (the model just copies the answer). But generation is garbage. "The model learned to cheat instead of to predict."</div>
+      </div>
+    </div>
+
+    <!-- Viz 4.7 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 4.7</div>
+      <h3 style="color:#ff9ff3;">The Complete Attention Block</h3>
+      <div class="viz-goal">Goal: Assemble everything: multi-head causal attention + LayerNorm + residual connection + FFN.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>Full block diagram</strong> with data flowing through: Input &rarr; LayerNorm &rarr; Multi-Head Attention &rarr; Residual Add &rarr; LayerNorm &rarr; FFN &rarr; Residual Add &rarr; Output.</p>
+        <p>Each component is a box that can be expanded (click to zoom in and see internals) or collapsed. Show concrete tensor shapes at every stage: (batch, seq_len, d_model).</p>
+        <div class="wf-element"><strong>Component toggles:</strong> Disable LayerNorm (gradients destabilize), disable residual (gradients vanish in deep stacks), disable FFN (reduced capacity — attention alone can't do nonlinear transformation).</div>
+      </div>
+      <div class="narrative-note"><strong>Chapter 4 payoff:</strong> "You've built the attention block — the core building block of every transformer. In Ch 5, you'll see that putting this same mechanism on <em>graph edges</em> gives you GATs. In Ch 6, you'll stack these blocks into a full transformer."</div>
+    </div>
+
+  </div>
+</div>
+
+<div class="section-divider">· · ·</div>
+
+<!-- ============================================================ -->
+<!-- CHAPTER 5: GNNs FROM SCRATCH -->
+<!-- ============================================================ -->
+<div class="chapter">
+  <div class="chapter-header">
+    <div class="ch-num" style="color:#54a0ff;">Chapter 5</div>
+    <h2 style="color:#54a0ff;">Graph Neural Networks from Scratch</h2>
+    <div class="ch-desc">From basic graphs to message passing to GCN to GAT. The learner builds an editable graph and watches neural message passing emerge. Attention from Ch 4 reappears as edge-level attention in GATs.</div>
+    <div class="ch-meta">
+      <span class="ch-badge badge-viz">8 visualizations</span>
+      <span class="ch-badge badge-quiz">30+ quiz questions</span>
+      <span class="ch-badge badge-prereq">Prereq: Ch 3 (MLP), Ch 4 (for GAT)</span>
+    </div>
+  </div>
+  <div class="ch-body">
+
+    <div class="minimap-spec">
+      <h4>Chapter Minimap</h4>
+      <div class="mm-stages">
+        <span class="mm-stage mm-done">Graph data</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-current">Msg passing</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-future">Aggregation</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-future">GCN</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-future">GAT</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-future">Over-smooth</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-future">Graph tasks</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-future">GraphSAGE</span>
+      </div>
+    </div>
+
+    <!-- Viz 5.1 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 5.1</div>
+      <h3 style="color:#54a0ff;">Graphs as Data: Nodes, Edges, Features</h3>
+      <div class="viz-goal">Goal: Understand what graph-structured data looks like. Build intuition with an editable graph.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>Interactive graph editor.</strong> Click to add nodes. Drag between nodes to add edges. Each node has a feature vector shown as a colored bar (e.g., [0.2, 0.8, 0.1] = RGB color). Nodes are colored by their feature.</p>
+        <p><strong>Adjacency matrix</strong> shown alongside — updates live as user edits the graph. "The adjacency matrix A is just a way to represent which nodes are connected."</p>
+        <p><strong>Presets:</strong> social network (friends), molecule (atoms/bonds), citation network.</p>
+        <div class="wf-element"><strong>Key insight:</strong> "Unlike images (grid) or text (sequence), graph data has <em>irregular structure</em>. Each node has a different number of neighbors. We need architectures that handle this."</div>
+      </div>
+    </div>
+
+    <!-- Viz 5.2 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 5.2</div>
+      <h3 style="color:#54a0ff;">Message Passing: The Core Idea</h3>
+      <div class="viz-goal">Goal: Animate one round of message passing. Each node "collects mail" from its neighbors.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>Animation sequence:</strong></p>
+        <p>&#x2460; <em>Highlight one target node v</em> and its neighbors N(v).</p>
+        <p>&#x2461; <em>Message creation:</em> Each neighbor sends its feature vector (shown as a colored envelope traveling along the edge toward v). Animate: envelopes slide along edges.</p>
+        <p>&#x2462; <em>Aggregation:</em> All envelopes arrive at v. They stack up. An aggregation function (mean/sum/max) combines them into one vector. Show the math: mean([0.2, 0.8], [0.5, 0.3]) = [0.35, 0.55].</p>
+        <p>&#x2463; <em>Update:</em> The aggregated vector passes through a weight matrix W and activation &sigma;. New feature for v.</p>
+        <p><strong>Then: repeat for ALL nodes simultaneously.</strong> One "round" = one GNN layer.</p>
+        <div class="wf-element"><strong>Layer slider:</strong> 1 layer = 1-hop info. 2 layers = 2-hop. 3 layers = 3-hop. Show the receptive field (highlighted subgraph) growing with each layer.</div>
+      </div>
+      <div class="interactions">
+        <h4>User Interactions</h4>
+        <div class="interaction-item"><span class="int-icon">&#x1F5B1;</span> Click any node to be the "focus node" and watch messages flow to it</div>
+        <div class="interaction-item"><span class="int-icon">&#x25B6;</span> Step through: message creation &rarr; send &rarr; aggregate &rarr; update</div>
+        <div class="interaction-item"><span class="int-icon">&#x1F3DA;</span> Layer slider: 1 to 5 message passing rounds</div>
+        <div class="interaction-item"><span class="int-icon">&#x1F504;</span> Aggregation function: mean / sum / max (toggle and compare)</div>
+      </div>
+    </div>
+
+    <!-- Viz 5.3 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 5.3</div>
+      <h3 style="color:#54a0ff;">Aggregation Functions: Mean vs Sum vs Max</h3>
+      <div class="viz-goal">Goal: Different aggregations have different properties. Sum preserves degree info. Mean is degree-invariant. Max captures salient features.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>Same graph, three columns</strong> — one per aggregation function. Show the resulting node embeddings side by side after 2 layers.</p>
+        <p><strong>Key experiment:</strong> A node with 2 neighbors vs a node with 10 neighbors, all neighbors having the same features. With sum: high-degree node gets 5x larger embedding. With mean: both get same embedding. "Sum is <em>degree-aware</em>. Mean is <em>degree-invariant</em>."</p>
+        <div class="wf-element"><strong>"Break it":</strong> Use sum aggregation on a graph with wildly varying degrees (1 to 100). Watch embeddings explode for hub nodes. Fix: normalize by degree (GCN-style).</div>
+      </div>
+    </div>
+
+    <!-- Viz 5.4 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 5.4</div>
+      <h3 style="color:#54a0ff;">GCN: Graph Convolutional Network</h3>
+      <div class="viz-goal">Goal: The specific message passing rule from Kipf &amp; Welling. Symmetric normalization by degree.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>The GCN formula:</strong> H' = &sigma;(D&#x0302;&supmin;&frac12; &Acirc; D&#x0302;&supmin;&frac12; H W). Break it down step by step:</p>
+        <p>&#x2460; &Acirc; = A + I (add self-loops). Show: original adjacency &rarr; add diagonal &rarr; now each node also receives its OWN message.</p>
+        <p>&#x2461; D&#x0302;&supmin;&frac12; &Acirc; D&#x0302;&supmin;&frac12; = symmetric normalization. Show: degree matrix D&#x0302;, then the normalized adjacency. "This is just weighted mean where the weight depends on both the sender's and receiver's degree."</p>
+        <p>&#x2462; Multiply by features H, then weight matrix W, then activation.</p>
+        <div class="wf-element"><strong>Comparison panel:</strong> GCN vs naive message passing (Viz 5.2). Show that GCN's normalization prevents the degree explosion problem from Viz 5.3.</div>
+      </div>
+      <div class="expert-hook"><strong>Expert layer:</strong> Show spectral interpretation. GCN is a first-order approximation of spectral graph convolutions. The normalized adjacency acts as a low-pass filter on graph signals.</div>
+    </div>
+
+    <!-- Viz 5.5 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 5.5</div>
+      <h3 style="color:#54a0ff;">GAT: Graph Attention Network</h3>
+      <div class="viz-goal">Goal: Not all neighbors are equally important. Use attention (from Ch 4!) to learn edge weights.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>Same graph from 5.2</strong>, but now edges have learned attention weights (shown as edge thickness and label). Different neighbors contribute differently to each node's update.</p>
+        <p>Show the attention computation: for edge (i,j): &alpha;_ij = softmax(LeakyReLU(a^T [W h_i || W h_j])). Break down step by step: transform features, concatenate, score, normalize.</p>
+        <div class="wf-element"><strong>Comparison mode:</strong> Split screen — left = GCN (all neighbors weighted by degree only), right = GAT (neighbors weighted by learned attention). On a heterogeneous graph, GAT clearly assigns different weights. "The model <em>learns</em> which neighbors matter."</div>
+      </div>
+      <div class="builds-on"><strong>Callback to Ch 4:</strong> "Remember Q/K/V attention on sequences? GAT is the same idea on graph edges. Instead of attending to all positions in a sequence, each node attends to its neighbors."</div>
+    </div>
+
+    <!-- Viz 5.6 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 5.6</div>
+      <h3 style="color:#54a0ff;">Over-Smoothing: The Depth Problem in GNNs</h3>
+      <div class="viz-goal">Goal: Show that too many GNN layers make all node embeddings converge to the same vector.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>Node embedding similarity heatmap</strong> after L layers. L=1: embeddings are diverse (many colors). L=3: starting to converge. L=10: all nearly identical (one color).</p>
+        <p><strong>Metric plot:</strong> "Embedding diversity" (e.g., average pairwise cosine distance) vs number of layers. Clear downward trend. "After ~6 layers, every node has essentially the same representation. The model is blind to local structure."</p>
+        <div class="wf-element"><strong>Fix demonstrations:</strong> Toggle on: (a) residual connections, (b) skip connections, (c) jumping knowledge (concatenate all layer outputs). Show each one restoring embedding diversity.</div>
+      </div>
+    </div>
+
+    <!-- Viz 5.7 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 5.7</div>
+      <h3 style="color:#54a0ff;">Graph-Level Tasks: Pooling &amp; Readout</h3>
+      <div class="viz-goal">Goal: Go from node embeddings to a single graph-level representation (for graph classification, molecule property prediction).</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p>After message passing: each node has a learned embedding. For graph-level tasks, we need ONE vector for the whole graph.</p>
+        <p><strong>Readout options:</strong> Mean pooling (average all node embeddings), sum pooling, hierarchical pooling (progressively coarsen the graph). Show each approach and the resulting graph vector.</p>
+        <div class="wf-element"><strong>Application panel:</strong> Molecule classification. Show a molecular graph &rarr; GNN layers &rarr; readout &rarr; MLP classifier &rarr; "toxic" / "non-toxic". End-to-end pipeline.</div>
+      </div>
+    </div>
+
+    <!-- Viz 5.8 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 5.8</div>
+      <h3 style="color:#54a0ff;">GraphSAGE: Inductive Learning &amp; Sampling</h3>
+      <div class="viz-goal">Goal: Scale GNNs to huge graphs. Sample neighbors instead of using all of them.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>Large graph</strong> (100+ nodes). For a target node, show the sampled computation graph: sample K neighbors at each layer. Different samples produce different subgraphs.</p>
+        <p><strong>Key advantage:</strong> Can generalize to unseen nodes (inductive). GCN requires the full graph at training time (transductive). Show: a new node is added to the graph. GraphSAGE immediately computes its embedding by sampling its neighbors. GCN would need retraining.</p>
+        <div class="wf-element"><strong>Sampling budget slider:</strong> K=2 (fast but noisy) to K=25 (accurate but slow). Show variance of embeddings across random samples.</div>
+      </div>
+      <div class="narrative-note"><strong>Chapter 5 payoff:</strong> "You've built GNNs from the ground up: message passing, GCN, GAT, and learned to handle their failure modes. The same attention mechanism from Ch 4 powers GATs — and in Ch 6, you'll stack attention blocks into a full transformer for language."</div>
+    </div>
+
+  </div>
+</div>
+
+<div class="section-divider">· · ·</div>
+
+<!-- ============================================================ -->
+<!-- CHAPTER 6: TRANSFORMER FROM SCRATCH -->
+<!-- ============================================================ -->
+<div class="chapter">
+  <div class="chapter-header">
+    <div class="ch-num" style="color:#01a3a4;">Chapter 6</div>
+    <h2 style="color:#01a3a4;">Transformer from Scratch</h2>
+    <div class="ch-desc">Assemble everything from previous chapters into a complete, working transformer. Tokenization &rarr; embeddings &rarr; positional encoding &rarr; attention blocks &rarr; output head. Then train it on a tiny dataset and watch it generate text.</div>
+    <div class="ch-meta">
+      <span class="ch-badge badge-viz">8 visualizations</span>
+      <span class="ch-badge badge-quiz">35+ quiz questions</span>
+      <span class="ch-badge badge-prereq">Prereq: Ch 1, Ch 2, Ch 3, Ch 4</span>
+    </div>
+  </div>
+  <div class="ch-body">
+
+    <div class="minimap-spec">
+      <h4>Chapter Minimap</h4>
+      <div class="mm-stages">
+        <span class="mm-stage mm-done">Tokenizer</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-current">Embeddings</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-future">Pos enc.</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-future">1 block</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-future">N blocks</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-future">Output head</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-future">Generation</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-future">Full training</span>
+      </div>
+    </div>
+
+    <!-- Viz 6.1 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 6.1</div>
+      <h3 style="color:#01a3a4;">Tokenization: From Text to Numbers</h3>
+      <div class="viz-goal">Goal: Show BPE tokenization in action. Text &rarr; tokens &rarr; integer IDs.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p>User types any text. Below it, colored boxes appear showing token boundaries: "Hello" "," " world" "!" — each with its token ID. Unusual words get split into subwords: "unbelievable" &rarr; "un" + "believ" + "able".</p>
+        <p><strong>Vocab explorer:</strong> Show a subset of the vocabulary. Search for any token. Show its ID and frequency.</p>
+        <div class="wf-element"><strong>Callback to Ch 2:</strong> "In makemore, our tokens were single characters. Real LLMs use subword tokens — same idea, bigger vocabulary, much shorter sequences."</div>
+      </div>
+    </div>
+
+    <!-- Viz 6.2 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 6.2</div>
+      <h3 style="color:#01a3a4;">Token Embeddings + Positional Encoding</h3>
+      <div class="viz-goal">Goal: Token IDs become dense vectors. Add position information.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>Three-row layout:</strong></p>
+        <p>Row 1: Token embeddings — each token ID indexes into an embedding table. Show the lookup as a highlighted row in a matrix.</p>
+        <p>Row 2: Positional encodings — sinusoidal waves or learned position embeddings. Show the waveforms for each dimension. "Position 0 and position 100 have different patterns, so the model can tell them apart."</p>
+        <p>Row 3: Sum of token + position = the final input embedding. "Now each vector encodes BOTH what the token is and where it is."</p>
+        <div class="wf-element"><strong>"Break it":</strong> Remove positional encoding &rarr; shuffle the input sentence &rarr; embeddings are identical regardless of order. "Without positions, 'dog bites man' = 'man bites dog'."</div>
+      </div>
+    </div>
+
+    <!-- Viz 6.3 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 6.3</div>
+      <h3 style="color:#01a3a4;">One Transformer Block — Full Data Flow</h3>
+      <div class="viz-goal">Goal: Trace data through a single block, showing every component from Ch 3 and Ch 4 assembled.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>Vertical flow diagram:</strong> Input embeddings (batch=1, seq=6, d=32) flow through: LayerNorm &rarr; Multi-Head Causal Attention &rarr; + Residual &rarr; LayerNorm &rarr; FFN (Linear &rarr; GELU &rarr; Linear) &rarr; + Residual &rarr; Output.</p>
+        <p>At each stage, show tensor shape and a heatmap of the actual values. User clicks "step" to advance through each component.</p>
+        <p><strong>Component zoom:</strong> Click any box to expand it and see internals (the attention head detail, the FFN's hidden dimension expansion, etc.).</p>
+        <div class="wf-element"><strong>Callback labels:</strong> Each component has a small tag: "LayerNorm [Ch 3.2]", "Attention [Ch 4.7]", "Residual [Ch 3.3]". Clicking the tag scrolls to or links to that chapter's viz.</div>
+      </div>
+    </div>
+
+    <!-- Viz 6.4 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 6.4</div>
+      <h3 style="color:#01a3a4;">Stacking Blocks: Depth &amp; Representation Evolution</h3>
+      <div class="viz-goal">Goal: Show how representations transform across 2, 4, 6 stacked blocks.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>Embedding similarity matrix at each layer.</strong> After layer 1: tokens attend mostly to adjacent tokens. After layer 3: long-range dependencies form (subject connects to verb). After layer 6: high-level semantic structure emerges.</p>
+        <p><strong>Probing panel:</strong> At each layer, run a simple classifier on the embeddings to predict: POS tags, named entities, sentiment. Show accuracy per layer. "Early layers capture syntax. Deep layers capture semantics."</p>
+        <div class="wf-element"><strong>Depth slider:</strong> 1 to 12 blocks. Show that more blocks = better downstream performance, but with diminishing returns.</div>
+      </div>
+    </div>
+
+    <!-- Viz 6.5 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 6.5</div>
+      <h3 style="color:#01a3a4;">The Output Head: Logits &rarr; Probabilities &rarr; Token</h3>
+      <div class="viz-goal">Goal: Final layer projects back to vocabulary space. Softmax gives probabilities. Sample or argmax to get next token.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>Pipeline:</strong> Last hidden state (d=32) &rarr; Linear projection (32 &rarr; vocab_size) &rarr; logits vector &rarr; softmax &rarr; probability distribution.</p>
+        <p>Show the full probability distribution as a bar chart over vocabulary. Top-5 tokens highlighted. "The model thinks 'the' is most likely (p=0.23), followed by 'a' (p=0.11)."</p>
+        <div class="wf-element"><strong>Sampling strategy toggle:</strong> Greedy (always top-1), Top-k (sample from top k), Top-p/nucleus (sample from tokens covering p% probability), Temperature. Show how each affects the distribution and the generated text.</div>
+      </div>
+    </div>
+
+    <!-- Viz 6.6 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 6.6</div>
+      <h3 style="color:#01a3a4;">Autoregressive Generation: One Token at a Time</h3>
+      <div class="viz-goal">Goal: Watch the transformer generate text token by token. The full loop: embed &rarr; attend &rarr; predict &rarr; append &rarr; repeat.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>Left:</strong> Growing sequence. Each step, a new token appears at the end with a flash. The input to the model grows by one each step.</p>
+        <p><strong>Right:</strong> Attention patterns updating. Each new token adds a new row to the attention matrix. KV-cache visualization: previously computed keys/values are reused (highlighted differently from the new computation).</p>
+        <div class="wf-element"><strong>Speed:</strong> Slow (see full forward pass per token), Medium (see just the sampling), Fast (stream output like ChatGPT).</div>
+      </div>
+    </div>
+
+    <!-- Viz 6.7 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 6.7</div>
+      <h3 style="color:#01a3a4;">Training: Cross-Entropy Loss on Next-Token Prediction</h3>
+      <div class="viz-goal">Goal: The training objective. Show how every position in a sequence provides a training signal.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>Sequence:</strong> "The cat sat on" &rarr; at each position, the model predicts the next token. Position 0 predicts "cat" given "The". Position 1 predicts "sat" given "The cat". Etc.</p>
+        <p>Show the cross-entropy loss at each position. Sum them. "One sequence of length N gives us N-1 training examples for free."</p>
+        <div class="wf-element"><strong>Training animation:</strong> Watch loss curve over epochs. Generated text starts as gibberish, gradually becomes more coherent. "Epoch 1: 'asjd kqw...' Epoch 50: 'the cat is...' Epoch 500: 'the cat sat on the warm mat.'"</div>
+      </div>
+    </div>
+
+    <!-- Viz 6.8 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 6.8</div>
+      <h3 style="color:#01a3a4;">The Complete Transformer — Architecture Overview</h3>
+      <div class="viz-goal">Goal: Zoom out. See the entire transformer as one system. Every component links back to where it was introduced.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>Full architecture diagram.</strong> From input text to output text. Every box is labeled with its chapter origin. The learner has built every single component.</p>
+        <p><strong>Scale comparison:</strong> "Your model: 6 layers, 4 heads, d=64. GPT-2: 12 layers, 12 heads, d=768. GPT-4: ~120 layers, ~96 heads, d=~12288. Same architecture. Just bigger."</p>
+        <div class="wf-element"><strong>Parameter counter:</strong> Slider for model dimensions. Watch parameter count grow: 6M &rarr; 117M (GPT-2) &rarr; 1.5B &rarr; 175B (GPT-3). "Scaling laws: bigger model + more data = better performance, predictably."</div>
+      </div>
+      <div class="narrative-note"><strong>Chapter 6 payoff:</strong> "You've built a complete transformer from scratch. Every component — embeddings, attention, normalization, residuals, FFN, output head — you constructed yourself. This same architecture, scaled up, powers GPT, Claude, Gemini, LLaMA, and every modern LLM."</div>
+    </div>
+
+  </div>
+</div>
+
+<div class="section-divider">· · ·</div>
+
+<!-- ============================================================ -->
+<!-- CHAPTER 7: DISTILLATION & COMPRESSION -->
+<!-- ============================================================ -->
+<div class="chapter">
+  <div class="chapter-header">
+    <div class="ch-num" style="color:#e056fd;">Chapter 7</div>
+    <h2 style="color:#e056fd;">Knowledge Distillation &amp; Model Compression</h2>
+    <div class="ch-desc">Take the large transformer from Ch 6 and compress it. Build intuition for soft targets, KL divergence, temperature, and the teacher-student framework. Then cover quantization and pruning as complementary compression techniques.</div>
+    <div class="ch-meta">
+      <span class="ch-badge badge-viz">7 visualizations</span>
+      <span class="ch-badge badge-quiz">25+ quiz questions</span>
+      <span class="ch-badge badge-prereq">Prereq: Ch 6, Ch 5 (optional)</span>
+    </div>
+  </div>
+  <div class="ch-body">
+
+    <div class="minimap-spec">
+      <h4>Chapter Minimap</h4>
+      <div class="mm-stages">
+        <span class="mm-stage mm-done">Why compress?</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-current">Soft targets</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-future">KL divergence</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-future">Temperature</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-future">Teacher-Student</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-future">Quantization</span>
+        <span class="mm-arrow">&rarr;</span>
+        <span class="mm-stage mm-future">Pruning</span>
+      </div>
+    </div>
+
+    <!-- Viz 7.1 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 7.1</div>
+      <h3 style="color:#e056fd;">Hard Labels vs Soft Targets: Dark Knowledge</h3>
+      <div class="viz-goal">Goal: Show that a teacher's probability distribution contains far more information than the hard one-hot label.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>Image classification example:</strong> A picture of a cat. Hard label: [0, 0, 1, 0, 0] (cat). Teacher's soft prediction: [0.01, 0.15, 0.70, 0.12, 0.02] (cat, but also looks a bit like a dog and a tiger).</p>
+        <p><strong>Side-by-side bar charts:</strong> Hard label = one tall bar. Soft targets = distribution with structure. "The teacher is saying: 'It's a cat, but it's somewhat cat-like AND dog-like AND tiger-like.' That relationship information is the <em>dark knowledge</em>."</p>
+        <div class="wf-element"><strong>Interactive:</strong> User picks different images. For each, compare hard label vs teacher output. See which classes the teacher considers "similar." "A BMW gets confused with a Mercedes, not with a cat. That's knowledge."</div>
+      </div>
+    </div>
+
+    <!-- Viz 7.2 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 7.2</div>
+      <h3 style="color:#e056fd;">KL Divergence: Measuring Distribution Distance</h3>
+      <div class="viz-goal">Goal: Build intuition for KL(P||Q). "How different are two probability distributions?"</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>Two editable distributions:</strong> P (teacher, blue) and Q (student, red). User drags the bars to change each distribution. KL(P||Q) updates in real-time.</p>
+        <p><strong>Visual decomposition:</strong> KL = &sum; P(x) &middot; log(P(x)/Q(x)). Show each term as a colored bar. When Q(x) is small but P(x) is large, that term is HUGE (heavy penalty for "missing" what the teacher thinks is important).</p>
+        <p><strong>Asymmetry demo:</strong> Show that KL(P||Q) &ne; KL(Q||P). "KL divergence is not symmetric — it matters who is the teacher and who is the student."</p>
+        <div class="wf-element"><strong>Presets:</strong> Identical distributions (KL=0), opposite distributions (KL=large), slightly shifted (KL=small).</div>
+      </div>
+      <div class="expert-hook"><strong>Expert layer:</strong> Show connection to cross-entropy: KL(P||Q) = H(P,Q) - H(P). Since H(P) is constant for a fixed teacher, minimizing KL is equivalent to minimizing cross-entropy. This is why cross-entropy is the standard training loss.</div>
+    </div>
+
+    <!-- Viz 7.3 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 7.3</div>
+      <h3 style="color:#e056fd;">Temperature: Controlling Softness</h3>
+      <div class="viz-goal">Goal: Show how temperature softens probability distributions and why this helps distillation.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>Logits:</strong> [5.2, 2.1, -0.5, -1.3, 0.8]. Below: softmax(logits / T) for adjustable T.</p>
+        <p><strong>Temperature slider:</strong> T=0.1 (near one-hot, almost all weight on class 0) to T=1.0 (standard softmax) to T=10.0 (nearly uniform). Animated smooth transition as user drags.</p>
+        <p><strong>Key insight moment:</strong> "At T=1, the dark knowledge is there but hard to learn from — the distribution is too peaked. At T=5, the subtle class relationships become visible. At T=100, everything's uniform — no information at all."</p>
+        <div class="wf-element"><strong>Gradient analysis:</strong> Show the magnitude of the gradient from the KL loss at different temperatures. At T=1: gradient is dominated by the top class. At T=5: gradients are spread across classes — the student learns about ALL class relationships.</div>
+      </div>
+      <div class="builds-on"><strong>Callback to Ch 4:</strong> "Temperature also appeared in attention softmax (Viz 4.4). Same principle — it controls how 'peaked' or 'spread' the distribution is."</div>
+    </div>
+
+    <!-- Viz 7.4 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 7.4</div>
+      <h3 style="color:#e056fd;">Teacher-Student Training: The Full Pipeline</h3>
+      <div class="viz-goal">Goal: Wire it all together. Train a small student to mimic a large teacher.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>Side-by-side architectures:</strong> Teacher (large, e.g., 6 layers, d=256) and Student (small, 2 layers, d=64). Same input fed to both.</p>
+        <p><strong>Loss visualization:</strong> L = &alpha; &middot; CE(student, hard_labels) + (1-&alpha;) &middot; T&sup2; &middot; KL(student_soft, teacher_soft). Show both loss terms as stacked bars. &alpha; slider controls the balance.</p>
+        <p><strong>Training animation:</strong> Watch the student's output distribution gradually approach the teacher's. Plot: teacher accuracy, student accuracy (from scratch), student accuracy (distilled). Distilled student > student trained from scratch.</p>
+        <div class="wf-element"><strong>Parameter comparison:</strong> Teacher: 2M params. Student: 200K params (10x smaller). But distilled student retains 95% of teacher's accuracy. "10x compression with 5% accuracy loss."</div>
+      </div>
+    </div>
+
+    <!-- Viz 7.5 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 7.5</div>
+      <h3 style="color:#e056fd;">Quantization: From FP32 to INT8 to INT4</h3>
+      <div class="viz-goal">Goal: Reduce precision of weights. Show the tradeoff between model size and accuracy.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>Weight distribution</strong> of one layer as a histogram. FP32: smooth, continuous. INT8: same shape but discretized into 256 buckets. INT4: only 16 buckets — visible "staircase" pattern.</p>
+        <p><strong>Reconstruction error:</strong> Show original weights vs quantized weights. Compute MSE. INT8: tiny error. INT4: noticeable error. INT2: severe distortion.</p>
+        <div class="wf-element"><strong>Precision slider:</strong> FP32 &rarr; FP16 &rarr; INT8 &rarr; INT4 &rarr; INT2. At each level show: model size (MB), inference speed (relative), accuracy on a sample task.</div>
+      </div>
+    </div>
+
+    <!-- Viz 7.6 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 7.6</div>
+      <h3 style="color:#e056fd;">Pruning: Removing Unnecessary Weights</h3>
+      <div class="viz-goal">Goal: Many weights are near-zero and can be removed. Sparse models can be as accurate as dense ones.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>Network diagram</strong> where edge thickness = weight magnitude. Apply pruning: edges below threshold disappear. Show: 50% of weights removed, accuracy barely changes. 90% removed, slight drop. 99% removed, significant drop.</p>
+        <p><strong>Weight magnitude histogram:</strong> Most weights are near zero (tall center peak). The pruning threshold is a vertical line the user drags. Everything below the line gets zeroed out.</p>
+        <div class="wf-element"><strong>Lottery Ticket hypothesis:</strong> Show that a pruned subnetwork, retrained from scratch with its <em>original initialization</em>, matches the full network's performance. "The winning ticket was hiding inside the full network all along."</div>
+      </div>
+    </div>
+
+    <!-- Viz 7.7 -->
+    <div class="viz-wireframe">
+      <div class="viz-num">Visualization 7.7</div>
+      <h3 style="color:#e056fd;">Compression Toolkit: Combining Techniques</h3>
+      <div class="viz-goal">Goal: Show that distillation, quantization, and pruning are complementary. Use all three for maximum compression.</div>
+      <div class="wireframe-canvas">
+        <span class="wf-label">canvas wireframe</span>
+        <p><strong>Compression pipeline:</strong> Start with a 2B parameter model. Distill &rarr; 200M params. Prune &rarr; 100M effective params. Quantize INT4 &rarr; 50MB on disk. Total compression: 100x smaller, runs on a phone.</p>
+        <p><strong>Pareto frontier plot:</strong> Accuracy vs model size. Each compression technique pushes the frontier. Combining all three reaches the best tradeoff.</p>
+        <div class="wf-element"><strong>Interactive:</strong> Toggle each technique on/off. See the cumulative effect on model size, speed, and accuracy. "Distillation + pruning + quantization: from a data center GPU to your phone."</div>
+      </div>
+      <div class="narrative-note"><strong>Chapter 7 payoff:</strong> "You now understand the full lifecycle: build a large, powerful model (Ch 6), then compress it for deployment (Ch 7). This is exactly how production LLMs are shipped — a massive teacher model trains a family of smaller, faster student models."</div>
+    </div>
+
+  </div>
+</div>
+
+<div class="section-divider">· · ·</div>
+
+<!-- ============================================================ -->
+<!-- FUTURE CHAPTERS -->
+<!-- ============================================================ -->
+<div class="philosophy" style="border-color: #555;">
+  <h2 style="color: #888;">Possible Future Chapters (Not Yet Planned)</h2>
+  <div class="principle">
+    <span class="icon" style="opacity:0.5;">&#x1F9EA;</span>
+    <div class="text"><strong style="color:#888;">Generative Models from Scratch:</strong> VAE &rarr; diffusion (noising/denoising build-up). Would build on Ch 1 (backprop), Ch 3 (optimization), and Ch 7 (KL divergence).</div>
+  </div>
+  <div class="principle">
+    <span class="icon" style="opacity:0.5;">&#x1F3AE;</span>
+    <div class="text"><strong style="color:#888;">RL from Scratch:</strong> Grid world &rarr; Q-table &rarr; DQN &rarr; Policy Gradient &rarr; PPO. Would connect to Ch 6 for RLHF.</div>
+  </div>
+  <div class="principle">
+    <span class="icon" style="opacity:0.5;">&#x1F50D;</span>
+    <div class="text"><strong style="color:#888;">Mechanistic Interpretability:</strong> Open the trained transformer from Ch 6 and find circuits: induction heads, copy suppression, etc. Requires Ch 4 and Ch 6.</div>
+  </div>
+  <div class="principle">
+    <span class="icon" style="opacity:0.5;">&#x1F310;</span>
+    <div class="text"><strong style="color:#888;">Multi-Modal from Scratch:</strong> Vision encoder (ViT) + LLM. Builds on Ch 6 and introduces patch embeddings, cross-attention, contrastive learning (CLIP).</div>
+  </div>
+</div>
+
+</div>
+
+<div class="footer">
+  <p>Roadmap for the "From Scratch" interactive series — companion to <a href="index.html">ML Interview Prep Visualizations</a></p>
+  <p style="margin-top:8px;color:#444;">Each chapter is a self-contained HTML file with zero dependencies, matching the existing format.</p>
+</div>
+
+</body>
+</html>

@@ -52,6 +52,17 @@
   .insight-box .comparison .option .opt-title { color: #ffd93d; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
   .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
   .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
+  .code-example { margin-top: 12px; border: 1px solid #2a2a4a; border-radius: 8px; overflow: hidden; }
+  .code-toggle { width: 100%; background: #1a1a2e; color: #ffd93d; border: none; padding: 10px 16px; text-align: left; cursor: pointer; font-size: 0.9em; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .code-toggle:hover { background: #22223a; }
+  .code-toggle-icon { display: inline-block; transition: transform 0.2s; font-size: 0.7em; }
+  .code-example.open .code-toggle-icon { transform: rotate(90deg); }
+  .code-content { display: none; padding: 14px 16px; background: #0a0a14; }
+  .code-example.open .code-content { display: block; }
+  .code-content pre { margin: 0; overflow-x: auto; white-space: pre; }
+  .code-content code { color: #e0e0e0; font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.82em; line-height: 1.6; }
+  .code-content .code-note { color: #888; font-size: 0.82em; margin-top: 8px; font-style: italic; }
+
 
   .katex { color: #e8e8ff; font-size: 1.1em; }
   .formula .katex { font-size: 1.2em; }
@@ -184,6 +195,26 @@
     <hr class="divider">
     <div class="interview-tip">Character-level models are the simplest language models. They are a great pedagogical tool because you can see every detail, but the same principles apply to word-level and subword (BPE) models.</div>
     <div class="mnemonic">Language modeling = next token prediction. That is it. GPT, BERT, everything reduces to predicting the next token from context.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Building a Character Vocabulary
+      </button>
+      <div class="code-content">
+        <pre><code>import torch
+
+words = ["emma", "olivia", "ava"]
+chars = sorted(set(''.join(words)))
+stoi = {c: i+1 for i, c in enumerate(chars)}
+stoi['.'] = 0
+itos = {i: c for c, i in stoi.items()}
+
+# Encode a word as tensor
+word = ".emma."
+ix = torch.tensor([stoi[c] for c in word])
+print(ix)  # tensor([0, 5, 9, 9, 1])</code></pre>
+        <p class="code-note">The '.' token marks start/end. stoi and itos map between characters and integer indices.</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -219,6 +250,27 @@
     <hr class="divider">
     <div class="interview-tip">Bigram models are bag-of-pairs: they have no memory beyond the immediately preceding character. This is a first-order Markov assumption.</div>
     <div class="mnemonic">Each row of the normalized matrix is a categorical distribution. Sampling from it gives the next character.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Counting Bigrams into a Tensor
+      </button>
+      <div class="code-content">
+        <pre><code>import torch
+
+words = ["emma", "olivia", "ava"]
+N = torch.zeros(27, 27, dtype=torch.int32)
+
+for w in words:
+    chs = ['.'] + list(w) + ['.']
+    for c1, c2 in zip(chs, chs[1:]):
+        ix1, ix2 = ord(c1) - 96 if c1 != '.' else 0, ord(c2) - 96 if c2 != '.' else 0
+        N[ix1, ix2] += 1
+
+P = (N + 1).float()  # +1 smoothing
+P = P / P.sum(dim=1, keepdim=True)  # normalize rows</code></pre>
+        <p class="code-note">Each row of P is a valid probability distribution. The +1 smoothing avoids zero probabilities.</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -259,6 +311,25 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">Temperature is the most common sampling hyperparameter in LLMs. It appears in GPT, LLaMA, and every production system. Explain it as "softmax sharpness control."</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Sampling with Temperature using torch.multinomial
+      </button>
+      <div class="code-content">
+        <pre><code>import torch
+import torch.nn.functional as F
+
+logits = torch.tensor([2.0, 1.0, 0.5, -1.0, 0.1])
+
+for temp in [0.5, 1.0, 2.0]:
+    scaled = logits / temp
+    probs = F.softmax(scaled, dim=0)
+    sample = torch.multinomial(probs, num_samples=5, replacement=True)
+    print(f"temp={temp}: probs={probs.tolist()}")
+    print(f"         samples={sample.tolist()}")</code></pre>
+        <p class="code-note">Low temperature sharpens the distribution (greedy). High temperature flattens it (more random).</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -306,6 +377,28 @@
     <hr class="divider">
     <div class="interview-tip">NLL and cross-entropy are the same thing for language models. Perplexity = exp(NLL). These three metrics appear in every LLM paper.</div>
     <div class="mnemonic">NLL = surprise. A perfect model that knows the data perfectly has NLL = 0. A uniform-random model over 27 chars has NLL = log(27) = 3.30.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Computing NLL with F.cross_entropy
+      </button>
+      <div class="code-content">
+        <pre><code>import torch
+import torch.nn.functional as F
+
+# Model outputs logits for 27 characters
+logits = torch.randn(5, 27)  # 5 predictions, 27 classes
+targets = torch.tensor([1, 14, 14, 1, 0])  # "anna."
+
+loss = F.cross_entropy(logits, targets)
+print(f"NLL (cross-entropy): {loss.item():.4f}")
+
+# Manual calculation:
+probs = F.softmax(logits, dim=1)
+manual = -probs[range(5), targets].log().mean()
+print(f"Manual NLL: {manual.item():.4f}")</code></pre>
+        <p class="code-note">F.cross_entropy = log_softmax + NLL combined. Numerically stable and faster than doing it manually.</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -341,6 +434,30 @@
     <hr class="divider">
     <div class="interview-tip">This is the exact motivation for neural language models. Bengio et al. (2003) introduced neural LMs precisely to solve this curse-of-dimensionality problem in n-gram models.</div>
     <div class="mnemonic">Counting can memorize but cannot generalize. Neural networks can generalize to unseen contexts via learned representations.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Building N-gram Training Data
+      </button>
+      <div class="code-content">
+        <pre><code>import torch
+
+word = ".emma."
+context_len = 3
+stoi = {'.': 0, 'a': 1, 'e': 5, 'm': 13}
+
+X, Y = [], []
+for i in range(len(word) - 1):
+    start = max(0, i - context_len + 1)
+    ctx = [stoi.get(word[j], 0) for j in range(start, i + 1)]
+    ctx = [0] * (context_len - len(ctx)) + ctx  # pad left
+    X.append(ctx)
+    Y.append(stoi.get(word[i + 1], 0))
+
+X, Y = torch.tensor(X), torch.tensor(Y)
+print(f"X shape: {X.shape}, Y shape: {Y.shape}")</code></pre>
+        <p class="code-note">Context windows slide over the text. Padding with '.' handles the start of sequences.</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -385,6 +502,28 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">Word2Vec, GloVe, and the embedding layers in transformers all work on this same principle: tokens that appear in similar contexts get similar embeddings. This is the distributional hypothesis.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Learning Character Embeddings with nn.Embedding
+      </button>
+      <div class="code-content">
+        <pre><code>import torch
+import torch.nn as nn
+
+emb = nn.Embedding(27, 2)  # 27 chars, 2D embeddings
+
+# Lookup: integer index -> dense vector
+idx = torch.tensor([1, 5, 13])  # 'a', 'e', 'm'
+vectors = emb(idx)
+print(vectors)  # shape: (3, 2)
+
+# Equivalent to:
+one_hot = torch.nn.functional.one_hot(idx, 27).float()
+manual = one_hot @ emb.weight
+print(torch.allclose(vectors, manual))  # True</code></pre>
+        <p class="code-note">nn.Embedding is just a lookup table. It is equivalent to one-hot times weight matrix, but much faster.</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -451,6 +590,32 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">Bengio et al. (2003) "A Neural Probabilistic Language Model" is exactly this architecture. It introduced the idea of learned word embeddings and is the foundation for all modern LLMs.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: MLP Language Model (Bengio-style)
+      </button>
+      <div class="code-content">
+        <pre><code>import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+class CharLM(nn.Module):
+    def __init__(self, vocab=27, emb_dim=10, ctx=3, hidden=200):
+        super().__init__()
+        self.emb = nn.Embedding(vocab, emb_dim)
+        self.mlp = nn.Sequential(
+            nn.Linear(ctx * emb_dim, hidden), nn.ReLU(),
+            nn.Linear(hidden, vocab))
+    def forward(self, x):
+        e = self.emb(x).view(x.size(0), -1)  # concat embeddings
+        return self.mlp(e)
+
+model = CharLM()
+x = torch.randint(0, 27, (32, 3))  # batch of 32, context 3
+logits = model(x)  # (32, 27)</code></pre>
+        <p class="code-note">This is Bengio et al. 2003 in PyTorch. Embeddings are concatenated, not summed.</p>
+      </div>
+    </div>
   </div>
 </div>
 

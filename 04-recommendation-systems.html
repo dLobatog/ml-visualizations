@@ -54,6 +54,18 @@
   .katex { color: #e8e8ff; font-size: 1.1em; }
   .formula .katex { font-size: 1.2em; }
 
+
+  .code-example { margin-top: 12px; border: 1px solid #2a2a4a; border-radius: 8px; overflow: hidden; }
+  .code-toggle { width: 100%; background: #1a1a2e; color: #ff9ff3; border: none; padding: 10px 16px; text-align: left; cursor: pointer; font-size: 0.9em; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .code-toggle:hover { background: #22223a; }
+  .code-toggle-icon { display: inline-block; transition: transform 0.2s; font-size: 0.7em; }
+  .code-example.open .code-toggle-icon { transform: rotate(90deg); }
+  .code-content { display: none; padding: 14px 16px; background: #0a0a14; }
+  .code-example.open .code-content { display: block; }
+  .code-content pre { margin: 0; overflow-x: auto; white-space: pre; }
+  .code-content code { color: #e0e0e0; font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.82em; line-height: 1.6; }
+  .code-content .code-note { color: #888; font-size: 0.82em; margin-top: 8px; font-style: italic; }
+
 </style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -113,6 +125,27 @@
     <div class="interview-tip">Why does sparse data require different algorithms? Explicit SVD solvers (eigendecomposition) cannot handle missing values; SGD/ALS gracefully skip unobserved entries by computing only on observed pairs.</div>
     <div class="interview-tip">How do you choose k? Via cross-validation: lower k is faster at serving (fewer parameters) but less accurate; higher k improves NDCG but increases latency—typical production range is k=64-512.</div>
     <div class="mnemonic">Think of SVD as embedding users and items in a shared k-dimensional space; similar users have similar embedding vectors, so their preferences are correlated.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Matrix Factorization with Embeddings
+      </button>
+      <div class="code-content">
+        <pre><code>import torch.nn as nn
+
+class MF(nn.Module):
+    def __init__(self, n_users, n_items, dim=32):
+        super().__init__()
+        self.user_emb = nn.Embedding(n_users, dim)
+        self.item_emb = nn.Embedding(n_items, dim)
+        self.user_bias = nn.Embedding(n_users, 1)
+        self.item_bias = nn.Embedding(n_items, 1)
+
+    def forward(self, user, item):
+        dot = (self.user_emb(user) * self.item_emb(item)).sum(-1)
+        return dot + self.user_bias(user).squeeze() + self.item_bias(item).squeeze()</code></pre>
+        <p class="code-note">Learnable user/item embeddings with bias terms. Train with MSE loss on observed ratings using SGD.</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -161,6 +194,28 @@
     <div class="interview-tip">Why pre-compute item embeddings? User tower requires online inference (live user context), but item embeddings are static—pre-computing and indexing eliminates real-time item inference cost.</div>
     <div class="interview-tip">Why dot product over cosine? Cosine similarity requires L2 normalization at serving time; dot product is faster in FAISS/Annoy libraries and achieves similar ranking when embeddings are approximately normalized.</div>
     <div class="mnemonic">Two-tower is like two separate coordinate systems: users and items map independently into shared embedding space, then you find nearest neighbors via simple dot product.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Two-Tower Retrieval Model
+      </button>
+      <div class="code-content">
+        <pre><code>import torch.nn as nn
+
+class TwoTower(nn.Module):
+    def __init__(self, user_feat_dim, item_feat_dim, emb_dim=64):
+        super().__init__()
+        self.user_tower = nn.Sequential(
+            nn.Linear(user_feat_dim, 128), nn.ReLU(), nn.Linear(128, emb_dim))
+        self.item_tower = nn.Sequential(
+            nn.Linear(item_feat_dim, 128), nn.ReLU(), nn.Linear(128, emb_dim))
+
+    def forward(self, user_feat, item_feat):
+        u = nn.functional.normalize(self.user_tower(user_feat), dim=-1)
+        i = nn.functional.normalize(self.item_tower(item_feat), dim=-1)
+        return (u * i).sum(-1)  # cosine similarity</code></pre>
+        <p class="code-note">Separate user and item towers produce normalized embeddings. Item embeddings are precomputed for fast ANN retrieval.</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -207,6 +262,25 @@
     <div class="interview-tip">How do you onboard new items without retraining? Use content-based initialization: compute embeddings from item metadata/category features, then fine-tune with user interaction signals.</div>
     <div class="interview-tip">What prevents embedding collapse (all items mapping to same region)? Proper loss functions (triplet, in-batch negatives) keep diverse negative samples far; batch normalization also helps stabilize scale.</div>
     <div class="mnemonic">Think of embeddings as a map of item space: similar items are neighbors on the map; ANN search finds nearby neighbors quickly instead of searching all items.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: t-SNE Visualization of Item Embeddings
+      </button>
+      <div class="code-content">
+        <pre><code>import numpy as np
+from sklearn.manifold import TSNE
+
+# item_embeddings: (n_items, dim) from trained model
+item_embeddings = model.item_emb.weight.detach().numpy()
+tsne = TSNE(n_components=2, perplexity=30, random_state=42)
+coords = tsne.fit_transform(item_embeddings)
+
+# Visualize: similar items cluster together
+import matplotlib.pyplot as plt
+plt.scatter(coords[:, 0], coords[:, 1], c=item_categories, s=5, alpha=0.6)</code></pre>
+        <p class="code-note">Projects learned item embeddings to 2D. Clusters reveal latent categories discovered by the model.</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -275,6 +349,28 @@
     <div class="interview-tip">Practical trick: When user embedding is unavailable, find nearest neighbor in content-feature space (demographics), copy their embedding until interactions accumulate—leverages collaborative signal from similar users.</div>
     <div class="interview-tip">How do you evaluate cold-start? Separately: measure NDCG on users/items with age < 7 days (cold metrics) vs age > 30 days (warm metrics). A/B test changes on cold users only to isolate impact.</div>
     <div class="mnemonic">Cold-start is a funnel: content-based (broad, weak) → exploration bandit (learning) → exploitation (leveraging learned preferences) → mature warm-start recommendations.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Hybrid Model for Cold Start
+      </button>
+      <div class="code-content">
+        <pre><code>import torch.nn as nn
+
+class HybridRecommender(nn.Module):
+    def __init__(self, n_users, n_items, content_dim, emb_dim=32):
+        super().__init__()
+        self.user_emb = nn.Embedding(n_users, emb_dim)
+        self.item_emb = nn.Embedding(n_items, emb_dim)
+        self.content_proj = nn.Linear(content_dim, emb_dim)  # for cold items
+
+    def forward(self, user, item, content_feat, is_cold):
+        u = self.user_emb(user)
+        i = torch.where(is_cold.unsqueeze(-1),
+                        self.content_proj(content_feat), self.item_emb(item))
+        return (u * i).sum(-1)</code></pre>
+        <p class="code-note">Falls back to content features for new items with no interactions. Warm items use learned collaborative embeddings.</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -331,6 +427,27 @@
     <div class="interview-tip">How do you choose wide-path features? High-dimensional, expensive to hand-engineer. Start with top-k frequent feature crosses (identified via statistical tests), then iteratively add new crosses based on model analysis.</div>
     <div class="interview-tip">Compare to baselines: Deep-only struggles with memorization (e.g., specific promo combos); Wide-only cannot generalize. Wide&Deep achieves both—validate via A/B test: Deep-only vs Wide-only vs Wide&Deep.</div>
     <div class="mnemonic">Think of it as: Wide handles special cases (memorize important user-item patterns), Deep handles the general case (learn reusable patterns from raw features).</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Wide and Deep Network
+      </button>
+      <div class="code-content">
+        <pre><code>import torch.nn as nn
+
+class WideAndDeep(nn.Module):
+    def __init__(self, wide_dim, deep_dims, hidden=128):
+        super().__init__()
+        self.wide = nn.Linear(wide_dim, 1)  # memorization
+        self.deep = nn.Sequential(
+            nn.Linear(deep_dims, hidden), nn.ReLU(),
+            nn.Linear(hidden, hidden), nn.ReLU(),
+            nn.Linear(hidden, 1))  # generalization
+
+    def forward(self, wide_x, deep_x):
+        return torch.sigmoid(self.wide(wide_x) + self.deep(deep_x))</code></pre>
+        <p class="code-note">Wide component memorizes feature crosses; deep component generalizes via embeddings. Used at Google Play.</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -382,6 +499,37 @@
     <div class="interview-tip">Why more efficient than hand-crafted crosses? Exponential feature explosion: to get 4th-order interactions manually, you need \(O(d^4)\) features. DCN achieves it with \(O(4d)\) parameters via automatic layer-wise composition.</div>
     <div class="interview-tip">Interpretability trade-off? Unlike Wide & Deep (you can inspect wide weights to see which crosses matter), DCN cross layers are learned implicitly—harder to debug but more automated.</div>
     <div class="mnemonic">Think of cross layers as a learnable feature interaction funnel: each layer multiplies original input by learned gates to extract higher-order patterns progressively.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: DCN-v2 with Cross Layers
+      </button>
+      <div class="code-content">
+        <pre><code>import torch.nn as nn
+
+class CrossLayer(nn.Module):
+    def __init__(self, dim):
+        super().__init__()
+        self.w = nn.Linear(dim, dim, bias=True)
+
+    def forward(self, x0, x):
+        return x0 * self.w(x) + x  # element-wise cross
+
+class DCN(nn.Module):
+    def __init__(self, input_dim, n_cross=3, hidden=128):
+        super().__init__()
+        self.cross_layers = nn.ModuleList([CrossLayer(input_dim) for _ in range(n_cross)])
+        self.deep = nn.Sequential(nn.Linear(input_dim, hidden), nn.ReLU(),
+                                  nn.Linear(hidden, hidden), nn.ReLU())
+        self.out = nn.Linear(input_dim + hidden, 1)
+
+    def forward(self, x):
+        xc = x
+        for cl in self.cross_layers:
+            xc = cl(x, xc)
+        return torch.sigmoid(self.out(torch.cat([xc, self.deep(x)], dim=-1)))</code></pre>
+        <p class="code-note">Cross layers learn explicit feature interactions without manual engineering. Stacked cross layers capture higher-order crosses.</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -433,6 +581,29 @@
     <div class="interview-tip">Why better than average? Example: User watched [Romance, Romance, Romance, Action]. Average gives little weight to Action preference. Attention on Action candidate upweights the Action history item.</div>
     <div class="interview-tip">Recency bias emerges naturally: if items are ordered temporally, softmax attention over recent items (higher scores) gives more weight to recent history without explicit time decay.</div>
     <div class="mnemonic">Attention = Adaptive history summarization: different candidates pull different "summaries" from the same user history based on relevance.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: DIN Attention over User History
+      </button>
+      <div class="code-content">
+        <pre><code>import torch, torch.nn as nn
+
+class DINAttention(nn.Module):
+    def __init__(self, emb_dim):
+        super().__init__()
+        self.mlp = nn.Sequential(
+            nn.Linear(emb_dim * 4, 64), nn.ReLU(),
+            nn.Linear(64, 1))
+
+    def forward(self, query, keys):  # query: (B, D), keys: (B, T, D)
+        q = query.unsqueeze(1).expand_as(keys)
+        cross = torch.cat([q, keys, q - keys, q * keys], dim=-1)
+        weights = self.mlp(cross).squeeze(-1)  # (B, T)
+        weights = torch.softmax(weights, dim=-1)
+        return (weights.unsqueeze(-1) * keys).sum(1)  # (B, D)</code></pre>
+        <p class="code-note">Computes attention between candidate item and user history. Captures which past behaviors are relevant to the current item.</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -485,6 +656,27 @@
     <div class="interview-tip">Validate candidate generation recall: If top-100 candidates always miss relevant items (measured offline), increase recall@k during Stage 1—trade some latency for accuracy.</div>
     <div class="interview-tip">Parallelize if bottlenecked: Stage 1 (ANN search) and business logic (re-ranking) are parallelizable; Stage 2 (sequential scoring) is harder to parallelize.</div>
     <div class="mnemonic">Think of it as a filtering funnel: broad candidate net (high recall) → precise ranking (high precision) → final polish (business logic).</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: 3-Stage Retrieval Pipeline
+      </button>
+      <div class="code-content">
+        <pre><code># 3-stage production pipeline pseudocode
+import faiss, torch
+
+# Stage 1: Candidate Generation (retrieve ~1000 from millions)
+user_vec = user_tower(user_features).numpy()
+D, candidates = faiss_index.search(user_vec, k=1000)
+
+# Stage 2: Scoring/Ranking (score ~1000 candidates)
+scores = ranking_model(user_features, item_features[candidates])
+top200 = candidates[scores.argsort(descending=True)[:200]]
+
+# Stage 3: Re-ranking (business rules, diversity, freshness)
+final = rerank(top200, diversity_weight=0.3, boost_new=True)</code></pre>
+        <p class="code-note">Real production systems use retrieve-then-rank. FAISS handles fast ANN retrieval; neural rankers score candidates.</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -536,6 +728,29 @@
     <div class="interview-tip">Variable-length sequences: Pad to max length with special tokens, use attention mask to ignore padding. Alternatively, truncate to recent k items (e.g., last 50 items).</div>
     <div class="interview-tip">Recency bias: Emerges naturally from attention weights (recent items higher QK scores); no explicit time decay needed. Validate via attention weight visualization.</div>
     <div class="mnemonic">Self-attention = parallel RNN: each position "reads" previous positions simultaneously via learned attention weights, avoiding sequential computation.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: SASRec with Transformer Encoder
+      </button>
+      <div class="code-content">
+        <pre><code>import torch.nn as nn
+
+class SASRec(nn.Module):
+    def __init__(self, n_items, d_model=64, max_len=50, n_heads=2, n_layers=2):
+        super().__init__()
+        self.item_emb = nn.Embedding(n_items + 1, d_model, padding_idx=0)
+        self.pos_emb = nn.Embedding(max_len, d_model)
+        encoder_layer = nn.TransformerEncoderLayer(d_model, n_heads, d_model * 4,
+                                                    dropout=0.1, batch_first=True)
+        self.encoder = nn.TransformerEncoder(encoder_layer, n_layers)
+
+    def forward(self, seq):  # seq: (B, T) item IDs
+        mask = torch.triu(torch.ones(seq.size(1), seq.size(1)), diagonal=1).bool()
+        x = self.item_emb(seq) + self.pos_emb(torch.arange(seq.size(1)))
+        return self.encoder(x, mask=mask)  # (B, T, D)</code></pre>
+        <p class="code-note">Applies causal self-attention over item sequences. The last hidden state predicts the next item.</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -589,6 +804,34 @@
     <div class="interview-tip">Handle label imbalance: CVR is ~1% (rarer than CTR ~10%). Use weighted sampling or loss weighting to balance task gradients; monitor which task dominates training.</div>
     <div class="interview-tip">Validate improvements: Compare multi-task vs CTR-only baseline. Measure both task accuracy (does each task improve?) and correlation (do tasks help each other?).</div>
     <div class="mnemonic">MoE gating = skill specialization: CTR gate prefers experts good at short-term clicks; CVR gate prefers experts predicting long-term conversions.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: MMOE Multi-Task Architecture
+      </button>
+      <div class="code-content">
+        <pre><code>import torch.nn as nn
+
+class MMOE(nn.Module):
+    def __init__(self, input_dim, n_experts=4, expert_dim=64, n_tasks=2):
+        super().__init__()
+        self.experts = nn.ModuleList(
+            [nn.Sequential(nn.Linear(input_dim, expert_dim), nn.ReLU()) for _ in range(n_experts)])
+        self.gates = nn.ModuleList(
+            [nn.Linear(input_dim, n_experts) for _ in range(n_tasks)])
+        self.towers = nn.ModuleList(
+            [nn.Linear(expert_dim, 1) for _ in range(n_tasks)])
+
+    def forward(self, x):
+        expert_outs = torch.stack([e(x) for e in self.experts], dim=1)  # (B, E, D)
+        outputs = []
+        for gate, tower in zip(self.gates, self.towers):
+            g = torch.softmax(gate(x), dim=-1).unsqueeze(-1)  # (B, E, 1)
+            mixed = (expert_outs * g).sum(1)  # (B, D)
+            outputs.append(tower(mixed))
+        return outputs</code></pre>
+        <p class="code-note">Each task has its own gating network to softly select from shared experts. Balances task-specific vs shared learning.</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -642,6 +885,26 @@
     <div class="interview-tip">Why does pointwise fail on ranked outputs? Position bias: top-ranked docs receive more clicks regardless of relevance. Evaluation metric mismatch: classification loss doesn't align with NDCG/MRR metrics.</div>
     <div class="interview-tip">Variable-length lists: Pad with negative labels (rank 0) to uniform length. LambdaMART handles missing labels gracefully (skips pairs with missing labels).</div>
     <div class="mnemonic">Pointwise = per-item scores ignoring context; Pairwise = respecting relative order; Listwise = optimizing the entire ranked order for metric.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Listwise Ranking Loss
+      </button>
+      <div class="code-content">
+        <pre><code>import torch
+import torch.nn.functional as F
+
+def listwise_softmax_loss(scores, relevance):
+    """ListNet-style listwise ranking loss."""
+    pred_dist = F.log_softmax(scores, dim=-1)
+    true_dist = F.softmax(relevance.float(), dim=-1)
+    return F.kl_div(pred_dist, true_dist, reduction='batchmean')
+
+# Usage: scores from ranking model, relevance = ground truth labels
+scores = model(query_features, doc_features)  # (batch, n_docs)
+loss = listwise_softmax_loss(scores, relevance_labels)</code></pre>
+        <p class="code-note">Optimizes the entire ranked list distribution. Outperforms pointwise/pairwise losses for ranking tasks like search and recommendations.</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -685,6 +948,29 @@
     <div class="interview-tip">Budget constraints: Advertisers cap daily spend; challenge is allocating limited budget across ads. Use online optimization (bid adjustment) to respect budgets while maximizing CTR.</div>
     <div class="interview-tip">Multi-touch attribution: Why harder? Multiple touchpoints in user journey; isolating which ad caused conversion is confounded by user intent. Shapley value fair but computationally expensive.</div>
     <div class="mnemonic">Think of auction equation as: (Advertiser value) × (User relevance) × (Platform quality); all three terms must be non-zero for ads to rank well.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: CTR Prediction Model
+      </button>
+      <div class="code-content">
+        <pre><code>import torch.nn as nn
+
+class CTRModel(nn.Module):
+    """Click-Through Rate prediction for ad ranking."""
+    def __init__(self, sparse_dims, dense_dim, emb_dim=16):
+        super().__init__()
+        self.embeddings = nn.ModuleList([nn.Embedding(d, emb_dim) for d in sparse_dims])
+        total_dim = len(sparse_dims) * emb_dim + dense_dim
+        self.mlp = nn.Sequential(nn.Linear(total_dim, 128), nn.ReLU(),
+                                 nn.Linear(128, 64), nn.ReLU(), nn.Linear(64, 1))
+
+    def forward(self, sparse_feats, dense_feats):
+        embs = [e(sparse_feats[:, i]) for i, e in enumerate(self.embeddings)]
+        x = torch.cat(embs + [dense_feats], dim=-1)
+        return torch.sigmoid(self.mlp(x))  # P(click)</code></pre>
+        <p class="code-note">Sparse features (user/ad IDs) get embeddings; dense features are concatenated. Output is click probability for ad auction ranking.</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -737,6 +1023,29 @@
     <div class="interview-tip">Why does ColBERT avoid early-interaction bottleneck? Standard dense matching locks in interaction decision at embedding time; ColBERT defers to serving (per-token flexibility).</div>
     <div class="interview-tip">Measure retrieval quality: recall@k (fraction of relevant docs in top-k), MRR (mean reciprocal rank of first relevant doc), NDCG. Validate on holdout relevance judgments.</div>
     <div class="mnemonic">Bi-encoder = fast approximate search; Cross-encoder = slow precise scoring; ColBERT = fast token-level flexibility for accurate re-ranking.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Bi-Encoder Dense Retrieval
+      </button>
+      <div class="code-content">
+        <pre><code>from transformers import AutoTokenizer, AutoModel
+import torch
+
+tokenizer = AutoTokenizer.from_pretrained("sentence-transformers/all-MiniLM-L6-v2")
+model = AutoModel.from_pretrained("sentence-transformers/all-MiniLM-L6-v2")
+
+def encode(texts):
+    inputs = tokenizer(texts, padding=True, truncation=True, return_tensors="pt")
+    with torch.no_grad():
+        out = model(**inputs)
+    return out.last_hidden_state[:, 0]  # CLS token
+
+q_emb = encode(["best pizza in NYC"])
+d_emb = encode(["Top rated pizza restaurants in New York City"])
+sim = torch.cosine_similarity(q_emb, d_emb)  # ~0.85</code></pre>
+        <p class="code-note">Encodes queries and documents independently with a shared transformer. Precompute document embeddings for fast ANN search.</p>
+      </div>
+    </div>
   </div>
 </div>
 

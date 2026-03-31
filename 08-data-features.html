@@ -285,6 +285,16 @@
     .quiz-score { text-align: center; font-size: 1.5em; color: #5f27cd; margin-bottom: 30px; }
     .quiz-actions { text-align: center; margin-top: 20px; }
     .quiz-actions button { padding: 10px 24px; margin: 0 8px; border-radius: 8px; border: 1px solid #5f27cd; background: transparent; color: #5f27cd; cursor: pointer; font-size: 1em; }
+  .code-example { margin-top: 12px; border: 1px solid #2a2a4a; border-radius: 8px; overflow: hidden; }
+  .code-toggle { width: 100%; background: #1a1a2e; color: #5f27cd; border: none; padding: 10px 16px; text-align: left; cursor: pointer; font-size: 0.9em; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .code-toggle:hover { background: #22223a; }
+  .code-toggle-icon { display: inline-block; transition: transform 0.2s; font-size: 0.7em; }
+  .code-example.open .code-toggle-icon { transform: rotate(90deg); }
+  .code-content { display: none; padding: 14px 16px; background: #0a0a14; }
+  .code-example.open .code-content { display: block; }
+  .code-content pre { margin: 0; overflow-x: auto; white-space: pre; }
+  .code-content code { color: #e0e0e0; font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.82em; line-height: 1.6; }
+  .code-content .code-note { color: #888; font-size: 0.82em; margin-top: 8px; font-style: italic; }
 </style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -389,6 +399,25 @@
 
                 <div class="interview-tip">Non-normal data? Use robust scaling (median/IQR) or power transform (Yeo-Johnson, Box-Cox) before standardization.</div>
                 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Toggle outlier magnitude slider to 10x and rewatch Z-Score vs Robust. Notice how Robust stays stable while Z-Score gets pulled. This is why Robust is best when outliers are real (not errors).</div>
+                <div class="code-example">
+                  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="code-toggle-icon">&#9654;</span> Scikit-learn Example: Feature Scaling
+                  </button>
+                  <div class="code-content">
+                    <pre><code>from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
+                import numpy as np
+                
+                X_train = np.array([[1, 100], [2, 200], [3, 50000]])
+                X_test = np.array([[1.5, 150]])
+                
+                scaler = StandardScaler()  # or MinMaxScaler(), RobustScaler()
+                X_train_scaled = scaler.fit_transform(X_train)
+                X_test_scaled = scaler.transform(X_test)  # use train params
+                print(f"Mean: {X_train_scaled.mean(axis=0)}")  # [0, 0]
+                print(f"Std:  {X_train_scaled.std(axis=0)}")   # [1, 1]</code></pre>
+                    <p class="code-note">Always fit on train, transform on test. RobustScaler uses median/IQR for outlier resistance.</p>
+                  </div>
+                </div>
             </div>
         </div>
 
@@ -482,6 +511,30 @@
                 <div class="key-point">
                     <span class="label">Production rule:</span>
                     <span class="desc">Store encoder versioned with model. Fit on train only (no leakage). Monitor cardinality for new categories. Switching encoding types mid-deployment breaks consistency.</span>
+                </div>
+                <div class="code-example">
+                  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="code-toggle-icon">&#9654;</span> Scikit-learn Example: Encoding Categorical Features
+                  </button>
+                  <div class="code-content">
+                    <pre><code>from sklearn.preprocessing import OneHotEncoder, LabelEncoder
+                import numpy as np
+                
+                categories = np.array([['red'], ['blue'], ['green'], ['red']])
+                
+                ohe = OneHotEncoder(sparse_output=False, drop='first')
+                X_encoded = ohe.fit_transform(categories)
+                print(X_encoded)  # drops 'blue' as reference
+                # [[0. 1.]    green=0, red=1
+                #  [0. 0.]    reference (blue)
+                #  [1. 0.]    green=1, red=0
+                #  [0. 1.]]
+                
+                le = LabelEncoder()
+                y_encoded = le.fit_transform(['cat', 'dog', 'cat', 'bird'])
+                print(y_encoded)  # [1, 2, 1, 0]</code></pre>
+                    <p class="code-note">Use drop='first' in OneHotEncoder to avoid the dummy variable trap.</p>
+                  </div>
                 </div>
             </div>
         </div>
@@ -581,6 +634,26 @@
                 <div class="key-point">
                     <span class="label">Production rule:</span>
                     <span class="desc">Document strategy & % missing per feature. Monitor missingness drift. Features >50% missing = unreliable imputation, consider dropping.</span>
+                </div>
+                <div class="code-example">
+                  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="code-toggle-icon">&#9654;</span> Scikit-learn Example: Missing Data Imputation
+                  </button>
+                  <div class="code-content">
+                    <pre><code>from sklearn.impute import SimpleImputer, KNNImputer
+                import numpy as np
+                
+                X = np.array([[1, 2], [np.nan, 3], [7, np.nan], [4, 5]])
+                
+                # Mean imputation
+                imp_mean = SimpleImputer(strategy='mean')
+                print(imp_mean.fit_transform(X))
+                
+                # KNN imputation (uses k nearest neighbors)
+                imp_knn = KNNImputer(n_neighbors=2)
+                print(imp_knn.fit_transform(X))</code></pre>
+                    <p class="code-note">SimpleImputer supports mean, median, most_frequent. KNNImputer preserves feature correlations.</p>
+                  </div>
                 </div>
             </div>
         </div>
@@ -690,6 +763,27 @@
                     <span class="label">Production rule:</span>
                     <span class="desc">Monitor minority class recall separately from accuracy. Use stratified split/K-fold. Document imbalance ratio. Choose class weights based on BUSINESS cost, not frequency.</span>
                 </div>
+                <div class="code-example">
+                  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="code-toggle-icon">&#9654;</span> Scikit-learn Example: SMOTE &amp; Class Weights
+                  </button>
+                  <div class="code-content">
+                    <pre><code>from sklearn.ensemble import RandomForestClassifier
+                from sklearn.datasets import make_classification
+                import numpy as np
+                
+                # Imbalanced dataset: 950 vs 50
+                X, y = make_classification(n_samples=1000, weights=[0.95],
+                                           n_features=10, random_state=42)
+                print(f"Class counts: {np.bincount(y)}")  # [950, 50]
+                
+                # Class weights (no data modification needed)
+                clf = RandomForestClassifier(class_weight='balanced', random_state=42)
+                clf.fit(X, y)
+                # 'balanced' sets w_i = n_samples / (n_classes * n_i)</code></pre>
+                    <p class="code-note">class_weight='balanced' auto-adjusts weights inversely proportional to class frequency.</p>
+                  </div>
+                </div>
             </div>
         </div>
 
@@ -776,6 +870,26 @@
                 <div class="key-point">
                     <span class="label">Production rule:</span>
                     <span class="desc">Never touch test set during dev. Document which samples in which set. For limited data: use nested CV (outer=eval, inner=tuning).</span>
+                </div>
+                <div class="code-example">
+                  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="code-toggle-icon">&#9654;</span> Scikit-learn Example: Stratified K-Fold Cross-Validation
+                  </button>
+                  <div class="code-content">
+                    <pre><code>from sklearn.model_selection import StratifiedKFold, cross_val_score
+                from sklearn.linear_model import LogisticRegression
+                import numpy as np
+                
+                X = np.random.randn(200, 5)
+                y = np.array([0]*180 + [1]*20)  # imbalanced
+                
+                skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+                clf = LogisticRegression()
+                scores = cross_val_score(clf, X, y, cv=skf, scoring='f1')
+                print(f"F1 per fold: {scores.round(3)}")
+                print(f"Mean F1: {scores.mean():.3f} +/- {scores.std():.3f}")</code></pre>
+                    <p class="code-note">StratifiedKFold preserves class proportions in each fold; critical for imbalanced data.</p>
+                  </div>
                 </div>
             </div>
         </div>
@@ -866,6 +980,28 @@
 
                 <div class="interview-tip">Offline-online gap >5% = likely leakage. For temporal data: ALWAYS time-based split, verify timestamps ascending order.</div>
                 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set split to Time-Based, then look at the canvas: data flows left-to-right (past to future). Verify: does your preprocessing fit on train-only data? Are timestamps monotonically increasing? Check your code—leakage hides in these details.</div>
+                <div class="code-example">
+                  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="code-toggle-icon">&#9654;</span> Pandas Example: Data Leakage Prevention Pipeline
+                  </button>
+                  <div class="code-content">
+                    <pre><code>from sklearn.pipeline import Pipeline
+                from sklearn.preprocessing import StandardScaler
+                from sklearn.linear_model import LogisticRegression
+                from sklearn.model_selection import train_test_split
+                import numpy as np
+                
+                X, y = np.random.randn(500, 4), (np.random.rand(500) > 0.5).astype(int)
+                X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+                
+                # Pipeline prevents leakage: scaler fits on train only
+                pipe = Pipeline([('scaler', StandardScaler()),
+                                 ('clf', LogisticRegression())])
+                pipe.fit(X_train, y_train)
+                print(f"Test acc: {pipe.score(X_test, y_test):.3f}")</code></pre>
+                    <p class="code-note">Pipeline ensures preprocessing fits only on training data during cross-validation.</p>
+                  </div>
+                </div>
             </div>
         </div>
 
@@ -966,6 +1102,27 @@
                 <div class="key-point">
                     <span class="label">Complementary to:</span>
                     <span class="desc">Regularization (both reduce overfitting). Transfer learning (augmented pre-training helps). Can target minority class for imbalance.</span>
+                </div>
+                <div class="code-example">
+                  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="code-toggle-icon">&#9654;</span> NumPy/Pandas Example: Data Augmentation (MixUp)
+                  </button>
+                  <div class="code-content">
+                    <pre><code>import numpy as np
+                
+                def mixup(X, y, alpha=1.0):
+                    lam = np.random.beta(alpha, alpha, size=len(X))
+                    idx = np.random.permutation(len(X))
+                    X_mix = lam.reshape(-1,1) * X + (1-lam.reshape(-1,1)) * X[idx]
+                    y_mix = lam * y + (1-lam) * y[idx]
+                    return X_mix, y_mix
+                
+                X = np.random.randn(100, 5)
+                y = np.random.randint(0, 2, 100).astype(float)
+                X_aug, y_aug = mixup(X, y, alpha=0.4)
+                print(f"Soft labels range: [{y_aug.min():.2f}, {y_aug.max():.2f}]")</code></pre>
+                    <p class="code-note">MixUp creates soft labels via linear interpolation; alpha controls mixing strength.</p>
+                  </div>
                 </div>
             </div>
         </div>
@@ -1073,6 +1230,29 @@
 
                 <div class="interview-tip">Include target lag-1 as feature? Yes if available at train. Production: use \(X_{t-1}\) predict \(Y_t\) (not \(Y_{t-1}\), which unavailable).</div>
                 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Build a time-series model: use X(t-1) to predict Y(t) (previous input predicts current target). Never use Y(t-1) as input—it's unavailable at deployment. Lag-1 often most predictive; higher lags add noise.</div>
+                <div class="code-example">
+                  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="code-toggle-icon">&#9654;</span> Pandas Example: Temporal Feature Engineering
+                  </button>
+                  <div class="code-content">
+                    <pre><code>import pandas as pd
+                import numpy as np
+                
+                dates = pd.date_range('2024-01-01', periods=100, freq='h')
+                df = pd.DataFrame({'ts': dates, 'value': np.random.randn(100).cumsum()})
+                
+                # Cyclical encoding (hour)
+                df['hour_sin'] = np.sin(2 * np.pi * df['ts'].dt.hour / 24)
+                df['hour_cos'] = np.cos(2 * np.pi * df['ts'].dt.hour / 24)
+                
+                # Lag and rolling features
+                df['lag_1'] = df['value'].shift(1)
+                df['rolling_mean_6'] = df['value'].rolling(6).mean()
+                df = df.dropna()
+                print(df[['hour_sin','hour_cos','lag_1','rolling_mean_6']].head())</code></pre>
+                    <p class="code-note">Always use shift (past only) for lags; rolling with min_periods avoids NaN propagation.</p>
+                  </div>
+                </div>
             </div>
         </div>
 
@@ -1157,6 +1337,34 @@
                 <div class="key-point">
                     <span class="label">Complementary to:</span>
                     <span class="desc">Active learning (selective human labeling). Semi-supervised (Snorkel seeds unlabeled). Multi-task (shared robust representations). Pre-training (more robust to noise).</span>
+                </div>
+                <div class="code-example">
+                  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="code-toggle-icon">&#9654;</span> Scikit-learn Example: Programmatic Labeling Functions
+                  </button>
+                  <div class="code-content">
+                    <pre><code>import numpy as np
+                
+                ABSTAIN = -1
+                
+                def lf_keyword(text):
+                    return 1 if 'urgent' in text.lower() else ABSTAIN
+                
+                def lf_length(text):
+                    return 0 if len(text) < 20 else ABSTAIN
+                
+                def lf_exclamation(text):
+                    return 1 if text.count('!') >= 2 else ABSTAIN
+                
+                texts = ["URGENT: fix now!!", "hello", "Please help!! URGENT"]
+                labels = np.array([[lf(t) for lf in [lf_keyword, lf_length, lf_exclamation]]
+                                   for t in texts])
+                print(labels)
+                # [[ 1, -1,  1],   two LFs vote positive
+                #  [-1,  0, -1],   one LF votes negative
+                #  [ 1, -1,  1]]   two LFs vote positive</code></pre>
+                    <p class="code-note">Each LF returns a label or ABSTAIN. Combine via majority vote or Snorkel's label model.</p>
+                  </div>
                 </div>
             </div>
         </div>

@@ -52,6 +52,16 @@
   .insight-box .comparison .option .opt-title { color: #54a0ff; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
   .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
   .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
+  .code-example { margin-top: 12px; border: 1px solid #2a2a4a; border-radius: 8px; overflow: hidden; }
+  .code-toggle { width: 100%; background: #1a1a2e; color: #54a0ff; border: none; padding: 10px 16px; text-align: left; cursor: pointer; font-size: 0.9em; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .code-toggle:hover { background: #22223a; }
+  .code-toggle-icon { display: inline-block; transition: transform 0.2s; font-size: 0.7em; }
+  .code-example.open .code-toggle-icon { transform: rotate(90deg); }
+  .code-content { display: none; padding: 14px 16px; background: #0a0a14; }
+  .code-example.open .code-content { display: block; }
+  .code-content pre { margin: 0; overflow-x: auto; white-space: pre; }
+  .code-content code { color: #e0e0e0; font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.82em; line-height: 1.6; }
+  .code-content .code-note { color: #888; font-size: 0.82em; margin-top: 8px; font-style: italic; }
 
   .katex { color: #e8e8ff; font-size: 1.1em; }
   .formula .katex { font-size: 1.2em; }
@@ -171,6 +181,22 @@
     <hr class="divider">
     <div class="interview-tip">Graphs are everywhere: social networks, molecules, knowledge bases, code ASTs, traffic networks. The key challenge is that we need architectures that handle variable-size neighborhoods.</div>
     <div class="mnemonic">A graph = (Nodes with features, Edges defining structure). The adjacency matrix A encodes who is connected to whom.</div>
+<div class="code-example">
+  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+    <span class="code-toggle-icon">&#9654;</span> Framework Example: Building a Graph with PyG
+  </button>
+  <div class="code-content">
+    <pre><code>import torch
+from torch_geometric.data import Data
+
+# Define a 4-node graph: edges + node features
+edge_index = torch.tensor([[0,1,1,2,2,3],[1,0,2,1,3,2]], dtype=torch.long)
+x = torch.randn(4, 16)  # 4 nodes, 16-dim features
+data = Data(x=x, edge_index=edge_index)
+print(data)  # Data(x=[4,16], edge_index=[2,6])</code></pre>
+    <p class="code-note">PyG uses COO format: edge_index has shape [2, num_edges].</p>
+  </div>
+</div>
   </div>
 </div>
 
@@ -218,6 +244,26 @@
     <hr class="divider">
     <div class="interview-tip">"Message passing" is the unifying framework for most GNNs: GCN, GAT, GraphSAGE, GIN all differ only in how they create messages and aggregate them.</div>
     <div class="mnemonic">Message passing in 4 steps: (1) Highlight target, (2) Neighbors send messages, (3) Aggregate (mean/sum/max), (4) Update with W and activation.</div>
+<div class="code-example">
+  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+    <span class="code-toggle-icon">&#9654;</span> Framework Example: Custom Message Passing Layer
+  </button>
+  <div class="code-content">
+    <pre><code>import torch
+from torch_geometric.nn import MessagePassing
+from torch_geometric.utils import add_self_loops
+
+class MyGNN(MessagePassing):
+    def __init__(self, in_ch, out_ch):
+        super().__init__(aggr='mean')  # mean aggregation
+        self.lin = torch.nn.Linear(in_ch, out_ch)
+    def forward(self, x, edge_index):
+        return self.propagate(edge_index, x=self.lin(x))
+    def message(self, x_j):  # x_j = neighbor features
+        return x_j</code></pre>
+    <p class="code-note">MessagePassing handles gather/scatter; override message() and aggregate().</p>
+  </div>
+</div>
   </div>
 </div>
 
@@ -258,6 +304,24 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">GIN (Graph Isomorphism Network) proves that sum aggregation is the most expressive -- it can distinguish graph structures that mean and max cannot.</div>
+<div class="code-example">
+  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+    <span class="code-toggle-icon">&#9654;</span> Framework Example: Comparing Aggregations in PyG
+  </button>
+  <div class="code-content">
+    <pre><code>from torch_geometric.nn import GCNConv, SAGEConv, GINConv
+import torch.nn as nn
+
+# GCN uses mean (symmetric-normalized)
+gcn = GCNConv(16, 32)
+# GraphSAGE supports mean, max, lstm
+sage = SAGEConv(16, 32, aggr='max')
+# GIN uses sum (most expressive)
+gin_nn = nn.Sequential(nn.Linear(16, 32), nn.ReLU())
+gin = GINConv(gin_nn)  # sum aggregation by default</code></pre>
+    <p class="code-note">Pass aggr='mean'|'sum'|'max' to most PyG layers.</p>
+  </div>
+</div>
   </div>
 </div>
 
@@ -290,6 +354,26 @@
     <hr class="divider">
     <div class="interview-tip">GCN is a first-order approximation of spectral graph convolutions. The normalized adjacency acts as a low-pass filter on the graph signal -- it smooths features between connected nodes.</div>
     <div class="mnemonic">GCN in one line: "Average your neighbors (including yourself), normalize by degree, then transform with a learned weight matrix."</div>
+<div class="code-example">
+  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+    <span class="code-toggle-icon">&#9654;</span> Framework Example: 2-Layer GCN for Node Classification
+  </button>
+  <div class="code-content">
+    <pre><code>import torch.nn.functional as F
+from torch_geometric.nn import GCNConv
+
+class GCN(torch.nn.Module):
+    def __init__(self, in_dim, hid, out_dim):
+        super().__init__()
+        self.conv1 = GCNConv(in_dim, hid)
+        self.conv2 = GCNConv(hid, out_dim)
+    def forward(self, data):
+        x = F.relu(self.conv1(data.x, data.edge_index))
+        x = F.dropout(x, p=0.5, training=self.training)
+        return self.conv2(x, data.edge_index)</code></pre>
+    <p class="code-note">GCNConv adds self-loops and applies symmetric normalization automatically.</p>
+  </div>
+</div>
   </div>
 </div>
 
@@ -336,6 +420,22 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">Multi-head attention in GATs: run K independent attention heads and concatenate (or average) their outputs. This stabilizes learning and captures different types of neighbor importance.</div>
+<div class="code-example">
+  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+    <span class="code-toggle-icon">&#9654;</span> Framework Example: Multi-Head GAT Layer
+  </button>
+  <div class="code-content">
+    <pre><code>from torch_geometric.nn import GATConv
+
+# 8 attention heads, concat output
+gat1 = GATConv(16, 8, heads=8, concat=True)   # out: 64
+# Final layer: average heads instead of concat
+gat2 = GATConv(64, 7, heads=1, concat=False)  # out: 7 classes
+
+# Forward: out = gat2(F.elu(gat1(x, edge_index)), edge_index)</code></pre>
+    <p class="code-note">Set concat=False on the final layer to average attention heads.</p>
+  </div>
+</div>
   </div>
 </div>
 
@@ -381,6 +481,26 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">If asked "why are GNNs shallow?", explain over-smoothing: repeated message passing is like repeatedly averaging -- everything converges. This is fundamentally different from depth problems in CNNs.</div>
+<div class="code-example">
+  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+    <span class="code-toggle-icon">&#9654;</span> Framework Example: Residual GNN to Combat Over-Smoothing
+  </button>
+  <div class="code-content">
+    <pre><code>from torch_geometric.nn import GCNConv
+import torch.nn.functional as F
+
+class ResGCN(torch.nn.Module):
+    def __init__(self, dim, num_layers=8):
+        super().__init__()
+        self.convs = torch.nn.ModuleList(
+            [GCNConv(dim, dim) for _ in range(num_layers)])
+    def forward(self, x, edge_index):
+        for conv in self.convs:
+            x = x + F.relu(conv(x, edge_index))  # residual
+        return x</code></pre>
+    <p class="code-note">Residual connections let deep GNNs (8+ layers) avoid over-smoothing.</p>
+  </div>
+</div>
   </div>
 </div>
 
@@ -418,6 +538,28 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">The molecule classification pipeline: molecular graph -> GNN layers -> readout -> MLP classifier -> property prediction. This is the workhorse of computational chemistry and drug discovery.</div>
+<div class="code-example">
+  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+    <span class="code-toggle-icon">&#9654;</span> Framework Example: Graph Classification with Global Pooling
+  </button>
+  <div class="code-content">
+    <pre><code>from torch_geometric.nn import GCNConv, global_mean_pool
+import torch.nn.functional as F
+
+class GraphClassifier(torch.nn.Module):
+    def __init__(self, in_dim, hid, n_classes):
+        super().__init__()
+        self.conv1 = GCNConv(in_dim, hid)
+        self.conv2 = GCNConv(hid, hid)
+        self.lin = torch.nn.Linear(hid, n_classes)
+    def forward(self, data):
+        x = F.relu(self.conv1(data.x, data.edge_index))
+        x = F.relu(self.conv2(x, data.edge_index))
+        x = global_mean_pool(x, data.batch)  # graph-level
+        return self.lin(x)</code></pre>
+    <p class="code-note">global_mean_pool averages node embeddings per graph in a batch.</p>
+  </div>
+</div>
   </div>
 </div>
 
@@ -475,6 +617,29 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">GraphSAGE's key innovation: instead of learning embeddings (transductive), it learns an aggregation function (inductive). This is why it scales to graphs with millions of nodes and can handle new nodes at test time.</div>
+<div class="code-example">
+  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+    <span class="code-toggle-icon">&#9654;</span> Framework Example: GraphSAGE with Neighbor Sampling
+  </button>
+  <div class="code-content">
+    <pre><code>from torch_geometric.nn import SAGEConv
+from torch_geometric.loader import NeighborLoader
+
+# Neighbor sampling: 25 neighbors at layer 1, 10 at layer 2
+loader = NeighborLoader(data, num_neighbors=[25, 10],
+                        batch_size=512, shuffle=True)
+
+class SAGE(torch.nn.Module):
+    def __init__(self, in_dim, hid, out_dim):
+        super().__init__()
+        self.conv1 = SAGEConv(in_dim, hid)
+        self.conv2 = SAGEConv(hid, out_dim)
+    def forward(self, x, edge_index):
+        x = F.relu(self.conv1(x, edge_index))
+        return self.conv2(x, edge_index)</code></pre>
+    <p class="code-note">NeighborLoader enables mini-batch training on million-node graphs.</p>
+  </div>
+</div>
   </div>
 </div>
 

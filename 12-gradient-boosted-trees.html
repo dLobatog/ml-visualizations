@@ -92,6 +92,17 @@
 .quiz-progress{height:4px;background:#1a1a2e;border-radius:2px;margin-bottom:20px;overflow:hidden}
 .quiz-progress-bar{height:100%;background:#10ac84;border-radius:2px;transition:width 0.3s}
 
+.code-example { margin-top: 12px; border: 1px solid #2a2a4a; border-radius: 8px; overflow: hidden; }
+.code-toggle { width: 100%; background: #1a1a2e; color: #10ac84; border: none; padding: 10px 16px; text-align: left; cursor: pointer; font-size: 0.9em; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.code-toggle:hover { background: #22223a; }
+.code-toggle-icon { display: inline-block; transition: transform 0.2s; font-size: 0.7em; }
+.code-example.open .code-toggle-icon { transform: rotate(90deg); }
+.code-content { display: none; padding: 14px 16px; background: #0a0a14; }
+.code-example.open .code-content { display: block; }
+.code-content pre { margin: 0; overflow-x: auto; white-space: pre; }
+.code-content code { color: #e0e0e0; font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.82em; line-height: 1.6; }
+.code-content .code-note { color: #888; font-size: 0.82em; margin-top: 8px; font-style: italic; }
+
 </style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -138,6 +149,25 @@
     <hr class="divider">
     <div class="interview-tip">A single deep tree overfits. GBDT uses many shallow trees (depth 3-8) sequentially, each correcting residual errors. The "weak learner" is the shallow tree.</div>
     <div class="mnemonic">Decision trees are greedy: each split is locally optimal. Boosting compensates by iteratively correcting mistakes.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Decision Tree Classifier
+      </button>
+      <div class="code-content">
+        <pre><code>from sklearn.tree import DecisionTreeClassifier
+from sklearn.datasets import make_classification
+from sklearn.model_selection import train_test_split
+
+X, y = make_classification(n_samples=1000, n_features=10, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+tree = DecisionTreeClassifier(max_depth=4, min_samples_leaf=10, random_state=42)
+tree.fit(X_train, y_train)
+print(f"Train acc: {tree.score(X_train, y_train):.3f}")
+print(f"Test acc:  {tree.score(X_test, y_test):.3f}")</code></pre>
+        <p class="code-note">Shallow trees (depth 4) are the building blocks of gradient boosting ensembles.</p>
+      </div>
+    </div>
     <div class="when-to-use">
       <h4>When to Use</h4>
       <div class="use-grid use-grid-3">
@@ -224,6 +254,28 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">GBDT fits trees to the negative gradient of the loss, not just residuals. For squared error, the negative gradient equals the residual. For other losses (logistic, huber), it differs.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Gradient Boosting Regressor
+      </button>
+      <div class="code-content">
+        <pre><code>from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.datasets import make_regression
+from sklearn.model_selection import train_test_split
+import numpy as np
+
+X, y = make_regression(n_samples=500, n_features=5, noise=10, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+gbr = GradientBoostingRegressor(
+    n_estimators=200, learning_rate=0.1, max_depth=3, random_state=42
+)
+gbr.fit(X_train, y_train)
+print(f"R2 score: {gbr.score(X_test, y_test):.3f}")
+print(f"Staged residuals (first 5 rounds): {[f'{s:.2f}' for s in list(gbr.train_score_[:5])]}")</code></pre>
+        <p class="code-note">Each tree fits the negative gradient (residuals for MSE loss). Use staged_predict() to inspect per-round predictions.</p>
+      </div>
+    </div>
     <div class="when-to-use">
       <h4>When to Use</h4>
       <div class="use-grid use-grid-3">
@@ -292,6 +344,28 @@
     <hr class="divider">
     <div class="interview-tip">In XGBoost/LightGBM, set n_estimators high (e.g., 10000) and use early_stopping_rounds=50. The learning rate controls the regularization strength. This is called "shrinkage".</div>
     <div class="mnemonic">Low learning rate + many trees = slow and steady wins the race. High learning rate + many trees = overfitting.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: XGBoost with Early Stopping
+      </button>
+      <div class="code-content">
+        <pre><code>import xgboost as xgb
+from sklearn.datasets import make_classification
+from sklearn.model_selection import train_test_split
+
+X, y = make_classification(n_samples=2000, n_features=20, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+model = xgb.XGBClassifier(
+    n_estimators=5000, learning_rate=0.05, max_depth=4,
+    early_stopping_rounds=50, eval_metric="logloss", random_state=42
+)
+model.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
+print(f"Best iteration: {model.best_iteration}")
+print(f"Accuracy: {model.score(X_test, y_test):.3f}")</code></pre>
+        <p class="code-note">Set n_estimators high and let early stopping find the optimal number of trees automatically.</p>
+      </div>
+    </div>
     <div class="when-to-use">
       <h4>When to Use</h4>
       <div class="use-grid use-grid-2">
@@ -365,6 +439,29 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">XGBoost's regularization term \(\Omega(f)\) in the objective is what differentiates it from vanilla GBM. This explicit regularization is a key reason for XGBoost's success.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: LightGBM Regularization
+      </button>
+      <div class="code-content">
+        <pre><code>import lightgbm as lgb
+from sklearn.datasets import make_classification
+from sklearn.model_selection import train_test_split
+
+X, y = make_classification(n_samples=2000, n_features=20, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+model = lgb.LGBMClassifier(
+    n_estimators=500, learning_rate=0.05, max_depth=5,
+    reg_alpha=0.1, reg_lambda=1.0,        # L1 and L2 regularization
+    subsample=0.8, colsample_bytree=0.7,   # stochastic regularization
+    min_child_samples=20, verbose=-1
+)
+model.fit(X_train, y_train)
+print(f"Accuracy: {model.score(X_test, y_test):.3f}")</code></pre>
+        <p class="code-note">LightGBM exposes reg_alpha (L1), reg_lambda (L2), subsample, and colsample_bytree for multi-level regularization.</p>
+      </div>
+    </div>
     <div class="when-to-use">
       <h4>When to Use</h4>
       <div class="use-grid use-grid-2">
@@ -421,6 +518,28 @@
     <div class="key-point"><span class="label">SHAP Values:</span><span class="desc">Game-theoretic approach: each feature's contribution to each prediction. Gold standard but computationally expensive.</span></div>
     <hr class="divider">
     <div class="interview-tip">Always use permutation importance or SHAP for feature selection decisions. Split-based importance from tree.feature_importances_ is fast but misleading with correlated or high-cardinality features.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: XGBoost + SHAP Feature Importance
+      </button>
+      <div class="code-content">
+        <pre><code>import xgboost as xgb
+import shap
+from sklearn.datasets import make_classification
+
+X, y = make_classification(n_samples=500, n_features=8, n_informative=4, random_state=42)
+model = xgb.XGBClassifier(n_estimators=100, max_depth=4, random_state=42)
+model.fit(X, y)
+
+explainer = shap.TreeExplainer(model)
+shap_values = explainer.shap_values(X)
+
+# Global feature importance (mean |SHAP|)
+shap.summary_plot(shap_values, X, plot_type="bar", show=False)
+print("Top feature:", shap_values.__abs__().mean(axis=0).argmax())</code></pre>
+        <p class="code-note">SHAP provides per-prediction explanations. Use summary_plot for global importance, force_plot for individual predictions.</p>
+      </div>
+    </div>
     <div class="when-to-use">
       <h4>When to Use</h4>
       <div class="use-grid use-grid-3">
@@ -500,6 +619,30 @@
     <hr class="divider">
     <div class="interview-tip">LightGBM's leaf-wise growth can overfit on small datasets (use max_depth to limit). CatBoost's ordered boosting avoids target leakage that plagues naive target encoding.</div>
     <div class="mnemonic">XGBoost = balanced growth, LightGBM = greedy growth (fastest), CatBoost = ordered growth (best categoricals).</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: XGBoost vs LightGBM vs CatBoost
+      </button>
+      <div class="code-content">
+        <pre><code>import xgboost as xgb
+import lightgbm as lgb
+from catboost import CatBoostClassifier
+from sklearn.datasets import make_classification
+from sklearn.model_selection import cross_val_score
+
+X, y = make_classification(n_samples=2000, n_features=20, random_state=42)
+
+models = {
+    "XGBoost":  xgb.XGBClassifier(n_estimators=200, max_depth=5, learning_rate=0.1, verbosity=0),
+    "LightGBM": lgb.LGBMClassifier(n_estimators=200, max_depth=5, learning_rate=0.1, verbose=-1),
+    "CatBoost": CatBoostClassifier(iterations=200, depth=5, learning_rate=0.1, verbose=0),
+}
+for name, model in models.items():
+    scores = cross_val_score(model, X, y, cv=5, scoring="accuracy")
+    print(f"{name:10s}: {scores.mean():.3f} +/- {scores.std():.3f}")</code></pre>
+        <p class="code-note">All three frameworks share similar APIs. CatBoost typically needs least tuning; LightGBM is fastest on large data.</p>
+      </div>
+    </div>
     <div class="when-to-use">
       <h4>When to Use</h4>
       <div class="use-grid use-grid-3">
@@ -571,6 +714,31 @@
     <div class="key-point"><span class="label">Histogram Subtraction:</span><span class="desc">Parent histogram - left child histogram = right child histogram. Saves 50% of computation.</span></div>
     <hr class="divider">
     <div class="interview-tip">LightGBM was the first major framework to use exclusive histogram-based splitting. XGBoost added it later (tree_method='hist'). For datasets with millions of rows, histogram is essential.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: LightGBM Histogram Splitting
+      </button>
+      <div class="code-content">
+        <pre><code>import lightgbm as lgb
+from sklearn.datasets import make_regression
+from sklearn.model_selection import train_test_split
+import time
+
+X, y = make_regression(n_samples=50000, n_features=50, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+# LightGBM always uses histogram-based splitting
+model = lgb.LGBMRegressor(
+    n_estimators=300, max_bin=255,  # default 255 bins per feature
+    learning_rate=0.05, verbose=-1
+)
+start = time.time()
+model.fit(X_train, y_train)
+print(f"Training time: {time.time() - start:.2f}s")
+print(f"R2 score: {model.score(X_test, y_test):.3f}")</code></pre>
+        <p class="code-note">Tune max_bin (default 255) for speed vs accuracy. Fewer bins = faster training, slightly coarser splits.</p>
+      </div>
+    </div>
     <div class="when-to-use">
       <h4>When to Use</h4>
       <div class="use-grid use-grid-2">
@@ -641,6 +809,29 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">GBDT wins on tabular data (Kaggle, industry). Neural nets win on unstructured data (images, text, audio). RF is the safe, hard-to-mess-up baseline. Use RF when you want robustness; GBDT when you want maximum performance.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: GBDT vs Random Forest vs Neural Net
+      </button>
+      <div class="code-content">
+        <pre><code>from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.neural_network import MLPClassifier
+from sklearn.datasets import make_classification
+from sklearn.model_selection import cross_val_score
+
+X, y = make_classification(n_samples=2000, n_features=20, random_state=42)
+
+models = {
+    "GBDT": GradientBoostingClassifier(n_estimators=200, max_depth=4, random_state=42),
+    "RF":   RandomForestClassifier(n_estimators=200, max_depth=None, random_state=42),
+    "MLP":  MLPClassifier(hidden_layer_sizes=(64, 32), max_iter=300, random_state=42),
+}
+for name, model in models.items():
+    scores = cross_val_score(model, X, y, cv=5, scoring="accuracy")
+    print(f"{name:5s}: {scores.mean():.3f} +/- {scores.std():.3f}")</code></pre>
+        <p class="code-note">On tabular data, GBDT typically matches or beats neural nets. RF is a robust baseline requiring minimal tuning.</p>
+      </div>
+    </div>
     <div class="when-to-use">
       <h4>When to Use</h4>
       <div class="use-grid use-grid-3">
@@ -717,6 +908,28 @@
     <hr class="divider">
     <div class="interview-tip">Never impute missing values before feeding to XGBoost/LightGBM - they handle them natively and learn optimal routing. Imputation can actually hurt performance by destroying the "missingness" signal.</div>
     <div class="mnemonic">XGBoost learns where missing goes. LightGBM handles categoricals natively. CatBoost handles both best out-of-box.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: CatBoost with Categorical Features
+      </button>
+      <div class="code-content">
+        <pre><code>from catboost import CatBoostClassifier, Pool
+import numpy as np
+
+# Synthetic data with categorical columns
+X = np.array([
+    ["red", "small", 1.2], ["blue", "large", 3.4], ["red", "medium", 2.1],
+    ["green", "small", 0.8], ["blue", "medium", 2.9], ["green", "large", 3.7],
+    ["red", "large", 3.1], ["blue", "small", 0.5], ["green", "medium", 2.3],
+] * 50)
+y = np.array([0, 1, 0, 0, 1, 1, 1, 0, 0] * 50)
+
+model = CatBoostClassifier(iterations=100, depth=4, learning_rate=0.1, verbose=0)
+model.fit(X, y, cat_features=[0, 1])  # specify categorical column indices
+print(f"Feature importance: {dict(zip(['color','size','value'], model.feature_importances_.round(1)))}")</code></pre>
+        <p class="code-note">CatBoost handles categoricals natively via ordered target encoding -- no manual one-hot or label encoding needed.</p>
+      </div>
+    </div>
     <div class="when-to-use">
       <h4>When to Use</h4>
       <div class="use-grid use-grid-3">
@@ -791,6 +1004,30 @@
     <hr class="divider">
     <div class="interview-tip">The standard GBDT workflow: set n_estimators=10000, learning_rate=0.05, early_stopping_rounds=50. Let early stopping find the right number of trees. Then optionally retrain on full data with that count.</div>
     <div class="mnemonic">Early stopping = free regularization. Always use it. Set trees high, let validation loss decide when to stop.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: XGBoost Early Stopping
+      </button>
+      <div class="code-content">
+        <pre><code>import xgboost as xgb
+from sklearn.datasets import make_classification
+from sklearn.model_selection import train_test_split
+
+X, y = make_classification(n_samples=5000, n_features=20, random_state=42)
+X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
+
+model = xgb.XGBClassifier(
+    n_estimators=10000, learning_rate=0.05, max_depth=5,
+    early_stopping_rounds=50, eval_metric="logloss", random_state=42
+)
+model.fit(X_train, y_train, eval_set=[(X_val, y_val)], verbose=False)
+
+print(f"Stopped at round: {model.best_iteration}")
+print(f"Best val logloss:  {model.best_score:.4f}")
+print(f"Test accuracy:     {model.score(X_val, y_val):.3f}")</code></pre>
+        <p class="code-note">Set n_estimators very high and let early_stopping_rounds find the optimal number of boosting rounds.</p>
+      </div>
+    </div>
     <div class="when-to-use">
       <h4>When to Use</h4>
       <div class="use-grid use-grid-2">

@@ -52,6 +52,16 @@
   .insight-box .comparison .option .opt-title { color: #01a3a4; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
   .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
   .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
+  .code-example { margin-top: 12px; border: 1px solid #2a2a4a; border-radius: 8px; overflow: hidden; }
+  .code-toggle { width: 100%; background: #1a1a2e; color: #01a3a4; border: none; padding: 10px 16px; text-align: left; cursor: pointer; font-size: 0.9em; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .code-toggle:hover { background: #22223a; }
+  .code-toggle-icon { display: inline-block; transition: transform 0.2s; font-size: 0.7em; }
+  .code-example.open .code-toggle-icon { transform: rotate(90deg); }
+  .code-content { display: none; padding: 14px 16px; background: #0a0a14; }
+  .code-example.open .code-content { display: block; }
+  .code-content pre { margin: 0; overflow-x: auto; white-space: pre; }
+  .code-content code { color: #e0e0e0; font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.82em; line-height: 1.6; }
+  .code-content .code-note { color: #888; font-size: 0.82em; margin-top: 8px; font-style: italic; }
 
   .katex { color: #e8e8ff; font-size: 1.1em; }
   .formula .katex { font-size: 1.2em; }
@@ -201,6 +211,21 @@
     <hr class="divider">
     <div class="interview-tip">Tokenization happens BEFORE the model sees anything. A "token" is the fundamental unit the transformer processes. Different tokenizers can produce different results for the same text.</div>
     <div class="mnemonic">Rare words split, common words stay whole. "the" = 1 token. "cryptocurrency" = "crypto" + "currency" = 2 tokens.</div>
+<div class="code-example">
+  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+    <span class="code-toggle-icon">&#9654;</span> Framework Example: BPE Tokenization with tiktoken
+  </button>
+  <div class="code-content">
+    <pre><code>import tiktoken
+
+enc = tiktoken.get_encoding('cl100k_base')  # GPT-4 tokenizer
+tokens = enc.encode('unbelievably')
+print(tokens)          # e.g. [348, 17023, 2901]
+print([enc.decode([t]) for t in tokens])  # ['un','believ','ably']
+print(len(enc.encode('the')))  # 1 token</code></pre>
+    <p class="code-note">tiktoken is OpenAI's fast BPE tokenizer; HuggingFace uses tokenizers lib.</p>
+  </div>
+</div>
   </div>
 </div>
 
@@ -248,6 +273,26 @@
     <hr class="divider">
     <div class="interview-tip">Unlike RNNs which process sequentially (inherently knowing position), transformers process all tokens in parallel. Positional encoding is the explicit signal that tells the model WHERE each token is.</div>
     <div class="mnemonic">Token embedding = WHAT the token is. Positional encoding = WHERE it is. Sum them = the model knows both.</div>
+<div class="code-example">
+  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+    <span class="code-toggle-icon">&#9654;</span> Framework Example: Sinusoidal Positional Encoding
+  </button>
+  <div class="code-content">
+    <pre><code>import torch, math
+
+def positional_encoding(seq_len, d_model):
+    pe = torch.zeros(seq_len, d_model)
+    pos = torch.arange(seq_len).unsqueeze(1).float()
+    div = torch.exp(torch.arange(0, d_model, 2).float()
+                    * -(math.log(10000.0) / d_model))
+    pe[:, 0::2] = torch.sin(pos * div)
+    pe[:, 1::2] = torch.cos(pos * div)
+    return pe  # shape: (seq_len, d_model)
+
+pe = positional_encoding(128, 512)</code></pre>
+    <p class="code-note">Add pe[:seq_len] to token embeddings before the first transformer block.</p>
+  </div>
+</div>
   </div>
 </div>
 
@@ -294,6 +339,28 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">The pre-norm variant (LayerNorm BEFORE attention/FFN) is used in GPT-2+ and is more stable than post-norm. Know both variants.</div>
+<div class="code-example">
+  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+    <span class="code-toggle-icon">&#9654;</span> Framework Example: Pre-Norm Transformer Block
+  </button>
+  <div class="code-content">
+    <pre><code>import torch.nn as nn
+
+class TransformerBlock(nn.Module):
+    def __init__(self, d_model=512, nhead=8, d_ff=2048):
+        super().__init__()
+        self.ln1 = nn.LayerNorm(d_model)
+        self.attn = nn.MultiheadAttention(d_model, nhead, batch_first=True)
+        self.ln2 = nn.LayerNorm(d_model)
+        self.ffn = nn.Sequential(
+            nn.Linear(d_model, d_ff), nn.GELU(), nn.Linear(d_ff, d_model))
+    def forward(self, x, mask=None):
+        x = x + self.attn(self.ln1(x), self.ln1(x), self.ln1(x), attn_mask=mask)[0]
+        x = x + self.ffn(self.ln2(x))
+        return x</code></pre>
+    <p class="code-note">Pre-norm applies LayerNorm before attention/FFN, improving training stability.</p>
+  </div>
+</div>
   </div>
 </div>
 
@@ -347,6 +414,24 @@
     <hr class="divider">
     <div class="interview-tip">More layers = better performance, but with diminishing returns. GPT-2 Small (12 layers) vs GPT-2 Medium (24 layers): 2x layers gave ~15% perplexity improvement, not 100%.</div>
     <div class="mnemonic">Shallow = syntax. Deep = semantics. The residual stream accumulates information layer by layer.</div>
+<div class="code-example">
+  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+    <span class="code-toggle-icon">&#9654;</span> Framework Example: Stacking Transformer Encoder Layers
+  </button>
+  <div class="code-content">
+    <pre><code>import torch.nn as nn
+
+encoder_layer = nn.TransformerEncoderLayer(
+    d_model=512, nhead=8, dim_feedforward=2048,
+    batch_first=True, norm_first=True  # pre-norm
+)
+encoder = nn.TransformerEncoder(encoder_layer, num_layers=12)
+
+x = torch.randn(2, 128, 512)  # (batch, seq_len, d_model)
+out = encoder(x)  # same shape, refined representations</code></pre>
+    <p class="code-note">nn.TransformerEncoder stacks identical layers with shared architecture.</p>
+  </div>
+</div>
   </div>
 </div>
 
@@ -405,6 +490,27 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">Temperature, top-k, and top-p are applied AFTER the model computes logits. They don't change what the model "thinks" &mdash; they change how we select from its predictions.</div>
+<div class="code-example">
+  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+    <span class="code-toggle-icon">&#9654;</span> Framework Example: Top-k and Temperature Sampling
+  </button>
+  <div class="code-content">
+    <pre><code>import torch
+import torch.nn.functional as F
+
+def sample(logits, temperature=1.0, top_k=50):
+    logits = logits / temperature
+    # Keep only top-k logits
+    top_vals, top_idx = logits.topk(top_k)
+    probs = F.softmax(top_vals, dim=-1)
+    token = top_idx[torch.multinomial(probs, 1)]
+    return token
+
+logits = torch.randn(50257)  # vocab-size logits
+next_token = sample(logits, temperature=0.8, top_k=40)</code></pre>
+    <p class="code-note">Temperature < 1 sharpens; top-k restricts to most likely tokens.</p>
+  </div>
+</div>
   </div>
 </div>
 
@@ -457,6 +563,27 @@
     <hr class="divider">
     <div class="interview-tip">Without KV-cache, generating n tokens costs O(n^3) total. With KV-cache, it costs O(n^2). This is why inference optimization matters so much for long sequences.</div>
     <div class="mnemonic">Generate = greedy loop: forward pass on full sequence, sample last position, append, repeat. KV-cache = "don't recompute what you already know."</div>
+<div class="code-example">
+  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+    <span class="code-toggle-icon">&#9654;</span> Framework Example: Autoregressive Generation Loop
+  </button>
+  <div class="code-content">
+    <pre><code>import torch
+
+def generate(model, prompt_ids, max_new=50, temperature=0.8):
+    ids = prompt_ids.clone()
+    for _ in range(max_new):
+        logits = model(ids)[:, -1, :]  # last position
+        logits = logits / temperature
+        probs = torch.softmax(logits, dim=-1)
+        next_id = torch.multinomial(probs, 1)
+        ids = torch.cat([ids, next_id], dim=1)
+        if next_id.item() == eos_token_id:
+            break
+    return ids</code></pre>
+    <p class="code-note">Production code uses KV-cache; here we recompute for clarity.</p>
+  </div>
+</div>
   </div>
 </div>
 
@@ -503,6 +630,27 @@
     <hr class="divider">
     <div class="interview-tip">This is why LLMs are so data-efficient: one document of N tokens provides N-1 supervised training examples. No labeling required &mdash; the text IS the label (shifted by one position).</div>
     <div class="mnemonic">Self-supervised learning: the input IS the label. Position t predicts position t+1. Slide a window across all text ever written = unlimited training data.</div>
+<div class="code-example">
+  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+    <span class="code-toggle-icon">&#9654;</span> Framework Example: Next-Token Prediction Training Step
+  </button>
+  <div class="code-content">
+    <pre><code>import torch
+import torch.nn.functional as F
+
+# input_ids: (batch, seq_len) of token IDs
+logits = model(input_ids[:, :-1])  # predict from pos 0..N-2
+targets = input_ids[:, 1:]          # targets are pos 1..N-1
+
+loss = F.cross_entropy(
+    logits.reshape(-1, vocab_size),
+    targets.reshape(-1)
+)
+loss.backward()
+optimizer.step()</code></pre>
+    <p class="code-note">Each sequence of N tokens yields N-1 training examples for free.</p>
+  </div>
+</div>
   </div>
 </div>
 
@@ -583,6 +731,30 @@
     <hr class="divider">
     <div class="interview-tip">When asked "what IS a transformer?", describe the data flow: text &rarr; tokens &rarr; embeddings + positions &rarr; N attention+FFN blocks with residuals &rarr; linear projection to vocab &rarr; softmax &rarr; next token. You built each piece.</div>
     <div class="mnemonic">Same architecture at every scale. The only differences are d_model, n_layers, n_heads, and how much data/compute you throw at it.</div>
+<div class="code-example">
+  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+    <span class="code-toggle-icon">&#9654;</span> Framework Example: Complete GPT-Style Model
+  </button>
+  <div class="code-content">
+    <pre><code>import torch.nn as nn
+
+class MiniGPT(nn.Module):
+    def __init__(self, vocab=50257, d=512, heads=8, layers=6):
+        super().__init__()
+        self.tok_emb = nn.Embedding(vocab, d)
+        self.pos_emb = nn.Embedding(1024, d)  # learned positions
+        enc_layer = nn.TransformerEncoderLayer(
+            d, heads, 4*d, batch_first=True, norm_first=True)
+        self.transformer = nn.TransformerEncoder(enc_layer, layers)
+        self.head = nn.Linear(d, vocab, bias=False)
+    def forward(self, idx):
+        B, T = idx.shape
+        x = self.tok_emb(idx) + self.pos_emb(torch.arange(T, device=idx.device))
+        x = self.transformer(x)
+        return self.head(x)  # (B, T, vocab)</code></pre>
+    <p class="code-note">This is a minimal but complete GPT: embed, transform, project to vocab.</p>
+  </div>
+</div>
   </div>
 </div>
 

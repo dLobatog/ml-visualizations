@@ -47,6 +47,18 @@
   .katex { color: #e8e8ff; font-size: 1.1em; }
   .formula .katex { font-size: 1.2em; }
 
+
+  .code-example { margin-top: 12px; border: 1px solid #2a2a4a; border-radius: 8px; overflow: hidden; }
+  .code-toggle { width: 100%; background: #1a1a2e; color: #4ecdc4; border: none; padding: 10px 16px; text-align: left; cursor: pointer; font-size: 0.9em; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .code-toggle:hover { background: #22223a; }
+  .code-toggle-icon { display: inline-block; transition: transform 0.2s; font-size: 0.7em; }
+  .code-example.open .code-toggle-icon { transform: rotate(90deg); }
+  .code-content { display: none; padding: 14px 16px; background: #0a0a14; }
+  .code-example.open .code-content { display: block; }
+  .code-content pre { margin: 0; overflow-x: auto; white-space: pre; }
+  .code-content code { color: #e0e0e0; font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.82em; line-height: 1.6; }
+  .code-content .code-note { color: #888; font-size: 0.82em; margin-top: 8px; font-style: italic; }
+
 </style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -101,6 +113,20 @@
     <div class="interview-tip">"Why not just use words as tokens?" → Unknown words break the model. "ChatGPT" isn't in any dictionary. BPE decomposes it to known subwords. Also: multilingual models need subword tokenization to share tokens across languages.</div>
     <div class="mnemonic">BPE = greedy compression. Most frequent pair → merge → repeat. Common things get short codes, rare things decompose. Like zip compression for language.</div>
     <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click "Next Merge" repeatedly. Watch vocabulary grow from characters to common subwords. Notice how "the", "ing", "tion" emerge early — these are the most frequent patterns in English.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: BPE Tokenization with Hugging Face
+      </button>
+      <div class="code-content">
+        <pre><code>from transformers import AutoTokenizer
+
+tokenizer = AutoTokenizer.from_pretrained("gpt2")
+tokens = tokenizer("Hello, ChatGPT is amazing!", return_tensors="pt")
+print(tokenizer.convert_ids_to_tokens(tokens["input_ids"][0]))
+# ['Hello', ',', 'ĠChat', 'G', 'PT', 'Ġis', 'Ġamazing', '!']</code></pre>
+        <p class="code-note">Shows how GPT-2 tokenizer splits text into subword tokens. Notice 'ChatGPT' decomposes into subwords.</p>
+      </div>
+    </div>
   </div>
   </div>
 
@@ -172,6 +198,24 @@
 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Select different tokens (try 'cat' vs 'sat'). Watch attention weights change—what does each token attend to? Lower Temperature to 1, then raise to 50. Notice how attention becomes sharp (one token dominates) vs spread (distributed across many). This is temperature controlling softmax concentration.</div>
     <div class="interview-tip">Why Q, K, V not just use input directly? Learned projections provide flexibility. Different heads can attend differently.</div>
     <div class="mnemonic">Self-attention = compare all positions with each other. Learn what to pay attention to. Q asks, K answers, V provides info.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Scaled Dot-Product Attention
+      </button>
+      <div class="code-content">
+        <pre><code>import torch
+import torch.nn.functional as F
+
+def scaled_dot_product_attention(Q, K, V, mask=None):
+    d_k = Q.size(-1)
+    scores = Q @ K.transpose(-2, -1) / d_k**0.5
+    if mask is not None:
+        scores = scores.masked_fill(mask == 0, -1e9)
+    weights = F.softmax(scores, dim=-1)
+    return weights @ V, weights</code></pre>
+        <p class="code-note">Core attention computation used in every transformer. Returns both output and attention weights for visualization.</p>
+      </div>
+    </div>
   </div>
   </div>
 
@@ -234,6 +278,21 @@
 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Move the "Number of Heads" slider from 1 to 8. At 1 head, you see one attention pattern. At 4 heads, you see 4 parallel patterns emerging. At 8, it's more complex. Try comparing a low-entropy head (one token gets all weight) vs high-entropy (spread across many). Which is more useful depends on the task.</div>
     <div class="interview-tip">Transformer depth comes from stacking. Each layer adds computational power but also parameters and memory.</div>
     <div class="mnemonic">LayerNorm normalizes each example independently. FFN expands then contracts. Residual connections = skip highways.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: PyTorch Multi-Head Attention
+      </button>
+      <div class="code-content">
+        <pre><code>import torch.nn as nn
+
+mha = nn.MultiheadAttention(embed_dim=512, num_heads=8, batch_first=True)
+x = torch.randn(2, 10, 512)  # (batch, seq_len, d_model)
+attn_out, attn_weights = mha(x, x, x)  # self-attention
+print(attn_out.shape)   # torch.Size([2, 10, 512])
+print(attn_weights.shape)  # torch.Size([2, 10, 10])</code></pre>
+        <p class="code-note">Uses nn.MultiheadAttention with 8 heads. Each head attends to different representation subspaces.</p>
+      </div>
+    </div>
   </div>
   </div>
 
@@ -291,6 +350,25 @@
 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click "Sinusoidal" and "RoPE" tabs to compare. Sinusoidal uses sin/cos waves at different frequencies. RoPE rotates embeddings. Increase Max Position to 256. Notice RoPE maintains better distance preservation at long sequences—this is why modern models prefer RoPE. Watch the rotation pattern change.</div>
     <div class="interview-tip">Subword tokenization is crucial for handling rare words and multilingual text. Understand vocab size trade-offs.</div>
     <div class="mnemonic">Tokenization + embedding = convert text to dense vectors. Positions matter. Special tokens provide structure.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Sinusoidal Positional Encoding
+      </button>
+      <div class="code-content">
+        <pre><code>import torch, math
+
+def sinusoidal_encoding(seq_len, d_model):
+    pe = torch.zeros(seq_len, d_model)
+    pos = torch.arange(seq_len).unsqueeze(1).float()
+    div = torch.exp(torch.arange(0, d_model, 2).float() * -(math.log(10000.0) / d_model))
+    pe[:, 0::2] = torch.sin(pos * div)
+    pe[:, 1::2] = torch.cos(pos * div)
+    return pe  # shape: (seq_len, d_model)
+
+pe = sinusoidal_encoding(128, 512)  # 128 positions, 512 dims</code></pre>
+        <p class="code-note">Generates fixed positional encodings as described in 'Attention Is All You Need'. Added to token embeddings before the transformer.</p>
+      </div>
+    </div>
   </div>
   </div>
 
@@ -350,6 +428,26 @@
 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click "Generate Next Token" repeatedly and watch cache grow (should see increasing bars for K and V). Turn on "Show Cache Memory" to see total memory. Then toggle "Without Cache" and watch inference slow down—each token must recompute all previous keys and values. For 100-token sequence, cache is ~100x faster.</div>
     <div class="interview-tip">Pretraining is expensive but transfer learning is powerful. Fine-tuning on specific task often very effective. Few-shot prompting often works!</div>
     <div class="mnemonic">LM pretraining = predict next token from massive unlabeled text. Learns grammar, facts, reasoning. Scale → emergent abilities.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: KV-Cache for Fast Inference
+      </button>
+      <div class="code-content">
+        <pre><code># Pseudocode for KV-cache in autoregressive generation
+past_key, past_value = None, None
+
+for step in range(max_new_tokens):
+    if past_key is not None:
+        q = project_q(x[:, -1:, :])          # only last token
+        k = torch.cat([past_key, project_k(x[:, -1:, :])], dim=1)
+        v = torch.cat([past_value, project_v(x[:, -1:, :])], dim=1)
+    else:
+        q, k, v = project_q(x), project_k(x), project_v(x)
+    past_key, past_value = k, v
+    out = scaled_dot_product_attention(q, k, v)</code></pre>
+        <p class="code-note">Shows how KV-cache avoids recomputing keys/values for previous tokens, reducing generation from O(n^2) to O(n) per step.</p>
+      </div>
+    </div>
   </div>
   </div>
 
@@ -402,6 +500,29 @@
 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click "Step Through" to animate data flow. Pause at each stage: after Attention, watch residual add. After FFN, watch residual add again. These skips are critical—they let gradients flow back unobstructed. Toggle "Remove Residuals" to see training collapse. This is why Transformers can be 100+ layers deep.</div>
     <div class="interview-tip">RLHF is expensive (human feedback needed) but crucial for alignment. Alternative: DPO (direct preference optimization, no reward model).</div>
     <div class="mnemonic">Instruction tuning = teach format. RLHF = optimize for human preferences. Alignment = make models helpful, safe, honest.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Pre-Norm Transformer Block
+      </button>
+      <div class="code-content">
+        <pre><code>import torch.nn as nn
+
+class TransformerBlock(nn.Module):
+    def __init__(self, d_model=512, nhead=8, d_ff=2048, dropout=0.1):
+        super().__init__()
+        self.attn = nn.MultiheadAttention(d_model, nhead, batch_first=True)
+        self.ff = nn.Sequential(nn.Linear(d_model, d_ff), nn.GELU(), nn.Linear(d_ff, d_model))
+        self.ln1 = nn.LayerNorm(d_model)
+        self.ln2 = nn.LayerNorm(d_model)
+        self.drop = nn.Dropout(dropout)
+
+    def forward(self, x):
+        x = x + self.drop(self.attn(self.ln1(x), self.ln1(x), self.ln1(x))[0])
+        x = x + self.drop(self.ff(self.ln2(x)))
+        return x</code></pre>
+        <p class="code-note">Modern pre-LayerNorm transformer block with GELU activation. This is the building block stacked N times in GPT-style models.</p>
+      </div>
+    </div>
   </div>
   </div>
 
@@ -462,6 +583,23 @@
 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Toggle between "Full Fine-Tune", "LoRA", "QLoRA". Watch Parameters and Memory metrics. Full tune = 7B params, 28GB memory. LoRA = 0.1B params, 3GB memory. QLoRA = 0.1B params + 4-bit base = 1GB memory. All achieve 85–90% of full tuning performance. This is why LoRA dominates in practice.</div>
     <div class="interview-tip">In-context learning is remarkable emergent ability of large models. Scaling laws: bigger models learn from fewer examples.</div>
     <div class="mnemonic">In-context learning = pattern matching via sequence completion. No parameter update. Examples are powerful context.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: LoRA Fine-Tuning with PEFT
+      </button>
+      <div class="code-content">
+        <pre><code>from peft import LoraConfig, get_peft_model
+from transformers import AutoModelForCausalLM
+
+model = AutoModelForCausalLM.from_pretrained("meta-llama/Llama-2-7b-hf")
+lora_config = LoraConfig(r=16, lora_alpha=32, target_modules=["q_proj", "v_proj"],
+                         lora_dropout=0.05, task_type="CAUSAL_LM")
+model = get_peft_model(model, lora_config)
+model.print_trainable_parameters()
+# trainable params: 4,194,304 || all params: 6,742,609,920 || trainable%: 0.062</code></pre>
+        <p class="code-note">Adds low-rank adapters to attention layers. Only 0.06% of parameters are trainable, yet achieves near full fine-tuning quality.</p>
+      </div>
+    </div>
   </div>
   </div>
 
@@ -514,6 +652,24 @@
 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click "Play Pipeline" to step through SFT → Reward Model → PPO. Watch reward scores improve at each stage. Then compare "DPO" (Direct Preference Optimization)—it skips reward model, learning from pairwise preferences directly. DPO is simpler, faster, nearly same quality. Slide "λ regularization" to see KL divergence control.</div>
     <div class="interview-tip">Longer context important for long documents, conversations, code. But comes with memory cost. Understanding context window critical.</div>
     <div class="mnemonic">Context window = how much history model sees. Longer = better for understanding long documents. O(n²) cost is limiting.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Reward Model for RLHF
+      </button>
+      <div class="code-content">
+        <pre><code>from transformers import AutoModelForSequenceClassification, AutoTokenizer
+
+# Step 1: Load a reward model (trained on human preferences)
+reward_model = AutoModelForSequenceClassification.from_pretrained(
+    "OpenAssistant/reward-model-deberta-v3-large-v2")
+tokenizer = AutoTokenizer.from_pretrained(
+    "OpenAssistant/reward-model-deberta-v3-large-v2")
+
+inputs = tokenizer("The capital of France is Paris.", return_tensors="pt")
+score = reward_model(**inputs).logits  # scalar reward score</code></pre>
+        <p class="code-note">Shows loading a pre-trained reward model that scores text quality. This reward signal drives PPO optimization of the policy LLM.</p>
+      </div>
+    </div>
   </div>
   </div>
 
@@ -567,6 +723,25 @@
 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Drag Quantization slider FP32 → INT4. Watch memory drop (28GB → 7GB) and speed increase. But quality metric drops too. Then toggle "Use Draft Model"—watch it generate 5 tokens, main model verifies them. If all correct: 5x speedup. If wrong: resample. Try draft_scale=0.3 (faster but riskier) vs 0.7 (slower, more accurate).</div>
     <div class="interview-tip">Quantization crucial for deployment on edge devices. int8 very practical. int4 requires careful tuning but very memory efficient.</div>
     <div class="mnemonic">Quantization = smaller, faster, less accurate. int8 sweet spot: 4x smaller, minimal loss. int4 when size critical.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: 4-bit Quantization with BitsAndBytes
+      </button>
+      <div class="code-content">
+        <pre><code>from transformers import AutoModelForCausalLM, BitsAndBytesConfig
+import torch
+
+bnb_config = BitsAndBytesConfig(
+    load_in_4bit=True,
+    bnb_4bit_quant_type="nf4",
+    bnb_4bit_compute_dtype=torch.bfloat16,
+    bnb_4bit_use_double_quant=True)
+
+model = AutoModelForCausalLM.from_pretrained(
+    "meta-llama/Llama-2-7b-hf", quantization_config=bnb_config)</code></pre>
+        <p class="code-note">Loads a 7B parameter model in 4-bit precision using NF4 quantization. Reduces memory from ~14GB to ~3.5GB with minimal quality loss.</p>
+      </div>
+    </div>
   </div>
   </div>
 
@@ -624,6 +799,24 @@
 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Toggle "Traditional Batching" vs "Continuous Batching". Traditional waits for slowest request (maybe stuck on hard prompt). Continuous removes completed requests mid-batch, adds new ones. Watch GPU utilization jump from 60% to 95%. Then view "PagedAttention"—notice how variable-length blocks prevent memory waste compared to fixed allocations.</div>
     <div class="interview-tip">Scaling laws are empirical (fit from data) not proven. But remarkably consistent across orders of magnitude. Useful for planning.</div>
     <div class="mnemonic">Scaling laws = loss improves as power law with model/data size. Chinchilla = balance model and data. Bigger = better.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: vLLM Serving with Paged Attention
+      </button>
+      <div class="code-content">
+        <pre><code>from vllm import LLM, SamplingParams
+
+llm = LLM(model="meta-llama/Llama-2-7b-hf",
+           tensor_parallel_size=1, gpu_memory_utilization=0.9)
+params = SamplingParams(temperature=0.7, max_tokens=256, top_p=0.95)
+
+prompts = ["Explain transformers:", "Write a haiku:", "Summarize ML:"]
+outputs = llm.generate(prompts, params)  # continuous batching + paged attention
+for out in outputs:
+    print(out.outputs[0].text)</code></pre>
+        <p class="code-note">vLLM automatically handles continuous batching and paged KV-cache, achieving 2-4x throughput over naive serving.</p>
+      </div>
+    </div>
   </div>
   </div>
 
@@ -677,6 +870,25 @@
 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click "Step Through" RAG pipeline. At Retrieve step, toggle "Fixed vs Semantic chunking". Fixed chunks are dumb (mid-sentence breaks). Semantic chunks respect meaning boundaries. Watch retrieval quality improve. Then try "Recursive chunking"—multi-level hierarchy for hierarchical reasoning. Compare retrieval accuracy at each strategy.</div>
     <div class="interview-tip">Distillation effective for deployment. Student learns from teacher's mistakes too (soft probability targets reveal model uncertainty).</div>
     <div class="mnemonic">Knowledge distillation = student learns from teacher. Soft targets more informative than hard labels. Trade: quality for size/speed.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: RAG with Hugging Face
+      </button>
+      <div class="code-content">
+        <pre><code>from transformers import RagTokenizer, RagRetriever, RagTokenForGeneration
+
+tokenizer = RagTokenizer.from_pretrained("facebook/rag-token-nq")
+retriever = RagRetriever.from_pretrained("facebook/rag-token-nq",
+    index_name="exact", use_dummy_dataset=True)
+model = RagTokenForGeneration.from_pretrained("facebook/rag-token-nq",
+    retriever=retriever)
+
+inputs = tokenizer("What is the capital of France?", return_tensors="pt")
+output = model.generate(**inputs)
+print(tokenizer.batch_decode(output, skip_special_tokens=True))</code></pre>
+        <p class="code-note">End-to-end retrieval-augmented generation. The retriever fetches relevant documents, and the generator conditions on them.</p>
+      </div>
+    </div>
   </div>
   </div>
 
@@ -737,6 +949,28 @@
 <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Toggle "HNSW vs Brute-Force" search. HNSW (hierarchical navigable small world) visits ~50 nodes to find nearest neighbor. Brute-force checks all 1M points. Watch latency: HNSW 1–5ms, brute-force 50–200ms. Increase Query Dimension. HNSW scales beautifully (still ~5ms), brute-force explodes (→ 500ms). This is why HNSW powers modern vector DBs.</div>
     <div class="interview-tip">MoE prevalent in large models (Gemini, Mixtral). Gating network quality critical. Understand expert utilization monitoring.</div>
     <div class="mnemonic">MoE = selective expert activation. Sparse = many parameters but low compute. Merging = simpler multi-capability scaling.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: FAISS HNSW Vector Search
+      </button>
+      <div class="code-content">
+        <pre><code>import numpy as np
+import faiss
+
+d = 768  # embedding dimension
+n = 100000  # number of vectors
+embeddings = np.random.randn(n, d).astype("float32")
+
+# Build HNSW index
+index = faiss.IndexHNSWFlat(d, 32)  # 32 neighbors per node
+index.hnsw.efConstruction = 200
+index.add(embeddings)
+
+index.hnsw.efSearch = 64  # search-time accuracy control
+D, I = index.search(np.random.randn(1, d).astype("float32"), k=10)</code></pre>
+        <p class="code-note">Builds an HNSW index for approximate nearest neighbor search. efSearch controls the speed-accuracy tradeoff at query time.</p>
+      </div>
+    </div>
   </div>
   </div>
 

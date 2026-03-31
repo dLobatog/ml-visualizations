@@ -52,6 +52,16 @@
   .insight-box .comparison .option .opt-title { color: #e056fd; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
   .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
   .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
+  .code-example { margin-top: 12px; border: 1px solid #2a2a4a; border-radius: 8px; overflow: hidden; }
+  .code-toggle { width: 100%; background: #1a1a2e; color: #e056fd; border: none; padding: 10px 16px; text-align: left; cursor: pointer; font-size: 0.9em; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .code-toggle:hover { background: #22223a; }
+  .code-toggle-icon { display: inline-block; transition: transform 0.2s; font-size: 0.7em; }
+  .code-example.open .code-toggle-icon { transform: rotate(90deg); }
+  .code-content { display: none; padding: 14px 16px; background: #0a0a14; }
+  .code-example.open .code-content { display: block; }
+  .code-content pre { margin: 0; overflow-x: auto; white-space: pre; }
+  .code-content code { color: #e0e0e0; font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.82em; line-height: 1.6; }
+  .code-content .code-note { color: #888; font-size: 0.82em; margin-top: 8px; font-style: italic; }
 
   .katex { color: #e8e8ff; font-size: 1.1em; }
   .formula .katex { font-size: 1.2em; }
@@ -162,6 +172,25 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">When asked about knowledge distillation, start with dark knowledge: "The teacher's soft probabilities contain inter-class similarity information that hard one-hot labels throw away."</div>
+<div class="code-example">
+  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+    <span class="code-toggle-icon">&#9654;</span> Framework Example: Soft Targets from a Teacher Model
+  </button>
+  <div class="code-content">
+    <pre><code>import torch
+import torch.nn.functional as F
+
+teacher_logits = torch.tensor([5.0, 2.1, 0.3, -1.0, 0.8])
+T = 3.0  # temperature
+hard_labels = F.softmax(teacher_logits, dim=0)
+soft_targets = F.softmax(teacher_logits / T, dim=0)
+
+print('Hard:', hard_labels.round(decimals=3))
+print('Soft:', soft_targets.round(decimals=3))
+# Soft targets reveal inter-class similarity</code></pre>
+    <p class="code-note">Higher temperature spreads probability mass, exposing dark knowledge.</p>
+  </div>
+</div>
   </div>
 </div>
 
@@ -201,6 +230,27 @@
     <hr class="divider">
     <div class="interview-tip">KL divergence is not a true distance (it is asymmetric). When Q puts near-zero probability where P puts mass, KL explodes -- this is why label smoothing helps.</div>
     <div class="mnemonic">KL(P||Q) penalizes Q for "missing" what P considers important. Think of P as reality and Q as your model -- missing a likely event is far worse than wasting probability on an unlikely one.</div>
+<div class="code-example">
+  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+    <span class="code-toggle-icon">&#9654;</span> Framework Example: Computing KL Divergence in PyTorch
+  </button>
+  <div class="code-content">
+    <pre><code>import torch
+import torch.nn.functional as F
+
+teacher_probs = torch.tensor([0.7, 0.2, 0.08, 0.02])
+student_logits = torch.tensor([2.0, 0.5, -0.3, -1.0])
+
+# F.kl_div expects log-probs for input, probs for target
+kl = F.kl_div(
+    F.log_softmax(student_logits, dim=0),
+    teacher_probs,
+    reduction='sum'
+)
+print(f'KL divergence: {kl.item():.4f}')</code></pre>
+    <p class="code-note">PyTorch convention: input=log Q, target=P. Use reduction='batchmean' for batches.</p>
+  </div>
+</div>
   </div>
 </div>
 
@@ -247,6 +297,25 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">The T^2 factor in the distillation loss compensates for the reduced gradient magnitude at higher temperatures. Without it, the soft target loss would vanish as T increases.</div>
+<div class="code-example">
+  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+    <span class="code-toggle-icon">&#9654;</span> Framework Example: Temperature Scaling for Distillation
+  </button>
+  <div class="code-content">
+    <pre><code>import torch
+import torch.nn.functional as F
+
+def distill_loss(student_logits, teacher_logits, T=4.0):
+    s_soft = F.log_softmax(student_logits / T, dim=-1)
+    t_soft = F.softmax(teacher_logits / T, dim=-1)
+    return F.kl_div(s_soft, t_soft, reduction='batchmean') * (T * T)
+
+student_out = torch.randn(8, 10)  # batch=8, classes=10
+teacher_out = torch.randn(8, 10)
+loss = distill_loss(student_out, teacher_out, T=4.0)</code></pre>
+    <p class="code-note">Multiply by T^2 to compensate for reduced gradient magnitude at high T.</p>
+  </div>
+</div>
   </div>
 </div>
 
@@ -305,6 +374,30 @@
       </div>
     </div>
     <div class="interview-tip">The T^2 scaling factor is crucial. As temperature increases, gradient magnitudes from KL loss decrease by T^2. Multiplying by T^2 keeps the two loss terms on comparable scales regardless of the chosen temperature.</div>
+<div class="code-example">
+  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+    <span class="code-toggle-icon">&#9654;</span> Framework Example: Full Distillation Training Loop
+  </button>
+  <div class="code-content">
+    <pre><code>import torch.nn.functional as F
+
+alpha, T = 0.3, 4.0
+for x, y in dataloader:
+    s_logits = student(x)
+    with torch.no_grad():
+        t_logits = teacher(x)
+    # Hard label loss
+    ce_loss = F.cross_entropy(s_logits, y)
+    # Soft target loss
+    kl_loss = F.kl_div(
+        F.log_softmax(s_logits / T, dim=-1),
+        F.softmax(t_logits / T, dim=-1),
+        reduction='batchmean') * (T * T)
+    loss = alpha * ce_loss + (1 - alpha) * kl_loss
+    loss.backward(); optimizer.step(); optimizer.zero_grad()</code></pre>
+    <p class="code-note">alpha balances hard labels (ground truth) vs soft targets (teacher).</p>
+  </div>
+</div>
   </div>
 </div>
 
@@ -356,6 +449,29 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">Quantization is the single most impactful compression technique for inference cost. INT8 quantization typically loses less than 1% accuracy while cutting memory and compute by 4x.</div>
+<div class="code-example">
+  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+    <span class="code-toggle-icon">&#9654;</span> Framework Example: Post-Training INT8 Quantization
+  </button>
+  <div class="code-content">
+    <pre><code>import torch
+
+# Dynamic quantization (easiest, no calibration data)
+quantized_model = torch.quantization.quantize_dynamic(
+    model,
+    {torch.nn.Linear},  # quantize Linear layers
+    dtype=torch.qint8
+)
+
+# Compare sizes
+import os, tempfile
+for m, name in [(model,'FP32'), (quantized_model,'INT8')]:
+    f = tempfile.mktemp()
+    torch.save(m.state_dict(), f)
+    print(f'{name}: {os.path.getsize(f)/1e6:.1f} MB')</code></pre>
+    <p class="code-note">Dynamic quantization needs no calibration data; ideal for inference.</p>
+  </div>
+</div>
   </div>
 </div>
 
@@ -412,6 +528,27 @@
       </div>
     </div>
     <div class="mnemonic">Pruning works because neural networks are like forests -- most trees (weights) are small and removing them does not change the landscape. The few tall trees carry all the information.</div>
+<div class="code-example">
+  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+    <span class="code-toggle-icon">&#9654;</span> Framework Example: Magnitude Pruning with PyTorch
+  </button>
+  <div class="code-content">
+    <pre><code>import torch.nn.utils.prune as prune
+
+# Prune 60% of weights in a Linear layer (smallest magnitude)
+linear = torch.nn.Linear(256, 128)
+prune.l1_unstructured(linear, name='weight', amount=0.6)
+
+# Check sparsity
+zeros = (linear.weight == 0).sum().item()
+total = linear.weight.numel()
+print(f'Sparsity: {zeros/total:.0%}')  # ~60%
+
+# Make permanent (remove re-parametrization hook)
+prune.remove(linear, 'weight')</code></pre>
+    <p class="code-note">Prune iteratively with fine-tuning for best accuracy retention.</p>
+  </div>
+</div>
   </div>
 </div>
 
@@ -458,6 +595,29 @@
     <hr class="divider">
     <div class="interview-tip">Production compression pipelines: (1) Train a large teacher on massive data. (2) Distill into a smaller student. (3) Prune the student. (4) Quantize to INT4/INT8 for serving. This is how GPT-4 becomes GPT-4-mini, and how Llama 70B becomes Llama 7B.</div>
     <div class="mnemonic">Distillation changes the architecture (fewer neurons). Pruning changes the density (fewer connections). Quantization changes the precision (fewer bits). Three independent axes of compression.</div>
+<div class="code-example">
+  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+    <span class="code-toggle-icon">&#9654;</span> Framework Example: Combined Compression Pipeline
+  </button>
+  <div class="code-content">
+    <pre><code>import torch
+import torch.nn.utils.prune as prune
+
+# Step 1: Distillation (assume student already trained)
+student = SmallModel()  # 10x fewer params than teacher
+
+# Step 2: Prune 50% of student weights
+for name, module in student.named_modules():
+    if isinstance(module, torch.nn.Linear):
+        prune.l1_unstructured(module, 'weight', amount=0.5)
+        prune.remove(module, 'weight')
+
+# Step 3: Quantize to INT8
+compressed = torch.quantization.quantize_dynamic(
+    student, {torch.nn.Linear}, dtype=torch.qint8)</code></pre>
+    <p class="code-note">Distill -> Prune -> Quantize: multiplicative compression on all three axes.</p>
+  </div>
+</div>
   </div>
 </div>
 

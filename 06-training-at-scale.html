@@ -297,6 +297,17 @@
   .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
   .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
 
+  .code-example { margin-top: 12px; border: 1px solid #2a2a4a; border-radius: 8px; overflow: hidden; }
+  .code-toggle { width: 100%; background: #1a1a2e; color: #01a3a4; border: none; padding: 10px 16px; text-align: left; cursor: pointer; font-size: 0.9em; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .code-toggle:hover { background: #22223a; }
+  .code-toggle-icon { display: inline-block; transition: transform 0.2s; font-size: 0.7em; }
+  .code-example.open .code-toggle-icon { transform: rotate(90deg); }
+  .code-content { display: none; padding: 14px 16px; background: #0a0a14; }
+  .code-example.open .code-content { display: block; }
+  .code-content pre { margin: 0; overflow-x: auto; white-space: pre; }
+  .code-content code { color: #e0e0e0; font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.82em; line-height: 1.6; }
+  .code-content .code-note { color: #888; font-size: 0.82em; margin-top: 8px; font-style: italic; }
+
   .katex { color: #e8e8ff; font-size: 1.1em; }
 
   #quizToggle { position: fixed; top: 20px; right: 20px; z-index: 1000; padding: 12px 20px; background: #01a3a4; color: #0a0a0f; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 1em; box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: transform 0.2s; }
@@ -422,6 +433,29 @@
                 <div class="interview-tip">Reduce synchronization: Gradient accumulation (accumulate over k batches before sync), communication-computation overlap (compute while communicating), reduce precision (FP16 transfers 2x less data).</div>
                     <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set k=64 and toggle data parallelism ON with 4 GPUs. Observe all-reduce overhead. Increase k to 512 and notice per-GPU gradient communication cost. Then try model parallelism with k=2048 and watch different GPUs become communication bottlenecks.</div>
                 <div class="mnemonic">Data parallelism = many workers, one model copy each; Model parallelism = one worker per model shard (harder to coordinate).</div>
+                <div class="code-example">
+                  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="code-toggle-icon">▶</span> Framework Example: PyTorch DDP
+                  </button>
+                  <div class="code-content">
+                    <pre><code>import torch
+import torch.distributed as dist
+from torch.nn.parallel import DistributedDataParallel as DDP
+
+dist.init_process_group("nccl")
+rank = dist.get_rank()
+model = MyModel().to(rank)
+model = DDP(model, device_ids=[rank])
+
+optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4)
+for batch in dataloader:
+    loss = model(batch.to(rank)).loss
+    loss.backward()  # gradients synced via AllReduce
+    optimizer.step()
+    optimizer.zero_grad()</code></pre>
+                    <p class="code-note">Launch with: torchrun --nproc_per_node=4 train.py. DDP handles gradient sync automatically.</p>
+                  </div>
+                </div>
             </div>
         </div>
 
@@ -509,6 +543,28 @@
                 <div class="interview-tip">Validate schedule: Plot training loss curve. Does earlier decay help (lower final loss) or hurt (slower convergence)? Validate on final validation metric.</div>
                     <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Start with LR=0.001 and watch smooth training. Increase to 0.01 and see oscillations. Jump to 0.1 and watch divergence. Then select "Cosine" schedule and watch LR decay smoothly—better convergence than constant. Try "Exponential" with different decay rates.</div>
                 <div class="mnemonic">Warmup = preparation (stabilize); cosine = smooth descent (avoid shocks); flat minima = robustness (generalize well).</div>
+                <div class="code-example">
+                  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="code-toggle-icon">▶</span> Framework Example: Cosine Annealing with Warmup
+                  </button>
+                  <div class="code-content">
+                    <pre><code>import torch
+from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR, SequentialLR
+
+optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)
+warmup = LinearLR(optimizer, start_factor=0.01, total_iters=500)
+cosine = CosineAnnealingLR(optimizer, T_max=9500)
+scheduler = SequentialLR(optimizer, [warmup, cosine], milestones=[500])
+
+for step, batch in enumerate(dataloader):
+    loss = model(batch).loss
+    loss.backward()
+    optimizer.step()
+    scheduler.step()
+    optimizer.zero_grad()</code></pre>
+                    <p class="code-note">500-step linear warmup followed by cosine decay over remaining steps. Standard for Transformer training.</p>
+                  </div>
+                </div>
             </div>
         </div>
 
@@ -601,6 +657,24 @@
                 <div class="interview-tip">When to use BF16 vs FP16: BF16 has range advantage (prefer unless hardware accelerates FP16). If gradient norms are very small (< 1e-4), loss scaling must be more aggressive.</div>
                     <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Train with FP32 and watch memory usage and speed. Switch to FP16 and see 2x speedup, half memory. Try BF16 (faster overflow protection) and compare stability. Set loss scaling to 1.0 with FP16 and watch gradients underflow; increase scaling to 1024 and recover.</div>
                 <div class="mnemonic">FP16 = fast but fragile (underflow risk); BF16 = fast and robust (range-safe); loss scaling = safety net (prevent underflow).</div>
+                <div class="code-example">
+                  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="code-toggle-icon">▶</span> Framework Example: Mixed Precision with AMP
+                  </button>
+                  <div class="code-content">
+                    <pre><code>from torch.cuda.amp import autocast, GradScaler
+
+scaler = GradScaler()
+for batch in dataloader:
+    optimizer.zero_grad()
+    with autocast(dtype=torch.bfloat16):
+        loss = model(batch).loss
+    scaler.scale(loss).backward()
+    scaler.step(optimizer)
+    scaler.update()</code></pre>
+                    <p class="code-note">GradScaler handles dynamic loss scaling for FP16. For BF16 on A100+, scaler is optional but harmless.</p>
+                  </div>
+                </div>
             </div>
         </div>
 
@@ -689,6 +763,27 @@
                 <div class="interview-tip">Choose accumulation steps: If effective batch B needed but GPU memory only holds B/N, use N accumulation steps. Example: want batch 512, GPU holds 128 → N=4 steps.</div>
                     <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set batch size=16, accumulation=1 (total 16). Then keep batch=8, accumulation=2 (same total, less memory). Compare training curves—should match. Increase accumulation to 8 with batch=2 and observe when accumulated gradient becomes stale.</div>
                 <div class="mnemonic">Gradient accumulation = financial analogy: collect payments (gradients) over time, apply one large transaction (optimizer step) periodically.</div>
+                <div class="code-example">
+                  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="code-toggle-icon">▶</span> Framework Example: Gradient Accumulation Loop
+                  </button>
+                  <div class="code-content">
+                    <pre><code>import torch
+
+accumulation_steps = 4
+optimizer.zero_grad()
+
+for i, batch in enumerate(dataloader):
+    loss = model(batch).loss / accumulation_steps
+    loss.backward()  # gradients accumulate in .grad
+
+    if (i + 1) % accumulation_steps == 0:
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+        optimizer.step()
+        optimizer.zero_grad()</code></pre>
+                    <p class="code-note">Divide loss by accumulation_steps to average gradients. Clip after full accumulation, not per micro-batch.</p>
+                  </div>
+                </div>
             </div>
         </div>
 
@@ -780,6 +875,30 @@
                 <div class="interview-tip">When to offload to CPU: GPU memory < 10GB available; trade GPU-CPU PCIe bandwidth for GPU VRAM. Typical: CPU offloading worthwhile only if PCIe bandwidth > 50 GB/s.</div>
                     <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Stage 0 (no sharding) baseline—see full optimizer/gradient/param memory. Stage 1: optimizer state splits (25% memory). Stage 2: gradients split (50% total). Stage 3: parameters split (75% total, all-gather on backward). Watch memory drop and communication increase.</div>
                 <div class="mnemonic">ZeRO = sharing is caring: partition parameters/gradients across GPUs, gather only what's needed, reduce per-GPU memory drastically.</div>
+                <div class="code-example">
+                  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="code-toggle-icon">▶</span> Framework Example: FSDP (PyTorch Native ZeRO-3)
+                  </button>
+                  <div class="code-content">
+                    <pre><code>import torch
+from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
+from torch.distributed.fsdp import MixedPrecision
+
+mp_policy = MixedPrecision(
+    param_dtype=torch.bfloat16,
+    reduce_dtype=torch.bfloat16,
+)
+model = FSDP(model, mixed_precision=mp_policy,
+             auto_wrap_policy=transformer_auto_wrap_policy)
+
+for batch in dataloader:
+    loss = model(batch).loss
+    loss.backward()
+    optimizer.step()
+    optimizer.zero_grad()</code></pre>
+                    <p class="code-note">FSDP shards parameters, gradients, and optimizer states across GPUs -- equivalent to ZeRO Stage 3.</p>
+                  </div>
+                </div>
             </div>
         </div>
 
@@ -856,6 +975,29 @@
                 <div class="interview-tip">Choose k (checkpoint frequency): Start k=√L; if still OOM, increase k (less checkpoints, more recompute). If mostly memory-bound, decrease k (more checkpoints, less recompute).</div>
                     <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Batch=32 without checkpointing—set as baseline memory. Enable checkpointing and memory drops 50%. Now increase batch to 64 with checkpointing (same peak memory as original batch 32). Observe speed slowdown (recomputation overhead) vs memory savings.</div>
                 <div class="mnemonic">Checkpointing = bookmarks: mark certain pages (layers), skip middle pages during reading (backward), flip back to marked pages to reread (recompute).</div>
+                <div class="code-example">
+                  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="code-toggle-icon">▶</span> Framework Example: Activation Checkpointing
+                  </button>
+                  <div class="code-content">
+                    <pre><code>import torch
+from torch.utils.checkpoint import checkpoint
+
+class CheckpointedTransformer(torch.nn.Module):
+    def __init__(self, layers):
+        super().__init__()
+        self.layers = torch.nn.ModuleList(layers)
+
+    def forward(self, x):
+        for layer in self.layers:
+            x = checkpoint(layer, x, use_reentrant=False)
+        return x
+
+# Wraps each layer: stores input only, recomputes
+# activations during backward pass to save memory</code></pre>
+                    <p class="code-note">use_reentrant=False is recommended for new code. Memory drops from O(L) to O(sqrt(L)) with ~30% compute overhead.</p>
+                  </div>
+                </div>
             </div>
         </div>
 
@@ -923,6 +1065,32 @@
                 <div class="interview-tip">Monitoring architecture: Central logging (W&B, TensorBoard, MLflow) with alerting thresholds; saves best validation model (not last); enables post-hoc analysis.</div>
                     <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Run training, watch loss decrease smoothly. Click "Inject Gradient Explosion"—loss spikes, training breaks. Increase gradient clip norm from 1.0 to 10.0 and training recovers. Toggle "Async Update" ON and observe loss divergence despite gradient clipping.</div>
                 <div class="mnemonic">Monitor = early warning system: gradient norms → health check; loss curve → performance; throughput → efficiency.</div>
+                <div class="code-example">
+                  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="code-toggle-icon">▶</span> Framework Example: Gradient Clipping and Monitoring
+                  </button>
+                  <div class="code-content">
+                    <pre><code>import torch
+
+for step, batch in enumerate(dataloader):
+    loss = model(batch).loss
+    loss.backward()
+
+    # Monitor gradient norm before clipping
+    grad_norm = torch.nn.utils.clip_grad_norm_(
+        model.parameters(), max_norm=1.0
+    )
+    if grad_norm > 100:
+        print(f"Step {step}: grad explosion ({grad_norm:.1f})")
+
+    optimizer.step()
+    optimizer.zero_grad()
+
+    if step % 100 == 0:
+        print(f"Step {step} | Loss: {loss.item():.4f} | Grad: {grad_norm:.2f}")</code></pre>
+                    <p class="code-note">clip_grad_norm_ returns the original norm before clipping -- use it as a health metric.</p>
+                  </div>
+                </div>
             </div>
         </div>
 
@@ -1002,6 +1170,33 @@
                 <div class="interview-tip">Quantization effect: Lower precision reduces memory traffic (good for memory-bound ops) but reduces compute (hurts compute-bound ops). Analyze AI before and after quantization.</div>
                     <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Low arithmetic intensity (left side of graph)—model is memory-bound (roofline ceiling set by memory BW). High AI (right side)—compute-bound (ceiling by FLOPS). Drag slider to the "ridge" where memory and compute balance. Toggle GPU and watch roofline angle steepen (higher memory BW on newer GPUs).</div>
                 <div class="mnemonic">Roofline = ceiling for performance: either compute or memory bandwidth caps you; find which and optimize that bottleneck.</div>
+                <div class="code-example">
+                  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="code-toggle-icon">▶</span> Framework Example: DataLoader with Prefetching
+                  </button>
+                  <div class="code-content">
+                    <pre><code>import torch
+from torch.utils.data import DataLoader
+
+dataloader = DataLoader(
+    dataset,
+    batch_size=64,
+    num_workers=4,        # parallel data loading
+    pin_memory=True,      # faster GPU transfer
+    prefetch_factor=2,    # prefetch 2 batches per worker
+    persistent_workers=True,
+)
+
+# Overlap data loading with GPU compute
+for batch in dataloader:
+    batch = batch.to("cuda", non_blocking=True)
+    loss = model(batch).loss
+    loss.backward()
+    optimizer.step()
+    optimizer.zero_grad()</code></pre>
+                    <p class="code-note">pin_memory + non_blocking enables async CPU-to-GPU transfer, hiding data loading latency behind compute.</p>
+                  </div>
+                </div>
             </div>
         </div>
 

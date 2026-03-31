@@ -52,6 +52,17 @@
   .insight-box .comparison .option .opt-title { color: #ff9ff3; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
   .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
   .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
+  .code-example { margin-top: 12px; border: 1px solid #2a2a4a; border-radius: 8px; overflow: hidden; }
+  .code-toggle { width: 100%; background: #1a1a2e; color: #ff9ff3; border: none; padding: 10px 16px; text-align: left; cursor: pointer; font-size: 0.9em; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .code-toggle:hover { background: #22223a; }
+  .code-toggle-icon { display: inline-block; transition: transform 0.2s; font-size: 0.7em; }
+  .code-example.open .code-toggle-icon { transform: rotate(90deg); }
+  .code-content { display: none; padding: 14px 16px; background: #0a0a14; }
+  .code-example.open .code-content { display: block; }
+  .code-content pre { margin: 0; overflow-x: auto; white-space: pre; }
+  .code-content code { color: #e0e0e0; font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.82em; line-height: 1.6; }
+  .code-content .code-note { color: #888; font-size: 0.82em; margin-top: 8px; font-style: italic; }
+
 
   .katex { color: #e8e8ff; font-size: 1.1em; }
   .formula .katex { font-size: 1.2em; }
@@ -161,6 +172,28 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">When asked "why attention over RNNs/MLPs?": MLPs have a fixed receptive field. RNNs process sequentially (slow, vanishing gradients). Attention looks at ALL positions in parallel with learned relevance weights.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: The Fixed-Window Problem
+      </button>
+      <div class="code-content">
+        <pre><code>import torch
+import torch.nn as nn
+
+# MLP can only see a fixed window of tokens
+context_size = 5
+d_model = 64
+mlp_input = nn.Linear(context_size * d_model, 128)  # O(k*d) params!
+
+# Attention sees ALL tokens regardless of distance
+seq_len = 100
+x = torch.randn(1, seq_len, d_model)
+attn = nn.MultiheadAttention(d_model, num_heads=4, batch_first=True)
+out, weights = attn(x, x, x)  # every token attends to all 100
+print(f"Output shape: {out.shape}")  # (1, 100, 64)</code></pre>
+        <p class="code-note">Attention scales to any sequence length without adding parameters. MLPs cannot.</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -194,6 +227,29 @@
     </div>
     <hr class="divider">
     <div class="mnemonic">This IS attention. Everything else (Q, K, V projections, scaling, multi-head) is just making the similarity scores learnable and stable.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Attention as Weighted Sum of Values
+      </button>
+      <div class="code-content">
+        <pre><code>import torch
+import torch.nn.functional as F
+
+# 4 key-value pairs
+keys = torch.randn(4, 8)    # 4 keys, dim=8
+values = torch.randn(4, 8)  # 4 values
+query = torch.randn(1, 8)   # 1 query
+
+# Soft dictionary lookup
+scores = query @ keys.T             # similarity scores
+weights = F.softmax(scores, dim=-1) # normalize to sum=1
+output = weights @ values            # weighted blend
+
+print(f"Weights: {weights.data}")    # how much each key matched
+print(f"Output: {output.shape}")     # (1, 8) blended value</code></pre>
+        <p class="code-note">This is the core attention mechanism: score, normalize, blend. Everything else builds on this.</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -234,6 +290,29 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">Q/K/V is the most asked attention question. Key answer: Q and K determine HOW MUCH to attend (the routing). V determines WHAT information flows. They are decoupled on purpose.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Q, K, V Linear Projections
+      </button>
+      <div class="code-content">
+        <pre><code>import torch
+import torch.nn as nn
+
+d_model, d_k = 64, 16
+W_Q = nn.Linear(d_model, d_k, bias=False)
+W_K = nn.Linear(d_model, d_k, bias=False)
+W_V = nn.Linear(d_model, d_k, bias=False)
+
+x = torch.randn(1, 5, d_model)  # 5 tokens
+Q = W_Q(x)  # "what am I looking for?"
+K = W_K(x)  # "what do I contain?"
+V = W_V(x)  # "what do I offer?"
+
+scores = Q @ K.transpose(-2, -1) / (d_k ** 0.5)
+print(f"Q,K,V shapes: {Q.shape}")  # (1, 5, 16)</code></pre>
+        <p class="code-note">W_Q, W_K, W_V are learned projections. They decouple routing (Q,K) from content (V).</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -269,6 +348,31 @@
     </div>
     <hr class="divider">
     <div class="mnemonic">Think of it like temperature in a softmax. Large dot products = very cold = spiky. Dividing by &radic;d_k = warming up = smoother. The sweet spot keeps gradients flowing.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Scaled Dot-Product Attention (Manual)
+      </button>
+      <div class="code-content">
+        <pre><code>import torch
+import torch.nn.functional as F
+
+d_k = 64
+Q = torch.randn(1, 5, d_k)
+K = torch.randn(1, 5, d_k)
+V = torch.randn(1, 5, d_k)
+
+# Without scaling: dot products are O(sqrt(d_k)) in magnitude
+raw_scores = Q @ K.transpose(-2, -1)
+print(f"Unscaled std: {raw_scores.std():.2f}")  # ~8
+
+# With scaling: unit variance
+scaled_scores = raw_scores / (d_k ** 0.5)
+print(f"Scaled std: {scaled_scores.std():.2f}")    # ~1
+
+attn = F.softmax(scaled_scores, dim=-1) @ V</code></pre>
+        <p class="code-note">Dividing by sqrt(d_k) keeps softmax inputs near unit variance, preventing gradient saturation.</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -307,6 +411,27 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">Common follow-up: "Why not just use a bigger single head?" Because a single attention pattern per position is a bottleneck. Multi-head is like an ensemble -- each head specializes on a different linguistic relation.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: nn.MultiheadAttention Usage
+      </button>
+      <div class="code-content">
+        <pre><code>import torch
+import torch.nn as nn
+
+d_model, n_heads = 64, 4
+mha = nn.MultiheadAttention(d_model, n_heads, batch_first=True)
+
+x = torch.randn(2, 10, d_model)  # batch=2, seq_len=10
+# Self-attention: Q=K=V=x
+output, attn_weights = mha(x, x, x)
+
+print(f"Output: {output.shape}")         # (2, 10, 64)
+print(f"Attn weights: {attn_weights.shape}")  # (2, 10, 10)
+# Each head uses d_k = d_model/n_heads = 16</code></pre>
+        <p class="code-note">Each head operates in d_model/n_heads dimensions. Outputs are concatenated and projected by W_O.</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -342,6 +467,30 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">Causal masking is what makes GPT-style models autoregressive. BERT uses NO mask (bidirectional). T5 uses causal mask in the decoder only. Know which architecture uses which masking strategy.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Causal (Autoregressive) Mask
+      </button>
+      <div class="code-content">
+        <pre><code>import torch
+import torch.nn.functional as F
+
+seq_len, d_k = 5, 16
+Q = torch.randn(1, seq_len, d_k)
+K = torch.randn(1, seq_len, d_k)
+V = torch.randn(1, seq_len, d_k)
+
+scores = Q @ K.transpose(-2, -1) / (d_k ** 0.5)
+
+# Causal mask: -inf above diagonal
+mask = torch.triu(torch.ones(seq_len, seq_len), diagonal=1).bool()
+scores = scores.masked_fill(mask, float('-inf'))
+
+attn = F.softmax(scores, dim=-1)  # future positions become 0
+print(attn[0])  # lower-triangular attention pattern</code></pre>
+        <p class="code-note">torch.triu creates the upper-triangular mask. masked_fill with -inf zeros them after softmax.</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -381,6 +530,30 @@
     <hr class="divider">
     <div class="interview-tip">If asked "what are the components of a transformer block?": LayerNorm, Multi-Head Attention, Residual Add, LayerNorm, FFN, Residual Add. Pre-norm (LN before attention) is now standard over post-norm.</div>
     <div class="mnemonic">The block formula: (1) normalize, (2) attend, (3) add residual, (4) normalize, (5) feed-forward, (6) add residual. Six steps, one block. Stack N of these = a transformer.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Complete Transformer Block
+      </button>
+      <div class="code-content">
+        <pre><code>import torch
+import torch.nn as nn
+
+class TransformerBlock(nn.Module):
+    def __init__(self, d_model=64, n_heads=4):
+        super().__init__()
+        self.ln1 = nn.LayerNorm(d_model)
+        self.attn = nn.MultiheadAttention(d_model, n_heads, batch_first=True)
+        self.ln2 = nn.LayerNorm(d_model)
+        self.ffn = nn.Sequential(
+            nn.Linear(d_model, 4*d_model), nn.GELU(),
+            nn.Linear(4*d_model, d_model))
+    def forward(self, x):
+        x = x + self.attn(self.ln1(x), self.ln1(x), self.ln1(x))[0]
+        x = x + self.ffn(self.ln2(x))
+        return x</code></pre>
+        <p class="code-note">Pre-norm transformer block: LayerNorm before attention and FFN. Residuals around both.</p>
+      </div>
+    </div>
   </div>
 </div>
 

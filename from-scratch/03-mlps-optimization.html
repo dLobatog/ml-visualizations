@@ -52,6 +52,17 @@
   .insight-box .comparison .option .opt-title { color: #4ecdc4; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
   .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
   .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
+  .code-example { margin-top: 12px; border: 1px solid #2a2a4a; border-radius: 8px; overflow: hidden; }
+  .code-toggle { width: 100%; background: #1a1a2e; color: #4ecdc4; border: none; padding: 10px 16px; text-align: left; cursor: pointer; font-size: 0.9em; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .code-toggle:hover { background: #22223a; }
+  .code-toggle-icon { display: inline-block; transition: transform 0.2s; font-size: 0.7em; }
+  .code-example.open .code-toggle-icon { transform: rotate(90deg); }
+  .code-content { display: none; padding: 14px 16px; background: #0a0a14; }
+  .code-example.open .code-content { display: block; }
+  .code-content pre { margin: 0; overflow-x: auto; white-space: pre; }
+  .code-content code { color: #e0e0e0; font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.82em; line-height: 1.6; }
+  .code-content .code-note { color: #888; font-size: 0.82em; margin-top: 8px; font-style: italic; }
+
 
   .katex { color: #e8e8ff; font-size: 1.1em; }
   .formula .katex { font-size: 1.2em; }
@@ -188,6 +199,28 @@
     <hr class="divider">
     <div class="interview-tip">When asked about init: "Xavier for tanh/sigmoid, He for ReLU. The key idea is preserving activation variance across layers so gradients neither vanish nor explode."</div>
     <div class="mnemonic">He init has a factor of 2 because ReLU kills half the neurons. Xavier averages fan-in and fan-out. Both solve the same problem: keeping signal alive through depth.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Xavier and Kaiming Initialization
+      </button>
+      <div class="code-content">
+        <pre><code>import torch
+import torch.nn as nn
+
+linear = nn.Linear(256, 256)
+nn.init.xavier_normal_(linear.weight)   # for tanh/sigmoid
+print(f"Xavier std: {linear.weight.std():.4f}")
+
+nn.init.kaiming_normal_(linear.weight, nonlinearity='relu')
+print(f"He/Kaiming std: {linear.weight.std():.4f}")
+
+# Verify variance preservation:
+x = torch.randn(1000, 256)
+y = torch.relu(linear(x))
+print(f"Input var: {x.var():.4f}, Output var: {y.var():.4f}")</code></pre>
+        <p class="code-note">Kaiming init preserves variance through ReLU layers. Xavier is for tanh/sigmoid.</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -236,6 +269,27 @@
     <hr class="divider">
     <div class="interview-tip">"BatchNorm normalizes across the batch (each feature independently), LayerNorm normalizes across features (each sample independently). LN is preferred for Transformers because it works with variable sequence lengths and batch size 1."</div>
     <div class="mnemonic">BN = normalize each feature column. LN = normalize each sample row. Toggle "Break It" to see training diverge without normalization.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: BatchNorm1d vs LayerNorm
+      </button>
+      <div class="code-content">
+        <pre><code>import torch
+import torch.nn as nn
+
+x = torch.randn(32, 128)  # batch=32, features=128
+
+bn = nn.BatchNorm1d(128)   # normalizes across batch dim
+ln = nn.LayerNorm(128)     # normalizes across feature dim
+
+bn_out = bn(x)   # each feature: mean=0, var=1 across batch
+ln_out = ln(x)   # each sample: mean=0, var=1 across features
+
+print(f"BN: per-feature mean~0: {bn_out[:, 0].mean():.4f}")
+print(f"LN: per-sample mean~0: {ln_out[0, :].mean():.4f}")</code></pre>
+        <p class="code-note">BN needs batches and has train/eval modes. LN works anywhere. Transformers use LN.</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -284,6 +338,31 @@
     <hr class="divider">
     <div class="interview-tip">"Residual connections solve the degradation problem. The key insight is that the identity shortcut provides a gradient highway: d/dx[x + F(x)] = I + dF/dx. The I term means gradients are always at least 1 along the skip path."</div>
     <div class="mnemonic">ResNet = "make it easy to learn the identity." If the optimal mapping is close to identity, F(x) just needs to learn a small residual, which is much easier than learning the full mapping.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Residual Block Implementation
+      </button>
+      <div class="code-content">
+        <pre><code>import torch
+import torch.nn as nn
+
+class ResidualBlock(nn.Module):
+    def __init__(self, dim):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(dim, dim), nn.ReLU(),
+            nn.Linear(dim, dim))
+    def forward(self, x):
+        return x + self.net(x)  # skip connection!
+
+# Stack 20 residual blocks
+blocks = nn.Sequential(*[ResidualBlock(64) for _ in range(20)])
+x = torch.randn(1, 64)
+out = blocks(x)
+print(f"Output norm after 20 blocks: {out.norm():.2f}")</code></pre>
+        <p class="code-note">The key line is 'x + self.net(x)'. The identity shortcut keeps gradients alive through any depth.</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -345,6 +424,31 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">"Adam = Momentum + RMSProp + bias correction. m tracks gradient direction, v tracks gradient magnitude. The update is lr * m / sqrt(v), which gives an adaptive per-parameter learning rate."</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Comparing SGD, Momentum, and Adam
+      </button>
+      <div class="code-content">
+        <pre><code>import torch
+import torch.nn as nn
+
+model_sgd = nn.Linear(10, 1)
+model_adam = nn.Linear(10, 1)
+model_adam.load_state_dict(model_sgd.state_dict())
+
+opt_sgd = torch.optim.SGD(model_sgd.parameters(), lr=0.01, momentum=0.9)
+opt_adam = torch.optim.Adam(model_adam.parameters(), lr=0.001)
+
+x, y = torch.randn(64, 10), torch.randn(64, 1)
+for step in range(50):
+    for model, opt, name in [(model_sgd, opt_sgd, "SGD+M"), (model_adam, opt_adam, "Adam")]:
+        loss = nn.MSELoss()(model(x), y)
+        loss.backward()
+        opt.step()
+        opt.zero_grad()</code></pre>
+        <p class="code-note">Adam adapts the learning rate per parameter. It is the default choice for most deep learning.</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -387,6 +491,30 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">"L2 regularization penalizes large weights, acting as a preference for simpler models. For Adam, use AdamW (decoupled weight decay) because the adaptive learning rate interacts poorly with L2 applied to the loss."</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Weight Decay with AdamW
+      </button>
+      <div class="code-content">
+        <pre><code>import torch
+import torch.nn as nn
+
+model = nn.Sequential(nn.Linear(10, 64), nn.ReLU(), nn.Linear(64, 1))
+
+# AdamW = decoupled weight decay (preferred over L2 with Adam)
+optimizer = torch.optim.AdamW(
+    model.parameters(), lr=1e-3, weight_decay=0.01
+)
+
+x, y = torch.randn(100, 10), torch.randn(100, 1)
+for epoch in range(100):
+    loss = nn.MSELoss()(model(x), y)
+    loss.backward()
+    optimizer.step()
+    optimizer.zero_grad()</code></pre>
+        <p class="code-note">Use AdamW (not Adam + L2 loss). Decoupled weight decay works correctly with adaptive LR.</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -436,6 +564,31 @@
     <hr class="divider">
     <div class="interview-tip">"Dropout is an implicit ensemble method. Each forward pass trains a different subnetwork. At test time, the full network approximates the average of all 2^n subnetworks. It prevents co-adaptation: no neuron can rely on another always being present."</div>
     <div class="mnemonic">Dropout rate 0 = overfit. Dropout rate 0.5 = good. Dropout rate 0.9 = underfit. It is a bias-variance tradeoff knob.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Dropout in Training vs Eval Mode
+      </button>
+      <div class="code-content">
+        <pre><code>import torch
+import torch.nn as nn
+
+model = nn.Sequential(
+    nn.Linear(10, 64), nn.ReLU(), nn.Dropout(0.5),
+    nn.Linear(64, 64), nn.ReLU(), nn.Dropout(0.5),
+    nn.Linear(64, 1))
+
+x = torch.randn(1, 10)
+
+model.train()  # dropout ACTIVE: random neurons zeroed
+out1, out2 = model(x), model(x)
+print(f"Train: outputs differ = {not torch.equal(out1, out2)}")
+
+model.eval()   # dropout OFF: deterministic
+out3, out4 = model(x), model(x)
+print(f"Eval: outputs equal = {torch.equal(out3, out4)}")</code></pre>
+        <p class="code-note">Always call model.train() before training and model.eval() before inference.</p>
+      </div>
+    </div>
   </div>
 </div>
 

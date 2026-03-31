@@ -52,6 +52,16 @@
   .insight-box .comparison .option .opt-title { color: #10ac84; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
   .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
   .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
+  .code-example { margin-top: 12px; border: 1px solid #2a2a4a; border-radius: 8px; overflow: hidden; }
+  .code-toggle { width: 100%; background: #1a1a2e; color: #10ac84; border: none; padding: 10px 16px; text-align: left; cursor: pointer; font-size: 0.9em; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .code-toggle:hover { background: #22223a; }
+  .code-toggle-icon { display: inline-block; transition: transform 0.2s; font-size: 0.7em; }
+  .code-example.open .code-toggle-icon { transform: rotate(90deg); }
+  .code-content { display: none; padding: 14px 16px; background: #0a0a14; }
+  .code-example.open .code-content { display: block; }
+  .code-content pre { margin: 0; overflow-x: auto; white-space: pre; }
+  .code-content code { color: #e0e0e0; font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.82em; line-height: 1.6; }
+  .code-content .code-note { color: #888; font-size: 0.82em; margin-top: 8px; font-style: italic; }
 
   .when-to-use { margin-top: 18px; padding-top: 14px; border-top: 1px solid #2a2a4a; }
   .when-to-use h4 { color: #10ac84; margin-bottom: 10px; font-size: 1.05em; }
@@ -204,6 +214,25 @@
         </div>
       </div>
     </div>
+<div class="code-example">
+  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+    <span class="code-toggle-icon">&#9654;</span> Framework Example: Decision Stump with sklearn
+  </button>
+  <div class="code-content">
+    <pre><code>from sklearn.tree import DecisionTreeClassifier
+import numpy as np
+
+X = np.random.randn(100, 2)
+y = (X[:, 0] + X[:, 1] &gt; 0).astype(int)
+
+stump = DecisionTreeClassifier(max_depth=1)
+stump.fit(X, y)
+print(f'Feature: {stump.tree_.feature[0]}')
+print(f'Threshold: {stump.tree_.threshold[0]:.3f}')
+print(f'Accuracy: {stump.score(X, y):.2f}')</code></pre>
+    <p class="code-note">max_depth=1 creates a single split -- the simplest weak learner.</p>
+  </div>
+</div>
   </div>
 </div>
 
@@ -277,6 +306,25 @@
         </div>
       </div>
     </div>
+<div class="code-example">
+  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+    <span class="code-toggle-icon">&#9654;</span> Framework Example: Controlling Tree Depth
+  </button>
+  <div class="code-content">
+    <pre><code>from sklearn.tree import DecisionTreeClassifier
+from sklearn.datasets import make_moons
+
+X, y = make_moons(n_samples=300, noise=0.25, random_state=42)
+
+for depth in [1, 3, None]:  # None = unlimited
+    tree = DecisionTreeClassifier(max_depth=depth, random_state=42)
+    tree.fit(X, y)
+    print(f'Depth={str(depth):&gt;4s}  '
+          f'Nodes={tree.tree_.node_count:&gt;3d}  '
+          f'Accuracy={tree.score(X, y):.2f}')</code></pre>
+    <p class="code-note">Unlimited depth memorizes training data (100% accuracy, poor generalization).</p>
+  </div>
+</div>
   </div>
 </div>
 
@@ -350,6 +398,30 @@
         </div>
       </div>
     </div>
+<div class="code-example">
+  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+    <span class="code-toggle-icon">&#9654;</span> Framework Example: Manual Residual Computation
+  </button>
+  <div class="code-content">
+    <pre><code>import numpy as np
+from sklearn.tree import DecisionTreeRegressor
+
+np.random.seed(42)
+X = np.linspace(0, 10, 100).reshape(-1, 1)
+y = np.sin(X.ravel()) + np.random.randn(100) * 0.2
+
+# Step 1: initial prediction = mean
+y_pred = np.full_like(y, y.mean())
+# Step 2: compute residuals
+residuals = y - y_pred
+print(f'MSE before: {np.mean(residuals**2):.3f}')
+# Step 3: fit tree to residuals
+tree = DecisionTreeRegressor(max_depth=2).fit(X, residuals)
+y_pred += 0.1 * tree.predict(X)  # learning rate 0.1
+print(f'MSE after:  {np.mean((y - y_pred)**2):.3f}')</code></pre>
+    <p class="code-note">Each boosting step fits a tree to residuals: r_i = y_i - y_hat_i.</p>
+  </div>
+</div>
   </div>
 </div>
 
@@ -429,6 +501,28 @@
         </div>
       </div>
     </div>
+<div class="code-example">
+  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+    <span class="code-toggle-icon">&#9654;</span> Framework Example: One Boosting Step with Learning Rate
+  </button>
+  <div class="code-content">
+    <pre><code>from sklearn.ensemble import GradientBoostingRegressor
+import numpy as np
+
+X = np.random.randn(200, 5)
+y = X[:, 0]**2 + 0.5 * X[:, 1] + np.random.randn(200) * 0.3
+
+# learning_rate controls step size; n_estimators = number of trees
+gbr = GradientBoostingRegressor(
+    n_estimators=100, learning_rate=0.1,
+    max_depth=3, random_state=42
+)
+gbr.fit(X, y)
+print(f'R2 score: {gbr.score(X, y):.3f}')
+print(f'Trees used: {gbr.n_estimators_}')</code></pre>
+    <p class="code-note">Small learning_rate + many trees = better generalization than large lr + few trees.</p>
+  </div>
+</div>
   </div>
 </div>
 
@@ -508,6 +602,27 @@
         </div>
       </div>
     </div>
+<div class="code-example">
+  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+    <span class="code-toggle-icon">&#9654;</span> Framework Example: XGBoost with Early Stopping
+  </button>
+  <div class="code-content">
+    <pre><code>from xgboost import XGBRegressor
+from sklearn.model_selection import train_test_split
+import numpy as np
+
+X = np.random.randn(1000, 10)
+y = np.sum(X[:, :3]**2, axis=1) + np.random.randn(1000) * 0.5
+X_tr, X_val, y_tr, y_val = train_test_split(X, y, test_size=0.2)
+
+xgb = XGBRegressor(n_estimators=500, learning_rate=0.05,
+                   max_depth=4, early_stopping_rounds=10)
+xgb.fit(X_tr, y_tr, eval_set=[(X_val, y_val)], verbose=False)
+print(f'Best round: {xgb.best_iteration}')
+print(f'Val RMSE: {xgb.best_score:.4f}')</code></pre>
+    <p class="code-note">Early stopping halts training when validation loss stops improving.</p>
+  </div>
+</div>
   </div>
 </div>
 
@@ -588,6 +703,29 @@
         </div>
       </div>
     </div>
+<div class="code-example">
+  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+    <span class="code-toggle-icon">&#9654;</span> Framework Example: Custom Loss Function in XGBoost
+  </button>
+  <div class="code-content">
+    <pre><code>import xgboost as xgb
+import numpy as np
+
+# Huber loss: robust to outliers
+def huber_obj(y_pred, dtrain):
+    y_true = dtrain.get_label()
+    delta = 1.0
+    diff = y_pred - y_true
+    grad = np.where(np.abs(diff) &lt;= delta, diff, delta * np.sign(diff))
+    hess = np.where(np.abs(diff) &lt;= delta, 1.0, 0.0)
+    return grad, hess
+
+dtrain = xgb.DMatrix(X_tr, label=y_tr)
+params = {'max_depth': 4, 'eta': 0.1}
+model = xgb.train(params, dtrain, num_boost_round=100, obj=huber_obj)</code></pre>
+    <p class="code-note">Any twice-differentiable loss works: provide gradient and hessian.</p>
+  </div>
+</div>
   </div>
 </div>
 
@@ -676,6 +814,27 @@
         </div>
       </div>
     </div>
+<div class="code-example">
+  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+    <span class="code-toggle-icon">&#9654;</span> Framework Example: LightGBM with Regularization
+  </button>
+  <div class="code-content">
+    <pre><code>import lightgbm as lgb
+from sklearn.datasets import make_classification
+
+X, y = make_classification(n_samples=5000, n_features=20, random_state=42)
+
+model = lgb.LGBMClassifier(
+    n_estimators=300, learning_rate=0.05,
+    max_depth=4, subsample=0.8,
+    colsample_bytree=0.7, reg_alpha=0.1,
+    reg_lambda=1.0, random_state=42
+)
+model.fit(X, y)
+print(f'Accuracy: {model.score(X, y):.3f}')</code></pre>
+    <p class="code-note">Combine shrinkage, subsampling, and L1/L2 regularization for best results.</p>
+  </div>
+</div>
   </div>
 </div>
 
@@ -747,6 +906,29 @@
     <hr class="divider">
     <div class="interview-tip">XGBoost, LightGBM, CatBoost all follow this same algorithm. The differences are in HOW they build trees (histogram binning, leaf-wise vs level-wise growth, handling categoricals). The core idea is identical.</div>
     <div class="mnemonic">GBDT = "fit the errors, add a little bit, repeat". Learning rate shrinks each tree's contribution, early stopping says when to stop.</div>
+<div class="code-example">
+  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+    <span class="code-toggle-icon">&#9654;</span> Framework Example: Full GBDT Pipeline with XGBoost
+  </button>
+  <div class="code-content">
+    <pre><code>from xgboost import XGBClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.datasets import make_classification
+
+X, y = make_classification(n_samples=5000, n_features=20, random_state=42)
+X_tr, X_val, y_tr, y_val = train_test_split(X, y, test_size=0.2)
+
+clf = XGBClassifier(
+    n_estimators=500, learning_rate=0.05,
+    max_depth=4, subsample=0.8,
+    colsample_bytree=0.7, early_stopping_rounds=10
+)
+clf.fit(X_tr, y_tr, eval_set=[(X_val, y_val)], verbose=False)
+print(f'Best iteration: {clf.best_iteration}')
+print(f'Accuracy: {clf.score(X_val, y_val):.3f}')</code></pre>
+    <p class="code-note">This is the standard production GBDT recipe: tune lr, depth, subsampling + early stopping.</p>
+  </div>
+</div>
     <div class="when-to-use">
       <h4>When to Use</h4>
       <div class="use-grid use-grid-3">

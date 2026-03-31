@@ -345,6 +345,18 @@
 .quiz-progress{height:4px;background:#1a1a2e;border-radius:2px;margin-bottom:20px;overflow:hidden}
 .quiz-progress-bar{height:100%;background:#ff9f43;border-radius:2px;transition:width 0.3s}
 
+
+.code-example { margin-top: 12px; border: 1px solid #2a2a4a; border-radius: 8px; overflow: hidden; }
+.code-toggle { width: 100%; background: #1a1a2e; color: #ff9f43; border: none; padding: 10px 16px; text-align: left; cursor: pointer; font-size: 0.9em; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.code-toggle:hover { background: #22223a; }
+.code-toggle-icon { display: inline-block; transition: transform 0.2s; font-size: 0.7em; }
+.code-example.open .code-toggle-icon { transform: rotate(90deg); }
+.code-content { display: none; padding: 14px 16px; background: #0a0a14; }
+.code-example.open .code-content { display: block; }
+.code-content pre { margin: 0; overflow-x: auto; white-space: pre; }
+.code-content code { color: #e0e0e0; font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.82em; line-height: 1.6; }
+.code-content .code-note { color: #888; font-size: 0.82em; margin-top: 8px; font-style: italic; }
+
 </style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -474,6 +486,29 @@
                 <div class="mnemonic">Think: Bellman = backwards induction. Each state's value = what you get now + discounted value of successor states.</div>
                 <p><strong>Interview Gotchas:</strong> Markov property is strong (not all problems satisfy it); Value iteration rate depends on γ and space size; Large spaces need function approximation; Exploration-exploitation is orthogonal to MDPs.</p>
                 <p><strong>Production Tips:</strong> Verify Markov assumption holds. Use γ=0.99 for long horizons. Function approximation essential for continuous spaces. Monitor episode returns. Always simulate offline before deployment.</p>
+                <div class="code-example">
+                  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="code-toggle-icon">&#9654;</span> Framework Example: Gymnasium MDP Environment
+                  </button>
+                  <div class="code-content">
+                    <pre><code>import gymnasium as gym
+                import numpy as np
+                
+                env = gym.make("FrozenLake-v1", is_slippery=True)
+                state, info = env.reset()
+                
+                for step in range(100):
+                    action = env.action_space.sample()  # random policy
+                    next_state, reward, terminated, truncated, info = env.step(action)
+                    print(f"S={state} A={action} R={reward} S'={next_state}")
+                    state = next_state
+                    if terminated or truncated:
+                        state, info = env.reset()
+                
+                env.close()</code></pre>
+                    <p class="code-note">FrozenLake is a classic MDP grid world. Replace with any Gymnasium env.</p>
+                  </div>
+                </div>
             </div>
         </div>
 
@@ -569,6 +604,31 @@
                 <div class="mnemonic">Q-Learning: Maximize future Q values (greedy bootstrap). The max makes it optimistic and off-policy—you explore but learn about the best policy.</div>
                 <p><strong>Key Gotchas:</strong> Overestimation bias from max (max_a Q is biased up); Function approximation breaks convergence; Off-policy divergence if policies drift; ε-greedy is inefficient.</p>
                 <p><strong>Production Solutions:</strong> Double Deep Q-Network (separate target/online networks for bias reduction); Experience replay (decorrelates samples); Slow target network updates (stable targets); Policy gradients for continuous control; Monitor Q-value distributions for explosions; Always simulate before deployment.</p>
+                <div class="code-example">
+                  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="code-toggle-icon">&#9654;</span> Framework Example: Tabular Q-Learning
+                  </button>
+                  <div class="code-content">
+                    <pre><code>import gymnasium as gym
+                import numpy as np
+                
+                env = gym.make("FrozenLake-v1", is_slippery=False)
+                Q = np.zeros((env.observation_space.n, env.action_space.n))
+                alpha, gamma, epsilon = 0.1, 0.99, 0.1
+                
+                for ep in range(2000):
+                    s, _ = env.reset()
+                    done = False
+                    while not done:
+                        a = env.action_space.sample() if np.random.random() < epsilon else np.argmax(Q[s])
+                        s2, r, term, trunc, _ = env.step(a)
+                        Q[s, a] += alpha * (r + gamma * np.max(Q[s2]) - Q[s, a])
+                        s, done = s2, term or trunc
+                
+                print("Learned Q-table:\n", Q)</code></pre>
+                    <p class="code-note">Tabular Q-learning converges for small discrete state/action spaces.</p>
+                  </div>
+                </div>
             </div>
         </div>
 
@@ -670,6 +730,36 @@
                 <div class="mnemonic">Actor-Critic = actor (policy) makes decisions, critic (value) evaluates them. Critic reduces variance of policy gradients via advantage estimation.</div>
                 <p><strong>Key Gotchas:</strong> REINFORCE high variance without baselines; Critic bias if poorly trained; High sample complexity; Local optima common; Off-policy corrections can explode.</p>
                 <p><strong>Production Best Practices:</strong> Use Proximal Policy Optimization / Trust Region Policy Optimization for stability (clip/trust region updates); Actor-critic more sample-efficient; Generalized Advantage Estimation balances bias-variance; Monitor policy entropy; Test exhaustively (can exploit simulator); Continuous control is PG sweet spot.</p>
+                <div class="code-example">
+                  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="code-toggle-icon">&#9654;</span> Framework Example: REINFORCE Policy Gradient
+                  </button>
+                  <div class="code-content">
+                    <pre><code>import torch
+                import torch.nn as nn
+                import gymnasium as gym
+                
+                class Policy(nn.Module):
+                    def __init__(self, obs_dim, act_dim):
+                        super().__init__()
+                        self.net = nn.Sequential(nn.Linear(obs_dim, 64), nn.ReLU(), nn.Linear(64, act_dim))
+                    def forward(self, x):
+                        return torch.softmax(self.net(x), dim=-1)
+                
+                env = gym.make("CartPole-v1")
+                policy = Policy(4, 2)
+                optimizer = torch.optim.Adam(policy.parameters(), lr=1e-2)
+                
+                state, _ = env.reset()
+                log_probs, rewards = [], []
+                probs = policy(torch.FloatTensor(state))
+                dist = torch.distributions.Categorical(probs)
+                action = dist.sample()
+                log_probs.append(dist.log_prob(action))
+                # After episode: loss = -sum(log_prob * discounted_return)</code></pre>
+                    <p class="code-note">REINFORCE: collect trajectory, compute returns, update with policy gradient.</p>
+                  </div>
+                </div>
             </div>
         </div>
 
@@ -768,6 +858,32 @@
                 <div class="mnemonic">UCB = empirical mean + exploration bonus that shrinks as arm is played. Thompson = posterior samples naturally balance exploration (high uncertainty) and exploitation (posterior peaks).</div>
                 <p><strong>Key Gotchas:</strong> ε-greedy regret is linear in T (bad for long horizons); UCB constant c requires tuning; Thompson Sampling needs Bayesian inference; Contextual bandits are realistic but harder.</p>
                 <p><strong>Production Best Practices:</strong> Use Thompson Sampling for A/B testing/ad serving (auto-balances, easy to explain); UCB for explicit control; Avoid ε-greedy unless trivial; Contextual variants (LinUCB, ContextTS) for recommendations; Monitor arm frequencies; Cold-start: all arms equally unknown.</p>
+                <div class="code-example">
+                  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="code-toggle-icon">&#9654;</span> Framework Example: Multi-Armed Bandit (UCB)
+                  </button>
+                  <div class="code-content">
+                    <pre><code>import numpy as np
+                
+                n_arms, n_rounds = 5, 10000
+                true_means = np.random.randn(n_arms)
+                counts = np.zeros(n_arms)
+                values = np.zeros(n_arms)
+                
+                for t in range(1, n_rounds + 1):
+                    if t <= n_arms:
+                        arm = t - 1  # pull each arm once
+                    else:
+                        ucb = values + np.sqrt(2 * np.log(t) / counts)
+                        arm = np.argmax(ucb)
+                    reward = np.random.randn() + true_means[arm]
+                    counts[arm] += 1
+                    values[arm] += (reward - values[arm]) / counts[arm]
+                
+                print(f"Best arm: {np.argmax(values)}, True best: {np.argmax(true_means)}")</code></pre>
+                    <p class="code-note">UCB balances exploration (uncertainty bonus) and exploitation (empirical mean).</p>
+                  </div>
+                </div>
             </div>
         </div>
 
@@ -845,6 +961,28 @@
                 <div class="mnemonic">Reinforcement Learning from Human Feedback = teach model to please humans. Bradley-Terry = learn what humans like. Proximal Policy Optimization + KL = apply reinforcement learning while staying sensible. Three-stage dance between supervised fine-tuning, reward, and policy.</div>
                 <p><strong>Key Challenges:</strong> Reward hacking (exploiting model weaknesses); Expensive annotation with labeler bias; Reward model overfits or goes off-distribution; KL tuning critical; Computational cost high.</p>
                 <p><strong>Production Best Practices:</strong> Multiple annotators, measure agreement; Diverse preference data; Monitor reward model accuracy on held-out; Use β ≈ 0.1-1.0; Test on multiple benchmarks; Iteratively improve reward model as language model improves; Static reward model becomes suboptimal over time.</p>
+                <div class="code-example">
+                  <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="code-toggle-icon">&#9654;</span> Framework Example: PPO Clipped Objective
+                  </button>
+                  <div class="code-content">
+                    <pre><code>import torch
+                import torch.nn as nn
+                
+                def ppo_loss(new_log_probs, old_log_probs, advantages, clip_eps=0.2, beta=0.1, ref_log_probs=None):
+                    ratio = torch.exp(new_log_probs - old_log_probs)
+                    clipped = torch.clamp(ratio, 1 - clip_eps, 1 + clip_eps)
+                    policy_loss = -torch.min(ratio * advantages, clipped * advantages).mean()
+                    kl_penalty = 0.0
+                    if ref_log_probs is not None:
+                        kl_penalty = (torch.exp(new_log_probs) * (new_log_probs - ref_log_probs)).mean()
+                    return policy_loss + beta * kl_penalty
+                
+                # Usage: loss = ppo_loss(new_lp, old_lp, adv, ref_log_probs=sft_lp)
+                # loss.backward(); optimizer.step()</code></pre>
+                    <p class="code-note">PPO clip + KL penalty is the core of RLHF for LLM alignment.</p>
+                  </div>
+                </div>
             </div>
         </div>
 

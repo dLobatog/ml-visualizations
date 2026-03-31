@@ -326,6 +326,17 @@
   .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
   .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
 
+  .code-example { margin-top: 12px; border: 1px solid #2a2a4a; border-radius: 8px; overflow: hidden; }
+  .code-toggle { width: 100%; background: #1a1a2e; color: #54a0ff; border: none; padding: 10px 16px; text-align: left; cursor: pointer; font-size: 0.9em; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .code-toggle:hover { background: #22223a; }
+  .code-toggle-icon { display: inline-block; transition: transform 0.2s; font-size: 0.7em; }
+  .code-example.open .code-toggle-icon { transform: rotate(90deg); }
+  .code-content { display: none; padding: 14px 16px; background: #0a0a14; }
+  .code-example.open .code-content { display: block; }
+  .code-content pre { margin: 0; overflow-x: auto; white-space: pre; }
+  .code-content code { color: #e0e0e0; font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.82em; line-height: 1.6; }
+  .code-content .code-note { color: #888; font-size: 0.82em; margin-top: 8px; font-style: italic; }
+
   .katex { color: #e8e8ff; font-size: 1.1em; }
 
   #quizToggle { position: fixed; top: 20px; right: 20px; z-index: 1000; padding: 12px 20px; background: #54a0ff; color: #0a0a0f; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 1em; box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: transform 0.2s; }
@@ -406,6 +417,28 @@
                     <div class="interview-tip">Feedback loops can amplify biases: popular items get more exposure → more training data → stronger model → more exposure (rich-get-richer problem). Monitor for feedback loop amplification.</div>
                     <div class="mnemonic">Offline = preparation (take time to validate); Online = execution (must be fast); feedback loop = learning (continuously improve).</div>
                     <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click "Offline Pipeline" and trace the training loop from raw logs through feature engineering. Then click "Online Pipeline" and observe the latency constraint (50-300ms) forcing lighter computation. Finally click both to see how offline accuracy and online speed coexist in production.</div>
+                    <div class="code-example">
+                      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+                        <span class="code-toggle-icon">▶</span> Framework Example: Data Pipeline with Pandas
+                      </button>
+                      <div class="code-content">
+                        <pre><code>import pandas as pd
+import numpy as np
+
+# Offline pipeline: aggregate features from logs
+logs = pd.read_parquet("click_logs.parquet")
+features = (logs.groupby("user_id")
+    .agg(click_rate=("clicked", "mean"),
+         session_count=("session_id", "nunique"),
+         avg_dwell=("dwell_time", "mean"))
+    .reset_index())
+
+# Validate: no nulls, distributions match training
+assert features.isnull().sum().sum() == 0
+features.to_parquet("features/user_features.parquet")</code></pre>
+                        <p class="code-note">Offline batch pipeline: aggregate raw logs into features, validate, and store for downstream training and serving.</p>
+                      </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -480,6 +513,30 @@
                     <div class="interview-tip">Why not run tests until significance? That's p-hacking. You must pre-register sample size and duration; stopping early when results look good biases estimates toward false positives.</div>
                     <div class="mnemonic">\(\alpha\) = false positive risk; \(\beta\) = false negative risk; power = ability to detect truth; larger \(n\) = smaller errors.</div>
                     <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set Sample Size slider to 1000, run test (p-value likely > 0.05). Then drag to 10000 and run again (likely significant). Notice the confidence interval tightens. Try predicting: at what sample size will this effect become detectable?</div>
+                    <div class="code-example">
+                      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+                        <span class="code-toggle-icon">▶</span> Framework Example: A/B Test with scipy.stats
+                      </button>
+                      <div class="code-content">
+                        <pre><code>from scipy import stats
+import numpy as np
+
+# Simulated click data: control vs treatment
+control = np.random.binomial(1, 0.05, size=10000)
+treatment = np.random.binomial(1, 0.058, size=10000)
+
+# Two-proportion z-test
+count = np.array([treatment.sum(), control.sum()])
+nobs = np.array([len(treatment), len(control)])
+z_stat, p_value = stats.proportions_ztest(count, nobs)
+
+print(f"Control CTR: {control.mean():.4f}")
+print(f"Treatment CTR: {treatment.mean():.4f}")
+print(f"P-value: {p_value:.4f}")
+print(f"Significant: {p_value < 0.05}")</code></pre>
+                        <p class="code-note">Two-proportion z-test comparing click-through rates. Use proportions_ztest for binary outcomes.</p>
+                      </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -563,6 +620,30 @@
                     <div class="interview-tip">Tools: Feast (open-source, K8s-native), Tecton (enterprise, seamless offline/online), Hopsworks (distributed, MLOps-focused). Choose based on latency/scale requirements.</div>
                     <div class="mnemonic">Feature store = single source of truth: one definition, two implementations (offline + online), no skew.</div>
                     <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click "Batch Only" and observe the delay (historical data) but perfect logic. Then click "Streaming Only" and see real-time but risk of logic drift. Click "Both" to see how hybrid systems pre-compute batch features, then enrich with streaming. Try toggling and predicting accuracy vs latency.</div>
+                    <div class="code-example">
+                      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+                        <span class="code-toggle-icon">▶</span> Framework Example: Feature Engineering with Pandas
+                      </button>
+                      <div class="code-content">
+                        <pre><code>import pandas as pd
+import numpy as np
+
+def compute_user_features(events: pd.DataFrame) -> pd.DataFrame:
+    """Single feature definition used by both offline and online."""
+    now = pd.Timestamp.now()
+    recent = events[events["ts"] >= now - pd.Timedelta(days=7)]
+    return (recent.groupby("user_id")
+        .agg(click_7d=("clicked", "sum"),
+             views_7d=("viewed", "sum"))
+        .assign(ctr_7d=lambda df: df.click_7d / df.views_7d.clip(1))
+        .reset_index())
+
+# Offline: run on full history batch
+features = compute_user_features(pd.read_parquet("events.parquet"))
+features.to_parquet("feature_store/user_ctr_7d.parquet")</code></pre>
+                        <p class="code-note">One function for both offline batch and online serving -- prevents train/serve skew.</p>
+                      </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -660,6 +741,28 @@
                     <div class="interview-tip">Hybrid sweet spot: batch pre-compute embeddings (expensive, static); online compute lightweight scores (fresh, fast). Example: batch BERT embeddings, online dot-product ranking.</div>
                     <div class="mnemonic">Online = fresh but expensive; Batch = cheap but stale; Hybrid = batch for expensive, online for fresh.</div>
                     <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Drag the freshness slider left to 1 day (batch) and latency stays low but predictions age. Then drag latency slider right to 500ms and freshness improves but cost skyrockets. Try finding the "sweet spot" for your use case. Which matters more: freshness or latency?</div>
+                    <div class="code-example">
+                      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+                        <span class="code-toggle-icon">▶</span> Framework Example: Model Serving with FastAPI
+                      </button>
+                      <div class="code-content">
+                        <pre><code>from fastapi import FastAPI
+import torch
+
+app = FastAPI()
+model = torch.jit.load("model.pt")
+
+@app.post("/predict")
+async def predict(features: list[float]):
+    x = torch.tensor([features])
+    with torch.no_grad():
+        pred = model(x)
+    return {"prediction": pred.tolist()}
+
+# Run: uvicorn serve:app --host 0.0.0.0 --port 8000</code></pre>
+                        <p class="code-note">Minimal online serving endpoint. Use torch.jit for optimized inference and no_grad to skip gradient tracking.</p>
+                      </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -737,6 +840,29 @@
                     <div class="interview-tip">When to retrain vs accept: Seasonal variations (expected, monitor but don't panic); unexpected drifts (investigate and retrain). Set baselines for normal drift ranges.</div>
                     <div class="mnemonic">Drift detection = sentinel; if drift exceeds threshold, investigate root cause before applying fixes.</div>
                     <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Drag the drift magnitude slider to 0.5 and watch accuracy tank. Observe the drift detection threshold light up red. Then click "Retrain" and watch accuracy recover as the model adapts. Set threshold high (0.30 PSI) and see delayed detection, then low (0.10) and observe faster alerts.</div>
+                    <div class="code-example">
+                      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+                        <span class="code-toggle-icon">▶</span> Framework Example: Drift Detection with NumPy
+                      </button>
+                      <div class="code-content">
+                        <pre><code>import numpy as np
+
+def compute_psi(expected, actual, bins=10):
+    """Population Stability Index for drift detection."""
+    breakpoints = np.quantile(expected, np.linspace(0, 1, bins + 1))
+    exp_pct = np.histogram(expected, bins=breakpoints)[0] / len(expected)
+    act_pct = np.histogram(actual, bins=breakpoints)[0] / len(actual)
+    exp_pct = np.clip(exp_pct, 1e-4, None)
+    act_pct = np.clip(act_pct, 1e-4, None)
+    return np.sum((act_pct - exp_pct) * np.log(act_pct / exp_pct))
+
+train_dist = np.random.normal(0, 1, 10000)
+prod_dist = np.random.normal(0.3, 1.1, 10000)  # drifted
+psi = compute_psi(train_dist, prod_dist)
+print(f"PSI: {psi:.3f} ({'Drift!' if psi > 0.25 else 'OK'}")</code></pre>
+                        <p class="code-note">PSI &lt; 0.1 = stable, 0.1-0.25 = investigate, &gt; 0.25 = significant drift requiring action.</p>
+                      </div>
+                    </div>
                 </div>
             </div>
         </div>
