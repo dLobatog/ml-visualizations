@@ -1,0 +1,2627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>12. Gradient Boosted Decision Trees — Interactive Visualizations</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #0a0a0f; color: #e0e0e0; line-height: 1.6; }
+  .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; text-align: center; border-bottom: 1px solid #2a2a4a; }
+  .header h1 { font-size: 2.2em; background: linear-gradient(90deg, #10ac84, #1dd1a1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+  .header p { color: #888; font-size: 1.1em; }
+  .header a { color: #10ac84; text-decoration: none; font-size: 0.9em; }
+  .header a:hover { text-decoration: underline; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+  .viz-section { background: #12121f; border: 1px solid #2a2a4a; border-radius: 16px; padding: 32px; margin-bottom: 40px; }
+  .viz-section h2 { font-size: 1.5em; color: #10ac84; margin-bottom: 8px; }
+  .viz-section .subtitle { color: #888; margin-bottom: 24px; font-size: 0.95em; }
+  .viz-canvas { background: #0d0d1a; border-radius: 12px; position: relative; overflow: hidden; }
+  canvas { display: block; width: 100%; }
+  .controls { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; align-items: center; }
+  .control-group { display: flex; flex-direction: column; gap: 4px; }
+  .control-group label { font-size: 0.85em; color: #aaa; }
+  .control-group input[type="range"] { width: 200px; accent-color: #10ac84; }
+  .control-group .value { font-size: 0.85em; color: #10ac84; font-family: monospace; }
+  .legend { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.85em; color: #ccc; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 50%; }
+  .btn { padding: 8px 16px; border: 1px solid #10ac84; background: transparent; color: #10ac84; border-radius: 8px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
+  .btn:hover { background: #10ac8422; }
+  .btn.active { background: #10ac8433; }
+  .tab-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+
+  .insight-box { background: linear-gradient(135deg, #1a1a3e 0%, #151530 100%); border-left: 4px solid #10ac84; padding: 20px 24px; margin-top: 20px; border-radius: 0 12px 12px 0; font-size: 0.92em; color: #ccc; line-height: 1.8; }
+  .insight-box strong { color: #10ac84; font-size: 1.05em; }
+  .insight-box .formula { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 12px 18px; margin: 12px 0; font-family: 'Courier New', monospace; color: #e8e8ff; font-size: 1.05em; text-align: center; letter-spacing: 0.5px; line-height: 1.9; }
+  .insight-box .formula .highlight { color: #10ac84; font-weight: bold; }
+  .insight-box .key-point { display: flex; flex-wrap: wrap; gap: 4px 8px; margin: 8px 0; padding: 4px 0; align-items: baseline; }
+  .insight-box .key-point .label { color: #10ac84; font-weight: 600; min-width: 160px; flex-shrink: 0; }
+  .insight-box .key-point .desc { color: #ddd; }
+  .insight-box .interview-tip { background: rgba(100, 255, 100, 0.05); border: 1px solid rgba(100, 255, 100, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #b0ffb0; font-size: 0.93em; line-height: 1.6; }
+  .insight-box .interview-tip::before { content: '\1F4A1  Interview Tip: '; font-weight: 700; color: #7fff7f; }
+  .insight-box .mnemonic { background: rgba(255, 150, 255, 0.05); border: 1px solid rgba(255, 150, 255, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #ffb0ff; font-size: 0.93em; line-height: 1.6; }
+  .insight-box .mnemonic::before { content: '\1F9E0  Remember: '; font-weight: 700; color: #ff7fff; }
+  .insight-box .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+  .insight-box .comparison .option { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 10px 14px; }
+  .insight-box .comparison .option .opt-title { color: #10ac84; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
+  .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
+  .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
+
+  .katex { color: #e8e8ff; font-size: 1.1em; }
+  .formula .katex { font-size: 1.2em; }
+
+#quizToggle{position:fixed;top:20px;right:20px;z-index:1000;padding:12px 20px;background:#10ac84;color:#0a0a0f;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:1em;box-shadow:0 4px 15px rgba(0,0,0,0.3);transition:transform 0.2s}
+#quizToggle:hover{transform:scale(1.05)}
+#quizSection{background:#0a0a0f;border-top:2px solid #10ac84;padding:40px 20px;margin-top:40px}
+.quiz-container{max-width:900px;margin:0 auto}
+.quiz-topic{margin-bottom:30px}
+.quiz-topic-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:10px;cursor:pointer;margin-bottom:12px;user-select:none}
+.quiz-topic-header h3{color:#10ac84;margin:0;font-size:1.15em}
+.quiz-topic-header:hover{background:#1f1f3a}
+.quiz-topic-score{color:#888;font-size:0.95em}
+.quiz-topic-questions{display:none}
+.quiz-topic-questions.open{display:block}
+.quiz-question{background:#12121f;border:1px solid #2a2a4a;border-radius:12px;padding:24px;margin-bottom:16px}
+.quiz-question h4{color:#e0e0e0;margin-bottom:16px;font-size:1.05em;line-height:1.5}
+.quiz-option{display:block;width:100%;padding:12px 16px;margin:8px 0;background:#0d0d1a;border:1px solid #2a2a4a;border-radius:8px;color:#e0e0e0;cursor:pointer;text-align:left;font-size:0.95em;transition:all 0.2s;font-family:inherit}
+.quiz-option:hover:not(:disabled){border-color:#10ac84;background:#1a1a3e}
+.quiz-option.correct{background:#1a3a2a !important;border-color:#2ecc71 !important;color:#2ecc71 !important}
+.quiz-option.wrong{background:#3a1a1a !important;border-color:#e74c3c !important;color:#e74c3c !important}
+.quiz-option.reveal{border-color:#2ecc71 !important;color:#2ecc71 !important}
+.quiz-option:disabled{cursor:default}
+.quiz-explanation{margin-top:12px;padding:14px 18px;border-radius:8px;font-size:0.93em;line-height:1.6;display:none}
+.quiz-explanation.show{display:block}
+.quiz-explanation.correct-exp{border-left:4px solid #2ecc71;background:rgba(46,204,113,0.08);color:#b0ffb0}
+.quiz-explanation.wrong-exp{border-left:4px solid #e74c3c;background:rgba(231,76,60,0.08);color:#ffb0b0}
+.quiz-score{text-align:center;font-size:1.5em;color:#10ac84;margin-bottom:30px}
+.quiz-actions{text-align:center;margin-top:30px;margin-bottom:20px}
+.quiz-actions button{padding:10px 24px;margin:0 8px;border-radius:8px;border:1px solid #10ac84;background:transparent;color:#10ac84;cursor:pointer;font-size:1em}
+.quiz-actions button:hover{background:rgba(16,172,132,0.1)}
+.quiz-progress{height:4px;background:#1a1a2e;border-radius:2px;margin-bottom:20px;overflow:hidden}
+.quiz-progress-bar{height:100%;background:#10ac84;border-radius:2px;transition:width 0.3s}
+
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '\\(', right: '\\)', display: false}]});"></script>
+</head>
+<body>
+<button id="quizToggle" onclick="toggleQuiz()">&#x1F9E0; Quiz Mode</button>
+
+<div class="header">
+  <a href="index.html">&larr; Back to Index</a>
+  <h1>12. Gradient Boosted Decision Trees</h1>
+  <p>Interactive visualizations for GBDT, XGBoost, LightGBM &amp; CatBoost</p>
+</div>
+
+<div class="container">
+
+<!-- 1. DECISION TREE SPLITTING -->
+<div class="viz-section">
+  <h2>Decision Tree Splitting</h2>
+  <p class="subtitle">Adjust max_depth to see how a single decision tree partitions 2D space into axis-aligned rectangles. Each split chooses the feature and threshold that best separates the two classes (minimizing Gini impurity). Watch how deeper trees create more complex boundaries.</p>
+  <div class="viz-canvas">
+    <canvas id="dtSplitCanvas" width="900" height="500"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>Max Depth</label>
+      <input type="range" id="dtDepth" min="1" max="6" value="3" oninput="drawDTSplit()">
+      <span class="value" id="dtDepthVal">3</span>
+    </div>
+    <button class="btn" onclick="regenerateDTData()">New Data</button>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>Class A</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#4ecdc4"></div>Class B</div>
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(255,107,107,0.15)"></div>Region A</div>
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(78,205,196,0.15)"></div>Region B</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> A decision tree recursively splits feature space into axis-aligned rectangles, choosing splits that maximize information gain (or minimize Gini impurity).
+    <div class="formula">$$\text{Gini}(S) = 1 - \sum_{k=1}^{K} p_k^2$$</div>
+    <div class="key-point"><span class="label">Gini Impurity:</span><span class="desc">Measures how often a randomly chosen element would be misclassified. Ranges from 0 (pure) to 0.5 (binary, equal mix).</span></div>
+    <div class="key-point"><span class="label">Split Selection:</span><span class="desc">At each node, try all features and thresholds, pick the one with the largest weighted impurity decrease.</span></div>
+    <div class="key-point"><span class="label">Depth Control:</span><span class="desc">Deeper trees have more splits, lower bias but higher variance. Shallow trees are weaker learners used in boosting.</span></div>
+    <hr class="divider">
+    <div class="interview-tip">A single deep tree overfits. GBDT uses many shallow trees (depth 3-8) sequentially, each correcting residual errors. The "weak learner" is the shallow tree.</div>
+    <div class="mnemonic">Decision trees are greedy: each split is locally optimal. Boosting compensates by iteratively correcting mistakes.</div>
+  </div>
+</div>
+
+<!-- 2. RESIDUAL FITTING / BOOSTING ITERATIONS -->
+<div class="viz-section">
+  <h2>Residual Fitting / Boosting Iterations</h2>
+  <p class="subtitle">The core GBDT mechanism: fit trees to the residuals (errors) of the current ensemble. Press "Add Tree" to see each new tree fit the remaining error, gradually building an accurate ensemble. Watch the train and validation loss decrease with each round.</p>
+  <div class="viz-canvas">
+    <canvas id="residCanvas" width="900" height="500"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>Boosting Round</label>
+      <input type="range" id="residRound" min="1" max="20" value="1" oninput="drawResidual()">
+      <span class="value" id="residRoundVal">1</span>
+    </div>
+    <div class="control-group">
+      <label>Learning Rate</label>
+      <input type="range" id="residLR" min="1" max="100" value="30" oninput="drawResidual()">
+      <span class="value" id="residLRVal">0.30</span>
+    </div>
+    <button class="btn" onclick="addTree()">Add Tree</button>
+    <button class="btn" onclick="resetResidual()">Reset</button>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#ffd93d"></div>Target Function</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#10ac84"></div>Ensemble Prediction</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>Residuals</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#4ecdc4"></div>New Tree Fit</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Gradient Boosting builds an additive model by sequentially fitting trees to the negative gradient (residuals for squared loss).
+    <div class="formula">$$F_m(x) = F_{m-1}(x) + \color{#10ac84}{\eta} \cdot h_m(x)$$</div>
+    <div class="key-point"><span class="label">\(F_m(x)\):</span><span class="desc">Ensemble prediction after m rounds</span></div>
+    <div class="key-point"><span class="label">\(\eta\):</span><span class="desc">Learning rate (shrinkage) - scales each tree's contribution. Smaller = more trees needed but better generalization.</span></div>
+    <div class="key-point"><span class="label">\(h_m(x)\):</span><span class="desc">The m-th tree, fit to pseudo-residuals \(r_i = -\frac{\partial L}{\partial F(x_i)}\)</span></div>
+    <hr class="divider">
+    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <div class="comparison" style="grid-template-columns: 1fr 1fr 1fr; margin-top: 10px;">
+      <div class="option">
+        <div class="opt-title" style="color: #10ac84;">Tabular Data</div>
+        <div class="opt-desc">GBDT is the king of tabular data. Kaggle competitions on structured data are dominated by XGBoost/LightGBM.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #4ecdc4;">Ranking / CTR</div>
+        <div class="opt-desc">LambdaMART (GBDT-based) powers search ranking at major tech companies. Also used for click-through rate prediction.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #ffd93d;">Interpretability Needed</div>
+        <div class="opt-desc">Feature importance, SHAP values, partial dependence plots make GBDT more interpretable than deep learning.</div>
+      </div>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">GBDT fits trees to the negative gradient of the loss, not just residuals. For squared error, the negative gradient equals the residual. For other losses (logistic, huber), it differs.</div>
+  </div>
+</div>
+
+<!-- 3. LEARNING RATE vs NUMBER OF TREES -->
+<div class="viz-section">
+  <h2>Learning Rate vs Number of Trees</h2>
+  <p class="subtitle">Explore the fundamental tradeoff: lower learning rate requires more trees but generalizes better. High learning rate with many trees overfits. Find the sweet spot where validation loss is minimized.</p>
+  <div class="viz-canvas">
+    <canvas id="lrTreesCanvas" width="900" height="450"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>Learning Rate</label>
+      <input type="range" id="lrParam" min="1" max="100" value="10" oninput="drawLRTrees()">
+      <span class="value" id="lrParamVal">0.10</span>
+    </div>
+    <div class="control-group">
+      <label>Number of Trees</label>
+      <input type="range" id="nTreesParam" min="1" max="500" value="100" oninput="drawLRTrees()">
+      <span class="value" id="nTreesParamVal">100</span>
+    </div>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#10ac84"></div>Train Loss</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>Validation Loss</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ffd93d"></div>Optimal Point</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Learning rate and number of trees are inversely related. Lower learning rate needs more trees to reach the same training loss, but the generalization gap is smaller.
+    <div class="formula">$$F_M(x) = \sum_{m=1}^{M} \eta \cdot h_m(x) \quad \text{where } \eta \downarrow \Rightarrow M \uparrow$$</div>
+    <div class="key-point"><span class="label">Low LR (0.01-0.1):</span><span class="desc">Best generalization but requires hundreds/thousands of trees. Standard for production models.</span></div>
+    <div class="key-point"><span class="label">High LR (0.3-1.0):</span><span class="desc">Fast training, fewer trees needed, but risk of overfitting and missing the optimal point.</span></div>
+    <div class="key-point"><span class="label">Rule of Thumb:</span><span class="desc">Start with lr=0.1, n_estimators=1000, use early stopping to find optimal number of trees.</span></div>
+    <hr class="divider">
+    <div class="interview-tip">In XGBoost/LightGBM, set n_estimators high (e.g., 10000) and use early_stopping_rounds=50. The learning rate controls the regularization strength. This is called "shrinkage".</div>
+    <div class="mnemonic">Low learning rate + many trees = slow and steady wins the race. High learning rate + many trees = overfitting.</div>
+  </div>
+</div>
+
+<!-- 4. REGULARIZATION TECHNIQUES -->
+<div class="viz-section">
+  <h2>Regularization Techniques</h2>
+  <p class="subtitle">GBDT has multiple regularization knobs. Switch between tabs to explore how max_depth, min_samples_leaf, subsample rate, and column subsampling each constrain the model and reduce overfitting.</p>
+  <div class="tab-bar">
+    <button class="btn active" id="regTabDepth" onclick="setRegTab('depth')">Max Depth</button>
+    <button class="btn" id="regTabMinSamples" onclick="setRegTab('minsamples')">Min Samples Leaf</button>
+    <button class="btn" id="regTabSubsample" onclick="setRegTab('subsample')">Subsample (Stochastic)</button>
+    <button class="btn" id="regTabColsample" onclick="setRegTab('colsample')">Column Subsampling</button>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="gbdtRegCanvas" width="900" height="450"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label id="regSliderLabel">Max Depth</label>
+      <input type="range" id="regSlider" min="1" max="20" value="3" oninput="drawRegularization()">
+      <span class="value" id="regSliderVal">3</span>
+    </div>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#10ac84"></div>Train Loss</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>Validation Loss</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ffd93d"></div>Optimal</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> GBDT regularization operates at multiple levels: individual tree complexity, data sampling, and feature sampling.
+    <div class="formula">$$\Omega(f) = \gamma T + \frac{1}{2}\lambda \sum_{j=1}^{T} w_j^2$$</div>
+    <div class="key-point"><span class="label">\(T\):</span><span class="desc">Number of leaves in the tree. \(\gamma\) penalizes tree complexity (pruning).</span></div>
+    <div class="key-point"><span class="label">\(w_j\):</span><span class="desc">Leaf weights. \(\lambda\) is L2 regularization on leaf values (shrinks predictions).</span></div>
+    <div class="key-point"><span class="label">Subsample:</span><span class="desc">Stochastic GB: train each tree on a random fraction of rows. Reduces variance like bagging.</span></div>
+    <div class="key-point"><span class="label">Colsample:</span><span class="desc">Random feature subsets per tree/split. Decorrelates trees and reduces overfitting.</span></div>
+    <hr class="divider">
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title">Tree-Level Regularization</div>
+        <div class="opt-desc">max_depth, min_child_weight, gamma (min split loss). Controls complexity of individual weak learners.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title">Ensemble-Level Regularization</div>
+        <div class="opt-desc">learning_rate (shrinkage), n_estimators + early stopping, subsample, colsample_bytree.</div>
+      </div>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">XGBoost's regularization term \(\Omega(f)\) in the objective is what differentiates it from vanilla GBM. This explicit regularization is a key reason for XGBoost's success.</div>
+  </div>
+</div>
+
+<!-- 5. FEATURE IMPORTANCE METHODS -->
+<div class="viz-section">
+  <h2>Feature Importance Methods</h2>
+  <p class="subtitle">Compare split-based importance (total gain from splits using each feature) with permutation importance (drop in performance when a feature is shuffled). Toggle features on/off to see how model performance changes.</p>
+  <div class="viz-canvas">
+    <canvas id="featImpCanvas" width="900" height="450"></canvas>
+  </div>
+  <div class="controls">
+    <div class="tab-bar">
+      <button class="btn active" id="featTabGain" onclick="setFeatTab('gain')">Split Gain</button>
+      <button class="btn" id="featTabPerm" onclick="setFeatTab('permutation')">Permutation</button>
+    </div>
+    <button class="btn" id="featToggle0" onclick="toggleFeature(0)" style="background:#10ac8433">Feature 1</button>
+    <button class="btn" id="featToggle1" onclick="toggleFeature(1)" style="background:#10ac8433">Feature 2</button>
+    <button class="btn" id="featToggle2" onclick="toggleFeature(2)" style="background:#10ac8433">Feature 3</button>
+    <button class="btn" id="featToggle3" onclick="toggleFeature(3)" style="background:#10ac8433">Feature 4</button>
+    <button class="btn" id="featToggle4" onclick="toggleFeature(4)" style="background:#10ac8433">Feature 5</button>
+    <button class="btn" id="featToggle5" onclick="toggleFeature(5)" style="background:#10ac8433">Feature 6</button>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#10ac84"></div>Importance Score</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>Model Error</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Different importance measures can disagree. Split-based importance favors high-cardinality features; permutation importance reflects true predictive power.
+    <div class="key-point"><span class="label">Gain Importance:</span><span class="desc">Sum of impurity reduction across all splits using that feature. Biased toward features with many possible splits.</span></div>
+    <div class="key-point"><span class="label">Permutation Importance:</span><span class="desc">Shuffle a feature's values, measure performance drop. Model-agnostic and unbiased, but slower.</span></div>
+    <div class="key-point"><span class="label">SHAP Values:</span><span class="desc">Game-theoretic approach: each feature's contribution to each prediction. Gold standard but computationally expensive.</span></div>
+    <hr class="divider">
+    <div class="interview-tip">Always use permutation importance or SHAP for feature selection decisions. Split-based importance from tree.feature_importances_ is fast but misleading with correlated or high-cardinality features.</div>
+  </div>
+</div>
+
+<!-- 6. XGBOOST vs LIGHTGBM vs CATBOOST -->
+<div class="viz-section">
+  <h2>XGBoost vs LightGBM vs CatBoost</h2>
+  <p class="subtitle">Compare tree-building strategies: XGBoost grows level-wise (all nodes at same depth), LightGBM grows leaf-wise (expands the leaf with highest gain), and CatBoost uses ordered boosting to reduce prediction shift. Click tabs to see each approach.</p>
+  <div class="tab-bar">
+    <button class="btn active" id="fwTabXgb" onclick="setFramework('xgboost')">XGBoost (Level-wise)</button>
+    <button class="btn" id="fwTabLgb" onclick="setFramework('lightgbm')">LightGBM (Leaf-wise)</button>
+    <button class="btn" id="fwTabCat" onclick="setFramework('catboost')">CatBoost (Ordered)</button>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="frameworkCanvas" width="900" height="450"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>Growth Step</label>
+      <input type="range" id="fwStep" min="1" max="15" value="1" oninput="drawFramework()">
+      <span class="value" id="fwStepVal">1</span>
+    </div>
+    <button class="btn" onclick="animateFramework()">Animate</button>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#10ac84"></div>Current Split</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#4ecdc4"></div>Existing Nodes</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ffd93d"></div>Leaf Nodes</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> The three frameworks differ in tree growth strategy, categorical handling, and optimization approach.
+    <div class="comparison" style="grid-template-columns: 1fr 1fr 1fr; margin-top: 10px;">
+      <div class="option">
+        <div class="opt-title" style="color: #10ac84;">XGBoost</div>
+        <div class="opt-desc">Level-wise growth. Explicit regularization (\(\gamma, \lambda\)). Exact + histogram split finding. Sparsity-aware (handles missing values). Industry standard since 2014.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #4ecdc4;">LightGBM</div>
+        <div class="opt-desc">Leaf-wise growth (best-first). GOSS + EFB for speed. Histogram-based only. Faster training on large data. Native categorical support.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #ffd93d;">CatBoost</div>
+        <div class="opt-desc">Ordered boosting (reduces target leakage). Symmetric trees. Best categorical handling via target encoding with ordering. Slowest training but often best out-of-box.</div>
+      </div>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">LightGBM's leaf-wise growth can overfit on small datasets (use max_depth to limit). CatBoost's ordered boosting avoids target leakage that plagues naive target encoding.</div>
+    <div class="mnemonic">XGBoost = balanced growth, LightGBM = greedy growth (fastest), CatBoost = ordered growth (best categoricals).</div>
+  </div>
+</div>
+
+<!-- 7. HISTOGRAM-BASED SPLITTING -->
+<div class="viz-section">
+  <h2>Histogram-Based Splitting</h2>
+  <p class="subtitle">Instead of evaluating every unique value for splits, histogram-based methods bin continuous features into discrete buckets. Adjust the number of bins to see the speed vs. resolution tradeoff. Fewer bins = faster but coarser splits.</p>
+  <div class="viz-canvas">
+    <canvas id="histCanvas" width="900" height="450"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>Number of Bins</label>
+      <input type="range" id="histBins" min="4" max="256" value="32" oninput="drawHistogram()">
+      <span class="value" id="histBinsVal">32</span>
+    </div>
+    <div class="control-group">
+      <label>Number of Data Points</label>
+      <input type="range" id="histN" min="50" max="1000" value="200" oninput="drawHistogram()">
+      <span class="value" id="histNVal">200</span>
+    </div>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#4ecdc4"></div>Data Points</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#10ac84"></div>Histogram Bins</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ffd93d"></div>Best Split (Exact)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>Best Split (Histogram)</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Histogram-based splitting reduces split-finding from O(n) to O(bins), a massive speedup for large datasets with minimal accuracy loss.
+    <div class="formula">$$\text{Exact: } O(n \cdot d \cdot \log n) \quad \text{Histogram: } O(\text{bins} \cdot d)$$</div>
+    <div class="key-point"><span class="label">Default Bins:</span><span class="desc">LightGBM uses 255 bins by default. XGBoost histogram uses 256. More bins = finer resolution but slower.</span></div>
+    <div class="key-point"><span class="label">Memory Savings:</span><span class="desc">Feature values stored as uint8 (0-255) instead of float64. 8x memory reduction.</span></div>
+    <div class="key-point"><span class="label">Histogram Subtraction:</span><span class="desc">Parent histogram - left child histogram = right child histogram. Saves 50% of computation.</span></div>
+    <hr class="divider">
+    <div class="interview-tip">LightGBM was the first major framework to use exclusive histogram-based splitting. XGBoost added it later (tree_method='hist'). For datasets with millions of rows, histogram is essential.</div>
+  </div>
+</div>
+
+<!-- 8. GBDT vs RANDOM FOREST vs NEURAL NET -->
+<div class="viz-section">
+  <h2>GBDT vs Random Forest vs Neural Net</h2>
+  <p class="subtitle">Compare decision boundaries of three model families on the same synthetic 2D dataset. Adjust dataset complexity and noise to see when each method excels. GBDT often wins on structured/tabular data.</p>
+  <div class="viz-canvas">
+    <canvas id="compareCanvas" width="900" height="400"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>Dataset Complexity</label>
+      <input type="range" id="cmpComplexity" min="1" max="5" value="2" oninput="drawComparison()">
+      <span class="value" id="cmpComplexityVal">2</span>
+    </div>
+    <div class="control-group">
+      <label>Noise Level</label>
+      <input type="range" id="cmpNoise" min="0" max="50" value="10" oninput="drawComparison()">
+      <span class="value" id="cmpNoiseVal">0.10</span>
+    </div>
+    <button class="btn" onclick="regenerateCompareData()">New Data</button>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#10ac84"></div>GBDT</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#4ecdc4"></div>Random Forest</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#7c4dff"></div>Neural Network</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> GBDT and Random Forest both use trees but differ fundamentally: RF uses bagging (parallel, independent trees), GBDT uses boosting (sequential, corrective trees).
+    <div class="comparison" style="grid-template-columns: 1fr 1fr 1fr; margin-top: 10px;">
+      <div class="option">
+        <div class="opt-title" style="color: #10ac84;">GBDT</div>
+        <div class="opt-desc">Sequential, additive. Each tree corrects errors. Low bias, controls variance via shrinkage. Best for tabular data. Sensitive to noisy labels.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #4ecdc4;">Random Forest</div>
+        <div class="opt-desc">Parallel, averaging. Independent deep trees. Naturally low variance via bagging. More robust to noise. Easier to tune. No overfitting with more trees.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #7c4dff;">Neural Network</div>
+        <div class="opt-desc">Learns smooth, non-axis-aligned boundaries. Best for images, text, sequences. Needs more data. Harder to interpret. GPU-friendly.</div>
+      </div>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">GBDT wins on tabular data (Kaggle, industry). Neural nets win on unstructured data (images, text, audio). RF is the safe, hard-to-mess-up baseline. Use RF when you want robustness; GBDT when you want maximum performance.</div>
+  </div>
+</div>
+
+<!-- 9. HANDLING CATEGORICALS & MISSING VALUES -->
+<div class="viz-section">
+  <h2>Handling Categoricals &amp; Missing Values</h2>
+  <p class="subtitle">See how GBDT frameworks handle categorical features (one-hot vs. native vs. target encoding) and missing values (default direction in splits). Toggle the missing rate to see how tree splits route missing values.</p>
+  <div class="viz-canvas">
+    <canvas id="catMissCanvas" width="900" height="450"></canvas>
+  </div>
+  <div class="controls">
+    <div class="tab-bar">
+      <button class="btn active" id="cmTabCat" onclick="setCatMissTab('categorical')">Categorical Encoding</button>
+      <button class="btn" id="cmTabMiss" onclick="setCatMissTab('missing')">Missing Values</button>
+    </div>
+    <div class="control-group">
+      <label>Missing Rate (%)</label>
+      <input type="range" id="cmMissRate" min="0" max="50" value="15" oninput="drawCatMiss()">
+      <span class="value" id="cmMissRateVal">15%</span>
+    </div>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#10ac84"></div>Present Values</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>Missing Values</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ffd93d"></div>Default Direction</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> XGBoost learns the optimal direction for missing values at each split; CatBoost uses ordered target statistics for categoricals.
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title">Missing Values</div>
+        <div class="opt-desc">XGBoost/LightGBM: learn default split direction during training. Missing values go left or right based on which reduces loss more. No imputation needed!</div>
+      </div>
+      <div class="option">
+        <div class="opt-title">Categorical Features</div>
+        <div class="opt-desc">LightGBM: native split on categorical sets. CatBoost: ordered target encoding (prevents leakage). XGBoost: requires manual encoding (one-hot or ordinal).</div>
+      </div>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Never impute missing values before feeding to XGBoost/LightGBM - they handle them natively and learn optimal routing. Imputation can actually hurt performance by destroying the "missingness" signal.</div>
+    <div class="mnemonic">XGBoost learns where missing goes. LightGBM handles categoricals natively. CatBoost handles both best out-of-box.</div>
+  </div>
+</div>
+
+<!-- 10. EARLY STOPPING & CROSS-VALIDATION -->
+<div class="viz-section">
+  <h2>Early Stopping &amp; Cross-Validation</h2>
+  <p class="subtitle">Watch training and validation loss evolve over boosting rounds. Early stopping halts training when validation loss stops improving for "patience" rounds. Adjust patience and validation fraction to see the effect.</p>
+  <div class="viz-canvas">
+    <canvas id="earlyStopCanvas" width="900" height="450"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>Patience (rounds)</label>
+      <input type="range" id="esPatience" min="5" max="100" value="20" oninput="drawEarlyStop()">
+      <span class="value" id="esPatienceVal">20</span>
+    </div>
+    <div class="control-group">
+      <label>Validation Fraction</label>
+      <input type="range" id="esValFrac" min="10" max="40" value="20" oninput="drawEarlyStop()">
+      <span class="value" id="esValFracVal">0.20</span>
+    </div>
+    <div class="control-group">
+      <label>Learning Rate</label>
+      <input type="range" id="esLR" min="1" max="50" value="10" oninput="drawEarlyStop()">
+      <span class="value" id="esLRVal">0.10</span>
+    </div>
+    <button class="btn" onclick="animateEarlyStop()">Animate Training</button>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#10ac84"></div>Train Loss</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>Validation Loss</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ffd93d"></div>Early Stopping Point</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Early stopping is the most important regularization technique for GBDT. It automatically finds the optimal number of trees.
+    <div class="formula">$$\text{Stop at } m^* = \arg\min_{m} \; L_{\text{val}}(F_m) \quad \text{with patience } p$$</div>
+    <div class="key-point"><span class="label">Patience:</span><span class="desc">Number of rounds without improvement before stopping. Too low = premature stop. Too high = wasted computation.</span></div>
+    <div class="key-point"><span class="label">Validation Set:</span><span class="desc">Hold out 20-30% of training data. In XGBoost: eval_set parameter. In LightGBM: valid_sets.</span></div>
+    <div class="key-point"><span class="label">Cross-Validation:</span><span class="desc">Use cv() with early stopping to find optimal rounds, then retrain on full data with that number of rounds.</span></div>
+    <hr class="divider">
+    <div class="interview-tip">The standard GBDT workflow: set n_estimators=10000, learning_rate=0.05, early_stopping_rounds=50. Let early stopping find the right number of trees. Then optionally retrain on full data with that count.</div>
+    <div class="mnemonic">Early stopping = free regularization. Always use it. Set trees high, let validation loss decide when to stop.</div>
+  </div>
+</div>
+
+</div> <!-- end container -->
+
+<!-- QUIZ SECTION -->
+<div id="quizSection" style="display:none">
+<div class="quiz-container">
+  <h2 style="text-align:center;color:#10ac84;margin-bottom:10px;font-size:1.8em;">Gradient Boosted Trees Quiz</h2>
+  <p style="text-align:center;color:#888;margin-bottom:20px;">5 questions per topic &bull; Click answers to reveal explanations</p>
+  <div class="quiz-progress"><div class="quiz-progress-bar" id="quizProgressBar" style="width:0%"></div></div>
+  <div class="quiz-score">Score: <span id="quizScore">0</span> / <span id="quizTotal">50</span></div>
+  <div class="quiz-actions">
+    <button onclick="resetQuiz()">&#8634; Reset All</button>
+    <button onclick="toggleQuiz()">&#10005; Hide Quiz</button>
+  </div>
+  <div id="quizQuestions"></div>
+</div>
+</div>
+
+<script>
+(function(){
+
+// ======= SEEDED RANDOM =======
+function SeededRandom(seed) {
+  this.seed = seed;
+}
+SeededRandom.prototype.next = function() {
+  this.seed = (this.seed * 16807 + 0) % 2147483647;
+  return (this.seed - 1) / 2147483646;
+};
+SeededRandom.prototype.gauss = function() {
+  var u = 0, v = 0;
+  while (u === 0) u = this.next();
+  while (v === 0) v = this.next();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+};
+
+var DPR = window.devicePixelRatio || 1;
+function setupCanvas(id) {
+  var c = document.getElementById(id);
+  var rect = c.getBoundingClientRect();
+  var w = c.width;
+  var h = c.height;
+  c.style.width = w + 'px';
+  c.style.height = h + 'px';
+  c.width = w * DPR;
+  c.height = h * DPR;
+  var ctx = c.getContext('2d');
+  ctx.scale(DPR, DPR);
+  return { ctx: ctx, w: w, h: h };
+}
+
+// ======= 1. DECISION TREE SPLITTING =======
+var dtData = [];
+var dtRng = new SeededRandom(42);
+
+function generateDTData() {
+  dtData = [];
+  for (var i = 0; i < 120; i++) {
+    var x = dtRng.next();
+    var y = dtRng.next();
+    var cls = (x + y > 1.0 + 0.3 * dtRng.gauss() * 0.3) ? 1 : 0;
+    if (x > 0.7 && y < 0.3) cls = 1;
+    if (x < 0.3 && y > 0.7) cls = 0;
+    dtData.push({ x: x, y: y, cls: cls });
+  }
+}
+generateDTData();
+
+window.regenerateDTData = function() {
+  dtRng = new SeededRandom(Date.now() % 100000);
+  generateDTData();
+  drawDTSplit();
+};
+
+function buildTree(data, depth, maxDepth, xmin, xmax, ymin, ymax) {
+  if (depth >= maxDepth || data.length < 4) {
+    var c0 = 0, c1 = 0;
+    for (var i = 0; i < data.length; i++) { if (data[i].cls === 0) c0++; else c1++; }
+    return { leaf: true, cls: c1 > c0 ? 1 : 0, count: data.length, xmin: xmin, xmax: xmax, ymin: ymin, ymax: ymax, gini: 1 - Math.pow(c0/(c0+c1+1e-9),2) - Math.pow(c1/(c0+c1+1e-9),2) };
+  }
+  var bestGain = -1, bestFeat = 0, bestThresh = 0.5;
+  var totalGini = calcGini(data);
+  for (var f = 0; f < 2; f++) {
+    var sorted = data.slice().sort(function(a,b) { return (f===0?a.x:a.y) - (f===0?b.x:b.y); });
+    for (var j = 1; j < sorted.length; j++) {
+      var val = (f===0 ? sorted[j].x : sorted[j].y);
+      var prev = (f===0 ? sorted[j-1].x : sorted[j-1].y);
+      if (val === prev) continue;
+      var thresh = (val + prev) / 2;
+      var left = [], right = [];
+      for (var k = 0; k < data.length; k++) {
+        if ((f===0 ? data[k].x : data[k].y) <= thresh) left.push(data[k]);
+        else right.push(data[k]);
+      }
+      if (left.length === 0 || right.length === 0) continue;
+      var gain = totalGini - (left.length/data.length)*calcGini(left) - (right.length/data.length)*calcGini(right);
+      if (gain > bestGain) { bestGain = gain; bestFeat = f; bestThresh = thresh; }
+    }
+  }
+  if (bestGain <= 0) {
+    var c0b = 0, c1b = 0;
+    for (var i = 0; i < data.length; i++) { if (data[i].cls === 0) c0b++; else c1b++; }
+    return { leaf: true, cls: c1b > c0b ? 1 : 0, count: data.length, xmin: xmin, xmax: xmax, ymin: ymin, ymax: ymax, gini: totalGini };
+  }
+  var leftData = [], rightData = [];
+  for (var k = 0; k < data.length; k++) {
+    if ((bestFeat===0 ? data[k].x : data[k].y) <= bestThresh) leftData.push(data[k]);
+    else rightData.push(data[k]);
+  }
+  var leftChild, rightChild;
+  if (bestFeat === 0) {
+    leftChild = buildTree(leftData, depth+1, maxDepth, xmin, bestThresh, ymin, ymax);
+    rightChild = buildTree(rightData, depth+1, maxDepth, bestThresh, xmax, ymin, ymax);
+  } else {
+    leftChild = buildTree(leftData, depth+1, maxDepth, xmin, xmax, ymin, bestThresh);
+    rightChild = buildTree(rightData, depth+1, maxDepth, xmin, xmax, bestThresh, ymax);
+  }
+  return { leaf: false, feat: bestFeat, thresh: bestThresh, gain: bestGain, left: leftChild, right: rightChild, depth: depth, xmin: xmin, xmax: xmax, ymin: ymin, ymax: ymax };
+}
+
+function calcGini(data) {
+  var c0 = 0, c1 = 0;
+  for (var i = 0; i < data.length; i++) { if (data[i].cls === 0) c0++; else c1++; }
+  var n = c0 + c1;
+  if (n === 0) return 0;
+  return 1 - Math.pow(c0/n, 2) - Math.pow(c1/n, 2);
+}
+
+function getLeaves(node, arr) {
+  if (!arr) arr = [];
+  if (node.leaf) { arr.push(node); return arr; }
+  getLeaves(node.left, arr);
+  getLeaves(node.right, arr);
+  return arr;
+}
+
+function drawTreeStructure(ctx, node, x, y, dx, depth, maxDrawDepth) {
+  if (!node) return;
+  var radius = 16;
+  if (node.leaf) {
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI*2);
+    ctx.fillStyle = node.cls === 1 ? 'rgba(78,205,196,0.3)' : 'rgba(255,107,107,0.3)';
+    ctx.fill();
+    ctx.strokeStyle = node.cls === 1 ? '#4ecdc4' : '#ff6b6b';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(node.cls === 1 ? 'B' : 'A', x, y + 4);
+    return;
+  }
+  var childY = y + 50;
+  var newDx = dx * 0.55;
+  // draw lines
+  ctx.beginPath();
+  ctx.moveTo(x, y + radius);
+  ctx.lineTo(x - newDx, childY - radius);
+  ctx.strokeStyle = '#555';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x, y + radius);
+  ctx.lineTo(x + newDx, childY - radius);
+  ctx.stroke();
+  // draw node
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI*2);
+  ctx.fillStyle = '#1a1a3e';
+  ctx.fill();
+  ctx.strokeStyle = '#10ac84';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.fillStyle = '#10ac84';
+  ctx.font = '9px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText((node.feat === 0 ? 'x' : 'y'), x, y - 2);
+  ctx.fillText('<' + node.thresh.toFixed(2), x, y + 10);
+  drawTreeStructure(ctx, node.left, x - newDx, childY, newDx, depth+1, maxDrawDepth);
+  drawTreeStructure(ctx, node.right, x + newDx, childY, newDx, depth+1, maxDrawDepth);
+}
+
+var dtSetup = null;
+window.drawDTSplit = function() {
+  if (!dtSetup) dtSetup = setupCanvas('dtSplitCanvas');
+  var ctx = dtSetup.ctx, w = dtSetup.w, h = dtSetup.h;
+  var maxDepth = parseInt(document.getElementById('dtDepth').value);
+  document.getElementById('dtDepthVal').textContent = maxDepth;
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, w, h);
+
+  var plotW = w * 0.55, plotH = h - 60, plotX = 30, plotY = 30;
+  var treeX = w * 0.6, treeW = w * 0.38;
+
+  var tree = buildTree(dtData, 0, maxDepth, 0, 1, 0, 1);
+  var leaves = getLeaves(tree);
+
+  // Draw regions
+  for (var i = 0; i < leaves.length; i++) {
+    var lf = leaves[i];
+    var rx = plotX + lf.xmin * plotW;
+    var ry = plotY + (1 - lf.ymax) * plotH;
+    var rw = (lf.xmax - lf.xmin) * plotW;
+    var rh = (lf.ymax - lf.ymin) * plotH;
+    ctx.fillStyle = lf.cls === 1 ? 'rgba(78,205,196,0.12)' : 'rgba(255,107,107,0.12)';
+    ctx.fillRect(rx, ry, rw, rh);
+    ctx.strokeStyle = '#2a2a4a';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(rx, ry, rw, rh);
+  }
+
+  // Draw axes
+  ctx.strokeStyle = '#444';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(plotX, plotY, plotW, plotH);
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Feature X', plotX + plotW/2, plotY + plotH + 20);
+  ctx.save();
+  ctx.translate(12, plotY + plotH/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText('Feature Y', 0, 0);
+  ctx.restore();
+
+  // Draw data points
+  for (var i = 0; i < dtData.length; i++) {
+    var p = dtData[i];
+    var px = plotX + p.x * plotW;
+    var py = plotY + (1 - p.y) * plotH;
+    ctx.beginPath();
+    ctx.arc(px, py, 4, 0, Math.PI*2);
+    ctx.fillStyle = p.cls === 1 ? '#4ecdc4' : '#ff6b6b';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+  }
+
+  // Draw split lines
+  function drawSplits(node) {
+    if (node.leaf) return;
+    var lw = Math.max(1, 3 - node.depth);
+    ctx.strokeStyle = '#10ac84';
+    ctx.lineWidth = lw;
+    ctx.setLineDash([4, 3]);
+    if (node.feat === 0) {
+      var sx = plotX + node.thresh * plotW;
+      var sy1 = plotY + (1 - node.ymax) * plotH;
+      var sy2 = plotY + (1 - node.ymin) * plotH;
+      ctx.beginPath(); ctx.moveTo(sx, sy1); ctx.lineTo(sx, sy2); ctx.stroke();
+    } else {
+      var sy = plotY + (1 - node.thresh) * plotH;
+      var sx1 = plotX + node.xmin * plotW;
+      var sx2 = plotX + node.xmax * plotW;
+      ctx.beginPath(); ctx.moveTo(sx1, sy); ctx.lineTo(sx2, sy); ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    drawSplits(node.left);
+    drawSplits(node.right);
+  }
+  drawSplits(tree);
+
+  // Draw tree structure on right side
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Tree Structure', treeX + treeW/2, 18);
+  drawTreeStructure(ctx, tree, treeX + treeW/2, 45, treeW/2.5, 0, maxDepth);
+
+  // Stats
+  ctx.fillStyle = '#888';
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('Leaves: ' + leaves.length + '  |  Depth: ' + maxDepth + '  |  Points: ' + dtData.length, plotX, plotY + plotH + 45);
+};
+
+// ======= 2. RESIDUAL FITTING =======
+var residSetup = null;
+var residTrees = [];
+var residTargetData = [];
+var residRng = new SeededRandom(77);
+
+function generateResidTarget() {
+  residTargetData = [];
+  for (var i = 0; i < 60; i++) {
+    var x = i / 59;
+    var y = Math.sin(x * Math.PI * 2.5) * 0.4 + 0.1 * residRng.gauss() + 0.5;
+    residTargetData.push({ x: x, y: y });
+  }
+}
+generateResidTarget();
+
+function fitStumpToResiduals(residuals) {
+  // Simple decision stump: find best split among the x values
+  var bestMSE = Infinity, bestSplit = 0.5, bestLeftVal = 0, bestRightVal = 0;
+  for (var s = 5; s < residuals.length - 5; s++) {
+    var splitX = (residuals[s].x + residuals[s-1].x) / 2;
+    var leftSum = 0, leftN = 0, rightSum = 0, rightN = 0;
+    for (var j = 0; j < residuals.length; j++) {
+      if (residuals[j].x <= splitX) { leftSum += residuals[j].r; leftN++; }
+      else { rightSum += residuals[j].r; rightN++; }
+    }
+    var leftMean = leftN > 0 ? leftSum/leftN : 0;
+    var rightMean = rightN > 0 ? rightSum/rightN : 0;
+    var mse = 0;
+    for (var j = 0; j < residuals.length; j++) {
+      var pred = residuals[j].x <= splitX ? leftMean : rightMean;
+      mse += Math.pow(residuals[j].r - pred, 2);
+    }
+    if (mse < bestMSE) { bestMSE = mse; bestSplit = splitX; bestLeftVal = leftMean; bestRightVal = rightMean; }
+  }
+  // Try a 2-level stump for better fit
+  return { split: bestSplit, leftVal: bestLeftVal, rightVal: bestRightVal };
+}
+
+function predictStump(stump, x) {
+  return x <= stump.split ? stump.leftVal : stump.rightVal;
+}
+
+function fitMultiStump(residuals, nSplits) {
+  // Piecewise constant with multiple splits for better approximation
+  var splits = [];
+  var step = Math.floor(residuals.length / (nSplits + 1));
+  for (var s = 0; s < nSplits; s++) {
+    splits.push(residuals[Math.min((s+1)*step, residuals.length-1)].x);
+  }
+  var vals = [];
+  for (var s = 0; s <= nSplits; s++) {
+    var lo = s === 0 ? -1 : splits[s-1];
+    var hi = s === nSplits ? 2 : splits[s];
+    var sum = 0, cnt = 0;
+    for (var j = 0; j < residuals.length; j++) {
+      if (residuals[j].x > lo && residuals[j].x <= hi) { sum += residuals[j].r; cnt++; }
+    }
+    vals.push(cnt > 0 ? sum/cnt : 0);
+  }
+  return { splits: splits, vals: vals };
+}
+
+function predictMultiStump(stump, x) {
+  for (var s = 0; s < stump.splits.length; s++) {
+    if (x <= stump.splits[s]) return stump.vals[s];
+  }
+  return stump.vals[stump.vals.length - 1];
+}
+
+window.resetResidual = function() {
+  residTrees = [];
+  document.getElementById('residRound').value = 1;
+  drawResidual();
+};
+
+window.addTree = function() {
+  var round = parseInt(document.getElementById('residRound').value);
+  if (round < 20) {
+    document.getElementById('residRound').value = round + 1;
+  }
+  drawResidual();
+};
+
+window.drawResidual = function() {
+  if (!residSetup) residSetup = setupCanvas('residCanvas');
+  var ctx = residSetup.ctx, w = residSetup.w, h = residSetup.h;
+  var nRounds = parseInt(document.getElementById('residRound').value);
+  var lr = parseInt(document.getElementById('residLR').value) / 100;
+  document.getElementById('residRoundVal').textContent = nRounds;
+  document.getElementById('residLRVal').textContent = lr.toFixed(2);
+
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, w, h);
+
+  var plotX = 60, plotY = 30, plotW = w * 0.6 - 80, plotH = h - 80;
+  var lossX = w * 0.63, lossW = w * 0.34, lossH = h - 80;
+
+  // Build ensemble up to nRounds
+  var predictions = [];
+  for (var i = 0; i < residTargetData.length; i++) predictions.push(0.5); // initial prediction = mean
+
+  var trainLosses = [];
+  var valLosses = [];
+  var treeFits = [];
+
+  for (var round = 0; round < nRounds; round++) {
+    var residuals = [];
+    for (var i = 0; i < residTargetData.length; i++) {
+      residuals.push({ x: residTargetData[i].x, r: residTargetData[i].y - predictions[i] });
+    }
+    var stump = fitMultiStump(residuals, 4 + Math.min(round, 3));
+    treeFits.push(stump);
+
+    for (var i = 0; i < predictions.length; i++) {
+      predictions[i] += lr * predictMultiStump(stump, residTargetData[i].x);
+    }
+
+    var mse = 0;
+    for (var i = 0; i < residTargetData.length; i++) {
+      mse += Math.pow(residTargetData[i].y - predictions[i], 2);
+    }
+    trainLosses.push(mse / residTargetData.length);
+    valLosses.push(mse / residTargetData.length + 0.002 * round * lr + 0.005 * Math.pow(lr, 2) * round);
+  }
+
+  // Draw main plot axes
+  ctx.strokeStyle = '#444';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(plotX, plotY, plotW, plotH);
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('x', plotX + plotW/2, plotY + plotH + 20);
+  ctx.fillText('Function Fitting (Round ' + nRounds + ')', plotX + plotW/2, 18);
+
+  // Y axis labels
+  ctx.textAlign = 'right';
+  for (var v = 0; v <= 4; v++) {
+    var yv = v / 4;
+    var yp = plotY + plotH - yv * plotH;
+    ctx.fillStyle = '#555';
+    ctx.fillText(yv.toFixed(1), plotX - 5, yp + 4);
+    if (v > 0 && v < 4) {
+      ctx.beginPath(); ctx.moveTo(plotX, yp); ctx.lineTo(plotX + plotW, yp);
+      ctx.strokeStyle = '#1a1a2a'; ctx.stroke();
+    }
+  }
+
+  // Target function
+  ctx.beginPath();
+  for (var i = 0; i < residTargetData.length; i++) {
+    var px = plotX + residTargetData[i].x * plotW;
+    var py = plotY + plotH - residTargetData[i].y * plotH;
+    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+  ctx.strokeStyle = '#ffd93d';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Ensemble prediction
+  ctx.beginPath();
+  for (var i = 0; i < residTargetData.length; i++) {
+    var px = plotX + residTargetData[i].x * plotW;
+    var py = plotY + plotH - predictions[i] * plotH;
+    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+  ctx.strokeStyle = '#10ac84';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  // Current residuals
+  var finalResiduals = [];
+  for (var i = 0; i < residTargetData.length; i++) {
+    finalResiduals.push(residTargetData[i].y - predictions[i]);
+  }
+  for (var i = 0; i < residTargetData.length; i += 2) {
+    var px = plotX + residTargetData[i].x * plotW;
+    var py1 = plotY + plotH - predictions[i] * plotH;
+    var py2 = plotY + plotH - residTargetData[i].y * plotH;
+    ctx.beginPath();
+    ctx.moveTo(px, py1);
+    ctx.lineTo(px, py2);
+    ctx.strokeStyle = 'rgba(255,107,107,0.5)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // Loss plot
+  ctx.strokeStyle = '#444';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(lossX, plotY, lossW, lossH);
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Loss over Rounds', lossX + lossW/2, 18);
+  ctx.fillText('Round', lossX + lossW/2, plotY + lossH + 20);
+
+  if (trainLosses.length > 0) {
+    var maxLoss = Math.max(trainLosses[0], valLosses[0], 0.1);
+    // Train loss
+    ctx.beginPath();
+    for (var i = 0; i < trainLosses.length; i++) {
+      var px = lossX + (i / 19) * lossW;
+      var py = plotY + lossH - (1 - trainLosses[i] / maxLoss) * lossH;
+      py = Math.max(plotY, Math.min(plotY + lossH, py));
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.strokeStyle = '#10ac84';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Val loss
+    ctx.beginPath();
+    for (var i = 0; i < valLosses.length; i++) {
+      var px = lossX + (i / 19) * lossW;
+      var py = plotY + lossH - (1 - valLosses[i] / maxLoss) * lossH;
+      py = Math.max(plotY, Math.min(plotY + lossH, py));
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.strokeStyle = '#ff6b6b';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 3]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Current values
+    ctx.fillStyle = '#10ac84';
+    ctx.font = '11px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('Train: ' + trainLosses[trainLosses.length-1].toFixed(4), lossX + 10, plotY + lossH - 10);
+    ctx.fillStyle = '#ff6b6b';
+    ctx.fillText('Val: ' + valLosses[valLosses.length-1].toFixed(4), lossX + 10, plotY + lossH - 25);
+  }
+};
+
+// ======= 3. LEARNING RATE vs NUMBER OF TREES =======
+var lrSetup = null;
+window.drawLRTrees = function() {
+  if (!lrSetup) lrSetup = setupCanvas('lrTreesCanvas');
+  var ctx = lrSetup.ctx, w = lrSetup.w, h = lrSetup.h;
+  var lr = parseInt(document.getElementById('lrParam').value) / 100;
+  var nTrees = parseInt(document.getElementById('nTreesParam').value);
+  document.getElementById('lrParamVal').textContent = lr.toFixed(2);
+  document.getElementById('nTreesParamVal').textContent = nTrees;
+
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, w, h);
+
+  var plotX = 70, plotY = 40, plotW = w - 120, plotH = h - 100;
+
+  // Simulate loss curves
+  var trainLoss = [], valLoss = [];
+  var optimalRound = 0, optimalVal = Infinity;
+  for (var t = 0; t < nTrees; t++) {
+    var decay = Math.exp(-lr * (t + 1) * 0.01);
+    var tl = 0.5 * decay + 0.001;
+    var overfit = 0.0003 * lr * lr * Math.max(0, t - 50 / lr);
+    var vl = 0.5 * decay + 0.02 + overfit + 0.005 * Math.sin(t * 0.1) * 0.01;
+    trainLoss.push(tl);
+    valLoss.push(vl);
+    if (vl < optimalVal) { optimalVal = vl; optimalRound = t; }
+  }
+
+  // Axes
+  ctx.strokeStyle = '#444';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(plotX, plotY, plotW, plotH);
+
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Number of Trees', plotX + plotW/2, plotY + plotH + 35);
+  ctx.fillText('Train & Validation Loss  (LR=' + lr.toFixed(2) + ', Trees=' + nTrees + ')', plotX + plotW/2, 25);
+
+  ctx.save();
+  ctx.translate(15, plotY + plotH/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText('Loss', 0, 0);
+  ctx.restore();
+
+  var maxLoss = 0.55;
+  // Y axis ticks
+  ctx.textAlign = 'right';
+  ctx.font = '10px monospace';
+  for (var v = 0; v <= 5; v++) {
+    var lv = v / 5 * maxLoss;
+    var yp = plotY + plotH - (lv / maxLoss) * plotH;
+    ctx.fillStyle = '#555';
+    ctx.fillText(lv.toFixed(2), plotX - 5, yp + 4);
+    ctx.beginPath(); ctx.moveTo(plotX, yp); ctx.lineTo(plotX + plotW, yp);
+    ctx.strokeStyle = '#1a1a2a'; ctx.lineWidth = 0.5; ctx.stroke();
+  }
+
+  // X axis ticks
+  ctx.textAlign = 'center';
+  for (var v = 0; v <= 5; v++) {
+    var tv = Math.round(v / 5 * nTrees);
+    var xp = plotX + (v / 5) * plotW;
+    ctx.fillStyle = '#555';
+    ctx.fillText(tv, xp, plotY + plotH + 15);
+  }
+
+  // Train loss curve
+  ctx.beginPath();
+  for (var t = 0; t < nTrees; t++) {
+    var px = plotX + (t / (nTrees - 1)) * plotW;
+    var py = plotY + plotH - (trainLoss[t] / maxLoss) * plotH;
+    py = Math.max(plotY, Math.min(plotY + plotH, py));
+    if (t === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+  ctx.strokeStyle = '#10ac84';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  // Val loss curve
+  ctx.beginPath();
+  for (var t = 0; t < nTrees; t++) {
+    var px = plotX + (t / (nTrees - 1)) * plotW;
+    var py = plotY + plotH - (valLoss[t] / maxLoss) * plotH;
+    py = Math.max(plotY, Math.min(plotY + plotH, py));
+    if (t === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+  ctx.strokeStyle = '#ff6b6b';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  // Optimal point
+  var optX = plotX + (optimalRound / (nTrees - 1)) * plotW;
+  var optY = plotY + plotH - (optimalVal / maxLoss) * plotH;
+  optY = Math.max(plotY, Math.min(plotY + plotH, optY));
+  ctx.beginPath();
+  ctx.arc(optX, optY, 6, 0, Math.PI*2);
+  ctx.fillStyle = '#ffd93d';
+  ctx.fill();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Vertical line at optimal
+  ctx.beginPath();
+  ctx.moveTo(optX, plotY);
+  ctx.lineTo(optX, plotY + plotH);
+  ctx.strokeStyle = 'rgba(255,217,61,0.3)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Labels
+  ctx.fillStyle = '#ffd93d';
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('Optimal: tree ' + (optimalRound + 1) + ', val_loss=' + optimalVal.toFixed(4), optX + 10, optY - 10);
+
+  // Current final values
+  ctx.fillStyle = '#10ac84';
+  ctx.fillText('Final train_loss: ' + trainLoss[nTrees-1].toFixed(4), plotX + 10, plotY + 20);
+  ctx.fillStyle = '#ff6b6b';
+  ctx.fillText('Final val_loss: ' + valLoss[nTrees-1].toFixed(4), plotX + 10, plotY + 35);
+};
+
+// ======= 4. REGULARIZATION TECHNIQUES =======
+var regSetup = null;
+var regTab = 'depth';
+
+window.setRegTab = function(tab) {
+  regTab = tab;
+  document.getElementById('regTabDepth').className = 'btn' + (tab === 'depth' ? ' active' : '');
+  document.getElementById('regTabMinSamples').className = 'btn' + (tab === 'minsamples' ? ' active' : '');
+  document.getElementById('regTabSubsample').className = 'btn' + (tab === 'subsample' ? ' active' : '');
+  document.getElementById('regTabColsample').className = 'btn' + (tab === 'colsample' ? ' active' : '');
+
+  var slider = document.getElementById('regSlider');
+  var label = document.getElementById('regSliderLabel');
+  if (tab === 'depth') { slider.min = 1; slider.max = 20; slider.value = 3; label.textContent = 'Max Depth'; }
+  else if (tab === 'minsamples') { slider.min = 1; slider.max = 50; slider.value = 5; label.textContent = 'Min Samples Leaf'; }
+  else if (tab === 'subsample') { slider.min = 10; slider.max = 100; slider.value = 80; label.textContent = 'Subsample Rate (%)'; }
+  else { slider.min = 10; slider.max = 100; slider.value = 80; label.textContent = 'Column Subsample (%)'; }
+  drawRegularization();
+};
+
+window.drawRegularization = function() {
+  if (!regSetup) regSetup = setupCanvas('gbdtRegCanvas');
+  var ctx = regSetup.ctx, w = regSetup.w, h = regSetup.h;
+  var val = parseInt(document.getElementById('regSlider').value);
+  document.getElementById('regSliderVal').textContent = val + (regTab === 'subsample' || regTab === 'colsample' ? '%' : '');
+
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, w, h);
+
+  var plotX = 70, plotY = 40, plotW = w - 120, plotH = h - 100;
+  var nRounds = 200;
+
+  // Simulate train/val curves based on regularization
+  var trainLoss = [], valLoss = [];
+  var complexity;
+  if (regTab === 'depth') complexity = val / 20;
+  else if (regTab === 'minsamples') complexity = 1 - val / 50;
+  else if (regTab === 'subsample') complexity = val / 100;
+  else complexity = val / 100;
+
+  var optRound = 0, optVal = Infinity;
+  for (var t = 0; t < nRounds; t++) {
+    var base = 0.5 * Math.exp(-0.02 * t * (0.5 + complexity * 0.5));
+    var tl = base + 0.005;
+    var overfit = 0.0005 * complexity * complexity * Math.max(0, t - 30 / (complexity + 0.1));
+    var vl = base + 0.03 + overfit;
+    trainLoss.push(tl);
+    valLoss.push(vl);
+    if (vl < optVal) { optVal = vl; optRound = t; }
+  }
+
+  // Axes
+  ctx.strokeStyle = '#444';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(plotX, plotY, plotW, plotH);
+
+  var titleMap = { depth: 'Max Depth = ' + val, minsamples: 'Min Samples Leaf = ' + val, subsample: 'Subsample Rate = ' + val + '%', colsample: 'Column Subsample = ' + val + '%' };
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Regularization Effect: ' + titleMap[regTab], plotX + plotW/2, 25);
+  ctx.fillText('Boosting Round', plotX + plotW/2, plotY + plotH + 35);
+
+  var maxLoss = 0.55;
+  // Y ticks
+  ctx.textAlign = 'right';
+  ctx.font = '10px monospace';
+  for (var v = 0; v <= 5; v++) {
+    var lv = v / 5 * maxLoss;
+    var yp = plotY + plotH - (lv / maxLoss) * plotH;
+    ctx.fillStyle = '#555';
+    ctx.fillText(lv.toFixed(2), plotX - 5, yp + 4);
+  }
+
+  // Train curve
+  ctx.beginPath();
+  for (var t = 0; t < nRounds; t++) {
+    var px = plotX + (t / (nRounds - 1)) * plotW;
+    var py = plotY + plotH - (trainLoss[t] / maxLoss) * plotH;
+    py = Math.max(plotY, Math.min(plotY + plotH, py));
+    if (t === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+  ctx.strokeStyle = '#10ac84';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  // Val curve
+  ctx.beginPath();
+  for (var t = 0; t < nRounds; t++) {
+    var px = plotX + (t / (nRounds - 1)) * plotW;
+    var py = plotY + plotH - (valLoss[t] / maxLoss) * plotH;
+    py = Math.max(plotY, Math.min(plotY + plotH, py));
+    if (t === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+  ctx.strokeStyle = '#ff6b6b';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  // Optimal marker
+  var ox = plotX + (optRound / (nRounds - 1)) * plotW;
+  var oy = plotY + plotH - (optVal / maxLoss) * plotH;
+  oy = Math.max(plotY, Math.min(plotY + plotH, oy));
+  ctx.beginPath(); ctx.arc(ox, oy, 6, 0, Math.PI * 2);
+  ctx.fillStyle = '#ffd93d'; ctx.fill();
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+
+  ctx.fillStyle = '#ffd93d';
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('Best val_loss=' + optVal.toFixed(4) + ' at round ' + (optRound+1), ox + 10, oy - 8);
+
+  // Generalization gap annotation
+  var gap = valLoss[nRounds-1] - trainLoss[nRounds-1];
+  ctx.fillStyle = '#ff6b6b';
+  ctx.fillText('Generalization gap: ' + gap.toFixed(4), plotX + 10, plotY + 20);
+};
+
+// ======= 5. FEATURE IMPORTANCE =======
+var featSetup = null;
+var featTab = 'gain';
+var featActive = [true, true, true, true, true, true];
+var featNames = ['Income', 'Age', 'CreditScore', 'Tenure', 'Balance', 'RandomNoise'];
+var featGainImportance = [0.35, 0.22, 0.18, 0.12, 0.08, 0.05];
+var featPermImportance = [0.32, 0.25, 0.20, 0.10, 0.11, 0.02];
+
+window.setFeatTab = function(tab) {
+  featTab = tab;
+  document.getElementById('featTabGain').className = 'btn' + (tab === 'gain' ? ' active' : '');
+  document.getElementById('featTabPerm').className = 'btn' + (tab === 'permutation' ? ' active' : '');
+  drawFeatImp();
+};
+
+window.toggleFeature = function(idx) {
+  featActive[idx] = !featActive[idx];
+  var btn = document.getElementById('featToggle' + idx);
+  btn.style.background = featActive[idx] ? '#10ac8433' : 'transparent';
+  drawFeatImp();
+};
+
+window.drawFeatImp = function() {
+  if (!featSetup) featSetup = setupCanvas('featImpCanvas');
+  var ctx = featSetup.ctx, w = featSetup.w, h = featSetup.h;
+
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, w, h);
+
+  var importances = featTab === 'gain' ? featGainImportance : featPermImportance;
+  var plotX = 150, plotY = 40, plotW = w * 0.45, plotH = h - 100;
+  var barH = plotH / 6 - 8;
+
+  ctx.fillStyle = '#888';
+  ctx.font = '13px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(featTab === 'gain' ? 'Split Gain Importance' : 'Permutation Importance', plotX + plotW/2, 25);
+
+  // Draw bars
+  var maxImp = 0.4;
+  for (var i = 0; i < 6; i++) {
+    var by = plotY + i * (barH + 8);
+    var bw = (importances[i] / maxImp) * plotW;
+    var alpha = featActive[i] ? 1.0 : 0.25;
+
+    ctx.fillStyle = 'rgba(16,172,132,' + (alpha * 0.7) + ')';
+    ctx.fillRect(plotX, by, bw, barH);
+
+    ctx.strokeStyle = 'rgba(16,172,132,' + alpha + ')';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(plotX, by, bw, barH);
+
+    ctx.fillStyle = featActive[i] ? '#ddd' : '#555';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(featNames[i], plotX - 10, by + barH / 2 + 5);
+
+    ctx.fillStyle = featActive[i] ? '#10ac84' : '#555';
+    ctx.font = '11px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(importances[i].toFixed(3), plotX + bw + 8, by + barH / 2 + 5);
+  }
+
+  // Model performance panel on right
+  var perfX = w * 0.65, perfW = w * 0.3, perfY = plotY;
+  ctx.fillStyle = '#888';
+  ctx.font = '13px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Model Performance', perfX + perfW/2, 25);
+
+  // Calculate performance based on active features
+  var activeCount = 0;
+  var activeImpSum = 0;
+  for (var i = 0; i < 6; i++) {
+    if (featActive[i]) { activeCount++; activeImpSum += featGainImportance[i]; }
+  }
+  var baseAcc = 0.92;
+  var acc = baseAcc * (activeImpSum / 1.0);
+  var baseMSE = 0.08;
+  var mse = baseMSE + (1 - activeImpSum) * 0.3;
+
+  ctx.fillStyle = '#1a1a3e';
+  ctx.fillRect(perfX, perfY + 10, perfW, 60);
+  ctx.strokeStyle = '#2a2a4a';
+  ctx.strokeRect(perfX, perfY + 10, perfW, 60);
+
+  ctx.fillStyle = '#10ac84';
+  ctx.font = '13px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('Accuracy: ' + (acc * 100).toFixed(1) + '%', perfX + 15, perfY + 35);
+  ctx.fillStyle = '#ff6b6b';
+  ctx.fillText('MSE: ' + mse.toFixed(4), perfX + 15, perfY + 55);
+
+  ctx.fillStyle = '#888';
+  ctx.font = '11px Inter, sans-serif';
+  ctx.fillText('Active features: ' + activeCount + '/6', perfX + 15, perfY + 95);
+
+  // Performance bar chart - contribution by feature
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Feature Contribution', perfX + perfW/2, perfY + 130);
+
+  for (var i = 0; i < 6; i++) {
+    var bx = perfX + (i / 6) * perfW;
+    var bw2 = perfW / 6 - 4;
+    var contrib = featActive[i] ? importances[i] : 0;
+    var bh2 = (contrib / maxImp) * 150;
+    var by2 = perfY + 280 - bh2;
+    ctx.fillStyle = featActive[i] ? 'rgba(16,172,132,0.6)' : 'rgba(80,80,80,0.3)';
+    ctx.fillRect(bx + 2, by2, bw2, bh2);
+    ctx.fillStyle = '#888';
+    ctx.font = '9px monospace';
+    ctx.fillText('F' + (i+1), bx + 2 + bw2/2, perfY + 295);
+  }
+};
+
+// ======= 6. FRAMEWORK COMPARISON =======
+var fwSetup = null;
+var fwMode = 'xgboost';
+var fwAnimating = false;
+
+window.setFramework = function(fw) {
+  fwMode = fw;
+  document.getElementById('fwTabXgb').className = 'btn' + (fw === 'xgboost' ? ' active' : '');
+  document.getElementById('fwTabLgb').className = 'btn' + (fw === 'lightgbm' ? ' active' : '');
+  document.getElementById('fwTabCat').className = 'btn' + (fw === 'catboost' ? ' active' : '');
+  drawFramework();
+};
+
+window.animateFramework = function() {
+  if (fwAnimating) return;
+  fwAnimating = true;
+  document.getElementById('fwStep').value = 1;
+  var step = 1;
+  var interval = setInterval(function() {
+    step++;
+    if (step > 15) { clearInterval(interval); fwAnimating = false; return; }
+    document.getElementById('fwStep').value = step;
+    drawFramework();
+  }, 400);
+};
+
+window.drawFramework = function() {
+  if (!fwSetup) fwSetup = setupCanvas('frameworkCanvas');
+  var ctx = fwSetup.ctx, w = fwSetup.w, h = fwSetup.h;
+  var step = parseInt(document.getElementById('fwStep').value);
+  document.getElementById('fwStepVal').textContent = step;
+
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, w, h);
+
+  var titleMap = { xgboost: 'XGBoost: Level-wise Growth', lightgbm: 'LightGBM: Leaf-wise Growth', catboost: 'CatBoost: Ordered / Symmetric Trees' };
+  ctx.fillStyle = '#888';
+  ctx.font = '14px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(titleMap[fwMode] + ' (Step ' + step + ')', w/2, 25);
+
+  // Draw tree based on growth strategy
+  var treeX = w/2, treeY = 60;
+
+  if (fwMode === 'xgboost') {
+    drawLevelWise(ctx, treeX, treeY, step, w, h);
+  } else if (fwMode === 'lightgbm') {
+    drawLeafWise(ctx, treeX, treeY, step, w, h);
+  } else {
+    drawOrderedBoosting(ctx, treeX, treeY, step, w, h);
+  }
+};
+
+function drawNode(ctx, x, y, r, fillColor, strokeColor, label) {
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fillStyle = fillColor;
+  ctx.fill();
+  ctx.strokeStyle = strokeColor;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  if (label) {
+    ctx.fillStyle = '#fff';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(label, x, y + 4);
+  }
+}
+
+function drawEdge(ctx, x1, y1, x2, y2) {
+  ctx.beginPath();
+  ctx.moveTo(x1, y1 + 16);
+  ctx.lineTo(x2, y2 - 16);
+  ctx.strokeStyle = '#555';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+}
+
+function drawLevelWise(ctx, cx, startY, step, w, h) {
+  // Level-wise: expand all nodes at current level before going deeper
+  var levels = [];
+  var maxLevel = Math.min(Math.floor(Math.log2(step + 1)), 4);
+  var nodesShown = Math.min(step, 31);
+
+  var nodeId = 0;
+  var queue = [{ x: cx, y: startY, id: 0 }];
+  var allNodes = [];
+
+  for (var level = 0; level <= maxLevel && allNodes.length < nodesShown; level++) {
+    var nextQueue = [];
+    var spacing = w / (Math.pow(2, level) + 1);
+    for (var i = 0; i < queue.length && allNodes.length < nodesShown; i++) {
+      var node = queue[i];
+      allNodes.push(node);
+      var childY = node.y + 70;
+      var dx = w / Math.pow(2, level + 2);
+      nextQueue.push({ x: node.x - dx, y: childY, parentX: node.x, parentY: node.y, id: allNodes.length });
+      nextQueue.push({ x: node.x + dx, y: childY, parentX: node.x, parentY: node.y, id: allNodes.length + 1 });
+    }
+    queue = nextQueue;
+  }
+
+  // Draw edges
+  for (var i = 0; i < allNodes.length; i++) {
+    if (allNodes[i].parentX !== undefined) {
+      drawEdge(ctx, allNodes[i].parentX, allNodes[i].parentY, allNodes[i].x, allNodes[i].y);
+    }
+  }
+
+  // Draw nodes
+  for (var i = 0; i < allNodes.length; i++) {
+    var isLatest = i === allNodes.length - 1;
+    var isLeaf = true;
+    for (var j = 0; j < allNodes.length; j++) {
+      if (allNodes[j].parentX === allNodes[i].x && allNodes[j].parentY === allNodes[i].y) { isLeaf = false; break; }
+    }
+    var fill = isLatest ? '#10ac84' : (isLeaf ? '#2a2a4a' : '#1a1a3e');
+    var stroke = isLatest ? '#1dd1a1' : (isLeaf ? '#ffd93d' : '#4ecdc4');
+    drawNode(ctx, allNodes[i].x, allNodes[i].y, 16, fill, stroke, 'n' + i);
+  }
+
+  // Description
+  ctx.fillStyle = '#888';
+  ctx.font = '11px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Level-wise: all nodes at depth d are split before moving to depth d+1', cx, h - 20);
+  ctx.fillText('Balanced trees, consistent depth. Default in XGBoost.', cx, h - 5);
+}
+
+function drawLeafWise(ctx, cx, startY, step, w, h) {
+  // Leaf-wise: always split the leaf with highest gain
+  // Simulate an unbalanced tree that grows deeper on one side
+  var nodes = [{ x: cx, y: startY, gain: 0.8, depth: 0 }];
+  var edges = [];
+
+  for (var s = 0; s < step && nodes.length < 30; s++) {
+    // Find leaf with highest gain
+    var bestIdx = -1, bestGain = -1;
+    for (var i = 0; i < nodes.length; i++) {
+      if (!nodes[i].split && nodes[i].gain > bestGain) {
+        bestGain = nodes[i].gain;
+        bestIdx = i;
+      }
+    }
+    if (bestIdx < 0) break;
+    var parent = nodes[bestIdx];
+    parent.split = true;
+    var dx = 120 / Math.pow(1.6, parent.depth);
+    var leftGain = bestGain * (0.5 + Math.random() * 0.3);
+    var rightGain = bestGain * (0.2 + Math.random() * 0.2);
+    nodes.push({ x: parent.x - dx, y: parent.y + 65, gain: leftGain, depth: parent.depth + 1, parentIdx: bestIdx });
+    nodes.push({ x: parent.x + dx, y: parent.y + 65, gain: rightGain, depth: parent.depth + 1, parentIdx: bestIdx });
+    edges.push([bestIdx, nodes.length - 2]);
+    edges.push([bestIdx, nodes.length - 1]);
+  }
+
+  // Draw edges
+  for (var i = 0; i < edges.length; i++) {
+    drawEdge(ctx, nodes[edges[i][0]].x, nodes[edges[i][0]].y, nodes[edges[i][1]].x, nodes[edges[i][1]].y);
+  }
+
+  // Draw nodes
+  for (var i = 0; i < nodes.length; i++) {
+    var isLeaf = !nodes[i].split;
+    var isLatest = (i === nodes.length - 1 || i === nodes.length - 2) && step > 0;
+    var fill = isLatest ? '#10ac84' : (isLeaf ? '#2a2a4a' : '#1a1a3e');
+    var stroke = isLatest ? '#1dd1a1' : (isLeaf ? '#ffd93d' : '#4ecdc4');
+    drawNode(ctx, nodes[i].x, nodes[i].y, 16, fill, stroke, nodes[i].gain.toFixed(1));
+  }
+
+  ctx.fillStyle = '#888';
+  ctx.font = '11px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Leaf-wise: always split the leaf with highest gain. Creates unbalanced, deeper trees.', cx, h - 20);
+  ctx.fillText('Can overfit on small data. Use max_depth to limit. Default in LightGBM.', cx, h - 5);
+}
+
+function drawOrderedBoosting(ctx, cx, startY, step, w, h) {
+  // Symmetric tree (all leaves at same depth) + ordered boosting concept
+  var depth = Math.min(step, 4);
+
+  // Draw symmetric tree
+  var allNodes = [];
+  function addSymNode(x, y, d, maxD) {
+    allNodes.push({ x: x, y: y, depth: d, isLeaf: d >= maxD });
+    if (d < maxD) {
+      var dx = w / Math.pow(2, d + 2);
+      addSymNode(x - dx, y + 65, d + 1, maxD);
+      addSymNode(x + dx, y + 65, d + 1, maxD);
+    }
+  }
+  addSymNode(cx, startY, 0, depth);
+
+  // Draw edges
+  for (var i = 0; i < allNodes.length; i++) {
+    if (!allNodes[i].isLeaf) {
+      for (var j = i + 1; j < allNodes.length; j++) {
+        if (allNodes[j].depth === allNodes[i].depth + 1) {
+          var dx = Math.abs(allNodes[j].x - allNodes[i].x);
+          var expectedDx = w / Math.pow(2, allNodes[i].depth + 2);
+          if (Math.abs(dx - expectedDx) < 5) {
+            drawEdge(ctx, allNodes[i].x, allNodes[i].y, allNodes[j].x, allNodes[j].y);
+          }
+        }
+      }
+    }
+  }
+
+  // Draw nodes
+  for (var i = 0; i < allNodes.length; i++) {
+    var fill = allNodes[i].isLeaf ? '#2a2a4a' : '#1a1a3e';
+    var stroke = allNodes[i].isLeaf ? '#ffd93d' : '#4ecdc4';
+    drawNode(ctx, allNodes[i].x, allNodes[i].y, 16, fill, stroke, 'd' + allNodes[i].depth);
+  }
+
+  // Draw ordered boosting illustration below
+  var obsY = h - 100;
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Ordered Boosting: Each sample uses only preceding samples for predictions', cx, obsY);
+
+  var nSamples = Math.min(step + 4, 12);
+  var sampleW = Math.min(50, (w - 100) / nSamples);
+  var startSX = cx - (nSamples * sampleW) / 2;
+
+  for (var i = 0; i < nSamples; i++) {
+    var sx = startSX + i * sampleW + sampleW / 2;
+    var sy = obsY + 30;
+    var usedFor = i < step;
+    ctx.fillStyle = usedFor ? 'rgba(16,172,132,0.4)' : 'rgba(42,42,74,0.4)';
+    ctx.fillRect(sx - sampleW/2 + 2, sy, sampleW - 4, 25);
+    ctx.strokeStyle = usedFor ? '#10ac84' : '#2a2a4a';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(sx - sampleW/2 + 2, sy, sampleW - 4, 25);
+    ctx.fillStyle = '#aaa';
+    ctx.font = '9px monospace';
+    ctx.fillText('s' + (i+1), sx, sy + 16);
+  }
+
+  ctx.fillStyle = '#888';
+  ctx.font = '11px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Symmetric trees: same split at each level. Reduces prediction shift / target leakage.', cx, h - 5);
+}
+
+// ======= 7. HISTOGRAM-BASED SPLITTING =======
+var histSetup = null;
+var histRng = new SeededRandom(123);
+
+window.drawHistogram = function() {
+  if (!histSetup) histSetup = setupCanvas('histCanvas');
+  var ctx = histSetup.ctx, w = histSetup.w, h = histSetup.h;
+  var nBins = parseInt(document.getElementById('histBins').value);
+  var nData = parseInt(document.getElementById('histN').value);
+  document.getElementById('histBinsVal').textContent = nBins;
+  document.getElementById('histNVal').textContent = nData;
+
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, w, h);
+
+  // Generate data
+  histRng = new SeededRandom(123);
+  var data = [];
+  for (var i = 0; i < nData; i++) {
+    var x = histRng.next();
+    var y = (x > 0.5 ? 1 : 0) + 0.3 * histRng.gauss();
+    data.push({ x: x, y: y, cls: x > 0.45 + 0.1 * histRng.gauss() ? 1 : 0 });
+  }
+
+  var plotX = 60, plotY = 40, plotW = w - 120, plotH = (h - 120) / 2;
+  var histPlotY = plotY + plotH + 50;
+
+  // Top: scatter plot with exact and histogram splits
+  ctx.strokeStyle = '#444';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(plotX, plotY, plotW, plotH);
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Data Distribution with Split Lines', plotX + plotW/2, 25);
+
+  // Draw data points
+  for (var i = 0; i < data.length; i++) {
+    var px = plotX + data[i].x * plotW;
+    var py = plotY + plotH - ((data[i].y + 1) / 3) * plotH;
+    py = Math.max(plotY, Math.min(plotY + plotH, py));
+    ctx.beginPath();
+    ctx.arc(px, py, 2.5, 0, Math.PI*2);
+    ctx.fillStyle = data[i].cls === 1 ? 'rgba(78,205,196,0.6)' : 'rgba(255,107,107,0.6)';
+    ctx.fill();
+  }
+
+  // Find exact best split
+  var exactBest = findBestSplit(data);
+  // Find histogram best split
+  var histBest = findHistogramSplit(data, nBins);
+
+  // Draw exact split
+  var exactX = plotX + exactBest.thresh * plotW;
+  ctx.beginPath(); ctx.moveTo(exactX, plotY); ctx.lineTo(exactX, plotY + plotH);
+  ctx.strokeStyle = '#ffd93d'; ctx.lineWidth = 2; ctx.setLineDash([6, 3]); ctx.stroke(); ctx.setLineDash([]);
+
+  // Draw histogram split
+  var histSplitX = plotX + histBest.thresh * plotW;
+  ctx.beginPath(); ctx.moveTo(histSplitX, plotY); ctx.lineTo(histSplitX, plotY + plotH);
+  ctx.strokeStyle = '#ff6b6b'; ctx.lineWidth = 2; ctx.setLineDash([3, 3]); ctx.stroke(); ctx.setLineDash([]);
+
+  // Labels
+  ctx.fillStyle = '#ffd93d';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('Exact: ' + exactBest.thresh.toFixed(4) + ' (gain=' + exactBest.gain.toFixed(4) + ')', exactX + 5, plotY + 15);
+  ctx.fillStyle = '#ff6b6b';
+  ctx.fillText('Hist: ' + histBest.thresh.toFixed(4) + ' (gain=' + histBest.gain.toFixed(4) + ')', histSplitX + 5, plotY + 30);
+
+  // Bottom: histogram visualization
+  ctx.strokeStyle = '#444';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(plotX, histPlotY, plotW, plotH);
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Histogram Bins (' + nBins + ' bins, ' + nData + ' points)', plotX + plotW/2, histPlotY - 10);
+
+  // Build histogram
+  var bins = new Array(nBins).fill(0);
+  var binCls0 = new Array(nBins).fill(0);
+  var binCls1 = new Array(nBins).fill(0);
+  for (var i = 0; i < data.length; i++) {
+    var b = Math.min(Math.floor(data[i].x * nBins), nBins - 1);
+    bins[b]++;
+    if (data[i].cls === 0) binCls0[b]++; else binCls1[b]++;
+  }
+  var maxBin = Math.max.apply(null, bins) || 1;
+
+  var binW = plotW / nBins;
+  for (var i = 0; i < nBins; i++) {
+    var bx = plotX + i * binW;
+    var bh0 = (binCls0[i] / maxBin) * plotH * 0.9;
+    var bh1 = (binCls1[i] / maxBin) * plotH * 0.9;
+
+    ctx.fillStyle = 'rgba(255,107,107,0.4)';
+    ctx.fillRect(bx + 1, histPlotY + plotH - bh0 - bh1, binW - 2, bh0);
+    ctx.fillStyle = 'rgba(78,205,196,0.4)';
+    ctx.fillRect(bx + 1, histPlotY + plotH - bh1, binW - 2, bh1);
+
+    ctx.strokeStyle = 'rgba(16,172,132,0.5)';
+    ctx.lineWidth = 0.5;
+    ctx.strokeRect(bx + 1, histPlotY + plotH - bh0 - bh1, binW - 2, bh0 + bh1);
+  }
+
+  // Speed comparison
+  ctx.fillStyle = '#10ac84';
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'left';
+  var exactOps = nData * Math.ceil(Math.log2(nData));
+  var histOps = nBins;
+  ctx.fillText('Exact split candidates: ' + nData + ' | Histogram candidates: ' + nBins + ' | Speedup: ' + (exactOps / histOps).toFixed(0) + 'x', plotX, histPlotY + plotH + 20);
+};
+
+function findBestSplit(data) {
+  var sorted = data.slice().sort(function(a,b) { return a.x - b.x; });
+  var bestGain = -1, bestThresh = 0.5;
+  var n = data.length;
+  var totalCls1 = 0;
+  for (var i = 0; i < n; i++) totalCls1 += data[i].cls;
+  var totalCls0 = n - totalCls1;
+  var totalGini = 1 - Math.pow(totalCls0/n, 2) - Math.pow(totalCls1/n, 2);
+
+  var leftCls1 = 0, leftCls0 = 0;
+  for (var i = 0; i < n - 1; i++) {
+    if (sorted[i].cls === 0) leftCls0++; else leftCls1++;
+    var rightCls0 = totalCls0 - leftCls0;
+    var rightCls1 = totalCls1 - leftCls1;
+    var leftN = i + 1, rightN = n - i - 1;
+    var leftGini = 1 - Math.pow(leftCls0/leftN, 2) - Math.pow(leftCls1/leftN, 2);
+    var rightGini = 1 - Math.pow(rightCls0/rightN, 2) - Math.pow(rightCls1/rightN, 2);
+    var gain = totalGini - (leftN/n)*leftGini - (rightN/n)*rightGini;
+    if (gain > bestGain && sorted[i].x !== sorted[i+1].x) {
+      bestGain = gain;
+      bestThresh = (sorted[i].x + sorted[i+1].x) / 2;
+    }
+  }
+  return { thresh: bestThresh, gain: bestGain };
+}
+
+function findHistogramSplit(data, nBins) {
+  var binCls0 = new Array(nBins).fill(0);
+  var binCls1 = new Array(nBins).fill(0);
+  for (var i = 0; i < data.length; i++) {
+    var b = Math.min(Math.floor(data[i].x * nBins), nBins - 1);
+    if (data[i].cls === 0) binCls0[b]++; else binCls1[b]++;
+  }
+  var n = data.length;
+  var totalCls0 = 0, totalCls1 = 0;
+  for (var i = 0; i < nBins; i++) { totalCls0 += binCls0[i]; totalCls1 += binCls1[i]; }
+  var totalGini = 1 - Math.pow(totalCls0/n, 2) - Math.pow(totalCls1/n, 2);
+
+  var bestGain = -1, bestBin = Math.floor(nBins/2);
+  var leftCls0 = 0, leftCls1 = 0;
+  for (var b = 0; b < nBins - 1; b++) {
+    leftCls0 += binCls0[b];
+    leftCls1 += binCls1[b];
+    var leftN = leftCls0 + leftCls1;
+    var rightCls0 = totalCls0 - leftCls0;
+    var rightCls1 = totalCls1 - leftCls1;
+    var rightN = rightCls0 + rightCls1;
+    if (leftN === 0 || rightN === 0) continue;
+    var leftGini = 1 - Math.pow(leftCls0/leftN, 2) - Math.pow(leftCls1/leftN, 2);
+    var rightGini = 1 - Math.pow(rightCls0/rightN, 2) - Math.pow(rightCls1/rightN, 2);
+    var gain = totalGini - (leftN/n)*leftGini - (rightN/n)*rightGini;
+    if (gain > bestGain) { bestGain = gain; bestBin = b; }
+  }
+  return { thresh: (bestBin + 1) / nBins, gain: bestGain };
+}
+
+// ======= 8. GBDT vs RANDOM FOREST vs NEURAL NET =======
+var cmpSetup = null;
+var cmpRng = new SeededRandom(88);
+var cmpData = [];
+
+function generateCompareData() {
+  cmpData = [];
+  var complexity = parseInt(document.getElementById('cmpComplexity').value);
+  var noise = parseInt(document.getElementById('cmpNoise').value) / 100;
+  cmpRng = new SeededRandom(88);
+  for (var i = 0; i < 150; i++) {
+    var x = cmpRng.next() * 2 - 1;
+    var y = cmpRng.next() * 2 - 1;
+    var cls;
+    if (complexity <= 1) {
+      cls = (x + y > 0) ? 1 : 0;
+    } else if (complexity === 2) {
+      cls = (x * x + y * y < 0.6) ? 1 : 0;
+    } else if (complexity === 3) {
+      cls = (Math.sin(x * 3) > y) ? 1 : 0;
+    } else if (complexity === 4) {
+      cls = ((x * x - y * y) > 0) ? 1 : 0;
+    } else {
+      cls = (Math.sin(x * 4) * Math.cos(y * 4) > 0) ? 1 : 0;
+    }
+    if (cmpRng.next() < noise) cls = 1 - cls;
+    cmpData.push({ x: x, y: y, cls: cls });
+  }
+}
+
+window.regenerateCompareData = function() {
+  cmpRng = new SeededRandom(Date.now() % 100000);
+  generateCompareData();
+  drawComparison();
+};
+
+function simpleGBDTPredict(px, py, data, complexity) {
+  // Simulate GBDT: axis-aligned splits, good at tabular
+  var score = 0;
+  // Multiple simple stumps
+  for (var d = 0; d < 3 + complexity; d++) {
+    var bestFeat = 0, bestThresh = 0, bestScore = 0;
+    for (var f = 0; f < 2; f++) {
+      for (var t = -8; t <= 8; t++) {
+        var thresh = t / 8;
+        var leftSum = 0, leftN = 0, rightSum = 0, rightN = 0;
+        for (var i = 0; i < data.length; i++) {
+          var v = f === 0 ? data[i].x : data[i].y;
+          var target = data[i].cls * 2 - 1;
+          if (v <= thresh) { leftSum += target; leftN++; }
+          else { rightSum += target; rightN++; }
+        }
+        var s = Math.abs(leftN > 0 ? leftSum/leftN : 0) + Math.abs(rightN > 0 ? rightSum/rightN : 0);
+        if (s > bestScore) { bestScore = s; bestFeat = f; bestThresh = thresh; }
+      }
+    }
+    var v = bestFeat === 0 ? px : py;
+    var leftMean = 0, rightMean = 0, lc = 0, rc = 0;
+    for (var i = 0; i < data.length; i++) {
+      var fv = bestFeat === 0 ? data[i].x : data[i].y;
+      if (fv <= bestThresh) { leftMean += data[i].cls; lc++; }
+      else { rightMean += data[i].cls; rc++; }
+    }
+    score += 0.1 * (v <= bestThresh ? (lc > 0 ? leftMean/lc : 0.5) : (rc > 0 ? rightMean/rc : 0.5));
+  }
+  return score > 0.3 ? 1 : 0;
+}
+
+function simpleRFPredict(px, py, data) {
+  // RF: average of multiple random splits
+  var votes = 0;
+  var rfRng = new SeededRandom(Math.floor((px+2)*1000 + (py+2)*7));
+  for (var t = 0; t < 5; t++) {
+    var nearDist = Infinity, nearCls = 0;
+    for (var i = 0; i < data.length; i++) {
+      var d = Math.pow(px - data[i].x, 2) + Math.pow(py - data[i].y, 2);
+      if (d < nearDist) { nearDist = d; nearCls = data[i].cls; }
+    }
+    votes += nearCls;
+  }
+  return votes > 2 ? 1 : 0;
+}
+
+function simpleNNPredict(px, py, data, complexity) {
+  // NN: smooth decision boundary
+  var wx1 = 2.5 * complexity, wx2 = -1.8 * complexity, wy1 = 2.1 * complexity, wy2 = -2.3 * complexity;
+  var h1 = Math.tanh(wx1 * px + wy1 * py + 0.5);
+  var h2 = Math.tanh(wx2 * px + wy2 * py - 0.3);
+  var h3 = Math.tanh(1.5 * px * py * complexity);
+  var out = h1 * 0.4 + h2 * 0.3 + h3 * 0.3;
+  return out > 0 ? 1 : 0;
+}
+
+window.drawComparison = function() {
+  if (!cmpSetup) cmpSetup = setupCanvas('compareCanvas');
+  var ctx = cmpSetup.ctx, w = cmpSetup.w, h = cmpSetup.h;
+  var complexity = parseInt(document.getElementById('cmpComplexity').value);
+  var noise = parseInt(document.getElementById('cmpNoise').value) / 100;
+  document.getElementById('cmpComplexityVal').textContent = complexity;
+  document.getElementById('cmpNoiseVal').textContent = noise.toFixed(2);
+
+  if (cmpData.length === 0) generateCompareData();
+
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, w, h);
+
+  var panelW = (w - 40) / 3;
+  var panelH = h - 70;
+  var titles = ['GBDT', 'Random Forest', 'Neural Network'];
+  var colors = ['#10ac84', '#4ecdc4', '#7c4dff'];
+  var methods = ['gbdt', 'rf', 'nn'];
+
+  for (var p = 0; p < 3; p++) {
+    var px0 = 10 + p * (panelW + 10);
+    var py0 = 40;
+
+    // Title
+    ctx.fillStyle = colors[p];
+    ctx.font = '13px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(titles[p], px0 + panelW/2, 25);
+
+    // Draw decision boundary (coarse grid)
+    var res = 25;
+    var cellW = panelW / res;
+    var cellH = panelH / res;
+    var correct = 0, total = 0;
+
+    for (var gx = 0; gx < res; gx++) {
+      for (var gy = 0; gy < res; gy++) {
+        var fx = (gx / res) * 2 - 1;
+        var fy = (gy / res) * 2 - 1;
+        var pred;
+        if (p === 0) pred = simpleGBDTPredict(fx, fy, cmpData, complexity);
+        else if (p === 1) pred = simpleRFPredict(fx, fy, cmpData);
+        else pred = simpleNNPredict(fx, fy, cmpData, complexity);
+
+        ctx.fillStyle = pred === 1 ? 'rgba(78,205,196,0.1)' : 'rgba(255,107,107,0.1)';
+        ctx.fillRect(px0 + gx * cellW, py0 + gy * cellH, cellW, cellH);
+      }
+    }
+
+    // Calculate accuracy
+    for (var i = 0; i < cmpData.length; i++) {
+      var pred;
+      if (p === 0) pred = simpleGBDTPredict(cmpData[i].x, cmpData[i].y, cmpData, complexity);
+      else if (p === 1) pred = simpleRFPredict(cmpData[i].x, cmpData[i].y, cmpData);
+      else pred = simpleNNPredict(cmpData[i].x, cmpData[i].y, cmpData, complexity);
+      if (pred === cmpData[i].cls) correct++;
+      total++;
+    }
+
+    // Draw data points
+    for (var i = 0; i < cmpData.length; i++) {
+      var dpx = px0 + ((cmpData[i].x + 1) / 2) * panelW;
+      var dpy = py0 + ((cmpData[i].y + 1) / 2) * panelH;
+      ctx.beginPath();
+      ctx.arc(dpx, dpy, 3, 0, Math.PI*2);
+      ctx.fillStyle = cmpData[i].cls === 1 ? '#4ecdc4' : '#ff6b6b';
+      ctx.fill();
+    }
+
+    // Border
+    ctx.strokeStyle = '#2a2a4a';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(px0, py0, panelW, panelH);
+
+    // Accuracy
+    ctx.fillStyle = colors[p];
+    ctx.font = '11px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('Acc: ' + (correct/total*100).toFixed(1) + '%', px0 + panelW/2, h - 10);
+  }
+};
+
+// ======= 9. HANDLING CATEGORICALS & MISSING VALUES =======
+var cmSetup = null;
+var cmTab = 'categorical';
+
+window.setCatMissTab = function(tab) {
+  cmTab = tab;
+  document.getElementById('cmTabCat').className = 'btn' + (tab === 'categorical' ? ' active' : '');
+  document.getElementById('cmTabMiss').className = 'btn' + (tab === 'missing' ? ' active' : '');
+  drawCatMiss();
+};
+
+window.drawCatMiss = function() {
+  if (!cmSetup) cmSetup = setupCanvas('catMissCanvas');
+  var ctx = cmSetup.ctx, w = cmSetup.w, h = cmSetup.h;
+  var missRate = parseInt(document.getElementById('cmMissRate').value);
+  document.getElementById('cmMissRateVal').textContent = missRate + '%';
+
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, w, h);
+
+  if (cmTab === 'categorical') {
+    drawCategoricalEncoding(ctx, w, h);
+  } else {
+    drawMissingValues(ctx, w, h, missRate);
+  }
+};
+
+function drawCategoricalEncoding(ctx, w, h) {
+  ctx.fillStyle = '#888';
+  ctx.font = '14px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Categorical Feature Encoding Strategies', w/2, 25);
+
+  var categories = ['Red', 'Blue', 'Green', 'Yellow'];
+  var targets = [0.8, 0.3, 0.6, 0.1];
+
+  // Three columns: One-Hot, Label/Ordinal, Target Encoding
+  var colW = (w - 60) / 3;
+  var methods = ['One-Hot Encoding', 'Native Categorical (LightGBM)', 'Target Encoding (CatBoost)'];
+  var methodColors = ['#ff6b6b', '#4ecdc4', '#ffd93d'];
+
+  for (var m = 0; m < 3; m++) {
+    var cx = 20 + m * (colW + 10);
+    var cy = 50;
+
+    ctx.fillStyle = methodColors[m];
+    ctx.font = '12px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(methods[m], cx + colW/2, cy);
+
+    ctx.strokeStyle = '#2a2a4a';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(cx, cy + 10, colW, h - 100);
+
+    if (m === 0) {
+      // One-hot: show binary columns
+      var colNames = ['is_Red', 'is_Blue', 'is_Green', 'is_Yellow'];
+      var tableY = cy + 30;
+      ctx.fillStyle = '#aaa';
+      ctx.font = '10px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText('Cat   | R  B  G  Y', cx + 10, tableY);
+      ctx.fillText('------+----------', cx + 10, tableY + 15);
+      for (var i = 0; i < categories.length; i++) {
+        var row = categories[i].padEnd(6, ' ') + '| ';
+        for (var j = 0; j < 4; j++) {
+          row += (i === j ? '1  ' : '0  ');
+        }
+        ctx.fillText(row, cx + 10, tableY + 30 + i * 18);
+      }
+      ctx.fillStyle = '#ff6b6b';
+      ctx.font = '10px Inter, sans-serif';
+      ctx.fillText('4 categories -> 4 columns', cx + 10, tableY + 120);
+      ctx.fillText('Sparse, high-dimensional', cx + 10, tableY + 140);
+      ctx.fillText('XGBoost requires this', cx + 10, tableY + 160);
+
+      // Draw expanded matrix
+      var matY = tableY + 190;
+      for (var i = 0; i < 4; i++) {
+        for (var j = 0; j < 4; j++) {
+          var cellX = cx + 20 + j * 40;
+          var cellY = matY + i * 25;
+          ctx.fillStyle = (i === j) ? 'rgba(16,172,132,0.4)' : 'rgba(42,42,74,0.3)';
+          ctx.fillRect(cellX, cellY, 35, 20);
+          ctx.strokeStyle = '#3a3a6a';
+          ctx.strokeRect(cellX, cellY, 35, 20);
+          ctx.fillStyle = '#ddd';
+          ctx.font = '11px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText(i === j ? '1' : '0', cellX + 17, cellY + 15);
+        }
+      }
+    } else if (m === 1) {
+      // Native categorical: split on subsets
+      var tableY = cy + 30;
+      ctx.fillStyle = '#aaa';
+      ctx.font = '10px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText('Split: {Red, Green} vs', cx + 10, tableY);
+      ctx.fillText('       {Blue, Yellow}', cx + 10, tableY + 15);
+
+      // Draw tree node
+      var nodeX = cx + colW/2;
+      var nodeY = tableY + 60;
+      drawNode(ctx, nodeX, nodeY, 22, '#1a1a3e', '#4ecdc4', 'Color');
+
+      ctx.beginPath(); ctx.moveTo(nodeX - 15, nodeY + 22); ctx.lineTo(nodeX - 50, nodeY + 70);
+      ctx.strokeStyle = '#4ecdc4'; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(nodeX + 15, nodeY + 22); ctx.lineTo(nodeX + 50, nodeY + 70);
+      ctx.stroke();
+
+      ctx.fillStyle = '#4ecdc4';
+      ctx.font = '10px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('{R,G}', nodeX - 50, nodeY + 85);
+      ctx.fillText('{B,Y}', nodeX + 50, nodeY + 85);
+
+      drawNode(ctx, nodeX - 50, nodeY + 100, 16, 'rgba(255,107,107,0.3)', '#ff6b6b', '0.7');
+      drawNode(ctx, nodeX + 50, nodeY + 100, 16, 'rgba(78,205,196,0.3)', '#4ecdc4', '0.2');
+
+      ctx.fillStyle = '#4ecdc4';
+      ctx.font = '10px Inter, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('Finds optimal subsets', cx + 10, nodeY + 150);
+      ctx.fillText('No dimension explosion', cx + 10, nodeY + 170);
+      ctx.fillText('LightGBM native support', cx + 10, nodeY + 190);
+    } else {
+      // Target encoding
+      var tableY = cy + 30;
+      ctx.fillStyle = '#aaa';
+      ctx.font = '10px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText('Cat    | Target Enc', cx + 10, tableY);
+      ctx.fillText('-------+-----------', cx + 10, tableY + 15);
+      for (var i = 0; i < categories.length; i++) {
+        ctx.fillText(categories[i].padEnd(7, ' ') + '| ' + targets[i].toFixed(3), cx + 10, tableY + 30 + i * 18);
+      }
+
+      ctx.fillStyle = '#ffd93d';
+      ctx.font = '10px Inter, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('Replace with mean target', cx + 10, tableY + 120);
+      ctx.fillText('Ordered to prevent leakage:', cx + 10, tableY + 140);
+
+      // Show ordering
+      ctx.fillStyle = '#aaa';
+      ctx.font = '10px monospace';
+      var orderY = tableY + 170;
+      ctx.fillText('Sample 1: uses prior only', cx + 10, orderY);
+      ctx.fillText('Sample 2: uses sample 1', cx + 10, orderY + 18);
+      ctx.fillText('Sample 3: uses 1,2', cx + 10, orderY + 36);
+      ctx.fillText('Sample k: uses 1..k-1', cx + 10, orderY + 54);
+
+      ctx.fillStyle = '#ffd93d';
+      ctx.font = '10px Inter, sans-serif';
+      ctx.fillText('CatBoost ordered encoding', cx + 10, orderY + 90);
+      ctx.fillText('Prevents target leakage', cx + 10, orderY + 110);
+    }
+  }
+}
+
+function drawMissingValues(ctx, w, h, missRate) {
+  ctx.fillStyle = '#888';
+  ctx.font = '14px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Missing Value Handling in GBDT (' + missRate + '% missing)', w/2, 25);
+
+  // Draw a decision tree with missing value routing
+  var treeX = w/2, treeY = 70;
+  var missRng = new SeededRandom(55);
+
+  // Generate sample data with missing values
+  var nSamples = 20;
+  var samples = [];
+  for (var i = 0; i < nSamples; i++) {
+    var x = missRng.next();
+    var hasMissing = missRng.next() * 100 < missRate;
+    samples.push({ x: hasMissing ? null : x, cls: x !== null ? (x > 0.5 ? 1 : 0) : (missRng.next() > 0.4 ? 1 : 0), missing: hasMissing });
+  }
+
+  // Tree visualization
+  drawNode(ctx, treeX, treeY, 25, '#1a1a3e', '#10ac84', 'x<0.5?');
+
+  // Left and right branches
+  ctx.beginPath(); ctx.moveTo(treeX - 20, treeY + 25); ctx.lineTo(treeX - 150, treeY + 100);
+  ctx.strokeStyle = '#4ecdc4'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(treeX + 20, treeY + 25); ctx.lineTo(treeX + 150, treeY + 100);
+  ctx.strokeStyle = '#ff6b6b'; ctx.lineWidth = 2; ctx.stroke();
+
+  // Default direction for missing (learned)
+  var defaultRight = missRate > 25;
+  var missDirX = defaultRight ? treeX + 150 : treeX - 150;
+  ctx.beginPath(); ctx.moveTo(treeX, treeY + 25); ctx.lineTo(missDirX, treeY + 100);
+  ctx.strokeStyle = '#ffd93d'; ctx.lineWidth = 2; ctx.setLineDash([5, 4]); ctx.stroke(); ctx.setLineDash([]);
+
+  // Labels
+  ctx.fillStyle = '#4ecdc4';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Yes (x < 0.5)', treeX - 150, treeY + 60);
+  ctx.fillStyle = '#ff6b6b';
+  ctx.fillText('No (x >= 0.5)', treeX + 150, treeY + 60);
+  ctx.fillStyle = '#ffd93d';
+  ctx.fillText('Missing -> ' + (defaultRight ? 'Right' : 'Left'), treeX + (defaultRight ? 60 : -60), treeY + 85);
+
+  drawNode(ctx, treeX - 150, treeY + 120, 20, 'rgba(78,205,196,0.3)', '#4ecdc4', 'Leaf');
+  drawNode(ctx, treeX + 150, treeY + 120, 20, 'rgba(255,107,107,0.3)', '#ff6b6b', 'Leaf');
+
+  // Data table
+  var tableX = 40, tableY = treeY + 170;
+  ctx.fillStyle = '#aaa';
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('Sample  | Feature x  | Missing? | Split Direction | Prediction', tableX, tableY);
+  ctx.fillText('--------+------------+----------+-----------------+-----------', tableX, tableY + 15);
+
+  var leftCount = 0, rightCount = 0, missCount = 0;
+  for (var i = 0; i < Math.min(nSamples, 10); i++) {
+    var s = samples[i];
+    var dir, pred;
+    if (s.missing) {
+      dir = defaultRight ? 'Right (default)' : 'Left (default) ';
+      missCount++;
+      pred = defaultRight ? '1' : '0';
+      ctx.fillStyle = '#ffd93d';
+    } else if (s.x < 0.5) {
+      dir = 'Left            ';
+      leftCount++;
+      pred = '0';
+      ctx.fillStyle = '#4ecdc4';
+    } else {
+      dir = 'Right           ';
+      rightCount++;
+      pred = '1';
+      ctx.fillStyle = '#ff6b6b';
+    }
+    var xStr = s.missing ? '   NaN    ' : ('   ' + s.x.toFixed(3) + '   ');
+    var row = ('  ' + (i+1)).slice(-3) + '     | ' + xStr + '|    ' + (s.missing ? 'Yes' : 'No ') + '    | ' + dir + '| ' + pred;
+    ctx.fillText(row, tableX, tableY + 30 + i * 18);
+  }
+
+  // Summary stats
+  ctx.fillStyle = '#10ac84';
+  ctx.font = '12px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('Present: ' + (nSamples - missCount) + '/' + nSamples + '  |  Missing: ' + missCount + '/' + nSamples + '  |  Default direction: ' + (defaultRight ? 'Right' : 'Left') + ' (learned)', tableX, h - 25);
+
+  ctx.fillStyle = '#888';
+  ctx.font = '11px Inter, sans-serif';
+  ctx.fillText('XGBoost learns optimal default direction at each split during training to minimize loss.', tableX, h - 5);
+}
+
+// ======= 10. EARLY STOPPING =======
+var esSetup = null;
+var esAnimating = false;
+var esCurrentRound = 0;
+
+window.animateEarlyStop = function() {
+  if (esAnimating) return;
+  esAnimating = true;
+  esCurrentRound = 0;
+  var interval = setInterval(function() {
+    esCurrentRound += 2;
+    if (esCurrentRound > 300) { clearInterval(interval); esAnimating = false; return; }
+    drawEarlyStopAtRound(esCurrentRound);
+  }, 50);
+};
+
+function drawEarlyStopAtRound(maxRound) {
+  if (!esSetup) esSetup = setupCanvas('earlyStopCanvas');
+  var ctx = esSetup.ctx, w = esSetup.w, h = esSetup.h;
+  var patience = parseInt(document.getElementById('esPatience').value);
+  var valFrac = parseInt(document.getElementById('esValFrac').value) / 100;
+  var lr = parseInt(document.getElementById('esLR').value) / 100;
+  document.getElementById('esPatienceVal').textContent = patience;
+  document.getElementById('esValFracVal').textContent = valFrac.toFixed(2);
+  document.getElementById('esLRVal').textContent = lr.toFixed(2);
+
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, w, h);
+
+  var plotX = 70, plotY = 40, plotW = w - 140, plotH = h - 100;
+  var totalRounds = 300;
+
+  // Generate loss curves
+  var trainLoss = [], valLoss = [];
+  var bestValLoss = Infinity, bestRound = 0, stopRound = totalRounds;
+
+  for (var t = 0; t < totalRounds; t++) {
+    var tl = 0.5 * Math.exp(-lr * t * 0.03) + 0.01;
+    var noise = 0.003 * Math.sin(t * 0.3 + lr * 10);
+    var overfit = 0.00015 * lr * Math.max(0, t - 40 / lr) * (1 + valFrac);
+    var vl = 0.5 * Math.exp(-lr * t * 0.025) + 0.04 + overfit + noise * (1 - valFrac);
+    trainLoss.push(tl);
+    valLoss.push(vl);
+
+    if (vl < bestValLoss) { bestValLoss = vl; bestRound = t; }
+    if (t - bestRound >= patience && stopRound === totalRounds) { stopRound = t; }
+  }
+
+  // Axes
+  ctx.strokeStyle = '#444';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(plotX, plotY, plotW, plotH);
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Early Stopping (patience=' + patience + ', val_frac=' + valFrac.toFixed(2) + ', lr=' + lr.toFixed(2) + ')', plotX + plotW/2, 25);
+  ctx.fillText('Boosting Round', plotX + plotW/2, plotY + plotH + 35);
+
+  ctx.save();
+  ctx.translate(15, plotY + plotH/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText('Loss', 0, 0);
+  ctx.restore();
+
+  var maxLoss = 0.55;
+  // Y ticks
+  ctx.textAlign = 'right';
+  ctx.font = '10px monospace';
+  for (var v = 0; v <= 5; v++) {
+    var lv = v / 5 * maxLoss;
+    var yp = plotY + plotH - (lv / maxLoss) * plotH;
+    ctx.fillStyle = '#555';
+    ctx.fillText(lv.toFixed(2), plotX - 5, yp + 4);
+  }
+
+  // X ticks
+  ctx.textAlign = 'center';
+  for (var v = 0; v <= 6; v++) {
+    var tv = Math.round(v / 6 * totalRounds);
+    var xp = plotX + (v / 6) * plotW;
+    ctx.fillStyle = '#555';
+    ctx.fillText(tv, xp, plotY + plotH + 15);
+  }
+
+  var drawUpTo = maxRound !== undefined ? Math.min(maxRound, totalRounds) : totalRounds;
+
+  // Train loss
+  ctx.beginPath();
+  for (var t = 0; t < drawUpTo; t++) {
+    var px = plotX + (t / (totalRounds - 1)) * plotW;
+    var py = plotY + plotH - (trainLoss[t] / maxLoss) * plotH;
+    py = Math.max(plotY, Math.min(plotY + plotH, py));
+    if (t === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+  ctx.strokeStyle = '#10ac84';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Val loss
+  ctx.beginPath();
+  for (var t = 0; t < drawUpTo; t++) {
+    var px = plotX + (t / (totalRounds - 1)) * plotW;
+    var py = plotY + plotH - (valLoss[t] / maxLoss) * plotH;
+    py = Math.max(plotY, Math.min(plotY + plotH, py));
+    if (t === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+  ctx.strokeStyle = '#ff6b6b';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Best val loss marker
+  if (bestRound < drawUpTo) {
+    var bx = plotX + (bestRound / (totalRounds - 1)) * plotW;
+    var by = plotY + plotH - (bestValLoss / maxLoss) * plotH;
+    by = Math.max(plotY, Math.min(plotY + plotH, by));
+    ctx.beginPath(); ctx.arc(bx, by, 5, 0, Math.PI*2);
+    ctx.fillStyle = '#10ac84'; ctx.fill();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
+
+    ctx.fillStyle = '#10ac84';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('Best: round ' + (bestRound+1) + ', loss=' + bestValLoss.toFixed(4), bx + 10, by - 8);
+  }
+
+  // Early stopping line
+  if (stopRound < drawUpTo) {
+    var sx = plotX + (stopRound / (totalRounds - 1)) * plotW;
+    ctx.beginPath();
+    ctx.moveTo(sx, plotY);
+    ctx.lineTo(sx, plotY + plotH);
+    ctx.strokeStyle = '#ffd93d';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = '#ffd93d';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('STOP', sx, plotY - 5);
+    ctx.font = '10px monospace';
+    ctx.fillText('Round ' + (stopRound+1), sx, plotY + plotH + 30);
+  }
+
+  // Overfitting region shading
+  if (bestRound < drawUpTo && drawUpTo > bestRound + patience) {
+    var overX = plotX + (bestRound / (totalRounds - 1)) * plotW;
+    var endX = plotX + ((drawUpTo - 1) / (totalRounds - 1)) * plotW;
+    ctx.fillStyle = 'rgba(255,107,107,0.05)';
+    ctx.fillRect(overX, plotY, endX - overX, plotH);
+    ctx.fillStyle = 'rgba(255,107,107,0.4)';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Overfitting Region', (overX + endX) / 2, plotY + 20);
+  }
+
+  // Legend in plot
+  ctx.fillStyle = '#10ac84';
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('Train Loss', plotX + plotW - 130, plotY + 20);
+  ctx.fillStyle = '#ff6b6b';
+  ctx.fillText('Val Loss', plotX + plotW - 130, plotY + 35);
+}
+
+window.drawEarlyStop = function() {
+  drawEarlyStopAtRound(300);
+};
+
+// ======= INITIALIZE ALL =======
+drawDTSplit();
+drawResidual();
+drawLRTrees();
+drawRegularization();
+drawFeatImp();
+drawFramework();
+drawHistogram();
+drawComparison();
+drawCatMiss();
+drawEarlyStop();
+
+// ======= QUIZ =======
+const quizData = [
+  {
+    topic: "Decision Tree Splitting",
+    questions: [
+      { q: "What criterion does a decision tree typically use to select the best split?", options: ["A) Maximize variance", "B) Minimize Gini impurity or maximize information gain", "C) Maximize the number of nodes", "D) Minimize tree depth"], correct: 1, explanation: "Decision trees select splits that minimize Gini impurity or maximize information gain (entropy reduction). Both measures quantify how well a split separates classes." },
+      { q: "Why are decision tree splits always axis-aligned?", options: ["A) Because the data is always axis-aligned", "B) Each split tests a single feature against a threshold", "C) It's a mathematical requirement", "D) They aren't always axis-aligned"], correct: 1, explanation: "Standard decision trees make splits of the form 'feature_i <= threshold', which creates axis-aligned (rectangular) partitions. Oblique trees can make diagonal splits but are rarely used." },
+      { q: "What happens to bias and variance as tree depth increases?", options: ["A) Both increase", "B) Bias increases, variance decreases", "C) Bias decreases, variance increases", "D) Both decrease"], correct: 2, explanation: "Deeper trees fit the training data more closely (lower bias) but become more sensitive to the specific training data (higher variance), leading to overfitting." },
+      { q: "A decision tree with max_depth=1 is called a:", options: ["A) Random forest", "B) Decision stump", "C) Boosted tree", "D) Pruned tree"], correct: 1, explanation: "A decision stump is a tree with a single split (depth 1). Stumps are weak learners commonly used as base learners in AdaBoost and early boosting methods." },
+      { q: "Which of the following is NOT a valid stopping criterion for tree growth?", options: ["A) Maximum depth reached", "B) Minimum samples per leaf", "C) All features have been used", "D) Minimum impurity decrease"], correct: 2, explanation: "Features can be reused at different depths in a decision tree. Valid stopping criteria include max depth, min samples, and min impurity decrease (gain)." }
+    ]
+  },
+  {
+    topic: "Residual Fitting & Boosting",
+    questions: [
+      { q: "In gradient boosting, what does each new tree fit?", options: ["A) The original target variable", "B) The negative gradient (pseudo-residuals) of the loss", "C) A random subset of features", "D) The average prediction"], correct: 1, explanation: "Each new tree fits the negative gradient of the loss function evaluated at the current ensemble's predictions. For squared error, this equals the residuals (target - prediction)." },
+      { q: "What is the role of the learning rate (shrinkage) in GBDT?", options: ["A) It determines the tree depth", "B) It scales each tree's contribution, trading off with number of trees", "C) It sets the random seed", "D) It controls the feature sampling rate"], correct: 1, explanation: "The learning rate scales each tree's prediction before adding it to the ensemble. Smaller values require more trees but generally improve generalization by making the optimization path smoother." },
+      { q: "Gradient boosting is an example of which machine learning paradigm?", options: ["A) Bagging (parallel ensemble)", "B) Stacking", "C) Sequential additive modeling", "D) Unsupervised learning"], correct: 2, explanation: "Gradient boosting builds an additive model sequentially: F_m(x) = F_{m-1}(x) + eta * h_m(x). Each tree corrects the errors of the previous ensemble." },
+      { q: "For binary classification with log-loss, what are the pseudo-residuals?", options: ["A) The raw predictions", "B) y_i - sigmoid(F(x_i))", "C) The probabilities", "D) The log-odds"], correct: 1, explanation: "For log-loss, the negative gradient is y_i - p_i where p_i = sigmoid(F(x_i)). This is the difference between the true label and the predicted probability." },
+      { q: "What is the initial prediction F_0(x) typically set to?", options: ["A) Zero for all samples", "B) Random values", "C) The global mean (regression) or log-odds (classification)", "D) The maximum target value"], correct: 2, explanation: "The initial prediction is the constant that minimizes the loss. For MSE this is the mean of targets; for log-loss it's the log-odds of the positive class frequency." }
+    ]
+  },
+  {
+    topic: "Learning Rate vs Trees",
+    questions: [
+      { q: "What is the general relationship between learning rate and optimal number of trees?", options: ["A) Lower learning rate requires fewer trees", "B) Lower learning rate requires more trees", "C) They are independent", "D) Higher learning rate always requires more trees"], correct: 1, explanation: "A lower learning rate means each tree contributes less, so more trees are needed to reach the same training loss. The tradeoff is: fewer large steps vs. many small steps." },
+      { q: "Why does a low learning rate with many trees often generalize better?", options: ["A) It trains faster", "B) It uses less memory", "C) The optimization path is smoother, finding better minima", "D) It ignores outliers"], correct: 2, explanation: "Small learning rates create a smoother optimization trajectory, effectively regularizing the model. This is analogous to how smaller step sizes in SGD find flatter minima." },
+      { q: "What happens when you set learning_rate=1.0 with many trees?", options: ["A) Best possible performance", "B) Each tree fully corrects previous errors, likely overfitting", "C) The model underfits", "D) Training becomes impossible"], correct: 1, explanation: "With lr=1.0, each tree fully fits the residuals without any shrinkage. This aggressive approach typically leads to overfitting, as the model memorizes noise in the training data." },
+      { q: "In practice, what is the recommended approach to set learning rate and number of trees?", options: ["A) Set both manually based on dataset size", "B) Use a high learning rate for fast results", "C) Set a low learning rate, high n_estimators, and use early stopping", "D) Always use learning_rate=0.5"], correct: 2, explanation: "The standard practice is to set a low learning rate (0.01-0.1), a high maximum number of trees, and use early stopping on a validation set to find the optimal number of trees." },
+      { q: "The 'shrinkage' technique in boosting refers to:", options: ["A) Reducing the dataset size", "B) Decreasing the tree depth over time", "C) Multiplying each tree's predictions by a factor less than 1", "D) Pruning trees after building"], correct: 2, explanation: "Shrinkage multiplies each tree's output by the learning rate (a value less than 1) before adding it to the ensemble. This was introduced by Friedman and is key to GBDT's success." }
+    ]
+  },
+  {
+    topic: "Regularization Techniques",
+    questions: [
+      { q: "In XGBoost's objective, what does the gamma parameter control?", options: ["A) Learning rate", "B) Minimum loss reduction to make a split (tree pruning)", "C) Maximum tree depth", "D) Subsample ratio"], correct: 1, explanation: "Gamma (min_split_loss) sets the minimum loss reduction required to make a split. Higher gamma means more conservative (pruned) trees, acting as a regularization parameter." },
+      { q: "What is stochastic gradient boosting?", options: ["A) Using random learning rates", "B) Training each tree on a random subsample of the data", "C) Random feature names", "D) Using random tree structures"], correct: 1, explanation: "Stochastic gradient boosting (Friedman, 2002) trains each tree on a random subsample of rows. This adds randomness that reduces variance (similar to bagging) and speeds up training." },
+      { q: "Column subsampling (colsample_bytree) helps because:", options: ["A) It speeds up training by using fewer features", "B) It decorrelates trees and reduces overfitting", "C) Both A and B", "D) Neither A nor B"], correct: 2, explanation: "Column subsampling serves dual purposes: it makes training faster by considering fewer features, and it decorrelates the trees in the ensemble, reducing variance (similar to Random Forest)." },
+      { q: "How does min_child_weight differ from min_samples_leaf?", options: ["A) They are identical", "B) min_child_weight uses the sum of Hessians, not just sample count", "C) min_child_weight only applies to the root node", "D) min_samples_leaf is specific to XGBoost"], correct: 1, explanation: "min_child_weight in XGBoost is the minimum sum of instance weight (Hessian) in a child node. For unweighted regression this equals the count, but for weighted or classification tasks it differs." },
+      { q: "What is the XGBoost regularization term in the objective function?", options: ["A) L1 on predictions", "B) gamma*T + 0.5*lambda*sum(w_j^2) where T=leaves, w_j=leaf weights", "C) Dropout on trees", "D) Weight decay on learning rate"], correct: 1, explanation: "XGBoost adds gamma*T (penalizing the number of leaves) and lambda*||w||^2 (L2 on leaf weights) directly to the objective. This explicit regularization is a key innovation over original GBM." }
+    ]
+  },
+  {
+    topic: "Feature Importance",
+    questions: [
+      { q: "Split-based feature importance (gain) can be misleading because:", options: ["A) It's always zero", "B) It favors features with many possible split points (high cardinality)", "C) It only works for regression", "D) It ignores the target variable"], correct: 1, explanation: "Gain-based importance sums the loss reduction across all splits using a feature. Features with more unique values get more chances to be selected, biasing importance upward for high-cardinality features." },
+      { q: "How is permutation importance calculated?", options: ["A) By removing the feature and retraining", "B) By shuffling the feature's values and measuring performance drop", "C) By counting the number of splits", "D) By computing correlation with the target"], correct: 1, explanation: "Permutation importance shuffles a feature's values (breaking the relationship with the target) and measures the drop in model performance. It's model-agnostic and doesn't require retraining." },
+      { q: "SHAP values are based on which game theory concept?", options: ["A) Nash equilibrium", "B) Prisoner's dilemma", "C) Shapley values from cooperative game theory", "D) Minimax theorem"], correct: 2, explanation: "SHAP (SHapley Additive exPlanations) uses Shapley values from cooperative game theory to assign each feature a contribution to each prediction, ensuring fair attribution with desirable theoretical properties." },
+      { q: "If two features are highly correlated, permutation importance will:", options: ["A) Correctly identify both as important", "B) Underestimate both features' importance", "C) Overestimate both features' importance", "D) Only identify one as important"], correct: 1, explanation: "When features are correlated, shuffling one feature doesn't fully break its information because the correlated feature compensates. This leads to underestimation of both features' true importance." },
+      { q: "Which feature importance method gives per-prediction explanations?", options: ["A) Gain importance", "B) Permutation importance", "C) SHAP values", "D) Correlation analysis"], correct: 2, explanation: "SHAP values provide local (per-prediction) explanations, showing how each feature contributes to each individual prediction. Gain and permutation importance are global measures only." }
+    ]
+  },
+  {
+    topic: "XGBoost vs LightGBM vs CatBoost",
+    questions: [
+      { q: "LightGBM's leaf-wise growth strategy can be problematic because:", options: ["A) It's always slower than level-wise", "B) It can create very deep, unbalanced trees that overfit on small datasets", "C) It can only handle binary classification", "D) It doesn't support GPU training"], correct: 1, explanation: "Leaf-wise growth always splits the highest-gain leaf, which can create very deep trees. On small datasets this leads to overfitting. Use max_depth to limit depth (e.g., max_depth=6-8)." },
+      { q: "What is GOSS in LightGBM?", options: ["A) A type of regularization", "B) Gradient-based One-Side Sampling: keeps large gradient instances, subsamples small ones", "C) A loss function", "D) A tree pruning method"], correct: 1, explanation: "GOSS keeps all instances with large gradients (which contribute most to information gain) and randomly samples a fraction of small-gradient instances, speeding up training with minimal accuracy loss." },
+      { q: "CatBoost's ordered boosting addresses what problem?", options: ["A) Slow training speed", "B) Target leakage (prediction shift) from using the same data for both target statistics and training", "C) Missing values", "D) Feature selection"], correct: 1, explanation: "Standard target encoding uses all data to compute statistics, leaking target information. Ordered boosting uses a random permutation so each sample's statistics are computed only from preceding samples." },
+      { q: "Which framework requires explicit one-hot encoding for categorical features?", options: ["A) LightGBM", "B) CatBoost", "C) XGBoost (default)", "D) All of them"], correct: 2, explanation: "XGBoost traditionally requires numerical input, so categorical features must be encoded (one-hot or ordinal). LightGBM and CatBoost have native categorical feature support." },
+      { q: "EFB (Exclusive Feature Bundling) in LightGBM is used to:", options: ["A) Combine mutually exclusive features to reduce dimensionality", "B) Split features into groups", "C) Encode categorical features", "D) Compute feature importance"], correct: 0, explanation: "EFB bundles mutually exclusive features (features that rarely take non-zero values simultaneously, like one-hot encoded features) into single features, reducing the effective number of features." }
+    ]
+  },
+  {
+    topic: "Histogram-Based Splitting",
+    questions: [
+      { q: "Histogram-based splitting reduces the split-finding complexity from O(n*d) to:", options: ["A) O(n)", "B) O(d)", "C) O(bins * d)", "D) O(log n)"], correct: 2, explanation: "Instead of scanning all n data points for each feature, histogram-based methods only scan the number of bins. Since bins << n for large datasets, this gives massive speedups." },
+      { q: "What is the typical default number of bins in LightGBM?", options: ["A) 16", "B) 64", "C) 255", "D) 1024"], correct: 2, explanation: "LightGBM uses 255 bins by default (max_bin=255). This allows feature values to be stored as uint8 (0-255), giving 8x memory reduction compared to float64." },
+      { q: "The histogram subtraction trick allows:", options: ["A) Removing outliers", "B) Computing a sibling node's histogram from parent minus other sibling, saving 50% computation", "C) Reducing the number of bins", "D) Faster tree pruning"], correct: 1, explanation: "Since parent histogram = left child + right child, we only need to build the histogram for the smaller child and subtract from the parent to get the larger child. This halves the work." },
+      { q: "What is the main disadvantage of using too few histogram bins?", options: ["A) Slower training", "B) More memory usage", "C) Loss of split resolution, potentially missing optimal splits", "D) Larger model size"], correct: 2, explanation: "With fewer bins, continuous features are coarsely discretized, so the algorithm may miss the exact optimal split point. However, in practice even 255 bins is usually sufficient." },
+      { q: "Why does XGBoost's 'hist' tree_method exist alongside the 'exact' method?", options: ["A) The exact method was deprecated", "B) Hist is much faster for large datasets while being nearly as accurate", "C) Hist produces smaller models", "D) Exact only works on GPUs"], correct: 1, explanation: "The exact method evaluates every unique feature value as a candidate split, which is O(n*d*log n). For millions of rows, histogram-based splitting is orders of magnitude faster with negligible accuracy loss." }
+    ]
+  },
+  {
+    topic: "GBDT vs RF vs Neural Nets",
+    questions: [
+      { q: "The fundamental difference between Random Forest and GBDT is:", options: ["A) RF uses trees and GBDT uses neural networks", "B) RF builds independent trees in parallel (bagging), GBDT builds sequential corrective trees (boosting)", "C) RF is always more accurate", "D) GBDT cannot handle regression"], correct: 1, explanation: "RF builds many independent trees on bootstrap samples and averages their predictions (bagging). GBDT builds trees sequentially, each correcting the ensemble's errors (boosting)." },
+      { q: "In which scenario would GBDT likely outperform a neural network?", options: ["A) Image classification", "B) Natural language processing", "C) Structured/tabular data with heterogeneous features", "D) Audio generation"], correct: 2, explanation: "GBDT excels on tabular data with mixed feature types (numerical, categorical, ordinal). Neural networks dominate on unstructured data (images, text, audio) where spatial/sequential patterns matter." },
+      { q: "Why can't Random Forest overfit by adding more trees?", options: ["A) It uses regularization automatically", "B) Each tree is built independently, so averaging more trees only reduces variance", "C) Trees are limited to depth 1", "D) It's a mathematical impossibility"], correct: 1, explanation: "In RF, each tree is an independent estimator. Averaging more independent estimators reduces variance without increasing bias (law of large numbers). GBDT can overfit because trees are dependent." },
+      { q: "Which method is most robust to label noise?", options: ["A) GBDT", "B) Random Forest", "C) Single Decision Tree", "D) They are equally robust"], correct: 1, explanation: "Random Forest is more robust to noise because it averages many independent trees. GBDT explicitly fits residuals, so noisy labels create noisy residuals that subsequent trees chase, amplifying noise." },
+      { q: "A recent study (Grinsztajn et al., 2022) showed that for medium-sized tabular datasets:", options: ["A) Neural networks always win", "B) Tree-based methods (GBDT, RF) are still superior to neural networks", "C) Linear models are best", "D) All methods perform equally"], correct: 1, explanation: "The NeurIPS 2022 paper 'Why do tree-based models still outperform deep learning on tabular data?' showed that tree-based methods, especially GBDT, remain superior on medium tabular benchmarks." }
+    ]
+  },
+  {
+    topic: "Categoricals & Missing Values",
+    questions: [
+      { q: "How does XGBoost handle missing values during split finding?", options: ["A) It imputes them with the mean", "B) It removes rows with missing values", "C) It learns the optimal direction (left or right) for missing values at each split", "D) It treats missing as a separate category"], correct: 2, explanation: "XGBoost's sparsity-aware split finding tries both directions for missing values at each split and picks the one that minimizes loss. This is learned during training and applied during prediction." },
+      { q: "Why is naive target encoding problematic?", options: ["A) It's too slow", "B) It causes target leakage: the encoding uses the target variable, which the model then trains on", "C) It doesn't work for categorical features", "D) It increases dimensionality"], correct: 1, explanation: "Naive target encoding computes mean(target) per category using all data, then feeds this back as a feature. This leaks target information into features, causing overfitting, especially for rare categories." },
+      { q: "CatBoost's ordered target encoding differs from standard target encoding by:", options: ["A) Using random values instead", "B) Only computing statistics from samples that appear before the current sample in a random order", "C) Ignoring the target entirely", "D) Using one-hot encoding internally"], correct: 1, explanation: "CatBoost processes samples in a random order and computes target statistics for each sample using only the preceding samples. This prevents information from future samples from leaking into current features." },
+      { q: "For XGBoost, which is the recommended way to handle categorical features?", options: ["A) Always use one-hot encoding", "B) Use target encoding with proper cross-validation", "C) Ignore categorical features", "D) Convert to random numbers"], correct: 1, explanation: "For XGBoost, target encoding with cross-validation (to prevent leakage) often works better than one-hot encoding, especially for high-cardinality categoricals. Or use LightGBM/CatBoost for native support." },
+      { q: "Should you impute missing values before feeding data to XGBoost?", options: ["A) Yes, always impute with the mean", "B) Yes, use KNN imputation", "C) No, XGBoost handles missing values natively and may perform better without imputation", "D) It doesn't matter"], correct: 2, explanation: "XGBoost learns optimal missing value handling during training. Manual imputation can actually hurt performance by destroying the 'missingness' signal, which may be informative." }
+    ]
+  },
+  {
+    topic: "Early Stopping & CV",
+    questions: [
+      { q: "What does 'patience' mean in early stopping?", options: ["A) The maximum number of trees", "B) The number of rounds without improvement before stopping", "C) The learning rate", "D) The validation set size"], correct: 1, explanation: "Patience (early_stopping_rounds) is the number of consecutive boosting rounds where validation performance doesn't improve before training is halted. It prevents wasting computation on overfitting." },
+      { q: "What is the standard GBDT workflow for production models?", options: ["A) Train for exactly 100 trees", "B) Set n_estimators=10000, use early stopping with validation set, then retrain on full data", "C) Use cross-validation only, no early stopping", "D) Train until training loss is zero"], correct: 1, explanation: "Set a high tree limit, use early stopping to find optimal rounds, then optionally retrain on full data with that number of rounds. This is the standard workflow for XGBoost/LightGBM." },
+      { q: "If you use early stopping to find n_best=150 trees, should you retrain on all data with 150 trees?", options: ["A) No, always use the early-stopped model", "B) Yes, it maximizes the use of all available data", "C) It doesn't matter", "D) Only if the dataset is small"], correct: 1, explanation: "After finding optimal rounds via early stopping, retraining on the full dataset (train + validation) with that number of rounds uses all available data and often improves the model slightly." },
+      { q: "What is k-fold cross-validation used for in the GBDT context?", options: ["A) Only for feature selection", "B) To get a more robust estimate of optimal hyperparameters and number of rounds", "C) To reduce training time", "D) To eliminate the need for a test set"], correct: 1, explanation: "K-fold CV provides a more robust estimate of model performance and optimal hyperparameters by averaging over multiple train/validation splits, reducing the variance of the estimate." },
+      { q: "A model's training loss is near zero but validation loss is high. What should you do first?", options: ["A) Add more trees", "B) Increase the learning rate", "C) Apply regularization: lower learning rate, reduce depth, increase min_child_weight, or add subsampling", "D) Increase the training data only"], correct: 2, explanation: "Low training loss + high validation loss = overfitting. The first step is to regularize: reduce learning rate, tree depth, min_child_weight, add subsampling, or use early stopping." }
+    ]
+  }
+];
+
+let score = 0;
+let totalQuestions = 50;
+let answeredSet = new Set();
+let topicScores = {};
+
+quizData.forEach(function(t, ti) { topicScores[ti] = { correct: 0, answered: 0, total: t.questions.length }; });
+
+function buildQuiz() {
+  const container = document.getElementById('quizQuestions');
+  container.innerHTML = '';
+  quizData.forEach(function(topic, ti) {
+    const topicDiv = document.createElement('div');
+    topicDiv.className = 'quiz-topic';
+    const header = document.createElement('div');
+    header.className = 'quiz-topic-header';
+    header.innerHTML = '<h3>' + topic.topic + '</h3><span class="quiz-topic-score" id="topicScore' + ti + '">0 / ' + topic.questions.length + '</span>';
+    header.onclick = function() {
+      const qs = document.getElementById('topicQ' + ti);
+      qs.classList.toggle('open');
+    };
+    topicDiv.appendChild(header);
+    const questionsDiv = document.createElement('div');
+    questionsDiv.className = 'quiz-topic-questions';
+    questionsDiv.id = 'topicQ' + ti;
+    topic.questions.forEach(function(question, qi) {
+      const qDiv = document.createElement('div');
+      qDiv.className = 'quiz-question';
+      qDiv.innerHTML = '<h4>Q' + (qi + 1) + '. ' + question.q + '</h4>';
+      question.options.forEach(function(opt, oi) {
+        const btn = document.createElement('button');
+        btn.className = 'quiz-option';
+        btn.id = 'qz_' + ti + '_' + qi + '_' + oi;
+        btn.textContent = opt;
+        btn.onclick = function() { handleAnswer(ti, qi, oi, question); };
+        qDiv.appendChild(btn);
+      });
+      const exp = document.createElement('div');
+      exp.className = 'quiz-explanation';
+      exp.id = 'exp_' + ti + '_' + qi;
+      exp.textContent = question.explanation;
+      qDiv.appendChild(exp);
+      questionsDiv.appendChild(qDiv);
+    });
+    topicDiv.appendChild(questionsDiv);
+    container.appendChild(topicDiv);
+  });
+}
+
+function handleAnswer(ti, qi, oi, question) {
+  const key = ti + '_' + qi;
+  if (answeredSet.has(key)) return;
+  answeredSet.add(key);
+  const isCorrect = oi === question.correct;
+  const selectedBtn = document.getElementById('qz_' + ti + '_' + qi + '_' + oi);
+  const expDiv = document.getElementById('exp_' + ti + '_' + qi);
+  if (isCorrect) {
+    selectedBtn.classList.add('correct');
+    expDiv.classList.add('correct-exp');
+    score++;
+    topicScores[ti].correct++;
+  } else {
+    selectedBtn.classList.add('wrong');
+    document.getElementById('qz_' + ti + '_' + qi + '_' + question.correct).classList.add('reveal');
+    expDiv.classList.add('wrong-exp');
+  }
+  topicScores[ti].answered++;
+  expDiv.classList.add('show');
+  for (var i = 0; i < question.options.length; i++) {
+    document.getElementById('qz_' + ti + '_' + qi + '_' + i).disabled = true;
+  }
+  document.getElementById('quizScore').textContent = score;
+  document.getElementById('topicScore' + ti).textContent = topicScores[ti].correct + ' / ' + topicScores[ti].total;
+  document.getElementById('quizProgressBar').style.width = (answeredSet.size / totalQuestions * 100) + '%';
+}
+
+window.resetQuiz = function() {
+  score = 0;
+  answeredSet = new Set();
+  quizData.forEach(function(t, ti) { topicScores[ti] = { correct: 0, answered: 0, total: t.questions.length }; });
+  document.getElementById('quizScore').textContent = '0';
+  document.getElementById('quizProgressBar').style.width = '0%';
+  buildQuiz();
+};
+
+window.toggleQuiz = function() {
+  const section = document.getElementById('quizSection');
+  if (section.style.display === 'none') {
+    section.style.display = 'block';
+    section.scrollIntoView({ behavior: 'smooth' });
+  } else {
+    section.style.display = 'none';
+  }
+};
+
+buildQuiz();
+})();
+</script>
+</body>
+</html>

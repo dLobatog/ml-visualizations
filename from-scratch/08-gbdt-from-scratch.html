@@ -1,0 +1,2763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 8: GBDTs from Scratch</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #0a0a0f; color: #e0e0e0; line-height: 1.6; }
+  .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; text-align: center; border-bottom: 1px solid #2a2a4a; }
+  .header h1 { font-size: 2.2em; background: linear-gradient(90deg, #10ac84, #1dd1a1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+  .header p { color: #888; font-size: 1.1em; }
+  .header a { color: #10ac84; text-decoration: none; font-size: 0.9em; }
+  .header a:hover { text-decoration: underline; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+
+  /* Minimap */
+  .minimap { position: sticky; top: 0; z-index: 100; background: #0a0a0fee; backdrop-filter: blur(10px); border-bottom: 1px solid #2a2a4a; padding: 10px 20px; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }
+  .mm-step { padding: 4px 12px; border-radius: 6px; font-size: 0.75em; font-weight: 600; cursor: pointer; transition: all 0.2s; background: #151530; color: #555; border: 1px solid #2a2a4a; white-space: nowrap; }
+  .mm-step:hover { border-color: #10ac84; color: #10ac84; }
+  .mm-step.active { background: rgba(16,172,132,0.2); color: #10ac84; border-color: rgba(16,172,132,0.5); }
+  .mm-step.done { background: rgba(16,172,132,0.1); color: #10ac84; border-color: rgba(16,172,132,0.3); }
+  .mm-arrow { color: #333; font-size: 0.8em; }
+
+  .viz-section { background: #12121f; border: 1px solid #2a2a4a; border-radius: 16px; padding: 32px; margin-bottom: 40px; }
+  .viz-section h2 { font-size: 1.5em; color: #10ac84; margin-bottom: 8px; }
+  .viz-section .subtitle { color: #888; margin-bottom: 24px; font-size: 0.95em; }
+  .viz-canvas { background: #0d0d1a; border-radius: 12px; position: relative; overflow: hidden; }
+  canvas { display: block; width: 100%; }
+  .controls { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; align-items: center; }
+  .control-group { display: flex; flex-direction: column; gap: 4px; }
+  .control-group label { font-size: 0.85em; color: #aaa; }
+  .control-group input[type="range"] { width: 160px; accent-color: #10ac84; }
+  .control-group .value { font-size: 0.85em; color: #10ac84; font-family: monospace; }
+  .btn { padding: 8px 16px; border: 1px solid #10ac84; background: transparent; color: #10ac84; border-radius: 8px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
+  .btn:hover { background: #10ac8422; }
+  .btn.active { background: #10ac8433; }
+  .tab-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+
+  .insight-box { background: linear-gradient(135deg, #1a1a3e 0%, #151530 100%); border-left: 4px solid #10ac84; padding: 20px 24px; margin-top: 20px; border-radius: 0 12px 12px 0; font-size: 0.92em; color: #ccc; line-height: 1.8; }
+  .insight-box strong { color: #10ac84; font-size: 1.05em; }
+  .insight-box .formula { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 12px 18px; margin: 12px 0; font-family: 'Courier New', monospace; color: #e8e8ff; font-size: 1.05em; text-align: center; letter-spacing: 0.5px; line-height: 1.9; }
+  .insight-box .key-point { display: flex; flex-wrap: wrap; gap: 4px 8px; margin: 8px 0; padding: 4px 0; align-items: baseline; }
+  .insight-box .key-point .label { color: #10ac84; font-weight: 600; min-width: 160px; flex-shrink: 0; }
+  .insight-box .key-point .desc { color: #ddd; }
+  .insight-box .interview-tip { background: rgba(100, 255, 100, 0.05); border: 1px solid rgba(100, 255, 100, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #b0ffb0; font-size: 0.93em; line-height: 1.6; }
+  .insight-box .interview-tip::before { content: '\1F4A1  Interview Tip: '; font-weight: 700; color: #7fff7f; }
+  .insight-box .mnemonic { background: rgba(255, 150, 255, 0.05); border: 1px solid rgba(255, 150, 255, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #ffb0ff; font-size: 0.93em; line-height: 1.6; }
+  .insight-box .mnemonic::before { content: '\1F9E0  Remember: '; font-weight: 700; color: #ff7fff; }
+  .insight-box .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+  .insight-box .comparison .option { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 10px 14px; }
+  .insight-box .comparison .option .opt-title { color: #10ac84; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
+  .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
+  .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
+
+  .katex { color: #e8e8ff; font-size: 1.1em; }
+  .formula .katex { font-size: 1.2em; }
+
+  .narrative-note { background: rgba(255,217,61,0.05); border-left: 3px solid #ffd93d; padding: 14px 18px; margin: 16px 0; border-radius: 0 8px 8px 0; font-size: 0.9em; color: #ccb866; }
+  .narrative-note strong { color: #ffd93d; }
+
+  select { padding: 6px 12px; border: 1px solid #2a2a4a; background: #0d0d1a; color: #e0e0e0; border-radius: 6px; font-size: 0.9em; cursor: pointer; }
+  select:focus { outline: none; border-color: #10ac84; }
+
+#quizToggle{position:fixed;top:20px;right:20px;z-index:1000;padding:12px 20px;background:#10ac84;color:#0a0a0f;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:1em;box-shadow:0 4px 15px rgba(0,0,0,0.3);transition:transform 0.2s}
+#quizToggle:hover{transform:scale(1.05)}
+#quizSection{background:#0a0a0f;border-top:2px solid #10ac84;padding:40px 20px;margin-top:40px}
+.quiz-container{max-width:900px;margin:0 auto}
+.quiz-topic{margin-bottom:30px}
+.quiz-topic-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:10px;cursor:pointer;margin-bottom:12px;user-select:none}
+.quiz-topic-header h3{color:#10ac84;margin:0;font-size:1.15em}
+.quiz-topic-header:hover{background:#1f1f3a}
+.quiz-topic-score{color:#888;font-size:0.95em}
+.quiz-topic-questions{display:none}
+.quiz-topic-questions.open{display:block}
+.quiz-question{background:#12121f;border:1px solid #2a2a4a;border-radius:12px;padding:24px;margin-bottom:16px}
+.quiz-question h4{color:#e0e0e0;margin-bottom:16px;font-size:1.05em;line-height:1.5}
+.quiz-option{display:block;width:100%;padding:12px 16px;margin:8px 0;background:#0d0d1a;border:1px solid #2a2a4a;border-radius:8px;color:#e0e0e0;cursor:pointer;text-align:left;font-size:0.95em;transition:all 0.2s;font-family:inherit}
+.quiz-option:hover:not(:disabled){border-color:#10ac84;background:#1a1a3e}
+.quiz-option.correct{background:#1a3a2a !important;border-color:#2ecc71 !important;color:#2ecc71 !important}
+.quiz-option.wrong{background:#3a1a1a !important;border-color:#e74c3c !important;color:#e74c3c !important}
+.quiz-option.reveal{border-color:#2ecc71 !important;color:#2ecc71 !important}
+.quiz-option:disabled{cursor:default}
+.quiz-explanation{margin-top:12px;padding:14px 18px;border-radius:8px;font-size:0.93em;line-height:1.6;display:none}
+.quiz-explanation.show{display:block}
+.quiz-explanation.correct-exp{border-left:4px solid #2ecc71;background:rgba(46,204,113,0.08);color:#b0ffb0}
+.quiz-explanation.wrong-exp{border-left:4px solid #e74c3c;background:rgba(231,76,60,0.08);color:#ffb0b0}
+.quiz-score{text-align:center;font-size:1.5em;color:#10ac84;margin-bottom:30px}
+.quiz-actions{text-align:center;margin-top:30px;margin-bottom:20px}
+.quiz-actions button{padding:10px 24px;margin:0 8px;border-radius:8px;border:1px solid #10ac84;background:transparent;color:#10ac84;cursor:pointer;font-size:1em}
+.quiz-actions button:hover{background:rgba(16,172,132,0.1)}
+.quiz-progress{height:4px;background:#1a1a2e;border-radius:2px;margin-bottom:20px;overflow:hidden}
+.quiz-progress-bar{height:100%;background:#10ac84;border-radius:2px;transition:width 0.3s}
+
+.break-toggle { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border: 1px solid #e74c3c; background: transparent; color: #e74c3c; border-radius: 8px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
+.break-toggle:hover { background: rgba(231,76,60,0.15); }
+.break-toggle.broken { background: rgba(231,76,60,0.25); border-color: #ff4444; color: #ff4444; }
+
+.legend { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.85em; color: #ccc; }
+.legend-dot { width: 12px; height: 12px; border-radius: 50%; }
+
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '\\(', right: '\\)', display: false}]});"></script>
+</head>
+<body>
+<button id="quizToggle" onclick="toggleQuiz()">&#x1F9E0; Quiz Mode</button>
+
+<div class="header">
+  <a href="../index.html">&larr; Back to Index</a>
+  <h1>Chapter 8: GBDTs from Scratch</h1>
+  <p>Build gradient boosted decision trees step by step, one split at a time</p>
+</div>
+
+<div class="minimap" id="minimap">
+  <span class="mm-step active" data-section="viz81" onclick="scrollToViz('viz81')">1. Stump</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz82" onclick="scrollToViz('viz82')">2. Full Tree</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz83" onclick="scrollToViz('viz83')">3. Residuals</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz84" onclick="scrollToViz('viz84')">4. Boost Step</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz85" onclick="scrollToViz('viz85')">5. Ensemble</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz86" onclick="scrollToViz('viz86')">6. Grad Descent</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz87" onclick="scrollToViz('viz87')">7. Regularize</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz88" onclick="scrollToViz('viz88')">8. Full GBDT</span>
+</div>
+
+<div class="container">
+
+<!-- ============================================================ -->
+<!-- VIZ 8.1: A SINGLE DECISION STUMP -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz81">
+  <h2>8.1 A Single Decision Stump</h2>
+  <p class="subtitle">The simplest possible tree: one split. We try every feature and every threshold, pick the one that best separates the classes.</p>
+  <div class="narrative-note">
+    <strong>Every gradient boosted model starts with a single, humble split.</strong> Before we can boost, we need to understand how a single decision tree node works. A "stump" is a tree with depth 1 -- just one question: "is feature X above threshold T?"
+  </div>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <button class="btn active" id="stumpDataLinear" onclick="setStumpData('linear')">Linear Data</button>
+    <button class="btn" id="stumpDataCircle" onclick="setStumpData('circle')">Circle Data</button>
+    <button class="btn" id="stumpDataXor" onclick="setStumpData('xor')">XOR Data</button>
+    <button class="btn" onclick="animateStumpSearch()">Animate Search</button>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="stumpCanvas" width="900" height="480"></canvas>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:#10ac84;"></span> Class 0</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#e74c3c;"></span> Class 1</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#ffd93d;"></span> Best Split</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> A decision stump exhaustively searches all possible splits to find the one that best separates data.
+    <div class="formula">$$\text{Gain} = \text{MSE}_{\text{parent}} - \frac{n_L}{n} \text{MSE}_L - \frac{n_R}{n} \text{MSE}_R$$</div>
+    <div class="key-point">
+      <span class="label">Brute Force Search:</span>
+      <span class="desc">For each feature, sort values and try every midpoint as a threshold. Keep the split with highest gain.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Limitation:</span>
+      <span class="desc">A single stump can only create axis-aligned boundaries. XOR patterns are impossible with one split.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Decision trees are greedy: they pick the locally best split at each node. This is not globally optimal, but it is fast and works well in practice.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 8.2: GROWING A FULL TREE -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz82">
+  <h2>8.2 Growing a Full Tree</h2>
+  <p class="subtitle">Recursively split each leaf to grow a deeper tree. Watch how depth controls complexity -- and overfitting.</p>
+  <div class="narrative-note">
+    <strong>Why not just use deeper trees?</strong> More depth means more splits, which means the tree can memorize training data perfectly. But memorization is not learning. The bias-variance tradeoff is at the heart of tree-based methods.
+  </div>
+  <div class="viz-canvas">
+    <canvas id="treeGrowCanvas" width="900" height="500"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>Max Depth</label>
+      <input type="range" id="treeDepthSlider" min="1" max="5" value="2" oninput="updateTreeGrow()">
+      <span class="value" id="treeDepthVal">2</span>
+    </div>
+    <button class="btn" onclick="regenerateTreeData()">New Data</button>
+    <button class="break-toggle" id="breakDepth" onclick="toggleBreakDepth()">Break It: Remove Depth Limit</button>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:#10ac84;"></span> Class 0</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#e74c3c;"></span> Class 1</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Tree depth controls the bias-variance tradeoff.
+    <div class="formula">$$\text{Depth 1: underfitting} \quad \longleftrightarrow \quad \text{Depth } \infty\text{: overfitting}$$</div>
+    <div class="key-point">
+      <span class="label">Shallow Trees:</span>
+      <span class="desc">High bias, low variance. Underfits complex patterns but generalizes well.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Deep Trees:</span>
+      <span class="desc">Low bias, high variance. Memorizes training data, poor on unseen data.</span>
+    </div>
+    <hr class="divider">
+    <div class="mnemonic">In boosting, we WANT weak learners (shallow trees). We will combine many weak predictions to make a strong one.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 8.3: COMPUTING RESIDUALS -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz83">
+  <h2>8.3 Computing Residuals</h2>
+  <p class="subtitle">The key insight of gradient boosting: after fitting a model, look at what it got WRONG. The residuals \(r_i = y_i - \hat{y}_i\) tell the next tree where to focus.</p>
+  <div class="narrative-note">
+    <strong>This is THE key insight of boosting.</strong> Instead of fitting a new tree to the original targets, we fit it to the errors (residuals) of the current model. Each new tree corrects the mistakes of all previous trees combined.
+  </div>
+  <div class="viz-canvas">
+    <canvas id="residualsCanvas" width="900" height="480"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>Tree Depth</label>
+      <input type="range" id="residualDepth" min="1" max="4" value="1" oninput="updateResiduals()">
+      <span class="value" id="residualDepthVal">1</span>
+    </div>
+    <button class="btn" onclick="updateResiduals()">Refit</button>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:#10ac84;"></span> True function</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#ffd93d;"></span> Tree prediction</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#e74c3c;"></span> Residual arrows</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Residuals are the negative gradient of MSE loss, pointing toward the correct answer.
+    <div class="formula">$$r_i = y_i - \hat{y}_i = -\frac{\partial}{\partial \hat{y}_i} \frac{1}{2}(y_i - \hat{y}_i)^2$$</div>
+    <div class="key-point">
+      <span class="label">Residual = Error:</span>
+      <span class="desc">Positive residual means we predicted too low. Negative means too high. The next tree learns to correct this.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Gradient Connection:</span>
+      <span class="desc">For MSE loss, the residual IS the negative gradient. This is why "gradient boosting" and "fitting residuals" are the same thing.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">When asked "what does gradient boosting do?", say: it iteratively fits new trees to the residuals (errors) of the current ensemble. Each tree corrects the mistakes of the previous trees.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 8.4: FITTING RESIDUALS (ONE BOOSTING STEP) -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz84">
+  <h2>8.4 Fitting Residuals -- One Boosting Step</h2>
+  <p class="subtitle">Fit a new tree to the residuals, then add it to the prediction (scaled by learning rate). Watch the prediction get closer to the target.</p>
+  <div class="narrative-note">
+    <strong>Why use a learning rate?</strong> Adding the full residual tree (learning rate = 1.0) can overshoot. A small learning rate (0.1) means each tree makes a small, conservative correction. More trees needed, but much better generalization.
+  </div>
+  <div class="viz-canvas">
+    <canvas id="boostStepCanvas" width="900" height="480"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>Learning Rate</label>
+      <input type="range" id="boostLR" min="1" max="100" value="30" oninput="updateBoostStep()">
+      <span class="value" id="boostLRVal">0.30</span>
+    </div>
+    <div class="control-group">
+      <label>Tree Depth</label>
+      <input type="range" id="boostDepth" min="1" max="4" value="2" oninput="updateBoostStep()">
+      <span class="value" id="boostDepthVal">2</span>
+    </div>
+    <button class="btn" onclick="updateBoostStep()">Step</button>
+    <button class="break-toggle" id="breakLR" onclick="toggleBreakLR()">Break It: LR = 1.0</button>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:#555;"></span> Old prediction</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#10ac84;"></span> Updated prediction</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#ffd93d;"></span> Target</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Each boosting step adds a small correction to the current prediction.
+    <div class="formula">$$\hat{y}^{(t)} = \hat{y}^{(t-1)} + \eta \cdot h_t(x)$$</div>
+    <div class="key-point">
+      <span class="label">\(\eta\) (Learning Rate):</span>
+      <span class="desc">Shrinks each tree's contribution. Small \(\eta\) = more trees needed, but better generalization (shrinkage regularization).</span>
+    </div>
+    <div class="key-point">
+      <span class="label">\(h_t(x)\) (New Tree):</span>
+      <span class="desc">Fitted to the residuals \(r_i = y_i - \hat{y}_i^{(t-1)}\). It predicts the correction needed.</span>
+    </div>
+    <hr class="divider">
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title" style="color: #10ac84;">Small LR (0.1)</div>
+        <div class="opt-desc">Conservative updates. Needs more trees but generalizes better. Less risk of overfitting.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #e74c3c;">Large LR (1.0)</div>
+        <div class="opt-desc">Aggressive updates. Fewer trees needed but risk of oscillation and overfitting. Try "Break It" above!</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 8.5: BUILDING THE FULL ENSEMBLE -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz85">
+  <h2>8.5 Building the Full Ensemble</h2>
+  <p class="subtitle">Watch the full boosting loop: each round fits a tree to residuals and adds it to the ensemble. The prediction converges to the target.</p>
+  <div class="viz-canvas">
+    <canvas id="ensembleCanvas" width="900" height="500"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>Rounds</label>
+      <input type="range" id="ensembleRounds" min="1" max="50" value="1" oninput="updateEnsemble()">
+      <span class="value" id="ensembleRoundsVal">1</span>
+    </div>
+    <div class="control-group">
+      <label>Learning Rate</label>
+      <input type="range" id="ensembleLR" min="1" max="100" value="20" oninput="updateEnsemble()">
+      <span class="value" id="ensembleLRVal">0.20</span>
+    </div>
+    <div class="control-group">
+      <label>Tree Depth</label>
+      <input type="range" id="ensembleDepth" min="1" max="4" value="2" oninput="updateEnsemble()">
+      <span class="value" id="ensembleDepthVal">2</span>
+    </div>
+    <button class="btn" onclick="animateEnsemble()">Animate</button>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:#ffd93d;"></span> True function</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#10ac84;"></span> Ensemble prediction</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#e74c3c;"></span> Train loss</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#4ecdc4;"></span> Val loss</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> The ensemble prediction is the sum of all individual tree predictions, each scaled by the learning rate.
+    <div class="formula">$$\hat{y}(x) = \hat{y}_0 + \sum_{t=1}^{T} \eta \cdot h_t(x)$$</div>
+    <div class="key-point">
+      <span class="label">Additive Model:</span>
+      <span class="desc">Each tree adds a small correction. The sum of many weak learners creates a strong learner.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Convergence:</span>
+      <span class="desc">Train loss always decreases. Validation loss decreases then increases (overfitting). This gap motivates regularization and early stopping.</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 8.6: GRADIENT DESCENT VIEW -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz86">
+  <h2>8.6 Gradient Descent in Function Space</h2>
+  <p class="subtitle">Gradient boosting IS gradient descent -- but in the space of functions, not parameters. Each tree is a step that reduces the loss.</p>
+  <div class="narrative-note">
+    <strong>The deep connection.</strong> In regular gradient descent, we update parameters: \(\theta \leftarrow \theta - \eta \nabla_\theta L\). In gradient boosting, we update the function itself: \(F \leftarrow F - \eta \nabla_F L\). Each tree approximates the negative gradient of the loss.
+  </div>
+  <div class="viz-canvas">
+    <canvas id="gradViewCanvas" width="900" height="480"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>Boosting Round</label>
+      <input type="range" id="gradRound" min="0" max="20" value="0" oninput="updateGradView()">
+      <span class="value" id="gradRoundVal">0</span>
+    </div>
+    <button class="btn" onclick="animateGradView()">Animate</button>
+    <button class="break-toggle" id="breakGrad" onclick="toggleBreakGrad()">Break It: Wrong Gradient</button>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:#10ac84;"></span> Loss reduction path</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#e74c3c;"></span> Current loss</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#ffd93d;"></span> Gradient direction</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Boosting performs gradient descent in function space.
+    <div class="formula">$$F_t(x) = F_{t-1}(x) - \eta \cdot \nabla_{F} \mathcal{L}(y, F_{t-1}(x))$$</div>
+    <div class="key-point">
+      <span class="label">Parameter Space:</span>
+      <span class="desc">Neural networks do gradient descent on weights \(\theta\).</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Function Space:</span>
+      <span class="desc">Boosting does gradient descent on the prediction function \(F\) itself. Each tree approximates the negative gradient.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">The name "gradient boosting" comes from this: we compute the gradient of the loss w.r.t. the current predictions, then fit a tree to approximate that gradient. The tree IS the gradient descent step.</div>
+    <div class="mnemonic">Trees are to gradient boosting what parameter updates are to SGD. Both take steps that reduce the loss.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 8.7: REGULARIZATION & SHRINKAGE -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz87">
+  <h2>8.7 Regularization & Shrinkage</h2>
+  <p class="subtitle">Prevent overfitting with multiple techniques: learning rate shrinkage, depth limits, subsampling rows, subsampling features.</p>
+  <div class="viz-canvas">
+    <canvas id="shrinkCanvas" width="900" height="500"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>Learning Rate</label>
+      <input type="range" id="regLR" min="1" max="100" value="10" oninput="updateRegularization()">
+      <span class="value" id="regLRVal">0.10</span>
+    </div>
+    <div class="control-group">
+      <label>Max Depth</label>
+      <input type="range" id="regDepth" min="1" max="6" value="3" oninput="updateRegularization()">
+      <span class="value" id="regDepthVal">3</span>
+    </div>
+    <div class="control-group">
+      <label>Row Subsample</label>
+      <input type="range" id="regRowSub" min="20" max="100" value="100" oninput="updateRegularization()">
+      <span class="value" id="regRowSubVal">1.00</span>
+    </div>
+    <div class="control-group">
+      <label>Col Subsample</label>
+      <input type="range" id="regColSub" min="20" max="100" value="100" oninput="updateRegularization()">
+      <span class="value" id="regColSubVal">1.00</span>
+    </div>
+    <div class="control-group">
+      <label>Rounds</label>
+      <input type="range" id="regRounds" min="5" max="100" value="50" oninput="updateRegularization()">
+      <span class="value" id="regRoundsVal">50</span>
+    </div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Regularization prevents the ensemble from memorizing the training data.
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title" style="color: #10ac84;">Shrinkage (Learning Rate)</div>
+        <div class="opt-desc">Each tree contributes less. Slows learning but improves generalization. The most important regularizer.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #4ecdc4;">Max Depth</div>
+        <div class="opt-desc">Limits tree complexity. Shallow trees = weak learners = less overfitting per tree.</div>
+      </div>
+    </div>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title" style="color: #ffd93d;">Row Subsampling</div>
+        <div class="opt-desc">Each tree sees a random subset of rows (like bagging). Reduces variance and correlation between trees.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #ff6b6b;">Column Subsampling</div>
+        <div class="opt-desc">Each tree (or split) uses a random subset of features. Inspired by Random Forests. Reduces overfitting to specific features.</div>
+      </div>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">In practice, XGBoost/LightGBM defaults: learning_rate=0.1, max_depth=6, subsample=1.0, colsample=1.0. Start there and tune.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 8.8: FULL GBDT TRAINING LOOP -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz88">
+  <h2>8.8 Full GBDT Training Loop</h2>
+  <p class="subtitle">End-to-end: generate data, iteratively build trees, watch the decision boundary form, and see early stopping prevent overfitting.</p>
+  <div class="narrative-note">
+    <strong>Chapter 8 complete.</strong> You have built gradient boosted decision trees from scratch: stumps, recursive splitting, residuals, boosting steps, ensembles, the gradient descent connection, regularization, and the full training loop. This is how XGBoost, LightGBM, and CatBoost work under the hood.
+  </div>
+  <div class="viz-canvas">
+    <canvas id="gbdtTrainCanvas" width="900" height="520"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>Max Rounds</label>
+      <input type="range" id="fullRounds" min="5" max="100" value="50" oninput="updateFullGBDT()">
+      <span class="value" id="fullRoundsVal">50</span>
+    </div>
+    <div class="control-group">
+      <label>Learning Rate</label>
+      <input type="range" id="fullLR" min="1" max="100" value="15" oninput="updateFullGBDT()">
+      <span class="value" id="fullLRVal">0.15</span>
+    </div>
+    <div class="control-group">
+      <label>Max Depth</label>
+      <input type="range" id="fullDepth" min="1" max="5" value="3" oninput="updateFullGBDT()">
+      <span class="value" id="fullDepthVal">3</span>
+    </div>
+    <div class="control-group">
+      <label>Early Stop Patience</label>
+      <input type="range" id="fullPatience" min="1" max="20" value="5" oninput="updateFullGBDT()">
+      <span class="value" id="fullPatienceVal">5</span>
+    </div>
+    <button class="btn" onclick="regenerateFullData()">New Data</button>
+    <button class="btn" onclick="animateFullGBDT()">Animate</button>
+    <button class="break-toggle" id="breakEarly" onclick="toggleBreakEarly()">Break It: No Early Stopping</button>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:#10ac84;"></span> Class 0</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#e74c3c;"></span> Class 1</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#ffd93d;"></span> Decision boundary</div>
+  </div>
+  <div class="insight-box">
+    <strong>The Full GBDT Algorithm:</strong>
+    <div class="formula">$$\text{Initialize } F_0(x) = \bar{y}. \text{ For } t = 1 \ldots T: \text{ fit } h_t \text{ to } r_i = -\nabla_F L, \text{ update } F_t = F_{t-1} + \eta \cdot h_t$$</div>
+    <div class="key-point">
+      <span class="label">1. Initialize:</span>
+      <span class="desc">Start with a constant prediction (mean of targets for regression, log-odds for classification).</span>
+    </div>
+    <div class="key-point">
+      <span class="label">2. Compute Residuals:</span>
+      <span class="desc">For each sample, compute the negative gradient of the loss w.r.t. current prediction.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">3. Fit Tree:</span>
+      <span class="desc">Build a regression tree on the residuals (pseudo-residuals for non-MSE losses).</span>
+    </div>
+    <div class="key-point">
+      <span class="label">4. Update:</span>
+      <span class="desc">Add the new tree's predictions (scaled by learning rate) to the ensemble.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">5. Early Stop:</span>
+      <span class="desc">Monitor validation loss. Stop when it stops improving (patience rounds).</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">XGBoost, LightGBM, CatBoost all follow this same algorithm. The differences are in HOW they build trees (histogram binning, leaf-wise vs level-wise growth, handling categoricals). The core idea is identical.</div>
+    <div class="mnemonic">GBDT = "fit the errors, add a little bit, repeat". Learning rate shrinks each tree's contribution, early stopping says when to stop.</div>
+  </div>
+</div>
+
+</div><!-- container -->
+
+<!-- ============================================================ -->
+<!-- QUIZ SECTION -->
+<!-- ============================================================ -->
+<div id="quizSection" style="display:none">
+<div class="quiz-container">
+  <h2 style="text-align:center;color:#10ac84;margin-bottom:10px;font-size:1.8em;">GBDTs from Scratch Quiz</h2>
+  <p style="text-align:center;color:#888;margin-bottom:20px;">5 questions per visualization &bull; 40 questions total &bull; Click answers to reveal explanations</p>
+  <div class="quiz-progress"><div class="quiz-progress-bar" id="quizProgressBar" style="width:0%"></div></div>
+  <div class="quiz-score">Score: <span id="quizScore">0</span> / <span id="quizTotal">40</span></div>
+  <div class="quiz-actions">
+    <button onclick="resetQuiz()">&#8634; Reset All</button>
+    <button onclick="toggleQuiz()">&#10005; Hide Quiz</button>
+  </div>
+  <div id="quizQuestions"></div>
+</div>
+</div>
+
+<div style="text-align:center; padding:40px; color:#555; font-size:0.85em; border-top:1px solid #1a1a2e;">
+  Chapter 8: GBDTs from Scratch &bull; <a href="../index.html" style="color:#10ac84; text-decoration:none;">From Scratch Series</a>
+</div>
+
+<script>
+// ============================================================
+// UTILITY FUNCTIONS
+// ============================================================
+function seededRandom(seed) {
+  var s = seed;
+  return function() {
+    s = (s * 16807 + 0) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
+}
+var rng = seededRandom(42);
+
+function drawRoundRect(ctx, x, y, w, h, r, fill, stroke) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 2; ctx.stroke(); }
+}
+
+function drawArrow(ctx, x1, y1, x2, y2, color, width) {
+  var dx = x2 - x1, dy = y2 - y1;
+  var len = Math.sqrt(dx * dx + dy * dy);
+  if (len < 1) return;
+  var ux = dx / len, uy = dy / len;
+  var headLen = 8;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width || 2;
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2 - ux * headLen, y2 - uy * headLen);
+  ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - ux * headLen - uy * 5, y2 - uy * headLen + ux * 5);
+  ctx.lineTo(x2 - ux * headLen + uy * 5, y2 - uy * headLen - ux * 5);
+  ctx.fill();
+}
+
+// ============================================================
+// MINIMAP / SCROLL TRACKING
+// ============================================================
+function scrollToViz(id) {
+  document.getElementById(id).scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+var vizSections = ['viz81','viz82','viz83','viz84','viz85','viz86','viz87','viz88'];
+window.addEventListener('scroll', function() {
+  var steps = document.querySelectorAll('.mm-step');
+  var activeIdx = 0;
+  for (var i = 0; i < vizSections.length; i++) {
+    var el = document.getElementById(vizSections[i]);
+    if (el && el.getBoundingClientRect().top < window.innerHeight / 2) activeIdx = i;
+  }
+  steps.forEach(function(s, i) {
+    s.classList.remove('active', 'done');
+    if (i < activeIdx) s.classList.add('done');
+    else if (i === activeIdx) s.classList.add('active');
+  });
+});
+
+// ============================================================
+// DECISION TREE ENGINE (used by all visualizations)
+// ============================================================
+function computeMSE(values) {
+  if (values.length === 0) return 0;
+  var mean = values.reduce(function(a,b){return a+b;}, 0) / values.length;
+  return values.reduce(function(a,v){return a + (v - mean) * (v - mean);}, 0) / values.length;
+}
+
+function computeGini(labels) {
+  if (labels.length === 0) return 0;
+  var counts = {};
+  labels.forEach(function(l) { counts[l] = (counts[l] || 0) + 1; });
+  var gini = 1;
+  for (var k in counts) {
+    var p = counts[k] / labels.length;
+    gini -= p * p;
+  }
+  return gini;
+}
+
+function findBestSplit(X, y, featureIndices, minSamples) {
+  minSamples = minSamples || 2;
+  var bestGain = -Infinity;
+  var bestFeature = -1, bestThreshold = 0;
+  var n = X.length;
+  if (n < minSamples) return null;
+  var parentMSE = computeMSE(y);
+
+  for (var fi = 0; fi < featureIndices.length; fi++) {
+    var f = featureIndices[fi];
+    var vals = [];
+    for (var i = 0; i < n; i++) vals.push({ v: X[i][f], y: y[i] });
+    vals.sort(function(a,b) { return a.v - b.v; });
+
+    for (var j = 1; j < vals.length; j++) {
+      if (vals[j].v === vals[j-1].v) continue;
+      var threshold = (vals[j].v + vals[j-1].v) / 2;
+      var leftY = [], rightY = [];
+      for (var k = 0; k < vals.length; k++) {
+        if (vals[k].v <= threshold) leftY.push(vals[k].y);
+        else rightY.push(vals[k].y);
+      }
+      if (leftY.length < 1 || rightY.length < 1) continue;
+      var gain = parentMSE - (leftY.length / n) * computeMSE(leftY) - (rightY.length / n) * computeMSE(rightY);
+      if (gain > bestGain) {
+        bestGain = gain;
+        bestFeature = f;
+        bestThreshold = threshold;
+      }
+    }
+  }
+  if (bestGain <= 0) return null;
+  return { feature: bestFeature, threshold: bestThreshold, gain: bestGain };
+}
+
+function buildTree(X, y, maxDepth, depth, featureIndices, rowMask, minSamples) {
+  depth = depth || 0;
+  featureIndices = featureIndices || [];
+  for (var i = 0; i < (X[0] ? X[0].length : 0); i++) {
+    if (featureIndices.indexOf(i) === -1 && featureIndices.length < (X[0] ? X[0].length : 0)) featureIndices.push(i);
+  }
+  if (!featureIndices.length && X[0]) {
+    featureIndices = [];
+    for (var i = 0; i < X[0].length; i++) featureIndices.push(i);
+  }
+  minSamples = minSamples || 2;
+
+  var indices = [];
+  if (rowMask) {
+    for (var i = 0; i < rowMask.length; i++) if (rowMask[i]) indices.push(i);
+  } else {
+    for (var i = 0; i < X.length; i++) indices.push(i);
+  }
+
+  var subX = indices.map(function(i) { return X[i]; });
+  var subY = indices.map(function(i) { return y[i]; });
+
+  var mean = subY.length > 0 ? subY.reduce(function(a,b){return a+b;},0) / subY.length : 0;
+  var node = { value: mean, samples: subY.length, mse: computeMSE(subY) };
+
+  if (depth >= maxDepth || subY.length < minSamples) return node;
+
+  var split = findBestSplit(subX, subY, featureIndices, minSamples);
+  if (!split) return node;
+
+  node.feature = split.feature;
+  node.threshold = split.threshold;
+  node.gain = split.gain;
+
+  var leftIdx = [], rightIdx = [];
+  for (var i = 0; i < indices.length; i++) {
+    if (X[indices[i]][split.feature] <= split.threshold) leftIdx.push(indices[i]);
+    else rightIdx.push(indices[i]);
+  }
+
+  var leftMask = new Array(X.length).fill(false);
+  var rightMask = new Array(X.length).fill(false);
+  leftIdx.forEach(function(i) { leftMask[i] = true; });
+  rightIdx.forEach(function(i) { rightMask[i] = true; });
+
+  node.left = buildTree(X, y, maxDepth, depth + 1, featureIndices, leftMask, minSamples);
+  node.right = buildTree(X, y, maxDepth, depth + 1, featureIndices, rightMask, minSamples);
+
+  return node;
+}
+
+function predictOne(tree, x) {
+  if (tree.feature === undefined) return tree.value;
+  if (x[tree.feature] <= tree.threshold) return predictOne(tree.left, x);
+  return predictOne(tree.right, x);
+}
+
+function predictAll(tree, X) {
+  return X.map(function(x) { return predictOne(tree, x); });
+}
+
+// ============================================================
+// DATA GENERATION
+// ============================================================
+function generateClassificationData(type, n, seed) {
+  var r = seededRandom(seed || 42);
+  var X = [], y = [];
+  if (type === 'linear') {
+    for (var i = 0; i < n; i++) {
+      var x1 = r() * 6 - 3, x2 = r() * 6 - 3;
+      var label = (x1 + x2 > 0.5 + (r() - 0.5) * 0.8) ? 1 : 0;
+      X.push([x1, x2]); y.push(label);
+    }
+  } else if (type === 'circle') {
+    for (var i = 0; i < n; i++) {
+      var angle = r() * Math.PI * 2;
+      var rad = r() * 3;
+      var x1 = Math.cos(angle) * rad, x2 = Math.sin(angle) * rad;
+      var label = (rad > 1.5 + (r() - 0.5) * 0.5) ? 1 : 0;
+      X.push([x1, x2]); y.push(label);
+    }
+  } else if (type === 'xor') {
+    for (var i = 0; i < n; i++) {
+      var x1 = r() * 6 - 3, x2 = r() * 6 - 3;
+      var label = ((x1 > 0) !== (x2 > 0)) ? 1 : 0;
+      if (r() < 0.08) label = 1 - label; // noise
+      X.push([x1, x2]); y.push(label);
+    }
+  } else if (type === 'moons') {
+    for (var i = 0; i < n; i++) {
+      if (r() < 0.5) {
+        var angle = r() * Math.PI;
+        X.push([Math.cos(angle) + (r()-0.5)*0.3, Math.sin(angle) + (r()-0.5)*0.3]);
+        y.push(0);
+      } else {
+        var angle = r() * Math.PI;
+        X.push([1 - Math.cos(angle) + (r()-0.5)*0.3, 0.5 - Math.sin(angle) + (r()-0.5)*0.3]);
+        y.push(1);
+      }
+    }
+  }
+  return { X: X, y: y };
+}
+
+function generateRegressionData(n, seed) {
+  var r = seededRandom(seed || 123);
+  var X = [], y = [];
+  for (var i = 0; i < n; i++) {
+    var x = r() * 6 - 1;
+    var val = Math.sin(x) * 1.5 + Math.cos(x * 2) * 0.5 + (r() - 0.5) * 0.3;
+    X.push([x]);
+    y.push(val);
+  }
+  // sort by x for nice plotting
+  var combined = X.map(function(x, i) { return { x: x, y: y[i] }; });
+  combined.sort(function(a,b) { return a.x[0] - b.x[0]; });
+  X = combined.map(function(c) { return c.x; });
+  y = combined.map(function(c) { return c.y; });
+  return { X: X, y: y };
+}
+
+// ============================================================
+// VIZ 8.1: A SINGLE DECISION STUMP
+// ============================================================
+var stumpData = generateClassificationData('linear', 80, 42);
+var stumpAnimTimer = null;
+var stumpSearchIdx = -1;
+
+function setStumpData(type) {
+  document.querySelectorAll('#viz81 .controls .btn').forEach(function(b) { b.classList.remove('active'); });
+  document.getElementById('stumpData' + type.charAt(0).toUpperCase() + type.slice(1)).classList.add('active');
+  stumpData = generateClassificationData(type, 80, 42);
+  stumpSearchIdx = -1;
+  drawStump();
+}
+
+function drawStump() {
+  var canvas = document.getElementById('stumpCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, W, H);
+
+  var X = stumpData.X, y = stumpData.y;
+  var plotX = 50, plotY = 30, plotW = 400, plotH = 400;
+
+  // Find best split
+  var bestSplit = findBestSplit(X, y, [0, 1]);
+
+  // Draw decision boundary background if found
+  if (bestSplit) {
+    var f = bestSplit.feature;
+    var t = bestSplit.threshold;
+    // Color regions
+    for (var px = plotX; px < plotX + plotW; px += 4) {
+      for (var py = plotY; py < plotY + plotH; py += 4) {
+        var xv = (px - plotX) / plotW * 6 - 3;
+        var yv = (1 - (py - plotY) / plotH) * 6 - 3;
+        var val = f === 0 ? xv : yv;
+        // Compute leaf means
+        var leftVals = [], rightVals = [];
+        for (var i = 0; i < X.length; i++) {
+          if (X[i][f] <= t) leftVals.push(y[i]);
+          else rightVals.push(y[i]);
+        }
+        var leftMean = leftVals.length > 0 ? leftVals.reduce(function(a,b){return a+b;},0)/leftVals.length : 0;
+        var rightMean = rightVals.length > 0 ? rightVals.reduce(function(a,b){return a+b;},0)/rightVals.length : 0;
+        var pred = val <= t ? leftMean : rightMean;
+        var alpha = 0.15;
+        if (pred > 0.5) ctx.fillStyle = 'rgba(231, 76, 60, ' + alpha + ')';
+        else ctx.fillStyle = 'rgba(16, 172, 132, ' + alpha + ')';
+        ctx.fillRect(px, py, 4, 4);
+      }
+    }
+
+    // Draw split line
+    ctx.strokeStyle = '#ffd93d';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([8, 4]);
+    ctx.beginPath();
+    if (f === 0) {
+      var sx = plotX + (t + 3) / 6 * plotW;
+      ctx.moveTo(sx, plotY);
+      ctx.lineTo(sx, plotY + plotH);
+    } else {
+      var sy = plotY + (1 - (t + 3) / 6) * plotH;
+      ctx.moveTo(plotX, sy);
+      ctx.lineTo(plotX + plotW, sy);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Draw axes
+  ctx.strokeStyle = '#2a2a4a';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(plotX, plotY, plotW, plotH);
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Feature 0 (x1)', plotX + plotW / 2, plotY + plotH + 25);
+  ctx.save();
+  ctx.translate(plotX - 30, plotY + plotH / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('Feature 1 (x2)', 0, 0);
+  ctx.restore();
+
+  // Draw points
+  for (var i = 0; i < X.length; i++) {
+    var px = plotX + (X[i][0] + 3) / 6 * plotW;
+    var py = plotY + (1 - (X[i][1] + 3) / 6) * plotH;
+    ctx.beginPath();
+    ctx.arc(px, py, 5, 0, Math.PI * 2);
+    ctx.fillStyle = y[i] === 1 ? '#e74c3c' : '#10ac84';
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // Info panel on right
+  var infoX = 500;
+  drawRoundRect(ctx, infoX, 30, 370, 420, 12, '#12121f', '#2a2a4a');
+
+  ctx.fillStyle = '#10ac84';
+  ctx.font = 'bold 16px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Stump Search Results', infoX + 20, 60);
+
+  if (bestSplit) {
+    ctx.fillStyle = '#e0e0e0';
+    ctx.font = '14px monospace';
+    var ly = 90;
+
+    ctx.fillStyle = '#ffd93d';
+    ctx.fillText('Best Split:', infoX + 20, ly);
+    ly += 25;
+    ctx.fillStyle = '#e0e0e0';
+    ctx.fillText('Feature: x' + (bestSplit.feature + 1), infoX + 30, ly); ly += 22;
+    ctx.fillText('Threshold: ' + bestSplit.threshold.toFixed(4), infoX + 30, ly); ly += 22;
+    ctx.fillText('Gain: ' + bestSplit.gain.toFixed(6), infoX + 30, ly); ly += 35;
+
+    // Show all candidate splits tried
+    ctx.fillStyle = '#10ac84';
+    ctx.fillText('All Candidates Evaluated:', infoX + 20, ly); ly += 22;
+
+    var allSplits = [];
+    for (var f = 0; f < 2; f++) {
+      var vals = [];
+      for (var i = 0; i < X.length; i++) vals.push({ v: X[i][f], y: y[i] });
+      vals.sort(function(a,b) { return a.v - b.v; });
+      var seen = {};
+      for (var j = 1; j < vals.length; j++) {
+        if (vals[j].v === vals[j-1].v) continue;
+        var th = (vals[j].v + vals[j-1].v) / 2;
+        var key = f + '_' + th.toFixed(4);
+        if (seen[key]) continue;
+        seen[key] = true;
+        var leftY = [], rightY = [];
+        for (var k = 0; k < vals.length; k++) {
+          if (vals[k].v <= th) leftY.push(vals[k].y);
+          else rightY.push(vals[k].y);
+        }
+        var g = computeMSE(y) - (leftY.length/y.length)*computeMSE(leftY) - (rightY.length/y.length)*computeMSE(rightY);
+        allSplits.push({ f: f, th: th, gain: g });
+      }
+    }
+    allSplits.sort(function(a,b) { return b.gain - a.gain; });
+
+    ctx.font = '12px monospace';
+    ctx.fillStyle = '#aaa';
+    ctx.fillText('Total splits tried: ' + allSplits.length, infoX + 20, ly); ly += 20;
+    ctx.fillText('Top 10 splits:', infoX + 20, ly); ly += 18;
+
+    for (var s = 0; s < Math.min(10, allSplits.length); s++) {
+      var sp = allSplits[s];
+      var highlight = (s === 0);
+      ctx.fillStyle = highlight ? '#ffd93d' : '#888';
+      ctx.fillText(
+        (highlight ? '>> ' : '   ') + 'x' + (sp.f+1) + ' <= ' + sp.th.toFixed(3) + '  gain=' + sp.gain.toFixed(5),
+        infoX + 20, ly
+      );
+      ly += 17;
+    }
+
+    // MSE info
+    ly += 10;
+    var leftVals = [], rightVals = [];
+    for (var i = 0; i < X.length; i++) {
+      if (X[i][bestSplit.feature] <= bestSplit.threshold) leftVals.push(y[i]);
+      else rightVals.push(y[i]);
+    }
+    ctx.fillStyle = '#10ac84';
+    ctx.font = '13px monospace';
+    ctx.fillText('Parent MSE: ' + computeMSE(y).toFixed(6), infoX + 20, ly); ly += 20;
+    ctx.fillText('Left  MSE:  ' + computeMSE(leftVals).toFixed(6) + ' (n=' + leftVals.length + ')', infoX + 20, ly); ly += 20;
+    ctx.fillText('Right MSE:  ' + computeMSE(rightVals).toFixed(6) + ' (n=' + rightVals.length + ')', infoX + 20, ly); ly += 20;
+
+    // Animate search indicator
+    if (stumpSearchIdx >= 0 && stumpSearchIdx < allSplits.length) {
+      var cs = allSplits[stumpSearchIdx];
+      ctx.fillStyle = '#ffd93d';
+      ctx.font = 'bold 13px monospace';
+      ctx.fillText('Searching: x' + (cs.f+1) + ' <= ' + cs.th.toFixed(3), infoX + 20, ly + 10);
+    }
+  }
+}
+
+function animateStumpSearch() {
+  if (stumpAnimTimer) { clearInterval(stumpAnimTimer); stumpAnimTimer = null; }
+  stumpSearchIdx = 0;
+  var allSplits = [];
+  var X = stumpData.X, y = stumpData.y;
+  for (var f = 0; f < 2; f++) {
+    var vals = [];
+    for (var i = 0; i < X.length; i++) vals.push({ v: X[i][f], y: y[i] });
+    vals.sort(function(a,b) { return a.v - b.v; });
+    for (var j = 1; j < vals.length; j++) {
+      if (vals[j].v === vals[j-1].v) continue;
+      allSplits.push({ f: f, th: (vals[j].v + vals[j-1].v) / 2 });
+    }
+  }
+  stumpAnimTimer = setInterval(function() {
+    stumpSearchIdx++;
+    drawStump();
+    if (stumpSearchIdx >= allSplits.length) {
+      clearInterval(stumpAnimTimer);
+      stumpAnimTimer = null;
+      stumpSearchIdx = -1;
+    }
+  }, 50);
+}
+
+// ============================================================
+// VIZ 8.2: GROWING A FULL TREE
+// ============================================================
+var treeGrowSeed = 55;
+var treeGrowData = generateClassificationData('moons', 100, treeGrowSeed);
+var breakDepthEnabled = false;
+
+function toggleBreakDepth() {
+  breakDepthEnabled = !breakDepthEnabled;
+  var btn = document.getElementById('breakDepth');
+  btn.classList.toggle('broken');
+  btn.textContent = breakDepthEnabled ? 'Fix: Restore Depth Limit' : 'Break It: Remove Depth Limit';
+  updateTreeGrow();
+}
+
+function regenerateTreeData() {
+  treeGrowSeed += 13;
+  treeGrowData = generateClassificationData('moons', 100, treeGrowSeed);
+  updateTreeGrow();
+}
+
+function updateTreeGrow() {
+  var depth = breakDepthEnabled ? 10 : parseInt(document.getElementById('treeDepthSlider').value);
+  document.getElementById('treeDepthVal').textContent = breakDepthEnabled ? 'INF' : depth;
+  drawTreeGrow(depth);
+}
+
+function drawTreeGrow(maxDepth) {
+  var canvas = document.getElementById('treeGrowCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, W, H);
+
+  var X = treeGrowData.X, y = treeGrowData.y;
+  var tree = buildTree(X, y, maxDepth);
+
+  // Decision boundary (left panel)
+  var plotX = 30, plotY = 30, plotW = 380, plotH = 380;
+
+  // Compute bounds
+  var minX = Infinity, maxX2 = -Infinity, minY = Infinity, maxY2 = -Infinity;
+  X.forEach(function(p) {
+    if (p[0] < minX) minX = p[0];
+    if (p[0] > maxX2) maxX2 = p[0];
+    if (p[1] < minY) minY = p[1];
+    if (p[1] > maxY2) maxY2 = p[1];
+  });
+  var padX = (maxX2 - minX) * 0.1, padY = (maxY2 - minY) * 0.1;
+  minX -= padX; maxX2 += padX; minY -= padY; maxY2 += padY;
+
+  // Color regions
+  var step = 5;
+  for (var px = plotX; px < plotX + plotW; px += step) {
+    for (var py = plotY; py < plotY + plotH; py += step) {
+      var xv = minX + (px - plotX) / plotW * (maxX2 - minX);
+      var yv = maxY2 - (py - plotY) / plotH * (maxY2 - minY);
+      var pred = predictOne(tree, [xv, yv]);
+      var alpha = 0.2;
+      if (pred > 0.5) ctx.fillStyle = 'rgba(231, 76, 60, ' + alpha + ')';
+      else ctx.fillStyle = 'rgba(16, 172, 132, ' + alpha + ')';
+      ctx.fillRect(px, py, step, step);
+    }
+  }
+
+  ctx.strokeStyle = '#2a2a4a';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(plotX, plotY, plotW, plotH);
+
+  // Draw points
+  for (var i = 0; i < X.length; i++) {
+    var px = plotX + (X[i][0] - minX) / (maxX2 - minX) * plotW;
+    var py = plotY + (maxY2 - X[i][1]) / (maxY2 - minY) * plotH;
+    ctx.beginPath();
+    ctx.arc(px, py, 4, 0, Math.PI * 2);
+    ctx.fillStyle = y[i] === 1 ? '#e74c3c' : '#10ac84';
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff55';
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+  }
+
+  // Compute accuracy
+  var correct = 0;
+  for (var i = 0; i < X.length; i++) {
+    var pred = predictOne(tree, X[i]);
+    if ((pred > 0.5 ? 1 : 0) === y[i]) correct++;
+  }
+  var acc = correct / X.length;
+
+  // Tree structure (right panel)
+  var treeX = 460, treeY = 30;
+  drawRoundRect(ctx, treeX, treeY, 410, 440, 12, '#12121f', '#2a2a4a');
+
+  ctx.fillStyle = '#10ac84';
+  ctx.font = 'bold 15px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Tree Structure (depth=' + maxDepth + ')', treeX + 20, treeY + 30);
+
+  ctx.fillStyle = acc > 0.95 ? '#e74c3c' : '#10ac84';
+  ctx.font = '14px monospace';
+  ctx.fillText('Train Accuracy: ' + (acc * 100).toFixed(1) + '%', treeX + 20, treeY + 55);
+  if (breakDepthEnabled || maxDepth >= 5) {
+    ctx.fillStyle = '#e74c3c';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.fillText('Warning: likely overfitting!', treeX + 240, treeY + 55);
+  }
+
+  // Draw tree nodes
+  function drawNode(node, x, y2, w, depth2) {
+    if (!node) return;
+    var nodeW = 90, nodeH = 36;
+    var isLeaf = (node.feature === undefined);
+    var fill = isLeaf ? '#1a2a1a' : '#1a1a2e';
+    var stroke = isLeaf ? '#10ac8488' : '#4ecdc488';
+    drawRoundRect(ctx, x - nodeW/2, y2, nodeW, nodeH, 6, fill, stroke);
+
+    ctx.fillStyle = '#e0e0e0';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'center';
+    if (isLeaf) {
+      ctx.fillStyle = node.value > 0.5 ? '#e74c3c' : '#10ac84';
+      ctx.fillText('val=' + node.value.toFixed(2), x, y2 + 15);
+      ctx.fillStyle = '#888';
+      ctx.fillText('n=' + node.samples, x, y2 + 28);
+    } else {
+      ctx.fillText('x' + (node.feature+1) + '<=' + node.threshold.toFixed(2), x, y2 + 15);
+      ctx.fillStyle = '#888';
+      ctx.fillText('n=' + node.samples + ' g=' + node.gain.toFixed(3), x, y2 + 28);
+    }
+
+    if (node.left) {
+      var childW = w / 2;
+      var childY = y2 + 60;
+      var leftX = x - childW / 2;
+      ctx.strokeStyle = '#2a2a4a';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x, y2 + nodeH);
+      ctx.lineTo(leftX, childY);
+      ctx.stroke();
+      drawNode(node.left, leftX, childY, childW, depth2 + 1);
+    }
+    if (node.right) {
+      var childW = w / 2;
+      var childY = y2 + 60;
+      var rightX = x + childW / 2;
+      ctx.strokeStyle = '#2a2a4a';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x, y2 + nodeH);
+      ctx.lineTo(rightX, childY);
+      ctx.stroke();
+      drawNode(node.right, rightX, childY, childW, depth2 + 1);
+    }
+  }
+
+  drawNode(tree, treeX + 205, treeY + 80, 360, 0);
+
+  // Depth accuracy chart
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Accuracy vs Depth', plotX + plotW / 2, plotY + plotH + 30);
+  var barY = plotY + plotH + 40, barH = 60;
+  for (var d = 1; d <= 5; d++) {
+    var t2 = buildTree(X, y, d);
+    var c2 = 0;
+    for (var i = 0; i < X.length; i++) {
+      if ((predictOne(t2, X[i]) > 0.5 ? 1 : 0) === y[i]) c2++;
+    }
+    var a2 = c2 / X.length;
+    var bx = plotX + (d - 1) * (plotW / 5) + 10;
+    var bw = plotW / 5 - 20;
+    var bh = a2 * barH;
+    ctx.fillStyle = d === maxDepth ? '#10ac84' : '#2a2a4a';
+    ctx.fillRect(bx, barY + barH - bh, bw, bh);
+    ctx.fillStyle = '#888';
+    ctx.font = '10px monospace';
+    ctx.fillText('d=' + d, bx + bw/2, barY + barH + 14);
+    ctx.fillText((a2*100).toFixed(0) + '%', bx + bw/2, barY + barH - bh - 4);
+  }
+}
+
+// ============================================================
+// VIZ 8.3: COMPUTING RESIDUALS
+// ============================================================
+var residualData = generateRegressionData(60, 123);
+
+function updateResiduals() {
+  var depth = parseInt(document.getElementById('residualDepth').value);
+  document.getElementById('residualDepthVal').textContent = depth;
+  drawResiduals(depth);
+}
+
+function drawResiduals(depth) {
+  var canvas = document.getElementById('residualsCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, W, H);
+
+  var X = residualData.X, y = residualData.y;
+  var tree = buildTree(X, y, depth);
+  var preds = predictAll(tree, X);
+
+  // Compute residuals
+  var residuals = y.map(function(yi, i) { return yi - preds[i]; });
+  var totalMSE = y.reduce(function(a, yi, i) { return a + (yi - preds[i]) * (yi - preds[i]); }, 0) / y.length;
+
+  // Main plot: data + predictions
+  var plotX = 60, plotY = 30, plotW = 500, plotH = 200;
+  var minXv = -1.5, maxXv = 5.5;
+  var minYv = -2.5, maxYv = 3;
+
+  function toPixelX(v) { return plotX + (v - minXv) / (maxXv - minXv) * plotW; }
+  function toPixelY(v) { return plotY + plotH - (v - minYv) / (maxYv - minYv) * plotH; }
+
+  // Draw true function (smooth curve)
+  ctx.strokeStyle = '#10ac84';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (var px = 0; px <= plotW; px += 2) {
+    var xv = minXv + px / plotW * (maxXv - minXv);
+    var yv = Math.sin(xv) * 1.5 + Math.cos(xv * 2) * 0.5;
+    var pyv = toPixelY(yv);
+    if (px === 0) ctx.moveTo(toPixelX(xv), pyv);
+    else ctx.lineTo(toPixelX(xv), pyv);
+  }
+  ctx.stroke();
+
+  // Draw tree prediction (step function)
+  ctx.strokeStyle = '#ffd93d';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([5, 3]);
+  ctx.beginPath();
+  for (var px = 0; px <= plotW; px += 2) {
+    var xv = minXv + px / plotW * (maxXv - minXv);
+    var pred = predictOne(tree, [xv]);
+    var pyv = toPixelY(pred);
+    if (px === 0) ctx.moveTo(toPixelX(xv), pyv);
+    else ctx.lineTo(toPixelX(xv), pyv);
+  }
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Draw data points and residual arrows
+  for (var i = 0; i < X.length; i++) {
+    var px = toPixelX(X[i][0]);
+    var pyTrue = toPixelY(y[i]);
+    var pyPred = toPixelY(preds[i]);
+
+    // Residual arrow
+    ctx.strokeStyle = '#e74c3c88';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(px, pyPred);
+    ctx.lineTo(px, pyTrue);
+    ctx.stroke();
+
+    // Data point
+    ctx.beginPath();
+    ctx.arc(px, pyTrue, 3, 0, Math.PI * 2);
+    ctx.fillStyle = '#e0e0e0';
+    ctx.fill();
+  }
+
+  ctx.strokeStyle = '#2a2a4a';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(plotX, plotY, plotW, plotH);
+
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Original Data + Tree Prediction', plotX, plotY - 8);
+
+  // Residuals plot below
+  var resY = plotY + plotH + 50, resH = 160;
+  var maxRes = 2.5;
+
+  function toResPixelY(v) { return resY + resH / 2 - (v / maxRes) * (resH / 2); }
+
+  // Zero line
+  ctx.strokeStyle = '#2a2a4a';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(plotX, resY + resH / 2);
+  ctx.lineTo(plotX + plotW, resY + resH / 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.strokeRect(plotX, resY, plotW, resH);
+
+  // Draw residual bars
+  for (var i = 0; i < X.length; i++) {
+    var px = toPixelX(X[i][0]);
+    var zeroY = resY + resH / 2;
+    var resPixY = toResPixelY(residuals[i]);
+
+    ctx.strokeStyle = residuals[i] > 0 ? '#10ac84' : '#e74c3c';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(px, zeroY);
+    ctx.lineTo(px, resPixY);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(px, resPixY, 3, 0, Math.PI * 2);
+    ctx.fillStyle = residuals[i] > 0 ? '#10ac84' : '#e74c3c';
+    ctx.fill();
+  }
+
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Residuals: r_i = y_i - y_hat_i  (what the NEXT tree will fit)', plotX, resY - 8);
+
+  // Stats panel
+  var infoX = 600;
+  drawRoundRect(ctx, infoX, 30, 270, 420, 12, '#12121f', '#2a2a4a');
+
+  ctx.fillStyle = '#10ac84';
+  ctx.font = 'bold 15px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Residual Analysis', infoX + 20, 60);
+
+  ctx.fillStyle = '#e0e0e0';
+  ctx.font = '13px monospace';
+  var ly = 90;
+  ctx.fillText('Tree depth: ' + depth, infoX + 20, ly); ly += 22;
+  ctx.fillText('MSE: ' + totalMSE.toFixed(6), infoX + 20, ly); ly += 22;
+
+  var meanRes = residuals.reduce(function(a,b){return a+b;},0) / residuals.length;
+  var maxResVal = Math.max.apply(null, residuals.map(Math.abs));
+  ctx.fillText('Mean residual: ' + meanRes.toFixed(6), infoX + 20, ly); ly += 22;
+  ctx.fillText('Max |residual|: ' + maxResVal.toFixed(4), infoX + 20, ly); ly += 30;
+
+  ctx.fillStyle = '#ffd93d';
+  ctx.fillText('Key Insight:', infoX + 20, ly); ly += 20;
+  ctx.fillStyle = '#ccc';
+  ctx.font = '12px Inter, sans-serif';
+  var lines = ['Positive residuals (green):', '  predicted too LOW', 'Negative residuals (red):', '  predicted too HIGH', '', 'The next tree will learn', 'to correct these errors.'];
+  lines.forEach(function(line) {
+    ctx.fillText(line, infoX + 20, ly);
+    ly += 18;
+  });
+
+  ly += 10;
+  ctx.fillStyle = '#10ac84';
+  ctx.font = '13px monospace';
+  ctx.fillText('Top 5 largest residuals:', infoX + 20, ly); ly += 18;
+  var sortedRes = residuals.map(function(r, i) { return { i: i, r: r }; });
+  sortedRes.sort(function(a,b) { return Math.abs(b.r) - Math.abs(a.r); });
+  ctx.font = '11px monospace';
+  ctx.fillStyle = '#aaa';
+  for (var s = 0; s < Math.min(5, sortedRes.length); s++) {
+    var sr = sortedRes[s];
+    ctx.fillText('x=' + X[sr.i][0].toFixed(2) + '  r=' + sr.r.toFixed(4), infoX + 20, ly);
+    ly += 16;
+  }
+}
+
+// ============================================================
+// VIZ 8.4: FITTING RESIDUALS (ONE BOOSTING STEP)
+// ============================================================
+var boostData = generateRegressionData(60, 123);
+var breakLREnabled = false;
+
+function toggleBreakLR() {
+  breakLREnabled = !breakLREnabled;
+  var btn = document.getElementById('breakLR');
+  btn.classList.toggle('broken');
+  btn.textContent = breakLREnabled ? 'Fix: Restore Learning Rate' : 'Break It: LR = 1.0';
+  updateBoostStep();
+}
+
+function updateBoostStep() {
+  var lr = breakLREnabled ? 1.0 : parseInt(document.getElementById('boostLR').value) / 100;
+  var depth = parseInt(document.getElementById('boostDepth').value);
+  document.getElementById('boostLRVal').textContent = lr.toFixed(2);
+  document.getElementById('boostDepthVal').textContent = depth;
+  drawBoostStep(lr, depth);
+}
+
+function drawBoostStep(lr, depth) {
+  var canvas = document.getElementById('boostStepCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, W, H);
+
+  var X = boostData.X, y = boostData.y;
+
+  // First tree (weak, depth 1)
+  var tree1 = buildTree(X, y, 1);
+  var preds1 = predictAll(tree1, X);
+
+  // Residuals
+  var residuals = y.map(function(yi, i) { return yi - preds1[i]; });
+
+  // Second tree fit to residuals
+  var tree2 = buildTree(X, residuals, depth);
+  var corrections = predictAll(tree2, X);
+
+  // Updated prediction
+  var predsUpdated = preds1.map(function(p, i) { return p + lr * corrections[i]; });
+
+  var plotX = 60, plotY = 30, plotW = 500, plotH = 400;
+  var minXv = -1.5, maxXv = 5.5, minYv = -2.5, maxYv = 3;
+
+  function toPixelX(v) { return plotX + (v - minXv) / (maxXv - minXv) * plotW; }
+  function toPixelY(v) { return plotY + plotH - (v - minYv) / (maxYv - minYv) * plotH; }
+
+  // Draw true function
+  ctx.strokeStyle = '#ffd93d';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (var px = 0; px <= plotW; px += 2) {
+    var xv = minXv + px / plotW * (maxXv - minXv);
+    var yv = Math.sin(xv) * 1.5 + Math.cos(xv * 2) * 0.5;
+    if (px === 0) ctx.moveTo(toPixelX(xv), toPixelY(yv));
+    else ctx.lineTo(toPixelX(xv), toPixelY(yv));
+  }
+  ctx.stroke();
+
+  // Draw old prediction
+  ctx.strokeStyle = '#555';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([5, 3]);
+  ctx.beginPath();
+  for (var px = 0; px <= plotW; px += 2) {
+    var xv = minXv + px / plotW * (maxXv - minXv);
+    var pred = predictOne(tree1, [xv]);
+    if (px === 0) ctx.moveTo(toPixelX(xv), toPixelY(pred));
+    else ctx.lineTo(toPixelX(xv), toPixelY(pred));
+  }
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Draw updated prediction
+  ctx.strokeStyle = '#10ac84';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  for (var px = 0; px <= plotW; px += 2) {
+    var xv = minXv + px / plotW * (maxXv - minXv);
+    var pred1 = predictOne(tree1, [xv]);
+    var corr = predictOne(tree2, [xv]);
+    var updated = pred1 + lr * corr;
+    if (px === 0) ctx.moveTo(toPixelX(xv), toPixelY(updated));
+    else ctx.lineTo(toPixelX(xv), toPixelY(updated));
+  }
+  ctx.stroke();
+
+  // Data points
+  for (var i = 0; i < X.length; i++) {
+    ctx.beginPath();
+    ctx.arc(toPixelX(X[i][0]), toPixelY(y[i]), 3, 0, Math.PI * 2);
+    ctx.fillStyle = '#e0e0e088';
+    ctx.fill();
+  }
+
+  ctx.strokeStyle = '#2a2a4a';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(plotX, plotY, plotW, plotH);
+
+  // Stats panel
+  var infoX = 600;
+  drawRoundRect(ctx, infoX, 30, 270, 420, 12, '#12121f', '#2a2a4a');
+
+  var mseBefore = y.reduce(function(a, yi, i) { return a + (yi - preds1[i]) * (yi - preds1[i]); }, 0) / y.length;
+  var mseAfter = y.reduce(function(a, yi, i) { return a + (yi - predsUpdated[i]) * (yi - predsUpdated[i]); }, 0) / y.length;
+
+  ctx.fillStyle = '#10ac84';
+  ctx.font = 'bold 15px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('One Boosting Step', infoX + 20, 60);
+
+  ctx.font = '13px monospace';
+  ctx.fillStyle = '#e0e0e0';
+  var ly = 90;
+  ctx.fillText('Learning rate: ' + lr.toFixed(2), infoX + 20, ly); ly += 22;
+  ctx.fillText('Correction depth: ' + depth, infoX + 20, ly); ly += 30;
+
+  ctx.fillStyle = '#888';
+  ctx.fillText('Before (1 tree):', infoX + 20, ly); ly += 20;
+  ctx.fillStyle = '#e0e0e0';
+  ctx.fillText('  MSE = ' + mseBefore.toFixed(6), infoX + 20, ly); ly += 25;
+
+  ctx.fillStyle = '#10ac84';
+  ctx.fillText('After (+1 tree):', infoX + 20, ly); ly += 20;
+  ctx.fillStyle = '#e0e0e0';
+  ctx.fillText('  MSE = ' + mseAfter.toFixed(6), infoX + 20, ly); ly += 25;
+
+  var reduction = ((mseBefore - mseAfter) / mseBefore * 100);
+  ctx.fillStyle = reduction > 0 ? '#10ac84' : '#e74c3c';
+  ctx.fillText('  Reduction: ' + reduction.toFixed(1) + '%', infoX + 20, ly); ly += 30;
+
+  // Formula
+  ctx.fillStyle = '#ffd93d';
+  ctx.font = '13px monospace';
+  ctx.fillText('Update formula:', infoX + 20, ly); ly += 22;
+  ctx.fillStyle = '#ccc';
+  ctx.font = '12px monospace';
+  ctx.fillText('y_hat_new = y_hat_old', infoX + 20, ly); ly += 18;
+  ctx.fillText('  + ' + lr.toFixed(2) + ' * h_2(x)', infoX + 20, ly); ly += 30;
+
+  if (breakLREnabled) {
+    ctx.fillStyle = '#e74c3c';
+    ctx.font = 'bold 13px Inter, sans-serif';
+    ctx.fillText('LR = 1.0: Risk of', infoX + 20, ly); ly += 18;
+    ctx.fillText('overshoot!', infoX + 20, ly); ly += 18;
+    ctx.fillText('Notice the prediction', infoX + 20, ly); ly += 18;
+    ctx.fillText('may oscillate.', infoX + 20, ly);
+  }
+}
+
+// ============================================================
+// VIZ 8.5: BUILDING THE FULL ENSEMBLE
+// ============================================================
+var ensembleData = generateRegressionData(60, 200);
+var ensembleValData = generateRegressionData(30, 999);
+var ensembleAnimTimer = null;
+
+function updateEnsemble() {
+  var rounds = parseInt(document.getElementById('ensembleRounds').value);
+  var lr = parseInt(document.getElementById('ensembleLR').value) / 100;
+  var depth = parseInt(document.getElementById('ensembleDepth').value);
+  document.getElementById('ensembleRoundsVal').textContent = rounds;
+  document.getElementById('ensembleLRVal').textContent = lr.toFixed(2);
+  document.getElementById('ensembleDepthVal').textContent = depth;
+  drawEnsemble(rounds, lr, depth);
+}
+
+function animateEnsemble() {
+  if (ensembleAnimTimer) { clearInterval(ensembleAnimTimer); }
+  document.getElementById('ensembleRounds').value = 1;
+  var slider = document.getElementById('ensembleRounds');
+  ensembleAnimTimer = setInterval(function() {
+    var v = parseInt(slider.value);
+    if (v >= 50) { clearInterval(ensembleAnimTimer); ensembleAnimTimer = null; return; }
+    slider.value = v + 1;
+    updateEnsemble();
+  }, 120);
+}
+
+function drawEnsemble(numRounds, lr, maxDepth) {
+  var canvas = document.getElementById('ensembleCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, W, H);
+
+  var X = ensembleData.X, y = ensembleData.y;
+  var Xv = ensembleValData.X, yv = ensembleValData.y;
+
+  // Build ensemble
+  var preds = new Array(X.length).fill(0);
+  var predsV = new Array(Xv.length).fill(0);
+  var meanY = y.reduce(function(a,b){return a+b;},0) / y.length;
+  preds = preds.map(function() { return meanY; });
+  predsV = predsV.map(function() { return meanY; });
+
+  var trainLosses = [];
+  var valLosses = [];
+  var trees = [];
+
+  for (var t = 0; t < numRounds; t++) {
+    var residuals = y.map(function(yi, i) { return yi - preds[i]; });
+    var tree = buildTree(X, residuals, maxDepth);
+    trees.push(tree);
+
+    for (var i = 0; i < X.length; i++) {
+      preds[i] += lr * predictOne(tree, X[i]);
+    }
+    for (var i = 0; i < Xv.length; i++) {
+      predsV[i] += lr * predictOne(tree, Xv[i]);
+    }
+
+    var trainMSE = y.reduce(function(a, yi, i) { return a + (yi - preds[i]) * (yi - preds[i]); }, 0) / y.length;
+    var valMSE = yv.reduce(function(a, yi, i) { return a + (yi - predsV[i]) * (yi - predsV[i]); }, 0) / yv.length;
+    trainLosses.push(trainMSE);
+    valLosses.push(valMSE);
+  }
+
+  // Main plot: ensemble prediction vs target
+  var plotX = 60, plotY = 30, plotW = 500, plotH = 220;
+  var minXv2 = -1.5, maxXv2 = 5.5, minYv2 = -2.5, maxYv2 = 3;
+
+  function toPixelX(v) { return plotX + (v - minXv2) / (maxXv2 - minXv2) * plotW; }
+  function toPixelY(v) { return plotY + plotH - (v - minYv2) / (maxYv2 - minYv2) * plotH; }
+
+  // True function
+  ctx.strokeStyle = '#ffd93d';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (var px = 0; px <= plotW; px += 2) {
+    var xv = minXv2 + px / plotW * (maxXv2 - minXv2);
+    var yv2 = Math.sin(xv) * 1.5 + Math.cos(xv * 2) * 0.5;
+    if (px === 0) ctx.moveTo(toPixelX(xv), toPixelY(yv2));
+    else ctx.lineTo(toPixelX(xv), toPixelY(yv2));
+  }
+  ctx.stroke();
+
+  // Ensemble prediction
+  ctx.strokeStyle = '#10ac84';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  for (var px = 0; px <= plotW; px += 2) {
+    var xv = minXv2 + px / plotW * (maxXv2 - minXv2);
+    var pred = meanY;
+    for (var t = 0; t < trees.length; t++) {
+      pred += lr * predictOne(trees[t], [xv]);
+    }
+    if (px === 0) ctx.moveTo(toPixelX(xv), toPixelY(pred));
+    else ctx.lineTo(toPixelX(xv), toPixelY(pred));
+  }
+  ctx.stroke();
+
+  // Data points
+  for (var i = 0; i < X.length; i++) {
+    ctx.beginPath();
+    ctx.arc(toPixelX(X[i][0]), toPixelY(y[i]), 2.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#e0e0e066';
+    ctx.fill();
+  }
+
+  ctx.strokeStyle = '#2a2a4a';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(plotX, plotY, plotW, plotH);
+
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Ensemble Prediction (' + numRounds + ' trees, LR=' + lr.toFixed(2) + ', depth=' + maxDepth + ')', plotX, plotY - 8);
+
+  // Loss curves
+  var lossY = plotY + plotH + 50, lossH = 170;
+  drawRoundRect(ctx, plotX - 10, lossY - 20, plotW + 20, lossH + 40, 8, '#12121f', '#2a2a4a');
+
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.fillText('Train / Validation Loss', plotX, lossY - 4);
+
+  if (trainLosses.length > 0) {
+    var maxLoss = Math.max(trainLosses[0], valLosses[0] || 0) * 1.1;
+    if (maxLoss < 0.01) maxLoss = 0.01;
+
+    // Train loss
+    ctx.strokeStyle = '#e74c3c';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (var t = 0; t < trainLosses.length; t++) {
+      var lx = plotX + t / Math.max(1, numRounds - 1) * plotW;
+      var ly = lossY + lossH - (trainLosses[t] / maxLoss) * lossH;
+      if (t === 0) ctx.moveTo(lx, ly);
+      else ctx.lineTo(lx, ly);
+    }
+    ctx.stroke();
+
+    // Val loss
+    ctx.strokeStyle = '#4ecdc4';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (var t = 0; t < valLosses.length; t++) {
+      var lx = plotX + t / Math.max(1, numRounds - 1) * plotW;
+      var ly = lossY + lossH - (valLosses[t] / maxLoss) * lossH;
+      if (t === 0) ctx.moveTo(lx, ly);
+      else ctx.lineTo(lx, ly);
+    }
+    ctx.stroke();
+  }
+
+  // Stats panel
+  var infoX = 600;
+  drawRoundRect(ctx, infoX, 30, 270, 440, 12, '#12121f', '#2a2a4a');
+
+  ctx.fillStyle = '#10ac84';
+  ctx.font = 'bold 15px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Ensemble Stats', infoX + 20, 60);
+
+  ctx.font = '13px monospace';
+  ctx.fillStyle = '#e0e0e0';
+  var ily = 90;
+  ctx.fillText('Trees: ' + numRounds, infoX + 20, ily); ily += 22;
+  ctx.fillText('Learning rate: ' + lr.toFixed(2), infoX + 20, ily); ily += 22;
+  ctx.fillText('Max depth: ' + maxDepth, infoX + 20, ily); ily += 30;
+
+  if (trainLosses.length > 0) {
+    ctx.fillStyle = '#e74c3c';
+    ctx.fillText('Train MSE: ' + trainLosses[trainLosses.length-1].toFixed(6), infoX + 20, ily); ily += 22;
+    ctx.fillStyle = '#4ecdc4';
+    ctx.fillText('Val MSE:   ' + valLosses[valLosses.length-1].toFixed(6), infoX + 20, ily); ily += 30;
+
+    // Best val
+    var bestVal = Infinity, bestRound = 0;
+    for (var t = 0; t < valLosses.length; t++) {
+      if (valLosses[t] < bestVal) { bestVal = valLosses[t]; bestRound = t + 1; }
+    }
+    ctx.fillStyle = '#ffd93d';
+    ctx.fillText('Best val MSE: ' + bestVal.toFixed(6), infoX + 20, ily); ily += 22;
+    ctx.fillText('At round: ' + bestRound, infoX + 20, ily); ily += 30;
+
+    if (numRounds > bestRound + 5) {
+      ctx.fillStyle = '#e74c3c';
+      ctx.font = '12px Inter, sans-serif';
+      ctx.fillText('Overfitting detected!', infoX + 20, ily); ily += 18;
+      ctx.fillText('Val loss increasing after', infoX + 20, ily); ily += 18;
+      ctx.fillText('round ' + bestRound, infoX + 20, ily);
+    }
+  }
+
+  // Individual tree contributions
+  ily += 30;
+  ctx.fillStyle = '#10ac84';
+  ctx.font = '13px monospace';
+  ctx.fillText('Tree contributions:', infoX + 20, ily); ily += 18;
+  ctx.font = '11px monospace';
+  ctx.fillStyle = '#aaa';
+  for (var t = 0; t < Math.min(8, trees.length); t++) {
+    var treePreds = predictAll(trees[t], X);
+    var treeVar = computeMSE(treePreds.map(function(p) { return p * lr; }));
+    ctx.fillText('Tree ' + (t+1) + ': avg_corr=' + (treePreds.reduce(function(a,b){return a+b;},0)/treePreds.length * lr).toFixed(4), infoX + 20, ily);
+    ily += 15;
+  }
+  if (trees.length > 8) {
+    ctx.fillText('... +' + (trees.length - 8) + ' more trees', infoX + 20, ily);
+  }
+}
+
+// ============================================================
+// VIZ 8.6: GRADIENT DESCENT VIEW
+// ============================================================
+var gradData = generateRegressionData(40, 300);
+var breakGradEnabled = false;
+var gradAnimTimer = null;
+
+function toggleBreakGrad() {
+  breakGradEnabled = !breakGradEnabled;
+  var btn = document.getElementById('breakGrad');
+  btn.classList.toggle('broken');
+  btn.textContent = breakGradEnabled ? 'Fix: Correct Gradient' : 'Break It: Wrong Gradient';
+  updateGradView();
+}
+
+function updateGradView() {
+  var round = parseInt(document.getElementById('gradRound').value);
+  document.getElementById('gradRoundVal').textContent = round;
+  drawGradView(round);
+}
+
+function animateGradView() {
+  if (gradAnimTimer) { clearInterval(gradAnimTimer); }
+  document.getElementById('gradRound').value = 0;
+  gradAnimTimer = setInterval(function() {
+    var v = parseInt(document.getElementById('gradRound').value);
+    if (v >= 20) { clearInterval(gradAnimTimer); gradAnimTimer = null; return; }
+    document.getElementById('gradRound').value = v + 1;
+    updateGradView();
+  }, 300);
+}
+
+function drawGradView(numRounds) {
+  var canvas = document.getElementById('gradViewCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, W, H);
+
+  var X = gradData.X, y = gradData.y;
+  var lr = 0.2;
+
+  // Build ensemble incrementally and track losses
+  var meanY = y.reduce(function(a,b){return a+b;},0) / y.length;
+  var preds = y.map(function() { return meanY; });
+  var losses = [];
+  var trees = [];
+
+  var initLoss = y.reduce(function(a, yi, i) { return a + (yi - preds[i]) * (yi - preds[i]); }, 0) / y.length;
+  losses.push(initLoss);
+
+  for (var t = 0; t < 20; t++) {
+    var residuals;
+    if (breakGradEnabled) {
+      // Wrong gradient: use negative of correct direction
+      residuals = y.map(function(yi, i) { return -(yi - preds[i]); });
+    } else {
+      residuals = y.map(function(yi, i) { return yi - preds[i]; });
+    }
+    var tree = buildTree(X, residuals, 2);
+    trees.push(tree);
+
+    for (var i = 0; i < X.length; i++) {
+      preds[i] += lr * predictOne(tree, X[i]);
+    }
+    var loss = y.reduce(function(a, yi, i) { return a + (yi - preds[i]) * (yi - preds[i]); }, 0) / y.length;
+    losses.push(loss);
+  }
+
+  // Loss landscape (conceptual 2D view)
+  var lossPlotX = 60, lossPlotY = 50, lossPlotW = 400, lossPlotH = 350;
+
+  // Draw contour-like loss landscape
+  var centerX = lossPlotX + lossPlotW / 2;
+  var centerY = lossPlotY + lossPlotH / 2 + 30;
+  for (var ring = 12; ring >= 1; ring--) {
+    var rx = ring * 16 + ring * ring * 0.5;
+    var ry = ring * 12 + ring * ring * 0.3;
+    ctx.beginPath();
+    ctx.ellipse(centerX, centerY, rx, ry, -0.3, 0, Math.PI * 2);
+    var intensity = ring / 12;
+    var r = Math.floor(40 + intensity * 60);
+    var g = Math.floor(20 + intensity * 30);
+    var b = Math.floor(60 + intensity * 40);
+    ctx.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ', 0.4)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(100, 100, 160, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // Draw path of gradient descent
+  var pathPoints = [];
+  var maxLossForPlot = losses[0];
+  for (var t = 0; t <= Math.min(numRounds, 20); t++) {
+    var angle = t * 0.5 + 0.3;
+    var radius = (losses[t] / maxLossForPlot) * 140;
+    var px = centerX + Math.cos(angle) * radius;
+    var py = centerY + Math.sin(angle) * radius * 0.7;
+    pathPoints.push({ x: px, y: py, loss: losses[t] });
+  }
+
+  // Draw path
+  if (pathPoints.length > 1) {
+    ctx.strokeStyle = '#10ac84';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(pathPoints[0].x, pathPoints[0].y);
+    for (var i = 1; i < pathPoints.length; i++) {
+      ctx.lineTo(pathPoints[i].x, pathPoints[i].y);
+    }
+    ctx.stroke();
+
+    // Draw arrows on path
+    for (var i = 0; i < pathPoints.length - 1; i++) {
+      var midX = (pathPoints[i].x + pathPoints[i+1].x) / 2;
+      var midY = (pathPoints[i].y + pathPoints[i+1].y) / 2;
+      drawArrow(ctx, pathPoints[i].x, pathPoints[i].y, midX, midY, '#10ac8488', 1);
+    }
+  }
+
+  // Draw points on path
+  for (var i = 0; i < pathPoints.length; i++) {
+    ctx.beginPath();
+    ctx.arc(pathPoints[i].x, pathPoints[i].y, i === pathPoints.length - 1 ? 6 : 3, 0, Math.PI * 2);
+    ctx.fillStyle = i === pathPoints.length - 1 ? '#e74c3c' : '#10ac8488';
+    ctx.fill();
+    if (i === pathPoints.length - 1) {
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+  }
+
+  // Labels
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Loss Landscape (function space)', lossPlotX + lossPlotW / 2, lossPlotY - 10);
+  ctx.fillText('Minimum', centerX, centerY + 8);
+  ctx.fillStyle = '#555';
+  ctx.font = '10px Inter, sans-serif';
+  ctx.fillText('Each step = one tree added', lossPlotX + lossPlotW / 2, lossPlotY + lossPlotH + 20);
+
+  // Loss curve panel on right
+  var infoX = 510;
+  drawRoundRect(ctx, infoX, 30, 360, 420, 12, '#12121f', '#2a2a4a');
+
+  ctx.fillStyle = '#10ac84';
+  ctx.font = 'bold 15px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Gradient Descent in Function Space', infoX + 20, 60);
+
+  // Loss curve
+  var curveX = infoX + 30, curveY = 80, curveW = 300, curveH = 150;
+  var maxL = losses[0] * 1.1;
+
+  ctx.strokeStyle = '#2a2a4a';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(curveX, curveY, curveW, curveH);
+
+  ctx.strokeStyle = '#10ac84';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (var t = 0; t <= Math.min(numRounds, 20); t++) {
+    var lx = curveX + t / 20 * curveW;
+    var ly = curveY + curveH - (losses[t] / maxL) * curveH;
+    if (t === 0) ctx.moveTo(lx, ly);
+    else ctx.lineTo(lx, ly);
+  }
+  ctx.stroke();
+
+  // Current point
+  if (numRounds <= 20) {
+    var clx = curveX + numRounds / 20 * curveW;
+    var cly = curveY + curveH - (losses[numRounds] / maxL) * curveH;
+    ctx.beginPath();
+    ctx.arc(clx, cly, 5, 0, Math.PI * 2);
+    ctx.fillStyle = '#e74c3c';
+    ctx.fill();
+  }
+
+  ctx.fillStyle = '#888';
+  ctx.font = '10px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Round', curveX + curveW / 2, curveY + curveH + 15);
+  ctx.textAlign = 'left';
+  ctx.fillText('Loss', curveX - 5, curveY - 5);
+
+  // Stats
+  var sly = curveY + curveH + 35;
+  ctx.fillStyle = '#e0e0e0';
+  ctx.font = '13px monospace';
+  ctx.fillText('Round: ' + numRounds, infoX + 20, sly); sly += 22;
+  ctx.fillText('Loss: ' + losses[Math.min(numRounds, 20)].toFixed(6), infoX + 20, sly); sly += 22;
+  if (numRounds > 0) {
+    var reduction = losses[0] - losses[Math.min(numRounds, 20)];
+    ctx.fillStyle = reduction > 0 ? '#10ac84' : '#e74c3c';
+    ctx.fillText('Total reduction: ' + reduction.toFixed(6), infoX + 20, sly); sly += 22;
+    ctx.fillText('(' + (reduction / losses[0] * 100).toFixed(1) + '% of initial)', infoX + 20, sly); sly += 30;
+  }
+
+  if (breakGradEnabled) {
+    ctx.fillStyle = '#e74c3c';
+    ctx.font = 'bold 13px Inter, sans-serif';
+    ctx.fillText('WRONG GRADIENT!', infoX + 20, sly); sly += 18;
+    ctx.font = '12px Inter, sans-serif';
+    ctx.fillText('Loss is INCREASING because', infoX + 20, sly); sly += 18;
+    ctx.fillText('we are ascending, not descending.', infoX + 20, sly); sly += 18;
+    ctx.fillText('Each tree makes predictions', infoX + 20, sly); sly += 18;
+    ctx.fillText('WORSE, not better.', infoX + 20, sly);
+  } else {
+    ctx.fillStyle = '#ccc';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.fillText('Connection to SGD:', infoX + 20, sly); sly += 20;
+    ctx.fillStyle = '#aaa';
+    ctx.font = '11px Inter, sans-serif';
+    var lines = [
+      'SGD:     theta -= lr * dL/dtheta',
+      'Boost:   F -= lr * dL/dF',
+      '',
+      'In SGD, we update parameters.',
+      'In boosting, we update the',
+      'function F itself by adding',
+      'a new tree h_t that approx.',
+      'the negative gradient.'
+    ];
+    lines.forEach(function(line) {
+      ctx.fillText(line, infoX + 20, sly);
+      sly += 15;
+    });
+  }
+}
+
+// ============================================================
+// VIZ 8.7: REGULARIZATION & SHRINKAGE
+// ============================================================
+var regData = generateRegressionData(80, 400);
+var regValData = generateRegressionData(40, 777);
+
+function updateRegularization() {
+  var lr = parseInt(document.getElementById('regLR').value) / 100;
+  var depth = parseInt(document.getElementById('regDepth').value);
+  var rowSub = parseInt(document.getElementById('regRowSub').value) / 100;
+  var colSub = parseInt(document.getElementById('regColSub').value) / 100;
+  var rounds = parseInt(document.getElementById('regRounds').value);
+
+  document.getElementById('regLRVal').textContent = lr.toFixed(2);
+  document.getElementById('regDepthVal').textContent = depth;
+  document.getElementById('regRowSubVal').textContent = rowSub.toFixed(2);
+  document.getElementById('regColSubVal').textContent = colSub.toFixed(2);
+  document.getElementById('regRoundsVal').textContent = rounds;
+
+  drawRegularization(lr, depth, rowSub, colSub, rounds);
+}
+
+function drawRegularization(lr, maxDepth, rowSub, colSub, numRounds) {
+  var canvas = document.getElementById('shrinkCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, W, H);
+
+  var X = regData.X, y = regData.y;
+  var Xv = regValData.X, yv = regValData.y;
+
+  // Build ensemble with regularization
+  var meanY = y.reduce(function(a,b){return a+b;},0) / y.length;
+  var preds = y.map(function() { return meanY; });
+  var predsV = yv.map(function() { return meanY; });
+  var trainLosses = [], valLosses = [];
+  var trees = [];
+  var treeRng = seededRandom(42);
+
+  for (var t = 0; t < numRounds; t++) {
+    // Row subsampling
+    var rowMask = null;
+    if (rowSub < 1.0) {
+      rowMask = new Array(X.length).fill(false);
+      for (var i = 0; i < X.length; i++) {
+        if (treeRng() < rowSub) rowMask[i] = true;
+      }
+      // Ensure at least 2 selected
+      var cnt = rowMask.filter(function(v){return v;}).length;
+      if (cnt < 2) { rowMask[0] = true; rowMask[1] = true; }
+    }
+
+    // Column subsampling
+    var featureIndices = [0]; // only 1 feature for 1D regression
+    // For 1D data, col subsampling doesn't change anything, but we track it for display
+
+    var residuals = y.map(function(yi, i) { return yi - preds[i]; });
+    var tree = buildTree(X, residuals, maxDepth, 0, featureIndices, rowMask);
+    trees.push(tree);
+
+    for (var i = 0; i < X.length; i++) {
+      preds[i] += lr * predictOne(tree, X[i]);
+    }
+    for (var i = 0; i < Xv.length; i++) {
+      predsV[i] += lr * predictOne(tree, Xv[i]);
+    }
+
+    trainLosses.push(y.reduce(function(a, yi, i) { return a + (yi - preds[i]) * (yi - preds[i]); }, 0) / y.length);
+    valLosses.push(yv.reduce(function(a, yi, i) { return a + (yi - predsV[i]) * (yi - predsV[i]); }, 0) / yv.length);
+  }
+
+  // Loss curves (main plot)
+  var plotX = 60, plotY = 40, plotW = 500, plotH = 200;
+  var maxLoss = Math.max(trainLosses[0] || 1, valLosses[0] || 1) * 1.1;
+
+  drawRoundRect(ctx, plotX - 10, plotY - 20, plotW + 20, plotH + 50, 8, '#12121f', '#2a2a4a');
+
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Train vs Validation Loss', plotX, plotY - 4);
+
+  ctx.strokeStyle = '#2a2a4a';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(plotX, plotY, plotW, plotH);
+
+  // Train
+  ctx.strokeStyle = '#e74c3c';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (var t = 0; t < trainLosses.length; t++) {
+    var lx = plotX + t / Math.max(1, numRounds - 1) * plotW;
+    var ly = plotY + plotH - Math.min(1, trainLosses[t] / maxLoss) * plotH;
+    if (t === 0) ctx.moveTo(lx, ly);
+    else ctx.lineTo(lx, ly);
+  }
+  ctx.stroke();
+
+  // Val
+  ctx.strokeStyle = '#4ecdc4';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (var t = 0; t < valLosses.length; t++) {
+    var lx = plotX + t / Math.max(1, numRounds - 1) * plotW;
+    var ly = plotY + plotH - Math.min(1, valLosses[t] / maxLoss) * plotH;
+    if (t === 0) ctx.moveTo(lx, ly);
+    else ctx.lineTo(lx, ly);
+  }
+  ctx.stroke();
+
+  // Axis labels
+  ctx.fillStyle = '#555';
+  ctx.font = '10px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Round', plotX + plotW / 2, plotY + plotH + 20);
+  ctx.fillText('0', plotX, plotY + plotH + 20);
+  ctx.fillText(numRounds + '', plotX + plotW, plotY + plotH + 20);
+
+  // Prediction plot
+  var predY = plotY + plotH + 60, predH = 170;
+  var minXv2 = -1.5, maxXv2 = 5.5, minYv2 = -2.5, maxYv2 = 3;
+
+  function toPixelX(v) { return plotX + (v - minXv2) / (maxXv2 - minXv2) * plotW; }
+  function toPixelY(v) { return predY + predH - (v - minYv2) / (maxYv2 - minYv2) * predH; }
+
+  ctx.strokeStyle = '#2a2a4a';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(plotX, predY, plotW, predH);
+
+  // True
+  ctx.strokeStyle = '#ffd93d';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (var px = 0; px <= plotW; px += 2) {
+    var xv = minXv2 + px / plotW * (maxXv2 - minXv2);
+    var yv2 = Math.sin(xv) * 1.5 + Math.cos(xv * 2) * 0.5;
+    if (px === 0) ctx.moveTo(toPixelX(xv), toPixelY(yv2));
+    else ctx.lineTo(toPixelX(xv), toPixelY(yv2));
+  }
+  ctx.stroke();
+
+  // Ensemble pred
+  ctx.strokeStyle = '#10ac84';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  for (var px = 0; px <= plotW; px += 2) {
+    var xv = minXv2 + px / plotW * (maxXv2 - minXv2);
+    var pred = meanY;
+    for (var t = 0; t < trees.length; t++) {
+      pred += lr * predictOne(trees[t], [xv]);
+    }
+    if (px === 0) ctx.moveTo(toPixelX(xv), toPixelY(pred));
+    else ctx.lineTo(toPixelX(xv), toPixelY(pred));
+  }
+  ctx.stroke();
+
+  // Stats panel
+  var infoX = 600;
+  drawRoundRect(ctx, infoX, 30, 270, 440, 12, '#12121f', '#2a2a4a');
+
+  ctx.fillStyle = '#10ac84';
+  ctx.font = 'bold 15px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Regularization Effects', infoX + 20, 60);
+
+  ctx.font = '13px monospace';
+  ctx.fillStyle = '#e0e0e0';
+  var ily = 90;
+  ctx.fillText('LR: ' + lr.toFixed(2), infoX + 20, ily); ily += 20;
+  ctx.fillText('Max depth: ' + maxDepth, infoX + 20, ily); ily += 20;
+  ctx.fillText('Row subsample: ' + rowSub.toFixed(2), infoX + 20, ily); ily += 20;
+  ctx.fillText('Col subsample: ' + colSub.toFixed(2), infoX + 20, ily); ily += 20;
+  ctx.fillText('Rounds: ' + numRounds, infoX + 20, ily); ily += 30;
+
+  if (trainLosses.length > 0) {
+    ctx.fillStyle = '#e74c3c';
+    ctx.fillText('Final train MSE:', infoX + 20, ily); ily += 18;
+    ctx.fillStyle = '#e0e0e0';
+    ctx.fillText('  ' + trainLosses[trainLosses.length-1].toFixed(6), infoX + 20, ily); ily += 22;
+
+    ctx.fillStyle = '#4ecdc4';
+    ctx.fillText('Final val MSE:', infoX + 20, ily); ily += 18;
+    ctx.fillStyle = '#e0e0e0';
+    ctx.fillText('  ' + valLosses[valLosses.length-1].toFixed(6), infoX + 20, ily); ily += 25;
+
+    var gap = trainLosses[trainLosses.length-1] - valLosses[valLosses.length-1];
+    var absGap = Math.abs(gap);
+    ctx.fillStyle = '#ffd93d';
+    ctx.fillText('Gap: ' + absGap.toFixed(6), infoX + 20, ily); ily += 25;
+
+    var bestVal = Infinity, bestR = 0;
+    for (var t = 0; t < valLosses.length; t++) {
+      if (valLosses[t] < bestVal) { bestVal = valLosses[t]; bestR = t + 1; }
+    }
+    ctx.fillStyle = '#10ac84';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.fillText('Best val at round ' + bestR, infoX + 20, ily); ily += 20;
+    ctx.fillText('(' + bestVal.toFixed(6) + ')', infoX + 20, ily); ily += 25;
+
+    // Overfitting indicator
+    var overfit = valLosses[valLosses.length-1] > bestVal * 1.1;
+    if (overfit) {
+      ctx.fillStyle = '#e74c3c';
+      ctx.font = 'bold 12px Inter, sans-serif';
+      ctx.fillText('Overfitting: val loss', infoX + 20, ily); ily += 16;
+      ctx.fillText('increased from best.', infoX + 20, ily); ily += 16;
+      ctx.fillText('Try: lower LR, fewer', infoX + 20, ily); ily += 16;
+      ctx.fillText('rounds, or shallower trees.', infoX + 20, ily);
+    } else {
+      ctx.fillStyle = '#10ac84';
+      ctx.font = '12px Inter, sans-serif';
+      ctx.fillText('Good fit! Train and val', infoX + 20, ily); ily += 16;
+      ctx.fillText('losses are close.', infoX + 20, ily);
+    }
+  }
+}
+
+// ============================================================
+// VIZ 8.8: FULL GBDT TRAINING LOOP
+// ============================================================
+var fullSeed = 88;
+var fullClassData = generateClassificationData('moons', 120, fullSeed);
+var fullValClassData = generateClassificationData('moons', 60, fullSeed + 500);
+var breakEarlyEnabled = false;
+var fullAnimTimer = null;
+
+function toggleBreakEarly() {
+  breakEarlyEnabled = !breakEarlyEnabled;
+  var btn = document.getElementById('breakEarly');
+  btn.classList.toggle('broken');
+  btn.textContent = breakEarlyEnabled ? 'Fix: Enable Early Stopping' : 'Break It: No Early Stopping';
+  updateFullGBDT();
+}
+
+function regenerateFullData() {
+  fullSeed += 17;
+  fullClassData = generateClassificationData('moons', 120, fullSeed);
+  fullValClassData = generateClassificationData('moons', 60, fullSeed + 500);
+  updateFullGBDT();
+}
+
+function animateFullGBDT() {
+  if (fullAnimTimer) { clearInterval(fullAnimTimer); }
+  document.getElementById('fullRounds').value = 5;
+  var slider = document.getElementById('fullRounds');
+  fullAnimTimer = setInterval(function() {
+    var v = parseInt(slider.value);
+    if (v >= parseInt(slider.max)) { clearInterval(fullAnimTimer); fullAnimTimer = null; return; }
+    slider.value = v + 1;
+    updateFullGBDT();
+  }, 100);
+}
+
+function updateFullGBDT() {
+  var rounds = parseInt(document.getElementById('fullRounds').value);
+  var lr = parseInt(document.getElementById('fullLR').value) / 100;
+  var depth = parseInt(document.getElementById('fullDepth').value);
+  var patience = parseInt(document.getElementById('fullPatience').value);
+
+  document.getElementById('fullRoundsVal').textContent = rounds;
+  document.getElementById('fullLRVal').textContent = lr.toFixed(2);
+  document.getElementById('fullDepthVal').textContent = depth;
+  document.getElementById('fullPatienceVal').textContent = patience;
+
+  drawFullGBDT(rounds, lr, depth, patience);
+}
+
+function drawFullGBDT(maxRounds, lr, maxDepth, patience) {
+  var canvas = document.getElementById('gbdtTrainCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, W, H);
+
+  var X = fullClassData.X, y = fullClassData.y;
+  var Xv = fullValClassData.X, yv = fullValClassData.y;
+
+  // Convert labels for regression (0/1 as is)
+  var meanY = y.reduce(function(a,b){return a+b;},0) / y.length;
+  var preds = y.map(function() { return meanY; });
+  var predsV = yv.map(function() { return meanY; });
+
+  var trainLosses = [], valLosses = [];
+  var trees = [];
+  var stoppedAt = maxRounds;
+  var bestValLoss = Infinity;
+  var roundsSinceBest = 0;
+
+  for (var t = 0; t < maxRounds; t++) {
+    var residuals = y.map(function(yi, i) { return yi - preds[i]; });
+    var tree = buildTree(X, residuals, maxDepth);
+    trees.push(tree);
+
+    for (var i = 0; i < X.length; i++) {
+      preds[i] += lr * predictOne(tree, X[i]);
+    }
+    for (var i = 0; i < Xv.length; i++) {
+      predsV[i] += lr * predictOne(tree, Xv[i]);
+    }
+
+    var trainMSE = y.reduce(function(a, yi, i) { return a + (yi - preds[i]) * (yi - preds[i]); }, 0) / y.length;
+    var valMSE = yv.reduce(function(a, yi, i) { return a + (yi - predsV[i]) * (yi - predsV[i]); }, 0) / yv.length;
+    trainLosses.push(trainMSE);
+    valLosses.push(valMSE);
+
+    // Early stopping
+    if (!breakEarlyEnabled) {
+      if (valMSE < bestValLoss) {
+        bestValLoss = valMSE;
+        roundsSinceBest = 0;
+      } else {
+        roundsSinceBest++;
+      }
+      if (roundsSinceBest >= patience) {
+        stoppedAt = t + 1;
+        break;
+      }
+    }
+  }
+
+  // Bounds
+  var minX1 = Infinity, maxX1 = -Infinity, minX2 = Infinity, maxX2 = -Infinity;
+  X.concat(Xv).forEach(function(p) {
+    if (p[0] < minX1) minX1 = p[0];
+    if (p[0] > maxX1) maxX1 = p[0];
+    if (p[1] < minX2) minX2 = p[1];
+    if (p[1] > maxX2) maxX2 = p[1];
+  });
+  var pad = 0.3;
+  minX1 -= pad; maxX1 += pad; minX2 -= pad; maxX2 += pad;
+
+  // Decision boundary plot
+  var plotX = 30, plotY = 30, plotW = 360, plotH = 340;
+
+  // Color regions
+  var step = 5;
+  for (var px = plotX; px < plotX + plotW; px += step) {
+    for (var py = plotY; py < plotY + plotH; py += step) {
+      var xv1 = minX1 + (px - plotX) / plotW * (maxX1 - minX1);
+      var xv2 = maxX2 - (py - plotY) / plotH * (maxX2 - minX2);
+      var pred = meanY;
+      for (var t = 0; t < trees.length; t++) {
+        pred += lr * predictOne(trees[t], [xv1, xv2]);
+      }
+      var alpha = 0.15 + Math.min(0.15, Math.abs(pred - 0.5) * 0.3);
+      if (pred > 0.5) ctx.fillStyle = 'rgba(231, 76, 60, ' + alpha + ')';
+      else ctx.fillStyle = 'rgba(16, 172, 132, ' + alpha + ')';
+      ctx.fillRect(px, py, step, step);
+    }
+  }
+
+  // Draw data points
+  for (var i = 0; i < X.length; i++) {
+    var px = plotX + (X[i][0] - minX1) / (maxX1 - minX1) * plotW;
+    var py = plotY + (maxX2 - X[i][1]) / (maxX2 - minX2) * plotH;
+    ctx.beginPath();
+    ctx.arc(px, py, 3.5, 0, Math.PI * 2);
+    ctx.fillStyle = y[i] === 1 ? '#e74c3c' : '#10ac84';
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff44';
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+  }
+
+  // Val points (smaller, different shape)
+  for (var i = 0; i < Xv.length; i++) {
+    var px = plotX + (Xv[i][0] - minX1) / (maxX1 - minX1) * plotW;
+    var py = plotY + (maxX2 - Xv[i][1]) / (maxX2 - minX2) * plotH;
+    ctx.strokeStyle = yv[i] === 1 ? '#e74c3c' : '#10ac84';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(px - 3, py - 3, 6, 6);
+  }
+
+  ctx.strokeStyle = '#2a2a4a';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(plotX, plotY, plotW, plotH);
+
+  ctx.fillStyle = '#888';
+  ctx.font = '11px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Decision Boundary (circles=train, squares=val)', plotX, plotY - 8);
+
+  // Loss curves
+  var lossX = plotX, lossY = plotY + plotH + 30, lossW = plotW, lossH = 110;
+  drawRoundRect(ctx, lossX - 5, lossY - 15, lossW + 10, lossH + 35, 6, '#12121f', '#2a2a4a');
+
+  if (trainLosses.length > 0) {
+    var maxLoss = Math.max(trainLosses[0], valLosses[0]) * 1.1;
+    ctx.strokeStyle = '#e74c3c';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (var t = 0; t < trainLosses.length; t++) {
+      var lx = lossX + t / Math.max(1, maxRounds - 1) * lossW;
+      var ly = lossY + lossH - Math.min(1, trainLosses[t] / maxLoss) * lossH;
+      if (t === 0) ctx.moveTo(lx, ly);
+      else ctx.lineTo(lx, ly);
+    }
+    ctx.stroke();
+
+    ctx.strokeStyle = '#4ecdc4';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (var t = 0; t < valLosses.length; t++) {
+      var lx = lossX + t / Math.max(1, maxRounds - 1) * lossW;
+      var ly = lossY + lossH - Math.min(1, valLosses[t] / maxLoss) * lossH;
+      if (t === 0) ctx.moveTo(lx, ly);
+      else ctx.lineTo(lx, ly);
+    }
+    ctx.stroke();
+
+    // Early stop line
+    if (!breakEarlyEnabled && stoppedAt < maxRounds) {
+      var sx = lossX + stoppedAt / Math.max(1, maxRounds - 1) * lossW;
+      ctx.strokeStyle = '#ffd93d';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(sx, lossY);
+      ctx.lineTo(sx, lossY + lossH);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#ffd93d';
+      ctx.font = '10px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('STOP', sx, lossY - 3);
+    }
+  }
+
+  ctx.fillStyle = '#888';
+  ctx.font = '10px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Train/Val Loss', lossX + lossW / 2, lossY - 3);
+
+  // Stats panel
+  var infoX = 430;
+  drawRoundRect(ctx, infoX, 30, 440, 460, 12, '#12121f', '#2a2a4a');
+
+  ctx.fillStyle = '#10ac84';
+  ctx.font = 'bold 16px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Full GBDT Training', infoX + 20, 60);
+
+  ctx.font = '13px monospace';
+  ctx.fillStyle = '#e0e0e0';
+  var ily = 90;
+  ctx.fillText('Config:', infoX + 20, ily); ily += 20;
+  ctx.fillStyle = '#aaa';
+  ctx.font = '12px monospace';
+  ctx.fillText('  max_rounds: ' + maxRounds, infoX + 20, ily); ily += 18;
+  ctx.fillText('  learning_rate: ' + lr.toFixed(2), infoX + 20, ily); ily += 18;
+  ctx.fillText('  max_depth: ' + maxDepth, infoX + 20, ily); ily += 18;
+  ctx.fillText('  early_stop_patience: ' + (breakEarlyEnabled ? 'OFF' : patience), infoX + 20, ily); ily += 25;
+
+  // Results
+  ctx.fillStyle = '#10ac84';
+  ctx.font = '13px monospace';
+  ctx.fillText('Results:', infoX + 20, ily); ily += 20;
+
+  var actualRounds = trees.length;
+  ctx.fillStyle = '#e0e0e0';
+  ctx.font = '12px monospace';
+  ctx.fillText('  Trees built: ' + actualRounds, infoX + 20, ily); ily += 18;
+
+  if (trainLosses.length > 0) {
+    ctx.fillText('  Final train MSE: ' + trainLosses[trainLosses.length-1].toFixed(6), infoX + 20, ily); ily += 18;
+    ctx.fillText('  Final val MSE:   ' + valLosses[valLosses.length-1].toFixed(6), infoX + 20, ily); ily += 18;
+
+    // Train accuracy
+    var trainCorr = 0;
+    for (var i = 0; i < X.length; i++) {
+      var pred = meanY;
+      for (var t = 0; t < trees.length; t++) {
+        pred += lr * predictOne(trees[t], X[i]);
+      }
+      if ((pred > 0.5 ? 1 : 0) === y[i]) trainCorr++;
+    }
+    var trainAcc = trainCorr / X.length;
+
+    var valCorr = 0;
+    for (var i = 0; i < Xv.length; i++) {
+      var pred = meanY;
+      for (var t = 0; t < trees.length; t++) {
+        pred += lr * predictOne(trees[t], Xv[i]);
+      }
+      if ((pred > 0.5 ? 1 : 0) === yv[i]) valCorr++;
+    }
+    var valAcc = valCorr / Xv.length;
+
+    ily += 5;
+    ctx.fillStyle = '#10ac84';
+    ctx.fillText('  Train accuracy: ' + (trainAcc * 100).toFixed(1) + '%', infoX + 20, ily); ily += 18;
+    ctx.fillStyle = '#4ecdc4';
+    ctx.fillText('  Val accuracy:   ' + (valAcc * 100).toFixed(1) + '%', infoX + 20, ily); ily += 25;
+
+    if (!breakEarlyEnabled && stoppedAt < maxRounds) {
+      ctx.fillStyle = '#ffd93d';
+      ctx.font = 'bold 12px Inter, sans-serif';
+      ctx.fillText('  Early stopped at round ' + stoppedAt, infoX + 20, ily); ily += 18;
+      ctx.font = '12px Inter, sans-serif';
+      ctx.fillText('  (patience=' + patience + ', no val improvement)', infoX + 20, ily); ily += 25;
+    }
+  }
+
+  // Feature importance
+  ily += 5;
+  ctx.fillStyle = '#10ac84';
+  ctx.font = '13px monospace';
+  ctx.fillText('Feature Importances:', infoX + 20, ily); ily += 20;
+
+  var featureImps = [0, 0];
+  function accumulateImportance(node) {
+    if (!node || node.feature === undefined) return;
+    featureImps[node.feature] += node.gain * node.samples;
+    if (node.left) accumulateImportance(node.left);
+    if (node.right) accumulateImportance(node.right);
+  }
+  trees.forEach(function(tree) { accumulateImportance(tree); });
+  var totalImp = featureImps[0] + featureImps[1];
+  if (totalImp > 0) {
+    featureImps[0] /= totalImp;
+    featureImps[1] /= totalImp;
+  }
+
+  // Draw bars
+  var barW = 200;
+  for (var f = 0; f < 2; f++) {
+    ctx.fillStyle = '#2a2a4a';
+    ctx.fillRect(infoX + 20, ily, barW, 16);
+    ctx.fillStyle = f === 0 ? '#10ac84' : '#4ecdc4';
+    ctx.fillRect(infoX + 20, ily, barW * featureImps[f], 16);
+    ctx.fillStyle = '#e0e0e0';
+    ctx.font = '11px monospace';
+    ctx.fillText('x' + (f+1) + ': ' + (featureImps[f] * 100).toFixed(1) + '%', infoX + barW + 30, ily + 12);
+    ily += 22;
+  }
+
+  // Warning if break is on
+  if (breakEarlyEnabled) {
+    ily += 15;
+    ctx.fillStyle = '#e74c3c';
+    ctx.font = 'bold 13px Inter, sans-serif';
+    ctx.fillText('Early stopping DISABLED!', infoX + 20, ily); ily += 18;
+    ctx.font = '12px Inter, sans-serif';
+    ctx.fillText('Model may be overfitting:', infoX + 20, ily); ily += 16;
+    ctx.fillText('train loss keeps decreasing', infoX + 20, ily); ily += 16;
+    ctx.fillText('but val loss may increase.', infoX + 20, ily); ily += 16;
+    ctx.fillText('Watch the gap between', infoX + 20, ily); ily += 16;
+    ctx.fillText('train and val curves!', infoX + 20, ily);
+  }
+
+  // Algorithm pseudocode
+  ily += 25;
+  ctx.fillStyle = '#ffd93d';
+  ctx.font = 'bold 12px monospace';
+  ctx.fillText('Algorithm:', infoX + 20, ily); ily += 18;
+  ctx.fillStyle = '#aaa';
+  ctx.font = '10px monospace';
+  var code = [
+    'F_0 = mean(y)',
+    'for t in 1..T:',
+    '  r = y - F_{t-1}(x)',
+    '  h_t = fit_tree(X, r, depth)',
+    '  F_t = F_{t-1} + lr * h_t',
+    '  if val_loss no improve:',
+    '    stop (patience=' + patience + ')'
+  ];
+  code.forEach(function(line) {
+    ctx.fillText(line, infoX + 20, ily);
+    ily += 14;
+  });
+}
+
+// ============================================================
+// QUIZ DATA
+// ============================================================
+var quizData = [
+  {
+    topic: "8.1: Decision Stumps",
+    questions: [
+      { q: "What is a decision stump?", options: ["A) A tree with unlimited depth", "B) A tree with exactly one split (depth 1)", "C) A tree that only uses one feature", "D) A tree that only predicts binary outcomes"], correct: 1, explanation: "A decision stump is the simplest possible decision tree: it has exactly one internal node (one split) and two leaf nodes. It makes a single binary decision based on one feature and one threshold." },
+      { q: "How does a decision stump find the best split?", options: ["A) Random selection", "B) Gradient computation", "C) Exhaustive search over all features and thresholds, maximizing information gain or MSE reduction", "D) K-means clustering"], correct: 2, explanation: "A decision stump tries every possible feature and every possible threshold value (midpoints between sorted unique values), computes the gain for each, and selects the one with the highest gain. This is a brute-force, greedy approach." },
+      { q: "Why can't a single decision stump separate XOR data?", options: ["A) XOR data has too many points", "B) XOR requires curved boundaries", "C) A stump creates one axis-aligned boundary, but XOR needs two boundaries", "D) Stumps only work with continuous features"], correct: 2, explanation: "XOR data requires separating points in two diagonal quadrants. A single stump can only create one axis-aligned split (vertical or horizontal line), which cannot separate XOR data. You need at least depth 2 (two splits) for XOR." },
+      { q: "What does 'information gain' measure in the context of splitting?", options: ["A) The number of data points in each child", "B) The reduction in impurity (MSE/Gini) achieved by the split", "C) The depth of the tree", "D) The accuracy of the model"], correct: 1, explanation: "Information gain measures how much a split reduces the impurity of the data. For regression, this is MSE reduction; for classification, it can be Gini impurity reduction or entropy reduction. Higher gain means a more useful split." },
+      { q: "If a split divides 100 samples into 50-50 groups but both groups have identical label distributions, what is the gain?", options: ["A) Maximum gain", "B) Gain equals 0.5", "C) Zero gain", "D) Negative gain"], correct: 2, explanation: "If both groups have the same label distribution as the parent, the impurity in each child equals the parent impurity. The weighted sum of child impurities equals the parent impurity, so the gain (parent - weighted children) is zero. The split provides no useful information." }
+    ]
+  },
+  {
+    topic: "8.2: Growing Full Trees",
+    questions: [
+      { q: "What happens as you increase the maximum depth of a decision tree?", options: ["A) The tree always generalizes better", "B) The tree can fit more complex patterns but risks overfitting", "C) Training becomes faster", "D) The tree uses fewer features"], correct: 1, explanation: "Increasing depth allows the tree to create more splits and model more complex decision boundaries. However, with enough depth, the tree can memorize the training data (each leaf contains very few or even single samples), leading to overfitting and poor generalization." },
+      { q: "A tree achieves 100% training accuracy. Is this good or bad?", options: ["A) Always good - it learned the data perfectly", "B) Always bad - it is overfitting", "C) Likely overfitting - it may have memorized noise in the training data", "D) It depends on the number of features"], correct: 2, explanation: "100% training accuracy usually indicates overfitting, especially with noisy data. The tree has likely memorized not just the signal but also the noise in the training data. This typically leads to poor performance on unseen data." },
+      { q: "In gradient boosting, we prefer weak learners (shallow trees). Why?", options: ["A) They are faster to train", "B) They have high bias and low variance, and boosting reduces the bias while keeping variance manageable", "C) They use less memory", "D) They are easier to interpret"], correct: 1, explanation: "Boosting works by combining many weak learners. Shallow trees have high bias (they underfit individually) but low variance. By adding many such trees, boosting gradually reduces the bias. The low variance of each individual tree helps prevent the ensemble from overfitting as quickly as with deep trees." },
+      { q: "What is the relationship between tree depth and the number of possible leaf nodes?", options: ["A) Leaves = depth", "B) Leaves = 2^depth (maximum)", "C) Leaves = depth^2", "D) Leaves = 2 * depth"], correct: 1, explanation: "A binary tree of depth d can have at most 2^d leaf nodes. Depth 1 = 2 leaves, depth 2 = 4 leaves, depth 3 = 8 leaves, etc. Each additional depth level doubles the maximum number of leaves, exponentially increasing the tree's capacity to partition the input space." },
+      { q: "Why does a greedy splitting algorithm not guarantee the globally optimal tree?", options: ["A) It uses random splits", "B) It makes locally optimal decisions at each node without considering future splits", "C) It cannot handle continuous features", "D) It requires pre-sorted data"], correct: 1, explanation: "Greedy splitting picks the best split at each node based on the current data in that node, without considering how this choice affects splits further down. A suboptimal split at depth 1 might enable much better splits at depth 2, but the greedy algorithm cannot see this. Finding the globally optimal tree is NP-hard." }
+    ]
+  },
+  {
+    topic: "8.3: Computing Residuals",
+    questions: [
+      { q: "What are residuals in the context of gradient boosting?", options: ["A) The weights of the model", "B) The difference between true values and current predictions: r_i = y_i - y_hat_i", "C) The features of the data", "D) The learning rate"], correct: 1, explanation: "Residuals are the errors of the current model: r_i = y_i - y_hat_i. They tell us how much each prediction is off from the true value. Positive residuals mean we predicted too low; negative means too high." },
+      { q: "For MSE loss, what is the relationship between residuals and gradients?", options: ["A) They are unrelated", "B) Residuals are the negative gradient of the loss with respect to predictions", "C) Residuals are the positive gradient", "D) Residuals are the second derivative"], correct: 1, explanation: "For MSE loss L = 1/2 * (y - y_hat)^2, the negative gradient w.r.t. y_hat is -(-(y - y_hat)) = (y - y_hat) = residual. This is why 'fitting residuals' and 'gradient boosting' are equivalent for MSE loss." },
+      { q: "After fitting a depth-1 tree to a sine wave, where will the residuals be largest?", options: ["A) Near the mean of the data", "B) At the threshold of the split", "C) At the peaks and valleys where the constant prediction deviates most from the true curve", "D) At the edges of the data range"], correct: 2, explanation: "A depth-1 tree can only create a step function (two constant values). The residuals will be largest where the true function deviates most from these constants, which is at the peaks and valleys of the sine wave." },
+      { q: "Why is fitting a tree to residuals equivalent to gradient descent?", options: ["A) Because trees use gradients internally", "B) Because the residuals are the negative gradient direction, and fitting a tree to them approximates the gradient step in function space", "C) Because both use learning rates", "D) Because both minimize MSE"], correct: 1, explanation: "In gradient descent, we move in the negative gradient direction to reduce the loss. In gradient boosting, the residuals ARE the negative gradient (for MSE). By fitting a tree to the residuals, we are approximating the negative gradient of the loss in function space, then taking a step in that direction." },
+      { q: "If all residuals are exactly zero, what should happen?", options: ["A) The algorithm diverges", "B) The next tree will predict all zeros and add nothing - the model has converged", "C) The learning rate should be increased", "D) More data is needed"], correct: 1, explanation: "If all residuals are zero, the model's predictions perfectly match the true values. Any tree fit to zero residuals will predict zero everywhere. Adding this tree (scaled by any learning rate) changes nothing. The boosting process has converged." }
+    ]
+  },
+  {
+    topic: "8.4: One Boosting Step",
+    questions: [
+      { q: "What is the update formula for one boosting step?", options: ["A) y_hat_new = y_hat_old * h_t(x)", "B) y_hat_new = y_hat_old + learning_rate * h_t(x)", "C) y_hat_new = learning_rate * h_t(x)", "D) y_hat_new = y_hat_old - h_t(x)"], correct: 1, explanation: "Each boosting step adds the new tree's prediction (scaled by the learning rate) to the current prediction: y_hat_new = y_hat_old + eta * h_t(x). The learning rate eta shrinks each tree's contribution to prevent overfitting." },
+      { q: "What happens when you set the learning rate to 1.0?", options: ["A) The model converges faster and generalizes better", "B) Each tree fully corrects the residuals, risking overshoot and oscillation", "C) The model becomes more regularized", "D) Nothing changes"], correct: 1, explanation: "With learning_rate = 1.0, each tree tries to fully correct the current errors. This is aggressive and can lead to overshooting (the prediction swings past the correct value), oscillation, and overfitting. Smaller learning rates (e.g., 0.1) are more conservative and typically generalize better." },
+      { q: "Why does a small learning rate require more trees?", options: ["A) Because each tree has less data", "B) Because each tree contributes a smaller correction, so more trees are needed to accumulate enough corrections", "C) Because the trees become deeper", "D) Because the data changes"], correct: 1, explanation: "With a small learning rate (e.g., 0.01), each tree only contributes 1% of its full prediction. It takes many more trees to accumulate enough corrections to fit the data well. The tradeoff: more trees needed, but better generalization due to the smaller step sizes." },
+      { q: "What is 'shrinkage' in gradient boosting?", options: ["A) Reducing the number of features", "B) Reducing the tree depth", "C) Scaling each tree's contribution by a learning rate less than 1", "D) Removing outliers from the data"], correct: 2, explanation: "Shrinkage is the practice of multiplying each tree's prediction by a learning rate eta < 1 before adding it to the ensemble. This 'shrinks' each tree's contribution, acting as a regularizer. It is one of the most important techniques for preventing overfitting in gradient boosting." },
+      { q: "If the MSE before a boosting step is 0.5 and after is 0.3, what is the percentage reduction?", options: ["A) 20%", "B) 40%", "C) 60%", "D) 30%"], correct: 1, explanation: "Percentage reduction = (0.5 - 0.3) / 0.5 * 100% = 0.2 / 0.5 * 100% = 40%. The boosting step reduced the error by 40% of the original value." }
+    ]
+  },
+  {
+    topic: "8.5: Full Ensemble",
+    questions: [
+      { q: "What is the prediction of a GBDT ensemble with T trees?", options: ["A) The prediction of the last tree only", "B) The average of all tree predictions", "C) The initial prediction plus the sum of all trees' predictions scaled by learning rate", "D) The maximum of all tree predictions"], correct: 2, explanation: "The GBDT prediction is: F(x) = F_0 + eta * h_1(x) + eta * h_2(x) + ... + eta * h_T(x), where F_0 is the initial constant (mean for regression), and each h_t is a tree fitted to residuals. It is an additive model, not an average." },
+      { q: "How does GBDT differ from Random Forests?", options: ["A) GBDT uses deeper trees", "B) GBDT fits trees sequentially to residuals, while RF fits trees independently to bootstrapped data", "C) RF uses gradient descent", "D) GBDT uses bagging"], correct: 1, explanation: "The key difference: Random Forests build trees independently in parallel on bootstrapped samples (bagging). GBDT builds trees sequentially, where each tree corrects the errors of the previous ensemble. RF reduces variance; GBDT reduces bias." },
+      { q: "Why does the validation loss eventually increase even as training loss keeps decreasing?", options: ["A) The validation data changes", "B) The model starts memorizing training noise, which hurts generalization (overfitting)", "C) The learning rate increases automatically", "D) The trees become too shallow"], correct: 1, explanation: "As more trees are added, the ensemble gains enough capacity to fit not just the true signal but also the noise in the training data. This noise-fitting reduces training loss but increases error on unseen data (validation loss), the classic hallmark of overfitting." },
+      { q: "What does the gap between train and validation loss indicate?", options: ["A) The learning rate is too high", "B) The degree of overfitting - larger gap means more overfitting", "C) The data is too noisy", "D) The trees are too shallow"], correct: 1, explanation: "The train-val loss gap is a direct measure of overfitting. A small gap means the model generalizes well. A large gap (low train loss, high val loss) means the model has overfit to the training data. Regularization techniques aim to reduce this gap." },
+      { q: "Why is GBDT called an 'additive model'?", options: ["A) Because it adds features", "B) Because the final prediction is the sum (addition) of all individual tree predictions", "C) Because it adds regularization", "D) Because it adds data points"], correct: 1, explanation: "GBDT is additive because the ensemble prediction is literally the sum of individual tree predictions: F(x) = sum of eta * h_t(x). Each tree adds a correction to the current prediction. This additive structure is what makes boosting work." }
+    ]
+  },
+  {
+    topic: "8.6: Gradient Descent View",
+    questions: [
+      { q: "In what 'space' does gradient boosting perform gradient descent?", options: ["A) Parameter space", "B) Feature space", "C) Function space", "D) Data space"], correct: 2, explanation: "Unlike neural networks (which do gradient descent in parameter space), gradient boosting does gradient descent in function space. Each tree is a step that modifies the prediction function F(x) itself, moving it in the direction that reduces the loss." },
+      { q: "What does the negative gradient of the loss tell us?", options: ["A) Which features to use", "B) The direction in which to change predictions to reduce the loss", "C) The optimal number of trees", "D) The best learning rate"], correct: 1, explanation: "The negative gradient of the loss w.r.t. predictions tells us, for each sample, in which direction and by how much to adjust the prediction to decrease the loss. The next tree approximates this direction." },
+      { q: "What happens when you use the WRONG gradient direction (ascending instead of descending)?", options: ["A) The model converges faster", "B) The loss increases with each step - the model gets progressively worse", "C) Nothing changes", "D) The model finds a different minimum"], correct: 1, explanation: "Using the wrong gradient direction means each tree's correction makes predictions WORSE, not better. The loss increases with every tree added, as the model moves away from the minimum in function space. This is gradient ASCENT." },
+      { q: "How is the tree related to the gradient in gradient boosting?", options: ["A) The tree computes the gradient", "B) The tree IS the gradient step - it approximates the negative gradient direction", "C) The tree selects which gradient to use", "D) The tree normalizes the gradient"], correct: 1, explanation: "Each tree in gradient boosting is fitted to the negative gradient (residuals for MSE). The tree's prediction at each point approximates the direction and magnitude of the optimal update. Adding this tree to the ensemble is equivalent to taking a gradient descent step." },
+      { q: "Why use a tree to approximate the gradient instead of using the exact gradient?", options: ["A) Trees are faster", "B) We cannot evaluate the gradient at new (test) points; the tree generalizes the gradient to unseen inputs", "C) The exact gradient is always zero", "D) Trees produce better gradients"], correct: 1, explanation: "The negative gradient (residuals) is only known at training points. We need a way to estimate corrections at NEW points the model hasn't seen. By fitting a tree to the residuals, we create a function that can predict corrections for any input, enabling generalization." }
+    ]
+  },
+  {
+    topic: "8.7: Regularization",
+    questions: [
+      { q: "Which regularization technique is considered the most important in gradient boosting?", options: ["A) L2 regularization on leaf weights", "B) Learning rate shrinkage", "C) Column subsampling", "D) Min child weight"], correct: 1, explanation: "Learning rate shrinkage (eta < 1) is widely considered the most important regularization technique in gradient boosting. It scales down each tree's contribution, requiring more trees to fit the data, which acts as a powerful regularizer. Typical values are 0.01-0.3." },
+      { q: "What is row subsampling (subsample parameter)?", options: ["A) Using a subset of features for each tree", "B) Using a random subset of training rows for each tree", "C) Reducing the number of output classes", "D) Reducing tree depth"], correct: 1, explanation: "Row subsampling (stochastic gradient boosting) trains each tree on a random subset of the training data. This introduces randomness similar to bagging in Random Forests, reducing variance and correlation between trees, which helps prevent overfitting." },
+      { q: "How does column subsampling help prevent overfitting?", options: ["A) By reducing computation time", "B) By preventing the model from relying too heavily on any single feature", "C) By increasing tree depth", "D) By adding noise to the data"], correct: 1, explanation: "Column (feature) subsampling forces each tree (or split) to use only a random subset of features. This prevents the model from relying too heavily on dominant features and encourages it to discover patterns in other features. It also reduces correlation between trees." },
+      { q: "What are typical default hyperparameters in XGBoost?", options: ["A) lr=1.0, depth=20, subsample=0.5", "B) lr=0.1, depth=6, subsample=1.0", "C) lr=0.5, depth=3, subsample=0.8", "D) lr=0.01, depth=10, subsample=0.3"], correct: 1, explanation: "XGBoost defaults are: learning_rate=0.1 (was 0.3), max_depth=6, subsample=1.0, colsample_bytree=1.0. These defaults provide a reasonable starting point. In practice, tuning learning rate lower (0.01-0.1) with more trees often improves performance." },
+      { q: "How do max_depth and min_child_weight regularize differently?", options: ["A) They both limit tree depth", "B) max_depth limits tree complexity globally, while min_child_weight prevents splits that create leaves with too few samples", "C) They both affect the learning rate", "D) max_depth affects training speed, min_child_weight affects accuracy"], correct: 1, explanation: "max_depth directly caps how deep each tree can grow (limiting overall complexity). min_child_weight prevents splits where the resulting leaf would have insufficient sample weight, avoiding overly specific rules based on very few data points. Both reduce overfitting but in complementary ways." }
+    ]
+  },
+  {
+    topic: "8.8: Full GBDT Training",
+    questions: [
+      { q: "What is early stopping in gradient boosting?", options: ["A) Stopping training when the learning rate reaches zero", "B) Monitoring validation loss and stopping when it stops improving for a set number of rounds", "C) Stopping after a fixed number of epochs", "D) Stopping when training loss reaches zero"], correct: 1, explanation: "Early stopping monitors the validation loss during training. If the validation loss does not improve for 'patience' consecutive rounds, training stops. This prevents the model from overfitting by adding too many trees that only reduce training loss while increasing validation loss." },
+      { q: "What is the initial prediction F_0 in GBDT for regression?", options: ["A) Zero", "B) The mean of the target values", "C) The median of the target values", "D) A random value"], correct: 1, explanation: "For regression with MSE loss, the optimal constant prediction is the mean of the training targets: F_0 = mean(y). This minimizes the initial MSE. For classification with log loss, it is the log-odds of the positive class." },
+      { q: "What happens when you disable early stopping?", options: ["A) The model always performs better", "B) The model may overfit as it continues adding trees past the optimal point", "C) Training becomes faster", "D) The model becomes more regularized"], correct: 1, explanation: "Without early stopping, the model continues adding trees until max_rounds is reached. Past the optimal number of trees, each additional tree reduces training loss but may increase validation loss (overfitting). Early stopping prevents this waste and degradation." },
+      { q: "How is feature importance computed in GBDT?", options: ["A) By the order features appear in the first tree", "B) By the total gain (or split count) attributed to each feature across all trees", "C) By the correlation between features and targets", "D) By the feature's position in the dataset"], correct: 1, explanation: "Feature importance in GBDT is typically computed by summing the gain (improvement in the objective) contributed by each feature across all splits in all trees. Features that are used frequently and produce large gains are ranked as more important." },
+      { q: "What are XGBoost, LightGBM, and CatBoost, and how do they differ?", options: ["A) Completely different algorithms", "B) Different implementations of GBDT with optimizations: XGBoost uses level-wise growth, LightGBM uses leaf-wise growth with histograms, CatBoost handles categoricals natively", "C) Different names for the same software", "D) Different types of neural networks"], correct: 1, explanation: "All three are GBDT implementations sharing the same core algorithm. XGBoost pioneered efficient parallel GBDT. LightGBM uses histogram-based splitting and leaf-wise tree growth for faster training. CatBoost handles categorical features natively using ordered boosting. The fundamental gradient boosting algorithm is the same." }
+    ]
+  }
+];
+
+// ============================================================
+// QUIZ RENDERING
+// ============================================================
+var topicScores = {};
+var totalCorrect = 0;
+var totalAnswered = 0;
+var totalQ = 40;
+
+quizData.forEach(function(t, ti) { topicScores[ti] = { correct: 0, answered: 0, total: t.questions.length }; });
+
+function buildQuiz() {
+  var container = document.getElementById('quizQuestions');
+  container.innerHTML = '';
+  quizData.forEach(function(topic, ti) {
+    var topicDiv = document.createElement('div');
+    topicDiv.className = 'quiz-topic';
+    var header = document.createElement('div');
+    header.className = 'quiz-topic-header';
+    header.innerHTML = '<h3>' + topic.topic + '</h3><span class="quiz-topic-score" id="topicScore' + ti + '">0 / ' + topic.questions.length + '</span>';
+    header.onclick = function() {
+      var qDiv = topicDiv.querySelector('.quiz-topic-questions');
+      qDiv.classList.toggle('open');
+    };
+    topicDiv.appendChild(header);
+    var questionsDiv = document.createElement('div');
+    questionsDiv.className = 'quiz-topic-questions';
+
+    topic.questions.forEach(function(question, qi) {
+      var qDiv = document.createElement('div');
+      qDiv.className = 'quiz-question';
+      qDiv.innerHTML = '<h4>Q' + (qi+1) + ': ' + question.q + '</h4>';
+      question.options.forEach(function(opt, oi) {
+        var btn = document.createElement('button');
+        btn.className = 'quiz-option';
+        btn.textContent = opt;
+        btn.onclick = function() { checkAnswer(ti, qi, oi, qDiv); };
+        btn.id = 'qopt_' + ti + '_' + qi + '_' + oi;
+        qDiv.appendChild(btn);
+      });
+      var expDiv = document.createElement('div');
+      expDiv.className = 'quiz-explanation';
+      expDiv.id = 'qexp_' + ti + '_' + qi;
+      expDiv.textContent = question.explanation;
+      qDiv.appendChild(expDiv);
+      questionsDiv.appendChild(qDiv);
+    });
+    topicDiv.appendChild(questionsDiv);
+    container.appendChild(topicDiv);
+  });
+}
+
+function checkAnswer(ti, qi, oi, qDiv) {
+  var question = quizData[ti].questions[qi];
+  var buttons = qDiv.querySelectorAll('.quiz-option');
+  var expDiv = document.getElementById('qexp_' + ti + '_' + qi);
+  if (buttons[0].disabled) return;
+  buttons.forEach(function(b, i) {
+    b.disabled = true;
+    if (i === question.correct) b.classList.add('correct');
+    if (i === oi && oi !== question.correct) b.classList.add('wrong');
+  });
+  totalAnswered++;
+  topicScores[ti].answered++;
+  if (oi === question.correct) {
+    totalCorrect++;
+    topicScores[ti].correct++;
+    expDiv.className = 'quiz-explanation show correct-exp';
+  } else {
+    expDiv.className = 'quiz-explanation show wrong-exp';
+  }
+  document.getElementById('quizScore').textContent = totalCorrect;
+  document.getElementById('topicScore' + ti).textContent = topicScores[ti].correct + ' / ' + topicScores[ti].total;
+  document.getElementById('quizProgressBar').style.width = (totalAnswered / totalQ * 100) + '%';
+}
+
+function resetQuiz() {
+  totalCorrect = 0;
+  totalAnswered = 0;
+  quizData.forEach(function(t, ti) { topicScores[ti] = { correct: 0, answered: 0, total: t.questions.length }; });
+  buildQuiz();
+  document.getElementById('quizScore').textContent = '0';
+  document.getElementById('quizProgressBar').style.width = '0%';
+}
+
+function toggleQuiz() {
+  var section = document.getElementById('quizSection');
+  if (section.style.display === 'none') {
+    section.style.display = 'block';
+    section.scrollIntoView({ behavior: 'smooth' });
+  } else {
+    section.style.display = 'none';
+  }
+}
+
+// ============================================================
+// INITIALIZATION
+// ============================================================
+window.addEventListener('DOMContentLoaded', function() {
+  drawStump();
+  drawTreeGrow(2);
+  drawResiduals(1);
+  drawBoostStep(0.3, 2);
+  drawEnsemble(1, 0.2, 2);
+  drawGradView(0);
+  drawRegularization(0.1, 3, 1.0, 1.0, 50);
+  drawFullGBDT(50, 0.15, 3, 5);
+  buildQuiz();
+});
+
+</script>
+</body>
+</html>
