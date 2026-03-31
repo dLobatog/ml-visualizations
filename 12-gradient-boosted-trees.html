@@ -956,23 +956,43 @@ function getLeaves(node, arr) {
 
 function drawTreeStructure(ctx, node, x, y, dx, depth, maxDrawDepth) {
   if (!node) return;
-  var radius = 16;
+  // Scale sizes based on max depth for readability
+  var scale = maxDrawDepth <= 3 ? 1.0 : maxDrawDepth <= 4 ? 0.85 : maxDrawDepth <= 5 ? 0.7 : 0.55;
+  var radius = Math.max(6, Math.round(16 * scale));
+  var vGap = Math.max(25, Math.round(50 * scale));
+  var fontSize = Math.max(7, Math.round(9 * scale));
+  // Cap drawing at depth 4 for readability; summarize deeper nodes
+  if (depth >= 4 && maxDrawDepth > 4) {
+    // Draw a summary dot
+    ctx.beginPath();
+    ctx.arc(x, y, 4, 0, Math.PI*2);
+    ctx.fillStyle = node.leaf ? (node.cls === 1 ? '#4ecdc4' : '#ff6b6b') : '#10ac84';
+    ctx.fill();
+    if (!node.leaf) {
+      ctx.fillStyle = '#666';
+      ctx.font = '8px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('...', x, y + 12);
+    }
+    return;
+  }
   if (node.leaf) {
     ctx.beginPath();
     ctx.arc(x, y, radius, 0, Math.PI*2);
     ctx.fillStyle = node.cls === 1 ? 'rgba(78,205,196,0.3)' : 'rgba(255,107,107,0.3)';
     ctx.fill();
     ctx.strokeStyle = node.cls === 1 ? '#4ecdc4' : '#ff6b6b';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 1.5;
     ctx.stroke();
     ctx.fillStyle = '#fff';
-    ctx.font = '10px monospace';
+    ctx.font = fontSize + 'px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(node.cls === 1 ? 'B' : 'A', x, y + 4);
+    ctx.fillText(node.cls === 1 ? 'B' : 'A', x, y + Math.round(fontSize * 0.4));
     return;
   }
-  var childY = y + 50;
-  var newDx = dx * 0.55;
+  var childY = y + vGap;
+  var shrink = maxDrawDepth <= 3 ? 0.55 : maxDrawDepth <= 4 ? 0.52 : 0.48;
+  var newDx = dx * shrink;
   // draw lines
   ctx.beginPath();
   ctx.moveTo(x, y + radius);
@@ -990,13 +1010,13 @@ function drawTreeStructure(ctx, node, x, y, dx, depth, maxDrawDepth) {
   ctx.fillStyle = '#1a1a3e';
   ctx.fill();
   ctx.strokeStyle = '#10ac84';
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 1.5;
   ctx.stroke();
   ctx.fillStyle = '#10ac84';
-  ctx.font = '9px monospace';
+  ctx.font = fontSize + 'px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText((node.feat === 0 ? 'x' : 'y'), x, y - 2);
-  ctx.fillText('<' + node.thresh.toFixed(2), x, y + 10);
+  ctx.fillText((node.feat === 0 ? 'x' : 'y'), x, y - Math.round(fontSize * 0.2));
+  ctx.fillText('<' + node.thresh.toFixed(2), x, y + Math.round(fontSize * 0.9));
   drawTreeStructure(ctx, node.left, x - newDx, childY, newDx, depth+1, maxDrawDepth);
   drawTreeStructure(ctx, node.right, x + newDx, childY, newDx, depth+1, maxDrawDepth);
 }
@@ -1089,6 +1109,13 @@ window.drawDTSplit = function() {
   ctx.textAlign = 'center';
   ctx.fillText('Tree Structure', treeX + treeW/2, 18);
   drawTreeStructure(ctx, tree, treeX + treeW/2, 45, treeW/2.5, 0, maxDepth);
+
+  if (maxDepth > 4) {
+    ctx.fillStyle = '#666';
+    ctx.font = '10px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('(tree truncated at depth 4 for readability — ' + leaves.length + ' leaves total)', treeX + treeW/2, h - 12);
+  }
 
   // Stats
   ctx.fillStyle = '#888';

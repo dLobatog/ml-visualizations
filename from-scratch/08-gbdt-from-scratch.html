@@ -1375,32 +1375,56 @@ function drawTreeGrow(maxDepth) {
     ctx.fillText('Warning: likely overfitting!', treeX + 240, treeY + 55);
   }
 
-  // Draw tree nodes
+  // Draw tree nodes - scale sizes based on max depth for readability
+  var treeScale = maxDepth <= 2 ? 1.0 : maxDepth <= 3 ? 0.85 : maxDepth <= 4 ? 0.7 : 0.55;
   function drawNode(node, x, y2, w, depth2) {
     if (!node) return;
-    var nodeW = 90, nodeH = 36;
+    var nodeW = Math.max(40, Math.round(90 * treeScale));
+    var nodeH = Math.max(20, Math.round(36 * treeScale));
+    var vGap = Math.max(28, Math.round(60 * treeScale));
+    var fontSize = Math.max(7, Math.round(10 * treeScale));
     var isLeaf = (node.feature === undefined);
+
+    // Cap drawing at depth 4 for readability; show summary dots for deeper
+    if (depth2 >= 4 && maxDepth > 4) {
+      ctx.beginPath();
+      ctx.arc(x, y2 + 8, 4, 0, Math.PI * 2);
+      ctx.fillStyle = isLeaf ? (node.value > 0.5 ? '#e74c3c' : '#10ac84') : '#4ecdc488';
+      ctx.fill();
+      if (!isLeaf) {
+        ctx.fillStyle = '#666';
+        ctx.font = '8px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('...', x, y2 + 22);
+      }
+      return;
+    }
+
     var fill = isLeaf ? '#1a2a1a' : '#1a1a2e';
     var stroke = isLeaf ? '#10ac8488' : '#4ecdc488';
     drawRoundRect(ctx, x - nodeW/2, y2, nodeW, nodeH, 6, fill, stroke);
 
     ctx.fillStyle = '#e0e0e0';
-    ctx.font = '10px monospace';
+    ctx.font = fontSize + 'px monospace';
     ctx.textAlign = 'center';
     if (isLeaf) {
       ctx.fillStyle = node.value > 0.5 ? '#e74c3c' : '#10ac84';
-      ctx.fillText('val=' + node.value.toFixed(2), x, y2 + 15);
+      ctx.fillText('val=' + node.value.toFixed(2), x, y2 + nodeH * 0.42);
       ctx.fillStyle = '#888';
-      ctx.fillText('n=' + node.samples, x, y2 + 28);
+      ctx.fillText('n=' + node.samples, x, y2 + nodeH * 0.78);
     } else {
-      ctx.fillText('x' + (node.feature+1) + '<=' + node.threshold.toFixed(2), x, y2 + 15);
+      ctx.fillText('x' + (node.feature+1) + '<=' + node.threshold.toFixed(2), x, y2 + nodeH * 0.42);
       ctx.fillStyle = '#888';
-      ctx.fillText('n=' + node.samples + ' g=' + node.gain.toFixed(3), x, y2 + 28);
+      if (treeScale >= 0.7) {
+        ctx.fillText('n=' + node.samples + ' g=' + node.gain.toFixed(3), x, y2 + nodeH * 0.78);
+      } else {
+        ctx.fillText('n=' + node.samples, x, y2 + nodeH * 0.78);
+      }
     }
 
     if (node.left) {
       var childW = w / 2;
-      var childY = y2 + 60;
+      var childY = y2 + vGap;
       var leftX = x - childW / 2;
       ctx.strokeStyle = '#2a2a4a';
       ctx.lineWidth = 1;
@@ -1412,7 +1436,7 @@ function drawTreeGrow(maxDepth) {
     }
     if (node.right) {
       var childW = w / 2;
-      var childY = y2 + 60;
+      var childY = y2 + vGap;
       var rightX = x + childW / 2;
       ctx.strokeStyle = '#2a2a4a';
       ctx.lineWidth = 1;
@@ -1425,6 +1449,13 @@ function drawTreeGrow(maxDepth) {
   }
 
   drawNode(tree, treeX + 205, treeY + 80, 360, 0);
+
+  if (maxDepth > 4) {
+    ctx.fillStyle = '#666';
+    ctx.font = '10px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('(truncated at depth 4 for readability)', treeX + 205, treeY + 430);
+  }
 
   // Depth accuracy chart
   ctx.fillStyle = '#888';
@@ -2787,11 +2818,21 @@ function drawFullGBDT(maxRounds, lr, maxDepth, patience) {
     ctx.fillText('train and val curves!', infoX + 20, ily);
   }
 
-  // Algorithm pseudocode
-  ily += 25;
+  // Algorithm pseudocode - fixed at bottom of panel so it never clips
+  var algoY = 390;
+  ctx.fillStyle = '#1a1a2e';
+  ctx.fillRect(infoX + 1, algoY, 438, 98);
+  ctx.strokeStyle = '#2a2a4a';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(infoX + 16, algoY);
+  ctx.lineTo(infoX + 424, algoY);
+  ctx.stroke();
+  algoY += 16;
   ctx.fillStyle = '#ffd93d';
   ctx.font = 'bold 12px monospace';
-  ctx.fillText('Algorithm:', infoX + 20, ily); ily += 18;
+  ctx.textAlign = 'left';
+  ctx.fillText('Algorithm:', infoX + 20, algoY); algoY += 16;
   ctx.fillStyle = '#aaa';
   ctx.font = '10px monospace';
   var code = [
@@ -2800,12 +2841,11 @@ function drawFullGBDT(maxRounds, lr, maxDepth, patience) {
     '  r = y - F_{t-1}(x)',
     '  h_t = fit_tree(X, r, depth)',
     '  F_t = F_{t-1} + lr * h_t',
-    '  if val_loss no improve:',
-    '    stop (patience=' + patience + ')'
+    '  if val_loss no improve: stop (patience=' + patience + ')'
   ];
   code.forEach(function(line) {
-    ctx.fillText(line, infoX + 20, ily);
-    ily += 14;
+    ctx.fillText(line, infoX + 20, algoY);
+    algoY += 13;
   });
 }
 
