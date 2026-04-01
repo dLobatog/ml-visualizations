@@ -164,7 +164,12 @@
 
   <!-- Hero Canvas Visualization -->
   <div class="hero-viz">
-    <div class="hero-viz-label">Gradient descent on the Rosenbrock function — drag the learning rate, switch optimizers</div>
+    <div class="hero-viz-label">Watch gradient descent find the minimum of a loss function in real time</div>
+    <div class="hero-viz-explain" style="font-size:0.78em;color:#8892b0;max-width:780px;margin:0 auto 8px;line-height:1.5;">
+      This is the <strong style="color:#64ffda;">Rosenbrock function</strong>: f(x,y) = (1−x)² + 10·(y−x²)².
+      It equals zero only at the point <strong style="color:#ffd700;">(1, 1)</strong> — that's the minimum the optimizer is trying to reach.
+      The narrow curved valley makes it a classic stress test: simple optimizers (SGD) crawl, while adaptive ones (Adam) race ahead.
+    </div>
     <canvas id="hero-canvas" width="900" height="350" style="border-radius:12px;"></canvas>
     <div class="hero-viz-controls">
       <div class="hero-slider-row">
@@ -791,21 +796,32 @@ document.addEventListener('keydown', function(e) {
       if (l > maxLoss) maxLoss = l;
     }
   }
-  // Color: dark navy (high loss) → muted blue → teal → soft white (low loss)
-  // Designed for readability: no bright yellows/greens that kill text contrast
+  // Log-scale coloring to reveal the banana-shaped valley
+  // The valley follows y = x² — the color scheme must make this path visually pop
+  var logMax = Math.log(maxLoss + 1);
   function lossColor(val) {
-    var t = Math.pow(Math.max(0, 1 - val / (maxLoss * 0.3)), 1.5);
+    // t=1 at minimum (loss=0), t=0 at maximum loss
+    var t = 1 - Math.log(val + 1) / logMax;
     t = Math.max(0, Math.min(1, t));
+    // Boost contrast: make valley floor pop more by steepening the curve
+    t = Math.pow(t, 0.7);
     var r, g, b;
-    if (t < 0.33) {
-      var s = t / 0.33;
-      r = 8 + s * 8;   g = 8 + s * 30;  b = 20 + s * 40;
-    } else if (t < 0.66) {
-      var s = (t - 0.33) / 0.33;
-      r = 16 + s * 20;  g = 38 + s * 70;  b = 60 + s * 50;
+    if (t < 0.3) {
+      // Dark indigo (high loss walls)
+      var s = t / 0.3;
+      r = 4 + s * 6;   g = 2 + s * 8;  b = 12 + s * 18;
+    } else if (t < 0.55) {
+      // Deep blue-purple (transition zone)
+      var s = (t - 0.3) / 0.25;
+      r = 10 + s * 15;  g = 10 + s * 25;  b = 30 + s * 45;
+    } else if (t < 0.78) {
+      // Teal-green (valley slopes)
+      var s = (t - 0.55) / 0.23;
+      r = 25 + s * 20;  g = 35 + s * 100;  b = 75 + s * 40;
     } else {
-      var s = (t - 0.66) / 0.34;
-      r = 36 + s * 60;  g = 108 + s * 80; b = 110 + s * 30;
+      // Bright warm glow (valley floor near minimum)
+      var s = (t - 0.78) / 0.22;
+      r = 45 + s * 180;  g = 135 + s * 110; b = 115 - s * 20;
     }
     return [r|0, g|0, b|0];
   }
@@ -835,7 +851,7 @@ document.addEventListener('keydown', function(e) {
   var converged = false;
 
   function resetBall() {
-    bx = -1.2; by = -0.5;
+    bx = -0.8; by = 1.2;
     vx = 0; vy = 0; mx = 0; my = 0; vxA = 0; vyA = 0; adamT = 0;
     stepCount = 0; converged = false;
     trail = [{x: bx, y: by}];
@@ -864,15 +880,20 @@ document.addEventListener('keydown', function(e) {
     var gx = g[0], gy = g[1];
     // Clip gradient magnitude to prevent divergence
     var gMag = Math.sqrt(gx*gx + gy*gy);
-    if (gMag > 50) { gx = gx/gMag*50; gy = gy/gMag*50; }
+    if (gMag > 8) { gx = gx/gMag*8; gy = gy/gMag*8; }
 
     var b1=0.9, b2=0.999, eps=1e-8;
+    // SGD/Momentum use higher base LR + gentle decay so oscillations dampen
+    var effLR = lr;
+    if (optimizer === 'sgd' || optimizer === 'momentum') {
+      effLR = lr * 4 / (1 + stepCount * 0.0005);
+    }
     if (optimizer === 'sgd') {
-      bx -= lr * gx;
-      by -= lr * gy;
+      bx -= effLR * gx;
+      by -= effLR * gy;
     } else if (optimizer === 'momentum') {
-      vx = 0.9 * vx + lr * gx;
-      vy = 0.9 * vy + lr * gy;
+      vx = 0.9 * vx + effLR * gx;
+      vy = 0.9 * vy + effLR * gy;
       bx -= vx; by -= vy;
     } else if (optimizer === 'rmsprop') {
       // RMSprop: divide LR by running RMS of gradient
@@ -923,8 +944,9 @@ document.addEventListener('keydown', function(e) {
   var frameCount = 0;
   function render() {
     frameCount++;
-    // 2 optimization steps per frame
-    step(); step();
+    // More steps per frame for non-adaptive optimizers so they visibly progress
+    var stepsPerFrame = (optimizer === 'sgd' || optimizer === 'momentum') ? 8 : 4;
+    for (var si = 0; si < stepsPerFrame; si++) step();
 
     // Draw landscape
     ctx.putImageData(landscapeData, 0, 0);
