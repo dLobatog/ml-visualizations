@@ -141,7 +141,11 @@
   <span class="mm-arrow">&rarr;</span>
   <span class="mm-step" data-section="viz46" onclick="scrollToViz('viz46')">6. Causal Mask</span>
   <span class="mm-arrow">&rarr;</span>
-  <span class="mm-step" data-section="viz47" onclick="scrollToViz('viz47')">7. Full Block</span>
+  <span class="mm-step" data-section="viz465" onclick="scrollToViz('viz465')">6.5 Position Awareness</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz47" onclick="scrollToViz('viz47')">7. Positional Encoding</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz48" onclick="scrollToViz('viz48')">8. Full Block</span>
 </div>
 
 <div class="container">
@@ -175,6 +179,7 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">When asked "why attention over RNNs/MLPs?": MLPs have a fixed receptive field. RNNs process sequentially (slow, vanishing gradients). Attention looks at ALL positions in parallel with learned relevance weights.</div>
+    <div class="mnemonic">The fixed context problem is exactly what MLP language models hit in <a href="02-makemore.html" style="color:#ff7fff;">Ch 02</a>. Attention is the solution.</div>
     <div class="code-example">
       <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
         <span class="code-toggle-icon">&#9654;</span> Framework Example: The Fixed-Window Problem
@@ -198,6 +203,10 @@ print(f"Output shape: {out.shape}")  # (1, 100, 64)</code></pre>
       </div>
     </div>
   </div>
+</div>
+
+<div class="narrative-note">
+  <strong>&#x1F4CE; Cross-reference:</strong> This connects to <a href='02-makemore.html' style='color:#ff9ff3;'>Ch 2: Makemore</a> where the MLP language model has exactly this fixed-context limitation.
 </div>
 
 <!-- ============================================================ -->
@@ -292,7 +301,7 @@ print(f"Output: {output.shape}")     # (1, 8) blended value</code></pre>
       <span class="desc">"Here's my content..." -- the actual information that gets passed when attended to.</span>
     </div>
     <hr class="divider">
-    <div class="interview-tip">Q/K/V is the most asked attention question. Key answer: Q and K determine HOW MUCH to attend (the routing). V determines WHAT information flows. They are decoupled on purpose.</div>
+    <div class="interview-tip">Q/K/V is the most asked attention question. Key answer: Q and K determine HOW MUCH to attend (the routing). V determines WHAT information flows. They are decoupled on purpose. Q,K,V projections are learned via backprop (<a href="01-backprop-autograd.html" style="color:#7fff7f;">Ch 01</a>).</div>
     <div class="code-example">
       <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
         <span class="code-toggle-icon">&#9654;</span> Framework Example: Q, K, V Linear Projections
@@ -317,6 +326,16 @@ print(f"Q,K,V shapes: {Q.shape}")  # (1, 5, 16)</code></pre>
       </div>
     </div>
   </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3>Common Mistakes</h3>
+    <ul style="list-style: none; padding: 0;">
+      <li style="margin-bottom: 8px;"><strong>Mistake:</strong> Using the same matrix for Q and K (i.e., W_Q = W_K). <strong>Fix:</strong> Keep them separate -- the model needs to distinguish "what I want" from "what I have." Tying them forces symmetric attention (A attends to B equally as B attends to A), which is too restrictive.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="narrative-note">
+  <strong>&#x1F4CE; Cross-reference:</strong> These projection matrices are learned via <a href='01-backprop-autograd.html' style='color:#ff9ff3;'>Ch 1: Backprop</a> &mdash; gradients flow through Q, K, V projections during training.
 </div>
 
 <!-- ============================================================ -->
@@ -332,6 +351,12 @@ print(f"Q,K,V shapes: {Q.shape}")  # (1, 5, 16)</code></pre>
       <span class="value" id="scaleVal">1.0</span>
     </div>
     <button class="btn" onclick="setScaleOptimal()">Set to Optimal (&radic;d<sub>k</sub> = 8)</button>
+  </div>
+  <div class="narrative-note">
+    <strong>&#x1F4A1; d_model:</strong> Powers of 2 for hardware efficiency (256, 512, 1024). Larger = more capacity but O(n&sup2;&middot;d) compute.
+  </div>
+  <div class="narrative-note">
+    <strong>&#x1F4A1; Scaling factor:</strong> Always use &radic;d_k. Without it, dot products grow with dimension and softmax saturates.
   </div>
   <div class="viz-canvas">
     <canvas id="scaleCanvas" width="1100" height="500"></canvas>
@@ -373,9 +398,15 @@ scaled_scores = raw_scores / (d_k ** 0.5)
 print(f"Scaled std: {scaled_scores.std():.2f}")    # ~1
 
 attn = F.softmax(scaled_scores, dim=-1) @ V</code></pre>
-        <p class="code-note">Dividing by sqrt(d_k) keeps softmax inputs near unit variance, preventing gradient saturation.</p>
+        <p class="code-note">Dividing by sqrt(d_k) keeps softmax inputs near unit variance, preventing gradient saturation. See also numerical stability in <a href="03-mlps-optimization.html" style="color:#7fff7f;">Ch 03</a>.</p>
       </div>
     </div>
+  </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3>Common Mistakes</h3>
+    <ul style="list-style: none; padding: 0;">
+      <li style="margin-bottom: 8px;"><strong>Mistake:</strong> Forgetting to scale by sqrt(d_k). <strong>Fix:</strong> Always divide QK^T by sqrt(d_k) before softmax. Without it, attention scores saturate as d_k grows, gradients vanish, and training stalls. This is the single most common self-attention implementation bug.</li>
+    </ul>
   </div>
 </div>
 
@@ -395,6 +426,9 @@ attn = F.softmax(scaled_scores, dim=-1) @ V</code></pre>
   <div class="viz-canvas">
     <canvas id="multiHeadCanvas" width="1100" height="560"></canvas>
   </div>
+  <div class="narrative-note">
+    <strong>&#x1F4A1; Rule of thumb:</strong> d_head = 64 is standard. d_model / 64 = number of heads. GPT-2: 768/64 = 12 heads.
+  </div>
   <div class="legend">
     <div class="legend-item"><span class="legend-dot" style="background:#ff9ff3;"></span> Head 1: Local syntax</div>
     <div class="legend-item"><span class="legend-dot" style="background:#48dbfb;"></span> Head 2: Subject-verb</div>
@@ -413,7 +447,7 @@ attn = F.softmax(scaled_scores, dim=-1) @ V</code></pre>
       <span class="desc">After all heads compute independently, their outputs are concatenated and projected through \(W_O\) to blend the perspectives.</span>
     </div>
     <hr class="divider">
-    <div class="interview-tip">Common follow-up: "Why not just use a bigger single head?" Because a single attention pattern per position is a bottleneck. Multi-head is like an ensemble -- each head specializes on a different linguistic relation.</div>
+    <div class="interview-tip">Common follow-up: "Why not just use a bigger single head?" Because a single attention pattern per position is a bottleneck. Multi-head is like an ensemble -- each head specializes on a different linguistic relation. Multi-head attention is stacked in full transformers (<a href="06-transformer.html" style="color:#7fff7f;">Ch 06</a>).</div>
     <div class="code-example">
       <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
         <span class="code-toggle-icon">&#9654;</span> Framework Example: nn.MultiheadAttention Usage
@@ -436,6 +470,16 @@ print(f"Attn weights: {attn_weights.shape}")  # (2, 10, 10)
       </div>
     </div>
   </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3>Common Mistakes</h3>
+    <ul style="list-style: none; padding: 0;">
+      <li style="margin-bottom: 8px;"><strong>Mistake:</strong> Attention heads all learning the same pattern (redundant heads waste capacity). <strong>Fix:</strong> Use different random initialization seeds per head. Some architectures add head-specific learned biases or use dropout across heads.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="narrative-note">
+  <strong>&#x1F4CE; Cross-reference:</strong> In <a href='06-transformer.html' style='color:#ff9ff3;'>Ch 6</a>, we'll stack these multi-head attention layers into a full transformer.
 </div>
 
 <!-- ============================================================ -->
@@ -469,7 +513,7 @@ print(f"Attn weights: {attn_weights.shape}")  # (2, 10, 10)
       </div>
     </div>
     <hr class="divider">
-    <div class="interview-tip">Causal masking is what makes GPT-style models autoregressive. BERT uses NO mask (bidirectional). T5 uses causal mask in the decoder only. Know which architecture uses which masking strategy.</div>
+    <div class="interview-tip">Causal masking is what makes GPT-style models autoregressive. BERT uses NO mask (bidirectional). T5 uses causal mask in the decoder only. Know which architecture uses which masking strategy. Causal masking is essential for autoregressive generation (<a href="06-transformer.html" style="color:#7fff7f;">Ch 06</a>).</div>
     <div class="code-example">
       <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
         <span class="code-toggle-icon">&#9654;</span> Framework Example: Causal (Autoregressive) Mask
@@ -495,14 +539,138 @@ print(attn[0])  # lower-triangular attention pattern</code></pre>
       </div>
     </div>
   </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3>Common Mistakes</h3>
+    <ul style="list-style: none; padding: 0;">
+      <li style="margin-bottom: 8px;"><strong>Mistake:</strong> Not applying causal mask BEFORE softmax (e.g., zeroing out attention weights after softmax instead). <strong>Fix:</strong> Always set future scores to -inf before softmax. Zeroing after softmax means the remaining weights no longer sum to 1, causing information leakage from future tokens.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="narrative-note">
+  <strong>&#x1F4CE; Cross-reference:</strong> This mask enables autoregressive generation as explored in <a href='06-transformer.html' style='color:#ff9ff3;'>Ch 6</a>.
 </div>
 
 <!-- ============================================================ -->
-<!-- VIZ 4.7: COMPLETE ATTENTION BLOCK -->
+<!-- VIZ 4.6.5: POSITION AWARENESS -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz465">
+  <h2>6.5 The Missing Piece: Position Awareness</h2>
+  <p class="subtitle">Shuffle the input and attention gives identical output. Without positional encoding, the model has no concept of word order.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <button class="break-toggle" id="breakPosAware" onclick="togglePosAwareShuffle()">Break It: Shuffle Positions</button>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="posAwareCanvas" width="900" height="400"></canvas>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Self-attention computes \(Q \cdot K^T\) using only token content. Rearranging the input changes nothing about the scores between any pair of tokens. The operation is <em>permutation-equivariant</em>.
+    <div class="formula">$$\text{Attention}(\pi(X)) = \pi(\text{Attention}(X))$$</div>
+    <div class="key-point">
+      <span class="label">The Fix:</span>
+      <span class="desc">Add a unique position-dependent vector to each token embedding before attention. Sinusoidal PE uses \(\sin\) and \(\cos\) at different frequencies so every position gets a distinct fingerprint.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">If asked "why is attention permutation-invariant?": Q&middot;K<sup>T</sup> is a set of pairwise dot products -- it only depends on the content of each token, not its index. Positional encoding breaks this symmetry by injecting order.</div>
+  </div>
+</div>
+<div class="narrative-note">
+  <strong>&#x1F4CE; Cross-reference:</strong> <a href='06-transformer.html' style='color:#ff9ff3;'>Ch 6</a> covers this in detail with sinusoidal and learned position embeddings.
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 4.7: POSITIONAL ENCODING -->
 <!-- ============================================================ -->
 <div class="viz-section" id="viz47">
-  <h2>4.7 The Complete Attention Block</h2>
+  <h2>4.7 Positional Encoding: Teaching Order to Attention</h2>
+  <p class="subtitle">Notice something missing? Shuffle the input tokens and attention gives the same output. The model has no notion of word ORDER. Q&middot;K<sup>T</sup> is permutation-invariant -- it only cares about content, not position.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <button class="break-toggle" id="breakShuffle" onclick="toggleShufflePositions()">Break It: Shuffle Positions</button>
+    <button class="btn" id="togPosEnc" onclick="togglePosEncoding()">Add Positional Encoding: OFF</button>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="posEncCanvas" width="1100" height="560"></canvas>
+  </div>
+  <div class="narrative-note">
+    <strong>Callback to 4.6:</strong> Causal masking tells the model which tokens it CAN see, but not WHERE they are. Without positional encoding, "The cat sat" and "sat cat The" produce the same attention scores. Position matters for language!
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Attention is a set operation -- it treats inputs as an unordered bag. Positional encodings inject order by adding a unique position-dependent vector to each token embedding before attention.
+    <div class="formula">$$\text{input}_i = \text{embedding}_i + \text{PE}(i)$$</div>
+    <div class="key-point">
+      <span class="label">Sinusoidal PE:</span>
+      <span class="desc">Fixed, deterministic. \(\text{PE}(pos, 2k) = \sin(pos / 10000^{2k/d})\), \(\text{PE}(pos, 2k+1) = \cos(pos / 10000^{2k/d})\). No learned parameters.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Learned PE:</span>
+      <span class="desc">A trainable embedding table of shape (max_seq_len, d_model). Each position gets its own learned vector. Used in GPT-2, BERT.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">RoPE (Rotary):</span>
+      <span class="desc">Applied to Q and K (not embeddings). Encodes relative positions via rotation matrices. Used in LLaMA, modern LLMs. Generalizes better to unseen lengths.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">If asked "why not just rely on causal masking for order?": the mask only restricts which tokens are visible, not their relative positions. Two tokens equidistant from the query get identical treatment. PE breaks this symmetry.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Positional Encoding
+      </button>
+      <div class="code-content">
+        <pre><code class="language-python">import torch
+import math
+
+def sinusoidal_pe(seq_len, d_model):
+    pe = torch.zeros(seq_len, d_model)
+    pos = torch.arange(0, seq_len).unsqueeze(1).float()
+    div = torch.exp(torch.arange(0, d_model, 2).float()
+                    * -(math.log(10000.0) / d_model))
+    pe[:, 0::2] = torch.sin(pos * div)
+    pe[:, 1::2] = torch.cos(pos * div)
+    return pe
+
+pe = sinusoidal_pe(seq_len=50, d_model=64)
+# Add to embeddings: x = token_embed + pe[:seq_len]
+print(f"PE shape: {pe.shape}")  # (50, 64)</code></pre>
+        <p class="code-note">Each position gets a unique sinusoidal pattern. Low-frequency dimensions encode coarse position, high-frequency encode fine position.</p>
+      </div>
+    </div>
+  </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3>Common Mistakes</h3>
+    <ul style="list-style: none; padding: 0;">
+      <li style="margin-bottom: 8px;"><strong>Mistake:</strong> Forgetting positional encoding entirely -- the model treats "The cat sat" and "sat The cat" identically. <strong>Fix:</strong> Always add PE to embeddings before the first attention layer.</li>
+      <li style="margin-bottom: 8px;"><strong>Mistake:</strong> Using learned PE and then testing on sequences longer than training max_len. <strong>Fix:</strong> Use sinusoidal or RoPE for length generalization, or ensure max_len covers your inference needs.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 4.8: COMPLETE ATTENTION BLOCK -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz48">
+  <h2>4.8 The Complete Attention Block</h2>
   <p class="subtitle">Assemble everything: multi-head causal attention + LayerNorm + residual connections + FFN. Toggle each component to see what breaks.</p>
+
+  <div class="insight-box" style="margin-bottom: 20px;">
+    <strong>Why Each Component Exists</strong>
+    <div class="key-point">
+      <span class="label">Attention:</span>
+      <span class="desc">Routes information between positions -- token i can pull relevant data from any token j. (<a href="04-attention-sequences.html#viz43" style="color:#ff9ff3;">see Sec 4.3 Q,K,V</a>)</span>
+    </div>
+    <div class="key-point">
+      <span class="label">LayerNorm:</span>
+      <span class="desc">Prevents activations from exploding or collapsing. Without it, gradients diverge after a few layers (see "Break It" below). Relates to numerical stability in optimization (<a href="03-mlps-optimization.html" style="color:#ff9ff3;">Ch 03</a>).</span>
+    </div>
+    <div class="key-point">
+      <span class="label">FFN:</span>
+      <span class="desc">Adds nonlinearity -- attention alone is linear in V. A stack of linear operations is still linear. The FFN's GELU/ReLU breaks this, enabling complex per-token transformations.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Residual:</span>
+      <span class="desc">Ensures gradients flow through deep stacks. The skip connection means gradients bypass each layer's transformations, preventing vanishing gradients even at 96+ layers. Learned via backprop (<a href="01-backprop-autograd.html" style="color:#ff9ff3;">Ch 01</a>).</span>
+    </div>
+  </div>
+
   <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
     <button class="btn active" id="togLN" onclick="toggleComponent('layernorm')">LayerNorm: ON</button>
     <button class="btn active" id="togRes" onclick="toggleComponent('residual')">Residual: ON</button>
@@ -513,7 +681,7 @@ print(attn[0])  # lower-triangular attention pattern</code></pre>
     <canvas id="blockCanvas" width="1100" height="600"></canvas>
   </div>
   <div class="narrative-note">
-    <strong>Chapter 4 payoff:</strong> You have built the attention block -- the core building block of every transformer. In Ch 5, you will see that putting this same mechanism on <em>graph edges</em> gives you GATs. In Ch 6, you will stack these blocks into a full transformer.
+    <strong>Chapter 4 payoff:</strong> You have built the attention block -- the core building block of every transformer. In Ch 5, you will see that putting this same mechanism on <em>graph edges</em> gives you GATs. In <a href="06-transformer.html" style="color:#ffd93d;">Ch 6</a>, you will stack these blocks (with causal masking from <a href="#viz46" style="color:#ffd93d;">Sec 4.6</a>) into a full autoregressive transformer.
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> The attention block is the fundamental unit of the transformer. Every component serves a critical purpose.
@@ -533,6 +701,10 @@ print(attn[0])  # lower-triangular attention pattern</code></pre>
     <hr class="divider">
     <div class="interview-tip">If asked "what are the components of a transformer block?": LayerNorm, Multi-Head Attention, Residual Add, LayerNorm, FFN, Residual Add. Pre-norm (LN before attention) is now standard over post-norm.</div>
     <div class="mnemonic">The block formula: (1) normalize, (2) attend, (3) add residual, (4) normalize, (5) feed-forward, (6) add residual. Six steps, one block. Stack N of these = a transformer.</div>
+  </div>
+  <div class="narrative-note">
+    &#128736; <strong>Hyperparameter Guidance:</strong> d_model: powers of 2 for hardware efficiency (256, 512, 1024). d_head = 64 is standard &rarr; n_heads = d_model / 64. FFN expansion: 4x d_model is standard (768 &rarr; 3072). Context length: quadratic cost &mdash; doubling context quadruples attention memory.
+  </div>
     <div class="code-example">
       <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
         <span class="code-toggle-icon">&#9654;</span> Framework Example: Complete Transformer Block
@@ -557,6 +729,47 @@ class TransformerBlock(nn.Module):
         <p class="code-note">Pre-norm transformer block: LayerNorm before attention and FFN. Residuals around both.</p>
       </div>
     </div>
+  </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3>Break It: Remove LayerNorm</h3>
+    <p style="margin-bottom: 10px;">Toggle LayerNorm OFF above and observe what happens in practice:</p>
+    <ul style="list-style: none; padding: 0;">
+      <li style="margin-bottom: 6px;">Layer 1 activations: mean=0.5, std=1.2 -- looks fine</li>
+      <li style="margin-bottom: 6px;">Layer 4 activations: mean=12.3, std=45.7 -- growing fast</li>
+      <li style="margin-bottom: 6px;">Layer 8 activations: mean=1.4e4, std=8.2e5 -- <strong style="color:#e74c3c;">exploded</strong></li>
+      <li style="margin-bottom: 6px;">Gradients at layer 8: 1e-12 (vanished) or NaN (exploded)</li>
+    </ul>
+    <p style="color:#888; margin-top: 8px;">LayerNorm re-centers and re-scales activations at every layer, keeping them in a stable numerical range. Without it, deep transformers are untrainable.</p>
+  </div>
+  <div class="insight-box" style="border-left-color: #48dbfb;">
+    <h3>Hyperparameter Guidance</h3>
+    <div class="key-point">
+      <span class="label">Number of heads:</span>
+      <span class="desc">d_model / d_head. Common choice: d_head=64, so 512/64=8 heads, 1024/64=16 heads. More heads = more patterns but each in a smaller subspace.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">d_model:</span>
+      <span class="desc">Powers of 2 for hardware efficiency (GPU tensor cores). 256-1024 for small models, 4096+ for large (GPT-3: 12288, LLaMA-70B: 8192).</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Context length:</span>
+      <span class="desc">Quadratic cost in attention -- doubling context quadruples memory and compute for the attention layer. 2048 (GPT-2) to 128K+ (modern LLMs with efficiency tricks).</span>
+    </div>
+    <div class="key-point">
+      <span class="label">FFN expansion:</span>
+      <span class="desc">Standard is 4x d_model. Some models use 8/3x with SwiGLU activation (LLaMA). Larger expansion = more capacity per layer but more parameters.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Number of layers:</span>
+      <span class="desc">12 (GPT-2 small), 32 (LLaMA-7B), 80 (LLaMA-70B), 96 (GPT-3). More layers = more sequential processing but diminishing returns per layer.</span>
+    </div>
+  </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3>Common Mistakes</h3>
+    <ul style="list-style: none; padding: 0;">
+      <li style="margin-bottom: 8px;"><strong>Mistake:</strong> Attention heads all learning the same pattern (redundant heads). <strong>Fix:</strong> Use different random initialization for each head's W_Q, W_K, W_V. Some architectures add learned head-specific biases.</li>
+      <li style="margin-bottom: 8px;"><strong>Mistake:</strong> Ignoring O(n^2) complexity for long sequences -- a 100K-token sequence needs 10 billion attention score computations. <strong>Fix:</strong> Use sparse attention, flash attention, or linear attention approximations for long contexts.</li>
+    </ul>
   </div>
 </div>
 
@@ -595,7 +808,7 @@ function scrollToViz(id) {
 }
 
 // Minimap scroll highlighting
-const vizSections = ['viz41','viz42','viz43','viz44','viz45','viz46','viz47'];
+const vizSections = ['viz41','viz42','viz43','viz44','viz45','viz46','viz465','viz47','viz48'];
 window.addEventListener('scroll', function() {
   const steps = document.querySelectorAll('.mm-step');
   let activeIdx = 0;
@@ -1715,7 +1928,386 @@ function drawCausalMask() {
 }
 
 // ============================================================
-// VIZ 4.7: COMPLETE ATTENTION BLOCK
+// VIZ 4.6.5: POSITION AWARENESS
+// ============================================================
+var posAwareShuffled = false;
+var posAwareWords = ["The", "cat", "sat", "on", "the", "mat"];
+var posAwareEmbeds = [
+  [0.5, -0.2, 0.8, 0.1],
+  [0.9, 0.3, -0.4, 0.7],
+  [-0.1, 0.6, 0.5, -0.3],
+  [0.3, -0.5, 0.2, 0.6],
+  [0.5, -0.2, 0.8, 0.1],
+  [-0.4, 0.3, 0.1, 0.8]
+];
+var posAwareShuffledOrder = [4, 1, 5, 0, 3, 2]; // "the cat mat The on sat"
+
+function togglePosAwareShuffle() {
+  posAwareShuffled = !posAwareShuffled;
+  document.getElementById('breakPosAware').className = posAwareShuffled ? 'break-toggle broken' : 'break-toggle';
+  drawPosAware();
+}
+
+function drawPosAware() {
+  var c = document.getElementById('posAwareCanvas');
+  var ctx = c.getContext('2d');
+  clearCanvas(ctx, c);
+  var n = posAwareWords.length;
+  var order = posAwareShuffled ? posAwareShuffledOrder : [0, 1, 2, 3, 4, 5];
+
+  // Title
+  ctx.fillStyle = FG;
+  ctx.font = 'bold 16px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(posAwareShuffled ? 'Shuffled Order -- Do Attention Scores Change?' : 'Original Order: "The cat sat on the mat"', 30, 30);
+
+  // Draw tokens with position indices
+  var tokW = 80, tokH = 34, startX = 30, tokY = 50, gap = 8;
+  for (var i = 0; i < n; i++) {
+    var idx = order[i];
+    var x = startX + i * (tokW + gap);
+    var borderCol = posAwareShuffled ? '#e74c3c' : ACCENT;
+    var bgCol = posAwareShuffled ? 'rgba(231,76,60,0.12)' : 'rgba(255,159,243,0.12)';
+    drawRoundedRect(ctx, x, tokY, tokW, tokH, 6, bgCol, borderCol);
+    ctx.fillStyle = '#fff';
+    ctx.font = '13px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(posAwareWords[idx], x + tokW / 2, tokY + 22);
+    // Position index below
+    ctx.fillStyle = posAwareShuffled ? '#e74c3c' : '#888';
+    ctx.font = '10px monospace';
+    ctx.fillText('pos ' + i, x + tokW / 2, tokY + tokH + 14);
+  }
+
+  // Compute pairwise attention scores (raw dot products)
+  var embeds = [];
+  for (var i = 0; i < n; i++) {
+    embeds.push(posAwareEmbeds[order[i]]);
+  }
+  var scores = [];
+  for (var i = 0; i < n; i++) {
+    var row = [];
+    for (var j = 0; j < n; j++) {
+      row.push(dotProduct(embeds[i], embeds[j]));
+    }
+    scores.push(row);
+  }
+
+  // Draw a compact attention heatmap
+  var cellSize = 38;
+  var heatX = 30, heatY = 110;
+  ctx.fillStyle = ACCENT;
+  ctx.font = 'bold 12px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Attention Scores (Q . K^T)', heatX + n * cellSize / 2, heatY - 6);
+
+  // Column/row headers
+  for (var j = 0; j < n; j++) {
+    ctx.fillStyle = '#888';
+    ctx.font = '9px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(posAwareWords[order[j]], heatX + j * cellSize + cellSize / 2, heatY + 10);
+  }
+
+  for (var i = 0; i < n; i++) {
+    ctx.fillStyle = '#888';
+    ctx.font = '9px Inter, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(posAwareWords[order[i]], heatX - 4, heatY + 18 + i * cellSize + cellSize / 2 + 3);
+    ctx.textAlign = 'center';
+
+    var smRow = softmax(scores[i]);
+    for (var j = 0; j < n; j++) {
+      var val = smRow[j];
+      var cx = heatX + j * cellSize;
+      var cy = heatY + 18 + i * cellSize;
+      var rgb = posAwareShuffled ? hexToRgb('#e74c3c') : hexToRgb(ACCENT);
+      ctx.fillStyle = 'rgba(' + rgb + ',' + (val * 0.85 + 0.08) + ')';
+      ctx.fillRect(cx + 1, cy + 1, cellSize - 2, cellSize - 2);
+      ctx.fillStyle = val > 0.3 ? '#000' : '#ccc';
+      ctx.font = '8px monospace';
+      ctx.fillText(val.toFixed(3), cx + cellSize / 2, cy + cellSize / 2 + 3);
+    }
+  }
+
+  // Right side: explanation panel
+  var px = heatX + n * cellSize + 40;
+  var py = heatY + 10;
+  ctx.textAlign = 'left';
+
+  if (posAwareShuffled) {
+    ctx.fillStyle = '#e74c3c';
+    ctx.font = 'bold 14px Inter, sans-serif';
+    ctx.fillText('Attention scores are IDENTICAL!', px, py);
+    ctx.fillStyle = '#ffb0b0';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.fillText('Without positions, "cat sat on"', px, py + 24);
+    ctx.fillText('and "on cat sat" are the same.', px, py + 42);
+    ctx.fillStyle = '#888';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.fillText('Q . K^T only depends on token', px, py + 72);
+    ctx.fillText('content, not order. The scores', px, py + 90);
+    ctx.fillText('for any pair (e.g. "cat"-"sat")', px, py + 108);
+    ctx.fillText('are identical regardless of', px, py + 126);
+    ctx.fillText('where they appear.', px, py + 144);
+
+    // Warning box
+    drawRoundedRect(ctx, px - 4, py + 168, 340, 44, 6, 'rgba(231,76,60,0.1)', '#e74c3c66');
+    ctx.fillStyle = '#e74c3c';
+    ctx.font = 'bold 11px Inter, sans-serif';
+    ctx.fillText('\u26A0\uFE0F  Attention is permutation-equivariant!', px + 6, py + 186);
+    ctx.fillStyle = '#ffb0b0';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.fillText('The model literally cannot tell word order.', px + 6, py + 202);
+  } else {
+    ctx.fillStyle = ACCENT;
+    ctx.font = 'bold 14px Inter, sans-serif';
+    ctx.fillText('Original token order', px, py);
+    ctx.fillStyle = '#888';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.fillText('Try "Shuffle Positions" to see', px, py + 24);
+    ctx.fillText('that the attention scores between', px, py + 42);
+    ctx.fillText('any token pair stay identical.', px, py + 60);
+    ctx.fillStyle = '#555';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.fillText('Q . K^T = f(content only)', px, py + 90);
+    ctx.fillText('No position information at all.', px, py + 108);
+
+    // How PE fixes it
+    drawRoundedRect(ctx, px - 4, py + 132, 340, 80, 6, 'rgba(72,219,251,0.08)', ACCENT2 + '44');
+    ctx.fillStyle = ACCENT2;
+    ctx.font = 'bold 11px Inter, sans-serif';
+    ctx.fillText('How Positional Encoding Fixes This:', px + 6, py + 150);
+    ctx.fillStyle = '#aaa';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.fillText('Add unique sinusoidal vectors to embeddings:', px + 6, py + 168);
+    ctx.fillStyle = '#ccc';
+    ctx.font = '11px monospace';
+    ctx.fillText('input_i = embed_i + PE(i)', px + 6, py + 186);
+    ctx.fillStyle = '#aaa';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.fillText('Now each position has a distinct fingerprint.', px + 6, py + 202);
+  }
+
+  // Bottom message
+  ctx.fillStyle = '#555';
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Attention(shuffled_X) has the same pairwise scores as Attention(X) -- order is invisible', c.width / 2, 385);
+}
+
+// ============================================================
+// VIZ 4.7: POSITIONAL ENCODING
+// ============================================================
+var posTokens = ["The", "cat", "sat", "on", "the", "mat"];
+var posEmbeddings = [
+  [0.5, -0.2, 0.8, 0.1, 0.3, -0.4, 0.6, 0.2],
+  [0.9, 0.3, -0.4, 0.7, -0.1, 0.5, 0.2, -0.3],
+  [-0.1, 0.6, 0.5, -0.3, 0.8, 0.1, -0.2, 0.4],
+  [0.3, -0.5, 0.2, 0.6, -0.3, 0.7, 0.4, -0.1],
+  [0.5, -0.2, 0.8, 0.1, 0.3, -0.4, 0.6, 0.2],
+  [-0.4, 0.3, 0.1, 0.8, 0.5, -0.2, -0.1, 0.7]
+];
+var shuffleActive = false;
+var posEncActive = false;
+var shuffledOrder = [0, 1, 2, 3, 4, 5];
+
+function toggleShufflePositions() {
+  shuffleActive = !shuffleActive;
+  document.getElementById('breakShuffle').className = shuffleActive ? 'break-toggle broken' : 'break-toggle';
+  if (shuffleActive) {
+    shuffledOrder = [3, 0, 5, 1, 4, 2]; // fixed shuffle for reproducibility
+  } else {
+    shuffledOrder = [0, 1, 2, 3, 4, 5];
+  }
+  drawPosEncoding();
+}
+
+function togglePosEncoding() {
+  posEncActive = !posEncActive;
+  var btn = document.getElementById('togPosEnc');
+  btn.textContent = 'Add Positional Encoding: ' + (posEncActive ? 'ON' : 'OFF');
+  btn.className = posEncActive ? 'btn active' : 'btn';
+  drawPosEncoding();
+}
+
+function sinPE(pos, dim, dModel) {
+  var divTerm = Math.pow(10000, (2 * Math.floor(dim / 2)) / dModel);
+  return dim % 2 === 0 ? Math.sin(pos / divTerm) : Math.cos(pos / divTerm);
+}
+
+function drawPosEncoding() {
+  var c = document.getElementById('posEncCanvas');
+  var ctx = c.getContext('2d');
+  clearCanvas(ctx, c);
+  var n = posTokens.length;
+  var dModel = 8;
+
+  // Title
+  ctx.fillStyle = FG;
+  ctx.font = 'bold 16px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Positional Encoding: Does Order Matter to Attention?', 30, 35);
+  ctx.fillStyle = '#888';
+  ctx.font = '13px Inter, sans-serif';
+  ctx.fillText(shuffleActive ? 'Tokens SHUFFLED -- compare attention scores below' : 'Original token order', 30, 55);
+
+  // Display current token order
+  var tokY = 75, tokW = 80, tokH = 34, startX = 30, gap = 6;
+  var order = shuffledOrder;
+  for (var i = 0; i < n; i++) {
+    var idx = order[i];
+    var x = startX + i * (tokW + gap);
+    drawRoundedRect(ctx, x, tokY, tokW, tokH, 6, shuffleActive ? 'rgba(231,76,60,0.15)' : 'rgba(255,159,243,0.15)', shuffleActive ? '#e74c3c' : ACCENT);
+    ctx.fillStyle = '#fff';
+    ctx.font = '13px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(posTokens[idx], x + tokW / 2, tokY + 22);
+    if (shuffleActive) {
+      ctx.fillStyle = '#e74c3c';
+      ctx.font = '10px monospace';
+      ctx.fillText('pos ' + i, x + tokW / 2, tokY + tokH + 14);
+    }
+  }
+
+  // Compute attention scores with current order
+  var embeds = [];
+  for (var i = 0; i < n; i++) {
+    var idx = order[i];
+    var emb = posEmbeddings[idx].slice();
+    if (posEncActive) {
+      for (var d = 0; d < dModel; d++) {
+        emb[d] += sinPE(i, d, dModel);
+      }
+    }
+    embeds.push(emb);
+  }
+
+  // Compute QK^T (raw dot products as attention scores)
+  var scores = [];
+  for (var i = 0; i < n; i++) {
+    var row = [];
+    for (var j = 0; j < n; j++) {
+      row.push(dotProduct(embeds[i], embeds[j]));
+    }
+    scores.push(row);
+  }
+
+  // Draw attention score heatmap
+  var heatX = 30, heatY = 140;
+  var cellSize = 50;
+  ctx.fillStyle = ACCENT;
+  ctx.font = 'bold 13px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Attention Scores (Q dot K^T)', heatX + n * cellSize / 2, heatY - 8);
+
+  for (var j = 0; j < n; j++) {
+    ctx.fillStyle = '#888';
+    ctx.font = '10px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(posTokens[order[j]], heatX + j * cellSize + cellSize / 2, heatY + 10);
+  }
+
+  for (var i = 0; i < n; i++) {
+    ctx.fillStyle = '#888';
+    ctx.font = '10px Inter, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(posTokens[order[i]], heatX - 4, heatY + 18 + i * cellSize + cellSize / 2 + 3);
+    ctx.textAlign = 'center';
+
+    var smRow = softmax(scores[i]);
+    for (var j = 0; j < n; j++) {
+      var val = smRow[j];
+      var cx = heatX + j * cellSize;
+      var cy = heatY + 18 + i * cellSize;
+      var rgb = hexToRgb(posEncActive && shuffleActive ? '#2ecc71' : (shuffleActive ? '#e74c3c' : ACCENT));
+      ctx.fillStyle = 'rgba(' + rgb + ',' + (val * 0.9 + 0.05) + ')';
+      ctx.fillRect(cx + 1, cy + 1, cellSize - 2, cellSize - 2);
+      ctx.fillStyle = val > 0.3 ? '#000' : '#ccc';
+      ctx.font = '9px monospace';
+      ctx.fillText(val.toFixed(3), cx + cellSize / 2, cy + cellSize / 2 + 3);
+    }
+  }
+
+  // Positional encoding visualization on the right
+  var peX = heatX + n * cellSize + 60, peY = 140;
+  ctx.fillStyle = ACCENT;
+  ctx.font = 'bold 13px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Positional Encoding Vectors', peX, peY - 8);
+
+  var peCellW = 36, peCellH = 22;
+  for (var i = 0; i < n; i++) {
+    ctx.fillStyle = '#888';
+    ctx.font = '10px Inter, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText('pos ' + i, peX - 4, peY + 16 + i * (peCellH + 4) + peCellH / 2 + 3);
+    for (var d = 0; d < dModel; d++) {
+      var val = sinPE(i, d, dModel);
+      var cx = peX + d * (peCellW + 2);
+      var cy = peY + 16 + i * (peCellH + 4);
+      var intensity = (val + 1) / 2;
+      ctx.fillStyle = 'rgba(' + hexToRgb(ACCENT2) + ',' + (intensity * 0.8 + 0.1) + ')';
+      ctx.fillRect(cx, cy, peCellW, peCellH);
+      ctx.fillStyle = intensity > 0.6 ? '#000' : '#ccc';
+      ctx.font = '8px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(val.toFixed(2), cx + peCellW / 2, cy + peCellH / 2 + 3);
+    }
+  }
+
+  // Dimension labels
+  ctx.fillStyle = '#555';
+  ctx.font = '8px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  for (var d = 0; d < dModel; d++) {
+    ctx.fillText('d' + d, peX + d * (peCellW + 2) + peCellW / 2, peY + 10);
+  }
+
+  // Status message
+  var msgY = heatY + 18 + n * cellSize + 30;
+  ctx.textAlign = 'left';
+  if (shuffleActive && !posEncActive) {
+    ctx.fillStyle = '#e74c3c';
+    ctx.font = 'bold 14px Inter, sans-serif';
+    ctx.fillText('Tokens shuffled but attention scores are IDENTICAL per token pair!', 30, msgY);
+    ctx.fillStyle = '#888';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.fillText('Q dot K^T only depends on token content, not position. "The cat sat" and "sat The cat" are the same to attention.', 30, msgY + 20);
+    ctx.fillText('The model literally cannot tell word order. Turn on Positional Encoding to fix this.', 30, msgY + 40);
+  } else if (shuffleActive && posEncActive) {
+    ctx.fillStyle = '#2ecc71';
+    ctx.font = 'bold 14px Inter, sans-serif';
+    ctx.fillText('With positional encoding, shuffled tokens produce DIFFERENT attention scores!', 30, msgY);
+    ctx.fillStyle = '#888';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.fillText('PE(pos) is added to each embedding. "cat" at position 1 differs from "cat" at position 3.', 30, msgY + 20);
+    ctx.fillText('The model can now distinguish order. Each position has a unique sinusoidal fingerprint (shown right).', 30, msgY + 40);
+  } else if (posEncActive) {
+    ctx.fillStyle = '#2ecc71';
+    ctx.font = 'bold 14px Inter, sans-serif';
+    ctx.fillText('Positional encoding active: each token has position information baked in.', 30, msgY);
+    ctx.fillStyle = '#888';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.fillText('Sinusoidal PE adds unique patterns per position. Low-freq dims encode coarse position, high-freq encode fine.', 30, msgY + 20);
+  } else {
+    ctx.fillStyle = ACCENT;
+    ctx.font = 'bold 14px Inter, sans-serif';
+    ctx.fillText('Original order, no PE. Try shuffling to see that attention is permutation-invariant.', 30, msgY);
+    ctx.fillStyle = '#888';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.fillText('Without PE, the same content at any position gives the same attention scores.', 30, msgY + 20);
+  }
+
+  // Formula reminder
+  ctx.fillStyle = '#555';
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(posEncActive ? 'input_i = embedding_i + PE(i)  -->  Q*K^T now depends on position' : 'Q*K^T = content only (no position info)', c.width / 2, msgY + 65);
+}
+
+// ============================================================
+// VIZ 4.8: COMPLETE ATTENTION BLOCK
 // ============================================================
 var blockComponents = { layernorm: true, residual: true, ffn: true };
 
@@ -2078,6 +2670,8 @@ window.addEventListener('DOMContentLoaded', function() {
   drawScaling();
   drawMultiHead();
   drawCausalMask();
+  drawPosAware();
+  drawPosEncoding();
   drawBlock();
   buildQuiz();
 });

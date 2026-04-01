@@ -194,6 +194,15 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">Decision trees are greedy: they pick the locally best split at each node. This is not globally optimal, but it is fast and works well in practice.</div>
+  </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3>&#9888;&#65039; Common Mistakes</h3>
+    <ul>
+      <li><strong>Mistake:</strong> Using GBDT for image/text data without feature engineering. <strong>Fix:</strong> Use neural networks for unstructured data -- they learn representations automatically. GBDT excels on tabular data with hand-crafted or naturally structured features.</li>
+      <li><strong>Mistake:</strong> Not setting a random seed. <strong>Fix:</strong> Always set <code>random_state</code> (sklearn) or <code>seed</code> (XGBoost) for reproducibility. Tree splits can vary between runs due to subsampling and tie-breaking.</li>
+    </ul>
+  </div>
+  <div class="insight-box">
     <div class="when-to-use">
       <h4>When to Use</h4>
       <div class="use-grid use-grid-2">
@@ -277,6 +286,15 @@ print(f'Accuracy: {stump.score(X, y):.2f}')</code></pre>
     </div>
     <hr class="divider">
     <div class="mnemonic">In boosting, we WANT weak learners (shallow trees). We will combine many weak predictions to make a strong one.</div>
+  </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3>&#9888;&#65039; Common Mistakes</h3>
+    <ul>
+      <li><strong>Mistake:</strong> Using max_depth too high on small datasets (each leaf needs enough samples). <strong>Fix:</strong> For datasets under 10k rows, keep max_depth at 3-4. With depth 8, a tree can have 256 leaves -- if you have only 500 samples, most leaves will have 1-2 points, pure memorization.</li>
+      <li><strong>Mistake:</strong> Ignoring class imbalance. <strong>Fix:</strong> Use <code>scale_pos_weight</code> (XGBoost) or <code>class_weight='balanced'</code> (sklearn) when one class significantly outnumbers the other. Without this, the model may predict the majority class for everything.</li>
+    </ul>
+  </div>
+  <div class="insight-box">
     <div class="when-to-use">
       <h4>When to Use</h4>
       <div class="use-grid use-grid-3">
@@ -338,7 +356,7 @@ for depth in [1, 3, None]:  # None = unlimited
   <h2>8.3 Computing Residuals</h2>
   <p class="subtitle">The key insight of gradient boosting: after fitting a model, look at what it got WRONG. The residuals \(r_i = y_i - \hat{y}_i\) tell the next tree where to focus.</p>
   <div class="narrative-note">
-    <strong>This is THE key insight of boosting.</strong> Instead of fitting a new tree to the original targets, we fit it to the errors (residuals) of the current model. Each new tree corrects the mistakes of all previous trees combined.
+    <strong>This is THE key insight of boosting.</strong> Instead of fitting a new tree to the original targets, we fit it to the errors (residuals) of the current model. Each new tree corrects the mistakes of all previous trees combined. This is gradient descent in function space -- the same core idea as backpropagation in neural networks (<a href="01-backprop-autograd.html" style="color:#10ac84;">Ch 01</a>), but applied to an ensemble of trees instead of layer weights.
   </div>
   <div class="viz-canvas">
     <canvas id="residualsCanvas" width="900" height="480"></canvas>
@@ -442,12 +460,12 @@ print(f'MSE after:  {np.mean((y - y_pred)**2):.3f}')</code></pre>
   </div>
   <div class="controls">
     <div class="control-group">
-      <label>Learning Rate</label>
+      <label>Learning Rate <span style="color:#666; font-size:0.8em;">(0.01-0.1 recommended. Use 0.05 as default.)</span></label>
       <input type="range" id="boostLR" min="1" max="100" value="30" oninput="updateBoostStep()">
       <span class="value" id="boostLRVal">0.30</span>
     </div>
     <div class="control-group">
-      <label>Tree Depth</label>
+      <label>Tree Depth <span style="color:#666; font-size:0.8em;">(3-6 for most problems. 8+ rarely helps.)</span></label>
       <input type="range" id="boostDepth" min="1" max="4" value="2" oninput="updateBoostStep()">
       <span class="value" id="boostDepthVal">2</span>
     </div>
@@ -464,7 +482,7 @@ print(f'MSE after:  {np.mean((y - y_pred)**2):.3f}')</code></pre>
     <div class="formula">$$\hat{y}^{(t)} = \hat{y}^{(t-1)} + \eta \cdot h_t(x)$$</div>
     <div class="key-point">
       <span class="label">\(\eta\) (Learning Rate):</span>
-      <span class="desc">Shrinks each tree's contribution. Small \(\eta\) = more trees needed, but better generalization (shrinkage regularization).</span>
+      <span class="desc">Shrinks each tree's contribution. Small \(\eta\) = more trees needed, but better generalization (shrinkage regularization). This serves the exact same purpose as the learning rate in SGD (<a href="03-mlps-optimization.html" style="color:#10ac84;">Ch 03</a>) -- controlling step size to balance convergence speed and stability.</span>
     </div>
     <div class="key-point">
       <span class="label">\(h_t(x)\) (New Tree):</span>
@@ -481,6 +499,15 @@ print(f'MSE after:  {np.mean((y - y_pred)**2):.3f}')</code></pre>
         <div class="opt-desc">Aggressive updates. Fewer trees needed but risk of oscillation and overfitting. Try "Break It" above!</div>
       </div>
     </div>
+  </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3>&#9888;&#65039; Common Mistakes</h3>
+    <ul>
+      <li><strong>Mistake:</strong> Setting learning rate too high without reducing n_estimators. <strong>Fix:</strong> Learning rate and n_estimators are inversely related. If you increase lr from 0.01 to 0.1, reduce trees from 5000 to ~500. High lr + many trees = severe overfitting.</li>
+      <li><strong>Mistake:</strong> Not using early stopping. <strong>Fix:</strong> Always set <code>early_stopping_rounds</code> (10-50) and provide a validation set. This saves compute and automatically finds the optimal number of trees. There is no reason to skip this in production.</li>
+    </ul>
+  </div>
+  <div class="insight-box">
     <div class="when-to-use">
       <h4>When to Use</h4>
       <div class="use-grid use-grid-2">
@@ -540,17 +567,17 @@ print(f'Trees used: {gbr.n_estimators_}')</code></pre>
   </div>
   <div class="controls">
     <div class="control-group">
-      <label>Rounds</label>
+      <label>Rounds <span style="color:#666; font-size:0.8em;">(lr=0.1: ~100-500 trees. lr=0.01: ~1000-5000. Use early stopping.)</span></label>
       <input type="range" id="ensembleRounds" min="1" max="50" value="1" oninput="updateEnsemble()">
       <span class="value" id="ensembleRoundsVal">1</span>
     </div>
     <div class="control-group">
-      <label>Learning Rate</label>
+      <label>Learning Rate <span style="color:#666; font-size:0.8em;">(Lower = more trees needed but better generalization.)</span></label>
       <input type="range" id="ensembleLR" min="1" max="100" value="20" oninput="updateEnsemble()">
       <span class="value" id="ensembleLRVal">0.20</span>
     </div>
     <div class="control-group">
-      <label>Tree Depth</label>
+      <label>Tree Depth <span style="color:#666; font-size:0.8em;">(Deeper = more interaction terms captured.)</span></label>
       <input type="range" id="ensembleDepth" min="1" max="4" value="2" oninput="updateEnsemble()">
       <span class="value" id="ensembleDepthVal">2</span>
     </div>
@@ -567,7 +594,7 @@ print(f'Trees used: {gbr.n_estimators_}')</code></pre>
     <div class="formula">$$\hat{y}(x) = \hat{y}_0 + \sum_{t=1}^{T} \eta \cdot h_t(x)$$</div>
     <div class="key-point">
       <span class="label">Additive Model:</span>
-      <span class="desc">Each tree adds a small correction. The sum of many weak learners creates a strong learner.</span>
+      <span class="desc">Each tree adds a small correction. The sum of many weak learners creates a strong learner. Compare with dropout in neural networks (<a href="03-mlps-optimization.html" style="color:#10ac84;">Ch 03</a>), which creates an implicit ensemble of sub-networks -- a different route to the same idea.</span>
     </div>
     <div class="key-point">
       <span class="label">Convergence:</span>
@@ -680,7 +707,7 @@ print(f'Val RMSE: {xgb.best_score:.4f}')</code></pre>
     </div>
     <hr class="divider">
     <div class="interview-tip">The name "gradient boosting" comes from this: we compute the gradient of the loss w.r.t. the current predictions, then fit a tree to approximate that gradient. The tree IS the gradient descent step.</div>
-    <div class="mnemonic">Trees are to gradient boosting what parameter updates are to SGD. Both take steps that reduce the loss.</div>
+    <div class="mnemonic">Trees are to gradient boosting what parameter updates are to SGD. Both take steps that reduce the loss. For when transformers beat trees and vice versa, see <a href="06-transformer.html" style="color:#ff7fff;">Ch 06</a>.</div>
     <div class="when-to-use">
       <h4>When to Use</h4>
       <div class="use-grid use-grid-2">
@@ -743,27 +770,27 @@ model = xgb.train(params, dtrain, num_boost_round=100, obj=huber_obj)</code></pr
   </div>
   <div class="controls">
     <div class="control-group">
-      <label>Learning Rate</label>
+      <label>Learning Rate <span style="color:#666; font-size:0.8em;">(0.01-0.1. Use 0.05 as default.)</span></label>
       <input type="range" id="regLR" min="1" max="100" value="10" oninput="updateRegularization()">
       <span class="value" id="regLRVal">0.10</span>
     </div>
     <div class="control-group">
-      <label>Max Depth</label>
+      <label>Max Depth <span style="color:#666; font-size:0.8em;">(3-6 for most problems. 8+ risks overfitting.)</span></label>
       <input type="range" id="regDepth" min="1" max="6" value="3" oninput="updateRegularization()">
       <span class="value" id="regDepthVal">3</span>
     </div>
     <div class="control-group">
-      <label>Row Subsample</label>
+      <label>Row Subsample <span style="color:#666; font-size:0.8em;">(0.8 is a good default. Lower adds regularization.)</span></label>
       <input type="range" id="regRowSub" min="20" max="100" value="100" oninput="updateRegularization()">
       <span class="value" id="regRowSubVal">1.00</span>
     </div>
     <div class="control-group">
-      <label>Col Subsample</label>
+      <label>Col Subsample <span style="color:#666; font-size:0.8em;">(0.8 default. Lower for 1000+ feature datasets.)</span></label>
       <input type="range" id="regColSub" min="20" max="100" value="100" oninput="updateRegularization()">
       <span class="value" id="regColSubVal">1.00</span>
     </div>
     <div class="control-group">
-      <label>Rounds</label>
+      <label>Rounds <span style="color:#666; font-size:0.8em;">(Inversely related to learning rate.)</span></label>
       <input type="range" id="regRounds" min="5" max="100" value="50" oninput="updateRegularization()">
       <span class="value" id="regRoundsVal">50</span>
     </div>
@@ -792,6 +819,15 @@ model = xgb.train(params, dtrain, num_boost_round=100, obj=huber_obj)</code></pr
     </div>
     <hr class="divider">
     <div class="interview-tip">In practice, XGBoost/LightGBM defaults: learning_rate=0.1, max_depth=6, subsample=1.0, colsample=1.0. Start there and tune.</div>
+  </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3>&#9888;&#65039; Common Mistakes</h3>
+    <ul>
+      <li><strong>Mistake:</strong> Forgetting to handle categorical features properly. <strong>Fix:</strong> Use one-hot encoding for XGBoost, but prefer native categorical support in LightGBM (<code>categorical_feature</code>) and CatBoost. One-hot encoding with high-cardinality categoricals creates sparse, inefficient features.</li>
+      <li><strong>Mistake:</strong> Applying the same regularization strength everywhere. <strong>Fix:</strong> Tune regularization based on your data size: small datasets need more regularization (lower lr, shallower trees, more subsampling); large datasets can tolerate less.</li>
+    </ul>
+  </div>
+  <div class="insight-box">
     <div class="when-to-use">
       <h4>When to Use</h4>
       <div class="use-grid use-grid-2">
@@ -850,6 +886,9 @@ print(f'Accuracy: {model.score(X, y):.3f}')</code></pre>
   <div class="narrative-note">
     <strong>Chapter 8 complete.</strong> You have built gradient boosted decision trees from scratch: stumps, recursive splitting, residuals, boosting steps, ensembles, the gradient descent connection, regularization, and the full training loop. This is how XGBoost, LightGBM, and CatBoost work under the hood.
   </div>
+  <div class="narrative-note">
+    &#128206; <strong>Looking back:</strong> Residual fitting (8.3) is gradient descent in disguise, which connects directly to <a href="01-backprop-autograd.html" style="color:#10ac84;">Ch 1: Backprop</a>. The ensemble idea (8.5) parallels dropout's implicit ensembles from <a href="03-mlps-optimization.html" style="color:#10ac84;">Ch 3</a>. And GBDT vs neural nets (8.6) is a key decision point that depends on whether your data is tabular or unstructured &mdash; see <a href="06-transformer.html" style="color:#10ac84;">Ch 6: Transformers</a>.
+  </div>
   <div class="viz-canvas">
     <canvas id="gbdtTrainCanvas" width="900" height="520"></canvas>
   </div>
@@ -907,7 +946,7 @@ print(f'Accuracy: {model.score(X, y):.3f}')</code></pre>
       <span class="desc">Monitor validation loss. Stop when it stops improving (patience rounds).</span>
     </div>
     <hr class="divider">
-    <div class="interview-tip">XGBoost, LightGBM, CatBoost all follow this same algorithm. The differences are in HOW they build trees (histogram binning, leaf-wise vs level-wise growth, handling categoricals). The core idea is identical.</div>
+    <div class="interview-tip">XGBoost, LightGBM, CatBoost all follow this same algorithm. The differences are in HOW they build trees (histogram binning, leaf-wise vs level-wise growth, handling categoricals). The core idea is identical. Feature importance in GBDT is analogous to attention weights in transformers (<a href="04-attention-sequences.html" style="color:#10ac84;">Ch 04</a>) -- both answer "what did the model focus on?", but through very different mechanisms.</div>
     <div class="mnemonic">GBDT = "fit the errors, add a little bit, repeat". Learning rate shrinks each tree's contribution, early stopping says when to stop.</div>
 <div class="code-example">
   <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
@@ -3041,7 +3080,7 @@ var quizData = [
   {
     topic: "8.1: Decision Stumps",
     questions: [
-      { q: "What is a decision stump?", options: ["A) A tree with unlimited depth", "B) A tree with exactly one split (depth 1)", "C) A tree that only uses one feature", "D) A tree that only predicts binary outcomes"], correct: 1, explanation: "A decision stump is the simplest possible decision tree: it has exactly one internal node (one split) and two leaf nodes. It makes a single binary decision based on one feature and one threshold." },
+      { q: "You have a dataset with 1000 features but only 100 samples. Would GBDT or a neural network be a better choice? Why?", options: ["A) Neural network -- it handles high-dimensional data better", "B) GBDT -- it has built-in feature selection via split gain, handles wide data well, and needs less data to generalize", "C) Neither -- you must reduce features first with PCA", "D) Neural network -- 1000 features require learned representations"], correct: 1, explanation: "GBDT is the better choice here. With only 100 samples, a neural network would severely overfit. GBDT naturally performs feature selection (only splitting on useful features), handles wide datasets well, and generalizes better with small sample sizes. Its tree-based splits act as implicit regularization. Neural networks need much more data to learn meaningful representations." },
       { q: "How does a decision stump find the best split?", options: ["A) Random selection", "B) Gradient computation", "C) Exhaustive search over all features and thresholds, maximizing information gain or MSE reduction", "D) K-means clustering"], correct: 2, explanation: "A decision stump tries every possible feature and every possible threshold value (midpoints between sorted unique values), computes the gain for each, and selects the one with the highest gain. This is a brute-force, greedy approach." },
       { q: "Why can't a single decision stump separate XOR data?", options: ["A) XOR data has too many points", "B) XOR requires curved boundaries", "C) A stump creates one axis-aligned boundary, but XOR needs two boundaries", "D) Stumps only work with continuous features"], correct: 2, explanation: "XOR data requires separating points in two diagonal quadrants. A single stump can only create one axis-aligned split (vertical or horizontal line), which cannot separate XOR data. You need at least depth 2 (two splits) for XOR." },
       { q: "What does 'information gain' measure in the context of splitting?", options: ["A) The number of data points in each child", "B) The reduction in impurity (MSE/Gini) achieved by the split", "C) The depth of the tree", "D) The accuracy of the model"], correct: 1, explanation: "Information gain measures how much a split reduces the impurity of the data. For regression, this is MSE reduction; for classification, it can be Gini impurity reduction or entropy reduction. Higher gain means a more useful split." },
@@ -3061,7 +3100,7 @@ var quizData = [
   {
     topic: "8.3: Computing Residuals",
     questions: [
-      { q: "What are residuals in the context of gradient boosting?", options: ["A) The weights of the model", "B) The difference between true values and current predictions: r_i = y_i - y_hat_i", "C) The features of the data", "D) The learning rate"], correct: 1, explanation: "Residuals are the errors of the current model: r_i = y_i - y_hat_i. They tell us how much each prediction is off from the true value. Positive residuals mean we predicted too low; negative means too high." },
+      { q: "Your GBDT training loss keeps decreasing but validation loss increases after iteration 50. What two parameters would you adjust?", options: ["A) Increase max_depth and increase n_estimators", "B) Decrease learning_rate and add early_stopping_rounds (e.g., patience=10)", "C) Increase subsample to 1.0 and remove regularization", "D) Increase n_estimators and set learning_rate to 1.0"], correct: 1, explanation: "Rising validation loss with decreasing training loss is classic overfitting. The two most effective adjustments: (1) Lower the learning rate so each tree contributes less, slowing down memorization. (2) Enable early stopping with a patience parameter so training halts automatically when validation loss stops improving. Together, these prevent the model from adding trees that only memorize noise." },
       { q: "For MSE loss, what is the relationship between residuals and gradients?", options: ["A) They are unrelated", "B) Residuals are the negative gradient of the loss with respect to predictions", "C) Residuals are the positive gradient", "D) Residuals are the second derivative"], correct: 1, explanation: "For MSE loss L = 1/2 * (y - y_hat)^2, the negative gradient w.r.t. y_hat is -(-(y - y_hat)) = (y - y_hat) = residual. This is why 'fitting residuals' and 'gradient boosting' are equivalent for MSE loss." },
       { q: "After fitting a depth-1 tree to a sine wave, where will the residuals be largest?", options: ["A) Near the mean of the data", "B) At the threshold of the split", "C) At the peaks and valleys where the constant prediction deviates most from the true curve", "D) At the edges of the data range"], correct: 2, explanation: "A depth-1 tree can only create a step function (two constant values). The residuals will be largest where the true function deviates most from these constants, which is at the peaks and valleys of the sine wave." },
       { q: "Why is fitting a tree to residuals equivalent to gradient descent?", options: ["A) Because trees use gradients internally", "B) Because the residuals are the negative gradient direction, and fitting a tree to them approximates the gradient step in function space", "C) Because both use learning rates", "D) Because both minimize MSE"], correct: 1, explanation: "In gradient descent, we move in the negative gradient direction to reduce the loss. In gradient boosting, the residuals ARE the negative gradient (for MSE). By fitting a tree to the residuals, we are approximating the negative gradient of the loss in function space, then taking a step in that direction." },
@@ -3071,7 +3110,7 @@ var quizData = [
   {
     topic: "8.4: One Boosting Step",
     questions: [
-      { q: "What is the update formula for one boosting step?", options: ["A) y_hat_new = y_hat_old * h_t(x)", "B) y_hat_new = y_hat_old + learning_rate * h_t(x)", "C) y_hat_new = learning_rate * h_t(x)", "D) y_hat_new = y_hat_old - h_t(x)"], correct: 1, explanation: "Each boosting step adds the new tree's prediction (scaled by the learning rate) to the current prediction: y_hat_new = y_hat_old + eta * h_t(x). The learning rate eta shrinks each tree's contribution to prevent overfitting." },
+      { q: "Why does XGBoost use second-order (Hessian) information while basic GBDT only uses first-order gradients?", options: ["A) The Hessian makes XGBoost slower but more accurate", "B) Second-order info gives curvature, enabling better leaf weight estimation and adaptive step sizes per leaf", "C) XGBoost does not actually use second-order information", "D) The Hessian is only used for feature selection, not prediction"], correct: 1, explanation: "Basic GBDT fits trees to the negative gradient (first-order). XGBoost also uses the Hessian (second derivative of the loss), which provides curvature information. This allows XGBoost to compute optimal leaf weights analytically (weight = -sum(grad)/sum(hess)) and take better-calibrated steps. The Hessian acts like an adaptive learning rate: regions with high curvature get smaller updates, preventing overshooting. This is analogous to Newton's method vs plain gradient descent." },
       { q: "What happens when you set the learning rate to 1.0?", options: ["A) The model converges faster and generalizes better", "B) Each tree fully corrects the residuals, risking overshoot and oscillation", "C) The model becomes more regularized", "D) Nothing changes"], correct: 1, explanation: "With learning_rate = 1.0, each tree tries to fully correct the current errors. This is aggressive and can lead to overshooting (the prediction swings past the correct value), oscillation, and overfitting. Smaller learning rates (e.g., 0.1) are more conservative and typically generalize better." },
       { q: "Why does a small learning rate require more trees?", options: ["A) Because each tree has less data", "B) Because each tree contributes a smaller correction, so more trees are needed to accumulate enough corrections", "C) Because the trees become deeper", "D) Because the data changes"], correct: 1, explanation: "With a small learning rate (e.g., 0.01), each tree only contributes 1% of its full prediction. It takes many more trees to accumulate enough corrections to fit the data well. The tradeoff: more trees needed, but better generalization due to the smaller step sizes." },
       { q: "What is 'shrinkage' in gradient boosting?", options: ["A) Reducing the number of features", "B) Reducing the tree depth", "C) Scaling each tree's contribution by a learning rate less than 1", "D) Removing outliers from the data"], correct: 2, explanation: "Shrinkage is the practice of multiplying each tree's prediction by a learning rate eta < 1 before adding it to the ensemble. This 'shrinks' each tree's contribution, acting as a regularizer. It is one of the most important techniques for preventing overfitting in gradient boosting." },
@@ -3091,7 +3130,7 @@ var quizData = [
   {
     topic: "8.6: Gradient Descent View",
     questions: [
-      { q: "In what 'space' does gradient boosting perform gradient descent?", options: ["A) Parameter space", "B) Feature space", "C) Function space", "D) Data space"], correct: 2, explanation: "Unlike neural networks (which do gradient descent in parameter space), gradient boosting does gradient descent in function space. Each tree is a step that modifies the prediction function F(x) itself, moving it in the direction that reduces the loss." },
+      { q: "You switch from depth-3 trees to depth-8 trees and training speed drops 10x. Why?", options: ["A) Deeper trees use more memory for storing predictions", "B) The number of possible splits grows exponentially with depth: depth-8 trees have up to 2^8=256 leaves vs 2^3=8, requiring far more split evaluations", "C) Deeper trees need more training data", "D) The learning rate automatically decreases with deeper trees"], correct: 1, explanation: "Tree building is dominated by split evaluation. A depth-3 tree has at most 8 leaves and 7 internal splits to find. A depth-8 tree has up to 256 leaves and 255 splits. At each node, the algorithm must evaluate all features and all thresholds. The number of split evaluations grows exponentially with depth, making deep trees dramatically slower. Additionally, deeper trees may create small leaf nodes that are unstable." },
       { q: "What does the negative gradient of the loss tell us?", options: ["A) Which features to use", "B) The direction in which to change predictions to reduce the loss", "C) The optimal number of trees", "D) The best learning rate"], correct: 1, explanation: "The negative gradient of the loss w.r.t. predictions tells us, for each sample, in which direction and by how much to adjust the prediction to decrease the loss. The next tree approximates this direction." },
       { q: "What happens when you use the WRONG gradient direction (ascending instead of descending)?", options: ["A) The model converges faster", "B) The loss increases with each step - the model gets progressively worse", "C) Nothing changes", "D) The model finds a different minimum"], correct: 1, explanation: "Using the wrong gradient direction means each tree's correction makes predictions WORSE, not better. The loss increases with every tree added, as the model moves away from the minimum in function space. This is gradient ASCENT." },
       { q: "How is the tree related to the gradient in gradient boosting?", options: ["A) The tree computes the gradient", "B) The tree IS the gradient step - it approximates the negative gradient direction", "C) The tree selects which gradient to use", "D) The tree normalizes the gradient"], correct: 1, explanation: "Each tree in gradient boosting is fitted to the negative gradient (residuals for MSE). The tree's prediction at each point approximates the direction and magnitude of the optimal update. Adding this tree to the ensemble is equivalent to taking a gradient descent step." },
@@ -3114,7 +3153,7 @@ var quizData = [
       { q: "What is early stopping in gradient boosting?", options: ["A) Stopping training when the learning rate reaches zero", "B) Monitoring validation loss and stopping when it stops improving for a set number of rounds", "C) Stopping after a fixed number of epochs", "D) Stopping when training loss reaches zero"], correct: 1, explanation: "Early stopping monitors the validation loss during training. If the validation loss does not improve for 'patience' consecutive rounds, training stops. This prevents the model from overfitting by adding too many trees that only reduce training loss while increasing validation loss." },
       { q: "What is the initial prediction F_0 in GBDT for regression?", options: ["A) Zero", "B) The mean of the target values", "C) The median of the target values", "D) A random value"], correct: 1, explanation: "For regression with MSE loss, the optimal constant prediction is the mean of the training targets: F_0 = mean(y). This minimizes the initial MSE. For classification with log loss, it is the log-odds of the positive class." },
       { q: "What happens when you disable early stopping?", options: ["A) The model always performs better", "B) The model may overfit as it continues adding trees past the optimal point", "C) Training becomes faster", "D) The model becomes more regularized"], correct: 1, explanation: "Without early stopping, the model continues adding trees until max_rounds is reached. Past the optimal number of trees, each additional tree reduces training loss but may increase validation loss (overfitting). Early stopping prevents this waste and degradation." },
-      { q: "How is feature importance computed in GBDT?", options: ["A) By the order features appear in the first tree", "B) By the total gain (or split count) attributed to each feature across all trees", "C) By the correlation between features and targets", "D) By the feature's position in the dataset"], correct: 1, explanation: "Feature importance in GBDT is typically computed by summing the gain (improvement in the objective) contributed by each feature across all splits in all trees. Features that are used frequently and produce large gains are ranked as more important." },
+      { q: "Your feature importance shows feature X is #1 by gain but #5 by frequency. What does this mean about feature X?", options: ["A) Feature X is broken and should be removed", "B) Feature X makes high-impact splits when used but is only useful in specific contexts, not universally across all trees", "C) Feature X has too many missing values", "D) The gain metric is unreliable and frequency should always be preferred"], correct: 1, explanation: "When a feature ranks high by gain but low by frequency, it means: each time the feature IS used for a split, it produces a large reduction in loss (high gain per split). But it is not used often, suggesting it is only relevant in certain regions of the data or for specific subgroups. Contrast with a feature that is #1 by frequency: it is useful everywhere but may only contribute small improvements per split. Both metrics tell different stories -- SHAP values provide a more complete picture." },
       { q: "What are XGBoost, LightGBM, and CatBoost, and how do they differ?", options: ["A) Completely different algorithms", "B) Different implementations of GBDT with optimizations: XGBoost uses level-wise growth, LightGBM uses leaf-wise growth with histograms, CatBoost handles categoricals natively", "C) Different names for the same software", "D) Different types of neural networks"], correct: 1, explanation: "All three are GBDT implementations sharing the same core algorithm. XGBoost pioneered efficient parallel GBDT. LightGBM uses histogram-based splitting and leaf-wise tree growth for faster training. CatBoost handles categorical features natively using ordered boosting. The fundamental gradient boosting algorithm is the same." }
     ]
   }

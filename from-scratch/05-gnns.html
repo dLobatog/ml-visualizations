@@ -247,6 +247,21 @@ print(data)  # Data(x=[4,16], edge_index=[2,6])</code></pre>
     <hr class="divider">
     <div class="interview-tip">"Message passing" is the unifying framework for most GNNs: GCN, GAT, GraphSAGE, GIN all differ only in how they create messages and aggregate them.</div>
     <div class="mnemonic">Message passing in 4 steps: (1) Highlight target, (2) Neighbors send messages, (3) Aggregate (mean/sum/max), (4) Update with W and activation.</div>
+  </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3 style="color: #ff6b6b;">&#9888;&#65039; Common Mistakes</h3>
+    <ul style="margin-top: 8px; padding-left: 18px; line-height: 2;">
+      <li><strong>Mistake:</strong> Not adding self-loops. Without them, a node's own features are lost during aggregation &mdash; it only sees neighbors. <strong>Fix:</strong> Use <code>add_self_loops(edge_index)</code> or use a GNN layer that adds them automatically (GCNConv does this by default).</li>
+      <li><strong>Mistake:</strong> Stacking too many GNN layers (5+). Unlike CNNs, more layers causes over-smoothing (Sec 5.6). <strong>Fix:</strong> Use 2&ndash;3 layers for most tasks. For long-range dependencies, use skip connections or virtual nodes.</li>
+      <li><strong>Mistake:</strong> Ignoring edge features (bond type, distance, weight). <strong>Fix:</strong> Use edge-conditioned message passing (e.g., NNConv) or concatenate edge features to messages.</li>
+    </ul>
+  </div>
+  <div class="narrative-note">
+    &#128206; Message passing is analogous to attention in <a href="04-attention-sequences.html" style="color:#54a0ff;">Ch 4</a> &mdash; both involve "gathering information from neighbors." Attention does it over a sequence (all positions are neighbors); GNNs do it over graph structure. GAT (Sec 5.5) makes this explicit by using attention scores as edge weights.
+  </div>
+  <div class="narrative-note">
+    &#128736; <strong>Hyperparameter Guidance:</strong> Hidden dim: 64&ndash;256 is standard. Layers: 2&ndash;3 (diminishing returns beyond that). Dropout: 0.5 on node features, 0.3 on attention coefficients (for GAT). Learning rate: 1e-3 with Adam. For large graphs, use mini-batching (GraphSAGE-style).
+  </div>
 <div class="code-example">
   <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
     <span class="code-toggle-icon">&#9654;</span> Framework Example: Custom Message Passing Layer
@@ -484,6 +499,17 @@ gat2 = GATConv(64, 7, heads=1, concat=False)  # out: 7 classes
     </div>
     <hr class="divider">
     <div class="interview-tip">If asked "why are GNNs shallow?", explain over-smoothing: repeated message passing is like repeatedly averaging -- everything converges. This is fundamentally different from depth problems in CNNs.</div>
+  </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3 style="color: #ff6b6b;">&#9888;&#65039; Common Mistakes</h3>
+    <ul style="margin-top: 8px; padding-left: 18px; line-height: 2;">
+      <li><strong>Mistake:</strong> Adding more GNN layers to "improve" node classification accuracy beyond 3&ndash;4 layers. <strong>Fix:</strong> Use residual connections, jumping knowledge, or skip connections. Depth in GNNs is fundamentally different from depth in CNNs &mdash; more layers = more smoothing, not more expressiveness.</li>
+      <li><strong>Mistake:</strong> Not normalizing by node degree (using sum instead of mean aggregation on heterogeneous-degree graphs). <strong>Fix:</strong> For citation/social networks with power-law degree distributions, use GCN-style symmetric normalization: \(\hat{A} = D^{-1/2}AD^{-1/2}\).</li>
+    </ul>
+  </div>
+  <div class="narrative-note">
+    &#128206; Over-smoothing in GNNs is analogous to vanishing gradients in deep RNNs (<a href="05-rnns-sequences.html" style="color:#54a0ff;">Ch 5 RNN</a>) and deep MLPs (<a href="03-mlps-optimization.html" style="color:#54a0ff;">Ch 3</a>). The solution is the same: residual connections. See <a href="06-transformer.html" style="color:#54a0ff;">Ch 6</a> for how transformers use residuals to stack 96+ layers.
+  </div>
 <div class="code-example">
   <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
     <span class="code-toggle-icon">&#9654;</span> Framework Example: Residual GNN to Combat Over-Smoothing

@@ -219,6 +219,13 @@ print(ix)  # tensor([0, 5, 9, 9, 1])</code></pre>
       </div>
     </div>
   </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3>&#9888;&#65039; Common Mistakes</h3>
+    <ul>
+      <li><strong>Mistake:</strong> Not adding start/end tokens &mdash; the model cannot learn which characters begin or end names, so generated output never terminates naturally. <strong>Fix:</strong> Always wrap each training name with a special delimiter (e.g., <code>. + name + .</code>) so the model explicitly learns boundary patterns.</li>
+      <li><strong>Mistake:</strong> Confusing character-level frequency with bigram frequency &mdash; knowing that 'a' is common overall does not tell you what follows 'a'. <strong>Fix:</strong> Keep these two distributions conceptually separate. Unigram = P(c), bigram = P(c2|c1).</li>
+    </ul>
+  </div>
 </div>
 
 <!-- ============================================================ -->
@@ -275,6 +282,16 @@ P = P / P.sum(dim=1, keepdim=True)  # normalize rows</code></pre>
       </div>
     </div>
   </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3>&#9888;&#65039; Common Mistakes</h3>
+    <ul>
+      <li><strong>Mistake:</strong> Forgetting to normalize bigram counts &mdash; raw counts are not probabilities and cannot be sampled from correctly. <strong>Fix:</strong> Always divide each row by its sum so rows represent valid probability distributions (each summing to 1).</li>
+      <li><strong>Mistake:</strong> Not using smoothing (e.g., add-1) &mdash; unseen bigrams get probability 0, causing log(0) = -infinity during evaluation. <strong>Fix:</strong> Add a small constant to all counts before normalizing. Laplace smoothing (+1) is the simplest approach.</li>
+    </ul>
+  </div>
+  <div class="narrative-note">
+    &#128206; This connects to <a href="01-backprop-autograd.html" style="color: #ff6b6b;">Ch 1 (Backpropagation)</a> &mdash; when we later replace this counting approach with a neural network, backprop is how we compute gradients of the NLL loss to update the model.
+  </div>
 </div>
 
 <!-- ============================================================ -->
@@ -290,6 +307,9 @@ P = P / P.sum(dim=1, keepdim=True)  # normalize rows</code></pre>
       <label>Temperature</label>
       <input type="range" id="tempSlider" min="1" max="300" value="100" oninput="updateTemp()">
       <span class="value" id="tempVal">1.00</span>
+      <div class="narrative-note" style="font-size: 0.85em; margin-top: 0.5em;">
+        &#128161; <strong>Rule of thumb:</strong> Temperature 0.7&ndash;0.9 for coherent but diverse text. Below 0.5 gets repetitive. Above 1.5 gets nonsensical.
+      </div>
     </div>
   </div>
   <div class="viz-canvas">
@@ -333,6 +353,16 @@ for temp in [0.5, 1.0, 2.0]:
         <p class="code-note">Low temperature sharpens the distribution (greedy). High temperature flattens it (more random).</p>
       </div>
     </div>
+  </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3>&#9888;&#65039; Common Mistakes</h3>
+    <ul>
+      <li><strong>Mistake:</strong> Forgetting to apply softmax before sampling &mdash; raw logits are not probabilities and can be negative. Sampling from them directly produces nonsensical results. <strong>Fix:</strong> Always convert logits to probabilities via softmax (or log-softmax + exp) before using <code>torch.multinomial</code>.</li>
+      <li><strong>Mistake:</strong> Applying temperature after softmax instead of before &mdash; dividing probabilities by temperature does not produce a valid distribution. <strong>Fix:</strong> Divide logits (log-probabilities) by temperature, then apply softmax.</li>
+    </ul>
+  </div>
+  <div class="narrative-note">
+    &#128206; This sampling/temperature mechanism is the same one used in <a href="06-transformer.html" style="color: #ff6b6b;">Ch 6 (Transformer/GPT)</a> for text generation &mdash; the only difference is what model produces the logits.
   </div>
 </div>
 
@@ -403,6 +433,17 @@ print(f"Manual NLL: {manual.item():.4f}")</code></pre>
       </div>
     </div>
   </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3>&#9888;&#65039; Common Mistakes</h3>
+    <ul>
+      <li><strong>Mistake:</strong> Not using log-space for NLL computation &mdash; multiplying many small probabilities causes numerical underflow (the product rounds to 0.0). <strong>Fix:</strong> Always work in log-space: sum log-probabilities instead of multiplying probabilities. Use <code>F.cross_entropy</code> or <code>F.log_softmax</code> which are numerically stable.</li>
+      <li><strong>Mistake:</strong> Confusing NLL with perplexity &mdash; NLL is in log-space (nats or bits), perplexity is exp(NLL) and represents "effective vocabulary size." A perplexity of 10 is much better than NLL of 10. <strong>Fix:</strong> Always state which metric you are reporting. Perplexity = exp(NLL).</li>
+      <li><strong>Mistake:</strong> Evaluating on training data and concluding the model is good &mdash; the model may have memorized the training set. <strong>Fix:</strong> Always hold out a validation/test set and report NLL on unseen data.</li>
+    </ul>
+  </div>
+  <div class="narrative-note">
+    &#128206; The NLL loss connects directly to <a href="01-backprop-autograd.html" style="color: #ff6b6b;">Ch 1 (Backpropagation)</a> &mdash; backprop computes the gradient of this loss with respect to every model parameter, which is how the neural network learns.
+  </div>
 </div>
 
 <!-- ============================================================ -->
@@ -462,6 +503,13 @@ print(f"X shape: {X.shape}, Y shape: {Y.shape}")</code></pre>
       </div>
     </div>
   </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3>&#9888;&#65039; Common Mistakes</h3>
+    <ul>
+      <li><strong>Mistake:</strong> Choosing a very large n without enough data &mdash; most n-gram entries will be zero, and the model cannot make predictions for unseen contexts. <strong>Fix:</strong> Match context length to dataset size. With 50 names, even trigrams (n=2) become sparse. You need exponentially more data as n grows.</li>
+      <li><strong>Mistake:</strong> Not padding the start of sequences &mdash; the first characters of each name have no context, causing index errors or silent bugs. <strong>Fix:</strong> Pad with n copies of the start token (e.g., <code>"..." + name + "."</code> for a trigram model).</li>
+    </ul>
+  </div>
 </div>
 
 <!-- ============================================================ -->
@@ -477,6 +525,9 @@ print(f"X shape: {X.shape}, Y shape: {Y.shape}")</code></pre>
       <label>Embedding Dim</label>
       <input type="range" id="embDimSlider" min="0" max="3" value="0" oninput="updateEmbDim()">
       <span class="value" id="embDimVal">2</span>
+      <div class="narrative-note" style="font-size: 0.85em; margin-top: 0.5em;">
+        &#128161; <strong>Rule of thumb:</strong> Embedding dim &asymp; sqrt(vocab_size) as a rough starting point (e.g., sqrt(27) &asymp; 5). Too large overfits on small data; too small loses expressiveness.
+      </div>
     </div>
     <div class="control-group">
       <label>Training Step</label>
@@ -528,6 +579,16 @@ print(torch.allclose(vectors, manual))  # True</code></pre>
       </div>
     </div>
   </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3>&#9888;&#65039; Common Mistakes</h3>
+    <ul>
+      <li><strong>Mistake:</strong> Using embeddings that are too large for small datasets &mdash; with 50 training names and 16-dim embeddings, the model has far more parameters than data points, leading to severe overfitting. <strong>Fix:</strong> Start small (2&ndash;4 dims for character-level with small data) and increase only if validation loss improves.</li>
+      <li><strong>Mistake:</strong> Assuming embedding structure is "programmed in" &mdash; the model is not told that vowels are similar. The clustering emerges purely from co-occurrence patterns during training. <strong>Fix:</strong> Understand that embeddings are learned representations. Their structure reflects the training data, not prior knowledge.</li>
+    </ul>
+  </div>
+  <div class="narrative-note">
+    &#128206; These character embeddings are a miniature version of what happens in <a href="04-attention-sequences.html" style="color: #ff6b6b;">Ch 4 (Attention)</a>, where attention operates over token embeddings to decide which context positions matter most for each prediction.
+  </div>
 </div>
 
 <!-- ============================================================ -->
@@ -563,7 +624,7 @@ print(torch.allclose(vectors, manual))  # True</code></pre>
     </div>
   </div>
   <div class="narrative-note">
-    <strong>Chapter 2 Payoff:</strong> You have built a language model from counting bigrams to a neural network that understands character patterns. But characters are limiting &mdash; to model real language, we need to handle <em>sequences</em> of varying length and learn <em>long-range dependencies</em>. Next: the attention mechanism.
+    <strong>Chapter 2 Payoff:</strong> You have built a language model from counting bigrams to a neural network that understands character patterns. But characters are limiting &mdash; to model real language, we need to handle <em>sequences</em> of varying length and learn <em>long-range dependencies</em>. In <a href="04-attention-sequences.html" style="color:#ff6b6b;">Ch 4</a>, attention replaces the fixed context window with a mechanism that can look at ALL positions. In <a href="06-transformer.html" style="color:#ff6b6b;">Ch 6</a>, the full transformer stacks these into a deep model that produces modern LLMs.
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> The MLP language model generalizes beyond counting by learning continuous representations.
@@ -619,6 +680,17 @@ logits = model(x)  # (32, 27)</code></pre>
         <p class="code-note">This is Bengio et al. 2003 in PyTorch. Embeddings are concatenated, not summed.</p>
       </div>
     </div>
+  </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3>&#9888;&#65039; Common Mistakes</h3>
+    <ul>
+      <li><strong>Mistake:</strong> Evaluating on training data and thinking the model is good &mdash; the MLP can memorize the training set. A low training NLL does not mean the model generalizes. <strong>Fix:</strong> Always split data into train/validation/test. Report validation NLL to detect overfitting.</li>
+      <li><strong>Mistake:</strong> Summing embeddings instead of concatenating them &mdash; summing loses positional information ("ab" and "ba" produce the same input). <strong>Fix:</strong> Concatenate embeddings so the hidden layer can distinguish which character is at which position.</li>
+      <li><strong>Mistake:</strong> Using a hidden layer that is too small or too large &mdash; too small limits what the model can learn; too large causes overfitting on small datasets. <strong>Fix:</strong> Start with hidden_size &asymp; 64&ndash;200 for character-level models and tune based on validation loss.</li>
+    </ul>
+  </div>
+  <div class="narrative-note">
+    &#128206; This MLP language model is the direct predecessor to the architecture in <a href="06-transformer.html" style="color: #ff6b6b;">Ch 6 (Transformer/GPT)</a>, which replaces the fixed-window MLP with self-attention over variable-length sequences.
   </div>
 </div>
 
@@ -2343,18 +2415,18 @@ var quizData = [
   {
     topic: "2.1: The Dataset — Character Frequencies",
     questions: [
-      { q: "What does the special '.' token represent in the character-level language model?", options: ["A) A space between words", "B) The start and end of a name", "C) A missing character", "D) A punctuation mark"], correct: 1, explanation: "The '.' token is a special sentinel that marks both the beginning and end of each name. It tells the model where names start and stop, which is essential for generating complete names rather than endless character streams." },
+      { q: "What would happen if you trained a character-level language model without adding start/end tokens?", options: ["A) The model would work perfectly fine", "B) The model could not learn which characters begin or end names, so generation would never stop naturally", "C) The model would only generate one-character names", "D) The model would crash during training"], correct: 1, explanation: "Without start/end tokens, the model has no signal about name boundaries. It cannot learn that certain characters (like vowels) tend to start names, or when to stop generating. The '.' token is essential for the model to learn these boundary patterns." },
       { q: "What is a character-level language model trying to learn?", options: ["A) The meaning of words", "B) The probability of the next character given the previous characters", "C) How to spell correctly", "D) The grammar of English"], correct: 1, explanation: "A character-level language model learns P(next_char | previous_chars). Given what it has seen so far, it predicts what character comes next. This is the fundamental task of all language models, whether at the character, subword, or word level." },
       { q: "Why are characters like 'a', 'e', 'i' much more frequent than 'x', 'z', 'q' in English names?", options: ["A) They were added to the alphabet first", "B) Vowels appear in nearly every syllable, making them statistically dominant", "C) The dataset is biased", "D) Consonants are optional in names"], correct: 1, explanation: "English (and most languages) requires vowels in nearly every syllable. Since names are composed of syllables, vowels like 'a', 'e', 'i' appear far more frequently than rare consonants like 'x', 'z', 'q'." },
-      { q: "If we have 50 training names with average length 5, approximately how many bigrams (character pairs) do we extract?", options: ["A) 50", "B) 250", "C) 350 (including start/end tokens)", "D) 500"], correct: 2, explanation: "Each name of length L produces L+1 bigrams (including .→first and last→.). With 50 names of average length 5, that's approximately 50 * (5+1) = 300-350 bigrams. The start/end tokens add one extra pair per name." },
+      { q: "If your dataset contained only names starting with 'z' (e.g., 'zara', 'zoe'), how would the character frequency chart look different?", options: ["A) No change at all", "B) 'z' would have much higher frequency, and vowels after 'z' would also be boosted", "C) All characters would become equally frequent", "D) Only 'z' would appear on the chart"], correct: 1, explanation: "The character frequency reflects the dataset. With all z-names, 'z' would spike dramatically (appearing at least once per name). Characters commonly paired with 'z' in those names (the vowels 'a', 'o', 'e') would also increase. The chart directly mirrors the data it is given." },
       { q: "Why is character-level modeling pedagogically useful even though production LLMs use subword tokens?", options: ["A) It is faster to train", "B) The vocabulary is small (27 tokens), so every detail is visible and debuggable", "C) Character-level models are more accurate", "D) Subword tokens are obsolete"], correct: 1, explanation: "With only 27 tokens (26 letters + '.'), you can visualize the entire probability distribution, inspect every matrix entry, and understand exactly what the model has learned. The same principles (next-token prediction, softmax, NLL loss) apply identically to larger vocabularies." }
     ]
   },
   {
     topic: "2.2: Bigram Frequency Matrix",
     questions: [
-      { q: "What does entry (i, j) in the bigram count matrix represent?", options: ["A) The probability of character i", "B) How many times character j appeared after character i in the training data", "C) The distance between characters i and j", "D) Whether characters i and j are similar"], correct: 1, explanation: "Entry (i, j) counts how many times character j immediately follows character i across all training names. For example, if 'th' appears 45 times in the dataset, the cell (t, h) contains 45." },
-      { q: "How do you convert the count matrix into a probability matrix?", options: ["A) Divide each entry by the total count in the matrix", "B) Divide each entry by its row sum (normalize each row independently)", "C) Take the square root of each entry", "D) Divide each entry by 27"], correct: 1, explanation: "Each row represents a conditional distribution P(next | current). To get valid probabilities, divide each entry by its row sum so that each row sums to 1. This is row-wise normalization, also called maximum likelihood estimation." },
+      { q: "What would happen if you normalized the bigram counts by dividing by the total matrix sum instead of each row sum?", options: ["A) Nothing different", "B) Rows would no longer sum to 1, so you would get joint probabilities P(c1, c2) instead of conditional probabilities P(c2|c1)", "C) The model would be more accurate", "D) The matrix would become symmetric"], correct: 1, explanation: "Dividing by the total gives joint probabilities P(c1, c2) = count(c1,c2)/total. But for generation we need conditional probabilities P(c2|c1) = count(c1,c2)/count(c1). Rows must individually sum to 1 to be valid conditional distributions. Using joint probabilities would bias toward characters that follow common characters." },
+      { q: "If you skipped smoothing and a test name contained the bigram 'qx' (never seen in training), what would happen to the NLL?", options: ["A) NLL would be slightly higher", "B) NLL would be infinity, because log(0) is undefined", "C) NLL would be zero", "D) The model would skip that bigram"], correct: 1, explanation: "Without smoothing, P('x'|'q') = 0. Computing -log(0) = infinity, making the total NLL infinite. This single unseen bigram destroys the entire evaluation. Smoothing (adding +1 to all counts) prevents this by ensuring every bigram has at least a small positive probability." },
       { q: "Why is the bigram model called a 'first-order Markov model'?", options: ["A) Because it was invented first", "B) Because it assumes the next character depends only on the immediately preceding character", "C) Because it uses one hidden layer", "D) Because it processes names in first-to-last order"], correct: 1, explanation: "The Markov property states that the future depends only on the present, not the full history. A first-order Markov model conditions on exactly one previous token: P(next | current). A second-order model would condition on the last two tokens." },
       { q: "What does smoothing (adding 1 to all counts) accomplish?", options: ["A) It makes the model more accurate", "B) It ensures no bigram has zero probability, preventing log(0) = -infinity", "C) It speeds up training", "D) It reduces the matrix size"], correct: 1, explanation: "Without smoothing, any bigram not seen in training has probability 0. When we encounter it at test time, log(0) = -infinity, making the loss infinite. Adding 1 to all counts (Laplace smoothing) ensures every bigram has at least a small positive probability." },
       { q: "How many parameters does the bigram model have?", options: ["A) 27", "B) 27 x 27 = 729", "C) 27 x 26 = 702 (since each row must sum to 1)", "D) 52"], correct: 2, explanation: "The bigram model is a 27x27 matrix, but since each row is a probability distribution that must sum to 1, one entry per row is determined by the others. So the true degrees of freedom are 27 * 26 = 702. However, the full table has 729 entries." }
@@ -2363,8 +2435,8 @@ var quizData = [
   {
     topic: "2.3: Sampling from the Bigram Model",
     questions: [
-      { q: "What happens when temperature approaches 0?", options: ["A) The output becomes completely random", "B) The model always picks the most probable next character (argmax/greedy decoding)", "C) The model stops generating", "D) All characters become equally likely"], correct: 1, explanation: "As temperature approaches 0, the softmax distribution becomes infinitely sharp — all probability mass concentrates on the single most likely character. This is equivalent to always picking argmax, producing deterministic but repetitive output." },
-      { q: "What happens when temperature is very high (e.g., 3.0)?", options: ["A) The model generates perfect names", "B) The distribution flattens toward uniform, producing more random/diverse output", "C) The model generates longer names", "D) Training speed increases"], correct: 1, explanation: "High temperature divides the logits by a large number before softmax, making all probabilities more similar. In the extreme, all 27 characters become equally likely (~3.7% each), producing random gibberish because the model's learned preferences are suppressed." },
+      { q: "Why does temperature=0 produce deterministic output, while temperature=1 does not?", options: ["A) Temperature=0 disables the random number generator", "B) At temperature=0, softmax puts 100% probability on the top logit (argmax), leaving no randomness for sampling", "C) Temperature=0 uses a different algorithm", "D) Temperature=1 adds extra noise"], correct: 1, explanation: "Dividing logits by a near-zero temperature makes the differences between logits enormous. After softmax, all probability concentrates on whichever character had the highest logit. Since there is only one option with non-zero probability, sampling always picks it. At temperature=1, the original distribution is preserved, so multiple characters have non-trivial probability and sampling varies." },
+      { q: "If you accidentally sampled from raw logits (without applying softmax), what would go wrong?", options: ["A) Nothing, logits are probabilities", "B) Logits can be negative and do not sum to 1, so sampling would be undefined or produce biased results", "C) The names would just be slightly worse", "D) Only the temperature would be affected"], correct: 1, explanation: "Logits are raw scores that can be any real number (positive or negative) and do not sum to 1. They are NOT probabilities. Sampling requires a valid probability distribution where all values are non-negative and sum to 1. Softmax converts logits to probabilities. Skipping it would produce garbage or crash depending on the sampling implementation." },
       { q: "In the sampling process, what triggers the end of a generated name?", options: ["A) After exactly 5 characters", "B) When the '.' (end) token is sampled", "C) When probability drops below a threshold", "D) After a fixed number of steps"], correct: 1, explanation: "Generation starts from '.' (start token) and continues sampling character by character until '.' is sampled again as the next character. This means names can be of variable length — the model learns when names typically end." },
       { q: "Why do most names generated by the bigram model look like gibberish?", options: ["A) The temperature is too high", "B) The model only sees one character of context, which is insufficient to capture real name patterns", "C) The dataset is too small", "D) The random number generator is broken"], correct: 1, explanation: "Bigrams only condition on one previous character. Real names have patterns spanning 3-5+ characters (e.g., 'tion', 'ley', 'anna'). With only one character of context, the model cannot capture these longer patterns, producing mostly incoherent sequences." },
       { q: "Temperature scaling modifies the logits as log(P)/tau before softmax. What is tau mathematically doing?", options: ["A) Scaling the learning rate", "B) Controlling the entropy (uncertainty) of the output distribution", "C) Changing the vocabulary size", "D) Adding noise to the weights"], correct: 1, explanation: "Temperature tau directly controls the entropy of the softmax output. Low tau = low entropy (confident, peaked distribution). High tau = high entropy (uncertain, flat distribution). It is a post-hoc way to trade off diversity vs. quality at inference time." }
@@ -2373,8 +2445,8 @@ var quizData = [
   {
     topic: "2.4: Measuring Quality — Negative Log-Likelihood",
     questions: [
-      { q: "What does a lower NLL indicate about the model?", options: ["A) The model is worse", "B) The model assigns higher probability to the training data (better fit)", "C) The model is overfitting", "D) The model has more parameters"], correct: 1, explanation: "NLL = -average(log P(data)). Lower NLL means higher probability assigned to the data, which means the model's predictions better match reality. A perfect model would assign probability 1 to each correct next character, giving NLL = 0." },
-      { q: "For a uniform random model over 27 characters, what is the NLL?", options: ["A) 0", "B) 1.0", "C) log(27) approximately 3.30", "D) 27"], correct: 2, explanation: "A uniform model assigns P = 1/27 to every character. NLL = -log(1/27) = log(27) approximately 3.30. This is the worst possible NLL for a model that at least assigns non-zero probability to every character. Any trained model should do better than this baseline." },
+      { q: "If your model's NLL is 3.3 on a 27-character vocabulary, is that better or worse than random guessing?", options: ["A) Much better than random", "B) About the same as random — a uniform model over 27 chars has NLL = log(27) = 3.30", "C) Much worse than random", "D) Cannot determine without more information"], correct: 1, explanation: "A uniform random model assigns P = 1/27 to every character, giving NLL = -log(1/27) = log(27) = 3.30. If your model also gets 3.30, it has learned nothing — it is no better than rolling a 27-sided die. Any useful training should push NLL well below this baseline (e.g., 2.0-2.5 for bigrams)." },
+      { q: "If you computed NLL by multiplying probabilities instead of summing log-probabilities, what practical problem would you hit?", options: ["A) The result would be wrong", "B) Numerical underflow — multiplying many small numbers (e.g., 0.05 * 0.03 * 0.08 * ...) quickly rounds to 0.0 in floating point", "C) It would be too slow", "D) The loss would always be 1.0"], correct: 1, explanation: "Multiplying many probabilities (each < 1) produces astronomically small numbers. For a 10-character name with average per-step probability 0.1, the product is 0.1^10 = 10^-10, which quickly hits floating-point underflow for longer sequences. Working in log-space converts multiplication to addition, avoiding this entirely: log(a*b) = log(a) + log(b)." },
       { q: "What is the relationship between NLL and perplexity?", options: ["A) Perplexity = NLL squared", "B) Perplexity = exp(NLL)", "C) Perplexity = 1/NLL", "D) They are unrelated"], correct: 1, explanation: "Perplexity = exp(NLL). It can be interpreted as the effective number of equally likely choices the model is considering at each step. A uniform model over 27 chars has perplexity 27. A well-trained model might have perplexity 8-12, meaning it has effectively narrowed down to 8-12 plausible next characters." },
       { q: "Why does 'xzqw' have much higher NLL than 'anna' under the bigram model?", options: ["A) It has more characters", "B) The bigrams 'xz', 'zq', 'qw' are extremely rare in English names, so their probabilities are near zero", "C) The model has not been trained on 'x'", "D) 'anna' is in the training set"], correct: 1, explanation: "The bigrams in 'xzqw' (like 'xz' and 'zq') almost never appear in English names, so the model assigns them very low probability. Since NLL = -log(P), low probability means high NLL. Meanwhile, 'anna' contains common bigrams like 'an', 'nn', 'na' that have high probability." },
       { q: "NLL is equivalent to which common loss function used in classification?", options: ["A) Mean Squared Error", "B) Cross-entropy loss", "C) Hinge loss", "D) Huber loss"], correct: 1, explanation: "NLL and cross-entropy are mathematically identical for categorical distributions. Cross-entropy = -sum(target * log(predicted)). For one-hot targets (as in next-character prediction), this reduces to -log(P(correct_class)), which is exactly NLL." }
@@ -2383,8 +2455,8 @@ var quizData = [
   {
     topic: "2.5: Beyond Bigrams — N-gram Context Window",
     questions: [
-      { q: "How many entries does a 5-gram table have for a 27-character vocabulary?", options: ["A) 27 * 5 = 135", "B) 27^5 = 14,348,907", "C) 5^27", "D) 27 + 5 = 32"], correct: 1, explanation: "An n-gram table needs one entry for every possible context of length n. With 27 characters and context length 5, there are 27^5 = 14,348,907 possible contexts. Each maps to a distribution over 27 next characters, so the full table has ~387 million entries." },
-      { q: "What is the 'curse of dimensionality' in the context of n-gram models?", options: ["A) The model becomes too slow to train", "B) The number of possible n-grams grows exponentially, but training data grows linearly, so most entries are unseen", "C) The embeddings become too high-dimensional", "D) The loss function has too many local minima"], correct: 1, explanation: "As context length n increases, the number of possible n-grams grows as 27^n (exponentially), while our training data is fixed. Most possible n-grams never appear in the training data, leaving most table entries at zero. The model cannot make predictions for these unseen contexts." },
+      { q: "If you increased context from bigram (n=1) to 5-gram (n=5) on a dataset of only 50 names, what would likely happen to generation quality?", options: ["A) It would improve dramatically", "B) It might initially improve but then degrade — with 14M possible entries and only ~350 data points, almost all contexts are unseen", "C) It would have no effect", "D) The model would refuse to generate"], correct: 1, explanation: "A 5-gram table has 27^5 = 14,348,907 entries, but 50 names produce only ~350 n-grams. That means 99.99% of contexts are never seen. When generation hits an unseen context, the model has no information and either fails or falls back to uniform random. More context helps only if you have enough data to fill the table." },
+      { q: "Why can't an n-gram model generalize from 'ann' to the similar context 'enn', even if 'ann' was seen 100 times?", options: ["A) It can generalize just fine", "B) A lookup table treats every context as independent — there is no notion of similarity between entries", "C) 'ann' and 'enn' have different lengths", "D) The smoothing prevents generalization"], correct: 1, explanation: "An n-gram table is a dictionary: each context is a separate key with its own count distribution. The table has no concept that 'ann' and 'enn' are similar (both are vowel-n-n patterns). Even if 'ann' was observed 100 times, the entry for 'enn' is completely independent. Neural networks solve this by mapping similar contexts to similar continuous representations." },
       { q: "Why does increasing context length improve name quality (at least initially)?", options: ["A) More parameters always means better models", "B) Longer context captures longer-range patterns (e.g., 'anna' requires seeing 'nn' follows 'a' in context of 'an')", "C) The table becomes more sparse", "D) Training becomes faster"], correct: 1, explanation: "Real name patterns span multiple characters. A bigram model cannot distinguish P(next | 'an') from P(next | 'en'). A trigram model sees two characters of context, capturing patterns like 'ann' → likely 'a' or 'e'. More context means more pattern discrimination." },
       { q: "What is the fundamental limitation that n-gram models cannot overcome?", options: ["A) They are too slow", "B) They cannot generalize to unseen contexts because lookup tables have no notion of similarity", "C) They require too much memory", "D) They cannot handle uppercase letters"], correct: 1, explanation: "A lookup table treats every context as completely independent. Even if 'ann' and 'enn' are similar contexts, an n-gram model cannot share information between them. If 'ann' was seen 100 times but 'enn' was never seen, the model knows nothing about 'enn'. Neural networks solve this through learned representations." },
       { q: "What motivated the transition from n-gram to neural language models historically?", options: ["A) GPUs became available", "B) The need to generalize to unseen word/character combinations using continuous representations", "C) N-gram models were too accurate", "D) Researchers wanted more complex models"], correct: 1, explanation: "Bengio et al. (2003) explicitly motivated neural LMs as a solution to the curse of dimensionality in n-gram models. By representing words/characters as continuous vectors (embeddings), the model can generalize: similar contexts produce similar predictions, even if one was never seen in training." }
@@ -2393,8 +2465,8 @@ var quizData = [
   {
     topic: "2.6: Character Embeddings",
     questions: [
-      { q: "What is the key advantage of embeddings over one-hot representations?", options: ["A) Embeddings use less memory", "B) Embeddings encode similarity — characters in similar contexts get similar vectors", "C) Embeddings are faster to compute", "D) Embeddings are always 2-dimensional"], correct: 1, explanation: "One-hot vectors are orthogonal: every character is equally 'different' from every other (cosine similarity = 0). Embeddings learn a continuous space where characters that appear in similar contexts (like vowels 'a','e','i') end up close together, enabling generalization." },
-      { q: "Why do vowels tend to cluster together in the learned embedding space?", options: ["A) They are programmed to cluster", "B) They appear in similar contexts (between consonants, in syllable nuclei), so gradient descent pulls their embeddings together", "C) Vowels have similar ASCII codes", "D) The PCA projection creates artificial clusters"], correct: 1, explanation: "The distributional hypothesis: tokens that appear in similar contexts develop similar representations. Vowels all appear in similar positions (between consonants, as syllable nuclei), so the training signal pushes their embeddings to similar locations. The network discovers this structure without being told." },
+      { q: "What breaks if your embedding dimension is too low (e.g., dim=1) for a 27-character vocabulary?", options: ["A) Nothing breaks, 1 dimension is fine", "B) All 27 characters must be mapped to points on a line — the model cannot represent complex similarity relationships and conflates unrelated characters", "C) The model trains faster but is equally accurate", "D) Only vowels are affected"], correct: 1, explanation: "With dim=1, all 27 characters are placed on a single number line. Characters that need to be distinguished (e.g., 'b' and 'd' behave differently) might be forced to the same location. Higher dimensions provide more 'room' to encode the different similarity relationships. With dim=2, you can at least separate vowels from consonants in 2D space." },
+      { q: "If you trained embeddings on a dataset of Japanese transliterated names instead of English names, how would the embedding space differ?", options: ["A) It would look identical", "B) The clusters would reflect Japanese phonotactic patterns — e.g., consonant-vowel pairs (ka, ki, ku) would cluster differently than in English", "C) Embeddings cannot work for non-English data", "D) Only the vowels would change"], correct: 1, explanation: "Embeddings reflect the distributional patterns in the training data. Japanese has strict consonant-vowel syllable structure (ka, ki, ku, ke, ko), so characters that participate in similar syllable patterns would cluster together. The embedding space is entirely data-driven — it captures whatever regularities exist in the training corpus." },
       { q: "If the embedding dimension is 16 but we visualize in 2D, what technique is used?", options: ["A) We just use the first 2 dimensions", "B) PCA (Principal Component Analysis) projects high-dimensional vectors to 2D while preserving maximum variance", "C) We average all 16 dimensions into 2", "D) Random projection"], correct: 1, explanation: "PCA finds the two directions in 16D space along which the data varies the most, then projects onto those axes. This preserves as much structure as possible in the 2D view. t-SNE is another popular technique that better preserves local neighborhoods." },
       { q: "What is the embedding table in terms of linear algebra?", options: ["A) A bias vector", "B) A matrix of shape (vocab_size x embedding_dim) where row i is the embedding for character i", "C) A square matrix", "D) A diagonal matrix"], correct: 1, explanation: "The embedding table C is a matrix of shape (27 x d) where d is the embedding dimension. Looking up the embedding for character i is equivalent to multiplying a one-hot vector by this matrix: e_i = C[i] = onehot(i) * C. This is why embedding lookup is just a matrix row selection." },
       { q: "How many learnable parameters are in an embedding table with 27 characters and dimension 8?", options: ["A) 27", "B) 8", "C) 27 x 8 = 216", "D) 27 + 8 = 35"], correct: 2, explanation: "The embedding table has one d-dimensional vector per character. With 27 characters and dimension 8, that's 27 * 8 = 216 learnable parameters. These are trained jointly with the rest of the network via backpropagation." }
@@ -2403,8 +2475,8 @@ var quizData = [
   {
     topic: "2.7: MLP Language Model",
     questions: [
-      { q: "What is the full pipeline of the MLP language model?", options: ["A) Input -> Hidden -> Output", "B) Input chars -> Embedding lookup -> Concatenate -> Hidden layer (ReLU) -> Output layer -> Softmax -> Next char probabilities", "C) Input -> Attention -> Output", "D) Input -> Convolution -> Pooling -> Output"], correct: 1, explanation: "The MLP LM pipeline is: (1) Look up embedding for each input character, (2) Concatenate all context embeddings into one long vector, (3) Linear transform + ReLU activation (hidden layer), (4) Linear transform to logits (output layer), (5) Softmax to get probabilities over 27 characters." },
-      { q: "Why is concatenation of context embeddings important?", options: ["A) It reduces the dimensionality", "B) It creates a fixed-size input vector that encodes all context characters, allowing the hidden layer to detect patterns across positions", "C) It makes training faster", "D) It is not important, just convenient"], correct: 1, explanation: "The hidden layer needs a fixed-size input. By concatenating context embeddings (e.g., 3 chars x 4 dims = 12-dim input), we create a single vector that encodes which character is at which position. The hidden layer can then learn to detect patterns like 'a at position 1 AND n at position 2'." },
+      { q: "If you summed the context embeddings instead of concatenating them, what information would be lost?", options: ["A) No information would be lost", "B) Positional information — 'ab' and 'ba' would produce identical inputs, so the model could not distinguish word order", "C) The embedding magnitudes", "D) Only the first character's information"], correct: 1, explanation: "Summing is commutative: emb('a') + emb('b') = emb('b') + emb('a'). The hidden layer would receive identical inputs for 'ab' and 'ba', making it impossible to learn order-dependent patterns. Concatenation preserves position because each embedding occupies a fixed slot in the input vector: [emb_pos1 ; emb_pos2 ; emb_pos3]." },
+      { q: "The MLP achieves NLL ~2.10 vs. the bigram's ~2.45. What two factors explain this improvement?", options: ["A) More data and faster training", "B) Longer context window (3 chars vs 1) AND generalization via learned embeddings to unseen contexts", "C) Better random initialization", "D) The softmax function is different"], correct: 1, explanation: "The MLP improves in two distinct ways: (1) It sees 3 characters of context instead of 1, capturing longer patterns like 'ann' -> 'a'. (2) Through embeddings, it can generalize — even contexts never seen in training get reasonable predictions because similar characters have similar embeddings. Both factors work together to reduce NLL." },
       { q: "What role does ReLU play in the hidden layer?", options: ["A) It normalizes the output", "B) It introduces nonlinearity, allowing the model to learn non-linear patterns that a single linear layer cannot express", "C) It speeds up computation", "D) It prevents overfitting"], correct: 1, explanation: "Without nonlinearity, stacking linear layers would collapse to a single linear transformation (matrix multiplication is associative). ReLU(x) = max(0, x) introduces nonlinearity, enabling the network to learn complex, non-linear relationships between input characters and output predictions." },
       { q: "Why does the MLP model achieve lower NLL than the bigram model?", options: ["A) It has more data", "B) It uses more context characters AND can generalize to unseen contexts via learned embeddings", "C) It uses a better random seed", "D) It trains for more epochs"], correct: 1, explanation: "The MLP model has two advantages over bigrams: (1) It sees multiple characters of context (e.g., 3 instead of 1), capturing longer patterns. (2) Through embeddings, it can generalize — even if it never saw 'xyz' in training, it can make reasonable predictions if 'x', 'y', 'z' have similar embeddings to characters it did see in that context." },
       { q: "This MLP architecture was introduced by which landmark paper?", options: ["A) Attention Is All You Need (2017)", "B) Bengio et al. 'A Neural Probabilistic Language Model' (2003)", "C) Word2Vec (2013)", "D) GPT-3 (2020)"], correct: 1, explanation: "Bengio, Ducharme, Vincent, and Jauvin published 'A Neural Probabilistic Language Model' in 2003, introducing exactly this architecture: learned word embeddings + concatenation + hidden layer + softmax. It was the foundation for all neural language models that followed, including the transformer-based models we use today." }

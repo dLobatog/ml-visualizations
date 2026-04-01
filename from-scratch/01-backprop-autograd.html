@@ -197,6 +197,14 @@ print(y.grad_fn.next_functions)  # shows the graph edges</code></pre>
       </div>
     </div>
   </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3>&#x26A0;&#xFE0F; Common Mistakes</h3>
+    <ul>
+      <li><strong>Mistake:</strong> Confusing the computation graph with the network architecture diagram. The computation graph includes every operation (add, multiply, activation), not just "layers." <strong>Fix:</strong> Think of the architecture as a summary; the computation graph is the full, detailed recipe that autograd actually uses.</li>
+      <li><strong>Mistake:</strong> Forgetting that <code>requires_grad=True</code> must be set on leaf tensors you want gradients for. Creating a tensor without it means PyTorch silently skips gradient tracking. <strong>Fix:</strong> Always check <code>tensor.requires_grad</code> when debugging missing gradients.</li>
+      <li><strong>Mistake:</strong> Assuming the graph is built once and reused. In PyTorch (eager mode), a new graph is built on every forward pass. <strong>Fix:</strong> Understand that dynamic graphs are rebuilt each iteration, which is why control flow (if/else, loops) works naturally in PyTorch.</li>
+    </ul>
+  </div>
 </div>
 
 <!-- ============================================================ -->
@@ -251,6 +259,14 @@ print(b.grad)  # dy/db = 1.0</code></pre>
         <p class="code-note">backward() walks the DAG in reverse, applying the chain rule at each node.</p>
       </div>
     </div>
+  </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3>&#x26A0;&#xFE0F; Common Mistakes</h3>
+    <ul>
+      <li><strong>Mistake:</strong> Calling <code>.backward()</code> on a non-scalar tensor without providing a gradient argument. PyTorch requires a <code>gradient</code> tensor (the "seed") when backward is called on a non-scalar. <strong>Fix:</strong> Either reduce to a scalar first (e.g., <code>.sum()</code> or a loss function), or pass <code>gradient=torch.ones_like(tensor)</code>.</li>
+      <li><strong>Mistake:</strong> Thinking backprop is a separate algorithm from the chain rule. <strong>Fix:</strong> Backpropagation IS the chain rule applied systematically through the graph. There is no magic -- just local derivative times upstream gradient at every node.</li>
+      <li><strong>Mistake:</strong> Not understanding that <code>.backward()</code> accumulates gradients by default (using <code>+=</code>). Calling it twice doubles the gradients. <strong>Fix:</strong> Always call <code>.zero_grad()</code> or <code>.grad.zero_()</code> before each new backward pass in a training loop.</li>
+    </ul>
   </div>
 </div>
 
@@ -315,6 +331,17 @@ print(x.grad)  # now dz/dx = 3*x^2</code></pre>
         <p class="code-note">Always call .zero_() before backward() in training loops to prevent gradient accumulation across steps.</p>
       </div>
     </div>
+  </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3>&#x26A0;&#xFE0F; Common Mistakes</h3>
+    <ul>
+      <li><strong>Mistake:</strong> Performing in-place operations (e.g., <code>x += 1</code>) on tensors that are part of the computation graph. This corrupts the graph and raises errors during backward. <strong>Fix:</strong> Use out-of-place operations: <code>x = x + 1</code> instead of <code>x += 1</code>.</li>
+      <li><strong>Mistake:</strong> Not calling <code>.detach()</code> when using a computed value as a fixed target or for logging. This keeps the full computation graph in memory, causing memory leaks. <strong>Fix:</strong> Use <code>tensor.detach()</code> or <code>tensor.item()</code> when you no longer need the gradient connection.</li>
+      <li><strong>Mistake:</strong> Trying to call <code>.backward()</code> a second time after the graph has been freed (PyTorch frees the graph after the first backward by default). <strong>Fix:</strong> Pass <code>retain_graph=True</code> to the first backward call if you need the graph again, or restructure your code to avoid it.</li>
+    </ul>
+  </div>
+  <div class="narrative-note">
+    &#x1F4CE; The gradients computed by autograd are what optimizers consume. See <a href="03-mlps-optimization.html" style="color: #64ffda;">Ch 3: Optimization</a> to explore how SGD, Adam, and other optimizers use these gradients differently to update weights.
   </div>
 </div>
 
@@ -412,6 +439,13 @@ print(f"Output: {out.item():.4f}")</code></pre>
       </div>
     </div>
   </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3>&#x26A0;&#xFE0F; Common Mistakes</h3>
+    <ul>
+      <li><strong>Mistake:</strong> Thinking a single neuron can learn any pattern. A single neuron can only draw a linear boundary (a line in 2D, a hyperplane in higher dimensions). It cannot solve XOR or any non-linearly-separable problem. <strong>Fix:</strong> Use multiple neurons and layers for nonlinear problems.</li>
+      <li><strong>Mistake:</strong> Using sigmoid activation in hidden layers of modern networks. Sigmoid squashes outputs to (0,1), causing vanishing gradients and slow training. <strong>Fix:</strong> Use ReLU or its variants (LeakyReLU, GELU) for hidden layers. Reserve sigmoid for the final layer only when you need probability outputs.</li>
+    </ul>
+  </div>
 </div>
 
 <!-- ============================================================ -->
@@ -467,6 +501,17 @@ print(f"Parameters: {sum(p.numel() for p in mlp.parameters())}")</code></pre>
         <p class="code-note">nn.Sequential chains layers. Without ReLU, this collapses to a single linear layer.</p>
       </div>
     </div>
+  </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3>&#x26A0;&#xFE0F; Common Mistakes</h3>
+    <ul>
+      <li><strong>Mistake:</strong> Placing an activation function after the final output layer in a regression task. A ReLU on the output clamps all predictions to be non-negative, and a sigmoid squashes them to (0,1). <strong>Fix:</strong> Only use activations between hidden layers. The output layer is typically left linear (or use sigmoid only for binary classification probabilities).</li>
+      <li><strong>Mistake:</strong> Confusing the number of parameters with model capacity. A wider network (more neurons) does not always outperform a deeper one. <strong>Fix:</strong> Consider both width and depth. Depth enables hierarchical feature learning, while width provides representation capacity within each layer.</li>
+      <li><strong>Mistake:</strong> Forgetting that the Universal Approximation Theorem says an MLP CAN approximate any function, not that it WILL. Training and finding the right weights is a separate challenge. <strong>Fix:</strong> Use appropriate architecture, sufficient data, and proper training -- the theorem guarantees existence, not learnability.</li>
+    </ul>
+  </div>
+  <div class="narrative-note">
+    &#x1F4CE; This connects to <a href="04-attention-sequences.html" style="color: #64ffda;">Ch 4: Attention & Transformers</a> where attention mechanisms replace the fixed-context limitation of MLPs by allowing each position to dynamically attend to any other position.
   </div>
 </div>
 
@@ -528,6 +573,17 @@ for i, layer in enumerate(layers):
       </div>
     </div>
   </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3>&#x26A0;&#xFE0F; Common Mistakes</h3>
+    <ul>
+      <li><strong>Mistake:</strong> Using sigmoid or tanh activations in deep networks (more than a few layers) without understanding the vanishing gradient consequence. <strong>Fix:</strong> Default to ReLU (or variants like LeakyReLU, GELU) for hidden layers. Reserve sigmoid for output layers where you need probabilities.</li>
+      <li><strong>Mistake:</strong> Initializing all weights to zero. With zero weights, all neurons in a layer compute the same output and receive the same gradient, so they never differentiate ("symmetry breaking" fails). <strong>Fix:</strong> Use proper random initialization (e.g., Kaiming/He init for ReLU, Xavier/Glorot for tanh).</li>
+      <li><strong>Mistake:</strong> Not monitoring gradient norms during training. Vanishing or exploding gradients can silently prevent learning. <strong>Fix:</strong> Log gradient norms per layer. Use gradient clipping (<code>torch.nn.utils.clip_grad_norm_</code>) as a safety net against explosions.</li>
+    </ul>
+  </div>
+  <div class="narrative-note">
+    &#x1F4CE; This connects to <a href="06-transformer.html" style="color: #64ffda;">Ch 6: Transformers Deep Dive</a> where residual connections (skip connections) solve the vanishing gradient problem by providing a direct gradient highway through deep networks.
+  </div>
 </div>
 
 <!-- ============================================================ -->
@@ -544,6 +600,9 @@ for i, layer in enumerate(layers):
       <label>LR (middle ball)</label>
       <input type="range" id="lossLR" min="1" max="100" value="30" oninput="updateLossLR()">
       <span class="value" id="lossLRVal">0.10</span>
+      <div class="narrative-note" style="font-size: 0.85em; margin-top: 0.5em;">
+        &#x1F4A1; <strong>Rule of thumb:</strong> Start with lr=1e-3 for Adam, lr=0.01 for SGD. If loss explodes, reduce by 10x. If loss plateaus, increase by 2-3x. The right LR depends on the loss surface curvature.
+      </div>
     </div>
   </div>
   <div class="viz-canvas">
@@ -588,6 +647,17 @@ for step in range(5):
       </div>
     </div>
   </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3>&#x26A0;&#xFE0F; Common Mistakes</h3>
+    <ul>
+      <li><strong>Mistake:</strong> Using the same learning rate for all experiments without tuning. A learning rate that works for one architecture or dataset can diverge on another. <strong>Fix:</strong> Always do a quick LR sweep (e.g., 1e-4, 1e-3, 1e-2) at the start of a new project. Use learning rate finders for systematic tuning.</li>
+      <li><strong>Mistake:</strong> Forgetting to wrap manual parameter updates in <code>torch.no_grad()</code>. Without it, the update operation is tracked by autograd, wasting memory and corrupting the computation graph. <strong>Fix:</strong> Always use <code>with torch.no_grad():</code> for manual updates, or use <code>torch.optim</code> which handles this automatically.</li>
+      <li><strong>Mistake:</strong> Assuming the loss landscape is convex (has a single global minimum). Neural network loss surfaces are highly non-convex with many local minima and saddle points. <strong>Fix:</strong> Use momentum or Adam to escape saddle points. Accept that different runs may find different (but similarly good) minima.</li>
+    </ul>
+  </div>
+  <div class="narrative-note">
+    &#x1F4CE; This connects to <a href="03-mlps-optimization.html" style="color: #64ffda;">Ch 3: Optimization</a> where we compare how different optimizers (SGD, Adam, AdaGrad) navigate this exact type of loss landscape with varying curvatures and saddle points.
+  </div>
 </div>
 
 <!-- ============================================================ -->
@@ -608,6 +678,9 @@ for step in range(5):
       <label>Learning Rate</label>
       <input type="range" id="trainLR" min="1" max="100" value="50" oninput="updateTrainLR()">
       <span class="value" id="trainLRVal">0.10</span>
+      <div class="narrative-note" style="font-size: 0.85em; margin-top: 0.5em;">
+        &#x1F4A1; <strong>Rule of thumb:</strong> Adam is forgiving (try 1e-3 to 3e-4). SGD needs careful tuning (try 0.01-0.1). Momentum helps SGD tolerate slightly higher LR. If training is unstable, lower LR first.
+      </div>
     </div>
     <div class="tab-bar" style="margin-bottom:0;">
       <button class="btn active" id="tdsXor" onclick="setTrainDataset('xor')">XOR</button>
@@ -682,6 +755,17 @@ for epoch in range(100):
         <p class="code-note">Four steps repeated: forward, loss, backward, update. This loop trains every neural network.</p>
       </div>
     </div>
+  </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3>&#x26A0;&#xFE0F; Common Mistakes</h3>
+    <ul>
+      <li><strong>Mistake:</strong> Forgetting to zero gradients between batches. This is the #1 PyTorch beginner bug. Gradients accumulate across <code>.backward()</code> calls, so without zeroing, each step uses the sum of all previous gradients. <strong>Fix:</strong> Call <code>optimizer.zero_grad()</code> before each <code>loss.backward()</code> (or after <code>optimizer.step()</code> -- both patterns work).</li>
+      <li><strong>Mistake:</strong> Not calling <code>model.eval()</code> during validation/testing. Layers like Dropout and BatchNorm behave differently in training vs. evaluation mode. <strong>Fix:</strong> Always use <code>model.eval()</code> and <code>torch.no_grad()</code> for validation, then <code>model.train()</code> when resuming training.</li>
+      <li><strong>Mistake:</strong> Storing the loss tensor (not its <code>.item()</code>) for logging. This keeps the entire computation graph in memory, causing a memory leak that grows each epoch. <strong>Fix:</strong> Use <code>loss.item()</code> to extract the scalar value for logging and plotting.</li>
+    </ul>
+  </div>
+  <div class="narrative-note">
+    &#x1F4CE; This connects to <a href="07-distillation-compression.html" style="color: #64ffda;">Ch 7: Distillation & Quantization</a> where knowledge distillation uses this same training loop but with a teacher model's outputs as soft targets -- an alternative to training deep networks from scratch.
   </div>
 </div>
 
@@ -2424,10 +2508,10 @@ const quizData = [
     topic: "1.1: Scalar Operations & Computation Graph",
     questions: [
       { q: "In a computation graph, what do the nodes represent?", options: ["A) Only input values", "B) Operations (add, multiply, etc.) and their output values", "C) Only the final output", "D) Only the gradients"], correct: 1, explanation: "Nodes in a computation graph represent either input values or operations (like add, multiply) along with their computed output values. Edges represent data flow between them." },
-      { q: "What type of graph structure is a computation graph?", options: ["A) Undirected cyclic graph", "B) Binary tree", "C) Directed acyclic graph (DAG)", "D) Complete graph"], correct: 2, explanation: "A computation graph is a DAG (Directed Acyclic Graph). Directed because data flows in one direction (inputs to output), and acyclic because there are no loops (an operation cannot depend on its own output)." },
+      { q: "What would happen if a computation graph contained a cycle (e.g., node A depends on node B which depends on A)?", options: ["A) The graph would compute faster", "B) The forward pass would loop infinitely and gradients could not be computed", "C) Gradients would double at each cycle", "D) Nothing changes, cycles are handled automatically"], correct: 1, explanation: "A cycle means a value depends on itself, creating an infinite loop in the forward pass. Backprop requires a DAG (directed acyclic graph) so we can process nodes in a well-defined order. Cycles break both forward computation and gradient computation." },
       { q: "In the expression f = a*b + c, how many operation nodes are in the computation graph?", options: ["A) 1", "B) 2", "C) 3", "D) 5"], correct: 1, explanation: "There are 2 operation nodes: one for multiplication (a*b) and one for addition (+c). The input nodes a, b, c are value nodes, not operation nodes." },
       { q: "If a = 2.0, b = -3.0, c = 10.0 in f = a*b + c, what is the output?", options: ["A) -16.0", "B) 4.0", "C) 7.0", "D) 16.0"], correct: 1, explanation: "f = a*b + c = 2.0 * (-3.0) + 10.0 = -6.0 + 10.0 = 4.0. The multiply node outputs -6.0, then the add node outputs 4.0." },
-      { q: "Which deep learning framework does NOT build computation graphs?", options: ["A) PyTorch", "B) TensorFlow", "C) JAX", "D) All of them build computation graphs"], correct: 3, explanation: "All major deep learning frameworks (PyTorch, TensorFlow, JAX) build computation graphs. PyTorch uses dynamic graphs (built on the fly), TensorFlow 1.x used static graphs, and JAX traces functions into computation graphs (XLA HLO)." }
+      { q: "Given f = a*b + c, you want to reuse the intermediate product a*b in two different expressions. What happens to the computation graph?", options: ["A) The graph duplicates the multiply node", "B) The multiply node gets two outgoing edges, and during backprop its gradient is the SUM of both upstream gradients", "C) This is not allowed in computation graphs", "D) The second usage ignores the gradient from the first"], correct: 1, explanation: "When a node's output is used by multiple downstream nodes, gradients from all paths are summed during backprop (the multivariate chain rule). This is why autograd implementations use += for gradient accumulation, not simple assignment." }
     ]
   },
   {
@@ -2436,7 +2520,7 @@ const quizData = [
       { q: "In backpropagation, what is the gradient of the output node with respect to itself?", options: ["A) 0", "B) 1", "C) The output value", "D) Depends on the loss function"], correct: 1, explanation: "The gradient of any value with respect to itself is always 1.0. This is the 'seed' gradient that starts backpropagation: dL/dL = 1." },
       { q: "For a multiply node y = a * b, what is the local gradient dy/da?", options: ["A) a", "B) b", "C) a * b", "D) 1"], correct: 1, explanation: "For y = a * b, the partial derivative dy/da = b. The local gradient with respect to one input is the OTHER input. This is why multiply nodes 'swap' values during backprop." },
       { q: "For an add node y = a + b, what is the local gradient dy/da?", options: ["A) a", "B) b", "C) 0", "D) 1"], correct: 3, explanation: "For y = a + b, the partial derivative dy/da = 1 and dy/db = 1. Addition distributes the upstream gradient equally to both inputs without modification." },
-      { q: "The chain rule states that df/dx = (df/dy) * (dy/dx). What is df/dy called in the context of backprop?", options: ["A) The local gradient", "B) The upstream gradient", "C) The weight gradient", "D) The bias gradient"], correct: 1, explanation: "df/dy is the 'upstream gradient' -- the gradient flowing backward from downstream nodes. It is multiplied by the local gradient (dy/dx) to produce the gradient that continues flowing backward." },
+      { q: "What would happen if you accidentally seeded backprop with 2.0 instead of 1.0 at the output node?", options: ["A) All gradients would be exactly double their correct values", "B) Only the output gradient would be wrong", "C) The gradients would be unchanged", "D) The computation graph would break"], correct: 0, explanation: "The seed gradient multiplies through every path in the graph via the chain rule. Doubling the seed doubles every downstream gradient. This is why the seed must be exactly 1.0 (dL/dL = 1) for correct gradients. In practice, this is also why scaling the loss (e.g., dividing by batch size) scales all gradients proportionally." },
       { q: "If a node has upstream gradient 2.0 and local gradient -3.0, what gradient is passed to its parent?", options: ["A) -1.0", "B) 5.0", "C) -6.0", "D) -5.0"], correct: 2, explanation: "The chain rule multiplies: upstream gradient (2.0) * local gradient (-3.0) = -6.0. This product is the gradient passed further backward through the graph." }
     ]
   },
@@ -2444,17 +2528,17 @@ const quizData = [
     topic: "1.3: Autograd Engine",
     questions: [
       { q: "Why does autograd use topological sort before computing gradients?", options: ["A) To make the code faster", "B) To ensure each node's gradient is computed only after all downstream gradients are ready", "C) To reduce memory usage", "D) To handle cycles in the graph"], correct: 1, explanation: "Topological sort ensures we process nodes in reverse dependency order. Each node's gradient depends on gradients from all nodes that use its output. Processing in reverse topo order guarantees these downstream gradients are computed first." },
-      { q: "What happens if you compute gradients without topological sort?", options: ["A) Exactly the same results but slower", "B) The computation crashes", "C) Some gradients may be incorrect because upstream gradients haven't been computed yet", "D) Only the output gradient is wrong"], correct: 2, explanation: "Without topo sort, a node might compute its gradient before its downstream consumers have propagated their gradients back. The node would multiply by an upstream gradient of 0 (uninitialized), giving wrong results." },
+      { q: "You call .backward() twice on the same loss without zeroing gradients in between. What goes wrong?", options: ["A) The second call is ignored", "B) Gradients are doubled because .backward() accumulates (adds) into .grad", "C) An error is raised automatically", "D) Only the second set of gradients is kept"], correct: 1, explanation: "PyTorch accumulates gradients by default (using +=). Calling backward() twice without zeroing adds the new gradients on top of the old ones, doubling them. This is a very common bug. Always call .zero_grad() or .grad.zero_() between backward passes." },
       { q: "In reverse-mode autodiff (backprop), how many backward passes are needed to get gradients for N parameters?", options: ["A) N passes", "B) N^2 passes", "C) 1 pass", "D) log(N) passes"], correct: 2, explanation: "This is the key advantage of reverse-mode: ONE backward pass computes gradients for ALL parameters simultaneously. This is why backprop is efficient for neural networks with millions of parameters." },
       { q: "In the Value class, why does __add__ store both operands as _children?", options: ["A) To save memory", "B) To enable the backward pass to propagate gradients to both inputs", "C) To speed up the forward pass", "D) To allow printing the expression"], correct: 1, explanation: "Storing children (input operands) creates the graph structure. During backward(), each operation needs to know its inputs so it can compute local gradients and propagate the upstream gradient to both parents." },
-      { q: "Forward-mode autodiff is preferred over reverse-mode when:", options: ["A) There are many parameters", "B) The model is a neural network", "C) There are few inputs and many outputs", "D) Always -- forward mode is always better"], correct: 2, explanation: "Forward-mode computes the gradient w.r.t. one input per pass. With few inputs and many outputs, forward mode is efficient. But neural networks have many parameters (inputs to the gradient) and one loss (output), making reverse mode (backprop) far more efficient." }
+      { q: "You have a model with 1 million parameters and 1 scalar loss. Which approach would you choose and why?", options: ["A) Forward-mode autodiff: it handles large models better", "B) Reverse-mode autodiff: one backward pass gives all 1M gradients at once", "C) Either mode: they have the same cost", "D) Finite differences: most accurate for large models"], correct: 1, explanation: "Reverse-mode (backprop) computes gradients for ALL parameters in one backward pass, regardless of how many parameters there are. Forward-mode would need 1 million passes (one per parameter). This is why all deep learning frameworks use reverse-mode." }
     ]
   },
   {
     topic: "1.4: A Single Neuron",
     questions: [
       { q: "A single neuron with sigmoid activation computes:", options: ["A) A polynomial function", "B) A weighted sum passed through a nonlinear activation", "C) A decision tree split", "D) A convolution"], correct: 1, explanation: "A neuron computes y = sigmoid(w1*x1 + w2*x2 + b): a weighted sum of inputs plus bias, passed through a nonlinear activation function." },
-      { q: "What shape is the decision boundary of a single neuron with 2 inputs?", options: ["A) A circle", "B) A parabola", "C) A straight line", "D) An arbitrary curve"], correct: 2, explanation: "The decision boundary w1*x1 + w2*x2 + b = 0 is a straight line in 2D (or a hyperplane in higher dimensions). A single neuron can only produce linear decision boundaries." },
+      { q: "You set requires_grad=False on a weight tensor by accident. What would happen during training?", options: ["A) Training works normally", "B) That weight never updates because no gradient is computed for it", "C) The entire model fails to train", "D) The weight updates with random values"], correct: 1, explanation: "With requires_grad=False, PyTorch does not track operations on that tensor in the computation graph, so no gradient is computed for it. The weight stays at its initial value forever. Other weights with requires_grad=True still train normally, but the frozen weight can severely limit the model." },
       { q: "Which of these problems CANNOT be solved by a single neuron?", options: ["A) AND gate", "B) OR gate", "C) XOR gate", "D) NOT gate"], correct: 2, explanation: "XOR is not linearly separable -- no single line can separate the positive examples (0,1) and (1,0) from the negative examples (0,0) and (1,1). This was famously shown by Minsky & Papert (1969)." },
       { q: "What does the bias term in a neuron control?", options: ["A) The slope of the decision boundary", "B) The offset/position of the decision boundary", "C) The nonlinearity of the output", "D) The learning rate"], correct: 1, explanation: "The bias shifts the decision boundary away from the origin. Without bias, the boundary must pass through the origin. With bias, it can be positioned anywhere in the input space." },
       { q: "If the ReLU activation outputs 0 for a given input, what is the gradient that flows back through this neuron?", options: ["A) 1", "B) 0", "C) -1", "D) The input value"], correct: 1, explanation: "ReLU(x) = max(0, x). When x <= 0, the output is 0 and the derivative is 0. The gradient is killed -- this is the 'dying ReLU' problem where neurons can permanently stop learning." }
@@ -2464,7 +2548,7 @@ const quizData = [
     topic: "1.5: MLP Forward Pass",
     questions: [
       { q: "What happens to the decision boundary if you remove all activation functions from an MLP?", options: ["A) It becomes more complex", "B) It stays the same", "C) It becomes linear", "D) The network cannot compute anything"], correct: 2, explanation: "Without activations, each layer is a linear transformation. Composing linear transformations gives another linear transformation: W2(W1*x + b1) + b2 = (W2*W1)x + (W2*b1 + b2). The network collapses to a single linear layer." },
-      { q: "An MLP with one hidden layer and ReLU activations can approximate:", options: ["A) Only linear functions", "B) Only polynomial functions", "C) Any continuous function (given enough hidden neurons)", "D) Only periodic functions"], correct: 2, explanation: "The Universal Approximation Theorem states that a single hidden layer with a nonlinear activation (like ReLU) can approximate any continuous function on a compact set, given sufficiently many hidden neurons." },
+      { q: "You add 10 more hidden layers to an MLP but keep all activations as identity (linear). What happens to the model's expressiveness?", options: ["A) It increases dramatically with depth", "B) It stays exactly the same as a single-layer model", "C) It doubles with each added layer", "D) It depends on the width of the layers"], correct: 1, explanation: "Without nonlinear activations, any number of linear layers collapses to a single linear transformation: W_n * ... * W_2 * W_1 is still one matrix. Depth without nonlinearity adds zero expressiveness. This is why activation functions are essential." },
       { q: "In a 2-3-3-1 MLP (2 inputs, two hidden layers of 3, 1 output), how many weight parameters are there (excluding biases)?", options: ["A) 9", "B) 15", "C) 18", "D) 21"], correct: 2, explanation: "Layer 1: 2*3 = 6 weights. Layer 2: 3*3 = 9 weights. Layer 3: 3*1 = 3 weights. Total: 6 + 9 + 3 = 18 weights (plus 7 biases = 25 total parameters)." },
       { q: "What is the purpose of having multiple neurons in a hidden layer?", options: ["A) To make training faster", "B) Each neuron learns a different feature/pattern", "C) To use more memory", "D) To avoid the need for activation functions"], correct: 1, explanation: "Each neuron in a hidden layer learns to detect a different feature or pattern. With 3 neurons, the layer can detect 3 different linear features. Together with nonlinear activations, these features combine to represent complex decision boundaries." },
       { q: "Why are the intermediate feature representations important?", options: ["A) They are not important, only the final output matters", "B) They show how the network progressively transforms the data into a linearly separable representation", "C) They reduce the number of parameters", "D) They prevent overfitting"], correct: 1, explanation: "Each layer transforms the data into a new representation. The network learns to 'untangle' the data layer by layer until the final representation is linearly separable. This is the key insight of deep learning." }
@@ -2474,7 +2558,7 @@ const quizData = [
     topic: "1.6: MLP Backward Pass & Gradient Flow",
     questions: [
       { q: "What is the maximum value of the sigmoid derivative?", options: ["A) 1.0", "B) 0.5", "C) 0.25", "D) 0.1"], correct: 2, explanation: "The sigmoid derivative is sigma(x) * (1 - sigma(x)), which is maximized at x=0 where sigma(0) = 0.5, giving 0.5 * 0.5 = 0.25. Since this is always less than 1, gradients shrink at every sigmoid layer." },
-      { q: "With sigmoid activations and 10 layers, what is the approximate maximum gradient that reaches the first layer?", options: ["A) 0.25", "B) 0.001", "C) 0.000001", "D) 1.0"], correct: 2, explanation: "Each sigmoid layer multiplies the gradient by at most 0.25. After 10 layers: 0.25^10 ≈ 0.00000095 ≈ 10^-6. This is why deep networks with sigmoid activations suffer from vanishing gradients." },
+      { q: "Why does a 50-layer network with sigmoid activations fail to train, while the same architecture with ReLU trains successfully?", options: ["A) Sigmoid is slower to compute than ReLU", "B) Sigmoid's max derivative is 0.25, so gradients shrink by 0.25^50 making early layers receive near-zero gradients", "C) ReLU prevents overfitting", "D) Sigmoid outputs are too small for the loss function"], correct: 1, explanation: "Sigmoid's maximum derivative is 0.25. Over 50 layers, gradients shrink by 0.25^50 ≈ 10^-30 -- effectively zero. Early layers receive no useful gradient signal and cannot learn. ReLU has derivative 1 for positive inputs, so gradients pass through without attenuation." },
       { q: "Why does ReLU help with the vanishing gradient problem?", options: ["A) ReLU has a maximum derivative of 2.0", "B) ReLU derivative is exactly 1 for positive inputs, so gradients pass through unchanged", "C) ReLU prevents any gradient from becoming zero", "D) ReLU normalizes gradients automatically"], correct: 1, explanation: "ReLU(x) = max(0, x) has derivative 1 for x > 0 and 0 for x <= 0. For active neurons (positive input), the gradient passes through with no attenuation. This is a dramatic improvement over sigmoid's maximum of 0.25." },
       { q: "What is 'exploding gradients' and when does it occur?", options: ["A) When gradients become very large, causing unstable updates. Occurs with large weights.", "B) When gradients become zero", "C) When the loss increases", "D) When the network has too few layers"], correct: 0, explanation: "Exploding gradients occur when gradient magnitudes grow exponentially through layers, typically with large weight values. Each layer can amplify the gradient, leading to enormous weight updates that destabilize training." },
       { q: "Which technique was NOT introduced specifically to address vanishing/exploding gradients?", options: ["A) ReLU activation", "B) Residual connections (skip connections)", "C) Dropout regularization", "D) Gradient clipping"], correct: 2, explanation: "Dropout was introduced for regularization (preventing overfitting), not specifically for gradient flow. ReLU, residual connections, and gradient clipping were all developed to address vanishing/exploding gradient problems." }
@@ -2483,7 +2567,7 @@ const quizData = [
   {
     topic: "1.7: Loss Landscape & Gradient Descent",
     questions: [
-      { q: "In gradient descent, the update rule is theta = theta - lr * gradient. What happens if lr is too large?", options: ["A) Convergence is guaranteed but slow", "B) The optimization overshoots the minimum and may diverge", "C) The gradients become zero", "D) The loss always decreases"], correct: 1, explanation: "With a learning rate that is too large, the parameter update jumps over the minimum. In extreme cases, each step increases the loss, causing divergence where the loss grows without bound." },
+      { q: "Your training loss suddenly jumps to NaN after 500 stable epochs. Which learning rate issue is the most likely cause?", options: ["A) Learning rate is too small", "B) Learning rate is too large, causing an update that explodes to infinity", "C) Learning rate should be negative", "D) Learning rate has no effect on NaN"], correct: 1, explanation: "A learning rate that is too large can cause weight updates that overshoot dramatically. When weights become extreme, activations overflow to infinity, and operations like log(0) or inf*0 produce NaN. This can happen suddenly when the optimizer enters a steep region of the loss landscape." },
       { q: "What does the gradient vector point in the direction of?", options: ["A) The minimum of the loss", "B) The steepest ascent (increase) of the loss", "C) The steepest descent (decrease) of the loss", "D) The nearest saddle point"], correct: 1, explanation: "The gradient points in the direction of steepest ASCENT. That is why gradient descent subtracts the gradient: theta - lr * gradient moves in the direction of steepest DESCENT." },
       { q: "What is a saddle point?", options: ["A) A global minimum", "B) A point where the gradient is zero but it's a minimum along some dimensions and a maximum along others", "C) A local maximum", "D) A point where the loss is undefined"], correct: 1, explanation: "At a saddle point, the gradient is zero (like a minimum), but the curvature is positive in some directions and negative in others. It looks like a minimum if you only look at some dimensions, but you can descend further along other dimensions." },
       { q: "Why is learning rate often called the most important hyperparameter?", options: ["A) It is the only hyperparameter that affects training", "B) It directly controls how much weights change each step, and too small or too large both prevent convergence", "C) It determines the architecture of the network", "D) It affects the forward pass directly"], correct: 1, explanation: "Learning rate directly controls the magnitude of weight updates. Too small: extremely slow training, may get stuck. Too large: unstable, divergent. The right LR is crucial for successful training and often requires careful tuning." },
@@ -2494,7 +2578,7 @@ const quizData = [
     topic: "1.8: The Training Loop",
     questions: [
       { q: "What are the four steps of the training loop, in order?", options: ["A) Backward, Forward, Update, Loss", "B) Forward, Loss, Backward, Update", "C) Loss, Forward, Backward, Update", "D) Forward, Update, Backward, Loss"], correct: 1, explanation: "The training loop is: (1) Forward pass - compute predictions, (2) Compute loss - measure error, (3) Backward pass - compute gradients via backprop, (4) Update weights - apply optimizer. Then repeat." },
-      { q: "What advantage does Adam have over vanilla SGD?", options: ["A) Adam always converges faster", "B) Adam uses adaptive per-parameter learning rates based on gradient history", "C) Adam does not require a learning rate", "D) Adam prevents overfitting"], correct: 1, explanation: "Adam maintains running averages of both the gradient (first moment) and squared gradient (second moment) for each parameter. This creates an adaptive learning rate per parameter, allowing it to handle sparse gradients and different scales effectively." },
+      { q: "You swap the order of optimizer.step() and loss.backward() in your training loop. What goes wrong?", options: ["A) Nothing, the order doesn't matter", "B) Weights are updated using stale gradients from the previous iteration (or zeros on the first)", "C) The loss becomes negative", "D) An error is raised automatically"], correct: 1, explanation: "If you call optimizer.step() before loss.backward(), the optimizer uses whatever gradients are currently stored -- either zeros (first iteration) or gradients from the previous batch. The model trains on outdated information, leading to poor or nonsensical convergence." },
       { q: "SGD with momentum adds a velocity term. What does this help with?", options: ["A) It eliminates the need for a learning rate", "B) It dampens oscillations and accelerates in consistent gradient directions", "C) It makes the model smaller", "D) It increases the batch size"], correct: 1, explanation: "Momentum accumulates past gradients into a velocity vector. If gradients consistently point the same direction, velocity builds up (acceleration). If gradients oscillate, they partially cancel in the velocity, reducing oscillation." },
       { q: "After the backward pass, why must we zero the gradients before the next iteration?", options: ["A) To save memory", "B) Because gradients accumulate (are added to existing values), so old gradients would corrupt new ones", "C) Because the graph is deleted", "D) Zeroing is optional and has no effect"], correct: 1, explanation: "In frameworks like PyTorch, gradients are accumulated (added) by default. If you don't zero them before each backward pass, new gradients get added to old ones, leading to incorrect gradient values. This is why optimizer.zero_grad() is called each iteration." },
       { q: "Why is the training loop framework (forward-loss-backward-update) universal across all neural networks?", options: ["A) It is enforced by hardware", "B) It follows from calculus: compute function, measure error, differentiate, optimize", "C) It is specific to classification tasks only", "D) It only works with MSE loss"], correct: 1, explanation: "The loop is fundamental mathematics: evaluate a parameterized function (forward), define an objective to minimize (loss), compute derivatives of that objective (backward/chain rule), and take a step to reduce it (gradient descent). This applies to any differentiable model with any differentiable loss." }

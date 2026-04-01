@@ -1,0 +1,1499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 5: RNNs & Sequence Processing from Scratch</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #0a0a0f; color: #e0e0e0; line-height: 1.6; }
+  .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; text-align: center; border-bottom: 1px solid #2a2a4a; }
+  .header h1 { font-size: 2.2em; background: linear-gradient(90deg, #f39c12, #e67e22); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+  .header p { color: #888; font-size: 1.1em; }
+  .header a { color: #f39c12; text-decoration: none; font-size: 0.9em; }
+  .header a:hover { text-decoration: underline; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+
+  /* Minimap */
+  .minimap { position: sticky; top: 0; z-index: 100; background: #0a0a0fee; backdrop-filter: blur(10px); border-bottom: 1px solid #2a2a4a; padding: 10px 20px; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }
+  .mm-step { padding: 4px 12px; border-radius: 6px; font-size: 0.75em; font-weight: 600; cursor: pointer; transition: all 0.2s; background: #151530; color: #555; border: 1px solid #2a2a4a; white-space: nowrap; }
+  .mm-step:hover { border-color: #f39c12; color: #f39c12; }
+  .mm-step.active { background: rgba(243,156,18,0.2); color: #f39c12; border-color: rgba(243,156,18,0.5); }
+  .mm-step.done { background: rgba(243,156,18,0.1); color: #f39c12; border-color: rgba(243,156,18,0.3); }
+  .mm-arrow { color: #333; font-size: 0.8em; }
+
+  .viz-section { background: #12121f; border: 1px solid #2a2a4a; border-radius: 16px; padding: 32px; margin-bottom: 40px; }
+  .viz-section h2 { font-size: 1.5em; color: #f39c12; margin-bottom: 8px; }
+  .viz-section .subtitle { color: #888; margin-bottom: 24px; font-size: 0.95em; }
+  .viz-canvas { background: #0d0d1a; border-radius: 12px; position: relative; overflow: hidden; }
+  canvas { display: block; margin: 0 auto; }
+  .controls { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; align-items: center; }
+  .control-group { display: flex; flex-direction: column; gap: 4px; }
+  .control-group label { font-size: 0.85em; color: #aaa; }
+  .control-group input[type="range"] { width: 160px; accent-color: #f39c12; }
+  .control-group .value { font-size: 0.85em; color: #f39c12; font-family: monospace; }
+  .btn { padding: 8px 16px; border: 1px solid #f39c12; background: transparent; color: #f39c12; border-radius: 8px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
+  .btn:hover { background: #f39c1222; }
+  .btn.active { background: #f39c1233; }
+  .tab-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+
+  .insight-box { background: linear-gradient(135deg, #1a1a3e 0%, #151530 100%); border-left: 4px solid #f39c12; padding: 20px 24px; margin-top: 20px; border-radius: 0 12px 12px 0; font-size: 0.92em; color: #ccc; line-height: 1.8; }
+  .insight-box strong { color: #f39c12; font-size: 1.05em; }
+  .insight-box .formula { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 12px 18px; margin: 12px 0; font-family: 'Courier New', monospace; color: #e8e8ff; font-size: 1.05em; text-align: center; letter-spacing: 0.5px; line-height: 1.9; }
+  .insight-box .key-point { display: flex; flex-wrap: wrap; gap: 4px 8px; margin: 8px 0; padding: 4px 0; align-items: baseline; }
+  .insight-box .key-point .label { color: #f39c12; font-weight: 600; min-width: 160px; flex-shrink: 0; }
+  .insight-box .key-point .desc { color: #ddd; }
+  .insight-box .interview-tip { background: rgba(100, 255, 100, 0.05); border: 1px solid rgba(100, 255, 100, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #b0ffb0; font-size: 0.93em; line-height: 1.6; }
+  .insight-box .interview-tip::before { content: '\1F4A1  Interview Tip: '; font-weight: 700; color: #7fff7f; }
+  .insight-box .mnemonic { background: rgba(255, 150, 255, 0.05); border: 1px solid rgba(255, 150, 255, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #ffb0ff; font-size: 0.93em; line-height: 1.6; }
+  .insight-box .mnemonic::before { content: '\1F9E0  Remember: '; font-weight: 700; color: #ff7fff; }
+  .insight-box .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+  .insight-box .comparison .option { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 10px 14px; }
+  .insight-box .comparison .option .opt-title { color: #f39c12; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
+  .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
+  .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
+  .code-example { margin-top: 12px; border: 1px solid #2a2a4a; border-radius: 8px; overflow: hidden; }
+  .code-toggle { width: 100%; background: #1a1a2e; color: #f39c12; border: none; padding: 10px 16px; text-align: left; cursor: pointer; font-size: 0.9em; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .code-toggle:hover { background: #22223a; }
+  .code-toggle-icon { display: inline-block; transition: transform 0.2s; font-size: 0.7em; }
+  .code-example.open .code-toggle-icon { transform: rotate(90deg); }
+  .code-content { display: none; padding: 14px 16px; background: #0a0a14; }
+  .code-example.open .code-content { display: block; }
+  .code-content pre { margin: 0; overflow-x: auto; white-space: pre; }
+  .code-content code { color: #e0e0e0; font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.82em; line-height: 1.6; }
+  .code-content .code-note { color: #888; font-size: 0.82em; margin-top: 8px; font-style: italic; }
+  .code-content pre[class*="language-"], .code-content code[class*="language-"] { background: #0a0a14; font-size: 0.82em; line-height: 1.6; margin: 0; padding: 0; text-shadow: none; }
+  pre[class*="language-"]::selection, code[class*="language-"]::selection { background: #333; }
+
+  .katex { color: #e8e8ff; font-size: 1.1em; }
+  .formula .katex { font-size: 1.2em; }
+
+  .narrative-note { background: rgba(255,217,61,0.05); border-left: 3px solid #ffd93d; padding: 14px 18px; margin: 16px 0; border-radius: 0 8px 8px 0; font-size: 0.9em; color: #ccb866; }
+  .narrative-note strong { color: #ffd93d; }
+
+  select { padding: 6px 12px; border: 1px solid #2a2a4a; background: #0d0d1a; color: #e0e0e0; border-radius: 6px; font-size: 0.9em; cursor: pointer; }
+  select:focus { outline: none; border-color: #f39c12; }
+
+#quizToggle{position:fixed;top:20px;right:20px;z-index:1000;padding:12px 20px;background:#f39c12;color:#0a0a0f;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:1em;box-shadow:0 4px 15px rgba(0,0,0,0.3);transition:transform 0.2s}
+#quizToggle:hover{transform:scale(1.05)}
+#quizSection{background:#0a0a0f;border-top:2px solid #f39c12;padding:40px 20px;margin-top:40px}
+.quiz-container{max-width:900px;margin:0 auto}
+.quiz-topic{margin-bottom:30px}
+.quiz-topic-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:10px;cursor:pointer;margin-bottom:12px;user-select:none}
+.quiz-topic-header h3{color:#f39c12;margin:0;font-size:1.15em}
+.quiz-topic-header:hover{background:#1f1f3a}
+.quiz-topic-score{color:#888;font-size:0.95em}
+.quiz-topic-questions{display:none}
+.quiz-topic-questions.open{display:block}
+.quiz-question{background:#12121f;border:1px solid #2a2a4a;border-radius:12px;padding:24px;margin-bottom:16px}
+.quiz-question h4{color:#e0e0e0;margin-bottom:16px;font-size:1.05em;line-height:1.5}
+.quiz-option{display:block;width:100%;padding:12px 16px;margin:8px 0;background:#0d0d1a;border:1px solid #2a2a4a;border-radius:8px;color:#e0e0e0;cursor:pointer;text-align:left;font-size:0.95em;transition:all 0.2s;font-family:inherit}
+.quiz-option:hover:not(:disabled){border-color:#f39c12;background:#1a1a3e}
+.quiz-option.correct{background:#1a3a2a !important;border-color:#2ecc71 !important;color:#2ecc71 !important}
+.quiz-option.wrong{background:#3a1a1a !important;border-color:#e74c3c !important;color:#e74c3c !important}
+.quiz-option.reveal{border-color:#2ecc71 !important;color:#2ecc71 !important}
+.quiz-option:disabled{cursor:default}
+.quiz-explanation{margin-top:12px;padding:14px 18px;border-radius:8px;font-size:0.93em;line-height:1.6;display:none}
+.quiz-explanation.show{display:block}
+.quiz-explanation.correct-exp{border-left:4px solid #2ecc71;background:rgba(46,204,113,0.08);color:#b0ffb0}
+.quiz-explanation.wrong-exp{border-left:4px solid #e74c3c;background:rgba(231,76,60,0.08);color:#ffb0b0}
+.quiz-score{text-align:center;font-size:1.5em;color:#f39c12;margin-bottom:30px}
+.quiz-actions{text-align:center;margin-top:30px;margin-bottom:20px}
+.quiz-actions button{padding:10px 24px;margin:0 8px;border-radius:8px;border:1px solid #f39c12;background:transparent;color:#f39c12;cursor:pointer;font-size:1em}
+.quiz-actions button:hover{background:rgba(243,156,18,0.1)}
+.quiz-progress{height:4px;background:#1a1a2e;border-radius:2px;margin-bottom:20px;overflow:hidden}
+.quiz-progress-bar{height:100%;background:#f39c12;border-radius:2px;transition:width 0.3s}
+
+.break-toggle { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border: 1px solid #e74c3c; background: transparent; color: #e74c3c; border-radius: 8px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
+.break-toggle:hover { background: rgba(231,76,60,0.15); }
+.break-toggle.broken { background: rgba(231,76,60,0.25); border-color: #ff4444; color: #ff4444; }
+
+.legend { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.85em; color: #ccc; }
+.legend-dot { width: 12px; height: 12px; border-radius: 50%; }
+
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '\\(', right: '\\)', display: false}]});"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-okaidia.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script></head>
+<body>
+<button id="quizToggle" onclick="toggleQuiz()">&#x1F9E0; Quiz Mode</button>
+
+<div class="header">
+  <a href="../index.html">&larr; Back to Index</a>
+  <h1>Chapter 5: RNNs & Sequence Processing from Scratch</h1>
+  <p>Vanilla RNNs, vanishing gradients, LSTMs, and GRUs &mdash; Prereqs: Ch 1 (Backprop), Ch 3 (Activations)</p>
+</div>
+
+<div class="minimap" id="minimap">
+  <span class="mm-step active" data-section="viz51" onclick="scrollToViz('viz51')">1. Vanilla RNN</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz52" onclick="scrollToViz('viz52')">2. Hidden State</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz53" onclick="scrollToViz('viz53')">3. BPTT & Vanishing Grad</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz54" onclick="scrollToViz('viz54')">4. LSTM</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz55" onclick="scrollToViz('viz55')">5. GRU</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz56" onclick="scrollToViz('viz56')">6. Stacked & Bidir</span>
+</div>
+
+<div class="container">
+
+<!-- ============================================================ -->
+<!-- VIZ 5.1: VANILLA RNN CELL -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz51">
+  <h2>5.1 The Vanilla RNN Cell</h2>
+  <p class="subtitle">An RNN processes sequences one token at a time, maintaining a hidden state that carries information from previous steps. At each timestep, the hidden state is updated using both the current input and the previous hidden state.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <div class="control-group">
+      <label>Timesteps to Unroll</label>
+      <input type="range" id="unrollSlider" min="2" max="8" value="4" oninput="drawVanillaRNN()">
+      <span class="value" id="unrollVal">4</span>
+    </div>
+    <div class="control-group">
+      <label>Hidden Size <span style="font-size:0.8em;color:#888;">(64-256 for simple tasks, 512-1024 for language. Larger = more capacity but slower and overfits more.)</span></label>
+      <input type="range" id="hiddenSlider" min="2" max="8" value="4" oninput="drawVanillaRNN()">
+      <span class="value" id="hiddenVal">4</span>
+    </div>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="rnnCanvas" width="1100" height="420"></canvas>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> An RNN reuses the same weights at every timestep. The hidden state \(h_t\) is a compressed summary of everything the network has seen so far.
+    <div class="formula">$$h_t = \tanh(W_{hh} \cdot h_{t-1} + W_{xh} \cdot x_t + b_h)$$</div>
+    <div class="key-point">
+      <span class="label">Weight Sharing:</span>
+      <span class="desc">The same \(W_{hh}\) and \(W_{xh}\) are used at every step. This is what makes RNNs handle variable-length sequences.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Sequential Processing:</span>
+      <span class="desc">Unlike attention (see <a href="04-attention-sequences.html" style="color:#f39c12;">Ch 04</a> where all positions are processed in parallel), RNNs must process tokens one at a time &mdash; a fundamental speed limitation.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">When asked "RNN vs Transformer?": RNNs process sequentially (O(n) serial steps), while transformers process all positions in parallel. But RNNs use O(1) memory per step, whereas attention uses O(n&sup2;).</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Vanilla RNN Cell from Scratch
+      </button>
+      <div class="code-content">
+        <pre><code class="language-python">import torch
+import torch.nn as nn
+
+class VanillaRNNCell(nn.Module):
+    def __init__(self, input_size, hidden_size):
+        super().__init__()
+        self.W_xh = nn.Linear(input_size, hidden_size)
+        self.W_hh = nn.Linear(hidden_size, hidden_size, bias=False)
+
+    def forward(self, x_t, h_prev):
+        # x_t: (batch, input_size), h_prev: (batch, hidden_size)
+        h_t = torch.tanh(self.W_xh(x_t) + self.W_hh(h_prev))
+        return h_t
+
+# Process a sequence
+cell = VanillaRNNCell(input_size=32, hidden_size=64)
+h = torch.zeros(1, 64)  # initial hidden state = zeros
+for t in range(10):
+    x_t = torch.randn(1, 32)
+    h = cell(x_t, h)
+print(f"Final hidden state: {h.shape}")  # (1, 64)</code></pre>
+        <p class="code-note">The same cell is called at every timestep with the previous hidden state. Weight sharing is automatic.</p>
+      </div>
+    </div>
+  </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3 style="color:#ff6b6b; margin-bottom: 10px;">&#x26A0;&#xFE0F; Common Mistakes</h3>
+    <ul style="list-style: none; padding: 0;">
+      <li style="margin-bottom: 8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Forgetting to initialize hidden state to zeros before each new sequence. <strong style="color:#2ecc71;">Fix:</strong> Always call <code>h = torch.zeros(batch, hidden_size)</code> at the start of each sequence. Leftover hidden states from previous sequences leak information and cause erratic training.</li>
+      <li style="margin-bottom: 8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Using vanilla RNN for long sequences (length > 30). <strong style="color:#2ecc71;">Fix:</strong> Use LSTM or GRU instead. Vanilla RNNs cannot maintain gradients over long distances due to vanishing/exploding gradients (see Section 5.3 below).</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 5.2: HIDDEN STATE AS MEMORY -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz52">
+  <h2>5.2 Hidden State as Memory</h2>
+  <p class="subtitle">The hidden state is the RNN's memory. It must compress the entire history of the sequence into a fixed-size vector. This bottleneck is exactly what <a href="04-attention-sequences.html" style="color:#f39c12;">Ch 04 (attention)</a> replaces with explicit lookup over all past positions.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <div class="tab-bar">
+      <button class="btn active" id="seqBtn0" onclick="setSeqExample(0)">Sequence: "the cat sat"</button>
+      <button class="btn" id="seqBtn1" onclick="setSeqExample(1)">Sequence: "the big fluffy cat sat"</button>
+      <button class="btn" id="seqBtn2" onclick="setSeqExample(2)">Sequence: long (20 tokens)</button>
+    </div>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="memoryCanvas" width="1100" height="400"></canvas>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> The hidden state is a lossy compression of the past. Recent tokens dominate; early tokens fade. This is the fundamental limitation that motivates LSTMs and attention.
+    <div class="formula">$$h_t = f(h_{t-1}, x_t) \quad \Rightarrow \quad h_t = f(f(f(\ldots, x_1), x_2), \ldots, x_t)$$</div>
+    <div class="key-point">
+      <span class="label">Information Bottleneck:</span>
+      <span class="desc">A hidden state of size 256 must encode ALL information from potentially thousands of tokens. Information is inevitably lost.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Recency Bias:</span>
+      <span class="desc">Each application of tanh squashes values into [-1,1]. After many steps, the contribution of early tokens approaches zero.</span>
+    </div>
+    <hr class="divider">
+    <div class="mnemonic">Think of the hidden state as a game of telephone: the message (early tokens) gets more distorted with each retelling (timestep). LSTMs add a "written note" (cell state) that preserves the original message.</div>
+  </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3 style="color:#ff6b6b; margin-bottom: 10px;">&#x26A0;&#xFE0F; Common Mistakes</h3>
+    <ul style="list-style: none; padding: 0;">
+      <li style="margin-bottom: 8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Confusing bidirectional hidden size &mdash; the output of a bidirectional RNN is <code>2 * hidden_size</code>, not <code>hidden_size</code>. <strong style="color:#2ecc71;">Fix:</strong> When feeding bidirectional output to a linear layer, use <code>nn.Linear(2 * hidden_size, ...)</code>. This is one of the most common shape-mismatch bugs.</li>
+      <li style="margin-bottom: 8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Not packing variable-length sequences before feeding to the RNN. <strong style="color:#2ecc71;">Fix:</strong> Use <code>pack_padded_sequence</code> and <code>pad_packed_sequence</code>. Without packing, the RNN wastes compute processing padding tokens and the hidden state gets corrupted by padding values.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 5.3: BPTT & VANISHING GRADIENTS -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz53">
+  <h2>5.3 Backpropagation Through Time & Vanishing Gradients</h2>
+  <p class="subtitle">When we unroll the RNN to compute gradients, we multiply the same weight matrix repeatedly. This causes gradients to either vanish (most common) or explode. This is the same gradient flow problem from <a href="01-backprop-autograd.html" style="color:#f39c12;">Ch 01 (backprop)</a>, but amplified by the recurrent structure.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <div class="control-group">
+      <label>Sequence Length for BPTT <span style="font-size:0.8em;color:#888;">(Truncate at 35-256 tokens. Longer = better gradients but more memory.)</span></label>
+      <input type="range" id="bpttSlider" min="3" max="20" value="10" oninput="drawBPTT()">
+      <span class="value" id="bpttVal">10</span>
+    </div>
+    <div class="control-group">
+      <label>Gradient Clipping <span style="font-size:0.8em;color:#888;">(Clip at 1.0-5.0. If loss spikes, reduce clip value.)</span></label>
+      <input type="range" id="clipSlider" min="0" max="10" value="0" step="0.5" oninput="drawBPTT()">
+      <span class="value" id="clipVal">off</span>
+    </div>
+    <div class="control-group">
+      <label>W_hh Spectral Radius</label>
+      <input type="range" id="specSlider" min="0.3" max="1.5" value="0.9" step="0.05" oninput="drawBPTT()">
+      <span class="value" id="specVal">0.9</span>
+    </div>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="bpttCanvas" width="1100" height="450"></canvas>
+  </div>
+  <div class="narrative-note">
+    <strong>Callback to Ch 01:</strong> Remember the chain rule from backpropagation? In an RNN, the chain rule produces a <em>product</em> of Jacobians across all timesteps. If each Jacobian has norm &lt; 1, the product vanishes exponentially. If &gt; 1, it explodes.
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Gradients flow backward through time via repeated multiplication by \(\frac{\partial h_t}{\partial h_{t-1}}\). If the spectral radius of \(W_{hh}\) is less than 1, gradients vanish. If greater than 1, they explode.
+    <div class="formula">$$\frac{\partial L}{\partial h_0} = \frac{\partial L}{\partial h_T} \prod_{t=1}^{T} \frac{\partial h_t}{\partial h_{t-1}} = \frac{\partial L}{\partial h_T} \prod_{t=1}^{T} \text{diag}(1 - h_t^2) \cdot W_{hh}$$</div>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title" style="color: #e74c3c;">Vanishing (spectral radius &lt; 1)</div>
+        <div class="opt-desc">Gradient magnitude decreases exponentially with sequence length. The RNN cannot learn long-range dependencies &mdash; early tokens become invisible to the loss.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #f39c12;">Exploding (spectral radius &gt; 1)</div>
+        <div class="opt-desc">Gradient magnitude increases exponentially. Training diverges with NaN losses. Gradient clipping is a band-aid; LSTMs are the real fix.</div>
+      </div>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">The classic interview question: "Why can't vanilla RNNs learn long-range dependencies?" Answer: repeated multiplication by W_hh causes vanishing gradients. The gradient from step T to step 0 scales as (spectral_radius)^T, which goes to 0 exponentially fast.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Gradient Clipping in PyTorch
+      </button>
+      <div class="code-content">
+        <pre><code class="language-python">import torch
+import torch.nn as nn
+
+model = nn.RNN(input_size=32, hidden_size=64, num_layers=1, batch_first=True)
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+
+# Training loop with gradient clipping
+for batch in dataloader:
+    optimizer.zero_grad()
+    output, h_n = model(batch)
+    loss = criterion(output, targets)
+    loss.backward()
+
+    # Clip gradients to prevent explosion
+    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+
+    optimizer.step()</code></pre>
+        <p class="code-note">Gradient clipping rescales the gradient vector if its norm exceeds max_norm. Essential for any RNN training.</p>
+      </div>
+    </div>
+  </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3 style="color:#ff6b6b; margin-bottom: 10px;">&#x26A0;&#xFE0F; Common Mistakes</h3>
+    <ul style="list-style: none; padding: 0;">
+      <li style="margin-bottom: 8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Not using gradient clipping with RNNs (exploding gradients crash training with NaN losses). <strong style="color:#2ecc71;">Fix:</strong> Always add <code>clip_grad_norm_(model.parameters(), max_norm=1.0)</code> after <code>loss.backward()</code>. Start with clip value 1.0; increase to 5.0 if training is too slow.</li>
+      <li style="margin-bottom: 8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Not detaching hidden state between sequences during truncated BPTT. The computation graph grows unbounded, consuming all GPU memory. <strong style="color:#2ecc71;">Fix:</strong> Call <code>h = h.detach()</code> at the boundary of each truncated segment. This cuts the gradient chain while keeping the hidden state values.</li>
+    </ul>
+  </div>
+  <div class="narrative-note">
+    &#128736; <strong>Hyperparameter Guidance:</strong> Gradient clip norm: start at 1.0, increase to 5.0 if training is too slow. Truncated BPTT length: 35&ndash;256 tokens. Longer = better gradient signal but more memory. Learning rate: 1e-3 for Adam, 1.0 for SGD with clipping (old-school but works).
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 5.4: LSTM -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz54">
+  <h2>5.4 LSTM: Long Short-Term Memory</h2>
+  <p class="subtitle">LSTMs add a separate cell state \(c_t\) that flows through time with minimal transformation. Three gates (forget, input, output) control what information to discard, store, and expose. The sigmoid gates act as soft switches &mdash; the same sigmoid activation from <a href="03-mlps-optimization.html" style="color:#f39c12;">Ch 03</a> that squashes values to [0,1] to control information flow.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <div class="control-group">
+      <label>Forget Gate Bias</label>
+      <input type="range" id="forgetSlider" min="0" max="1" value="0.8" step="0.05" oninput="drawLSTM()">
+      <span class="value" id="forgetVal">0.8</span>
+    </div>
+    <div class="control-group">
+      <label>Input Gate Bias</label>
+      <input type="range" id="inputGateSlider" min="0" max="1" value="0.5" step="0.05" oninput="drawLSTM()">
+      <span class="value" id="inputGateVal">0.5</span>
+    </div>
+    <div class="control-group">
+      <label>Number of Layers <span style="font-size:0.8em;color:#888;">(1-2 for most tasks. 3+ rarely helps without residual connections.)</span></label>
+      <input type="range" id="lstmLayersSlider" min="1" max="4" value="1" oninput="drawLSTM()">
+      <span class="value" id="lstmLayersVal">1</span>
+    </div>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="lstmCanvas" width="1100" height="500"></canvas>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> The cell state \(c_t\) is the LSTM's "highway" for gradients. It flows through time via element-wise multiply and add &mdash; no matrix multiplication by \(W_{hh}\), so gradients don't vanish.
+    <div class="formula">$$f_t = \sigma(W_f \cdot [h_{t-1}, x_t] + b_f) \quad \text{(forget gate)}$$</div>
+    <div class="formula">$$i_t = \sigma(W_i \cdot [h_{t-1}, x_t] + b_i) \quad \text{(input gate)}$$</div>
+    <div class="formula">$$c_t = f_t \odot c_{t-1} + i_t \odot \tanh(W_c \cdot [h_{t-1}, x_t] + b_c)$$</div>
+    <div class="formula">$$h_t = o_t \odot \tanh(c_t) \quad \text{where } o_t = \sigma(W_o \cdot [h_{t-1}, x_t] + b_o)$$</div>
+    <div class="key-point">
+      <span class="label">Forget Gate \(f_t\):</span>
+      <span class="desc">Controls what to discard from cell state. Initialized with large bias (~1.0) so the gate starts "open" (remembering by default).</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Input Gate \(i_t\):</span>
+      <span class="desc">Controls what new information to write to cell state.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Output Gate \(o_t\):</span>
+      <span class="desc">Controls what to expose from cell state to the hidden state (and the outside world).</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Key LSTM insight: the cell state update is c_t = f * c_{t-1} + i * new. The gradient through the cell state is just f_t (the forget gate), which can stay near 1 for many timesteps. This is why LSTMs solve the vanishing gradient problem.</div>
+    <div class="mnemonic">LSTM gates are like a note-taking system: the forget gate erases old notes, the input gate writes new notes, and the output gate decides which notes to share. The note itself (cell state) persists across time.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: LSTM in PyTorch
+      </button>
+      <div class="code-content">
+        <pre><code class="language-python">import torch
+import torch.nn as nn
+
+# Single-layer LSTM
+lstm = nn.LSTM(input_size=32, hidden_size=128, num_layers=2,
+               batch_first=True, dropout=0.1)
+
+# Input: (batch, seq_len, input_size)
+x = torch.randn(16, 50, 32)
+h0 = torch.zeros(2, 16, 128)  # (num_layers, batch, hidden)
+c0 = torch.zeros(2, 16, 128)  # cell state also zeros
+
+output, (h_n, c_n) = lstm(x, (h0, c0))
+print(f"Output: {output.shape}")  # (16, 50, 128)
+print(f"Final hidden: {h_n.shape}")  # (2, 16, 128)</code></pre>
+        <p class="code-note">LSTM returns both output (all timesteps) and final states. Note: h0 and c0 must both be initialized.</p>
+      </div>
+    </div>
+  </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3 style="color:#ff6b6b; margin-bottom: 10px;">&#x26A0;&#xFE0F; Common Mistakes</h3>
+    <ul style="list-style: none; padding: 0;">
+      <li style="margin-bottom: 8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Not initializing the forget gate bias to a positive value (~1.0). With default zero bias, the forget gate starts near 0.5, meaning the LSTM forgets half the cell state at every step from the start. <strong style="color:#2ecc71;">Fix:</strong> Manually set the forget gate bias to 1.0 after initialization: <code>for name, p in lstm.named_parameters(): if 'bias' in name: p.data[hidden_size:2*hidden_size].fill_(1.0)</code></li>
+      <li style="margin-bottom: 8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Stacking 3+ LSTM layers without residual connections. Deep LSTMs still suffer from depth-wise vanishing gradients even though they handle temporal gradients well. <strong style="color:#2ecc71;">Fix:</strong> For 3+ layers, add residual connections between layers or use 1-2 layers (sufficient for most tasks).</li>
+    </ul>
+  </div>
+  <div class="narrative-note">
+    &#128736; <strong>Hyperparameter Guidance:</strong> Hidden size: 128&ndash;512 for most tasks. Number of layers: 1&ndash;2 (3+ rarely helps without residual connections). Dropout between layers: 0.2&ndash;0.5. Forget gate bias: initialize to 1.0. Use Adam with lr=1e-3 and gradient clipping at 1.0.
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 5.5: GRU -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz55">
+  <h2>5.5 GRU: Gated Recurrent Unit</h2>
+  <p class="subtitle">A GRU simplifies the LSTM by merging the cell state and hidden state into one, using two gates instead of three. Fewer parameters, often similar performance. For most tasks where transformers (<a href="06-transformer.html" style="color:#f39c12;">Ch 06</a>) are overkill, GRUs are a strong default.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <div class="tab-bar">
+      <button class="btn active" id="gruViewBtn0" onclick="setGRUView(0)">Gate Values</button>
+      <button class="btn" id="gruViewBtn1" onclick="setGRUView(1)">Compare: RNN vs GRU vs LSTM</button>
+    </div>
+    <div class="control-group">
+      <label>Update Gate Bias</label>
+      <input type="range" id="gruUpdateSlider" min="0" max="1" value="0.5" step="0.05" oninput="drawGRU()">
+      <span class="value" id="gruUpdateVal">0.5</span>
+    </div>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="gruCanvas" width="1100" height="460"></canvas>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> The GRU uses the update gate \(z_t\) to interpolate between the old hidden state and a candidate. When \(z_t \approx 1\), the old state is kept (like an LSTM forget gate at 1). When \(z_t \approx 0\), the new candidate replaces it.
+    <div class="formula">$$z_t = \sigma(W_z \cdot [h_{t-1}, x_t]) \quad \text{(update gate)}$$</div>
+    <div class="formula">$$r_t = \sigma(W_r \cdot [h_{t-1}, x_t]) \quad \text{(reset gate)}$$</div>
+    <div class="formula">$$h_t = (1 - z_t) \odot h_{t-1} + z_t \odot \tanh(W \cdot [r_t \odot h_{t-1}, x_t])$$</div>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title">LSTM (3 gates, 2 states)</div>
+        <div class="opt-desc">Separate cell state + hidden state. 4x parameters vs vanilla RNN. More expressive for very long sequences.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title">GRU (2 gates, 1 state)</div>
+        <div class="opt-desc">Merged cell/hidden state. 3x parameters vs vanilla RNN. Faster training, often competitive with LSTM.</div>
+      </div>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">When to choose GRU vs LSTM: GRU is the default for smaller datasets and faster experiments. LSTM is better when you need the extra expressiveness (e.g., very long sequences or complex gating patterns). In 2024+, consider transformers first for most tasks.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: GRU vs LSTM Comparison
+      </button>
+      <div class="code-content">
+        <pre><code class="language-python">import torch
+import torch.nn as nn
+
+# GRU: simpler, fewer parameters
+gru = nn.GRU(input_size=32, hidden_size=128, batch_first=True)
+lstm = nn.LSTM(input_size=32, hidden_size=128, batch_first=True)
+
+print(f"GRU params:  {sum(p.numel() for p in gru.parameters()):,}")
+print(f"LSTM params: {sum(p.numel() for p in lstm.parameters()):,}")
+# GRU: ~62K, LSTM: ~83K (LSTM has ~33% more params)
+
+x = torch.randn(1, 20, 32)
+gru_out, gru_h = gru(x)          # returns (output, h_n)
+lstm_out, (lstm_h, lstm_c) = lstm(x)  # returns (output, (h_n, c_n))</code></pre>
+        <p class="code-note">GRU has 3 weight matrices (z, r, n) vs LSTM's 4 (f, i, c, o). Same API except LSTM also returns cell state.</p>
+      </div>
+    </div>
+  </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3 style="color:#ff6b6b; margin-bottom: 10px;">&#x26A0;&#xFE0F; Common Mistakes</h3>
+    <ul style="list-style: none; padding: 0;">
+      <li style="margin-bottom: 8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Assuming GRU and LSTM are interchangeable in all cases. GRU can struggle with very long sequences (200+) where LSTM's separate cell state provides better gradient flow. <strong style="color:#2ecc71;">Fix:</strong> Benchmark both on your task. If GRU works well at length 20 but fails at length 200, try LSTM or add attention on top.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 5.6: STACKED & BIDIRECTIONAL -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz56">
+  <h2>5.6 Stacked & Bidirectional RNNs</h2>
+  <p class="subtitle">Stacking multiple RNN layers increases model depth. Bidirectional RNNs process the sequence in both directions, giving each position context from the full sequence. This idea of "looking in both directions" also appears in <a href="06-transformer.html" style="color:#f39c12;">Ch 06 (transformers)</a> where attention naturally sees all positions.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <div class="control-group">
+      <label>Layers</label>
+      <input type="range" id="stackSlider" min="1" max="4" value="2" oninput="drawStacked()">
+      <span class="value" id="stackVal">2</span>
+    </div>
+    <div class="tab-bar">
+      <button class="btn active" id="dirBtn0" onclick="setDirection(0)">Unidirectional</button>
+      <button class="btn" id="dirBtn1" onclick="setDirection(1)">Bidirectional</button>
+    </div>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="stackedCanvas" width="1100" height="460"></canvas>
+  </div>
+  <div class="narrative-note">
+    <strong>Looking Ahead:</strong> While RNNs were the dominant sequence architecture for years, <a href="06-transformer.html" style="color:#f39c12;">Ch 06 (transformers)</a> shows how attention replaces RNNs for most tasks by processing all positions in parallel with O(1) serial depth. However, RNNs still matter: recent state-space models (Mamba, RWKV) revive the recurrent computation pattern with O(n) memory instead of attention's O(n&sup2;). The sequential processing flavor of RNNs also appears in <a href="08-gbdt-from-scratch.html" style="color:#f39c12;">Ch 08 (gradient-boosted trees)</a>, where each tree is built sequentially to correct the previous ensemble's errors.
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Stacking adds representational depth (each layer builds higher-level features). Bidirectionality adds context width (each position sees the full sequence). Use both for tasks like NER, POS tagging, and machine translation encoders.
+    <div class="formula">$$h_t^{(l)} = \text{RNN}(h_t^{(l-1)}, h_{t-1}^{(l)}) \quad \text{(layer } l \text{ sees output of layer } l-1 \text{)}$$</div>
+    <div class="formula">$$h_t^{\text{bidir}} = [\overrightarrow{h_t}; \overleftarrow{h_t}] \quad \text{(concatenate forward and backward hidden states)}$$</div>
+    <div class="key-point">
+      <span class="label">Bidirectional Output Size:</span>
+      <span class="desc">The output dimension doubles: \(2 \times \text{hidden\_size}\). Downstream layers must account for this.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">When Not to Use Bidir:</span>
+      <span class="desc">Autoregressive tasks (language generation) cannot use bidirectional RNNs &mdash; you can't look at future tokens you haven't generated yet.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Stacking 1-2 layers is standard. 3+ layers rarely help without residual connections (same issue as deep MLPs in Ch 03). Bidirectional is free accuracy for classification/tagging but impossible for generation.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Stacked Bidirectional LSTM
+      </button>
+      <div class="code-content">
+        <pre><code class="language-python">import torch
+import torch.nn as nn
+
+# 2-layer bidirectional LSTM
+bilstm = nn.LSTM(input_size=32, hidden_size=128,
+                 num_layers=2, batch_first=True,
+                 bidirectional=True, dropout=0.2)
+
+x = torch.randn(8, 30, 32)  # (batch, seq, features)
+output, (h_n, c_n) = bilstm(x)
+
+print(f"Output: {output.shape}")  # (8, 30, 256) -- 2*128!
+print(f"h_n: {h_n.shape}")        # (4, 8, 128) -- 2*layers * batch * hidden
+
+# Common pattern: classification head on final hidden states
+# Concatenate last forward + first backward hidden states
+h_forward = h_n[-2]   # last layer, forward direction
+h_backward = h_n[-1]  # last layer, backward direction
+final = torch.cat([h_forward, h_backward], dim=-1)  # (8, 256)
+classifier = nn.Linear(256, 10)  # 256 = 2 * hidden_size!</code></pre>
+        <p class="code-note">Bidirectional output is 2*hidden_size. h_n has shape (num_layers*2, batch, hidden) for bidirectional models.</p>
+      </div>
+    </div>
+  </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3 style="color:#ff6b6b; margin-bottom: 10px;">&#x26A0;&#xFE0F; Common Mistakes</h3>
+    <ul style="list-style: none; padding: 0;">
+      <li style="margin-bottom: 8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Confusing bidirectional hidden size &mdash; using <code>nn.Linear(hidden_size, ...)</code> after a bidirectional RNN instead of <code>nn.Linear(2 * hidden_size, ...)</code>. <strong style="color:#2ecc71;">Fix:</strong> Always check: if <code>bidirectional=True</code>, output features = <code>2 * hidden_size</code>.</li>
+      <li style="margin-bottom: 8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Using bidirectional RNNs for autoregressive generation (text generation, speech synthesis). <strong style="color:#2ecc71;">Fix:</strong> Use unidirectional for generation. Bidirectional is only valid when the full input sequence is available (e.g., classification, NER, encoding for seq2seq).</li>
+    </ul>
+  </div>
+</div>
+
+</div> <!-- /container -->
+
+<!-- ============================================================ -->
+<!-- QUIZ SECTION -->
+<!-- ============================================================ -->
+<div id="quizSection" style="display:none;">
+  <div class="quiz-container">
+    <h2 style="text-align:center; color:#f39c12; margin-bottom:10px;">Chapter 5 Quiz Mode</h2>
+    <div class="quiz-score">Score: <span id="quizScore">0</span></div>
+    <div class="quiz-progress"><div class="quiz-progress-bar" id="quizProgressBar"></div></div>
+    <div id="quizContent"></div>
+    <div class="quiz-actions">
+      <button onclick="resetQuiz()">Reset Quiz</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// GLOBAL STATE & UTILITIES
+// ============================================================
+const ACCENT = '#f39c12';
+const ACCENT2 = '#e67e22';
+const ACCENT3 = '#ffd93d';
+const ACCENT4 = '#ff6b6b';
+const BG = '#0d0d1a';
+const FG = '#e0e0e0';
+const DIM = '#555';
+const GRID = '#1a1a2e';
+
+function scrollToViz(id) {
+  document.getElementById(id).scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Minimap scroll highlighting
+const vizSections = ['viz51','viz52','viz53','viz54','viz55','viz56'];
+window.addEventListener('scroll', function() {
+  var steps = document.querySelectorAll('.mm-step');
+  var activeIdx = 0;
+  vizSections.forEach(function(id, i) {
+    var el = document.getElementById(id);
+    if (el && el.getBoundingClientRect().top < 300) activeIdx = i;
+  });
+  steps.forEach(function(s, i) {
+    s.classList.remove('active', 'done');
+    if (i < activeIdx) s.classList.add('done');
+    else if (i === activeIdx) s.classList.add('active');
+  });
+});
+
+function softmax(arr) {
+  var max = Math.max.apply(null, arr);
+  var exps = arr.map(function(x) { return Math.exp(x - max); });
+  var sum = exps.reduce(function(a, b) { return a + b; }, 0);
+  return exps.map(function(e) { return e / sum; });
+}
+
+function getCtx(id) {
+  var c = document.getElementById(id);
+  return c.getContext('2d');
+}
+
+function clearCanvas(ctx, c) {
+  ctx.clearRect(0, 0, c.width, c.height);
+  ctx.fillStyle = BG;
+  ctx.fillRect(0, 0, c.width, c.height);
+}
+
+function drawRoundedRect(ctx, x, y, w, h, r, fill, stroke) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 1.5; ctx.stroke(); }
+}
+
+function drawArrow(ctx, x1, y1, x2, y2, color, width) {
+  ctx.save();
+  ctx.strokeStyle = color || '#555';
+  ctx.fillStyle = color || '#555';
+  ctx.lineWidth = width || 1.5;
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+  var angle = Math.atan2(y2 - y1, x2 - x1);
+  var hl = 8;
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - hl * Math.cos(angle - 0.4), y2 - hl * Math.sin(angle - 0.4));
+  ctx.lineTo(x2 - hl * Math.cos(angle + 0.4), y2 - hl * Math.sin(angle + 0.4));
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+// ============================================================
+// VIZ 5.1: VANILLA RNN UNROLLED
+// ============================================================
+function drawVanillaRNN() {
+  var c = document.getElementById('rnnCanvas');
+  var ctx = c.getContext('2d');
+  clearCanvas(ctx, c);
+
+  var steps = parseInt(document.getElementById('unrollSlider').value);
+  var hs = parseInt(document.getElementById('hiddenSlider').value);
+  document.getElementById('unrollVal').textContent = steps;
+  document.getElementById('hiddenVal').textContent = hs;
+
+  var cellW = 100, cellH = 80, gapX = 30;
+  var totalW = steps * cellW + (steps - 1) * gapX;
+  var startX = (c.width - totalW) / 2;
+  var cellY = 160;
+
+  // Draw cells
+  for (var t = 0; t < steps; t++) {
+    var x = startX + t * (cellW + gapX);
+
+    // RNN cell box
+    drawRoundedRect(ctx, x, cellY, cellW, cellH, 8, 'rgba(243,156,18,0.12)', ACCENT);
+
+    // Cell label
+    ctx.fillStyle = ACCENT;
+    ctx.font = 'bold 13px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('RNN Cell', x + cellW / 2, cellY + cellH / 2 - 8);
+    ctx.fillStyle = '#aaa';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.fillText('(same weights)', x + cellW / 2, cellY + cellH / 2 + 10);
+
+    // Input arrow (from below)
+    drawArrow(ctx, x + cellW / 2, cellY + cellH + 60, x + cellW / 2, cellY + cellH + 4, ACCENT2, 1.5);
+    ctx.fillStyle = '#ccc';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('x_' + t, x + cellW / 2, cellY + cellH + 76);
+
+    // Output arrow (to above)
+    drawArrow(ctx, x + cellW / 2, cellY - 4, x + cellW / 2, cellY - 50, ACCENT, 1.5);
+    ctx.fillStyle = '#ccc';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.fillText('y_' + t, x + cellW / 2, cellY - 58);
+
+    // Hidden state arrow (horizontal to next cell)
+    if (t < steps - 1) {
+      var nx = startX + (t + 1) * (cellW + gapX);
+      drawArrow(ctx, x + cellW + 2, cellY + cellH / 2, nx - 2, cellY + cellH / 2, '#2ecc71', 2);
+      ctx.fillStyle = '#2ecc71';
+      ctx.font = '11px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('h_' + t, (x + cellW + nx) / 2, cellY + cellH / 2 - 10);
+    }
+  }
+
+  // Initial h_0 arrow
+  ctx.fillStyle = '#2ecc71';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText('h_0 = 0', startX - 10, cellY + cellH / 2 + 4);
+  drawArrow(ctx, startX - 8, cellY + cellH / 2, startX - 2, cellY + cellH / 2, '#2ecc71', 1.5);
+
+  // Hidden state size indicator
+  var barX = startX, barY = cellY + cellH + 100;
+  ctx.fillStyle = '#888';
+  ctx.font = '11px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Hidden size: ' + hs + ' units', barX, barY);
+  for (var i = 0; i < hs; i++) {
+    var bx = barX + i * 18;
+    drawRoundedRect(ctx, bx, barY + 8, 14, 14, 3, 'rgba(46,204,113,0.3)', '#2ecc71');
+  }
+
+  // Title
+  ctx.fillStyle = FG;
+  ctx.font = 'bold 16px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Unrolled RNN (' + steps + ' timesteps)', c.width / 2, 30);
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.fillText('All cells share the SAME weights W_xh and W_hh', c.width / 2, 50);
+}
+
+// ============================================================
+// VIZ 5.2: HIDDEN STATE MEMORY
+// ============================================================
+var seqExampleIdx = 0;
+var seqExamples = [
+  { tokens: ['the', 'cat', 'sat'], label: '3 tokens' },
+  { tokens: ['the', 'big', 'fluffy', 'cat', 'sat'], label: '5 tokens' },
+  { tokens: ['the', 'cat', 'that', 'lived', 'in', 'the', 'old', 'house', 'by', 'the', 'river', 'near', 'the', 'bridge', 'over', 'the', 'hill', 'behind', 'the', 'wall'], label: '20 tokens' }
+];
+
+function setSeqExample(idx) {
+  seqExampleIdx = idx;
+  document.querySelectorAll('[id^="seqBtn"]').forEach(function(b, i) {
+    b.classList.toggle('active', i === idx);
+  });
+  drawMemory();
+}
+
+function drawMemory() {
+  var c = document.getElementById('memoryCanvas');
+  var ctx = c.getContext('2d');
+  clearCanvas(ctx, c);
+
+  var seq = seqExamples[seqExampleIdx];
+  var tokens = seq.tokens;
+  var n = tokens.length;
+
+  // Draw the hidden state "memory strength" for each token
+  var barW = Math.min(50, (c.width - 120) / n - 4);
+  var startX = (c.width - n * (barW + 4)) / 2;
+  var baseY = 320;
+  var maxH = 200;
+
+  ctx.fillStyle = FG;
+  ctx.font = 'bold 14px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('How much each token contributes to the final hidden state h_' + (n - 1), c.width / 2, 30);
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.fillText('Earlier tokens fade exponentially (recency bias)', c.width / 2, 50);
+
+  for (var i = 0; i < n; i++) {
+    // Exponential decay: more recent tokens have more influence
+    var strength = Math.pow(0.75, n - 1 - i);
+    var barH = strength * maxH;
+    var x = startX + i * (barW + 4);
+
+    // Bar
+    var alpha = 0.3 + 0.7 * strength;
+    ctx.fillStyle = 'rgba(243,156,18,' + alpha + ')';
+    drawRoundedRect(ctx, x, baseY - barH, barW, barH, 4, 'rgba(243,156,18,' + alpha + ')', null);
+
+    // Token label
+    ctx.fillStyle = strength > 0.3 ? '#fff' : '#666';
+    ctx.font = '10px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.save();
+    ctx.translate(x + barW / 2, baseY + 14);
+    ctx.rotate(-0.5);
+    ctx.fillText(tokens[i], 0, 0);
+    ctx.restore();
+
+    // Strength percentage
+    ctx.fillStyle = ACCENT;
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(Math.round(strength * 100) + '%', x + barW / 2, baseY - barH - 6);
+  }
+
+  // Baseline
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(startX - 10, baseY);
+  ctx.lineTo(startX + n * (barW + 4) + 10, baseY);
+  ctx.stroke();
+
+  // Arrow showing time direction
+  ctx.fillStyle = '#888';
+  ctx.font = '11px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('earliest', startX, baseY + 40);
+  ctx.textAlign = 'right';
+  ctx.fillText('most recent', startX + n * (barW + 4), baseY + 40);
+  drawArrow(ctx, startX, baseY + 50, startX + n * (barW + 4), baseY + 50, '#555', 1);
+  ctx.fillStyle = '#555';
+  ctx.textAlign = 'center';
+  ctx.fillText('time', startX + n * (barW + 4) / 2, baseY + 64);
+}
+
+// ============================================================
+// VIZ 5.3: BPTT & VANISHING GRADIENTS
+// ============================================================
+function drawBPTT() {
+  var c = document.getElementById('bpttCanvas');
+  var ctx = c.getContext('2d');
+  clearCanvas(ctx, c);
+
+  var seqLen = parseInt(document.getElementById('bpttSlider').value);
+  var clipVal = parseFloat(document.getElementById('clipSlider').value);
+  var specRadius = parseFloat(document.getElementById('specSlider').value);
+  document.getElementById('bpttVal').textContent = seqLen;
+  document.getElementById('clipVal').textContent = clipVal === 0 ? 'off' : clipVal.toFixed(1);
+  document.getElementById('specVal').textContent = specRadius.toFixed(2);
+
+  var barW = Math.min(40, (c.width - 200) / seqLen - 4);
+  var startX = (c.width - seqLen * (barW + 4)) / 2;
+  var baseY = 350;
+  var maxH = 220;
+
+  // Title
+  ctx.fillStyle = FG;
+  ctx.font = 'bold 14px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Gradient magnitude at each timestep (backpropagating from loss at step ' + (seqLen - 1) + ')', c.width / 2, 25);
+
+  var vanishing = specRadius < 1;
+  ctx.fillStyle = vanishing ? ACCENT4 : ACCENT;
+  ctx.font = '12px Inter, sans-serif';
+  ctx.fillText(vanishing ? 'VANISHING: gradients decay as (' + specRadius.toFixed(2) + ')^t' : (specRadius > 1 ? 'EXPLODING: gradients grow as (' + specRadius.toFixed(2) + ')^t' : 'STABLE: gradients neither vanish nor explode'), c.width / 2, 48);
+
+  for (var t = 0; t < seqLen; t++) {
+    var stepsBack = seqLen - 1 - t;
+    var gradMag = Math.pow(specRadius, stepsBack);
+
+    // Apply gradient clipping
+    if (clipVal > 0 && gradMag > clipVal) {
+      gradMag = clipVal;
+    }
+
+    // Normalize for display
+    var displayMag = Math.min(gradMag, 5);
+    var barH = Math.max(2, (displayMag / 5) * maxH);
+    var x = startX + t * (barW + 4);
+
+    // Color based on magnitude
+    var color;
+    if (gradMag < 0.01) color = '#e74c3c';
+    else if (gradMag < 0.1) color = '#f39c12';
+    else if (gradMag > 2) color = '#ff4444';
+    else color = '#2ecc71';
+
+    ctx.fillStyle = color;
+    drawRoundedRect(ctx, x, baseY - barH, barW, barH, 3, color, null);
+
+    // Timestep label
+    ctx.fillStyle = '#888';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('t=' + t, x + barW / 2, baseY + 14);
+
+    // Gradient value
+    if (seqLen <= 12) {
+      ctx.fillStyle = '#aaa';
+      ctx.font = '8px monospace';
+      ctx.fillText(gradMag < 0.001 ? '<.001' : gradMag.toFixed(2), x + barW / 2, baseY - barH - 6);
+    }
+  }
+
+  // Baseline
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(startX - 10, baseY);
+  ctx.lineTo(startX + seqLen * (barW + 4) + 10, baseY);
+  ctx.stroke();
+
+  // Clipping line
+  if (clipVal > 0) {
+    var clipH = Math.min(clipVal / 5, 1) * maxH;
+    ctx.strokeStyle = '#2ecc71';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([5, 3]);
+    ctx.beginPath();
+    ctx.moveTo(startX - 10, baseY - clipH);
+    ctx.lineTo(startX + seqLen * (barW + 4) + 10, baseY - clipH);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#2ecc71';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText('clip=' + clipVal.toFixed(1), startX - 14, baseY - clipH + 4);
+  }
+
+  // Legend
+  ctx.fillStyle = '#888';
+  ctx.font = '11px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Loss is at the rightmost timestep. Gradients flow backward (right to left).', c.width / 2, baseY + 40);
+
+  // Draw backward arrow
+  drawArrow(ctx, startX + seqLen * (barW + 4), baseY + 55, startX, baseY + 55, ACCENT4, 1.5);
+  ctx.fillStyle = ACCENT4;
+  ctx.font = '11px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('gradient flow direction', c.width / 2, baseY + 72);
+}
+
+// ============================================================
+// VIZ 5.4: LSTM
+// ============================================================
+function drawLSTM() {
+  var c = document.getElementById('lstmCanvas');
+  var ctx = c.getContext('2d');
+  clearCanvas(ctx, c);
+
+  var forgetBias = parseFloat(document.getElementById('forgetSlider').value);
+  var inputBias = parseFloat(document.getElementById('inputGateSlider').value);
+  var numLayers = parseInt(document.getElementById('lstmLayersSlider').value);
+  document.getElementById('forgetVal').textContent = forgetBias.toFixed(2);
+  document.getElementById('inputGateVal').textContent = inputBias.toFixed(2);
+  document.getElementById('lstmLayersVal').textContent = numLayers;
+
+  var cellW = 220, cellH = 340;
+  var cx = (c.width - cellW) / 2;
+  var cy = 80;
+
+  // LSTM cell box
+  drawRoundedRect(ctx, cx, cy, cellW, cellH, 12, 'rgba(243,156,18,0.08)', ACCENT);
+
+  ctx.fillStyle = ACCENT;
+  ctx.font = 'bold 16px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('LSTM Cell', cx + cellW / 2, cy + 24);
+
+  // Gate boxes inside the cell
+  var gateW = 70, gateH = 36, gateGap = 16;
+  var gateStartY = cy + 50;
+
+  // Forget gate
+  var fg = forgetBias;
+  var fgColor = 'rgba(231,76,60,' + (0.3 + 0.7 * fg) + ')';
+  drawRoundedRect(ctx, cx + 20, gateStartY, gateW, gateH, 6, fgColor, '#e74c3c');
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 11px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Forget', cx + 20 + gateW / 2, gateStartY + 15);
+  ctx.font = '10px monospace';
+  ctx.fillText('f=' + fg.toFixed(2), cx + 20 + gateW / 2, gateStartY + 29);
+
+  // Input gate
+  var ig = inputBias;
+  var igColor = 'rgba(46,204,113,' + (0.3 + 0.7 * ig) + ')';
+  drawRoundedRect(ctx, cx + 20 + gateW + gateGap, gateStartY, gateW, gateH, 6, igColor, '#2ecc71');
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 11px Inter, sans-serif';
+  ctx.fillText('Input', cx + 20 + gateW + gateGap + gateW / 2, gateStartY + 15);
+  ctx.font = '10px monospace';
+  ctx.fillText('i=' + ig.toFixed(2), cx + 20 + gateW + gateGap + gateW / 2, gateStartY + 29);
+
+  // Output gate
+  var og = 0.7;
+  var ogColor = 'rgba(84,160,255,' + (0.3 + 0.7 * og) + ')';
+  drawRoundedRect(ctx, cx + 20, gateStartY + gateH + gateGap, gateW, gateH, 6, ogColor, '#54a0ff');
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 11px Inter, sans-serif';
+  ctx.fillText('Output', cx + 20 + gateW / 2, gateStartY + gateH + gateGap + 15);
+  ctx.font = '10px monospace';
+  ctx.fillText('o=0.70', cx + 20 + gateW / 2, gateStartY + gateH + gateGap + 29);
+
+  // Cell state "highway"
+  var csY = gateStartY + 2 * (gateH + gateGap) + 20;
+  ctx.strokeStyle = '#ffd93d';
+  ctx.lineWidth = 3;
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.moveTo(cx - 40, csY);
+  ctx.lineTo(cx + cellW + 40, csY);
+  ctx.stroke();
+  ctx.fillStyle = '#ffd93d';
+  ctx.font = 'bold 12px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Cell State c_t (gradient highway)', cx + cellW / 2, csY - 12);
+
+  // Gradient flow explanation
+  var gfY = csY + 40;
+  ctx.fillStyle = '#ccc';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Cell state update: c_t = ' + fg.toFixed(2) + ' * c_{t-1} + ' + ig.toFixed(2) + ' * new_info', cx + cellW / 2, gfY);
+
+  var gradStr = fg.toFixed(2);
+  ctx.fillStyle = fg > 0.8 ? '#2ecc71' : (fg > 0.4 ? ACCENT : ACCENT4);
+  ctx.fillText('Gradient through cell: ' + gradStr + ' per timestep (forget gate value)', cx + cellW / 2, gfY + 22);
+
+  if (fg > 0.9) {
+    ctx.fillStyle = '#2ecc71';
+    ctx.fillText('Gradient preserved! Information flows over many timesteps.', cx + cellW / 2, gfY + 44);
+  } else if (fg < 0.5) {
+    ctx.fillStyle = ACCENT4;
+    ctx.fillText('Warning: cell state decays quickly. After 10 steps: ' + Math.pow(fg, 10).toFixed(4), cx + cellW / 2, gfY + 44);
+  }
+
+  // Input and output arrows
+  drawArrow(ctx, cx + cellW / 2 - 30, cy + cellH + 20, cx + cellW / 2 - 30, cy + cellH + 4, ACCENT2, 1.5);
+  ctx.fillStyle = '#ccc';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('x_t', cx + cellW / 2 - 30, cy + cellH + 36);
+
+  drawArrow(ctx, cx + cellW / 2 + 30, cy + cellH + 20, cx + cellW / 2 + 30, cy + cellH + 4, '#2ecc71', 1.5);
+  ctx.fillText('h_{t-1}', cx + cellW / 2 + 30, cy + cellH + 36);
+
+  // Layers indicator
+  if (numLayers > 1) {
+    for (var l = 1; l < numLayers; l++) {
+      var lx = cx + cellW + 30 + l * 16;
+      ctx.strokeStyle = 'rgba(243,156,18,' + (0.3 + 0.2 * l) + ')';
+      ctx.lineWidth = 1;
+      drawRoundedRect(ctx, lx, cy + l * 8, cellW, cellH - l * 16, 12, null, ctx.strokeStyle);
+    }
+    ctx.fillStyle = '#888';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(numLayers + ' stacked layers', cx + cellW + 34, cy + cellH / 2);
+  }
+
+  // Title
+  ctx.fillStyle = FG;
+  ctx.font = 'bold 14px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('LSTM Cell Architecture', c.width / 2, 25);
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.fillText('Adjust forget/input gates to see how cell state is updated', c.width / 2, 45);
+}
+
+// ============================================================
+// VIZ 5.5: GRU
+// ============================================================
+var gruViewIdx = 0;
+
+function setGRUView(idx) {
+  gruViewIdx = idx;
+  document.querySelectorAll('[id^="gruViewBtn"]').forEach(function(b, i) {
+    b.classList.toggle('active', i === idx);
+  });
+  drawGRU();
+}
+
+function drawGRU() {
+  var c = document.getElementById('gruCanvas');
+  var ctx = c.getContext('2d');
+  clearCanvas(ctx, c);
+
+  var updateBias = parseFloat(document.getElementById('gruUpdateSlider').value);
+  document.getElementById('gruUpdateVal').textContent = updateBias.toFixed(2);
+
+  if (gruViewIdx === 0) {
+    drawGRUGates(ctx, c, updateBias);
+  } else {
+    drawModelComparison(ctx, c);
+  }
+}
+
+function drawGRUGates(ctx, c, updateBias) {
+  var cellW = 200, cellH = 200;
+  var cx = (c.width - cellW) / 2;
+  var cy = 100;
+
+  drawRoundedRect(ctx, cx, cy, cellW, cellH, 12, 'rgba(243,156,18,0.08)', ACCENT);
+
+  ctx.fillStyle = ACCENT;
+  ctx.font = 'bold 16px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('GRU Cell', cx + cellW / 2, cy + 24);
+
+  // Update gate
+  var gateW = 75, gateH = 36;
+  drawRoundedRect(ctx, cx + 15, cy + 50, gateW, gateH, 6, 'rgba(46,204,113,' + (0.3 + 0.7 * updateBias) + ')', '#2ecc71');
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 11px Inter, sans-serif';
+  ctx.fillText('Update z', cx + 15 + gateW / 2, cy + 65);
+  ctx.font = '10px monospace';
+  ctx.fillText('z=' + updateBias.toFixed(2), cx + 15 + gateW / 2, cy + 80);
+
+  // Reset gate
+  drawRoundedRect(ctx, cx + cellW - gateW - 15, cy + 50, gateW, gateH, 6, 'rgba(231,76,60,0.5)', '#e74c3c');
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 11px Inter, sans-serif';
+  ctx.fillText('Reset r', cx + cellW - gateW / 2 - 15, cy + 65);
+  ctx.font = '10px monospace';
+  ctx.fillText('r=0.60', cx + cellW - gateW / 2 - 15, cy + 80);
+
+  // Update equation
+  var eqY = cy + cellH + 40;
+  ctx.fillStyle = '#ccc';
+  ctx.font = '13px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('h_t = (1 - ' + updateBias.toFixed(2) + ') * h_{t-1} + ' + updateBias.toFixed(2) + ' * candidate', cx + cellW / 2, eqY);
+
+  var keepPct = ((1 - updateBias) * 100).toFixed(0);
+  var newPct = (updateBias * 100).toFixed(0);
+  ctx.fillStyle = ACCENT;
+  ctx.font = '12px Inter, sans-serif';
+  ctx.fillText('Keep ' + keepPct + '% of old state, mix in ' + newPct + '% new', cx + cellW / 2, eqY + 24);
+
+  // Interpolation bar
+  var barW = 300, barH = 20;
+  var barX = cx + cellW / 2 - barW / 2;
+  var barY = eqY + 45;
+  // Old portion
+  ctx.fillStyle = '#54a0ff';
+  drawRoundedRect(ctx, barX, barY, barW * (1 - updateBias), barH, 4, '#54a0ff', null);
+  // New portion
+  ctx.fillStyle = '#2ecc71';
+  drawRoundedRect(ctx, barX + barW * (1 - updateBias), barY, barW * updateBias, barH, 4, '#2ecc71', null);
+
+  ctx.fillStyle = '#fff';
+  ctx.font = '10px Inter, sans-serif';
+  if ((1 - updateBias) > 0.15) ctx.fillText('h_{t-1} (' + keepPct + '%)', barX + barW * (1 - updateBias) / 2, barY + 14);
+  if (updateBias > 0.15) ctx.fillText('new (' + newPct + '%)', barX + barW * (1 - updateBias) + barW * updateBias / 2, barY + 14);
+
+  // Title
+  ctx.fillStyle = FG;
+  ctx.font = 'bold 14px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('GRU: 2 Gates, 1 State', c.width / 2, 25);
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.fillText('Update gate z interpolates between keeping old state and writing new', c.width / 2, 45);
+}
+
+function drawModelComparison(ctx, c) {
+  ctx.fillStyle = FG;
+  ctx.font = 'bold 14px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('RNN vs GRU vs LSTM Comparison', c.width / 2, 30);
+
+  var models = [
+    { name: 'Vanilla RNN', gates: 0, states: 1, params: '1x', color: '#e74c3c', longRange: 'Poor', speed: 'Fast' },
+    { name: 'GRU', gates: 2, states: 1, params: '3x', color: ACCENT, longRange: 'Good', speed: 'Medium' },
+    { name: 'LSTM', gates: 3, states: 2, params: '4x', color: '#2ecc71', longRange: 'Best', speed: 'Slower' }
+  ];
+
+  var colW = 300, rowH = 50, startX = (c.width - 3 * colW) / 2;
+  var startY = 70;
+
+  models.forEach(function(m, i) {
+    var x = startX + i * colW + 10;
+    var y = startY;
+
+    drawRoundedRect(ctx, x, y, colW - 20, 340, 10, 'rgba(255,255,255,0.03)', m.color);
+
+    ctx.fillStyle = m.color;
+    ctx.font = 'bold 16px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(m.name, x + (colW - 20) / 2, y + 30);
+
+    var props = [
+      ['Gates:', m.gates.toString()],
+      ['States:', m.states.toString()],
+      ['Params:', m.params],
+      ['Long-range:', m.longRange],
+      ['Speed:', m.speed]
+    ];
+
+    props.forEach(function(p, j) {
+      ctx.fillStyle = '#aaa';
+      ctx.font = '12px Inter, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(p[0], x + 20, y + 70 + j * rowH);
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 13px Inter, sans-serif';
+      ctx.fillText(p[1], x + 110, y + 70 + j * rowH);
+    });
+  });
+}
+
+// ============================================================
+// VIZ 5.6: STACKED & BIDIRECTIONAL
+// ============================================================
+var directionIdx = 0;
+
+function setDirection(idx) {
+  directionIdx = idx;
+  document.querySelectorAll('[id^="dirBtn"]').forEach(function(b, i) {
+    b.classList.toggle('active', i === idx);
+  });
+  drawStacked();
+}
+
+function drawStacked() {
+  var c = document.getElementById('stackedCanvas');
+  var ctx = c.getContext('2d');
+  clearCanvas(ctx, c);
+
+  var layers = parseInt(document.getElementById('stackSlider').value);
+  var bidir = directionIdx === 1;
+  document.getElementById('stackVal').textContent = layers;
+
+  var seqLen = 5;
+  var cellW = 60, cellH = 40, gapX = 20, gapY = 20;
+  var totalSeqW = seqLen * cellW + (seqLen - 1) * gapX;
+  var totalH = layers * cellH + (layers - 1) * gapY;
+  var startX = (c.width - totalSeqW) / 2;
+  var startY = (c.height - totalH) / 2 + 20;
+
+  // Title
+  ctx.fillStyle = FG;
+  ctx.font = 'bold 14px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText((bidir ? 'Bidirectional ' : '') + layers + '-Layer RNN', c.width / 2, 25);
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.fillText(bidir ? 'Output size = 2 * hidden_size per position' : 'Output size = hidden_size per position', c.width / 2, 45);
+
+  for (var l = 0; l < layers; l++) {
+    var y = startY + (layers - 1 - l) * (cellH + gapY);
+    var layerAlpha = 0.5 + 0.5 * (l / Math.max(layers - 1, 1));
+
+    for (var t = 0; t < seqLen; t++) {
+      var x = startX + t * (cellW + gapX);
+
+      // Forward cell
+      drawRoundedRect(ctx, x, y, cellW, cellH, 6, 'rgba(243,156,18,' + (0.1 * layerAlpha) + ')', 'rgba(243,156,18,' + layerAlpha + ')');
+      ctx.fillStyle = 'rgba(243,156,18,' + layerAlpha + ')';
+      ctx.font = '10px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('L' + (l + 1) + ' t' + t, x + cellW / 2, y + cellH / 2 + 4);
+
+      // Forward horizontal arrow
+      if (t < seqLen - 1) {
+        var nx = startX + (t + 1) * (cellW + gapX);
+        drawArrow(ctx, x + cellW + 2, y + cellH / 2 - (bidir ? 6 : 0), nx - 2, y + cellH / 2 - (bidir ? 6 : 0), 'rgba(243,156,18,' + layerAlpha + ')', 1.5);
+      }
+
+      // Backward arrows (bidirectional)
+      if (bidir && t > 0) {
+        var px = startX + (t - 1) * (cellW + gapX);
+        drawArrow(ctx, x - 2, y + cellH / 2 + 6, px + cellW + 2, y + cellH / 2 + 6, 'rgba(84,160,255,' + layerAlpha + ')', 1.5);
+      }
+
+      // Vertical arrow to next layer
+      if (l < layers - 1) {
+        var ny = startY + (layers - 2 - l) * (cellH + gapY);
+        drawArrow(ctx, x + cellW / 2, y - 2, x + cellW / 2, ny + cellH + 2, '#555', 1);
+      }
+    }
+
+    // Layer label
+    ctx.fillStyle = '#888';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText('Layer ' + (l + 1), startX - 14, y + cellH / 2 + 4);
+  }
+
+  // Input arrows
+  for (var t = 0; t < seqLen; t++) {
+    var x = startX + t * (cellW + gapX);
+    var boty = startY + (layers - 1) * (cellH + gapY);
+    drawArrow(ctx, x + cellW / 2, boty + cellH + 30, x + cellW / 2, boty + cellH + 4, ACCENT2, 1.5);
+    ctx.fillStyle = '#ccc';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('x_' + t, x + cellW / 2, boty + cellH + 44);
+  }
+
+  // Legend
+  if (bidir) {
+    var legY = c.height - 30;
+    ctx.fillStyle = ACCENT;
+    ctx.font = '11px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Forward', c.width / 2 - 80, legY);
+    drawArrow(ctx, c.width / 2 - 50, legY - 4, c.width / 2 - 20, legY - 4, ACCENT, 1.5);
+    ctx.fillStyle = '#54a0ff';
+    ctx.fillText('Backward', c.width / 2 + 40, legY);
+    drawArrow(ctx, c.width / 2 + 80, legY - 4, c.width / 2 + 110, legY - 4, '#54a0ff', 1.5);
+  }
+}
+
+// ============================================================
+// QUIZ DATA
+// ============================================================
+var quizData = [
+  {
+    topic: "5.1: Vanilla RNN Mechanics",
+    questions: [
+      { q: "Your RNN's hidden state after 100 timesteps is nearly zero for all dimensions. What is happening and how would you fix it?", options: ["A) The learning rate is too high -- reduce it", "B) Repeated tanh activations are squashing values toward zero. Fix: use LSTM/GRU which have gating mechanisms to preserve information", "C) The input data is all zeros", "D) The hidden size is too small -- increase it to 1024"], correct: 1, explanation: "Vanilla RNNs apply tanh at every timestep, which maps values to [-1,1]. After many applications, values collapse toward zero unless the recurrent weights are carefully tuned. LSTMs solve this with a cell state that uses additive (not multiplicative) updates." },
+      { q: "In the vanilla RNN equation h_t = tanh(W_hh * h_{t-1} + W_xh * x_t), what does weight sharing across timesteps enable?", options: ["A) Faster training on GPUs", "B) The ability to handle variable-length sequences with a fixed number of parameters", "C) Better accuracy on short sequences", "D) Parallel processing of all timesteps"], correct: 1, explanation: "Because the same W_hh and W_xh are used at every timestep, the RNN can process sequences of any length without growing its parameter count. A 10-token and 1000-token sequence use identical weights." },
+      { q: "If you replaced the tanh activation with the identity function (no nonlinearity) in a vanilla RNN, what would happen?", options: ["A) The RNN would work better", "B) The hidden state would grow or shrink exponentially (linear recurrence), and the model could not learn nonlinear patterns", "C) Nothing would change", "D) The model would train faster"], correct: 1, explanation: "Without nonlinearity, h_t = W_hh * h_{t-1} + W_xh * x_t is a linear recurrence. The hidden state is just a linear combination of all past inputs, with magnitude determined by the eigenvalues of W_hh. No nonlinear feature detection is possible." },
+      { q: "Why can't a vanilla RNN learn to copy a token from 50 steps ago to the current output?", options: ["A) The model doesn't have enough parameters", "B) The gradient signal from step 50 vanishes exponentially through repeated multiplication by W_hh and tanh derivatives (<1)", "C) RNNs can only look back 10 steps", "D) The hidden state size is always too small"], correct: 1, explanation: "The gradient from the loss at step t to the input at step t-50 passes through 50 multiplications of (diag(1-h^2) * W_hh). Since tanh derivatives are at most 1 and often <1, this product vanishes exponentially. The RNN literally cannot 'feel' the signal from 50 steps ago." },
+      { q: "What is the computational complexity of processing a sequence of length n through a single-layer RNN with hidden size h?", options: ["A) O(n * h)", "B) O(n * h^2)", "C) O(n^2 * h)", "D) O(h^3)"], correct: 1, explanation: "At each of the n timesteps, the dominant operation is the matrix-vector multiply W_hh * h_{t-1}, which is O(h^2). Over n steps: O(n * h^2). This is serial (each step depends on the previous), unlike attention which is O(n^2 * h) but parallelizable." }
+    ]
+  },
+  {
+    topic: "5.2: Hidden State & Memory",
+    questions: [
+      { q: "An RNN with hidden_size=128 processes a 500-token document. How much information from token 1 realistically remains in the hidden state at token 500?", options: ["A) All of it -- the hidden state is lossless", "B) Nearly none -- it has been overwritten hundreds of times through the tanh bottleneck", "C) Exactly 128/500 = 25.6%", "D) It depends on the sequence length, not the hidden size"], correct: 1, explanation: "The hidden state is a lossy compression. Each timestep applies h_t = tanh(W*h_{t-1} + ...), which overwrites the hidden state. After 500 applications, the information from token 1 has been through 499 nonlinear transformations. In practice, vanilla RNNs retain meaningful information for ~10-30 steps." },
+      { q: "You switch from unidirectional to bidirectional RNN and your linear classifier layer throws a shape error. Why?", options: ["A) Bidirectional RNNs produce shorter sequences", "B) The output dimension is now 2*hidden_size instead of hidden_size", "C) Bidirectional RNNs require different input dimensions", "D) The batch dimension changed"], correct: 1, explanation: "A bidirectional RNN concatenates the forward and backward hidden states at each position, doubling the output size. If hidden_size=128, the output is 256. Your nn.Linear(128, num_classes) must become nn.Linear(256, num_classes)." },
+      { q: "Why is the hidden state sometimes called the 'bottleneck' of an RNN?", options: ["A) It slows down computation", "B) All past information must be compressed into a fixed-size vector, limiting what can be remembered", "C) It has the fewest parameters", "D) It uses the most memory"], correct: 1, explanation: "A hidden state of size h must encode ALL relevant information from the entire past sequence. For long sequences, this is impossible -- you cannot losslessly compress 500 tokens into 128 floats. This bottleneck is exactly what attention mechanisms (Ch 04) address by allowing direct access to all past positions." }
+    ]
+  },
+  {
+    topic: "5.3: BPTT & Vanishing Gradients",
+    questions: [
+      { q: "If W_hh has spectral radius 0.95 and the sequence length is 100, what is the approximate gradient magnitude at step 0 relative to step 99?", options: ["A) 0.95", "B) 0.95^100 = 0.006 (essentially zero)", "C) 100 * 0.95 = 95", "D) 0.95^2 = 0.90"], correct: 1, explanation: "The gradient from step 99 to step 0 passes through 99 multiplications, each scaling by approximately the spectral radius. 0.95^100 = 0.006, meaning the gradient at step 0 is less than 1% of the gradient at step 99. The RNN effectively cannot learn from the early parts of the sequence." },
+      { q: "You are training an RNN and the loss suddenly becomes NaN after 1000 steps. What is the most likely cause and fix?", options: ["A) The data is corrupted", "B) Exploding gradients -- add gradient clipping with torch.nn.utils.clip_grad_norm_", "C) The hidden size is too large", "D) The learning rate is too small"], correct: 1, explanation: "NaN loss is the hallmark of exploding gradients: the gradient magnitude grows exponentially, causing weight updates so large that values overflow to infinity/NaN. Gradient clipping caps the gradient norm, preventing this. clip_grad_norm_(model.parameters(), max_norm=1.0) is the standard fix." },
+      { q: "Why does truncated BPTT use a fixed window instead of backpropagating through the entire sequence?", options: ["A) It's faster but less accurate", "B) Memory: the computation graph for the full sequence is too large. Truncation trades gradient accuracy for bounded memory", "C) Full BPTT is mathematically incorrect", "D) Truncation gives better gradients"], correct: 1, explanation: "Full BPTT requires storing all intermediate activations for the entire sequence. For a 1000-step sequence with hidden_size=512, that's ~2MB per sample just for hidden states. Truncating at 35-256 steps bounds memory usage while still capturing most of the useful gradient signal (since gradients vanish for distant timesteps anyway)." },
+      { q: "You add gradient clipping and the loss stops exploding, but the model still can't learn long-range dependencies. Why?", options: ["A) The clipping value is too high", "B) Gradient clipping fixes exploding gradients but NOT vanishing gradients -- the signal from distant timesteps is still ~0", "C) The model needs more layers", "D) The learning rate should be increased"], correct: 1, explanation: "Gradient clipping only addresses the exploding gradient problem (when spectral radius > 1). Vanishing gradients (spectral radius < 1) mean the gradient from distant timesteps is exponentially small -- clipping can't amplify a signal that isn't there. You need architectural changes: LSTM, GRU, or attention." }
+    ]
+  },
+  {
+    topic: "5.4: LSTM Architecture",
+    questions: [
+      { q: "An LSTM with its forget gate always at 1.0 and input gate always at 0.0 behaves like what simpler model?", options: ["A) A vanilla RNN", "B) An identity function -- the cell state is passed through unchanged forever, and no new information is written", "C) A feedforward network", "D) A GRU with update gate at 0"], correct: 1, explanation: "With f=1 and i=0: c_t = 1.0 * c_{t-1} + 0.0 * new_info = c_{t-1}. The cell state is copied through time without any modification. The hidden state h_t = o_t * tanh(c_0), which only depends on the initial cell state. The LSTM ignores all inputs and just propagates c_0 forever." },
+      { q: "You switch from a vanilla RNN to an LSTM and training is 3x slower per epoch. Why?", options: ["A) LSTMs are bugged in PyTorch", "B) LSTMs compute 4 gates per timestep (forget, input, cell candidate, output), each requiring a full matrix multiply -- roughly 4x the computation of a vanilla RNN", "C) LSTMs require more data", "D) The hidden size automatically increases"], correct: 1, explanation: "A vanilla RNN computes one matrix multiply (W_hh * h + W_xh * x) per step. An LSTM computes four: one for each gate (f, i, o) and one for the cell candidate. Each gate involves a matrix multiply with concatenated [h_{t-1}, x_t]. This roughly quadruples the FLOPS per timestep." },
+      { q: "Why is the forget gate bias typically initialized to 1.0 instead of 0.0?", options: ["A) It makes the math simpler", "B) With bias=0, sigma(0)=0.5, so the LSTM forgets half the cell state at every step from the start, destroying long-range memory before learning begins", "C) It prevents exploding gradients", "D) It's a PyTorch convention with no effect"], correct: 1, explanation: "sigma(0) = 0.5 means the forget gate starts at 0.5: the cell state is halved at every step. After 10 steps, only 0.5^10 = 0.001 of the original cell state remains. Initializing bias to 1.0 gives sigma(1) = 0.73, which preserves much more information. This was identified as critical by Jozefowicz et al. (2015)." },
+      { q: "The cell state in an LSTM is updated as c_t = f_t * c_{t-1} + i_t * c_tilde. Why does this additive update solve the vanishing gradient problem?", options: ["A) Addition is faster than multiplication", "B) The gradient through the cell state is f_t (close to 1 for many timesteps), not a product of weight matrices. Gradients flow without repeated matrix multiplication", "C) The cell state has more dimensions", "D) Tanh is not used in the cell state"], correct: 1, explanation: "In a vanilla RNN, the gradient at each step is diag(1-h^2) * W_hh -- a matrix product that compounds. In an LSTM, the gradient through the cell state path is simply f_t (scalar per dimension). If f_t is close to 1, gradients flow unchanged for many timesteps. This is the key architectural insight of LSTMs." }
+    ]
+  },
+  {
+    topic: "5.5: GRU & Architecture Choice",
+    questions: [
+      { q: "Your GRU model works well on sequences of length 20 but fails completely at length 200. What would you try first?", options: ["A) Increase the learning rate", "B) Try LSTM (separate cell state provides better gradient flow for long sequences), add gradient clipping, or consider adding attention", "C) Make the GRU bidirectional", "D) Reduce the hidden size to prevent overfitting"], correct: 1, explanation: "GRUs merge cell/hidden state, so their gradient flow depends on the update gate staying near the right values for 200+ steps. LSTMs, with a separate cell state and explicit forget gate, often handle longer sequences better. Alternatively, adding an attention layer on top of the RNN lets the model directly access distant positions." },
+      { q: "A GRU with update gate z always at 0 behaves like what?", options: ["A) An LSTM", "B) h_t = h_{t-1} -- an identity/copy that ignores all inputs", "C) A vanilla RNN", "D) A feedforward network"], correct: 1, explanation: "The GRU update equation is h_t = (1-z)*h_{t-1} + z*candidate. With z=0: h_t = 1*h_{t-1} + 0*candidate = h_{t-1}. The hidden state is simply copied forward, ignoring all input tokens. This is analogous to an LSTM with forget=1, input=0." },
+      { q: "When would you choose a GRU over an LSTM in practice?", options: ["A) Always -- GRUs are strictly better", "B) When training speed matters and sequences are moderate length (<100). GRU has ~25% fewer parameters and often matches LSTM performance", "C) Only for computer vision tasks", "D) When you need bidirectional processing"], correct: 1, explanation: "GRUs have 3 gate matrices vs LSTM's 4, giving ~25% fewer parameters and proportionally faster training. On many benchmarks with moderate sequence lengths, GRU performance matches LSTM. For very long sequences or when maximum expressiveness is needed, LSTM may edge ahead." },
+      { q: "How does the GRU's reset gate relate to the LSTM's forget gate?", options: ["A) They are identical", "B) The reset gate controls how much of h_{t-1} is visible when computing the candidate, while the forget gate directly scales the cell state", "C) The reset gate is applied to the input, not the hidden state", "D) There is no relationship"], correct: 1, explanation: "The LSTM forget gate directly multiplies the cell state: c_t = f*c_{t-1} + ... The GRU reset gate multiplies h_{t-1} only when computing the candidate: candidate = tanh(W*(r*h_{t-1}) + ...). So the reset gate controls what past information is used to compute the new candidate, while the update gate z controls the interpolation between old and new." }
+    ]
+  },
+  {
+    topic: "5.6: Architecture Decisions & Practical RNN Usage",
+    questions: [
+      { q: "You are building a named entity recognition system. Should you use a unidirectional or bidirectional LSTM, and why?", options: ["A) Unidirectional -- NER only needs left context", "B) Bidirectional -- whether 'Washington' is a person or place depends on both left AND right context", "C) Neither -- use a feedforward network", "D) It doesn't matter"], correct: 1, explanation: "In 'George Washington crossed the river' vs 'I flew to Washington last week', the right context disambiguates the entity type. A bidirectional LSTM sees both directions at each position. For NER, the accuracy gain from bidirectionality is typically 2-5%." },
+      { q: "Why do modern NLP systems (2024+) rarely use RNNs as the primary architecture?", options: ["A) RNNs are mathematically unsound", "B) Transformers process all positions in parallel (faster on GPUs), scale better with data, and attention replaces the hidden state bottleneck with direct access to all positions", "C) RNNs require more parameters", "D) RNNs cannot handle text data"], correct: 1, explanation: "The RNN's sequential nature prevents GPU parallelism during training. The hidden state bottleneck limits information flow. Transformers solve both: attention processes all pairs in parallel and allows any token to directly access any other token. The result is faster training AND better performance at scale." },
+      { q: "A colleague says 'RNNs are dead.' Why is this an oversimplification?", options: ["A) It's not an oversimplification -- RNNs are truly obsolete", "B) State-space models (Mamba, RWKV) revive recurrent computation with O(n) memory vs attention's O(n^2), and RNNs remain useful for real-time streaming, edge devices, and online learning", "C) RNNs are better than transformers for all tasks", "D) RNNs use less data than transformers"], correct: 1, explanation: "While transformers dominate large-scale NLP, recurrent architectures have had a renaissance: Mamba uses selective state spaces for O(n) memory with competitive quality. RNNs are still preferred for real-time streaming (process one token at a time with O(1) memory), edge deployment (smaller models), and any setting where the full sequence isn't available upfront." }
+    ]
+  }
+];
+
+// ============================================================
+// QUIZ ENGINE
+// ============================================================
+var totalCorrect = 0, totalAnswered = 0, totalQ = 0;
+var topicScores = [];
+
+function buildQuiz() {
+  var container = document.getElementById('quizContent');
+  container.innerHTML = '';
+  totalQ = 0;
+  quizData.forEach(function(topic, ti) {
+    totalQ += topic.questions.length;
+    if (!topicScores[ti]) topicScores[ti] = { correct: 0, answered: 0, total: topic.questions.length };
+
+    var topicDiv = document.createElement('div');
+    topicDiv.className = 'quiz-topic';
+
+    var header = document.createElement('div');
+    header.className = 'quiz-topic-header';
+    header.innerHTML = '<h3>' + topic.topic + '</h3><span class="quiz-topic-score" id="topicScore' + ti + '">0 / ' + topic.questions.length + '</span>';
+    header.onclick = function() {
+      var qs = topicDiv.querySelector('.quiz-topic-questions');
+      qs.classList.toggle('open');
+    };
+    topicDiv.appendChild(header);
+
+    var questionsDiv = document.createElement('div');
+    questionsDiv.className = 'quiz-topic-questions';
+
+    topic.questions.forEach(function(question, qi) {
+      var qDiv = document.createElement('div');
+      qDiv.className = 'quiz-question';
+      qDiv.innerHTML = '<h4>Q' + (qi + 1) + ': ' + question.q + '</h4>';
+      question.options.forEach(function(opt, oi) {
+        var btn = document.createElement('button');
+        btn.className = 'quiz-option';
+        btn.textContent = opt;
+        btn.onclick = function() { checkAnswer(ti, qi, oi, qDiv); };
+        btn.id = 'qopt_' + ti + '_' + qi + '_' + oi;
+        qDiv.appendChild(btn);
+      });
+      var expDiv = document.createElement('div');
+      expDiv.className = 'quiz-explanation';
+      expDiv.id = 'qexp_' + ti + '_' + qi;
+      expDiv.textContent = question.explanation;
+      qDiv.appendChild(expDiv);
+      questionsDiv.appendChild(qDiv);
+    });
+    topicDiv.appendChild(questionsDiv);
+    container.appendChild(topicDiv);
+  });
+}
+
+function checkAnswer(ti, qi, oi, qDiv) {
+  var question = quizData[ti].questions[qi];
+  var buttons = qDiv.querySelectorAll('.quiz-option');
+  var expDiv = document.getElementById('qexp_' + ti + '_' + qi);
+  if (buttons[0].disabled) return;
+  buttons.forEach(function(b, i) {
+    b.disabled = true;
+    if (i === question.correct) b.classList.add('correct');
+    if (i === oi && oi !== question.correct) b.classList.add('wrong');
+  });
+  totalAnswered++;
+  topicScores[ti].answered++;
+  if (oi === question.correct) {
+    totalCorrect++;
+    topicScores[ti].correct++;
+    expDiv.className = 'quiz-explanation show correct-exp';
+  } else {
+    expDiv.className = 'quiz-explanation show wrong-exp';
+  }
+  document.getElementById('quizScore').textContent = totalCorrect;
+  document.getElementById('topicScore' + ti).textContent = topicScores[ti].correct + ' / ' + topicScores[ti].total;
+  document.getElementById('quizProgressBar').style.width = (totalAnswered / totalQ * 100) + '%';
+}
+
+function resetQuiz() {
+  totalCorrect = 0;
+  totalAnswered = 0;
+  quizData.forEach(function(t, ti) { topicScores[ti] = { correct: 0, answered: 0, total: t.questions.length }; });
+  buildQuiz();
+  document.getElementById('quizScore').textContent = '0';
+  document.getElementById('quizProgressBar').style.width = '0%';
+}
+
+function toggleQuiz() {
+  var section = document.getElementById('quizSection');
+  if (section.style.display === 'none') {
+    section.style.display = 'block';
+    section.scrollIntoView({ behavior: 'smooth' });
+  } else {
+    section.style.display = 'none';
+  }
+}
+
+// ============================================================
+// INITIALIZATION
+// ============================================================
+window.addEventListener('DOMContentLoaded', function() {
+  drawVanillaRNN();
+  drawMemory();
+  drawBPTT();
+  drawLSTM();
+  drawGRU();
+  drawStacked();
+  buildQuiz();
+});
+
+</script>
+</body>
+</html>

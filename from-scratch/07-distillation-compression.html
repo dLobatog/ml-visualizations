@@ -107,6 +107,10 @@
 .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.85em; color: #ccc; }
 .legend-dot { width: 12px; height: 12px; border-radius: 50%; }
 
+.break-toggle { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border: 1px solid #e74c3c; background: transparent; color: #e74c3c; border-radius: 8px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
+.break-toggle:hover { background: rgba(231,76,60,0.15); }
+.break-toggle.broken { background: rgba(231,76,60,0.25); border-color: #ff4444; color: #ff4444; }
+
 </style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -154,6 +158,7 @@
       <button class="btn" id="ex_digit" onclick="setDarkKnowledge('digit')">Digit "3"</button>
       <button class="btn" id="ex_bird" onclick="setDarkKnowledge('bird')">Bird</button>
     </div>
+    <button class="break-toggle" id="breakHardLabels" onclick="toggleHardLabels()">Break It: Hard Labels Only</button>
   </div>
   <div class="viz-canvas">
     <canvas id="darkKnowledgeCanvas" width="900" height="400"></canvas>
@@ -194,6 +199,16 @@ print('Soft:', soft_targets.round(decimals=3))
     <p class="code-note">Higher temperature spreads probability mass, exposing dark knowledge.</p>
   </div>
 </div>
+  </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <strong style="color: #ff6b6b;">&#9888;&#65039; Common Mistakes</strong>
+    <ul style="margin-top: 8px; padding-left: 18px; line-height: 2;">
+      <li><strong>Mistake:</strong> Setting alpha=1.0 (only hard labels, no distillation signal). <strong>Fix:</strong> Use alpha=0.1-0.5 to give substantial weight to the teacher's soft targets.</li>
+      <li><strong>Mistake:</strong> Distilling from a teacher that is too large relative to the student (e.g., 1000x parameter gap). <strong>Fix:</strong> Use an intermediate-sized teacher or progressive distillation through a chain of models.</li>
+    </ul>
+  </div>
+  <div class="narrative-note">
+    <strong>Cross-reference &rarr; Ch 02:</strong> Soft targets use the same temperature-scaled softmax that controls randomness in language model sampling. The concept of "spreading probability mass" is identical.
   </div>
 </div>
 
@@ -255,6 +270,12 @@ print(f'KL divergence: {kl.item():.4f}')</code></pre>
   </div>
 </div>
   </div>
+  <div class="narrative-note">
+    &#128206; <strong>Why KL divergence matters here:</strong> Distillation works by making the student's output distribution <em>match</em> the teacher's. KL divergence is exactly the measure of "how different are these two distributions?" &mdash; minimizing it IS the distillation objective.
+  </div>
+  <div class="narrative-note">
+    <strong>Cross-reference &rarr; Ch 01:</strong> KL divergence is closely related to the cross-entropy loss you saw in backpropagation. Minimizing KL(P||Q) when P is fixed is mathematically identical to minimizing cross-entropy H(P,Q).
+  </div>
 </div>
 
 <!-- ============================================================ -->
@@ -271,6 +292,7 @@ print(f'KL divergence: {kl.item():.4f}')</code></pre>
     </div>
     <button class="btn" onclick="animateTemp(0.1, 10, 3000)">Animate 0.1 &rarr; 10</button>
     <button class="btn" onclick="animateTemp(10, 0.1, 3000)">Animate 10 &rarr; 0.1</button>
+    <button class="break-toggle" id="breakExtremeTemp" onclick="toggleExtremeTemp()">Break It: Extreme Temperature (T=50)</button>
   </div>
   <div class="viz-canvas">
     <canvas id="tempCanvas" width="900" height="420"></canvas>
@@ -320,6 +342,21 @@ loss = distill_loss(student_out, teacher_out, T=4.0)</code></pre>
   </div>
 </div>
   </div>
+  <div class="narrative-note">
+    &#128206; <strong>Temperature in practice:</strong> The same T value must be used for both teacher and student during training. At inference time, the student uses T=1 (normal softmax). Think of high-T training as "the teacher whispers its uncertainties to the student."
+  </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <strong style="color: #ff6b6b;">&#9888;&#65039; Common Mistakes</strong>
+    <ul style="margin-top: 8px; padding-left: 18px; line-height: 2;">
+      <li><strong>Mistake:</strong> Using different temperatures for teacher and student (distributions are not comparable). <strong>Fix:</strong> Always use the same T for both teacher softmax and student softmax during training.</li>
+      <li><strong>Mistake:</strong> Forgetting the T&sup2; scaling factor in KL loss (gradients are T&sup2; smaller with high temperature). <strong>Fix:</strong> Always multiply the KL term by T*T.</li>
+    </ul>
+  </div>
+  <div class="insight-box">
+    <strong>&#128295; Hyperparameter Guidance: Temperature</strong>
+    <div class="key-point"><span class="label">Temperature (T):</span><span class="desc">T=3-5 is a good starting point. Higher T reveals more dark knowledge, but at T&gt;20 the signal gets diluted toward uniform.</span></div>
+    <div class="key-point"><span class="label">Alpha (loss weighting):</span><span class="desc">alpha=0.1-0.5 (more weight on soft targets). If the student is very small, use lower alpha to lean more on the teacher.</span></div>
+  </div>
 </div>
 
 <!-- ============================================================ -->
@@ -341,6 +378,7 @@ loss = distill_loss(student_out, teacher_out, T=4.0)</code></pre>
     </div>
     <button class="btn" id="tsTrainBtn" onclick="startTSTraining()">Train Student</button>
     <button class="btn" onclick="resetTSTraining()">Reset</button>
+    <button class="break-toggle" id="breakTempMismatch" onclick="toggleTempMismatch()">Break It: No Temperature Matching</button>
   </div>
   <div class="viz-canvas">
     <canvas id="tsCanvas" width="900" height="500"></canvas>
@@ -401,6 +439,9 @@ for x, y in dataloader:
     <p class="code-note">alpha balances hard labels (ground truth) vs soft targets (teacher).</p>
   </div>
 </div>
+  </div>
+  <div class="narrative-note">
+    <strong>Cross-reference &rarr; Ch 03:</strong> All optimization techniques from Chapter 3 (learning rate scheduling, Adam, weight decay) apply equally to the student's training. Distillation changes the loss signal, not the optimizer.
   </div>
 </div>
 
@@ -476,6 +517,20 @@ for m, name in [(model,'FP32'), (quantized_model,'INT8')]:
   </div>
 </div>
   </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <strong style="color: #ff6b6b;">&#9888;&#65039; Common Mistakes</strong>
+    <ul style="margin-top: 8px; padding-left: 18px; line-height: 2;">
+      <li><strong>Mistake:</strong> Quantizing without calibration data (range clipping destroys outlier weights). <strong>Fix:</strong> Use a representative calibration set to determine the weight range before quantization, or use quantization-aware training.</li>
+    </ul>
+  </div>
+  <div class="insight-box">
+    <strong>&#128295; Hyperparameter Guidance: Quantization</strong>
+    <div class="key-point"><span class="label">INT8:</span><span class="desc">Nearly lossless for most models. Start here &mdash; it is the industry default for inference.</span></div>
+    <div class="key-point"><span class="label">INT4:</span><span class="desc">Needs quantization-aware training (QAT) or advanced methods (GPTQ, AWQ) for best accuracy retention.</span></div>
+  </div>
+  <div class="narrative-note">
+    <strong>Cross-reference &rarr; Ch 06:</strong> Transformer inference is expensive (quadratic attention, large FFN layers). Quantization is what makes Ch 6's transformer deployable in production at reasonable cost.
+  </div>
 </div>
 
 <!-- ============================================================ -->
@@ -494,6 +549,7 @@ for m, name in [(model,'FP32'), (quantized_model,'INT8')]:
     <button class="btn" onclick="setPruneLevel(0.9)">90% Pruned</button>
     <button class="btn" onclick="setPruneLevel(0.99)">99% Pruned</button>
     <button class="btn" onclick="setPruneLevel(0)">Reset</button>
+    <button class="break-toggle" id="breakOverPrune" onclick="toggleOverPrune()">Break It: Over-Prune (99.5%)</button>
   </div>
   <div class="viz-canvas">
     <canvas id="pruneCanvas" width="900" height="460"></canvas>
@@ -552,6 +608,20 @@ prune.remove(linear, 'weight')</code></pre>
     <p class="code-note">Prune iteratively with fine-tuning for best accuracy retention.</p>
   </div>
 </div>
+  </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <strong style="color: #ff6b6b;">&#9888;&#65039; Common Mistakes</strong>
+    <ul style="margin-top: 8px; padding-left: 18px; line-height: 2;">
+      <li><strong>Mistake:</strong> Pruning weights and expecting automatic speedup (sparse matrices are not faster on standard hardware). <strong>Fix:</strong> Use structured pruning (remove entire filters/heads) or deploy on hardware that supports sparse operations.</li>
+      <li><strong>Mistake:</strong> Not fine-tuning after pruning. <strong>Fix:</strong> Always retrain the pruned model for a few epochs &mdash; accuracy recovers significantly.</li>
+    </ul>
+  </div>
+  <div class="insight-box">
+    <strong>&#128295; Hyperparameter Guidance: Pruning</strong>
+    <div class="key-point"><span class="label">Pruning ratio:</span><span class="desc">Start at 50%, measure accuracy. Many networks tolerate 80-90% sparsity with fine-tuning. Beyond 95% there is often a cliff.</span></div>
+  </div>
+  <div class="narrative-note">
+    <strong>Cross-reference &rarr; Ch 03:</strong> Dropout is essentially temporary pruning during training &mdash; random weights are zeroed out each forward pass. Pruning makes it permanent after training.
   </div>
 </div>
 
@@ -845,20 +915,23 @@ function drawDarkKnowledge() {
   ctx.lineTo(lx + halfW, margin.top + chartH);
   ctx.stroke();
 
-  // Right chart: Soft Targets
+  // Right chart: Soft Targets (or hard labels if broken)
   const rx = w / 2 + 10;
-  drawText(ctx, 'Teacher Soft Prediction', rx + halfW / 2, margin.top - 15, ACCENT, 13, 'center', '600');
+  const displaySoft = hardLabelsOnly ? ex.hard : ex.soft;
+  const rightTitle = hardLabelsOnly ? 'BROKEN: Hard Labels Only (no dark knowledge!)' : 'Teacher Soft Prediction';
+  const rightColor = hardLabelsOnly ? '#ff4444' : ACCENT;
+  drawText(ctx, rightTitle, rx + halfW / 2, margin.top - 15, rightColor, 13, 'center', '600');
   const gap2 = halfW / n;
   const barW2 = halfW / n * 0.6;
 
   for (let i = 0; i < n; i++) {
     const x = rx + i * gap2 + (gap2 - barW2) / 2;
-    const barH = ex.soft[i] * chartH * 0.85;
-    const alpha = 0.3 + ex.soft[i] * 0.7;
-    ctx.fillStyle = 'rgba(224,86,253,' + alpha + ')';
+    const barH = displaySoft[i] * chartH * 0.85;
+    const alpha = 0.3 + displaySoft[i] * 0.7;
+    ctx.fillStyle = hardLabelsOnly ? 'rgba(255,68,68,' + alpha + ')' : 'rgba(224,86,253,' + alpha + ')';
     drawRoundedRect(ctx, x, margin.top + chartH - barH, barW2, barH, 3);
     ctx.fill();
-    drawText(ctx, ex.soft[i].toFixed(2), x + barW2 / 2, margin.top + chartH - barH - 12, ACCENT, 11, 'center', '600');
+    drawText(ctx, displaySoft[i].toFixed(2), x + barW2 / 2, margin.top + chartH - barH - 12, rightColor, 11, 'center', '600');
     drawText(ctx, ex.classes[i], x + barW2 / 2, h - margin.bottom + 20, '#888', 10, 'center', '400');
   }
 
@@ -2011,6 +2084,63 @@ function drawToolkit() {
 }
 
 // ============================================================
+// BREAK IT TOGGLES
+// ============================================================
+
+// Break It #1: Hard Labels Only
+let hardLabelsOnly = false;
+function toggleHardLabels() {
+  hardLabelsOnly = !hardLabelsOnly;
+  const btn = document.getElementById('breakHardLabels');
+  btn.classList.toggle('broken', hardLabelsOnly);
+  btn.textContent = hardLabelsOnly ? 'Fix: Restore Soft Targets' : 'Break It: Hard Labels Only';
+  drawDarkKnowledge();
+}
+
+// Break It #2: Extreme Temperature
+let extremeTemp = false;
+function toggleExtremeTemp() {
+  extremeTemp = !extremeTemp;
+  const btn = document.getElementById('breakExtremeTemp');
+  btn.classList.toggle('broken', extremeTemp);
+  btn.textContent = extremeTemp ? 'Fix: Restore Normal Temperature' : 'Break It: Extreme Temperature (T=50)';
+  if (extremeTemp) {
+    document.getElementById('tempSlider').value = 10;
+    document.getElementById('tempValue').textContent = 'T = 50.0 (BROKEN)';
+    drawTemperature(50);
+  } else {
+    document.getElementById('tempSlider').value = 1.0;
+    document.getElementById('tempValue').textContent = 'T = 1.0';
+    drawTemperature(1.0);
+  }
+}
+
+// Break It #3: No Temperature Matching
+let tempMismatch = false;
+function toggleTempMismatch() {
+  tempMismatch = !tempMismatch;
+  const btn = document.getElementById('breakTempMismatch');
+  btn.classList.toggle('broken', tempMismatch);
+  btn.textContent = tempMismatch ? 'Fix: Match Temperatures' : 'Break It: No Temperature Matching';
+  resetTSTraining();
+  drawTeacherStudent();
+}
+
+// Break It #4: Over-Prune
+let overPrune = false;
+function toggleOverPrune() {
+  overPrune = !overPrune;
+  const btn = document.getElementById('breakOverPrune');
+  btn.classList.toggle('broken', overPrune);
+  btn.textContent = overPrune ? 'Fix: Restore Normal Pruning' : 'Break It: Over-Prune (99.5%)';
+  if (overPrune) {
+    setPruneLevel(0.995);
+  } else {
+    setPruneLevel(0);
+  }
+}
+
+// ============================================================
 // QUIZ DATA (35 questions, 5 per visualization)
 // ============================================================
 const quizData = [
@@ -2021,7 +2151,7 @@ const quizData = [
       { q: "Why are soft targets more informative than hard labels?", options: ["A) They use more bits of data", "B) They are easier to compute", "C) They encode relationships between classes, not just the correct answer", "D) They are always more accurate"], correct: 2, explanation: "Hard labels say 'this is a cat' (one-hot). Soft targets say 'this is a cat, but it looks somewhat like a tiger and a dog.' The probabilities assigned to wrong classes carry information about class similarity." },
       { q: "If a teacher predicts [0.01, 0.70, 0.02, 0.25, 0.02] for an image, what dark knowledge is revealed?", options: ["A) The image is definitely class 1", "B) Class 1 and class 3 share visual features", "C) The teacher is poorly trained", "D) All classes are equally likely"], correct: 1, explanation: "The teacher puts 0.70 on class 1 and 0.25 on class 3, suggesting these two classes share some visual features. Classes 0, 2, and 4 get very low probability, meaning they look very different from the input." },
       { q: "A student trained on hard labels vs soft targets will differ mainly in:", options: ["A) Training speed", "B) Number of parameters", "C) Generalization to new examples, especially ambiguous ones", "D) The loss function used"], correct: 2, explanation: "The main benefit of soft targets is improved generalization. The student learns about class structure and handles ambiguous or edge-case inputs better because it understands which classes are similar." },
-      { q: "Which scenario demonstrates dark knowledge best?", options: ["A) A model correctly classifying a clear photo of a dog", "B) A model assigning high probability to both 'wolf' and 'husky' for an ambiguous image", "C) A model outputting uniform probabilities for all classes", "D) A model memorizing the training set"], correct: 1, explanation: "When the teacher assigns significant probability to both 'wolf' and 'husky', it reveals that these classes are visually similar. This structural information (wolves look like huskies) is the dark knowledge that hard labels cannot convey." }
+      { q: "Why is distillation sometimes called 'dark knowledge' transfer?", options: ["A) Because it happens at night", "B) Because the inter-class similarity information in soft targets is invisible in hard labels -- it is 'hidden in the dark'", "C) Because the teacher model is opaque", "D) Because the student cannot see the teacher's weights"], correct: 1, explanation: "The term 'dark knowledge' comes from the fact that hard labels completely hide the rich inter-class structure. The soft probabilities assigned to wrong classes (e.g., a '3' looking like an '8') are invisible in one-hot labels but carry valuable structural information. This hidden knowledge is 'dark' -- present in the teacher but not in the labels." }
     ]
   },
   {
@@ -2031,7 +2161,7 @@ const quizData = [
       { q: "Why is KL divergence asymmetric?", options: ["A) It's a bug in the formula", "B) Because log(P/Q) != log(Q/P), and the weighting by P vs Q gives different results", "C) It is actually symmetric", "D) Because of floating point errors"], correct: 1, explanation: "KL(P||Q) = sum P*log(P/Q) while KL(Q||P) = sum Q*log(Q/P). The weighting distribution changes. KL(P||Q) penalizes Q for missing where P has mass; KL(Q||P) penalizes P for missing where Q has mass. Different priorities." },
       { q: "If P = [0.5, 0.5] and Q = [0.01, 0.99], what can you say about KL(P||Q)?", options: ["A) It equals zero", "B) It is very large because Q misses the first class that P considers important", "C) It is small because Q concentrates on one class", "D) It is negative"], correct: 1, explanation: "P puts 0.5 probability on class 0, but Q only puts 0.01 there. The term P(0)*log(P(0)/Q(0)) = 0.5*log(0.5/0.01) = 0.5*log(50) is very large. KL heavily penalizes Q for 'missing' probability mass that P considers important." },
       { q: "What is the relationship between KL divergence and cross-entropy?", options: ["A) They are completely unrelated", "B) KL(P||Q) = H(P,Q) - H(P). Since H(P) is constant, minimizing KL equals minimizing cross-entropy", "C) KL is always larger than cross-entropy", "D) Cross-entropy is the square of KL divergence"], correct: 1, explanation: "KL(P||Q) = H(P,Q) - H(P) where H(P,Q) is cross-entropy and H(P) is entropy. When P is fixed (the teacher), H(P) is a constant, so minimizing KL divergence is mathematically equivalent to minimizing cross-entropy." },
-      { q: "When does KL(P||Q) equal zero?", options: ["A) When P and Q are opposite distributions", "B) When P and Q are identical", "C) When both are uniform", "D) When P is zero everywhere"], correct: 1, explanation: "KL(P||Q) = 0 if and only if P = Q everywhere. When the distributions are identical, log(P(x)/Q(x)) = log(1) = 0 for every x, making the entire sum zero. No information is lost." }
+      { q: "Your distilled student matches teacher accuracy on common classes but fails on rare ones. What is likely wrong with your temperature setting?", options: ["A) Temperature is too high -- rare class info is washed out", "B) Temperature is too low -- soft targets are too peaked, so the student only learns the dominant classes and misses subtle rare-class relationships", "C) Temperature does not affect rare classes", "D) You need to increase the learning rate"], correct: 1, explanation: "When T is too low (close to 1), the soft targets are nearly one-hot. The student learns the dominant class well but gets almost no signal about rare classes. Raising T to 3-5 spreads probability mass and exposes the rare-class relationships in the teacher's predictions." }
     ]
   },
   {
@@ -2041,7 +2171,7 @@ const quizData = [
       { q: "Why does distillation use T > 1 instead of T = 1?", options: ["A) It's faster to compute", "B) Higher T softens the distribution, making dark knowledge more visible and learnable", "C) Lower temperatures cause overflow errors", "D) The teacher requires high temperature"], correct: 1, explanation: "At T=1, the teacher's distribution is too peaked -- almost all probability on the top class. At T=3-5, the subtle relationships between classes become visible. The student can learn from these smaller probabilities." },
       { q: "What is the effect of very high temperature (T=100)?", options: ["A) The distribution becomes very peaked", "B) The distribution becomes nearly uniform, losing all information", "C) The model becomes more accurate", "D) Training converges faster"], correct: 1, explanation: "At very high T, all logits divided by T approach 0, so exp(z/T) approaches 1 for all classes. The softmax becomes nearly uniform: [0.2, 0.2, 0.2, 0.2, 0.2]. All class information is washed out." },
       { q: "How does temperature affect gradient flow in distillation?", options: ["A) Higher T concentrates gradients on the top class", "B) Higher T spreads gradients across all classes, helping the student learn about every class relationship", "C) Temperature has no effect on gradients", "D) Lower T gives larger gradients everywhere"], correct: 1, explanation: "At T=1, gradients are dominated by the top class. At moderate T, gradients spread across all classes proportionally to their probability. The student receives learning signal about every class, not just the dominant one." },
-      { q: "Temperature in distillation is the same concept as temperature in:", options: ["A) Only distillation uses temperature", "B) Attention softmax (Ch 4) and text generation sampling", "C) Batch normalization", "D) Dropout regularization"], correct: 1, explanation: "Temperature scaling of softmax appears in attention mechanisms (controlling focus vs spread), in text generation (controlling randomness), and in distillation (controlling softness). All are the same formula: softmax(z/T)." }
+      { q: "Why does the distillation loss multiply by T squared? What would happen without this scaling?", options: ["A) T squared is for numerical stability only", "B) Without T squared, the KL gradient shrinks by T squared at high temperatures, making the soft target loss negligible compared to the hard label loss", "C) T squared increases the learning rate", "D) It is optional and has no effect"], correct: 1, explanation: "When you divide logits by T before softmax, the resulting probabilities are flatter and the gradients shrink by a factor of T squared. Without the T squared compensation, the KL loss term would become vanishingly small at T=5 or T=10, and the student would effectively only learn from hard labels. The T squared factor rescales the gradients to keep both loss terms balanced." }
     ]
   },
   {
@@ -2050,7 +2180,7 @@ const quizData = [
       { q: "In the distillation loss L = alpha*CE(student,hard) + (1-alpha)*T^2*KL(teacher_soft, student_soft), what does alpha control?", options: ["A) The learning rate", "B) The balance between learning from hard labels and learning from the teacher", "C) The number of training epochs", "D) The model size"], correct: 1, explanation: "Alpha balances two objectives: learning the correct answer (hard labels via CE) and learning class relationships (soft targets via KL). Typical values are alpha=0.1 to 0.5, giving more weight to the teacher's soft knowledge." },
       { q: "Why is there a T^2 factor in front of the KL term?", options: ["A) It's arbitrary", "B) It compensates for the reduced gradient magnitude at higher temperatures", "C) It makes the loss larger", "D) It normalizes the temperature"], correct: 1, explanation: "When temperature T increases, the softmax outputs become more uniform and gradients shrink by approximately T^2. Multiplying the KL term by T^2 rescales the gradients back to a comparable magnitude with the CE term, regardless of the chosen T." },
       { q: "A distilled student with 200K params achieves 94% accuracy while the teacher with 2M params achieves 99%. The student trained from scratch achieves 85%. What explains the gap?", options: ["A) The distilled student memorized the teacher", "B) The soft targets transfer class relationship knowledge that hard labels cannot convey", "C) The distilled student has more parameters", "D) Random initialization differences"], correct: 1, explanation: "The 9% improvement (85% to 94%) comes from dark knowledge. The teacher's soft targets encode which classes are similar, helping the student generalize far better than hard labels alone. The student architecture is identical -- only the training signal differs." },
-      { q: "What is the typical compression ratio achieved by distillation alone?", options: ["A) 2x", "B) 5-10x in parameters, retaining 90-95% accuracy", "C) 100x", "D) No compression, same size"], correct: 1, explanation: "Knowledge distillation typically achieves 5-10x parameter reduction while retaining 90-95% of the teacher's accuracy. The student has fewer layers and smaller hidden dimensions. Further compression requires pruning and quantization." },
+      { q: "You quantize a model from FP32 to INT4 and accuracy drops 15%. What technique could recover some of that accuracy?", options: ["A) Using a larger batch size", "B) Quantization-aware training (QAT): fine-tuning with simulated quantization so weights learn to be robust to rounding", "C) Increasing the number of layers", "D) Using a different optimizer"], correct: 1, explanation: "Quantization-aware training (QAT) inserts fake quantization operations during training so the model learns weight values that are robust to the rounding introduced by INT4. This can recover 5-10% of the accuracy drop compared to naive post-training quantization. Alternatively, advanced methods like GPTQ or AWQ calibrate quantization ranges using real data." },
       { q: "Can the student ever outperform the teacher?", options: ["A) Never, by definition", "B) Yes, on specific subsets or when the teacher is poorly calibrated", "C) Only with more parameters", "D) Only with more training data"], correct: 1, explanation: "Surprisingly, yes. The student can sometimes outperform the teacher on specific subsets, especially when the teacher's soft targets act as a regularizer. The averaged probabilities across similar examples can give cleaner signal than the teacher's prediction on any single example." }
     ]
   },
@@ -2060,7 +2190,7 @@ const quizData = [
       { q: "What is quantization in the context of model compression?", options: ["A) Removing layers from the network", "B) Reducing the numerical precision of weights from floating point to lower-bit integers", "C) Pruning small weights", "D) Training with less data"], correct: 1, explanation: "Quantization maps continuous float values (FP32) to discrete integers (INT8, INT4). Instead of storing each weight as a 32-bit float, you store it as an 8-bit or 4-bit integer, reducing model size by 4-8x." },
       { q: "INT8 quantization maps weights to how many discrete levels?", options: ["A) 8", "B) 16", "C) 128", "D) 256"], correct: 3, explanation: "INT8 means 8-bit integers, which can represent 2^8 = 256 different values. The continuous weight range is discretized into 256 evenly spaced levels. This is usually sufficient to maintain high accuracy." },
       { q: "Why does INT4 quantization produce a visible 'staircase' pattern?", options: ["A) A software bug", "B) Only 16 discrete levels to represent the entire weight range, so many different weights map to the same value", "C) The weights are sorted", "D) The histogram bins are too wide"], correct: 1, explanation: "INT4 has only 2^4 = 16 possible values. When hundreds of continuous float weights are mapped to just 16 levels, many weights collapse to the same value, creating visible 'steps' in the distribution." },
-      { q: "What is the main tradeoff of quantization?", options: ["A) Training time vs inference time", "B) Model size and speed vs accuracy due to precision loss", "C) Number of layers vs width", "D) Batch size vs learning rate"], correct: 1, explanation: "Quantization trades precision for efficiency. Lower bit-width means smaller model, faster inference (integer ops are faster than float ops), but the rounding introduces error. INT8 usually loses <1% accuracy, INT4 loses 1-3%, INT2 can lose 10%+." },
+      { q: "A pruned model has 90% sparsity but runs at the same speed on your GPU. Why?", options: ["A) Pruning does not actually remove weights", "B) Standard GPU hardware cannot exploit unstructured sparsity -- sparse matrix operations still process the full dense matrix", "C) The model was already fast enough", "D) 90% sparsity is not enough for speedup"], correct: 1, explanation: "Unstructured pruning (setting individual weights to zero) creates sparse matrices, but standard GPU hardware processes dense matrix operations. The zeros are still stored and multiplied. For actual speedup, you need structured pruning (removing entire rows/columns/heads) which produces smaller dense matrices, or specialized sparse hardware like NVIDIA Ampere's sparse tensor cores." },
       { q: "In practice, which quantization level is most commonly used for LLM deployment?", options: ["A) INT2", "B) INT4 and INT8", "C) FP64", "D) INT1 (binary)"], correct: 1, explanation: "INT4 (via GPTQ, AWQ) and INT8 are the industry standard for LLM serving. INT4 provides 8x compression with 1-3% accuracy loss. INT8 provides 4x compression with <1% loss. Most production LLM APIs serve quantized models." }
     ]
   },
@@ -2080,7 +2210,7 @@ const quizData = [
       { q: "In what order should compression techniques typically be applied?", options: ["A) Quantize, then prune, then distill", "B) Distill (architecture reduction), then prune (sparsity), then quantize (precision reduction)", "C) All techniques simultaneously", "D) Order does not matter"], correct: 1, explanation: "The typical pipeline is: (1) Distill to a smaller architecture. (2) Prune unnecessary weights. (3) Quantize to lower precision. This order makes sense because distillation changes the architecture first, pruning removes redundancy, and quantization is a final compression step that works on any model." },
       { q: "How do distillation, pruning, and quantization differ in what they compress?", options: ["A) They all do the same thing", "B) Distillation reduces architecture size, pruning reduces density, quantization reduces precision", "C) They all reduce the number of layers", "D) Pruning and quantization are identical"], correct: 1, explanation: "Each targets a different axis: Distillation gives you a smaller architecture (fewer layers/neurons). Pruning makes the model sparser (fewer non-zero weights). Quantization reduces bit-width (fewer bits per weight). These are orthogonal and compose multiplicatively." },
       { q: "Starting from a 2B parameter FP32 model (8GB), what size might you reach by applying all three techniques?", options: ["A) 4GB", "B) ~50-100MB", "C) 8GB (no change)", "D) 1 byte"], correct: 1, explanation: "Distill 2B to 200M (10x reduction in params, ~800MB). Prune to 100M effective (~400MB). Quantize INT4 (8x, ~50MB). The combined 100-160x compression brings an 8GB model down to ~50-100MB, small enough for a smartphone." },
-      { q: "What is a Pareto frontier in the context of model compression?", options: ["A) The maximum accuracy achievable", "B) The set of models where you cannot improve one metric (size/speed) without worsening another (accuracy)", "C) The training loss curve", "D) The teacher's accuracy ceiling"], correct: 1, explanation: "The Pareto frontier shows optimal tradeoffs. Every point on the frontier represents a model where you cannot make it smaller without losing accuracy, or more accurate without making it bigger. Different compression combinations push this frontier toward smaller, faster, and nearly as accurate." },
+      { q: "You are deploying a model to a phone. Would you distill, quantize, prune, or all three? In what order and why?", options: ["A) Only quantize -- it is the simplest", "B) All three: distill first (smaller architecture), then prune (remove redundancy), then quantize (reduce precision) -- each targets a different compression axis", "C) Only prune -- phones have sparse hardware", "D) All three but in reverse order: quantize, prune, distill"], correct: 1, explanation: "For maximum compression to fit on a phone, apply all three: (1) Distill to get a smaller architecture (fewer layers/neurons). (2) Prune to remove redundant weights within that architecture. (3) Quantize to INT4/INT8 to reduce memory per weight. This order makes sense because distillation changes the architecture first, and quantization should be the last step since it works on any model." },
       { q: "How does this chapter connect to the full ML pipeline?", options: ["A) Compression is unrelated to training", "B) Ch 6 builds the large model, Ch 7 compresses it for deployment -- this is exactly how production LLMs are shipped", "C) Compression should be done before training", "D) Only researchers need compression"], correct: 1, explanation: "The full lifecycle: train a large, powerful teacher model (Ch 6 transformer), then compress it for deployment (Ch 7). GPT-4 trains as a huge model, then is served via smaller distilled/quantized variants. Llama 70B becomes Llama 7B through distillation. This chapter completes the production ML pipeline." }
     ]
   }

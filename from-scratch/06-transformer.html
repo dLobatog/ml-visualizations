@@ -274,8 +274,9 @@ print(len(enc.encode('the')))  # 1 token</code></pre>
       <span class="desc">Sinusoidal waves at different frequencies. \(PE(pos, 2i) = \sin(pos / 10000^{2i/d})\), \(PE(pos, 2i+1) = \cos(pos / 10000^{2i/d})\).</span>
     </div>
     <hr class="divider">
-    <div class="interview-tip">Unlike RNNs which process sequentially (inherently knowing position), transformers process all tokens in parallel. Positional encoding is the explicit signal that tells the model WHERE each token is.</div>
+    <div class="interview-tip">Unlike RNNs which process sequentially (inherently knowing position), transformers process all tokens in parallel. Positional encoding is the explicit signal that tells the model WHERE each token is. As explored in Ch 04, attention is permutation-invariant without this signal &mdash; the order of tokens would be invisible.</div>
     <div class="mnemonic">Token embedding = WHAT the token is. Positional encoding = WHERE it is. Sum them = the model knows both.</div>
+    <div class="interview-tip" style="background:rgba(1,163,164,0.05); border:1px solid rgba(1,163,164,0.2); color:#88dddd;">&#128206; See Ch 4 where we show attention is permutation-invariant &mdash; positional encoding is the fix that gives the model awareness of token order.</div>
 <div class="code-example">
   <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
     <span class="code-toggle-icon">&#9654;</span> Framework Example: Sinusoidal Positional Encoding
@@ -305,6 +306,22 @@ pe = positional_encoding(128, 512)</code></pre>
 <div class="viz-section" id="viz63">
   <h2>6.3 One Transformer Block &mdash; Full Data Flow</h2>
   <p class="subtitle">Trace data through a single transformer block. Every component from previous chapters assembled together: LayerNorm, Multi-Head Attention, FFN, Residuals.</p>
+  <div class="narrative-note">
+    <strong>Why normalize?</strong> Without LayerNorm, activations grow or shrink through each layer. After 12 layers, values can be 1000x too large or 0.001x too small, making gradients unstable. LayerNorm rescales each layer's output to mean=0, variance=1.
+  </div>
+  <div class="insight-box">
+    <strong>Pre-Norm vs Post-Norm</strong>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title">Original Transformer (2017)</div>
+        <div class="opt-desc">Post-norm: LayerNorm after residual addition. Needs learning rate warmup. Harder to train deep models.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title">Modern Practice (GPT-2+)</div>
+        <div class="opt-desc">Pre-norm: LayerNorm before attention/FFN. More stable training, no warmup needed. Used by GPT-2, GPT-3, Llama, etc.</div>
+      </div>
+    </div>
+  </div>
   <div class="controls" style="margin-bottom:16px; margin-top:0;">
     <button class="btn" id="blockStepBtn" onclick="blockStep()">Step Forward</button>
     <button class="btn" onclick="blockReset()">Reset</button>
@@ -364,6 +381,32 @@ class TransformerBlock(nn.Module):
     <p class="code-note">Pre-norm applies LayerNorm before attention/FFN, improving training stability.</p>
   </div>
 </div>
+  </div>
+  <div class="insight-box">
+    <h3 style="color:#01a3a4; margin-bottom:8px;">Pre-Norm vs Post-Norm</h3>
+    <p><strong>Original Transformer (2017):</strong> Post-norm &mdash; LayerNorm after residual addition. Requires careful learning rate warmup to avoid training instability.</p>
+    <p><strong>Modern practice (GPT-2+):</strong> Pre-norm &mdash; LayerNorm before attention/FFN. More stable training, no warmup needed. Gradients flow cleanly through the residual path (see Ch 03 on gradient flow through residual connections).</p>
+    <p>This visualization uses <strong>pre-norm</strong> (the modern default).</p>
+  </div>
+  <div class="narrative-note">
+    &#128206; Ch 3 covers BatchNorm and LayerNorm in depth. Transformers use LayerNorm because it doesn't depend on batch size &mdash; each token is normalized independently across its embedding dimensions.
+  </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3 style="color:#ff6b6b; margin-bottom:8px;">Common Mistakes: Transformer Blocks</h3>
+    <ul style="list-style:none; padding:0;">
+      <li style="margin-bottom:8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Training with causal mask but evaluating without it (or vice versa). <strong style="color:#4ecdc4;">Fix:</strong> Always match train and eval masking. Decoder-only models need causal masks at all times.</li>
+      <li style="margin-bottom:8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Not applying the final LayerNorm before the output head. <strong style="color:#4ecdc4;">Fix:</strong> Pre-norm architectures require an extra LayerNorm after the last block, before projecting to vocab. Without it, the output logits are unnormalized.</li>
+      <li style="margin-bottom:8px;"><strong style="color:#ff6b6b;">Mistake:</strong> A 12-layer transformer without residual connections performs like a ~2 layer network. <strong style="color:#4ecdc4;">Fix:</strong> Always include residuals. Without them, gradients vanish through deep stacks and only the last few layers learn effectively.</li>
+      <li><strong style="color:#ff6b6b;">Mistake:</strong> Forgetting that attention is O(n&sup2;) &mdash; doubling context length quadruples memory usage. <strong style="color:#4ecdc4;">Fix:</strong> Use efficient attention implementations (FlashAttention) or limit context length. For very long sequences, consider sparse attention or sliding-window approaches.</li>
+    </ul>
+  </div>
+  <div class="narrative-note">
+    &#128736; <strong>Architecture Hyperparameters:</strong><br>
+    &#128161; <strong>d_model:</strong> 256 for toy models, 768 (GPT-2), 4096 (GPT-3). Powers of 2 preferred for hardware efficiency.<br>
+    &#128161; <strong>n_layers:</strong> 6&ndash;12 for small, 24&ndash;96 for large. More layers = more capacity but diminishing returns per layer.<br>
+    &#128161; <strong>n_heads:</strong> d_model/64 is typical. GPT-2: 768/64 = 12 heads. Each head gets 64 dims.<br>
+    &#128161; <strong>FFN expansion:</strong> 4x d_model is standard (768 &rarr; 3072). Some use 8/3x for SwiGLU activation.<br>
+    &#128161; <strong>Context length:</strong> 512&ndash;2048 typical. 8k&ndash;128k for modern long-context models. Memory grows quadratically with context.
   </div>
 </div>
 
@@ -436,6 +479,13 @@ out = encoder(x)  # same shape, refined representations</code></pre>
   </div>
 </div>
   </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3 style="color: #ff6b6b;">&#9888;&#65039; Common Mistakes</h3>
+    <ul style="margin-top: 8px; padding-left: 18px; line-height: 2;">
+      <li><strong>Mistake:</strong> Forgetting that attention is O(n&sup2;) &mdash; doubling context quadruples memory. <strong>Fix:</strong> Use efficient attention (FlashAttention) or limit context length.</li>
+      <li><strong>Mistake:</strong> Not applying final LayerNorm before the output projection head. <strong>Fix:</strong> Always include the final norm &mdash; it stabilizes the last layer's representations before projecting to vocabulary logits.</li>
+    </ul>
+  </div>
 </div>
 
 <!-- ============================================================ -->
@@ -468,6 +518,11 @@ out = encoder(x)  # same shape, refined representations</code></pre>
     </div>
     <button class="btn" onclick="resampleOutput()">Resample</button>
   </div>
+  <div class="narrative-note">
+    <strong>Sampling Hyperparameters:</strong><br>
+    &#128161; <strong>Temperature:</strong> 0.0 = greedy (argmax, deterministic), 0.7 = balanced, 1.0 = full diversity, &gt;1.5 = chaos.<br>
+    &#128161; <strong>Top-p (nucleus):</strong> 0.9-0.95 is standard. Lower = more focused output. Top-p adapts the number of candidate tokens dynamically.
+  </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> The output head converts hidden states to a probability distribution over the entire vocabulary.
     <div class="formula">$$\text{logits} = \mathbf{h}_{\text{last}} \cdot \mathbf{W}_{\text{vocab}}^T \quad;\quad P(\text{token}) = \text{softmax}(\text{logits} / T)$$</div>
@@ -492,7 +547,8 @@ out = encoder(x)  # same shape, refined representations</code></pre>
       </div>
     </div>
     <hr class="divider">
-    <div class="interview-tip">Temperature, top-k, and top-p are applied AFTER the model computes logits. They don't change what the model "thinks" &mdash; they change how we select from its predictions.</div>
+    <div class="interview-tip">Temperature, top-k, and top-p are applied AFTER the model computes logits. They don't change what the model "thinks" &mdash; they change how we select from its predictions. This is the same temperature concept from Ch 02 (language models), now applied at scale.</div>
+    <div class="interview-tip" style="background:rgba(1,163,164,0.05); border:1px solid rgba(1,163,164,0.2); color:#88dddd;">&#128206; Temperature sampling is the same concept as in Ch 2 (Makemore) &mdash; controlling randomness in next-token prediction. The math is identical, just applied to a much larger vocabulary.</div>
 <div class="code-example">
   <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
     <span class="code-toggle-icon">&#9654;</span> Framework Example: Top-k and Temperature Sampling
@@ -514,6 +570,17 @@ next_token = sample(logits, temperature=0.8, top_k=40)</code></pre>
     <p class="code-note">Temperature < 1 sharpens; top-k restricts to most likely tokens.</p>
   </div>
 </div>
+  </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3 style="color:#ff6b6b; margin-bottom:8px;">Common Mistakes: Sampling &amp; Generation</h3>
+    <ul style="list-style:none; padding:0;">
+      <li style="margin-bottom:8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Using greedy decoding when diversity is needed. <strong style="color:#4ecdc4;">Fix:</strong> Use temperature + top-p sampling. Greedy is deterministic and leads to repetitive text.</li>
+      <li style="margin-bottom:8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Setting temperature=0 and expecting creative output. <strong style="color:#4ecdc4;">Fix:</strong> Temperature=0 is greedy (argmax). For creative tasks, use T=0.7-1.0 with top-p=0.9-0.95.</li>
+      <li><strong style="color:#ff6b6b;">Mistake:</strong> Not using KV-cache during inference (recomputing attention for all previous tokens at every step). <strong style="color:#4ecdc4;">Fix:</strong> Always enable KV-cache for autoregressive generation. Without it, generating n tokens costs O(n^3) instead of O(n^2). See Ch 07 for more inference optimization techniques.</li>
+    </ul>
+  </div>
+  <div class="narrative-note">
+    &#128206; Temperature sampling is the same concept as in <a href="02-makemore.html" style="color:#01a3a4;">Ch 2 (Makemore)</a> &mdash; controlling randomness in next-token prediction. The only difference is what model produces the logits: a bigram table (Ch 2) vs a full transformer (here).
   </div>
 </div>
 
@@ -564,7 +631,7 @@ next_token = sample(logits, temperature=0.8, top_k=40)</code></pre>
       <span class="desc">The causal mask means each token can only see the past. Generation naturally follows: predict one, append, repeat.</span>
     </div>
     <hr class="divider">
-    <div class="interview-tip">Without KV-cache, generating n tokens costs O(n^3) total. With KV-cache, it costs O(n^2). This is why inference optimization matters so much for long sequences.</div>
+    <div class="interview-tip">Without KV-cache, generating n tokens costs O(n^3) total. With KV-cache, it costs O(n^2). This is why inference optimization matters so much for long sequences. See Ch 07 (distillation &amp; compression) for further KV-cache optimizations like quantized KV, GQA, and MQA.</div>
     <div class="mnemonic">Generate = greedy loop: forward pass on full sequence, sample last position, append, repeat. KV-cache = "don't recompute what you already know."</div>
 <div class="code-example">
   <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
@@ -587,6 +654,13 @@ def generate(model, prompt_ids, max_new=50, temperature=0.8):
     <p class="code-note">Production code uses KV-cache; here we recompute for clarity.</p>
   </div>
 </div>
+  </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3 style="color: #ff6b6b;">&#9888;&#65039; Common Mistakes</h3>
+    <ul style="margin-top: 8px; padding-left: 18px; line-height: 2;">
+      <li><strong>Mistake:</strong> Not using KV-cache during autoregressive inference (recomputing all tokens every step). <strong>Fix:</strong> Cache K,V from previous steps, only compute new token. This reduces per-step cost from O(n&sup2;) to O(n).</li>
+      <li><strong>Mistake:</strong> Training with causal mask but evaluating without it (data leakage). <strong>Fix:</strong> Always use the same masking at train and eval &mdash; decoder-only models need causal masks at all times.</li>
+    </ul>
   </div>
 </div>
 
@@ -632,7 +706,8 @@ def generate(model, prompt_ids, max_new=50, temperature=0.8):
     </div>
     <hr class="divider">
     <div class="interview-tip">This is why LLMs are so data-efficient: one document of N tokens provides N-1 supervised training examples. No labeling required &mdash; the text IS the label (shifted by one position).</div>
-    <div class="mnemonic">Self-supervised learning: the input IS the label. Position t predicts position t+1. Slide a window across all text ever written = unlimited training data.</div>
+    <div class="mnemonic">Self-supervised learning: the input IS the label. Position t predicts position t+1. Slide a window across all text ever written = unlimited training data. The backpropagation that makes this work is the same engine you built in Ch 01 &mdash; gradients flow back through every component.</div>
+    <div class="interview-tip" style="background:rgba(1,163,164,0.05); border:1px solid rgba(1,163,164,0.2); color:#88dddd;">&#128206; All these gradients flow through the computation graph from Ch 1 (Backprop). The chain rule applies through every LayerNorm, attention head, and FFN &mdash; the same derivative mechanics, just many more parameters.</div>
 <div class="code-example">
   <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
     <span class="code-toggle-icon">&#9654;</span> Framework Example: Next-Token Prediction Training Step
@@ -654,6 +729,13 @@ optimizer.step()</code></pre>
     <p class="code-note">Each sequence of N tokens yields N-1 training examples for free.</p>
   </div>
 </div>
+  </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3 style="color: #ff6b6b;">&#9888;&#65039; Common Mistakes</h3>
+    <ul style="margin-top: 8px; padding-left: 18px; line-height: 2;">
+      <li><strong>Mistake:</strong> Using greedy decoding when diversity is needed. <strong>Fix:</strong> Use temperature + top-p sampling. Greedy is deterministic and leads to repetitive, degenerate text.</li>
+      <li><strong>Mistake:</strong> Setting temperature=0 and expecting creative output. <strong>Fix:</strong> T=0 is argmax (deterministic). Use T=0.7-1.0 for creative generation, with top-p=0.9-0.95.</li>
+    </ul>
   </div>
 </div>
 
@@ -687,6 +769,13 @@ optimizer.step()</code></pre>
       <input type="range" id="archVocab" min="1000" max="100000" value="50257" step="1000" oninput="drawArchitecture()">
       <span class="value" id="archVocabVal">50257</span>
     </div>
+  </div>
+  <div class="narrative-note">
+    <strong>Hyperparameter Rules of Thumb:</strong><br>
+    &#128161; <strong>d_model:</strong> 256 for toy models, 768 (GPT-2), 4096 (GPT-3). Powers of 2 for GPU hardware efficiency.<br>
+    &#128161; <strong>n_layers:</strong> 6-12 for small models, 24-96 for large. More layers = more capacity but diminishing returns.<br>
+    &#128161; <strong>n_heads:</strong> d_model/64 is typical. GPT-2: 768/64 = 12 heads. Each head gets d_k = d_model/n_heads dimensions.<br>
+    &#128161; <strong>FFN expansion:</strong> 4x d_model is standard (e.g., 768 &rarr; 3072). Some modern models use 8/3x for SwiGLU activation.
   </div>
   <div style="margin-top:16px; padding:16px 20px; background:#0d0d1a; border-radius:12px;">
     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
