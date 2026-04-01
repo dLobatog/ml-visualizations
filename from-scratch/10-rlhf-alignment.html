@@ -1,0 +1,2043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 10: RLHF &amp; Alignment from Scratch</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #0a0a0f; color: #e0e0e0; line-height: 1.6; }
+  .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; text-align: center; border-bottom: 1px solid #2a2a4a; }
+  .header h1 { font-size: 2.2em; background: linear-gradient(90deg, #f368e0, #ff9ff3); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+  .header p { color: #888; font-size: 1.1em; }
+  .header a { color: #f368e0; text-decoration: none; font-size: 0.9em; }
+  .header a:hover { text-decoration: underline; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+
+  /* Minimap */
+  .minimap { position: sticky; top: 0; z-index: 100; background: #0a0a0fee; backdrop-filter: blur(10px); border-bottom: 1px solid #2a2a4a; padding: 10px 20px; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }
+  .mm-step { padding: 4px 12px; border-radius: 6px; font-size: 0.75em; font-weight: 600; cursor: pointer; transition: all 0.2s; background: #151530; color: #555; border: 1px solid #2a2a4a; white-space: nowrap; }
+  .mm-step:hover { border-color: #f368e0; color: #f368e0; }
+  .mm-step.active { background: rgba(243,104,224,0.2); color: #f368e0; border-color: rgba(243,104,224,0.5); }
+  .mm-step.done { background: rgba(243,104,224,0.1); color: #f368e0; border-color: rgba(243,104,224,0.3); }
+  .mm-arrow { color: #333; font-size: 0.8em; }
+
+  .viz-section { background: #12121f; border: 1px solid #2a2a4a; border-radius: 16px; padding: 32px; margin-bottom: 40px; }
+  .viz-section h2 { font-size: 1.5em; color: #f368e0; margin-bottom: 8px; }
+  .viz-section .subtitle { color: #888; margin-bottom: 24px; font-size: 0.95em; }
+  .viz-canvas { background: #0d0d1a; border-radius: 12px; position: relative; overflow: hidden; }
+  canvas { display: block; margin: 0 auto; }
+  .controls { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; align-items: center; }
+  .control-group { display: flex; flex-direction: column; gap: 4px; }
+  .control-group label { font-size: 0.85em; color: #aaa; }
+  .control-group input[type="range"] { width: 160px; accent-color: #f368e0; }
+  .control-group .value { font-size: 0.85em; color: #f368e0; font-family: monospace; }
+  .btn { padding: 8px 16px; border: 1px solid #f368e0; background: transparent; color: #f368e0; border-radius: 8px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
+  .btn:hover { background: #f368e022; }
+  .btn.active { background: #f368e033; }
+  .tab-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+
+  .insight-box { background: linear-gradient(135deg, #1a1a3e 0%, #151530 100%); border-left: 4px solid #f368e0; padding: 20px 24px; margin-top: 20px; border-radius: 0 12px 12px 0; font-size: 0.92em; color: #ccc; line-height: 1.8; }
+  .insight-box strong { color: #f368e0; font-size: 1.05em; }
+  .insight-box .formula { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 12px 18px; margin: 12px 0; font-family: 'Courier New', monospace; color: #e8e8ff; font-size: 1.05em; text-align: center; letter-spacing: 0.5px; line-height: 1.9; }
+  .insight-box .key-point { display: flex; flex-wrap: wrap; gap: 4px 8px; margin: 8px 0; padding: 4px 0; align-items: baseline; }
+  .insight-box .key-point .label { color: #f368e0; font-weight: 600; min-width: 160px; flex-shrink: 0; }
+  .insight-box .key-point .desc { color: #ddd; }
+  .insight-box .interview-tip { background: rgba(100, 255, 100, 0.05); border: 1px solid rgba(100, 255, 100, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #b0ffb0; font-size: 0.93em; line-height: 1.6; }
+  .insight-box .interview-tip::before { content: '\1F4A1  Interview Tip: '; font-weight: 700; color: #7fff7f; }
+  .insight-box .mnemonic { background: rgba(255, 150, 255, 0.05); border: 1px solid rgba(255, 150, 255, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #ffb0ff; font-size: 0.93em; line-height: 1.6; }
+  .insight-box .mnemonic::before { content: '\1F9E0  Remember: '; font-weight: 700; color: #ff7fff; }
+  .insight-box .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+  .insight-box .comparison .option { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 10px 14px; }
+  .insight-box .comparison .option .opt-title { color: #f368e0; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
+  .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
+  .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
+  .code-example { margin-top: 12px; border: 1px solid #2a2a4a; border-radius: 8px; overflow: hidden; }
+  .code-toggle { width: 100%; background: #1a1a2e; color: #f368e0; border: none; padding: 10px 16px; text-align: left; cursor: pointer; font-size: 0.9em; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .code-toggle:hover { background: #22223a; }
+  .code-toggle-icon { display: inline-block; transition: transform 0.2s; font-size: 0.7em; }
+  .code-example.open .code-toggle-icon { transform: rotate(90deg); }
+  .code-content { display: none; padding: 14px 16px; background: #0a0a14; }
+  .code-example.open .code-content { display: block; }
+  .code-content pre { margin: 0; overflow-x: auto; white-space: pre; }
+  .code-content code { color: #e0e0e0; font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.82em; line-height: 1.6; }
+  .code-content .code-note { color: #888; font-size: 0.82em; margin-top: 8px; font-style: italic; }
+  .code-content pre[class*="language-"], .code-content code[class*="language-"] { background: #0a0a14; font-size: 0.82em; line-height: 1.6; margin: 0; padding: 0; text-shadow: none; }
+  pre[class*="language-"]::selection, code[class*="language-"]::selection { background: #333; }
+  .katex { color: #e8e8ff; font-size: 1.1em; }
+  .formula .katex { font-size: 1.2em; }
+
+  .narrative-note { background: rgba(255,217,61,0.05); border-left: 3px solid #ffd93d; padding: 14px 18px; margin: 16px 0; border-radius: 0 8px 8px 0; font-size: 0.9em; color: #ccb866; }
+  .narrative-note strong { color: #ffd93d; }
+
+  select { padding: 6px 12px; border: 1px solid #2a2a4a; background: #0d0d1a; color: #e0e0e0; border-radius: 6px; font-size: 0.9em; cursor: pointer; }
+  select:focus { outline: none; border-color: #f368e0; }
+
+  input[type="text"] { padding: 8px 14px; border: 1px solid #2a2a4a; background: #0d0d1a; color: #e0e0e0; border-radius: 8px; font-size: 0.95em; font-family: inherit; width: 100%; }
+  input[type="text"]:focus { outline: none; border-color: #f368e0; }
+
+#quizToggle{position:fixed;top:20px;right:20px;z-index:1000;padding:12px 20px;background:#f368e0;color:#0a0a0f;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:1em;box-shadow:0 4px 15px rgba(0,0,0,0.3);transition:transform 0.2s}
+#quizToggle:hover{transform:scale(1.05)}
+#quizSection{background:#0a0a0f;border-top:2px solid #f368e0;padding:40px 20px;margin-top:40px}
+.quiz-container{max-width:900px;margin:0 auto}
+.quiz-topic{margin-bottom:30px}
+.quiz-topic-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:10px;cursor:pointer;margin-bottom:12px;user-select:none}
+.quiz-topic-header h3{color:#f368e0;margin:0;font-size:1.15em}
+.quiz-topic-header:hover{background:#1f1f3a}
+.quiz-topic-score{color:#888;font-size:0.95em}
+.quiz-topic-questions{display:none}
+.quiz-topic-questions.open{display:block}
+.quiz-question{background:#12121f;border:1px solid #2a2a4a;border-radius:12px;padding:24px;margin-bottom:16px}
+.quiz-question h4{color:#e0e0e0;margin-bottom:16px;font-size:1.05em;line-height:1.5}
+.quiz-option{display:block;width:100%;padding:12px 16px;margin:8px 0;background:#0d0d1a;border:1px solid #2a2a4a;border-radius:8px;color:#e0e0e0;cursor:pointer;text-align:left;font-size:0.95em;transition:all 0.2s;font-family:inherit}
+.quiz-option:hover:not(:disabled){border-color:#f368e0;background:#1a1a3e}
+.quiz-option.correct{background:#1a3a2a !important;border-color:#2ecc71 !important;color:#2ecc71 !important}
+.quiz-option.wrong{background:#3a1a1a !important;border-color:#e74c3c !important;color:#e74c3c !important}
+.quiz-option.reveal{border-color:#2ecc71 !important;color:#2ecc71 !important}
+.quiz-option:disabled{cursor:default}
+.quiz-explanation{margin-top:12px;padding:14px 18px;border-radius:8px;font-size:0.93em;line-height:1.6;display:none}
+.quiz-explanation.show{display:block}
+.quiz-explanation.correct-exp{border-left:4px solid #2ecc71;background:rgba(46,204,113,0.08);color:#b0ffb0}
+.quiz-explanation.wrong-exp{border-left:4px solid #e74c3c;background:rgba(231,76,60,0.08);color:#ffb0b0}
+.quiz-score{text-align:center;font-size:1.5em;color:#f368e0;margin-bottom:30px}
+.quiz-actions{text-align:center;margin-top:30px;margin-bottom:20px}
+.quiz-actions button{padding:10px 24px;margin:0 8px;border-radius:8px;border:1px solid #f368e0;background:transparent;color:#f368e0;cursor:pointer;font-size:1em}
+.quiz-actions button:hover{background:rgba(243,104,224,0.1)}
+.quiz-progress{height:4px;background:#1a1a2e;border-radius:2px;margin-bottom:20px;overflow:hidden}
+.quiz-progress-bar{height:100%;background:#f368e0;border-radius:2px;transition:width 0.3s}
+
+  .break-toggle { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border: 1px solid #e74c3c; background: transparent; color: #e74c3c; border-radius: 8px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
+  .break-toggle:hover { background: rgba(231,76,60,0.15); }
+  .break-toggle.broken { background: rgba(231,76,60,0.25); border-color: #ff4444; color: #ff4444; }
+
+  .legend { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.85em; color: #ccc; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 50%; }
+
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '\\(', right: '\\)', display: false}]});"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-okaidia.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script></head>
+<body>
+<button id="quizToggle" onclick="toggleQuiz()">&#x1F9E0; Quiz Mode</button>
+
+<div class="header">
+  <a href="../index.html">&larr; Back to Index</a>
+  <h1>Chapter 10: RLHF &amp; Alignment from Scratch</h1>
+  <p>From human preferences to aligned models &mdash; build the RLHF pipeline step by step</p>
+  <p style="margin-top:8px; font-size:0.85em; color:#666;">Prerequisites: <a href="01-backprop-autograd.html">Ch 1 (Backprop)</a>, <a href="06-transformer.html">Ch 6 (Transformer)</a></p>
+</div>
+
+<div class="minimap" id="minimap">
+  <span class="mm-step active" data-section="viz101" onclick="scrollToViz('viz101')">1. Alignment</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz102" onclick="scrollToViz('viz102')">2. Preferences</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz103" onclick="scrollToViz('viz103')">3. Reward Model</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz104" onclick="scrollToViz('viz104')">4. PPO</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz105" onclick="scrollToViz('viz105')">5. DPO</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz106" onclick="scrollToViz('viz106')">6. Reward Hacking</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz107" onclick="scrollToViz('viz107')">7. Full Pipeline</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz108" onclick="scrollToViz('viz108')">8. CAI &amp; Beyond</span>
+</div>
+
+<div class="container">
+
+<!-- ============================================================ -->
+<!-- VIZ 10.1: THE ALIGNMENT PROBLEM -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz101">
+  <h2>10.1 The Alignment Problem: Why Pretraining Isn't Enough</h2>
+  <p class="subtitle">A pretrained language model predicts the next token. It has no concept of helpful, harmless, or honest. Watch it generate completions with no preference between safe and harmful outputs.</p>
+  <div class="narrative-note"><strong>Callback to Ch 6:</strong> In the transformer chapter, we built a model that learns to predict the next token via cross-entropy loss on raw text. That objective learns patterns in language &mdash; including harmful ones. RLHF adds a second stage to steer the model toward human values.</div>
+  <div class="viz-canvas">
+    <canvas id="alignCanvas" width="900" height="400"></canvas>
+  </div>
+  <div class="controls">
+    <button class="btn" onclick="drawAlignment()">Regenerate Completions</button>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Pretraining optimizes for next-token prediction, not for being helpful, harmless, or honest. A model that predicts well can still produce harmful, biased, or unhelpful outputs.
+    <div class="formula">$$\mathcal{L}_{\text{pretrain}} = -\sum_t \log P_\theta(x_t | x_{&lt;t}) \quad \text{(no safety signal here)}$$</div>
+    <div class="key-point">
+      <span class="label">The Problem:</span>
+      <span class="desc">Next-token prediction treats all text equally. A factual answer and a harmful fabrication are optimized the same way if both appear in the training data.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">The Solution:</span>
+      <span class="desc">Add a second training phase that uses human feedback to teach the model WHICH completions are preferred.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">The alignment problem is not about making models smarter &mdash; it's about making them do what we actually want. A perfectly capable model that follows harmful instructions is worse than a less capable but aligned one.</div>
+    <div class="mnemonic">Pretraining = "predict everything." RLHF = "prefer the good stuff."</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 10.2: PREFERENCE DATA -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz102">
+  <h2>10.2 Preference Data: The Foundation</h2>
+  <p class="subtitle">Human annotators compare pairs of completions and pick which is better. Click to provide preferences and build a dataset of (prompt, chosen, rejected) triples.</p>
+  <div class="viz-canvas" style="padding: 20px; min-height: 420px;">
+    <div id="prefArea" style="min-height: 360px;"></div>
+  </div>
+  <div class="controls">
+    <button class="btn" onclick="resetPreferences()">Reset Preferences</button>
+    <span id="prefCount" style="color:#f368e0; font-family:monospace; font-size:0.9em;">0 / 6 preferences collected</span>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Preferences are easier than scores. Humans struggle to assign absolute quality numbers but reliably say "A is better than B."
+    <div class="key-point">
+      <span class="label">Why Pairwise?</span>
+      <span class="desc">Absolute ratings (1-5 stars) vary wildly between annotators. Relative comparisons ("A is better than B") are much more consistent and reliable.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Dataset Format:</span>
+      <span class="desc">Each example is a triple: (prompt, chosen_completion, rejected_completion). Typical datasets have 50k-200k such triples.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Real preference datasets (like Anthropic's HH-RLHF or OpenAI's WebGPT) are collected from paid annotators who follow detailed guidelines. Annotator agreement is typically 70-80%, reflecting genuine ambiguity in what "better" means.</div>
+    <div class="insight-box" style="border-left-color: #01a3a4; margin-top: 12px; padding: 12px 16px;">
+      <span style="color:#01a3a4;">&#128206; Cross-reference Ch 1 (Backprop):</span> The preference data will be used to compute gradients through a loss function (Bradley-Terry model). The autograd system from Ch 1 is what makes this training possible.
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 10.3: REWARD MODEL -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz103">
+  <h2>10.3 The Reward Model: Learning Human Preferences</h2>
+  <p class="subtitle">Train a neural network to predict which completion a human would prefer. The Bradley-Terry model converts reward scores into preference probabilities.</p>
+  <div class="viz-canvas">
+    <canvas id="rewardCanvas" width="900" height="500"></canvas>
+  </div>
+  <div class="controls">
+    <button class="btn" id="trainRMBtn" onclick="trainRewardModel()">Train Reward Model</button>
+    <button class="btn" onclick="resetRewardModel()">Reset</button>
+    <button class="break-toggle" id="breakFlipLabels" onclick="toggleBreakFlip()">Break It: Flip All Labels</button>
+  </div>
+  <div id="breakFlipMsg" style="display:none;" class="narrative-note">
+    <strong>Broken!</strong> With flipped labels, the reward model learns to prefer harmful content over safe content. The model assigns higher reward to rejected completions. This demonstrates why data quality and annotator guidelines are critical &mdash; garbage labels in, misaligned model out.
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> The reward model learns a scalar score r(prompt, completion) such that preferred completions get higher scores.
+    <div class="formula">$$P(A \succ B) = \sigma(r(A) - r(B)) \quad \text{(Bradley-Terry model)}$$</div>
+    <div class="formula">$$\mathcal{L}_{\text{RM}} = -\log \sigma(r_\theta(x, y_w) - r_\theta(x, y_l))$$</div>
+    <div class="key-point">
+      <span class="label">Bradley-Terry:</span>
+      <span class="desc">The probability that A is preferred over B depends only on the difference in their rewards, passed through a sigmoid. Simple and effective.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Architecture:</span>
+      <span class="desc">Typically the same transformer as the policy, with the final token's hidden state projected to a single scalar. The reward model learns "what humans value."</span>
+    </div>
+    <hr class="divider">
+    <div class="mnemonic">The reward model is the "judge" that learns human taste. Train it well, and it can score thousands of completions per second &mdash; far faster than asking humans.</div>
+  </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3 style="color: #ff6b6b;">Common Mistakes: Reward Model Training</h3>
+    <ul style="list-style:none; padding:0;">
+      <li style="margin-bottom:8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Training the reward model on data from a different model distribution (e.g., preferences collected on GPT-3 outputs used to train a LLaMA reward model). <strong style="color:#4ecdc4;">Fix:</strong> Collect preferences on outputs from YOUR policy, not a different model. Distribution mismatch degrades reward model accuracy.</li>
+      <li style="margin-bottom:8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Using too few preference pairs (&lt;10k). <strong style="color:#4ecdc4;">Fix:</strong> Use at least 50k preference pairs. Reward model accuracy directly limits RLHF performance.</li>
+    </ul>
+  </div>
+  <div class="code-example">
+    <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+      <span class="code-toggle-icon">&#9654;</span> Framework Example: Reward Model Training
+    </button>
+    <div class="code-content">
+      <pre><code class="language-python">import torch
+import torch.nn as nn
+
+class RewardModel(nn.Module):
+    def __init__(self, base_model):
+        super().__init__()
+        self.backbone = base_model  # e.g., GPT-2
+        self.reward_head = nn.Linear(base_model.config.hidden_size, 1)
+
+    def forward(self, input_ids, attention_mask):
+        outputs = self.backbone(input_ids, attention_mask=attention_mask)
+        # Use last token's hidden state as sequence representation
+        last_hidden = outputs.last_hidden_state[:, -1, :]
+        reward = self.reward_head(last_hidden)
+        return reward.squeeze(-1)
+
+# Bradley-Terry loss
+def reward_loss(r_chosen, r_rejected):
+    return -torch.log(torch.sigmoid(r_chosen - r_rejected)).mean()</code></pre>
+      <p class="code-note">The reward model typically shares architecture with the policy but adds a scalar head.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 10.4: PPO -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz104">
+  <h2>10.4 PPO: Optimizing the Policy</h2>
+  <p class="subtitle">Use Proximal Policy Optimization to maximize the reward while staying close to the reference model via a KL penalty. Watch the training loop animate.</p>
+  <div class="narrative-note"><strong>Callback to Ch 1:</strong> PPO uses gradient ascent (maximizing reward) rather than gradient descent (minimizing loss). The backpropagation machinery from Ch 1 works the same way &mdash; just negate the objective.</div>
+  <div class="viz-canvas">
+    <canvas id="ppoCanvas" width="900" height="500"></canvas>
+  </div>
+  <div class="controls">
+    <button class="btn" id="ppoTrainBtn" onclick="trainPPO()">Train PPO</button>
+    <button class="btn" onclick="resetPPO()">Reset</button>
+    <div class="control-group">
+      <label>KL Penalty (&beta;)</label>
+      <input type="range" id="betaSlider" min="0" max="100" value="10" oninput="updateBeta()">
+      <span class="value" id="betaVal">0.10</span>
+    </div>
+    <button class="break-toggle" id="breakNoKL" onclick="toggleBreakNoKL()">Break It: No KL Penalty (&beta;=0)</button>
+    <button class="break-toggle" id="breakHighKL" onclick="toggleBreakHighKL()">Break It: Extreme KL (&beta;=10)</button>
+  </div>
+  <div id="breakNoKLMsg" style="display:none;" class="narrative-note">
+    <strong>Broken!</strong> Without KL penalty, the model exploits the reward model. Reward skyrockets but the model produces degenerate outputs &mdash; repetitive phrases, sycophantic patterns, or other reward-hacking behaviors. The policy has drifted far from the base model.
+  </div>
+  <div id="breakHighKLMsg" style="display:none;" class="narrative-note">
+    <strong>Broken!</strong> With extreme KL penalty (&beta;=10), the model barely changes from the base policy. Reward stays flat because the KL constraint prevents any meaningful updates. Alignment fails because the model cannot learn from the reward signal.
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> The KL penalty is the crucial balancing act. Too low leads to reward hacking. Too high leads to no learning. This is why RLHF is hard to tune.
+    <div class="formula">$$\mathcal{J}(\theta) = \mathbb{E}_{x \sim D,\, y \sim \pi_\theta(\cdot|x)}\Big[r_\phi(x,y) - \beta \cdot \text{KL}\big(\pi_\theta(\cdot|x) \,\|\, \pi_{\text{ref}}(\cdot|x)\big)\Big]$$</div>
+    <div class="key-point">
+      <span class="label">The PPO Loop:</span>
+      <span class="desc">1) Generate completions with policy. 2) Score with reward model. 3) Compute advantage. 4) Update policy with clipped objective. 5) Apply KL penalty.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">KL Divergence:</span>
+      <span class="desc">Measures how far the current policy has drifted from the reference (pretrained) model. Acts as a regularizer to prevent the policy from collapsing to degenerate reward-hacking modes.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">In practice, &beta; is often adapted dynamically: if KL is too high, increase &beta;; if too low, decrease it. This keeps KL in a target range (e.g., 6-10 nats).</div>
+  </div>
+  <div class="narrative-note">
+    &#128736; <strong>Hyperparameter Guidance (PPO):</strong><br>
+    &#128161; <strong>&beta; (KL penalty):</strong> Start at 0.01-0.1. Use adaptive KL controller with target KL of 6 nats.<br>
+    &#128161; <strong>Learning rate:</strong> 1e-6 to 5e-6 (very small &mdash; the model is already good, we're fine-tuning).<br>
+    &#128161; <strong>Epochs per batch:</strong> 1-4 PPO epochs per batch of rollouts.<br>
+    &#128161; <strong>Batch size:</strong> 512-2048 completions per PPO step. Larger = more stable but slower.
+  </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3 style="color: #ff6b6b;">Common Mistakes: PPO Training</h3>
+    <ul style="list-style:none; padding:0;">
+      <li style="margin-bottom:8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Using a learning rate that's too high (e.g., 1e-4). <strong style="color:#4ecdc4;">Fix:</strong> Use 1e-6 to 5e-6. The model is already pretrained and SFT'd; large LR destroys learned capabilities.</li>
+      <li style="margin-bottom:8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Not freezing the reference model. <strong style="color:#4ecdc4;">Fix:</strong> The reference model (&pi;_ref) must be frozen. If it updates alongside the policy, the KL penalty becomes meaningless.</li>
+    </ul>
+  </div>
+  <div class="code-example">
+    <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+      <span class="code-toggle-icon">&#9654;</span> Framework Example: PPO Objective
+    </button>
+    <div class="code-content">
+      <pre><code class="language-python">import torch
+
+def ppo_objective(log_probs, old_log_probs, advantages, clip_eps=0.2):
+    """Clipped PPO surrogate objective."""
+    ratio = torch.exp(log_probs - old_log_probs)
+    clipped = torch.clamp(ratio, 1 - clip_eps, 1 + clip_eps)
+    return torch.min(ratio * advantages, clipped * advantages).mean()
+
+def rlhf_loss(rewards, kl_divergence, beta=0.1):
+    """RLHF objective: maximize reward minus KL penalty."""
+    return -(rewards - beta * kl_divergence).mean()
+
+# KL divergence between policy and reference
+def approx_kl(log_pi, log_pi_ref):
+    return (log_pi - log_pi_ref).mean()</code></pre>
+      <p class="code-note">In practice, use libraries like trl (HuggingFace) for full PPO-RLHF training loops.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 10.5: DPO -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz105">
+  <h2>10.5 DPO: Skipping the Reward Model</h2>
+  <p class="subtitle">Direct Preference Optimization derives a closed-form loss directly from preferences &mdash; no reward model needed. Compare the RLHF and DPO pipelines side by side.</p>
+  <div class="viz-canvas">
+    <canvas id="dpoCanvas" width="900" height="400"></canvas>
+  </div>
+  <div class="controls">
+    <button class="btn" id="dpoTrainBtn" onclick="trainDPO()">Train DPO</button>
+    <button class="btn" onclick="resetDPO()">Reset</button>
+    <button class="break-toggle" id="breakDPOoverfit" onclick="toggleBreakDPOoverfit()">Break It: Overfit DPO (10 epochs)</button>
+  </div>
+  <div id="breakDPOoverfitMsg" style="display:none;" class="narrative-note">
+    <strong>Broken!</strong> Training DPO for too many epochs on a small preference dataset causes overfitting. The model memorizes the training preferences perfectly but loses general capabilities &mdash; it becomes great at the exact prompts in the dataset but worse at everything else. The implicit reward margin shoots up but generalization collapses.
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> DPO shows that the optimal RLHF policy has a closed-form relationship to the reward function. Instead of learning the reward then optimizing against it, you can do both in one step.
+    <div class="formula">$$\mathcal{L}_{\text{DPO}} = -\log \sigma\!\Bigg(\beta \bigg[\log \frac{\pi_\theta(y_w|x)}{\pi_{\text{ref}}(y_w|x)} - \log \frac{\pi_\theta(y_l|x)}{\pi_{\text{ref}}(y_l|x)}\bigg]\Bigg)$$</div>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title">RLHF (PPO) Pipeline</div>
+        <div class="opt-desc">3 stages: 1) SFT on demonstrations. 2) Train reward model on preferences. 3) PPO to maximize reward. Requires 4 models in memory (policy, reference, reward model, value model).</div>
+      </div>
+      <div class="option">
+        <div class="opt-title">DPO Pipeline</div>
+        <div class="opt-desc">1 stage: Train directly on preferences using the DPO loss. Only needs 2 models in memory (policy, reference). Simpler, cheaper, more stable.</div>
+      </div>
+    </div>
+    <div class="key-point">
+      <span class="label">Why It Works:</span>
+      <span class="desc">The optimal policy under KL-constrained reward maximization is \(\pi^*(y|x) \propto \pi_{\text{ref}}(y|x) \exp(r(x,y)/\beta)\). Inverting this gives the reward in terms of the policy, which can be substituted into the Bradley-Terry loss.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">DPO is increasingly popular for smaller teams because it eliminates the complex PPO training loop. However, some research suggests PPO can achieve better results at scale when tuned properly.</div>
+    <div class="insight-box" style="border-left-color: #01a3a4; margin-top: 12px; padding: 12px 16px;">
+      <span style="color:#01a3a4;">&#128206; Cross-reference Ch 3 (MLPs &amp; Optimization):</span> The DPO loss is optimized with standard gradient descent, just like any supervised loss. The log-probability ratios are computed via forward passes through the transformer (Ch 6).
+    </div>
+  </div>
+  <div class="narrative-note">
+    &#128736; <strong>Hyperparameter Guidance (DPO):</strong><br>
+    &#128161; <strong>&beta;:</strong> 0.1-0.5. Controls how much the policy can diverge from the reference. Lower &beta; = more aggressive optimization.<br>
+    &#128161; <strong>Learning rate:</strong> 1e-6 to 5e-7. Even smaller than PPO since DPO is more direct.<br>
+    &#128161; <strong>Epochs:</strong> 1-3 over the preference dataset. Overfitting is a real risk with DPO.<br>
+    &#128161; <strong>Batch size:</strong> 32-128 preference pairs. DPO is more memory-efficient than PPO.
+  </div>
+  <div class="code-example">
+    <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+      <span class="code-toggle-icon">&#9654;</span> Framework Example: DPO Loss
+    </button>
+    <div class="code-content">
+      <pre><code class="language-python">import torch
+import torch.nn.functional as F
+
+def dpo_loss(pi_logps_w, pi_logps_l, ref_logps_w, ref_logps_l, beta=0.1):
+    """Direct Preference Optimization loss.
+
+    Args:
+        pi_logps_w: log P_policy(chosen | prompt)
+        pi_logps_l: log P_policy(rejected | prompt)
+        ref_logps_w: log P_ref(chosen | prompt)
+        ref_logps_l: log P_ref(rejected | prompt)
+        beta: temperature parameter
+    """
+    log_ratio_w = pi_logps_w - ref_logps_w
+    log_ratio_l = pi_logps_l - ref_logps_l
+    logits = beta * (log_ratio_w - log_ratio_l)
+    return -F.logsigmoid(logits).mean()</code></pre>
+      <p class="code-note">DPO is just a single loss function &mdash; no RL loop needed. Use trl's DPOTrainer for a full implementation.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 10.6: REWARD HACKING -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz106">
+  <h2>10.6 Reward Hacking &amp; Failure Modes</h2>
+  <p class="subtitle">When the model finds shortcuts to maximize reward without actually improving quality. Watch reward go up while actual output quality degrades.</p>
+  <div class="viz-canvas">
+    <canvas id="hackCanvas" width="900" height="400"></canvas>
+  </div>
+  <div class="controls">
+    <button class="btn" id="hackTrainBtn" onclick="trainHacking()">Train Too Long</button>
+    <button class="btn" onclick="resetHacking()">Reset</button>
+    <button class="break-toggle" id="breakOveropt" onclick="toggleBreakOveropt()">Break It: Train 10x Too Long</button>
+  </div>
+  <div id="breakOveroptMsg" style="display:none;" class="narrative-note">
+    <strong>Broken!</strong> After excessive training, the proxy reward (reward model score) continues climbing, but the "gold" reward (true human judgment) plummets. The model has learned to exploit patterns in the reward model rather than genuinely improving. This is Goodhart's Law: "When a measure becomes a target, it ceases to be a good measure."
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Reward hacking is the central failure mode of RLHF. The model optimizes the reward model (a proxy), not actual human preferences (the ground truth).
+    <div class="key-point">
+      <span class="label">Verbosity Hacking:</span>
+      <span class="desc">Model learns that longer responses get higher reward scores, so it generates verbose, padded garbage.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Sycophancy:</span>
+      <span class="desc">Model learns to agree with the user regardless of correctness. "Great question! You're absolutely right that 2+2=5."</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Safety Washing:</span>
+      <span class="desc">Model adds unnecessary disclaimers and hedging to everything: "As an AI, I must note that the color of the sky is generally considered blue, though views may vary..."</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Goodhart's Law is the fundamental challenge of RLHF: you're optimizing a proxy (reward model) rather than the true objective (human satisfaction). The better your optimizer (PPO), the more aggressively it exploits the proxy's flaws.</div>
+  </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3 style="color: #ff6b6b;">Common Mistakes: Reward Hacking</h3>
+    <ul style="list-style:none; padding:0;">
+      <li style="margin-bottom:8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Using a single reward model without checking for gaming. <strong style="color:#4ecdc4;">Fix:</strong> Use multiple reward models (ensemble) or periodic human spot-checks. If reward goes up but outputs look worse, you're being hacked.</li>
+      <li style="margin-bottom:8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Training RLHF for too many steps based on reward score alone. <strong style="color:#4ecdc4;">Fix:</strong> Early stopping based on human evaluation, not reward score. The optimal checkpoint is often early in training.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 10.7: FULL PIPELINE -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz107">
+  <h2>10.7 The Full RLHF Pipeline</h2>
+  <p class="subtitle">See the complete journey from pretrained model to aligned model. Every stage builds on the previous one.</p>
+  <div class="viz-canvas">
+    <canvas id="pipelineCanvas" width="900" height="500"></canvas>
+  </div>
+  <div class="controls">
+    <button class="btn" onclick="animatePipeline()">Animate Pipeline</button>
+    <button class="btn" onclick="resetPipeline()">Reset</button>
+  </div>
+  <div class="insight-box">
+    <strong>The Complete Pipeline:</strong>
+    <div class="key-point">
+      <span class="label">Stage 1 &mdash; Pretrain:</span>
+      <span class="desc">Train a large LM on internet text. Next-token prediction. Massive compute (thousands of GPUs, weeks). <span style="color:#01a3a4;">&#128206; Ch 6</span></span>
+    </div>
+    <div class="key-point">
+      <span class="label">Stage 2 &mdash; SFT:</span>
+      <span class="desc">Supervised fine-tuning on high-quality demonstrations (human-written ideal responses). Small dataset (~10k-100k examples), 1-3 epochs, LR 1e-5.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Stage 3 &mdash; RM Training:</span>
+      <span class="desc">Train a reward model on human preference data (50k-200k pairs). Same architecture as policy or smaller.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Stage 4 &mdash; PPO/DPO:</span>
+      <span class="desc">Optimize the SFT model against the reward signal. PPO: &beta;=0.01-0.1, LR 1e-6, 1-2 epochs. DPO: &beta;=0.1-0.5, LR 5e-7.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">The SFT stage is often the most important! A good SFT model already follows instructions well. RLHF/DPO provides the "polish" &mdash; reducing harmful outputs, improving nuance, calibrating confidence.</div>
+    <div class="insight-box" style="border-left-color: #01a3a4; margin-top: 12px; padding: 12px 16px;">
+      <span style="color:#01a3a4;">&#128206; Cross-reference Ch 7 (Distillation):</span> After RLHF, the aligned model can be distilled into a smaller model that retains alignment properties. This is how many "chat" versions of open-source models are created.
+    </div>
+  </div>
+  <div class="narrative-note">
+    &#128736; <strong>Hyperparameter Guidance (Full Pipeline):</strong><br>
+    &#128161; <strong>SFT:</strong> 1-3 epochs, LR 1e-5, cosine schedule. Don't overtrain &mdash; SFT overfitting hurts downstream RLHF.<br>
+    &#128161; <strong>Reward Model:</strong> Same architecture as policy or smaller. Train for 1 epoch. Validation accuracy should be 65-75% (higher than chance but not perfect, reflecting human disagreement).<br>
+    &#128161; <strong>PPO:</strong> &beta;=0.01-0.1, LR 1e-6, 1-2 epochs over preference data. Monitor KL divergence.<br>
+    &#128161; <strong>DPO:</strong> &beta;=0.1-0.5, LR 1e-6 to 5e-7. 1-3 epochs. Watch for overfitting on small datasets.
+  </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3 style="color: #ff6b6b;">Common Mistakes: Full Pipeline</h3>
+    <ul style="list-style:none; padding:0;">
+      <li style="margin-bottom:8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Skipping the SFT stage and going directly from pretraining to RLHF. <strong style="color:#4ecdc4;">Fix:</strong> Always include SFT. Without it, the base model doesn't follow instructions, making RLHF much harder and less effective.</li>
+      <li style="margin-bottom:8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Overfitting during SFT (too many epochs on a small demonstration dataset). <strong style="color:#4ecdc4;">Fix:</strong> Use 1-3 epochs for SFT. SFT overfitting degrades downstream RLHF performance because the model memorizes demonstrations rather than learning general instruction-following.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 10.8: CONSTITUTIONAL AI & BEYOND -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz108">
+  <h2>10.8 Constitutional AI &amp; Beyond</h2>
+  <p class="subtitle">Move beyond human feedback: let the model critique and improve its own outputs, guided by a set of principles (a "constitution").</p>
+  <div class="viz-canvas">
+    <canvas id="caiCanvas" width="900" height="400"></canvas>
+  </div>
+  <div class="controls">
+    <button class="btn" onclick="animateCAI()">Animate CAI Loop</button>
+    <button class="btn" onclick="resetCAI()">Reset</button>
+  </div>
+  <div class="insight-box">
+    <strong>Key Approaches Beyond RLHF:</strong>
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title">Constitutional AI (CAI)</div>
+        <div class="opt-desc">The model critiques its own outputs against a set of principles, then revises. Self-generated preferences replace (some) human annotation. <span style="color:#f368e0;">&#128206; Relies on the transformer's in-context reasoning from Ch 6.</span></div>
+      </div>
+      <div class="option">
+        <div class="opt-title">RLAIF (AI Feedback)</div>
+        <div class="opt-desc">Use a strong AI model (e.g., GPT-4) to provide preference labels instead of humans. Much cheaper and faster, though introduces the labeler model's biases.</div>
+      </div>
+    </div>
+    <div class="key-point">
+      <span class="label">CAI Loop:</span>
+      <span class="desc">Generate response &rarr; Critique against principles &rarr; Revise &rarr; Use revised version as the preferred completion. Repeat.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Iterative RLHF:</span>
+      <span class="desc">Run RLHF, deploy, collect new preferences on the improved model, train again. Each iteration improves the data distribution and the model.</span>
+    </div>
+    <hr class="divider">
+    <div class="mnemonic">RLHF = humans judge. RLAIF = AI judges. CAI = the model judges itself against rules. All aim for the same goal: align the model with human values.</div>
+    <div class="insight-box" style="border-left-color: #01a3a4; margin-top: 12px; padding: 12px 16px;">
+      <span style="color:#01a3a4;">&#128206; Cross-reference Ch 6 (Transformer):</span> Constitutional AI leverages the transformer's ability to follow instructions and reason in-context. The model must understand "critique this response for harmfulness" &mdash; which requires the deep language understanding built during pretraining.
+    </div>
+  </div>
+</div>
+
+</div> <!-- end container -->
+
+<!-- ============================================================ -->
+<!-- QUIZ SECTION -->
+<!-- ============================================================ -->
+<div id="quizSection" style="display:none">
+<div class="quiz-container">
+  <h2 style="text-align:center;color:#f368e0;margin-bottom:10px;font-size:1.8em;">RLHF &amp; Alignment Quiz</h2>
+  <p style="text-align:center;color:#888;margin-bottom:20px;">32 questions across 8 topics &bull; Click answers to reveal explanations</p>
+  <div class="quiz-progress"><div class="quiz-progress-bar" id="quizProgressBar" style="width:0%"></div></div>
+  <div class="quiz-score">Score: <span id="quizScore">0</span> / <span id="quizTotal">32</span></div>
+  <div class="quiz-actions">
+    <button onclick="resetQuiz()">&#8634; Reset All</button>
+    <button onclick="toggleQuiz()">&#10005; Hide Quiz</button>
+  </div>
+  <div id="quizQuestions"></div>
+</div>
+</div>
+
+<div style="text-align:center; padding:40px; color:#555; font-size:0.85em; border-top:1px solid #1a1a2e;">
+  Chapter 10: RLHF &amp; Alignment from Scratch &bull; <a href="../index.html" style="color:#f368e0; text-decoration:none;">From Scratch Series</a>
+</div>
+
+<script>
+// ============================================================
+// UTILITY FUNCTIONS
+// ============================================================
+function seededRandom(seed) {
+  let s = seed;
+  return function() {
+    s = (s * 16807 + 0) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
+}
+var rng = seededRandom(42);
+
+function sigmoid(x) { return 1 / (1 + Math.exp(-x)); }
+
+function scrollToViz(id) {
+  var el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Minimap scroll tracking
+var vizIds = ['viz101','viz102','viz103','viz104','viz105','viz106','viz107','viz108'];
+window.addEventListener('scroll', function() {
+  var scrollY = window.scrollY + 100;
+  var current = vizIds[0];
+  for (var i = 0; i < vizIds.length; i++) {
+    var el = document.getElementById(vizIds[i]);
+    if (el && el.offsetTop <= scrollY) current = vizIds[i];
+  }
+  var steps = document.querySelectorAll('.mm-step');
+  steps.forEach(function(s) {
+    s.classList.remove('active', 'done');
+    var sec = s.getAttribute('data-section');
+    if (sec === current) s.classList.add('active');
+    else if (vizIds.indexOf(sec) < vizIds.indexOf(current)) s.classList.add('done');
+  });
+});
+
+// Canvas helper: rounded rect
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function drawArrow(ctx, x1, y1, x2, y2, color) {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+  var angle = Math.atan2(y2 - y1, x2 - x1);
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - 8 * Math.cos(angle - 0.4), y2 - 8 * Math.sin(angle - 0.4));
+  ctx.lineTo(x2 - 8 * Math.cos(angle + 0.4), y2 - 8 * Math.sin(angle + 0.4));
+  ctx.fill();
+}
+
+// ============================================================
+// 10.1 THE ALIGNMENT PROBLEM
+// ============================================================
+function drawAlignment() {
+  var canvas = document.getElementById('alignCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  var rng1 = seededRandom(Date.now());
+
+  // Prompt
+  var prompt = "How to pick a lock?";
+  ctx.fillStyle = '#f368e0';
+  ctx.font = 'bold 16px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Prompt: "' + prompt + '"', W / 2, 35);
+
+  ctx.fillStyle = '#888';
+  ctx.font = '13px Inter, sans-serif';
+  ctx.fillText('Base LM generates multiple completions with roughly equal probability:', W / 2, 60);
+
+  // Three completions
+  var completions = [
+    {
+      text: "Step 1: Insert a tension wrench into the\nbottom of the keyhole. Step 2: Insert\na pick into the top. Step 3: Feel for\nthe pins and push them up one by one...",
+      label: "Detailed harmful instructions",
+      color: '#e74c3c',
+      safety: 'HARMFUL'
+    },
+    {
+      text: "Lockpicking is a skill used by locksmiths.\nYou can learn basics with a practice lock\nset from Amazon. Here are some general\nprinciples of how pin tumbler locks work...",
+      label: "Educational but borderline",
+      color: '#ffd93d',
+      safety: 'BORDERLINE'
+    },
+    {
+      text: "I'd recommend contacting a licensed\nlocksmith if you're locked out. They\nhave proper tools and training. If you\nneed help with lock security, I can\nexplain how locks work conceptually.",
+      label: "Helpful and safe",
+      color: '#2ecc71',
+      safety: 'SAFE'
+    }
+  ];
+
+  var boxW = 250, boxH = 180, gap = 30;
+  var startX = (W - 3 * boxW - 2 * gap) / 2;
+  var startY = 80;
+
+  completions.forEach(function(comp, i) {
+    var x = startX + i * (boxW + gap);
+    var y = startY;
+
+    // Box
+    roundRect(ctx, x, y, boxW, boxH, 10);
+    ctx.fillStyle = '#0d0d1a';
+    ctx.fill();
+    ctx.strokeStyle = comp.color + '88';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Safety badge
+    roundRect(ctx, x + boxW - 90, y + 6, 80, 22, 6);
+    ctx.fillStyle = comp.color + '33';
+    ctx.fill();
+    ctx.fillStyle = comp.color;
+    ctx.font = 'bold 10px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(comp.safety, x + boxW - 50, y + 21);
+
+    // Text
+    ctx.fillStyle = '#ccc';
+    ctx.font = '11px Consolas, monospace';
+    ctx.textAlign = 'left';
+    var lines = comp.text.split('\n');
+    lines.forEach(function(line, li) {
+      ctx.fillText(line, x + 12, y + 42 + li * 16);
+    });
+
+    // Label
+    ctx.fillStyle = comp.color;
+    ctx.font = '12px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(comp.label, x + boxW / 2, y + boxH + 18);
+
+    // Probability bar
+    var prob = 0.28 + rng1() * 0.1;
+    var barW = boxW - 24;
+    var barY = y + boxH - 30;
+    ctx.fillStyle = '#1a1a2e';
+    roundRect(ctx, x + 12, barY, barW, 16, 4);
+    ctx.fill();
+    ctx.fillStyle = comp.color + '66';
+    roundRect(ctx, x + 12, barY, barW * prob, 16, 4);
+    ctx.fill();
+    ctx.fillStyle = '#aaa';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('P = ' + prob.toFixed(2), x + boxW / 2, barY + 12);
+  });
+
+  // Bottom message
+  ctx.fillStyle = '#ff6b6b';
+  ctx.font = 'bold 14px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('The base model has NO preference between these!', W / 2, startY + boxH + 55);
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.fillText('All three are equally valid "next tokens" from the pretraining objective.', W / 2, startY + boxH + 75);
+
+  // Arrow from "no preference" to RLHF
+  ctx.fillStyle = '#f368e0';
+  ctx.font = 'bold 13px Inter, sans-serif';
+  ctx.fillText('RLHF teaches the model to prefer the safe completion', W / 2, startY + boxH + 105);
+  drawArrow(ctx, W / 2 - 120, startY + boxH + 85, W / 2 - 120, startY + boxH + 95, '#f368e0');
+}
+
+// ============================================================
+// 10.2 PREFERENCE DATA
+// ============================================================
+var prefPairs = [
+  {
+    prompt: "Explain quantum computing",
+    a: "Quantum computing uses qubits that can be 0 and 1 simultaneously through superposition, enabling parallel computation.",
+    b: "Quantum computing is basically magic. Nobody really understands it. It's just faster computers.",
+    better: 'a'
+  },
+  {
+    prompt: "Write a poem about rain",
+    a: "rain rain go away\ncome again another day\nrain rain go away",
+    b: "Silver threads descend from grey,\nDrumming softly on the clay.\nEach drop a whispered lullaby\nFrom clouds that drift across the sky.",
+    better: 'b'
+  },
+  {
+    prompt: "How do I lose weight?",
+    a: "Just stop eating. Starving yourself is the fastest way to lose weight quickly.",
+    b: "Sustainable weight loss combines a moderate caloric deficit (300-500 cal/day), regular exercise, and consistent sleep. Consult a doctor before major changes.",
+    better: 'b'
+  },
+  {
+    prompt: "Tell me about the moon landing",
+    a: "The Apollo 11 mission landed on the Moon on July 20, 1969. Neil Armstrong and Buzz Aldrin walked on the surface while Michael Collins orbited above.",
+    b: "Many people believe the moon landing was faked by NASA in a Hollywood studio. The evidence is quite compelling if you look into it.",
+    better: 'a'
+  },
+  {
+    prompt: "How to make a cake?",
+    a: "Mix flour, sugar, eggs, and butter. Bake at some temperature for a while. It should be fine.",
+    b: "Preheat oven to 350F. Combine 2c flour, 1.5c sugar, 3 eggs, 1c butter. Mix wet/dry separately, fold together. Bake 30min. Test with toothpick.",
+    better: 'b'
+  },
+  {
+    prompt: "What is machine learning?",
+    a: "ML is a subset of AI where models learn patterns from data instead of being explicitly programmed. Key types: supervised, unsupervised, reinforcement learning.",
+    b: "Machine learning is when computers become sentient and learn to think like humans. Soon they'll take over all jobs.",
+    better: 'a'
+  }
+];
+
+var prefState = { collected: [], currentIdx: 0 };
+
+function renderPreferences() {
+  var area = document.getElementById('prefArea');
+  var html = '';
+
+  // Show collected preferences
+  if (prefState.collected.length > 0) {
+    html += '<div style="margin-bottom:16px;">';
+    html += '<div style="color:#f368e0; font-weight:600; margin-bottom:8px;">Collected Preferences:</div>';
+    html += '<div style="display:flex; flex-wrap:wrap; gap:8px;">';
+    prefState.collected.forEach(function(p, i) {
+      html += '<div style="background:#1a1a3e; border:1px solid #f368e044; border-radius:8px; padding:8px 12px; font-size:0.8em;">';
+      html += '<span style="color:#888;">' + p.prompt.substring(0, 25) + '...</span> ';
+      html += '<span style="color:#2ecc71;">Chosen: ' + p.chosenLabel + '</span>';
+      html += '</div>';
+    });
+    html += '</div></div>';
+  }
+
+  // Show current pair
+  if (prefState.currentIdx < prefPairs.length) {
+    var pair = prefPairs[prefState.currentIdx];
+    html += '<div style="color:#aaa; font-size:0.9em; margin-bottom:12px;">Pair ' + (prefState.currentIdx + 1) + ' of ' + prefPairs.length + ': Click the better completion</div>';
+    html += '<div style="background:#0d0d2a; border:1px solid #3a3a6a; border-radius:8px; padding:12px 16px; margin-bottom:12px;">';
+    html += '<span style="color:#f368e0; font-weight:600;">Prompt:</span> <span style="color:#e0e0e0;">"' + pair.prompt + '"</span>';
+    html += '</div>';
+
+    html += '<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">';
+
+    // Completion A
+    html += '<div id="prefOptA" onclick="selectPreference(\'a\')" style="background:#12121f; border:2px solid #2a2a4a; border-radius:10px; padding:16px; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.borderColor=\'#f368e0\'" onmouseout="this.style.borderColor=\'#2a2a4a\'">';
+    html += '<div style="color:#f368e0; font-weight:600; margin-bottom:8px;">Completion A</div>';
+    html += '<div style="color:#ccc; font-size:0.9em; line-height:1.6; white-space:pre-wrap;">' + pair.a + '</div>';
+    html += '</div>';
+
+    // Completion B
+    html += '<div id="prefOptB" onclick="selectPreference(\'b\')" style="background:#12121f; border:2px solid #2a2a4a; border-radius:10px; padding:16px; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.borderColor=\'#f368e0\'" onmouseout="this.style.borderColor=\'#2a2a4a\'">';
+    html += '<div style="color:#f368e0; font-weight:600; margin-bottom:8px;">Completion B</div>';
+    html += '<div style="color:#ccc; font-size:0.9em; line-height:1.6; white-space:pre-wrap;">' + pair.b + '</div>';
+    html += '</div>';
+
+    html += '</div>';
+  } else {
+    html += '<div style="text-align:center; padding:30px; color:#2ecc71; font-size:1.1em;">';
+    html += 'All preferences collected! You built a dataset of ' + prefState.collected.length + ' (prompt, chosen, rejected) triples.';
+    html += '<br><span style="color:#888; font-size:0.85em;">This dataset can now train a reward model (Section 10.3).</span>';
+    html += '</div>';
+  }
+
+  area.innerHTML = html;
+  document.getElementById('prefCount').textContent = prefState.collected.length + ' / ' + prefPairs.length + ' preferences collected';
+}
+
+function selectPreference(choice) {
+  if (prefState.currentIdx >= prefPairs.length) return;
+  var pair = prefPairs[prefState.currentIdx];
+  prefState.collected.push({
+    prompt: pair.prompt,
+    chosen: choice === 'a' ? pair.a : pair.b,
+    rejected: choice === 'a' ? pair.b : pair.a,
+    chosenLabel: choice.toUpperCase(),
+    correct: choice === pair.better
+  });
+  prefState.currentIdx++;
+  renderPreferences();
+}
+
+function resetPreferences() {
+  prefState = { collected: [], currentIdx: 0 };
+  renderPreferences();
+}
+
+// ============================================================
+// 10.3 REWARD MODEL
+// ============================================================
+var rmState = {
+  epoch: 0,
+  losses: [],
+  scores: [],
+  flipped: false,
+  training: false
+};
+
+var rmPairs = [
+  { prompt: "Capital of France?", chosen: "Paris is the capital of France.", rejected: "I think it's London or something.", chosenScore: 0, rejectedScore: 0 },
+  { prompt: "Is the earth flat?", chosen: "No, the Earth is an oblate spheroid, confirmed by centuries of evidence.", rejected: "Yes, many people believe the earth is flat and there's good evidence for it.", chosenScore: 0, rejectedScore: 0 },
+  { prompt: "How to be happy?", chosen: "Research suggests regular exercise, social connections, gratitude practice, and adequate sleep contribute to well-being.", rejected: "Just buy more stuff. Money is the only path to happiness.", chosenScore: 0, rejectedScore: 0 },
+  { prompt: "Explain gravity", chosen: "Gravity is a fundamental force where objects with mass attract each other. Einstein described it as curvature of spacetime.", rejected: "Gravity doesn't exist. Things fall because of density, not gravity. It's a myth.", chosenScore: 0, rejectedScore: 0 },
+  { prompt: "Best programming language?", chosen: "It depends on the task: Python for ML/scripting, Rust for performance, JavaScript for web. No single 'best' language.", rejected: "ONLY use Java for everything. All other languages are worthless and their users are dumb.", chosenScore: 0, rejectedScore: 0 }
+];
+
+function drawRewardModel() {
+  var canvas = document.getElementById('rewardCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  // Title
+  ctx.fillStyle = '#f368e0';
+  ctx.font = 'bold 14px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Reward Model Training' + (rmState.flipped ? ' [LABELS FLIPPED!]' : ''), 20, 25);
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.fillText('Epoch: ' + rmState.epoch, 20, 45);
+
+  // Left side: loss curve
+  var lx = 20, ly = 60, lw = 350, lh = 180;
+  ctx.strokeStyle = '#2a2a4a';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(lx, ly); ctx.lineTo(lx, ly + lh); ctx.lineTo(lx + lw, ly + lh);
+  ctx.stroke();
+
+  ctx.fillStyle = '#666';
+  ctx.font = '10px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Epoch', lx + lw / 2, ly + lh + 18);
+  ctx.save();
+  ctx.translate(lx - 8, ly + lh / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('Loss', 0, 0);
+  ctx.restore();
+
+  // Y ticks
+  for (var i = 0; i <= 4; i++) {
+    var yy = ly + lh - (i / 4) * lh;
+    ctx.fillStyle = '#444';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText((i * 0.5).toFixed(1), lx - 4, yy + 3);
+    ctx.strokeStyle = '#1a1a2a';
+    ctx.beginPath(); ctx.moveTo(lx, yy); ctx.lineTo(lx + lw, yy); ctx.stroke();
+  }
+
+  // Loss curve
+  if (rmState.losses.length > 1) {
+    ctx.strokeStyle = '#f368e0';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (var i = 0; i < rmState.losses.length; i++) {
+      var xx = lx + (i / 100) * lw;
+      var yy = ly + lh - (rmState.losses[i] / 2) * lh;
+      yy = Math.max(ly, Math.min(ly + lh, yy));
+      if (i === 0) ctx.moveTo(xx, yy); else ctx.lineTo(xx, yy);
+    }
+    ctx.stroke();
+  }
+
+  // Right side: reward scores
+  var rx = 420, ry = 60, rw = 460, rh = 400;
+  ctx.fillStyle = '#aaa';
+  ctx.font = 'bold 12px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Reward Scores (chosen vs rejected)', rx, ry - 5);
+
+  rmPairs.forEach(function(pair, i) {
+    var py = ry + 10 + i * 78;
+    var maxBarW = 180;
+
+    // Prompt
+    ctx.fillStyle = '#888';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(pair.prompt, rx, py + 12);
+
+    // Chosen bar
+    var chosenW = Math.max(4, Math.abs(pair.chosenScore) / 3 * maxBarW);
+    ctx.fillStyle = '#2ecc7144';
+    roundRect(ctx, rx, py + 20, chosenW, 16, 4);
+    ctx.fill();
+    ctx.strokeStyle = '#2ecc71';
+    ctx.lineWidth = 1;
+    roundRect(ctx, rx, py + 20, chosenW, 16, 4);
+    ctx.stroke();
+    ctx.fillStyle = '#2ecc71';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('chosen: ' + pair.chosenScore.toFixed(2), rx + chosenW + 6, py + 33);
+
+    // Rejected bar
+    var rejectedW = Math.max(4, Math.abs(pair.rejectedScore) / 3 * maxBarW);
+    ctx.fillStyle = '#e74c3c44';
+    roundRect(ctx, rx, py + 40, rejectedW, 16, 4);
+    ctx.fill();
+    ctx.strokeStyle = '#e74c3c';
+    ctx.lineWidth = 1;
+    roundRect(ctx, rx, py + 40, rejectedW, 16, 4);
+    ctx.stroke();
+    ctx.fillStyle = '#e74c3c';
+    ctx.font = '10px monospace';
+    ctx.fillText('rejected: ' + pair.rejectedScore.toFixed(2), rx + rejectedW + 6, py + 53);
+
+    // Margin
+    var margin = pair.chosenScore - pair.rejectedScore;
+    var mColor = margin > 0 ? '#2ecc71' : '#e74c3c';
+    ctx.fillStyle = mColor;
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText('margin: ' + (margin > 0 ? '+' : '') + margin.toFixed(2), rx + maxBarW + 100, py + 43);
+  });
+}
+
+var rmAnimId = null;
+function trainRewardModel() {
+  if (rmState.training) return;
+  rmState.training = true;
+  var maxEpochs = 80;
+  var rng2 = seededRandom(rmState.flipped ? 999 : 42);
+
+  function step() {
+    if (rmState.epoch >= maxEpochs) {
+      rmState.training = false;
+      return;
+    }
+    rmState.epoch++;
+
+    // Simulate loss decreasing
+    var baseLoss = 0.69 * Math.exp(-rmState.epoch * 0.05) + 0.05;
+    var noise = (rng2() - 0.5) * 0.04;
+    rmState.losses.push(Math.max(0.02, baseLoss + noise));
+
+    // Update reward scores
+    rmPairs.forEach(function(pair, i) {
+      var rng3 = seededRandom(rmState.epoch * 100 + i);
+      var progress = 1 - Math.exp(-rmState.epoch * 0.06);
+      if (rmState.flipped) {
+        pair.chosenScore = -2.0 * progress + rng3() * 0.3;
+        pair.rejectedScore = 2.0 * progress + rng3() * 0.3;
+      } else {
+        pair.chosenScore = 2.0 * progress + rng3() * 0.3;
+        pair.rejectedScore = -1.5 * progress + rng3() * 0.3;
+      }
+    });
+
+    drawRewardModel();
+    rmAnimId = requestAnimationFrame(step);
+  }
+  step();
+}
+
+function resetRewardModel() {
+  rmState.training = false;
+  if (rmAnimId) cancelAnimationFrame(rmAnimId);
+  rmState.epoch = 0;
+  rmState.losses = [];
+  rmPairs.forEach(function(p) { p.chosenScore = 0; p.rejectedScore = 0; });
+  drawRewardModel();
+}
+
+function toggleBreakFlip() {
+  rmState.flipped = !rmState.flipped;
+  var btn = document.getElementById('breakFlipLabels');
+  btn.classList.toggle('broken');
+  document.getElementById('breakFlipMsg').style.display = rmState.flipped ? 'block' : 'none';
+  resetRewardModel();
+}
+
+// ============================================================
+// 10.4 PPO
+// ============================================================
+var ppoState = {
+  epoch: 0,
+  rewards: [],
+  kls: [],
+  qualities: [],
+  beta: 0.1,
+  noKL: false,
+  highKL: false,
+  training: false
+};
+
+function updateBeta() {
+  var val = parseInt(document.getElementById('betaSlider').value);
+  ppoState.beta = val / 100;
+  document.getElementById('betaVal').textContent = ppoState.beta.toFixed(2);
+}
+
+function drawPPO() {
+  var canvas = document.getElementById('ppoCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  // Title
+  ctx.fillStyle = '#f368e0';
+  ctx.font = 'bold 14px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  var titleSuffix = ppoState.noKL ? ' [NO KL PENALTY!]' : ppoState.highKL ? ' [EXTREME KL!]' : '';
+  ctx.fillText('PPO Training Loop' + titleSuffix, 20, 25);
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.fillText('Step: ' + ppoState.epoch + '  |  beta = ' + ppoState.beta.toFixed(2), 20, 45);
+
+  // Layout: two charts
+  var chartW = 380, chartH = 180;
+
+  // Left chart: Reward
+  var lx = 40, ly = 70;
+  ctx.strokeStyle = '#2a2a4a'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(lx, ly + chartH); ctx.lineTo(lx + chartW, ly + chartH); ctx.stroke();
+  ctx.fillStyle = '#aaa'; ctx.font = 'bold 11px Inter, sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('Reward Score', lx, ly - 8);
+
+  for (var i = 0; i <= 4; i++) {
+    var yy = ly + chartH - (i / 4) * chartH;
+    ctx.fillStyle = '#444'; ctx.font = '9px monospace'; ctx.textAlign = 'right';
+    ctx.fillText((i * 2.5).toFixed(1), lx - 4, yy + 3);
+    ctx.strokeStyle = '#1a1a2a'; ctx.beginPath(); ctx.moveTo(lx, yy); ctx.lineTo(lx + chartW, yy); ctx.stroke();
+  }
+
+  if (ppoState.rewards.length > 1) {
+    ctx.strokeStyle = '#2ecc71'; ctx.lineWidth = 2; ctx.beginPath();
+    for (var i = 0; i < ppoState.rewards.length; i++) {
+      var xx = lx + (i / 200) * chartW;
+      var yy = ly + chartH - (ppoState.rewards[i] / 10) * chartH;
+      yy = Math.max(ly, Math.min(ly + chartH, yy));
+      if (i === 0) ctx.moveTo(xx, yy); else ctx.lineTo(xx, yy);
+    }
+    ctx.stroke();
+  }
+
+  // Right chart: KL Divergence
+  var rx = 490;
+  ctx.strokeStyle = '#2a2a4a'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(rx, ly); ctx.lineTo(rx, ly + chartH); ctx.lineTo(rx + chartW, ly + chartH); ctx.stroke();
+  ctx.fillStyle = '#aaa'; ctx.font = 'bold 11px Inter, sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('KL Divergence from Reference', rx, ly - 8);
+
+  for (var i = 0; i <= 4; i++) {
+    var yy = ly + chartH - (i / 4) * chartH;
+    ctx.fillStyle = '#444'; ctx.font = '9px monospace'; ctx.textAlign = 'right';
+    ctx.fillText((i * 5).toFixed(0), rx - 4, yy + 3);
+    ctx.strokeStyle = '#1a1a2a'; ctx.beginPath(); ctx.moveTo(rx, yy); ctx.lineTo(rx + chartW, yy); ctx.stroke();
+  }
+
+  if (ppoState.kls.length > 1) {
+    ctx.strokeStyle = '#ff6b6b'; ctx.lineWidth = 2; ctx.beginPath();
+    for (var i = 0; i < ppoState.kls.length; i++) {
+      var xx = rx + (i / 200) * chartW;
+      var yy = ly + chartH - (ppoState.kls[i] / 20) * chartH;
+      yy = Math.max(ly, Math.min(ly + chartH, yy));
+      if (i === 0) ctx.moveTo(xx, yy); else ctx.lineTo(xx, yy);
+    }
+    ctx.stroke();
+  }
+
+  // Bottom: PPO loop diagram
+  var by = 290;
+  ctx.fillStyle = '#aaa'; ctx.font = 'bold 12px Inter, sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('PPO Training Loop', W / 2, by);
+
+  var steps = [
+    { label: 'Policy\ngenerates', x: 120, color: '#f368e0' },
+    { label: 'Reward model\nscores', x: 310, color: '#ffd93d' },
+    { label: 'Compute\nadvantage', x: 500, color: '#4ecdc4' },
+    { label: 'PPO update\n(clipped)', x: 690, color: '#2ecc71' }
+  ];
+
+  var stepW = 130, stepH = 50;
+  var stepY = by + 15;
+
+  steps.forEach(function(s, i) {
+    roundRect(ctx, s.x - stepW / 2, stepY, stepW, stepH, 8);
+    ctx.fillStyle = '#12121f'; ctx.fill();
+    ctx.strokeStyle = s.color; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = s.color; ctx.font = '11px Inter, sans-serif'; ctx.textAlign = 'center';
+    var lines = s.label.split('\n');
+    lines.forEach(function(l, li) {
+      ctx.fillText(l, s.x, stepY + 22 + li * 14);
+    });
+
+    if (i < steps.length - 1) {
+      drawArrow(ctx, s.x + stepW / 2 + 4, stepY + stepH / 2, steps[i + 1].x - stepW / 2 - 4, stepY + stepH / 2, '#3a3a6a');
+    }
+  });
+
+  // KL penalty annotation
+  var klY = stepY + stepH + 25;
+  roundRect(ctx, W / 2 - 100, klY, 200, 35, 8);
+  ctx.fillStyle = '#1a1a2e'; ctx.fill();
+  ctx.strokeStyle = '#ff6b6b88'; ctx.lineWidth = 1; ctx.stroke();
+  ctx.fillStyle = '#ff6b6b'; ctx.font = '11px Inter, sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('KL Penalty: beta = ' + ppoState.beta.toFixed(2), W / 2, klY + 21);
+  drawArrow(ctx, W / 2, klY, W / 2, stepY + stepH + 2, '#ff6b6b44');
+
+  // Loop arrow (back from last to first)
+  ctx.strokeStyle = '#3a3a6a'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(steps[3].x + stepW / 2, stepY + stepH);
+  ctx.lineTo(steps[3].x + stepW / 2 + 20, stepY + stepH + 45);
+  ctx.lineTo(steps[0].x - stepW / 2 - 20, stepY + stepH + 45);
+  ctx.lineTo(steps[0].x - stepW / 2, stepY + stepH);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#666'; ctx.font = '10px Inter, sans-serif';
+  ctx.fillText('repeat', W / 2, stepY + stepH + 58);
+
+  // Quality indicator
+  if (ppoState.qualities.length > 0) {
+    var lastQ = ppoState.qualities[ppoState.qualities.length - 1];
+    var qColor = lastQ > 5 ? '#2ecc71' : lastQ > 2 ? '#ffd93d' : '#e74c3c';
+    ctx.fillStyle = qColor;
+    ctx.font = 'bold 13px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Output Quality: ' + lastQ.toFixed(1) + ' / 10', W / 2, H - 15);
+  }
+}
+
+var ppoAnimId = null;
+function trainPPO() {
+  if (ppoState.training) return;
+  ppoState.training = true;
+  var maxSteps = 200;
+  var rng4 = seededRandom(77);
+
+  function step() {
+    if (ppoState.epoch >= maxSteps) { ppoState.training = false; return; }
+    ppoState.epoch++;
+    var t = ppoState.epoch;
+    var beta = ppoState.beta;
+
+    // Simulate reward trajectory
+    var baseReward, kl, quality;
+    if (ppoState.noKL) {
+      // No KL: reward shoots up, but it's degenerate
+      baseReward = 8 * (1 - Math.exp(-t * 0.03)) + rng4() * 0.5;
+      kl = 15 * (1 - Math.exp(-t * 0.02)) + rng4() * 0.5;
+      quality = Math.max(0, 7 * (1 - Math.exp(-t * 0.05)) - (t > 50 ? (t - 50) * 0.06 : 0));
+    } else if (ppoState.highKL) {
+      // High KL: barely any change
+      baseReward = 0.5 * (1 - Math.exp(-t * 0.005)) + rng4() * 0.1;
+      kl = 0.2 * (1 - Math.exp(-t * 0.01)) + rng4() * 0.05;
+      quality = 3 + 0.3 * (1 - Math.exp(-t * 0.005));
+    } else {
+      // Normal training
+      var klTarget = 6;
+      baseReward = 5 * (1 - Math.exp(-t * 0.02)) + rng4() * 0.3;
+      kl = klTarget * (1 - Math.exp(-t * 0.015)) + rng4() * 0.3;
+      quality = Math.min(8.5, 3 + 5 * (1 - Math.exp(-t * 0.015)));
+    }
+
+    ppoState.rewards.push(baseReward);
+    ppoState.kls.push(kl);
+    ppoState.qualities.push(quality);
+
+    drawPPO();
+    ppoAnimId = setTimeout(step, 30);
+  }
+  step();
+}
+
+function resetPPO() {
+  ppoState.training = false;
+  if (ppoAnimId) clearTimeout(ppoAnimId);
+  ppoState.epoch = 0;
+  ppoState.rewards = [];
+  ppoState.kls = [];
+  ppoState.qualities = [];
+  drawPPO();
+}
+
+function toggleBreakNoKL() {
+  ppoState.noKL = !ppoState.noKL;
+  if (ppoState.noKL) ppoState.highKL = false;
+  document.getElementById('breakNoKL').classList.toggle('broken', ppoState.noKL);
+  document.getElementById('breakHighKL').classList.remove('broken');
+  document.getElementById('breakNoKLMsg').style.display = ppoState.noKL ? 'block' : 'none';
+  document.getElementById('breakHighKLMsg').style.display = 'none';
+  if (ppoState.noKL) { ppoState.beta = 0; document.getElementById('betaSlider').value = 0; document.getElementById('betaVal').textContent = '0.00'; }
+  resetPPO();
+}
+
+function toggleBreakHighKL() {
+  ppoState.highKL = !ppoState.highKL;
+  if (ppoState.highKL) ppoState.noKL = false;
+  document.getElementById('breakHighKL').classList.toggle('broken', ppoState.highKL);
+  document.getElementById('breakNoKL').classList.remove('broken');
+  document.getElementById('breakHighKLMsg').style.display = ppoState.highKL ? 'block' : 'none';
+  document.getElementById('breakNoKLMsg').style.display = 'none';
+  if (ppoState.highKL) { ppoState.beta = 10; document.getElementById('betaSlider').value = 100; document.getElementById('betaVal').textContent = '10.00'; }
+  resetPPO();
+}
+
+// ============================================================
+// 10.5 DPO
+// ============================================================
+var dpoState = { epoch: 0, margins: [], training: false, overfit: false };
+
+function drawDPO() {
+  var canvas = document.getElementById('dpoCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  // Top: pipeline comparison
+  ctx.fillStyle = '#f368e0';
+  ctx.font = 'bold 14px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('RLHF vs DPO Pipeline Comparison', 20, 25);
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.fillText('DPO Step: ' + dpoState.epoch, 20, 45);
+
+  // RLHF pipeline (top row)
+  var pipeY = 60, pipeH = 40, pipeGap = 10;
+  var rlhfStages = [
+    { label: 'SFT Model', w: 110, color: '#4ecdc4' },
+    { label: 'Collect Prefs', w: 120, color: '#ffd93d' },
+    { label: 'Train RM', w: 110, color: '#ff6b6b' },
+    { label: 'PPO Loop', w: 110, color: '#f368e0' },
+    { label: 'Aligned', w: 90, color: '#2ecc71' }
+  ];
+
+  ctx.fillStyle = '#aaa'; ctx.font = '11px Inter, sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('RLHF (PPO):', 20, pipeY + 8);
+
+  var px = 120;
+  rlhfStages.forEach(function(s, i) {
+    roundRect(ctx, px, pipeY - 12, s.w, pipeH, 6);
+    ctx.fillStyle = '#0d0d1a'; ctx.fill();
+    ctx.strokeStyle = s.color; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = s.color; ctx.font = '10px Inter, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(s.label, px + s.w / 2, pipeY + 12);
+    if (i < rlhfStages.length - 1) {
+      drawArrow(ctx, px + s.w + 2, pipeY + pipeH / 2 - 12, px + s.w + pipeGap - 2, pipeY + pipeH / 2 - 12, '#3a3a6a');
+    }
+    px += s.w + pipeGap;
+  });
+
+  // DPO pipeline (bottom row)
+  var dpoY = pipeY + 55;
+  var dpoStages = [
+    { label: 'SFT Model', w: 110, color: '#4ecdc4' },
+    { label: 'Collect Prefs', w: 120, color: '#ffd93d' },
+    { label: 'DPO Loss (1 step!)', w: 200, color: '#f368e0' },
+    { label: 'Aligned', w: 90, color: '#2ecc71' }
+  ];
+
+  ctx.fillStyle = '#aaa'; ctx.font = '11px Inter, sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('DPO:', 20, dpoY + 8);
+
+  px = 120;
+  dpoStages.forEach(function(s, i) {
+    roundRect(ctx, px, dpoY - 12, s.w, pipeH, 6);
+    ctx.fillStyle = '#0d0d1a'; ctx.fill();
+    ctx.strokeStyle = s.color; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = s.color; ctx.font = '10px Inter, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(s.label, px + s.w / 2, dpoY + 12);
+    if (i < dpoStages.length - 1) {
+      drawArrow(ctx, px + s.w + 2, dpoY + pipeH / 2 - 12, px + s.w + pipeGap - 2, dpoY + pipeH / 2 - 12, '#3a3a6a');
+    }
+    px += s.w + pipeGap;
+  });
+
+  // Highlight "no RM needed"
+  ctx.fillStyle = '#2ecc71';
+  ctx.font = 'bold 11px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('No separate reward model needed!', px + 20, dpoY + 12);
+
+  // Bottom: implicit reward margin chart
+  var cy = 180, cw = 400, ch = 180, cx = 250;
+  ctx.strokeStyle = '#2a2a4a'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx, cy + ch); ctx.lineTo(cx + cw, cy + ch); ctx.stroke();
+  ctx.fillStyle = '#aaa'; ctx.font = 'bold 11px Inter, sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('Implicit Reward Margin (chosen - rejected)', cx, cy - 8);
+
+  for (var i = 0; i <= 4; i++) {
+    var yy = cy + ch - (i / 4) * ch;
+    ctx.fillStyle = '#444'; ctx.font = '9px monospace'; ctx.textAlign = 'right';
+    ctx.fillText((i * 1.5).toFixed(1), cx - 4, yy + 3);
+  }
+
+  if (dpoState.margins.length > 1) {
+    ctx.strokeStyle = '#f368e0'; ctx.lineWidth = 2; ctx.beginPath();
+    for (var i = 0; i < dpoState.margins.length; i++) {
+      var dpoMax = dpoState.overfit ? 300 : 100;
+      var xx = cx + (i / dpoMax) * cw;
+      var yy = cy + ch - (dpoState.margins[i] / 6) * ch;
+      yy = Math.max(cy, Math.min(cy + ch, yy));
+      if (i === 0) ctx.moveTo(xx, yy); else ctx.lineTo(xx, yy);
+    }
+    ctx.stroke();
+  }
+
+  // Label
+  ctx.fillStyle = '#888'; ctx.font = '10px Inter, sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('Training Step', cx + cw / 2, cy + ch + 15);
+  if (dpoState.margins.length > 0) {
+    ctx.fillStyle = '#f368e0'; ctx.font = '12px monospace';
+    ctx.fillText('Current margin: ' + dpoState.margins[dpoState.margins.length - 1].toFixed(3), cx + cw / 2, cy + ch + 35);
+  }
+}
+
+var dpoAnimId = null;
+function trainDPO() {
+  if (dpoState.training) return;
+  dpoState.training = true;
+  var rng5 = seededRandom(55);
+
+  var maxSteps = dpoState.overfit ? 300 : 100;
+  function step() {
+    if (dpoState.epoch >= maxSteps) { dpoState.training = false; return; }
+    dpoState.epoch++;
+    var t = dpoState.epoch;
+    var margin;
+    if (dpoState.overfit) {
+      // Margin shoots up unrealistically as model memorizes training data
+      margin = 8 * (1 - Math.exp(-t * 0.02)) + rng5() * 0.1;
+    } else {
+      margin = 4.5 * (1 - Math.exp(-t * 0.04)) + rng5() * 0.15;
+    }
+    dpoState.margins.push(margin);
+    drawDPO();
+    dpoAnimId = setTimeout(step, 40);
+  }
+  step();
+}
+
+function resetDPO() {
+  dpoState.training = false;
+  if (dpoAnimId) clearTimeout(dpoAnimId);
+  dpoState.epoch = 0;
+  dpoState.margins = [];
+  drawDPO();
+}
+
+function toggleBreakDPOoverfit() {
+  dpoState.overfit = !dpoState.overfit;
+  document.getElementById('breakDPOoverfit').classList.toggle('broken', dpoState.overfit);
+  document.getElementById('breakDPOoverfitMsg').style.display = dpoState.overfit ? 'block' : 'none';
+  resetDPO();
+}
+
+// ============================================================
+// 10.6 REWARD HACKING
+// ============================================================
+var hackState = { epoch: 0, proxyRewards: [], goldRewards: [], overopt: false, training: false };
+
+function drawHacking() {
+  var canvas = document.getElementById('hackCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  ctx.fillStyle = '#f368e0';
+  ctx.font = 'bold 14px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Reward Hacking: Proxy vs Gold Reward' + (hackState.overopt ? ' [10x OVERTRAINING!]' : ''), 20, 25);
+  ctx.fillStyle = '#888'; ctx.font = '12px Inter, sans-serif';
+  ctx.fillText('Step: ' + hackState.epoch, 20, 45);
+
+  // Chart
+  var cx = 60, cy = 70, cw = 500, ch = 220;
+  ctx.strokeStyle = '#2a2a4a'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx, cy + ch); ctx.lineTo(cx + cw, cy + ch); ctx.stroke();
+
+  for (var i = 0; i <= 5; i++) {
+    var yy = cy + ch - (i / 5) * ch;
+    ctx.fillStyle = '#444'; ctx.font = '9px monospace'; ctx.textAlign = 'right';
+    ctx.fillText((i * 2).toFixed(0), cx - 6, yy + 3);
+    ctx.strokeStyle = '#1a1a2a'; ctx.beginPath(); ctx.moveTo(cx, yy); ctx.lineTo(cx + cw, yy); ctx.stroke();
+  }
+
+  ctx.fillStyle = '#666'; ctx.font = '10px Inter, sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('Training Step', cx + cw / 2, cy + ch + 20);
+
+  var maxSteps = hackState.overopt ? 500 : 200;
+
+  // Proxy reward line
+  if (hackState.proxyRewards.length > 1) {
+    ctx.strokeStyle = '#2ecc71'; ctx.lineWidth = 2; ctx.beginPath();
+    for (var i = 0; i < hackState.proxyRewards.length; i++) {
+      var xx = cx + (i / maxSteps) * cw;
+      var yy = cy + ch - (hackState.proxyRewards[i] / 10) * ch;
+      yy = Math.max(cy, Math.min(cy + ch, yy));
+      if (i === 0) ctx.moveTo(xx, yy); else ctx.lineTo(xx, yy);
+    }
+    ctx.stroke();
+  }
+
+  // Gold reward line
+  if (hackState.goldRewards.length > 1) {
+    ctx.strokeStyle = '#ffd93d'; ctx.lineWidth = 2; ctx.beginPath();
+    for (var i = 0; i < hackState.goldRewards.length; i++) {
+      var xx = cx + (i / maxSteps) * cw;
+      var yy = cy + ch - (hackState.goldRewards[i] / 10) * ch;
+      yy = Math.max(cy, Math.min(cy + ch, yy));
+      if (i === 0) ctx.moveTo(xx, yy); else ctx.lineTo(xx, yy);
+    }
+    ctx.stroke();
+  }
+
+  // Legend
+  ctx.fillStyle = '#2ecc71'; ctx.font = '12px Inter, sans-serif'; ctx.textAlign = 'left';
+  ctx.fillRect(cx + cw + 30, cy + 10, 16, 3);
+  ctx.fillText('Proxy Reward (RM score)', cx + cw + 52, cy + 16);
+  ctx.fillStyle = '#ffd93d';
+  ctx.fillRect(cx + cw + 30, cy + 35, 16, 3);
+  ctx.fillText('Gold Reward (human eval)', cx + cw + 52, cy + 41);
+
+  // Right: failure modes
+  var fx = 600, fy = 90;
+  ctx.fillStyle = '#aaa'; ctx.font = 'bold 12px Inter, sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('Common Failure Modes:', fx, fy);
+
+  var failures = [
+    { icon: 'V', label: 'Verbosity Hacking', desc: 'Longer = higher reward', color: '#e74c3c' },
+    { icon: 'S', label: 'Sycophancy', desc: 'Always agrees with user', color: '#ff6b6b' },
+    { icon: 'D', label: 'Safety Washing', desc: 'Unnecessary disclaimers', color: '#ffa07a' }
+  ];
+
+  failures.forEach(function(f, i) {
+    var yyy = fy + 20 + i * 55;
+    roundRect(ctx, fx, yyy, 270, 45, 8);
+    ctx.fillStyle = '#0d0d1a'; ctx.fill();
+    ctx.strokeStyle = f.color + '66'; ctx.lineWidth = 1; ctx.stroke();
+
+    // Icon circle
+    ctx.fillStyle = f.color + '33';
+    ctx.beginPath(); ctx.arc(fx + 22, yyy + 22, 14, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = f.color; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(f.icon, fx + 22, yyy + 27);
+
+    ctx.fillStyle = f.color; ctx.font = 'bold 11px Inter, sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText(f.label, fx + 44, yyy + 18);
+    ctx.fillStyle = '#888'; ctx.font = '10px Inter, sans-serif';
+    ctx.fillText(f.desc, fx + 44, yyy + 35);
+  });
+
+  // Optimal checkpoint annotation
+  if (hackState.goldRewards.length > 10) {
+    var bestIdx = 0, bestVal = -Infinity;
+    for (var i = 0; i < hackState.goldRewards.length; i++) {
+      if (hackState.goldRewards[i] > bestVal) { bestVal = hackState.goldRewards[i]; bestIdx = i; }
+    }
+    var bx = cx + (bestIdx / maxSteps) * cw;
+    var by = cy + ch - (bestVal / 10) * ch;
+    ctx.strokeStyle = '#ffd93d88'; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(bx, cy); ctx.lineTo(bx, cy + ch); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#ffd93d'; ctx.font = '10px Inter, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('Optimal checkpoint', bx, cy - 4);
+  }
+}
+
+var hackAnimId = null;
+function trainHacking() {
+  if (hackState.training) return;
+  hackState.training = true;
+  var maxSteps = hackState.overopt ? 500 : 200;
+  var rng6 = seededRandom(33);
+
+  function step() {
+    if (hackState.epoch >= maxSteps) { hackState.training = false; return; }
+    hackState.epoch++;
+    var t = hackState.epoch;
+
+    // Proxy always goes up
+    var proxy = 8 * (1 - Math.exp(-t * 0.01)) + rng6() * 0.3;
+    hackState.proxyRewards.push(proxy);
+
+    // Gold goes up then down (overoptimization)
+    var peak = hackState.overopt ? 80 : 120;
+    var gold;
+    if (t < peak) {
+      gold = 6 * (1 - Math.exp(-t * 0.02)) + rng6() * 0.3;
+    } else {
+      var decay = (t - peak) * (hackState.overopt ? 0.015 : 0.008);
+      gold = 6 * (1 - Math.exp(-peak * 0.02)) - decay + rng6() * 0.3;
+      gold = Math.max(0, gold);
+    }
+    hackState.goldRewards.push(gold);
+
+    drawHacking();
+    hackAnimId = setTimeout(step, hackState.overopt ? 15 : 30);
+  }
+  step();
+}
+
+function resetHacking() {
+  hackState.training = false;
+  if (hackAnimId) clearTimeout(hackAnimId);
+  hackState.epoch = 0;
+  hackState.proxyRewards = [];
+  hackState.goldRewards = [];
+  drawHacking();
+}
+
+function toggleBreakOveropt() {
+  hackState.overopt = !hackState.overopt;
+  document.getElementById('breakOveropt').classList.toggle('broken', hackState.overopt);
+  document.getElementById('breakOveroptMsg').style.display = hackState.overopt ? 'block' : 'none';
+  resetHacking();
+}
+
+// ============================================================
+// 10.7 FULL PIPELINE
+// ============================================================
+var pipelineState = { step: -1, animating: false };
+
+function drawPipeline() {
+  var canvas = document.getElementById('pipelineCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  var stages = [
+    { label: 'Pretrained LM', sub: 'Next-token prediction on internet text', params: '7B-70B params', compute: '~1000 GPU-days', color: '#4ecdc4', ref: 'Ch 6' },
+    { label: 'SFT (Supervised Fine-Tuning)', sub: 'Fine-tune on human demonstrations', params: '10k-100k examples', compute: '~10 GPU-hours', color: '#ffd93d', ref: '' },
+    { label: 'Reward Model Training', sub: 'Learn to score completions from preferences', params: '50k-200k pairs', compute: '~20 GPU-hours', color: '#ff6b6b', ref: '' },
+    { label: 'PPO / DPO Training', sub: 'Optimize policy against reward signal', params: 'beta=0.01-0.1', compute: '~50 GPU-hours', color: '#f368e0', ref: '' },
+    { label: 'Aligned Model', sub: 'Helpful, harmless, honest', params: 'Same size as base', compute: 'Ready to deploy', color: '#2ecc71', ref: 'Ch 7: can distill' }
+  ];
+
+  var boxW = 340, boxH = 65, gap = 16;
+  var startX = (W - boxW) / 2;
+  var startY = 30;
+
+  stages.forEach(function(s, i) {
+    var y = startY + i * (boxH + gap);
+    var isActive = i <= pipelineState.step;
+    var isCurrent = i === pipelineState.step;
+
+    // Box
+    roundRect(ctx, startX, y, boxW, boxH, 10);
+    ctx.fillStyle = isActive ? '#1a1a3e' : '#0d0d1a';
+    ctx.fill();
+    ctx.strokeStyle = isCurrent ? s.color : (isActive ? s.color + '88' : '#2a2a4a');
+    ctx.lineWidth = isCurrent ? 3 : 1.5;
+    ctx.stroke();
+
+    if (isCurrent) {
+      ctx.shadowColor = s.color;
+      ctx.shadowBlur = 15;
+      roundRect(ctx, startX, y, boxW, boxH, 10);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
+
+    // Label
+    ctx.fillStyle = isActive ? s.color : '#555';
+    ctx.font = 'bold 13px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(s.label, startX + boxW / 2, y + 22);
+
+    ctx.fillStyle = isActive ? '#aaa' : '#444';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.fillText(s.sub, startX + boxW / 2, y + 40);
+
+    // Right: params/compute
+    ctx.fillStyle = isActive ? '#888' : '#333';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(s.params, startX + boxW + 20, y + 22);
+    ctx.fillText(s.compute, startX + boxW + 20, y + 40);
+
+    // Left: ref
+    if (s.ref) {
+      ctx.fillStyle = '#01a3a488';
+      ctx.font = '10px Inter, sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(s.ref, startX - 12, y + 30);
+    }
+
+    // Arrow
+    if (i < stages.length - 1) {
+      var ay = y + boxH + 2;
+      ctx.fillStyle = isActive ? s.color + '88' : '#2a2a4a';
+      ctx.beginPath();
+      ctx.moveTo(startX + boxW / 2, ay);
+      ctx.lineTo(startX + boxW / 2 - 6, ay + gap - 4);
+      ctx.lineTo(startX + boxW / 2 + 6, ay + gap - 4);
+      ctx.fill();
+    }
+  });
+}
+
+var pipeAnimId = null;
+function animatePipeline() {
+  pipelineState.step = -1;
+  pipelineState.animating = true;
+  function step() {
+    pipelineState.step++;
+    drawPipeline();
+    if (pipelineState.step < 4) {
+      pipeAnimId = setTimeout(step, 800);
+    } else {
+      pipelineState.animating = false;
+    }
+  }
+  step();
+}
+
+function resetPipeline() {
+  pipelineState.animating = false;
+  if (pipeAnimId) clearTimeout(pipeAnimId);
+  pipelineState.step = -1;
+  drawPipeline();
+}
+
+// ============================================================
+// 10.8 CONSTITUTIONAL AI
+// ============================================================
+var caiState = { step: -1, animating: false };
+
+function drawCAI() {
+  var canvas = document.getElementById('caiCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  ctx.fillStyle = '#f368e0';
+  ctx.font = 'bold 14px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Constitutional AI: Self-Critique Loop', W / 2, 25);
+
+  var steps = [
+    { label: 'Generate', desc: 'Model produces initial response', icon: 'G', color: '#4ecdc4' },
+    { label: 'Critique', desc: 'Model critiques its own response\nagainst constitutional principles', icon: 'C', color: '#ffd93d' },
+    { label: 'Revise', desc: 'Model revises based on critique', icon: 'R', color: '#f368e0' },
+    { label: 'Rate', desc: 'Revised = chosen, original = rejected\nUse as preference data', icon: 'P', color: '#2ecc71' }
+  ];
+
+  var centerX = W / 2, centerY = 210, radius = 130;
+
+  steps.forEach(function(s, i) {
+    var angle = -Math.PI / 2 + (i / steps.length) * Math.PI * 2;
+    var x = centerX + radius * Math.cos(angle);
+    var y = centerY + radius * Math.sin(angle);
+
+    var isActive = i <= caiState.step;
+    var isCurrent = i === caiState.step;
+
+    // Circle node
+    ctx.beginPath();
+    ctx.arc(x, y, 40, 0, Math.PI * 2);
+    ctx.fillStyle = isActive ? s.color + '33' : '#0d0d1a';
+    ctx.fill();
+    ctx.strokeStyle = isCurrent ? s.color : (isActive ? s.color + '88' : '#2a2a4a');
+    ctx.lineWidth = isCurrent ? 3 : 1.5;
+    ctx.stroke();
+
+    if (isCurrent) {
+      ctx.shadowColor = s.color;
+      ctx.shadowBlur = 15;
+      ctx.beginPath();
+      ctx.arc(x, y, 40, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
+
+    // Icon
+    ctx.fillStyle = isActive ? s.color : '#555';
+    ctx.font = 'bold 20px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(s.icon, x, y + 7);
+
+    // Label
+    ctx.fillStyle = isActive ? s.color : '#555';
+    ctx.font = 'bold 12px Inter, sans-serif';
+    var labelOffsetY = (i === 0) ? -55 : (i === 2) ? 55 : (i === 1) ? -8 : -8;
+    var labelOffsetX = (i === 1) ? 60 : (i === 3) ? -60 : 0;
+    ctx.fillText(s.label, x + labelOffsetX, y + labelOffsetY);
+
+    // Description
+    ctx.fillStyle = isActive ? '#888' : '#333';
+    ctx.font = '10px Inter, sans-serif';
+    var descLines = s.desc.split('\n');
+    descLines.forEach(function(line, li) {
+      ctx.fillText(line, x + labelOffsetX, y + labelOffsetY + 14 + li * 13);
+    });
+
+    // Arrow to next
+    if (i < steps.length - 1) {
+      var nextAngle = -Math.PI / 2 + ((i + 1) / steps.length) * Math.PI * 2;
+      var nx = centerX + radius * Math.cos(nextAngle);
+      var ny = centerY + radius * Math.sin(nextAngle);
+      var dx = nx - x, dy = ny - y;
+      var dist = Math.sqrt(dx * dx + dy * dy);
+      var ux = dx / dist, uy = dy / dist;
+      drawArrow(ctx, x + ux * 44, y + uy * 44, nx - ux * 44, ny - uy * 44, isActive ? s.color + '88' : '#2a2a4a');
+    }
+  });
+
+  // Loop arrow from Rate back to Generate
+  var lastAngle = -Math.PI / 2 + (3 / 4) * Math.PI * 2;
+  var firstAngle = -Math.PI / 2;
+  var lx = centerX + radius * Math.cos(lastAngle);
+  var ly = centerY + radius * Math.sin(lastAngle);
+  var fx = centerX + radius * Math.cos(firstAngle);
+  var fy = centerY + radius * Math.sin(firstAngle);
+  var ldx = fx - lx, ldy = fy - ly;
+  var ldist = Math.sqrt(ldx * ldx + ldy * ldy);
+  drawArrow(ctx, lx + (ldx / ldist) * 44, ly + (ldy / ldist) * 44, fx - (ldx / ldist) * 44, fy - (ldy / ldist) * 44, caiState.step >= 3 ? '#2ecc7188' : '#2a2a4a');
+
+  // Constitution principles box
+  roundRect(ctx, 20, H - 80, W - 40, 65, 10);
+  ctx.fillStyle = '#0d0d1a'; ctx.fill();
+  ctx.strokeStyle = '#f368e044'; ctx.lineWidth = 1; ctx.stroke();
+  ctx.fillStyle = '#f368e0'; ctx.font = 'bold 11px Inter, sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('Constitution (Example Principles):', 35, H - 58);
+  ctx.fillStyle = '#aaa'; ctx.font = '10px Inter, sans-serif';
+  ctx.fillText('1. "Choose the response that is most helpful while being harmless and honest."', 35, H - 42);
+  ctx.fillText('2. "Choose the response that is least likely to be used for harmful purposes."', 35, H - 27);
+}
+
+var caiAnimId = null;
+function animateCAI() {
+  caiState.step = -1;
+  caiState.animating = true;
+  function step() {
+    caiState.step++;
+    drawCAI();
+    if (caiState.step < 3) {
+      caiAnimId = setTimeout(step, 900);
+    } else {
+      caiState.animating = false;
+    }
+  }
+  step();
+}
+
+function resetCAI() {
+  caiState.animating = false;
+  if (caiAnimId) clearTimeout(caiAnimId);
+  caiState.step = -1;
+  drawCAI();
+}
+
+// ============================================================
+// QUIZ DATA: 30 questions
+// ============================================================
+var quizData = [
+  {
+    topic: "10.1: The Alignment Problem",
+    questions: [
+      { q: "Why does a pretrained language model have no preference between helpful and harmful completions?", options: ["A) Because harmful text was removed from training data", "B) Because next-token prediction treats all text equally: it optimizes for likelihood, not safety", "C) Because the model is too small to understand harm", "D) Because safety is handled by the tokenizer"], correct: 1, explanation: "The pretraining objective is next-token prediction (cross-entropy loss). It treats all tokens equally, regardless of whether the content is helpful, harmful, or neutral. The model learns to predict what comes next in the training data, including harmful patterns." },
+      { q: "What is the core goal of alignment in the context of LLMs?", options: ["A) Making models generate faster", "B) Reducing model size", "C) Making models behave in accordance with human intentions and values", "D) Improving tokenization accuracy"], correct: 2, explanation: "Alignment means ensuring the model does what humans actually want. A capable but misaligned model that follows harmful instructions is dangerous. Alignment research focuses on making models helpful, harmless, and honest." },
+      { q: "Which of the following is NOT a reason why pretraining alone is insufficient for a safe assistant?", options: ["A) The training data contains harmful content that the model can reproduce", "B) Next-token prediction doesn't distinguish between helpful and harmful text", "C) The model has no explicit reward signal for safety", "D) The transformer architecture cannot represent safe behavior"], correct: 3, explanation: "The transformer architecture CAN represent safe behavior. The issue is that pretraining doesn't teach it to prefer safe behavior. The architecture is capable; the training objective is what lacks a safety signal." },
+      { q: "If you remove the KL penalty from PPO, what failure mode do you expect?", options: ["A) The model will stop generating text entirely", "B) Reward hacking: the model will find degenerate high-reward outputs that exploit the reward model", "C) The model will become more conservative", "D) Training will converge faster with better results"], correct: 1, explanation: "Without the KL penalty, the model is free to drift arbitrarily far from the base model. It will aggressively exploit any weakness in the reward model, producing repetitive, sycophantic, or otherwise degenerate outputs that score high on the proxy reward but are low quality." }
+    ]
+  },
+  {
+    topic: "10.2: Preference Data",
+    questions: [
+      { q: "Why are pairwise preferences more reliable than absolute ratings?", options: ["A) Pairwise comparisons require less compute", "B) Humans are more consistent at 'A is better than B' comparisons than assigning absolute scores (1-5)", "C) Absolute ratings don't work with neural networks", "D) Pairwise comparisons produce more training data"], correct: 1, explanation: "Human annotators show much higher inter-annotator agreement on pairwise comparisons (70-80%) than on absolute ratings. Different people have different internal scales for 'what is a 4/5?', but they can reliably identify which of two options is better." },
+      { q: "What does a typical preference dataset entry look like?", options: ["A) Just a prompt with a quality score", "B) A triple of (prompt, chosen_completion, rejected_completion)", "C) A single completion with a binary label", "D) A prompt with 10 completions ranked in order"], correct: 1, explanation: "The standard format is (prompt, chosen, rejected). The 'chosen' completion is the one the human annotator preferred, and the 'rejected' is the one they didn't prefer. This binary signal is used to train the reward model via the Bradley-Terry framework." },
+      { q: "Approximately how large are typical preference datasets used for RLHF?", options: ["A) 100-500 examples", "B) 1,000-5,000 examples", "C) 50,000-200,000 examples", "D) 10 million+ examples"], correct: 2, explanation: "Industrial RLHF pipelines typically use 50k-200k preference pairs. This is much smaller than pretraining datasets (trillions of tokens) but sufficient because the signal is very rich: each example provides a direct comparison." },
+      { q: "A reward model trained on English preferences is used for a multilingual model. What could go wrong?", options: ["A) Nothing, reward models generalize across languages", "B) The reward model may be unreliable for non-English outputs, producing noisy or biased reward signals that misalign the model in other languages", "C) The model will stop generating non-English text", "D) The reward model will refuse to score non-English text"], correct: 1, explanation: "A reward model trained only on English preferences has no reliable signal for other languages. It may assign arbitrary rewards to non-English completions, causing the model to be poorly aligned (or even adversely optimized) in those languages. This is a real distribution mismatch problem." }
+    ]
+  },
+  {
+    topic: "10.3: Reward Model",
+    questions: [
+      { q: "What does the Bradley-Terry model compute?", options: ["A) The absolute quality of a completion", "B) The probability that completion A is preferred over B, as sigma(r(A) - r(B))", "C) The gradient of the reward function", "D) The optimal policy directly"], correct: 1, explanation: "The Bradley-Terry model says P(A > B) = sigmoid(r(A) - r(B)). It converts the difference in scalar rewards into a preference probability. Only the difference matters, not the absolute values." },
+      { q: "What is the loss function for reward model training?", options: ["A) Mean squared error between predicted and actual rewards", "B) Cross-entropy between predicted preferences and actual preferences: L = -log(sigma(r_chosen - r_rejected))", "C) KL divergence between policy and reference", "D) The PPO clipped objective"], correct: 1, explanation: "The reward model loss is L = -log(sigma(r_chosen - r_rejected)). This pushes the reward model to assign higher scores to chosen completions and lower scores to rejected ones. It's derived from the Bradley-Terry model." },
+      { q: "Why might you use the same architecture for the reward model and the policy?", options: ["A) It's required by the math", "B) The reward model needs to understand language at the same depth as the policy to judge quality accurately", "C) It saves disk space", "D) It makes the KL penalty easier to compute"], correct: 1, explanation: "A reward model needs strong language understanding to judge completion quality. Using the same (or similar) architecture as the policy ensures it has sufficient capacity. In practice, some teams use a smaller model to save compute, but accuracy may suffer." },
+      { q: "What happens if you flip all preference labels in the training data?", options: ["A) The reward model trains normally", "B) The reward model learns to prefer harmful/low-quality completions over safe/high-quality ones", "C) Training fails to converge", "D) The model ignores the labels"], correct: 1, explanation: "Flipping labels teaches the reward model the opposite preferences: it assigns high reward to rejected (lower quality) completions and low reward to chosen (higher quality) ones. This directly demonstrates why data quality and annotation guidelines are critical." }
+    ]
+  },
+  {
+    topic: "10.4: PPO Training",
+    questions: [
+      { q: "What is the role of the KL penalty in the PPO-RLHF objective?", options: ["A) It speeds up training", "B) It prevents the policy from drifting too far from the reference model, avoiding reward hacking", "C) It replaces the reward signal", "D) It normalizes the gradients"], correct: 1, explanation: "The KL penalty term beta * KL(pi_theta || pi_ref) penalizes the policy for diverging from the pretrained/SFT model. This prevents reward hacking by keeping the model close to its original distribution, where it produces coherent, on-topic text." },
+      { q: "What are the approximate hyperparameters for PPO in RLHF?", options: ["A) LR = 1e-2, beta = 1.0", "B) LR = 1e-6, beta = 0.01-0.1", "C) LR = 1e-1, beta = 0.001", "D) LR = 1e-4, beta = 100"], correct: 1, explanation: "PPO-RLHF uses very small learning rates (1e-6 to 5e-6) because the model is already well-trained. Beta is typically 0.01-0.1, often with adaptive control to keep KL in a target range (~6 nats)." },
+      { q: "Why might DPO be preferred over PPO for smaller teams?", options: ["A) DPO produces better results in all cases", "B) DPO is simpler (no RL loop, no reward model, fewer models in memory) and more stable to train", "C) DPO uses less training data", "D) DPO doesn't require a reference model"], correct: 1, explanation: "DPO eliminates the need for a separate reward model and the complex PPO training loop. It requires only 2 models in memory (policy + reference) vs 4 for PPO (policy + reference + reward + value). This makes it much more accessible for smaller teams with limited compute." },
+      { q: "In PPO for RLHF, what does the 'clipped' objective prevent?", options: ["A) Gradient explosion", "B) Catastrophically large policy updates in a single step, which could destabilize training", "C) The model from generating long responses", "D) Overfitting to the reward model"], correct: 1, explanation: "The clipped PPO objective limits how much the policy can change in a single update by clipping the probability ratio. This prevents destructively large updates that could cause training instability or mode collapse." }
+    ]
+  },
+  {
+    topic: "10.5: DPO",
+    questions: [
+      { q: "What key insight makes DPO possible?", options: ["A) Reward models are unnecessary for alignment", "B) The optimal RLHF policy has a closed-form relationship to the reward, allowing the reward to be expressed in terms of the policy itself", "C) Human preferences can be ignored", "D) KL divergence is not needed"], correct: 1, explanation: "DPO's insight: the optimal policy under KL-constrained reward maximization is pi*(y|x) proportional to pi_ref(y|x) * exp(r(x,y)/beta). Inverting this, r(x,y) = beta * log(pi*(y|x)/pi_ref(y|x)). Substituting this into the Bradley-Terry loss gives a loss directly in terms of the policy." },
+      { q: "How many models need to be in memory simultaneously for DPO vs PPO?", options: ["A) DPO: 4, PPO: 2", "B) DPO: 2 (policy + reference), PPO: 4 (policy + reference + reward + value)", "C) Both need exactly 3 models", "D) DPO: 1, PPO: 1"], correct: 1, explanation: "DPO needs only the policy model and a frozen reference model (2 total). PPO needs the policy, reference, reward model, and value model (4 total). This 2x memory difference is a major practical advantage of DPO." },
+      { q: "What does the beta parameter control in DPO?", options: ["A) The learning rate", "B) The batch size", "C) How much the policy can diverge from the reference model (same role as in PPO)", "D) The number of training epochs"], correct: 2, explanation: "Beta in DPO plays the same role as in PPO: it controls the strength of the implicit KL constraint. Lower beta = more aggressive optimization (policy diverges more). Higher beta = more conservative (stays closer to reference)." },
+      { q: "Your RLHF model always says 'I don't know' to hard questions. What went wrong?", options: ["A) The model is too small", "B) The preference data likely over-represented cautious/refusal responses as 'chosen', teaching the model that refusing is always preferred over attempting an answer", "C) The learning rate was too low", "D) The tokenizer can't handle hard questions"], correct: 1, explanation: "If annotators consistently preferred cautious refusals over potentially incorrect answers, the model learns that saying 'I don't know' is the safest strategy. This is a form of over-alignment or over-refusal. Fix: ensure preference data includes examples where helpful (even if imperfect) answers are preferred over unhelpful refusals." }
+    ]
+  },
+  {
+    topic: "10.6: Reward Hacking",
+    questions: [
+      { q: "What is Goodhart's Law and how does it relate to RLHF?", options: ["A) A law about gradient optimization", "B) 'When a measure becomes a target, it ceases to be a good measure.' The reward model is a proxy for human preferences; optimizing it too hard exploits the proxy's flaws", "C) A law about model scaling", "D) A law about data collection"], correct: 1, explanation: "Goodhart's Law perfectly describes reward hacking: the reward model is a proxy for human judgment. When you optimize aggressively against it, the model finds patterns that score high on the proxy but don't correspond to genuine quality improvements." },
+      { q: "Which of these is NOT a common form of reward hacking?", options: ["A) Generating verbose responses to exploit length bias in the reward model", "B) Being sycophantic and agreeing with everything the user says", "C) Producing outputs with perfect grammar and factual accuracy", "D) Adding unnecessary safety disclaimers to every response"], correct: 2, explanation: "Perfect grammar and factual accuracy would be genuine quality improvements, not reward hacking. The other options (verbosity, sycophancy, safety-washing) are all cases where the model exploits superficial patterns that correlate with reward without actually improving quality." },
+      { q: "How can you detect reward hacking during RLHF training?", options: ["A) Check if the loss is decreasing", "B) Monitor the gap between proxy reward (RM score) and gold reward (human evaluation): if proxy goes up but gold plateaus or drops, you're being hacked", "C) Count the number of training steps", "D) Measure the model's parameter norm"], correct: 1, explanation: "The classic signature of reward hacking is the proxy-gold divergence: RM scores keep improving, but human evaluators rate the outputs as stagnant or declining. This is why periodic human evaluation during RLHF is essential." },
+      { q: "A model trained with RLHF starts producing extremely long responses. What is the most likely cause?", options: ["A) The model's context window expanded", "B) The reward model has a length bias: longer responses get higher scores, so the model exploits this", "C) The tokenizer changed", "D) The KL penalty is too high"], correct: 1, explanation: "Length bias is one of the most common reward model flaws. If longer responses tend to get higher human ratings (because they contain more information), the reward model learns 'longer = better' and the policy exploits this by generating unnecessarily verbose outputs." }
+    ]
+  },
+  {
+    topic: "10.7: Full Pipeline",
+    questions: [
+      { q: "What is the correct order of the RLHF pipeline?", options: ["A) Reward Model -> Pretrain -> SFT -> PPO", "B) Pretrain -> SFT -> Reward Model -> PPO/DPO", "C) SFT -> Pretrain -> PPO -> Reward Model", "D) PPO -> Pretrain -> SFT -> Reward Model"], correct: 1, explanation: "The pipeline is: 1) Pretrain on large text corpus (builds language understanding). 2) SFT on demonstrations (teaches instruction following). 3) Train reward model on preferences (learns human values). 4) PPO/DPO (optimizes toward the reward). Each stage builds on the previous." },
+      { q: "Why is the SFT stage important even though PPO/DPO will further align the model?", options: ["A) SFT is not actually important; you can skip it", "B) SFT teaches the model to follow instructions and produce assistant-like responses, giving PPO/DPO a much better starting point", "C) SFT replaces pretraining", "D) SFT reduces the model's parameter count"], correct: 1, explanation: "SFT transforms the base model from a text completer into an instruction follower. Without SFT, PPO/DPO would have to both teach instruction following AND alignment simultaneously, which is much harder. SFT provides the foundation that RLHF polishes." },
+      { q: "Approximately how much compute does RLHF require compared to pretraining?", options: ["A) 10x more than pretraining", "B) About the same as pretraining", "C) Roughly 1-5% of pretraining compute", "D) Zero compute (it's a data-only process)"], correct: 2, explanation: "RLHF (SFT + RM training + PPO) typically requires only 1-5% of the compute used for pretraining. Pretraining might take thousands of GPU-days, while the full RLHF pipeline takes tens to hundreds of GPU-hours. The leverage of RLHF is enormous relative to its cost." },
+      { q: "After RLHF, the aligned model can be distilled. What does this mean?", options: ["A) The model is compressed by removing layers", "B) A smaller model is trained to mimic the aligned model's outputs, retaining alignment properties in a cheaper-to-run model", "C) The model's weights are quantized to integers", "D) The model is retrained from scratch"], correct: 1, explanation: "Distillation (Ch 7) trains a smaller student model to match the aligned teacher's outputs. This transfers alignment properties to a model that's cheaper to deploy. Many open-source 'chat' models are created by distilling from larger aligned models." }
+    ]
+  },
+  {
+    topic: "10.8: Constitutional AI & Beyond",
+    questions: [
+      { q: "What is the key innovation of Constitutional AI (CAI)?", options: ["A) It uses a larger model", "B) It replaces human preference annotation with model self-critique guided by explicit principles (a 'constitution')", "C) It removes the need for pretraining", "D) It uses reinforcement learning from scratch"], correct: 1, explanation: "CAI's key insight: instead of collecting expensive human preferences, have the model critique its own outputs against a set of principles. The model generates, critiques ('Is this response harmful?'), and revises. The revised versions serve as the preferred completions for training." },
+      { q: "What is RLAIF and how does it differ from RLHF?", options: ["A) RLAIF uses random labels instead of human labels", "B) RLAIF uses a strong AI model to provide preference labels instead of human annotators, trading annotation quality for speed and cost", "C) RLAIF doesn't use any feedback at all", "D) RLAIF and RLHF are the same thing"], correct: 1, explanation: "RLAIF (RL from AI Feedback) replaces human annotators with an AI labeler (e.g., GPT-4). This is much cheaper and faster but introduces the labeler model's biases. Research shows RLAIF can approach RLHF quality for many tasks." },
+      { q: "In iterative RLHF, why is collecting new preferences after each round important?", options: ["A) To increase dataset size", "B) Because the model's output distribution changes after each round, and preferences on the new distribution are more informative than preferences on the old one", "C) To keep annotators employed", "D) To test different reward model architectures"], correct: 1, explanation: "After RLHF round 1, the model generates differently than before. Preferences collected on the OLD model's outputs may not be representative of the NEW model's failure modes. Iterative RLHF collects fresh preferences on the current model's outputs for each round, closing the distribution gap." },
+      { q: "What is a potential risk of using AI feedback (RLAIF) instead of human feedback?", options: ["A) AI feedback is always worse than human feedback", "B) The AI labeler's own biases, blind spots, and failure modes get amplified into the trained model", "C) AI feedback requires more compute than pretraining", "D) AI feedback only works for English"], correct: 1, explanation: "If the AI labeler has systematic biases (e.g., preferring verbose responses, being unable to detect certain types of misinformation), these biases get baked into the preference data and then amplified by RLHF training. The trained model inherits and potentially amplifies the labeler's flaws." }
+    ]
+  }
+];
+
+// ============================================================
+// QUIZ RENDERING
+// ============================================================
+var topicScores = {};
+var totalCorrect = 0;
+var totalAnswered = 0;
+var totalQ = 32;
+
+quizData.forEach(function(t, ti) { topicScores[ti] = { correct: 0, answered: 0, total: t.questions.length }; });
+
+function buildQuiz() {
+  var container = document.getElementById('quizQuestions');
+  container.innerHTML = '';
+  quizData.forEach(function(topic, ti) {
+    var topicDiv = document.createElement('div');
+    topicDiv.className = 'quiz-topic';
+    var header = document.createElement('div');
+    header.className = 'quiz-topic-header';
+    header.innerHTML = '<h3>' + topic.topic + '</h3><span class="quiz-topic-score" id="topicScore' + ti + '">0 / ' + topic.questions.length + '</span>';
+    header.onclick = function() {
+      var qDiv = topicDiv.querySelector('.quiz-topic-questions');
+      qDiv.classList.toggle('open');
+    };
+    topicDiv.appendChild(header);
+    var questionsDiv = document.createElement('div');
+    questionsDiv.className = 'quiz-topic-questions';
+
+    topic.questions.forEach(function(question, qi) {
+      var qDiv = document.createElement('div');
+      qDiv.className = 'quiz-question';
+      qDiv.innerHTML = '<h4>Q' + (qi+1) + ': ' + question.q + '</h4>';
+      question.options.forEach(function(opt, oi) {
+        var btn = document.createElement('button');
+        btn.className = 'quiz-option';
+        btn.textContent = opt;
+        btn.onclick = function() { checkAnswer(ti, qi, oi, qDiv); };
+        btn.id = 'qopt_' + ti + '_' + qi + '_' + oi;
+        qDiv.appendChild(btn);
+      });
+      var expDiv = document.createElement('div');
+      expDiv.className = 'quiz-explanation';
+      expDiv.id = 'qexp_' + ti + '_' + qi;
+      expDiv.textContent = question.explanation;
+      qDiv.appendChild(expDiv);
+      questionsDiv.appendChild(qDiv);
+    });
+    topicDiv.appendChild(questionsDiv);
+    container.appendChild(topicDiv);
+  });
+}
+
+function checkAnswer(ti, qi, oi, qDiv) {
+  var question = quizData[ti].questions[qi];
+  var buttons = qDiv.querySelectorAll('.quiz-option');
+  var expDiv = document.getElementById('qexp_' + ti + '_' + qi);
+  if (buttons[0].disabled) return;
+  buttons.forEach(function(b, i) {
+    b.disabled = true;
+    if (i === question.correct) b.classList.add('correct');
+    if (i === oi && oi !== question.correct) b.classList.add('wrong');
+  });
+  totalAnswered++;
+  topicScores[ti].answered++;
+  if (oi === question.correct) {
+    totalCorrect++;
+    topicScores[ti].correct++;
+    expDiv.className = 'quiz-explanation show correct-exp';
+  } else {
+    expDiv.className = 'quiz-explanation show wrong-exp';
+  }
+  document.getElementById('quizScore').textContent = totalCorrect;
+  document.getElementById('topicScore' + ti).textContent = topicScores[ti].correct + ' / ' + topicScores[ti].total;
+  document.getElementById('quizProgressBar').style.width = (totalAnswered / totalQ * 100) + '%';
+}
+
+function resetQuiz() {
+  totalCorrect = 0;
+  totalAnswered = 0;
+  quizData.forEach(function(t, ti) { topicScores[ti] = { correct: 0, answered: 0, total: t.questions.length }; });
+  buildQuiz();
+  document.getElementById('quizScore').textContent = '0';
+  document.getElementById('quizProgressBar').style.width = '0%';
+}
+
+function toggleQuiz() {
+  var section = document.getElementById('quizSection');
+  if (section.style.display === 'none') {
+    section.style.display = 'block';
+    section.scrollIntoView({ behavior: 'smooth' });
+  } else {
+    section.style.display = 'none';
+  }
+}
+
+// ============================================================
+// INITIALIZATION
+// ============================================================
+window.addEventListener('DOMContentLoaded', function() {
+  drawAlignment();
+  renderPreferences();
+  drawRewardModel();
+  drawPPO();
+  drawDPO();
+  drawHacking();
+  drawPipeline();
+  drawCAI();
+  buildQuiz();
+});
+
+</script>
+</body></html>

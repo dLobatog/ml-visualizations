@@ -89,13 +89,26 @@
   .card.card--disabled { opacity: 0.55; pointer-events: none; }
   .card.card--disabled::after { content: ''; }
 
-  /* Chapter flow diagram */
-  .chapter-flow { background: #12121f; border: 1px solid #2a2a4a; border-radius: 12px; padding: 20px 24px; margin-bottom: 24px; text-align: center; }
-  .chapter-flow-title { font-size: 0.8em; text-transform: uppercase; letter-spacing: 2px; color: #555; margin-bottom: 14px; }
-  .chapter-flow-diagram { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px; font-size: 0.85em; }
-  .flow-node { padding: 5px 12px; border-radius: 8px; font-weight: 600; }
+  /* Knowledge tree */
+  .chapter-flow { background: #12121f; border: 1px solid #2a2a4a; border-radius: 12px; padding: 28px 24px; margin-bottom: 24px; text-align: center; }
+  .chapter-flow-title { font-size: 0.8em; text-transform: uppercase; letter-spacing: 2px; color: #555; margin-bottom: 20px; }
+  .knowledge-tree { position: relative; width: 100%; }
+  .tree-tier { display: flex; justify-content: center; gap: 12px; margin-bottom: 6px; flex-wrap: wrap; }
+  .tree-tier-label { font-size: 0.65em; text-transform: uppercase; letter-spacing: 1.5px; color: #444; margin-bottom: 8px; margin-top: 2px; }
+  .tree-connector { display: flex; justify-content: center; gap: 0; margin: 2px 0; }
+  .tree-line { color: #333; font-size: 0.9em; line-height: 1; }
+  .flow-node { padding: 5px 12px; border-radius: 8px; font-weight: 600; font-size: 0.85em; cursor: default; transition: transform 0.15s, box-shadow 0.15s; }
+  .flow-node:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
   .flow-arrow { color: #555; font-size: 1.1em; }
   .flow-group { display: flex; align-items: center; gap: 6px; }
+  .tree-branches { display: flex; justify-content: center; gap: 60px; margin-top: 4px; }
+  .tree-branch { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .tree-branch-line { width: 1px; height: 14px; background: #333; }
+  .tree-split { display: flex; justify-content: center; align-items: flex-start; gap: 0; position: relative; }
+  .tree-split::before { content: ''; position: absolute; top: 0; left: 25%; right: 25%; height: 1px; background: #333; }
+  @media (max-width: 700px) {
+    .tree-branches { gap: 20px; flex-wrap: wrap; }
+  }
 
   @media (max-width: 700px) {
     .header h1 { font-size: 2em; }
@@ -152,7 +165,7 @@
     <a class="path-card path-card--scratch" href="#from-scratch-series" onclick="document.getElementById('from-scratch-series').scrollIntoView({behavior:'smooth'});return false;">
       <div class="path-card-icon">&#x1F9F1;</div>
       <h3 style="color:#ff6b6b">From Scratch Series <span class="path-new-badge">NEW</span></h3>
-      <p>Build ML systems from first principles. 8 chapters that construct entire systems step-by-step, from a single neuron to a full transformer and beyond.</p>
+      <p>Build ML systems from first principles. 10 chapters that construct entire systems step-by-step, from a single neuron to a full transformer, CNNs, RLHF, and beyond.</p>
     </a>
   </div>
 
@@ -429,33 +442,49 @@
 
   <!-- From Scratch Series Section -->
   <div id="from-scratch-series" class="section-divider"></div>
-  <div class="section-label">&#x1F9F1; From Scratch Series &mdash; 8 Chapters</div>
+  <div class="section-label">&#x1F9F1; From Scratch Series &mdash; 10 Chapters</div>
 
   <div class="chapter-flow">
-    <div class="chapter-flow-title">Chapter Dependencies</div>
-    <div class="chapter-flow-diagram">
-      <span class="flow-node" style="background:rgba(255,107,107,0.15);color:#ff6b6b;">Ch 1</span>
-      <span class="flow-arrow">&rarr;</span>
-      <span class="flow-group">
-        <span class="flow-node" style="background:rgba(255,217,61,0.15);color:#ffd93d;">Ch 2</span>
-        <span style="color:#555">+</span>
-        <span class="flow-node" style="background:rgba(78,205,196,0.15);color:#4ecdc4;">Ch 3</span>
-      </span>
-      <span class="flow-arrow">&rarr;</span>
-      <span class="flow-group">
-        <span class="flow-node" style="background:rgba(255,159,243,0.15);color:#ff9ff3;">Ch 4</span>
-        <span style="color:#555">+</span>
-        <span class="flow-node" style="background:rgba(84,160,255,0.15);color:#54a0ff;">Ch 5</span>
-      </span>
-      <span class="flow-arrow">&rarr;</span>
-      <span class="flow-node" style="background:rgba(1,163,164,0.15);color:#01a3a4;">Ch 6</span>
-      <span class="flow-arrow">&rarr;</span>
-      <span class="flow-node" style="background:rgba(224,86,253,0.15);color:#e056fd;">Ch 7</span>
-    </div>
-    <div class="chapter-flow-diagram" style="margin-top:8px;">
-      <span class="flow-node" style="background:rgba(255,107,107,0.15);color:#ff6b6b;">Ch 1</span>
-      <span class="flow-arrow">&rarr;</span>
-      <span class="flow-node" style="background:rgba(16,172,132,0.15);color:#10ac84;">Ch 8 (GBDTs)</span>
+    <div class="chapter-flow-title">Knowledge Tree</div>
+    <div class="knowledge-tree">
+      <!-- Tier 0: Foundation -->
+      <div class="tree-tier-label">Foundation</div>
+      <div class="tree-tier">
+        <span class="flow-node" style="background:rgba(255,107,107,0.2);color:#ff6b6b;border:1px solid rgba(255,107,107,0.3);">1 &middot; Backprop</span>
+      </div>
+      <div class="tree-connector"><span class="tree-line">│</span></div>
+
+      <!-- Tier 1: Core building blocks -->
+      <div class="tree-tier-label">Building Blocks</div>
+      <div class="tree-tier">
+        <span class="flow-node" style="background:rgba(255,217,61,0.15);color:#ffd93d;border:1px solid rgba(255,217,61,0.25);">2 &middot; Makemore</span>
+        <span class="flow-node" style="background:rgba(78,205,196,0.15);color:#4ecdc4;border:1px solid rgba(78,205,196,0.25);">3 &middot; MLPs &amp; Optimization</span>
+      </div>
+      <div class="tree-connector"><span class="tree-line">│</span></div>
+
+      <!-- Tier 2: Architectures (branches) -->
+      <div class="tree-tier-label">Architectures</div>
+      <div class="tree-tier">
+        <span class="flow-node" style="background:rgba(255,159,243,0.15);color:#ff9ff3;border:1px solid rgba(255,159,243,0.25);">4 &middot; Attention</span>
+        <span class="flow-node" style="background:rgba(84,160,255,0.15);color:#54a0ff;border:1px solid rgba(84,160,255,0.25);">5 &middot; RNNs &amp; GNNs</span>
+        <span class="flow-node" style="background:rgba(255,159,67,0.15);color:#ff9f43;border:1px solid rgba(255,159,67,0.25);">9 &middot; CNNs</span>
+        <span class="flow-node" style="background:rgba(16,172,132,0.15);color:#10ac84;border:1px solid rgba(16,172,132,0.25);">8 &middot; GBDTs</span>
+      </div>
+      <div class="tree-connector"><span class="tree-line">│</span></div>
+
+      <!-- Tier 3: Full systems -->
+      <div class="tree-tier-label">Full Systems</div>
+      <div class="tree-tier">
+        <span class="flow-node" style="background:rgba(1,163,164,0.2);color:#01a3a4;border:1px solid rgba(1,163,164,0.3);">6 &middot; Transformer</span>
+      </div>
+      <div class="tree-connector"><span class="tree-line">│</span></div>
+
+      <!-- Tier 4: Deployment & Alignment -->
+      <div class="tree-tier-label">Production &amp; Alignment</div>
+      <div class="tree-tier">
+        <span class="flow-node" style="background:rgba(224,86,253,0.15);color:#e056fd;border:1px solid rgba(224,86,253,0.25);">7 &middot; Distillation &amp; LoRA</span>
+        <span class="flow-node" style="background:rgba(243,104,224,0.15);color:#f368e0;border:1px solid rgba(243,104,224,0.25);">10 &middot; RLHF &amp; Alignment</span>
+      </div>
     </div>
   </div>
 
@@ -586,7 +615,7 @@
         <span class="topic-tag">Knowledge Distillation</span>
         <span class="topic-tag">Weight Pruning</span>
         <span class="topic-tag">Quantization</span>
-        <span class="topic-tag">Temperature Scaling</span>
+        <span class="topic-tag">LoRA &amp; PEFT</span>
         <span class="topic-tag">Model Compression</span>
       </div>
     </div>
@@ -611,22 +640,62 @@
     </div>
   </a>
 
+  <a class="card" href="from-scratch/09-cnns-from-scratch.html">
+    <span class="card-available">Available</span>
+    <div class="card-num" style="color:#ff9f43">9</div>
+    <div class="card-content">
+      <h2 style="color:#ff9f43">CNNs from Scratch</h2>
+      <p>Build convolutional neural networks one filter at a time. From sliding kernels to deep feature hierarchies.</p>
+      <div class="card-meta">
+        <span class="card-badge badge-viz">8 visualizations</span>
+      </div>
+      <div class="card-topics">
+        <span class="topic-tag">Convolution</span>
+        <span class="topic-tag">Filters &amp; Kernels</span>
+        <span class="topic-tag">Stride &amp; Padding</span>
+        <span class="topic-tag">Pooling</span>
+        <span class="topic-tag">Feature Maps</span>
+        <span class="topic-tag">ResNet</span>
+      </div>
+    </div>
+  </a>
+
+  <a class="card" href="from-scratch/10-rlhf-alignment.html">
+    <span class="card-available">Available</span>
+    <div class="card-num" style="color:#f368e0">10</div>
+    <div class="card-content">
+      <h2 style="color:#f368e0">RLHF &amp; Alignment from Scratch</h2>
+      <p>Build the RLHF pipeline from human preferences to aligned models. Reward modeling, PPO, DPO, and failure modes.</p>
+      <div class="card-meta">
+        <span class="card-badge badge-viz">8 visualizations</span>
+      </div>
+      <div class="card-topics">
+        <span class="topic-tag">Preference Data</span>
+        <span class="topic-tag">Reward Model</span>
+        <span class="topic-tag">PPO</span>
+        <span class="topic-tag">DPO</span>
+        <span class="topic-tag">Reward Hacking</span>
+        <span class="topic-tag">Constitutional AI</span>
+      </div>
+    </div>
+  </a>
+
 </div>
 
 <div class="footer">
   <p>Built as a personal reference, but hopefully useful for interview prep, research, or just refreshing concepts</p>
   <p style="margin-top:8px;">All visualizations are self-contained HTML with zero dependencies. Works offline. <a href="https://github.com/dLobatog/ml-visualizations">Source on GitHub</a></p>
-  <p style="margin-top:12px;color:#444;font-size:0.78em;">Tip: Press 1-9 or 0 (for 10) to jump to reference topics &bull; Shift+1 through Shift+8 for From Scratch chapters</p>
+  <p style="margin-top:12px;color:#444;font-size:0.78em;">Tip: Press 1-9 or 0 (for 10) to jump to reference topics &bull; Shift+1 through Shift+0 for From Scratch chapters</p>
 </div>
 <script>
 // Keyboard navigation
 document.addEventListener('keydown', function(e) {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
   var refPages = ['01-ml-fundamentals.html','02-deep-learning-foundations.html','03-llms-transformers.html','04-recommendation-systems.html','05-ml-system-design.html','06-training-at-scale.html','07-metrics-evaluation.html','08-data-features.html','09-generative-models.html','10-reinforcement-learning.html','11-specialized-topics.html','12-gradient-boosted-trees.html'];
-  var scratchPages = ['from-scratch/01-backprop-autograd.html','from-scratch/02-makemore.html','from-scratch/03-mlps-optimization.html','from-scratch/04-attention-sequences.html','from-scratch/05-gnns.html','from-scratch/06-transformer.html','from-scratch/07-distillation-compression.html','from-scratch/08-gbdt-from-scratch.html'];
-  var scratchAvailable = [true, true, true, true, true, true, true, true];
+  var scratchPages = ['from-scratch/01-backprop-autograd.html','from-scratch/02-makemore.html','from-scratch/03-mlps-optimization.html','from-scratch/04-attention-sequences.html','from-scratch/05-gnns.html','from-scratch/06-transformer.html','from-scratch/07-distillation-compression.html','from-scratch/08-gbdt-from-scratch.html','from-scratch/09-cnns-from-scratch.html','from-scratch/10-rlhf-alignment.html'];
+  var scratchAvailable = [true, true, true, true, true, true, true, true, true, true];
   var num = parseInt(e.key);
-  if (e.shiftKey && num >= 1 && num <= 8) {
+  if (e.shiftKey && num >= 1 && num <= 10) {
     if (scratchAvailable[num - 1]) window.location.href = scratchPages[num - 1];
     return;
   }

@@ -1,0 +1,2575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 9: CNNs from Scratch</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #0a0a0f; color: #e0e0e0; line-height: 1.6; }
+  .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; text-align: center; border-bottom: 1px solid #2a2a4a; }
+  .header h1 { font-size: 2.2em; background: linear-gradient(90deg, #ff9f43, #ffd93d); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+  .header p { color: #888; font-size: 1.1em; }
+  .header a { color: #ff9f43; text-decoration: none; font-size: 0.9em; }
+  .header a:hover { text-decoration: underline; }
+  .prereqs { color: #666; font-size: 0.85em; margin-top: 8px; }
+  .prereqs a { color: #ff9f43; text-decoration: none; }
+  .prereqs a:hover { text-decoration: underline; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+
+  /* Minimap */
+  .minimap { position: sticky; top: 0; z-index: 100; background: #0a0a0fee; backdrop-filter: blur(10px); border-bottom: 1px solid #2a2a4a; padding: 10px 20px; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }
+  .mm-step { padding: 4px 12px; border-radius: 6px; font-size: 0.75em; font-weight: 600; cursor: pointer; transition: all 0.2s; background: #151530; color: #555; border: 1px solid #2a2a4a; white-space: nowrap; }
+  .mm-step:hover { border-color: #ff9f43; color: #ff9f43; }
+  .mm-step.active { background: rgba(255,159,67,0.2); color: #ff9f43; border-color: rgba(255,159,67,0.5); }
+  .mm-step.done { background: rgba(255,159,67,0.1); color: #ff9f43; border-color: rgba(255,159,67,0.3); }
+  .mm-arrow { color: #333; font-size: 0.8em; }
+
+  .viz-section { background: #12121f; border: 1px solid #2a2a4a; border-radius: 16px; padding: 32px; margin-bottom: 40px; }
+  .viz-section h2 { font-size: 1.5em; color: #ff9f43; margin-bottom: 8px; }
+  .viz-section .subtitle { color: #888; margin-bottom: 24px; font-size: 0.95em; }
+  .viz-canvas { background: #0d0d1a; border-radius: 12px; position: relative; overflow: hidden; }
+  canvas { display: block; margin: 0 auto; }
+  .controls { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; align-items: center; }
+  .control-group { display: flex; flex-direction: column; gap: 4px; }
+  .control-group label { font-size: 0.85em; color: #aaa; }
+  .control-group input[type="range"] { width: 160px; accent-color: #ff9f43; }
+  .control-group .value { font-size: 0.85em; color: #ff9f43; font-family: monospace; }
+  .btn { padding: 8px 16px; border: 1px solid #ff9f43; background: transparent; color: #ff9f43; border-radius: 8px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
+  .btn:hover { background: #ff9f4322; }
+  .btn.active { background: #ff9f4333; }
+  .tab-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+
+  .insight-box { background: linear-gradient(135deg, #1a1a3e 0%, #151530 100%); border-left: 4px solid #ff9f43; padding: 20px 24px; margin-top: 20px; border-radius: 0 12px 12px 0; font-size: 0.92em; color: #ccc; line-height: 1.8; }
+  .insight-box strong { color: #ff9f43; font-size: 1.05em; }
+  .insight-box .formula { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 12px 18px; margin: 12px 0; font-family: 'Courier New', monospace; color: #e8e8ff; font-size: 1.05em; text-align: center; letter-spacing: 0.5px; line-height: 1.9; }
+  .insight-box .key-point { display: flex; flex-wrap: wrap; gap: 4px 8px; margin: 8px 0; padding: 4px 0; align-items: baseline; }
+  .insight-box .key-point .label { color: #ff9f43; font-weight: 600; min-width: 160px; flex-shrink: 0; }
+  .insight-box .key-point .desc { color: #ddd; }
+  .insight-box .interview-tip { background: rgba(100, 255, 100, 0.05); border: 1px solid rgba(100, 255, 100, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #b0ffb0; font-size: 0.93em; line-height: 1.6; }
+  .insight-box .interview-tip::before { content: '\1F4A1  Interview Tip: '; font-weight: 700; color: #7fff7f; }
+  .insight-box .mnemonic { background: rgba(255, 150, 255, 0.05); border: 1px solid rgba(255, 150, 255, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #ffb0ff; font-size: 0.93em; line-height: 1.6; }
+  .insight-box .mnemonic::before { content: '\1F9E0  Remember: '; font-weight: 700; color: #ff7fff; }
+  .insight-box .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+  .insight-box .comparison .option { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 10px 14px; }
+  .insight-box .comparison .option .opt-title { color: #ff9f43; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
+  .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
+  .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
+  .code-example { margin-top: 12px; border: 1px solid #2a2a4a; border-radius: 8px; overflow: hidden; }
+  .code-toggle { width: 100%; background: #1a1a2e; color: #ff9f43; border: none; padding: 10px 16px; text-align: left; cursor: pointer; font-size: 0.9em; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .code-toggle:hover { background: #22223a; }
+  .code-toggle-icon { display: inline-block; transition: transform 0.2s; font-size: 0.7em; }
+  .code-example.open .code-toggle-icon { transform: rotate(90deg); }
+  .code-content { display: none; padding: 14px 16px; background: #0a0a14; }
+  .code-example.open .code-content { display: block; }
+  .code-content pre { margin: 0; overflow-x: auto; white-space: pre; }
+  .code-content code { color: #e0e0e0; font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.82em; line-height: 1.6; }
+  .code-content .code-note { color: #888; font-size: 0.82em; margin-top: 8px; font-style: italic; }
+  .code-content pre[class*="language-"], .code-content code[class*="language-"] { background: #0a0a14; font-size: 0.82em; line-height: 1.6; margin: 0; padding: 0; text-shadow: none; }
+  pre[class*="language-"]::selection, code[class*="language-"]::selection { background: #333; }
+
+  .katex { color: #e8e8ff; font-size: 1.1em; }
+  .formula .katex { font-size: 1.2em; }
+
+  .narrative-note { background: rgba(255,217,61,0.05); border-left: 3px solid #ffd93d; padding: 14px 18px; margin: 16px 0; border-radius: 0 8px 8px 0; font-size: 0.9em; color: #ccb866; }
+  .narrative-note strong { color: #ffd93d; }
+
+  select { padding: 6px 12px; border: 1px solid #2a2a4a; background: #0d0d1a; color: #e0e0e0; border-radius: 6px; font-size: 0.9em; cursor: pointer; }
+  select:focus { outline: none; border-color: #ff9f43; }
+
+#quizToggle{position:fixed;top:20px;right:20px;z-index:1000;padding:12px 20px;background:#ff9f43;color:#0a0a0f;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:1em;box-shadow:0 4px 15px rgba(0,0,0,0.3);transition:transform 0.2s}
+#quizToggle:hover{transform:scale(1.05)}
+#quizSection{background:#0a0a0f;border-top:2px solid #ff9f43;padding:40px 20px;margin-top:40px}
+.quiz-container{max-width:900px;margin:0 auto}
+.quiz-topic{margin-bottom:30px}
+.quiz-topic-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:10px;cursor:pointer;margin-bottom:12px;user-select:none}
+.quiz-topic-header h3{color:#ff9f43;margin:0;font-size:1.15em}
+.quiz-topic-header:hover{background:#1f1f3a}
+.quiz-topic-score{color:#888;font-size:0.95em}
+.quiz-topic-questions{display:none}
+.quiz-topic-questions.open{display:block}
+.quiz-question{background:#12121f;border:1px solid #2a2a4a;border-radius:12px;padding:24px;margin-bottom:16px}
+.quiz-question h4{color:#e0e0e0;margin-bottom:16px;font-size:1.05em;line-height:1.5}
+.quiz-option{display:block;width:100%;padding:12px 16px;margin:8px 0;background:#0d0d1a;border:1px solid #2a2a4a;border-radius:8px;color:#e0e0e0;cursor:pointer;text-align:left;font-size:0.95em;transition:all 0.2s;font-family:inherit}
+.quiz-option:hover:not(:disabled){border-color:#ff9f43;background:#1a1a3e}
+.quiz-option.correct{background:#1a3a2a !important;border-color:#2ecc71 !important;color:#2ecc71 !important}
+.quiz-option.wrong{background:#3a1a1a !important;border-color:#e74c3c !important;color:#e74c3c !important}
+.quiz-option.reveal{border-color:#2ecc71 !important;color:#2ecc71 !important}
+.quiz-option:disabled{cursor:default}
+.quiz-explanation{margin-top:12px;padding:14px 18px;border-radius:8px;font-size:0.93em;line-height:1.6;display:none}
+.quiz-explanation.show{display:block}
+.quiz-explanation.correct-exp{border-left:4px solid #2ecc71;background:rgba(46,204,113,0.08);color:#b0ffb0}
+.quiz-explanation.wrong-exp{border-left:4px solid #e74c3c;background:rgba(231,76,60,0.08);color:#ffb0b0}
+.quiz-score{text-align:center;font-size:1.5em;color:#ff9f43;margin-bottom:30px}
+.quiz-actions{text-align:center;margin-top:30px;margin-bottom:20px}
+.quiz-actions button{padding:10px 24px;margin:0 8px;border-radius:8px;border:1px solid #ff9f43;background:transparent;color:#ff9f43;cursor:pointer;font-size:1em}
+.quiz-actions button:hover{background:rgba(255,159,67,0.1)}
+.quiz-progress{height:4px;background:#1a1a2e;border-radius:2px;margin-bottom:20px;overflow:hidden}
+.quiz-progress-bar{height:100%;background:#ff9f43;border-radius:2px;transition:width 0.3s}
+
+.break-toggle { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border: 1px solid #e74c3c; background: transparent; color: #e74c3c; border-radius: 8px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
+.break-toggle:hover { background: rgba(231,76,60,0.15); }
+.break-toggle.broken { background: rgba(231,76,60,0.25); border-color: #ff4444; color: #ff4444; }
+
+.legend { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.85em; color: #ccc; }
+.legend-dot { width: 12px; height: 12px; border-radius: 50%; }
+
+.hyper-box { background: linear-gradient(135deg, #1a2a1a 0%, #151f15 100%); border-left: 4px solid #2ecc71; padding: 20px 24px; margin-top: 20px; border-radius: 0 12px 12px 0; font-size: 0.92em; color: #ccc; line-height: 1.8; }
+.hyper-box strong { color: #2ecc71; font-size: 1.05em; }
+.hyper-box ul { margin: 8px 0 0 20px; }
+.hyper-box li { margin-bottom: 4px; }
+
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '\\(', right: '\\)', display: false}]});"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-okaidia.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script></head>
+<body>
+<button id="quizToggle" onclick="toggleQuiz()">&#x1F9E0; Quiz Mode</button>
+
+<div class="header">
+  <a href="../index.html">&larr; Back to Index</a>
+  <h1>Chapter 9: CNNs from Scratch</h1>
+  <p>From a single filter to deep convolutional networks &mdash; build spatial feature extractors one layer at a time</p>
+  <div class="prereqs">Prerequisites: <a href="01-backprop-autograd.html">Ch 1 (Backprop)</a>, <a href="03-mlps-optimization.html">Ch 3 (MLPs)</a></div>
+</div>
+
+<div class="minimap" id="minimap">
+  <span class="mm-step active" data-section="viz91" onclick="scrollToViz('viz91')">1. Why MLPs Fail</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz92" onclick="scrollToViz('viz92')">2. Convolution</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz93" onclick="scrollToViz('viz93')">3. Padding & Stride</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz94" onclick="scrollToViz('viz94')">4. Channels & Filters</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz95" onclick="scrollToViz('viz95')">5. Pooling</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz96" onclick="scrollToViz('viz96')">6. Full CNN</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz97" onclick="scrollToViz('viz97')">7. Backprop Conv</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz98" onclick="scrollToViz('viz98')">8. Architectures</span>
+</div>
+
+<div class="container">
+
+<!-- ============================================================ -->
+<!-- VIZ 9.1: WHY MLPs FAIL ON IMAGES -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz91">
+  <h2>9.1 The Problem: Why MLPs Fail on Images</h2>
+  <p class="subtitle">An MLP flattens a 2D image into a 1D vector, destroying all spatial structure. Shift a pattern by 2 pixels and the MLP sees a completely different input.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <button class="btn active" id="shiftBtn0" onclick="setShift(0)">Original</button>
+    <button class="btn" id="shiftBtn2" onclick="setShift(2)">Shift Right +2</button>
+    <button class="btn" id="shiftBtn4" onclick="setShift(4)">Shift Right +4</button>
+    <button class="break-toggle" id="breakScramble" onclick="toggleScramble()">Break It: Scramble Pixels</button>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="mlpFailCanvas" width="900" height="400"></canvas>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:#ff9f43;"></span> Active pixel</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#2a2a4a;"></span> Inactive pixel</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#e74c3c;"></span> Changed input positions</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> MLPs have no spatial awareness. A pixel at position (0,0) and (2,0) are completely unrelated parameters to an MLP.
+    <div class="formula">$$\text{Flatten: } 7 \times 7 \text{ image} \rightarrow 49\text{-dim vector} \rightarrow \text{spatial relationships lost}$$</div>
+    <div class="key-point">
+      <span class="label">The Fundamental Problem:</span>
+      <span class="desc">Shifting an image by 2 pixels changes almost every element of the flattened vector. The MLP must learn every possible translation separately.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Parameter Explosion:</span>
+      <span class="desc">A 224&times;224&times;3 image = 150,528 inputs. A single hidden layer of 1000 neurons needs 150M weights just for the first layer.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">When asked "why use CNNs instead of MLPs for images?", lead with two things: (1) spatial structure preservation and (2) parameter sharing. MLPs need separate weights for every pixel position.</div>
+    <div class="mnemonic">MLPs see a flat list of numbers. CNNs see a grid of neighbors. That is the entire difference.</div>
+  </div>
+  <div class="insight-box" style="border-left-color: #ff9f43;">
+    <h3>&#x26A0;&#xFE0F; Common Mistakes</h3>
+    <ul>
+      <li><strong>Mistake:</strong> Thinking MLPs "cannot" learn image tasks. They can, but need exponentially more data and parameters to learn spatial patterns that CNNs get for free. <strong>Fix:</strong> Understand that CNNs encode an inductive bias (locality + translation invariance) that MLPs lack.</li>
+      <li><strong>Mistake:</strong> Applying an MLP to raw pixels of a large image. <strong>Fix:</strong> Always use convolutional layers for spatial data. Reserve MLPs (fully-connected layers) for the classification head after spatial features have been extracted.</li>
+    </ul>
+  </div>
+  <div class="narrative-note">
+    <strong>Running Example:</strong> Throughout this chapter, we will follow a tiny 8&times;8 handwritten digit as it passes through each stage of a CNN. Watch how raw pixel values transform into abstract features, then into a class prediction.
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 9.2: CONVOLUTION: SLIDING A FILTER -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz92">
+  <h2>9.2 Convolution: Sliding a Filter</h2>
+  <p class="subtitle">A convolution slides a small kernel across the input, computing a weighted sum at each position. This is the fundamental operation of CNNs.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <button class="btn" id="convStepBtn" onclick="convStep()">Step</button>
+    <button class="btn" id="convAutoBtn" onclick="convAutoToggle()">Auto-play</button>
+    <button class="btn" onclick="convReset()">Reset</button>
+    <div class="tab-bar" style="margin-bottom:0;">
+      <button class="btn active" id="kernEdgeH" onclick="setKernel('edgeH')">Edge Horizontal</button>
+      <button class="btn" id="kernEdgeV" onclick="setKernel('edgeV')">Edge Vertical</button>
+      <button class="btn" id="kernSharpen" onclick="setKernel('sharpen')">Sharpen</button>
+      <button class="btn" id="kernBlur" onclick="setKernel('blur')">Blur</button>
+    </div>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="convCanvas" width="900" height="500"></canvas>
+  </div>
+  <div class="controls" id="kernelControls">
+    <div style="display:grid;grid-template-columns:repeat(3,50px);gap:4px;">
+      <input type="number" id="k00" value="-1" style="width:50px;background:#0d0d1a;color:#e0e0e0;border:1px solid #2a2a4a;border-radius:4px;text-align:center;padding:4px;" onchange="updateKernelFromInputs()">
+      <input type="number" id="k01" value="-1" style="width:50px;background:#0d0d1a;color:#e0e0e0;border:1px solid #2a2a4a;border-radius:4px;text-align:center;padding:4px;" onchange="updateKernelFromInputs()">
+      <input type="number" id="k02" value="-1" style="width:50px;background:#0d0d1a;color:#e0e0e0;border:1px solid #2a2a4a;border-radius:4px;text-align:center;padding:4px;" onchange="updateKernelFromInputs()">
+      <input type="number" id="k10" value="0" style="width:50px;background:#0d0d1a;color:#e0e0e0;border:1px solid #2a2a4a;border-radius:4px;text-align:center;padding:4px;" onchange="updateKernelFromInputs()">
+      <input type="number" id="k11" value="0" style="width:50px;background:#0d0d1a;color:#e0e0e0;border:1px solid #2a2a4a;border-radius:4px;text-align:center;padding:4px;" onchange="updateKernelFromInputs()">
+      <input type="number" id="k12" value="0" style="width:50px;background:#0d0d1a;color:#e0e0e0;border:1px solid #2a2a4a;border-radius:4px;text-align:center;padding:4px;" onchange="updateKernelFromInputs()">
+      <input type="number" id="k20" value="1" style="width:50px;background:#0d0d1a;color:#e0e0e0;border:1px solid #2a2a4a;border-radius:4px;text-align:center;padding:4px;" onchange="updateKernelFromInputs()">
+      <input type="number" id="k21" value="1" style="width:50px;background:#0d0d1a;color:#e0e0e0;border:1px solid #2a2a4a;border-radius:4px;text-align:center;padding:4px;" onchange="updateKernelFromInputs()">
+      <input type="number" id="k22" value="1" style="width:50px;background:#0d0d1a;color:#e0e0e0;border:1px solid #2a2a4a;border-radius:4px;text-align:center;padding:4px;" onchange="updateKernelFromInputs()">
+    </div>
+    <span style="color:#888;font-size:0.85em;">Edit kernel values above or use preset buttons</span>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Weight sharing &mdash; the SAME 3&times;3 kernel is used everywhere. This is what gives CNNs translation invariance.
+    <div class="formula">$$\text{output}[i,j] = \sum_{m=0}^{2} \sum_{n=0}^{2} \text{input}[i+m,\, j+n] \times \text{kernel}[m,\, n]$$</div>
+    <div class="key-point">
+      <span class="label">Weight Sharing:</span>
+      <span class="desc">Instead of 49 separate weights per output, we have 9 shared weights. A pattern detected at position (0,0) is also detected at (3,4).</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Local Connectivity:</span>
+      <span class="desc">Each output pixel depends on only a 3&times;3 patch of input, not the entire image. This encodes the prior that nearby pixels are more relevant.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Convolution is really cross-correlation in most DL frameworks (no kernel flipping). The distinction only matters for the backward pass.</div>
+    <div class="mnemonic">Convolution = slide, multiply, sum. Same kernel everywhere = translation equivariance.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: 2D Convolution in PyTorch
+      </button>
+      <div class="code-content">
+        <pre><code class="language-python">import torch
+import torch.nn as nn
+
+# Input: 1 image, 1 channel, 7x7
+x = torch.randn(1, 1, 7, 7)
+
+# Conv: 1 input channel, 1 output channel, 3x3 kernel
+conv = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=3)
+out = conv(x)  # shape: (1, 1, 5, 5)
+
+print(conv.weight.shape)  # (1, 1, 3, 3) = 9 parameters
+print(out.shape)           # 7 - 3 + 1 = 5</code></pre>
+        <p class="code-note">nn.Conv2d applies the same kernel at every spatial position (weight sharing).</p>
+      </div>
+    </div>
+  </div>
+  <div class="narrative-note">
+    &#x1F4CE; The chain rule from <a href="01-backprop-autograd.html" style="color: #64ffda;">Ch 1: Backprop</a> applies here too. Each output pixel is a function of 9 inputs and 9 weights, so backprop computes 9 local gradients per position. We will see this in Section 9.7.
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 9.3: PADDING & STRIDE -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz93">
+  <h2>9.3 Padding & Stride</h2>
+  <p class="subtitle">Padding adds border pixels; stride controls how far the kernel jumps. Together they determine the output size.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <div class="control-group">
+      <label>Padding</label>
+      <input type="range" id="padSlider" min="0" max="2" value="0" oninput="updatePadStride()">
+      <span class="value" id="padVal">0</span>
+    </div>
+    <div class="control-group">
+      <label>Stride</label>
+      <input type="range" id="strideSlider" min="1" max="3" value="1" oninput="updatePadStride()">
+      <span class="value" id="strideVal">1</span>
+    </div>
+    <button class="btn" id="psStepBtn" onclick="padStrideStep()">Step</button>
+    <button class="btn" id="psAutoBtn" onclick="padStrideAutoToggle()">Auto-play</button>
+    <button class="btn" onclick="padStrideReset()">Reset</button>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="padStrideCanvas" width="900" height="400"></canvas>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> The output spatial size is fully determined by a simple formula.
+    <div class="formula">$$\text{output\_size} = \left\lfloor \frac{\text{input} + 2 \times \text{padding} - \text{kernel}}{\text{stride}} \right\rfloor + 1$$</div>
+    <div class="key-point">
+      <span class="label">"Same" Padding:</span>
+      <span class="desc">Use \(p = \lfloor(k-1)/2\rfloor\) to keep the output size equal to the input size (when stride=1). For a 3&times;3 kernel, padding=1.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">"Valid" Padding:</span>
+      <span class="desc">No padding (p=0). The output shrinks by (k-1) in each dimension. For a 3&times;3 kernel on 7&times;7 input: output is 5&times;5.</span>
+    </div>
+    <hr class="divider">
+    <div class="mnemonic">Stride=2 halves the spatial dimensions. This is a common way to downsample instead of pooling.</div>
+  </div>
+  <div class="insight-box" style="border-left-color: #ff9f43;">
+    <h3>&#x26A0;&#xFE0F; Common Mistakes</h3>
+    <ul>
+      <li><strong>Mistake:</strong> Forgetting that stride=2 halves spatial dimensions. <strong>Fix:</strong> Always use the formula. For "same" padding with stride=1, use p = (k-1)/2.</li>
+      <li><strong>Mistake:</strong> Using even-sized kernels (e.g., 4&times;4) which make "same" padding asymmetric. <strong>Fix:</strong> Stick to odd-sized kernels (3&times;3, 5&times;5, 7&times;7) so padding is symmetric on both sides.</li>
+    </ul>
+  </div>
+  <div class="hyper-box">
+    <strong>Hyperparameter Guidance: Kernel Size & Padding</strong>
+    <ul>
+      <li><strong>Kernel size:</strong> 3&times;3 is the modern standard (VGG showed two 3&times;3 layers = one 5&times;5 receptive field with fewer parameters).</li>
+      <li><strong>Padding:</strong> Almost always use "same" padding (p=1 for 3&times;3) to avoid losing spatial information early.</li>
+      <li><strong>Stride:</strong> Use stride=2 for downsampling (replaces pooling in many modern architectures like ResNet).</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 9.4: MULTIPLE CHANNELS & FILTERS -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz94">
+  <h2>9.4 Multiple Channels & Filters</h2>
+  <p class="subtitle">Real images have multiple channels (RGB). Each filter has one kernel per input channel, and multiple filters produce multiple output channels.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <div class="control-group">
+      <label>Output Filters</label>
+      <input type="range" id="numFilters" min="1" max="8" value="4" oninput="updateFilters()">
+      <span class="value" id="numFiltersVal">4</span>
+    </div>
+    <button class="btn" onclick="drawChannels()">Redraw</button>
+    <button class="break-toggle" id="breakShareWeights" onclick="toggleNoShare()">Break It: No Weight Sharing</button>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="channelsCanvas" width="900" height="500"></canvas>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Each filter learns to detect one feature (edge, texture, color). C_out filters produce C_out feature maps. The network learns WHAT to look for.
+    <div class="formula">$$\text{output}[f, i, j] = \sum_{c=0}^{C_{in}-1} \sum_{m,n} \text{input}[c, i+m, j+n] \times \text{kernel}[f, c, m, n] + \text{bias}[f]$$</div>
+    <div class="key-point">
+      <span class="label">Parameter Count:</span>
+      <span class="desc">One filter: \(C_{in} \times k \times k\) weights + 1 bias. Total: \(C_{out} \times (C_{in} \times k \times k + 1)\).</span>
+    </div>
+    <div class="key-point">
+      <span class="label">1&times;1 Convolutions:</span>
+      <span class="desc">A 1&times;1 kernel mixes channels without spatial computation &mdash; like a per-pixel fully-connected layer across channels.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">When asked about parameter counts: a Conv2d(64, 128, 3) has 128 * (64 * 3 * 3 + 1) = 73,856 parameters. This is independent of the spatial size of the input.</div>
+  </div>
+  <div class="narrative-note">
+    &#x1F4CE; The weight-sharing concept connects to <a href="03-mlps-optimization.html" style="color: #64ffda;">Ch 3: MLPs</a> &mdash; in an MLP, every input-output pair has its own weight. In a CNN, the same kernel weights are reused at every spatial position, which is a much stronger inductive bias.
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 9.5: POOLING -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz95">
+  <h2>9.5 Pooling: Spatial Reduction</h2>
+  <p class="subtitle">Pooling reduces spatial dimensions, building a hierarchy from local features to global understanding.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <button class="btn active" id="poolMaxBtn" onclick="setPoolMode('max')">Max Pooling</button>
+    <button class="btn" id="poolAvgBtn" onclick="setPoolMode('avg')">Average Pooling</button>
+    <button class="btn" onclick="regeneratePoolInput()">New Random Input</button>
+    <button class="break-toggle" id="breakNoPool" onclick="toggleNoPool()">Break It: No Pooling</button>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="poolCanvas" width="900" height="400"></canvas>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Max pooling keeps the strongest activation in each region &mdash; if a feature (edge, corner) was detected anywhere in the 2&times;2 window, it survives.
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title">Max Pooling</div>
+        <div class="opt-desc">Keeps the strongest signal. Provides slight translation invariance within the pool window. Most common in classification.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title">Average Pooling</div>
+        <div class="opt-desc">Averages all values. Smoother but can dilute strong activations. Global Average Pooling (GAP) replaces FC layers in modern nets.</div>
+      </div>
+    </div>
+    <hr class="divider">
+    <div class="mnemonic">Max pool = "was this feature detected anywhere in this region?" Average pool = "how much of this feature is in this region?"</div>
+  </div>
+  <div class="insight-box" style="border-left-color: #ff9f43;">
+    <h3>&#x26A0;&#xFE0F; Common Mistakes</h3>
+    <ul>
+      <li><strong>Mistake:</strong> Stacking many conv layers without any downsampling (no pooling, no stride&gt;1). Feature maps stay enormous, computation explodes, and the receptive field grows too slowly. <strong>Fix:</strong> Downsample every few layers using stride=2 conv or 2&times;2 max pool.</li>
+    </ul>
+  </div>
+  <div class="hyper-box">
+    <strong>Hyperparameter Guidance: Pooling</strong>
+    <ul>
+      <li><strong>Pool size:</strong> 2&times;2 with stride 2 is the standard. Reduces each spatial dimension by half.</li>
+      <li><strong>Modern trend:</strong> Replace max pooling with strided convolutions (stride=2). This lets the network learn how to downsample.</li>
+      <li><strong>Global Average Pooling:</strong> At the end of the network, use GAP instead of flatten+FC. Reduces parameters dramatically.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 9.6: FULL CNN PIPELINE -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz96">
+  <h2>9.6 A Full CNN: Conv &rarr; ReLU &rarr; Pool &rarr; Conv &rarr; ReLU &rarr; Pool &rarr; FC</h2>
+  <p class="subtitle">Watch our 8&times;8 digit flow through a complete CNN pipeline, with feature map sizes and parameter counts at each stage.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <button class="btn" onclick="fullCNNForward()">Run Forward Pass</button>
+    <button class="btn" onclick="fullCNNReset()">Reset</button>
+    <button class="break-toggle" id="breakBigFC" onclick="toggleBigFC()">Break It: Giant FC Layer</button>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="fullCNNCanvas" width="900" height="500"></canvas>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> A CNN progressively reduces spatial size while increasing channel depth. This trades spatial resolution for semantic richness.
+    <div class="formula">$$8 \times 8 \times 1 \xrightarrow{\text{Conv1}} 6 \times 6 \times 4 \xrightarrow{\text{Pool}} 3 \times 3 \times 4 \xrightarrow{\text{Conv2}} 1 \times 1 \times 8 \xrightarrow{\text{FC}} 3 \text{ classes}$$</div>
+    <div class="key-point">
+      <span class="label">Conv1 Params:</span>
+      <span class="desc">4 filters &times; (1 &times; 3 &times; 3 + 1) = 40 parameters</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Conv2 Params:</span>
+      <span class="desc">8 filters &times; (4 &times; 3 &times; 3 + 1) = 296 parameters</span>
+    </div>
+    <div class="key-point">
+      <span class="label">FC Params:</span>
+      <span class="desc">8 &times; 3 + 3 = 27 parameters. Total: 363 parameters</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">When asked about CNN architecture design, describe the pyramid: spatial dimensions shrink (pool/stride), channel dimensions grow (more filters). Early layers detect edges, deeper layers detect complex patterns.</div>
+  </div>
+  <div class="insight-box" style="border-left-color: #ff9f43;">
+    <h3>&#x26A0;&#xFE0F; Common Mistakes</h3>
+    <ul>
+      <li><strong>Mistake:</strong> Making the first FC layer too large by flattening big feature maps. A 7&times;7&times;512 feature map flattened = 25,088 inputs. If FC has 4096 outputs, that is 100M+ parameters in one layer. <strong>Fix:</strong> Use Global Average Pooling (GAP) to collapse spatial dims: 7&times;7&times;512 &rarr; 512. Then FC: 512&times;num_classes.</li>
+      <li><strong>Mistake:</strong> Forgetting to apply ReLU between conv layers. Without activation, stacking convolutions is equivalent to a single convolution (linear composition). <strong>Fix:</strong> Always apply a nonlinearity (ReLU, GELU) after each convolution.</li>
+    </ul>
+  </div>
+  <div class="narrative-note">
+    &#x1F4CE; The ReLU activations here are the same ones from <a href="01-backprop-autograd.html" style="color: #64ffda;">Ch 1: Backprop</a> (Section 1.4). The "dying ReLU" problem applies in CNNs too &mdash; if a filter's output is always negative, its gradient is always zero.
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 9.7: BACKPROP THROUGH CONVOLUTIONS -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz97">
+  <h2>9.7 Backprop Through Convolutions</h2>
+  <p class="subtitle">Gradients flow backward through conv layers. The key insight: backprop through convolution is a convolution with the flipped kernel.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <button class="btn" id="bpConvStepBtn" onclick="bpConvStep()">Step Backward</button>
+    <button class="btn" id="bpConvAutoBtn" onclick="bpConvAutoToggle()">Auto-play</button>
+    <button class="btn" onclick="bpConvReset()">Reset</button>
+    <button class="break-toggle" id="breakNoFlip" onclick="toggleNoFlip()">Break It: Skip Kernel Flip</button>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="bpConvCanvas" width="900" height="500"></canvas>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:#4ecdc4;"></span> Forward values</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#ff9f43;"></span> Backward gradients</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#e74c3c;"></span> Flipped kernel</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Each output pixel was influenced by a kernel-sized patch of input. So the gradient for each input pixel accumulates contributions from all output pixels it influenced.
+    <div class="formula">$$\frac{\partial L}{\partial \text{input}[i,j]} = \sum_{m,n} \frac{\partial L}{\partial \text{output}[i-m, j-n]} \times \text{kernel}[m,n]$$</div>
+    <div class="key-point">
+      <span class="label">Gradient w.r.t. Input:</span>
+      <span class="desc">Convolve the upstream gradient (padded) with the 180&deg;-flipped kernel. This is a "full" convolution.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Gradient w.r.t. Kernel:</span>
+      <span class="desc">Convolve the input with the upstream gradient. Each kernel element's gradient sums contributions from ALL spatial positions (because of weight sharing).</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">The gradient of the loss w.r.t. the kernel sums over all spatial positions because the same kernel was used everywhere. Weight sharing means gradient accumulation during backprop.</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Framework Example: Conv Gradients in PyTorch
+      </button>
+      <div class="code-content">
+        <pre><code class="language-python">import torch
+import torch.nn as nn
+
+conv = nn.Conv2d(1, 1, 3, bias=False)
+x = torch.randn(1, 1, 5, 5, requires_grad=True)
+out = conv(x)
+loss = out.sum()
+loss.backward()
+
+# x.grad: gradient w.r.t. input (full conv with flipped kernel)
+# conv.weight.grad: gradient w.r.t. kernel (sum over positions)
+print(x.grad.shape)           # (1, 1, 5, 5)
+print(conv.weight.grad.shape) # (1, 1, 3, 3)</code></pre>
+        <p class="code-note">PyTorch handles the kernel flipping and gradient accumulation automatically in the backward pass.</p>
+      </div>
+    </div>
+  </div>
+  <div class="narrative-note">
+    &#x1F4CE; This is the chain rule from <a href="01-backprop-autograd.html" style="color: #64ffda;">Ch 1: Backprop</a> applied to the convolution operation. The "upstream gradient &times; local gradient" rule is identical &mdash; the local gradient just happens to be the kernel (or flipped kernel).
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 9.8: MODERN ARCHITECTURES -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz98">
+  <h2>9.8 Modern Architectures: From LeNet to ResNet</h2>
+  <p class="subtitle">Three decades of CNN evolution: deeper networks, smaller kernels, skip connections. Each innovation solved a specific problem.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <div class="tab-bar">
+      <button class="btn active" id="archLenet" onclick="setArch('lenet')">LeNet (1998)</button>
+      <button class="btn" id="archAlexnet" onclick="setArch('alexnet')">AlexNet (2012)</button>
+      <button class="btn" id="archVgg" onclick="setArch('vgg')">VGG (2014)</button>
+      <button class="btn" id="archResnet" onclick="setArch('resnet')">ResNet (2015)</button>
+    </div>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="archCanvas" width="900" height="500"></canvas>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> The trend is clear &mdash; deeper networks with smaller kernels and skip connections.
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title">VGG Insight</div>
+        <div class="opt-desc">Two 3&times;3 convolutions have the same receptive field as one 5&times;5, but with fewer parameters and more nonlinearity. Three 3&times;3 = one 7&times;7.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title">ResNet Insight</div>
+        <div class="opt-desc">Skip connections let gradients flow directly through identity paths. The layer only needs to learn the residual \(F(x) = H(x) - x\). This enables 100+ layer networks.</div>
+      </div>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">When asked "why are deeper networks better?", explain that depth = compositional feature hierarchy. But depth without skip connections hits vanishing gradients. ResNet solved this.</div>
+  </div>
+  <div class="hyper-box">
+    <strong>Hyperparameter Guidance: Modern CNN Design</strong>
+    <ul>
+      <li><strong>Filter sizes:</strong> 3&times;3 is standard (sometimes 1&times;1 for channel mixing, 7&times;7 only at the very first layer).</li>
+      <li><strong>Channel progression:</strong> Double at each downsampling: 64 &rarr; 128 &rarr; 256 &rarr; 512.</li>
+      <li><strong>BatchNorm:</strong> After every conv layer, before activation. Stabilizes training and allows higher learning rates.</li>
+      <li><strong>Skip connections:</strong> Use residual blocks (add input to output) for any network deeper than ~10 layers.</li>
+    </ul>
+  </div>
+  <div class="hyper-box">
+    <strong>Hyperparameter Guidance: Training CNNs</strong>
+    <ul>
+      <li><strong>Learning rate:</strong> Start with 0.1 for SGD+momentum, 0.001 for Adam. Use cosine annealing or step decay.</li>
+      <li><strong>Data augmentation:</strong> Random crop, horizontal flip, color jitter. This is crucial for CNNs &mdash; it artificially expands the training set with spatial transformations.</li>
+      <li><strong>Weight initialization:</strong> Kaiming/He initialization for ReLU networks. Xavier/Glorot for tanh/sigmoid.</li>
+    </ul>
+  </div>
+  <div class="narrative-note">
+    &#x1F4CE; Skip connections in ResNet are the same concept as residual connections in <a href="06-transformer.html" style="color: #64ffda;">Ch 6: Transformers</a>. The idea of learning \(F(x) = H(x) - x\) instead of \(H(x)\) directly appears throughout modern deep learning. Also see <a href="04-attention-sequences.html" style="color: #64ffda;">Ch 4: Attention</a> for how self-attention layers replaced convolutions in vision transformers.
+  </div>
+  <div class="insight-box" style="border-left-color: #ff9f43;">
+    <h3>&#x26A0;&#xFE0F; Common Mistakes</h3>
+    <ul>
+      <li><strong>Mistake:</strong> Designing very deep networks without skip connections, then wondering why training loss plateaus. <strong>Fix:</strong> Always use residual connections for networks deeper than ~10 layers. The gradient signal needs a direct path to early layers.</li>
+    </ul>
+  </div>
+</div>
+
+</div><!-- container -->
+
+<!-- ============================================================ -->
+<!-- QUIZ SECTION -->
+<!-- ============================================================ -->
+<div id="quizSection" style="display:none">
+<div class="quiz-container">
+  <h2 style="text-align:center;color:#ff9f43;margin-bottom:10px;font-size:1.8em;">CNNs from Scratch Quiz</h2>
+  <p style="text-align:center;color:#888;margin-bottom:20px;">30 questions across 8 topics &bull; Click answers to reveal explanations</p>
+  <div class="quiz-progress"><div class="quiz-progress-bar" id="quizProgressBar" style="width:0%"></div></div>
+  <div class="quiz-score">Score: <span id="quizScore">0</span> / <span id="quizTotal">30</span></div>
+  <div class="quiz-actions">
+    <button onclick="resetQuiz()">&#8634; Reset All</button>
+    <button onclick="toggleQuiz()">&#10005; Hide Quiz</button>
+  </div>
+  <div id="quizQuestions"></div>
+</div>
+</div>
+
+<div style="text-align:center; padding:40px; color:#555; font-size:0.85em; border-top:1px solid #1a1a2e;">
+  Chapter 9: CNNs from Scratch &bull; <a href="../index.html" style="color:#ff9f43; text-decoration:none;">From Scratch Series</a>
+</div>
+
+<script>
+// ============================================================
+// UTILITY FUNCTIONS
+// ============================================================
+function seededRandom(seed) {
+  let s = seed;
+  return function() { s = (s * 16807 + 0) % 2147483647; return (s - 1) / 2147483646; };
+}
+
+// Running example: 8x8 handwritten digit "7"
+const DIGIT_7 = [
+  [0,0,0,0,0,0,0,0],
+  [0,1,1,1,1,1,1,0],
+  [0,0,0,0,0,1,1,0],
+  [0,0,0,0,1,1,0,0],
+  [0,0,0,1,1,0,0,0],
+  [0,0,1,1,0,0,0,0],
+  [0,0,1,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0]
+];
+
+// 7x7 version for convolution demos
+const INPUT_7x7 = [
+  [0, 0, 1, 1, 1, 0, 0],
+  [0, 0, 0, 0, 1, 0, 0],
+  [0, 0, 0, 1, 0, 0, 0],
+  [0, 0, 1, 0, 0, 0, 0],
+  [0, 1, 1, 0, 0, 0, 0],
+  [0, 1, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0]
+];
+
+// ============================================================
+// MINIMAP / SCROLL TRACKING
+// ============================================================
+function scrollToViz(id) {
+  document.getElementById(id).scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+const vizSections = ['viz91','viz92','viz93','viz94','viz95','viz96','viz97','viz98'];
+window.addEventListener('scroll', function() {
+  const steps = document.querySelectorAll('.mm-step');
+  let activeIdx = 0;
+  for (let i = 0; i < vizSections.length; i++) {
+    const el = document.getElementById(vizSections[i]);
+    if (el && el.getBoundingClientRect().top < window.innerHeight / 2) activeIdx = i;
+  }
+  steps.forEach(function(s, i) {
+    s.classList.remove('active', 'done');
+    if (i < activeIdx) s.classList.add('done');
+    else if (i === activeIdx) s.classList.add('active');
+  });
+});
+
+// ============================================================
+// 9.1 WHY MLPs FAIL
+// ============================================================
+let shiftAmount = 0;
+let scrambled = false;
+let scramblePerm = null;
+
+function makeDigit7_7x7(shift) {
+  // 7x7 digit "7" with optional horizontal shift
+  const base = [
+    [0,0,0,0,0,0,0],
+    [0,1,1,1,1,1,0],
+    [0,0,0,0,0,1,0],
+    [0,0,0,0,1,0,0],
+    [0,0,0,1,0,0,0],
+    [0,0,1,0,0,0,0],
+    [0,0,0,0,0,0,0]
+  ];
+  if (shift === 0) return base;
+  const shifted = [];
+  for (let r = 0; r < 7; r++) {
+    const row = new Array(7).fill(0);
+    for (let c = 0; c < 7; c++) {
+      const sc = c - shift;
+      if (sc >= 0 && sc < 7) row[c] = base[r][sc];
+    }
+    shifted.push(row);
+  }
+  return shifted;
+}
+
+function setShift(s) {
+  shiftAmount = s;
+  document.querySelectorAll('#viz91 .btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('shiftBtn' + s);
+  if (btn) btn.classList.add('active');
+  drawMLPFail();
+}
+
+function toggleScramble() {
+  scrambled = !scrambled;
+  const btn = document.getElementById('breakScramble');
+  btn.classList.toggle('broken', scrambled);
+  if (scrambled && !scramblePerm) {
+    scramblePerm = [];
+    for (let i = 0; i < 49; i++) scramblePerm.push(i);
+    const rng = seededRandom(42);
+    for (let i = 48; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [scramblePerm[i], scramblePerm[j]] = [scramblePerm[j], scramblePerm[i]];
+    }
+  }
+  drawMLPFail();
+}
+
+function drawMLPFail() {
+  const c = document.getElementById('mlpFailCanvas');
+  const ctx = c.getContext('2d');
+  const W = c.width, H = c.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const orig = makeDigit7_7x7(0);
+  const shifted = makeDigit7_7x7(shiftAmount);
+
+  const cellSize = 36;
+  const gridW = 7 * cellSize;
+  const startX1 = 40;
+  const startY = 50;
+
+  // Draw original grid
+  ctx.font = '14px Inter, sans-serif';
+  ctx.fillStyle = '#ff9f43';
+  ctx.fillText('Original 7x7', startX1, startY - 10);
+  for (let r = 0; r < 7; r++) {
+    for (let cl = 0; cl < 7; cl++) {
+      const x = startX1 + cl * cellSize;
+      const y = startY + r * cellSize;
+      ctx.fillStyle = orig[r][cl] ? '#ff9f43' : '#1a1a2e';
+      ctx.fillRect(x, y, cellSize - 2, cellSize - 2);
+      ctx.fillStyle = orig[r][cl] ? '#0a0a0f' : '#444';
+      ctx.font = '11px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(orig[r][cl].toString(), x + cellSize/2 - 1, y + cellSize/2 + 4);
+    }
+  }
+
+  // Draw shifted grid
+  const startX2 = startX1 + gridW + 60;
+  ctx.font = '14px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#ff9f43';
+  ctx.fillText('Shifted +' + shiftAmount + 'px', startX2, startY - 10);
+  for (let r = 0; r < 7; r++) {
+    for (let cl = 0; cl < 7; cl++) {
+      const x = startX2 + cl * cellSize;
+      const y = startY + r * cellSize;
+      ctx.fillStyle = shifted[r][cl] ? '#ff9f43' : '#1a1a2e';
+      ctx.fillRect(x, y, cellSize - 2, cellSize - 2);
+      if (shifted[r][cl] !== orig[r][cl]) {
+        ctx.strokeStyle = '#e74c3c';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x, y, cellSize - 2, cellSize - 2);
+      }
+      ctx.fillStyle = shifted[r][cl] ? '#0a0a0f' : '#444';
+      ctx.font = '11px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(shifted[r][cl].toString(), x + cellSize/2 - 1, y + cellSize/2 + 4);
+    }
+  }
+
+  // Draw flattened vectors
+  const flatOrig = orig.flat();
+  const flatShifted = shifted.flat();
+  let displayOrig = flatOrig.slice();
+  let displayShifted = flatShifted.slice();
+  if (scrambled && scramblePerm) {
+    const so = new Array(49);
+    const ss = new Array(49);
+    for (let i = 0; i < 49; i++) {
+      so[i] = flatOrig[scramblePerm[i]];
+      ss[i] = flatShifted[scramblePerm[i]];
+    }
+    displayOrig = so;
+    displayShifted = ss;
+  }
+
+  const vecX = startX2 + gridW + 80;
+  const vecCellH = 6;
+  const vecW = 28;
+  const vecY = startY;
+
+  ctx.font = '12px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#888';
+  ctx.fillText('MLP Input', vecX + vecW / 2, vecY - 16);
+  ctx.fillText('(orig)', vecX + vecW / 2, vecY - 4);
+  ctx.fillText('MLP Input', vecX + vecW + 30 + vecW / 2, vecY - 16);
+  ctx.fillText('(shifted)', vecX + vecW + 30 + vecW / 2, vecY - 4);
+
+  let diffCount = 0;
+  for (let i = 0; i < 49; i++) {
+    const y = vecY + 4 + i * vecCellH;
+    ctx.fillStyle = displayOrig[i] ? '#ff9f43' : '#1a1a2e';
+    ctx.fillRect(vecX, y, vecW, vecCellH - 1);
+
+    const isDiff = displayOrig[i] !== displayShifted[i];
+    if (isDiff) diffCount++;
+    ctx.fillStyle = displayShifted[i] ? '#ff9f43' : '#1a1a2e';
+    ctx.fillRect(vecX + vecW + 30, y, vecW, vecCellH - 1);
+    if (isDiff) {
+      ctx.strokeStyle = '#e74c3c';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(vecX + vecW + 30, y, vecW, vecCellH - 1);
+    }
+  }
+
+  // Summary
+  ctx.textAlign = 'left';
+  ctx.font = '13px Inter, sans-serif';
+  ctx.fillStyle = '#e74c3c';
+  ctx.fillText(diffCount + ' / 49 positions changed', vecX, vecY + 49 * vecCellH + 24);
+  ctx.fillStyle = '#888';
+  ctx.fillText('(' + Math.round(diffCount/49*100) + '% different)', vecX, vecY + 49 * vecCellH + 42);
+
+  if (scrambled) {
+    ctx.fillStyle = '#e74c3c';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.fillText('SCRAMBLED: MLP sees no difference', startX1, H - 20);
+    ctx.fillText('(no spatial structure to lose)', startX1, H - 6);
+  }
+
+  // Arrows
+  ctx.strokeStyle = '#444';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]);
+  // From grid to vector
+  ctx.beginPath();
+  ctx.moveTo(startX1 + gridW + 10, startY + gridW / 2);
+  ctx.lineTo(startX2 - 10, startY + gridW / 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(startX2 + gridW + 10, startY + gridW / 2);
+  ctx.lineTo(vecX - 10, startY + gridW / 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.textAlign = 'left';
+}
+
+// ============================================================
+// 9.2 CONVOLUTION: SLIDING A FILTER
+// ============================================================
+let convKernel = [[-1,-1,-1],[0,0,0],[1,1,1]]; // horizontal edge
+let convPos = { r: 0, c: 0 };
+let convAutoInterval = null;
+let convOutputMap = [];
+
+const KERNELS = {
+  edgeH: [[-1,-1,-1],[0,0,0],[1,1,1]],
+  edgeV: [[-1,0,1],[-1,0,1],[-1,0,1]],
+  sharpen: [[0,-1,0],[-1,5,-1],[0,-1,0]],
+  blur: [[1/9,1/9,1/9],[1/9,1/9,1/9],[1/9,1/9,1/9]]
+};
+
+function setKernel(name) {
+  convKernel = KERNELS[name].map(r => r.slice());
+  document.querySelectorAll('#viz92 .tab-bar .btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('kern' + name.charAt(0).toUpperCase() + name.slice(1).replace(/([A-Z])/g, '$1')).classList.add('active');
+  // Simpler approach: just mark the clicked one
+  const ids = { edgeH: 'kernEdgeH', edgeV: 'kernEdgeV', sharpen: 'kernSharpen', blur: 'kernBlur' };
+  document.querySelectorAll('#viz92 .tab-bar .btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(ids[name]).classList.add('active');
+  syncKernelInputs();
+  convReset();
+}
+
+function syncKernelInputs() {
+  for (let r = 0; r < 3; r++)
+    for (let c = 0; c < 3; c++)
+      document.getElementById('k' + r + c).value = Math.round(convKernel[r][c] * 1000) / 1000;
+}
+
+function updateKernelFromInputs() {
+  for (let r = 0; r < 3; r++)
+    for (let c = 0; c < 3; c++)
+      convKernel[r][c] = parseFloat(document.getElementById('k' + r + c).value) || 0;
+  computeFullConvOutput();
+  drawConv();
+}
+
+function computeFullConvOutput() {
+  convOutputMap = [];
+  const inp = INPUT_7x7;
+  for (let r = 0; r <= 4; r++) {
+    const row = [];
+    for (let c = 0; c <= 4; c++) {
+      let sum = 0;
+      for (let m = 0; m < 3; m++)
+        for (let n = 0; n < 3; n++)
+          sum += inp[r + m][c + n] * convKernel[m][n];
+      row.push(Math.round(sum * 100) / 100);
+    }
+    convOutputMap.push(row);
+  }
+}
+
+function convStep() {
+  convPos.c++;
+  if (convPos.c > 4) { convPos.c = 0; convPos.r++; }
+  if (convPos.r > 4) { convPos.r = 0; convPos.c = 0; }
+  drawConv();
+}
+
+function convAutoToggle() {
+  if (convAutoInterval) {
+    clearInterval(convAutoInterval);
+    convAutoInterval = null;
+    document.getElementById('convAutoBtn').classList.remove('active');
+  } else {
+    convAutoInterval = setInterval(convStep, 600);
+    document.getElementById('convAutoBtn').classList.add('active');
+  }
+}
+
+function convReset() {
+  if (convAutoInterval) { clearInterval(convAutoInterval); convAutoInterval = null; }
+  document.getElementById('convAutoBtn').classList.remove('active');
+  convPos = { r: 0, c: 0 };
+  computeFullConvOutput();
+  drawConv();
+}
+
+function drawConv() {
+  const c = document.getElementById('convCanvas');
+  const ctx = c.getContext('2d');
+  const W = c.width, H = c.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const inp = INPUT_7x7;
+  const cellSize = 46;
+  const inpX = 30, inpY = 60;
+
+  // Title
+  ctx.font = 'bold 14px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#ff9f43';
+  ctx.fillText('Input 7x7', inpX, inpY - 15);
+
+  // Draw input grid
+  for (let r = 0; r < 7; r++) {
+    for (let cl = 0; cl < 7; cl++) {
+      const x = inpX + cl * cellSize;
+      const y = inpY + r * cellSize;
+      const highlight = r >= convPos.r && r < convPos.r + 3 && cl >= convPos.c && cl < convPos.c + 3;
+      ctx.fillStyle = highlight ? (inp[r][cl] ? '#ff9f43' : '#2a3a4a') : (inp[r][cl] ? '#886633' : '#1a1a2e');
+      ctx.fillRect(x, y, cellSize - 2, cellSize - 2);
+      if (highlight) {
+        ctx.strokeStyle = '#ff9f43';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x, y, cellSize - 2, cellSize - 2);
+      }
+      ctx.fillStyle = '#ddd';
+      ctx.font = '13px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(inp[r][cl].toString(), x + cellSize / 2 - 1, y + cellSize / 2 + 4);
+    }
+  }
+
+  // Draw kernel
+  const kernX = inpX + 7 * cellSize + 40;
+  const kernY = inpY + 20;
+  const kCell = 46;
+  ctx.font = 'bold 14px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#ff9f43';
+  ctx.fillText('Kernel 3x3', kernX, kernY - 15);
+
+  for (let r = 0; r < 3; r++) {
+    for (let cl = 0; cl < 3; cl++) {
+      const x = kernX + cl * kCell;
+      const y = kernY + r * kCell;
+      const v = convKernel[r][cl];
+      ctx.fillStyle = v > 0 ? 'rgba(46,204,113,0.3)' : v < 0 ? 'rgba(231,76,60,0.3)' : '#1a1a2e';
+      ctx.fillRect(x, y, kCell - 2, kCell - 2);
+      ctx.strokeStyle = '#ff9f43';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x, y, kCell - 2, kCell - 2);
+      ctx.fillStyle = '#eee';
+      ctx.font = '13px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText((Math.round(v * 100) / 100).toString(), x + kCell / 2 - 1, y + kCell / 2 + 4);
+    }
+  }
+
+  // Draw element-wise multiplication
+  const multX = kernX;
+  const multY = kernY + 3 * kCell + 30;
+  ctx.font = '12px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#888';
+  ctx.fillText('Element-wise multiply & sum:', multX, multY - 8);
+
+  let sum = 0;
+  let terms = [];
+  for (let m = 0; m < 3; m++) {
+    for (let n = 0; n < 3; n++) {
+      const iv = inp[convPos.r + m][convPos.c + n];
+      const kv = convKernel[m][n];
+      const prod = iv * kv;
+      sum += prod;
+      terms.push(iv + '*' + (Math.round(kv * 100) / 100));
+    }
+  }
+  sum = Math.round(sum * 100) / 100;
+
+  ctx.font = '11px monospace';
+  ctx.fillStyle = '#aaa';
+  const termsStr = terms.join(' + ');
+  // Split into 2 lines if needed
+  if (termsStr.length > 50) {
+    ctx.fillText(terms.slice(0, 5).join(' + ') + ' +', multX, multY + 10);
+    ctx.fillText(terms.slice(5).join(' + '), multX, multY + 26);
+    ctx.fillStyle = '#ff9f43';
+    ctx.font = 'bold 14px monospace';
+    ctx.fillText('= ' + sum, multX, multY + 50);
+  } else {
+    ctx.fillText(termsStr, multX, multY + 10);
+    ctx.fillStyle = '#ff9f43';
+    ctx.font = 'bold 14px monospace';
+    ctx.fillText('= ' + sum, multX, multY + 34);
+  }
+
+  // Draw output feature map
+  const outX = kernX + 200;
+  const outY = inpY;
+  const outCell = 46;
+  ctx.font = 'bold 14px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#ff9f43';
+  ctx.fillText('Output 5x5', outX, outY - 15);
+
+  for (let r = 0; r < 5; r++) {
+    for (let cl = 0; cl < 5; cl++) {
+      const x = outX + cl * outCell;
+      const y = outY + r * outCell;
+      const computed = (r < convPos.r) || (r === convPos.r && cl <= convPos.c);
+      const current = r === convPos.r && cl === convPos.c;
+
+      if (current) {
+        ctx.fillStyle = '#ff9f4366';
+        ctx.fillRect(x, y, outCell - 2, outCell - 2);
+        ctx.strokeStyle = '#ff9f43';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x, y, outCell - 2, outCell - 2);
+      } else if (computed) {
+        const val = convOutputMap[r] ? convOutputMap[r][cl] : 0;
+        const intensity = Math.min(Math.abs(val) / 3, 1);
+        ctx.fillStyle = val >= 0 ? `rgba(46,204,113,${intensity * 0.6})` : `rgba(231,76,60,${intensity * 0.6})`;
+        ctx.fillRect(x, y, outCell - 2, outCell - 2);
+      } else {
+        ctx.fillStyle = '#1a1a2e';
+        ctx.fillRect(x, y, outCell - 2, outCell - 2);
+      }
+
+      ctx.strokeStyle = '#2a2a4a';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x, y, outCell - 2, outCell - 2);
+
+      if (computed && convOutputMap[r]) {
+        ctx.fillStyle = '#eee';
+        ctx.font = '11px monospace';
+        ctx.textAlign = 'center';
+        const dispVal = current ? sum : convOutputMap[r][cl];
+        ctx.fillText(dispVal.toString(), x + outCell / 2 - 1, y + outCell / 2 + 4);
+      }
+    }
+  }
+
+  // Position indicator
+  ctx.font = '12px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#888';
+  ctx.fillText('Position: (' + convPos.r + ', ' + convPos.c + ')', inpX, H - 15);
+
+  ctx.textAlign = 'left';
+}
+
+// ============================================================
+// 9.3 PADDING & STRIDE
+// ============================================================
+let psPos = { r: 0, c: 0 };
+let psAutoInterval = null;
+
+function updatePadStride() {
+  document.getElementById('padVal').textContent = document.getElementById('padSlider').value;
+  document.getElementById('strideVal').textContent = document.getElementById('strideSlider').value;
+  psPos = { r: 0, c: 0 };
+  drawPadStride();
+}
+
+function padStrideStep() {
+  const pad = parseInt(document.getElementById('padSlider').value);
+  const stride = parseInt(document.getElementById('strideSlider').value);
+  const inSize = 7 + 2 * pad;
+  const outSize = Math.floor((inSize - 3) / stride) + 1;
+
+  psPos.c++;
+  if (psPos.c >= outSize) { psPos.c = 0; psPos.r++; }
+  if (psPos.r >= outSize) { psPos.r = 0; psPos.c = 0; }
+  drawPadStride();
+}
+
+function padStrideAutoToggle() {
+  if (psAutoInterval) {
+    clearInterval(psAutoInterval);
+    psAutoInterval = null;
+    document.getElementById('psAutoBtn').classList.remove('active');
+  } else {
+    psAutoInterval = setInterval(padStrideStep, 500);
+    document.getElementById('psAutoBtn').classList.add('active');
+  }
+}
+
+function padStrideReset() {
+  if (psAutoInterval) { clearInterval(psAutoInterval); psAutoInterval = null; }
+  document.getElementById('psAutoBtn').classList.remove('active');
+  psPos = { r: 0, c: 0 };
+  drawPadStride();
+}
+
+function drawPadStride() {
+  const c = document.getElementById('padStrideCanvas');
+  const ctx = c.getContext('2d');
+  const W = c.width, H = c.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = parseInt(document.getElementById('padSlider').value);
+  const stride = parseInt(document.getElementById('strideSlider').value);
+  const inSize = 7;
+  const paddedSize = inSize + 2 * pad;
+  const outSize = Math.floor((paddedSize - 3) / stride) + 1;
+
+  const maxCells = Math.max(paddedSize, 11);
+  const cellSize = Math.min(32, Math.floor((350) / maxCells));
+  const inpX = 30, inpY = 60;
+
+  // Title
+  ctx.font = 'bold 14px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#ff9f43';
+  ctx.fillText('Input ' + inSize + 'x' + inSize + ' (padded: ' + paddedSize + 'x' + paddedSize + ')', inpX, inpY - 15);
+
+  // Build padded input
+  const padded = [];
+  for (let r = 0; r < paddedSize; r++) {
+    const row = [];
+    for (let cl = 0; cl < paddedSize; cl++) {
+      const ir = r - pad, ic = cl - pad;
+      if (ir >= 0 && ir < 7 && ic >= 0 && ic < 7) row.push(INPUT_7x7[ir][ic]);
+      else row.push(0);
+    }
+    padded.push(row);
+  }
+
+  // Kernel position in padded coords
+  const kernR = psPos.r * stride;
+  const kernC = psPos.c * stride;
+
+  // Draw padded input
+  for (let r = 0; r < paddedSize; r++) {
+    for (let cl = 0; cl < paddedSize; cl++) {
+      const x = inpX + cl * cellSize;
+      const y = inpY + r * cellSize;
+      const isPad = (r < pad || r >= pad + inSize || cl < pad || cl >= pad + inSize);
+      const inKern = r >= kernR && r < kernR + 3 && cl >= kernC && cl < kernC + 3;
+
+      if (isPad) {
+        ctx.fillStyle = inKern ? '#2a3a4a' : '#0a0a1a';
+        ctx.fillRect(x, y, cellSize - 1, cellSize - 1);
+        ctx.strokeStyle = '#333';
+        ctx.setLineDash([2, 2]);
+        ctx.strokeRect(x, y, cellSize - 1, cellSize - 1);
+        ctx.setLineDash([]);
+      } else {
+        ctx.fillStyle = inKern ? (padded[r][cl] ? '#ff9f43' : '#2a3a4a') : (padded[r][cl] ? '#886633' : '#1a1a2e');
+        ctx.fillRect(x, y, cellSize - 1, cellSize - 1);
+      }
+
+      if (inKern) {
+        ctx.strokeStyle = '#ff9f43';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x, y, cellSize - 1, cellSize - 1);
+        ctx.lineWidth = 1;
+      }
+
+      if (cellSize >= 20) {
+        ctx.fillStyle = isPad ? '#555' : '#ccc';
+        ctx.font = '10px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(padded[r][cl].toString(), x + cellSize / 2, y + cellSize / 2 + 3);
+      }
+    }
+  }
+
+  // Draw output
+  const outX = inpX + paddedSize * cellSize + 60;
+  const outCellSize = Math.min(cellSize, 32);
+  ctx.font = 'bold 14px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#ff9f43';
+  ctx.fillText('Output ' + outSize + 'x' + outSize, outX, inpY - 15);
+
+  // Compute output
+  for (let r = 0; r < outSize; r++) {
+    for (let cl = 0; cl < outSize; cl++) {
+      const x = outX + cl * outCellSize;
+      const y = inpY + r * outCellSize;
+      const sr = r * stride, sc = cl * stride;
+      let sum = 0;
+      for (let m = 0; m < 3; m++)
+        for (let n = 0; n < 3; n++)
+          sum += (padded[sr + m] ? (padded[sr + m][sc + n] || 0) : 0) * convKernel[m][n];
+      sum = Math.round(sum * 100) / 100;
+
+      const current = r === psPos.r && cl === psPos.c;
+      const computed = r < psPos.r || (r === psPos.r && cl <= psPos.c);
+
+      if (current) {
+        ctx.fillStyle = '#ff9f4366';
+      } else if (computed) {
+        const intensity = Math.min(Math.abs(sum) / 3, 1);
+        ctx.fillStyle = sum >= 0 ? `rgba(46,204,113,${intensity * 0.5})` : `rgba(231,76,60,${intensity * 0.5})`;
+      } else {
+        ctx.fillStyle = '#1a1a2e';
+      }
+      ctx.fillRect(x, y, outCellSize - 1, outCellSize - 1);
+      ctx.strokeStyle = current ? '#ff9f43' : '#2a2a4a';
+      ctx.lineWidth = current ? 2 : 1;
+      ctx.strokeRect(x, y, outCellSize - 1, outCellSize - 1);
+
+      if (computed && outCellSize >= 20) {
+        ctx.fillStyle = '#eee';
+        ctx.font = '10px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(sum.toString(), x + outCellSize / 2, y + outCellSize / 2 + 3);
+      }
+    }
+  }
+
+  // Formula display
+  ctx.font = '14px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#ccc';
+  const formulaY = Math.max(inpY + paddedSize * cellSize + 30, inpY + outSize * outCellSize + 30);
+  ctx.fillText('Formula: floor((' + inSize + ' + 2*' + pad + ' - 3) / ' + stride + ') + 1 = ' + outSize, inpX, Math.min(formulaY, H - 20));
+
+  ctx.font = '12px monospace';
+  ctx.fillStyle = '#888';
+  ctx.fillText('Position: (' + psPos.r + ', ' + psPos.c + ')  Stride jumps: ' + stride + 'px', outX, Math.min(formulaY, H - 20));
+}
+
+// ============================================================
+// 9.4 MULTIPLE CHANNELS & FILTERS
+// ============================================================
+let noShareWeights = false;
+
+function updateFilters() {
+  document.getElementById('numFiltersVal').textContent = document.getElementById('numFilters').value;
+  drawChannels();
+}
+
+function toggleNoShare() {
+  noShareWeights = !noShareWeights;
+  document.getElementById('breakShareWeights').classList.toggle('broken', noShareWeights);
+  drawChannels();
+}
+
+function drawChannels() {
+  const c = document.getElementById('channelsCanvas');
+  const ctx = c.getContext('2d');
+  const W = c.width, H = c.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const nFilters = parseInt(document.getElementById('numFilters').value);
+  const colors = ['#e74c3c', '#2ecc71', '#3498db']; // RGB channels
+  const chanNames = ['R', 'G', 'B'];
+
+  const cellSize = 22;
+  const inSize = 5; // show smaller for clarity
+  const kSize = 3;
+  const outSize = inSize - kSize + 1; // 3
+
+  // Generate random input per channel
+  const rng = seededRandom(123);
+  const inputChans = [];
+  for (let ch = 0; ch < 3; ch++) {
+    const m = [];
+    for (let r = 0; r < inSize; r++) {
+      const row = [];
+      for (let cl = 0; cl < inSize; cl++) row.push(Math.round(rng() * 5) / 5);
+      row.push();
+      m.push(row);
+    }
+    inputChans.push(m);
+  }
+
+  // Generate filters
+  const filters = [];
+  for (let f = 0; f < nFilters; f++) {
+    const kernels = [];
+    for (let ch = 0; ch < 3; ch++) {
+      const k = [];
+      for (let r = 0; r < 3; r++) {
+        const row = [];
+        for (let cl = 0; cl < 3; cl++) row.push(Math.round((rng() * 2 - 1) * 10) / 10);
+        k.push(row);
+      }
+      kernels.push(k);
+    }
+    filters.push(kernels);
+  }
+
+  // Draw input channels
+  const startX = 20;
+  const startY = 50;
+
+  ctx.font = 'bold 14px Inter, sans-serif';
+  ctx.fillStyle = '#ff9f43';
+  ctx.textAlign = 'left';
+  ctx.fillText('Input: 5x5x3 (RGB)', startX, startY - 15);
+
+  for (let ch = 0; ch < 3; ch++) {
+    const offX = startX + ch * (inSize * cellSize + 12);
+    const offY = startY;
+
+    ctx.fillStyle = colors[ch];
+    ctx.font = '11px Inter, sans-serif';
+    ctx.fillText(chanNames[ch], offX + inSize * cellSize / 2 - 3, offY - 4);
+
+    for (let r = 0; r < inSize; r++) {
+      for (let cl = 0; cl < inSize; cl++) {
+        const x = offX + cl * cellSize;
+        const y = offY + r * cellSize;
+        const v = inputChans[ch][r][cl];
+        ctx.fillStyle = `rgba(${ch===0?200:50},${ch===1?200:50},${ch===2?200:50},${0.2+v*0.6})`;
+        ctx.fillRect(x, y, cellSize - 1, cellSize - 1);
+        if (cellSize >= 18) {
+          ctx.fillStyle = '#ddd';
+          ctx.font = '9px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText(v.toFixed(1), x + cellSize / 2, y + cellSize / 2 + 3);
+        }
+      }
+    }
+  }
+
+  // Arrow
+  const arrowX = startX + 3 * (inSize * cellSize + 12) + 10;
+  ctx.strokeStyle = '#555';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(arrowX, startY + inSize * cellSize / 2);
+  ctx.lineTo(arrowX + 30, startY + inSize * cellSize / 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(arrowX + 25, startY + inSize * cellSize / 2 - 5);
+  ctx.lineTo(arrowX + 30, startY + inSize * cellSize / 2);
+  ctx.lineTo(arrowX + 25, startY + inSize * cellSize / 2 + 5);
+  ctx.stroke();
+
+  // Draw output feature maps
+  const outStartX = arrowX + 50;
+  const outCellSize = 26;
+  const maxPerRow = Math.min(nFilters, 4);
+
+  ctx.font = 'bold 14px Inter, sans-serif';
+  ctx.fillStyle = '#ff9f43';
+  ctx.textAlign = 'left';
+  ctx.fillText('Output: ' + outSize + 'x' + outSize + 'x' + nFilters + ' (' + nFilters + ' filters)', outStartX, startY - 15);
+
+  for (let f = 0; f < nFilters; f++) {
+    const col = f % maxPerRow;
+    const row = Math.floor(f / maxPerRow);
+    const oX = outStartX + col * (outSize * outCellSize + 20);
+    const oY = startY + row * (outSize * outCellSize + 35);
+
+    ctx.fillStyle = '#888';
+    ctx.font = '10px Inter, sans-serif';
+    ctx.fillText('F' + (f + 1), oX, oY - 4);
+
+    for (let r = 0; r < outSize; r++) {
+      for (let cl = 0; cl < outSize; cl++) {
+        // Compute convolution
+        let sum = 0;
+        for (let ch = 0; ch < 3; ch++) {
+          for (let m = 0; m < 3; m++) {
+            for (let n = 0; n < 3; n++) {
+              sum += inputChans[ch][r + m][cl + n] * filters[f][ch][m][n];
+            }
+          }
+        }
+        sum = Math.round(sum * 100) / 100;
+
+        const x = oX + cl * outCellSize;
+        const y = oY + r * outCellSize;
+        const intensity = Math.min(Math.abs(sum) / 5, 1);
+        ctx.fillStyle = sum >= 0 ? `rgba(255,159,67,${0.1 + intensity * 0.7})` : `rgba(100,100,255,${0.1 + intensity * 0.7})`;
+        ctx.fillRect(x, y, outCellSize - 1, outCellSize - 1);
+        ctx.strokeStyle = '#3a3a5a';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x, y, outCellSize - 1, outCellSize - 1);
+
+        if (outCellSize >= 20) {
+          ctx.fillStyle = '#eee';
+          ctx.font = '9px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText(sum.toFixed(1), x + outCellSize / 2, y + outCellSize / 2 + 3);
+        }
+      }
+    }
+  }
+
+  // Parameter count
+  const paramCount = noShareWeights ?
+    nFilters * 3 * 3 * 3 * outSize * outSize :
+    nFilters * (3 * 3 * 3 + 1);
+
+  ctx.font = '13px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = noShareWeights ? '#e74c3c' : '#2ecc71';
+  ctx.fillText('Parameters: ' + paramCount + (noShareWeights ? ' (NO weight sharing - different weights per position!)' : ' (weight sharing)'), startX, H - 20);
+
+  if (noShareWeights) {
+    ctx.fillStyle = '#e74c3c';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.fillText('Without sharing: ' + nFilters + ' x 3 x 3 x 3 x ' + outSize + 'x' + outSize + ' = ' + paramCount + ' params (explosion!)', startX, H - 40);
+  }
+}
+
+// ============================================================
+// 9.5 POOLING
+// ============================================================
+let poolMode = 'max';
+let noPool = false;
+let poolInput = null;
+
+function generatePoolInput() {
+  const rng = seededRandom(77);
+  const m = [];
+  for (let r = 0; r < 6; r++) {
+    const row = [];
+    for (let c = 0; c < 6; c++) row.push(Math.round(rng() * 9));
+    m.push(row);
+  }
+  return m;
+}
+
+function regeneratePoolInput() {
+  const rng = seededRandom(Math.floor(Math.random() * 10000));
+  poolInput = [];
+  for (let r = 0; r < 6; r++) {
+    const row = [];
+    for (let c = 0; c < 6; c++) row.push(Math.round(rng() * 9));
+    poolInput.push(row);
+  }
+  drawPool();
+}
+
+function setPoolMode(mode) {
+  poolMode = mode;
+  document.getElementById('poolMaxBtn').classList.toggle('active', mode === 'max');
+  document.getElementById('poolAvgBtn').classList.toggle('active', mode === 'avg');
+  drawPool();
+}
+
+function toggleNoPool() {
+  noPool = !noPool;
+  document.getElementById('breakNoPool').classList.toggle('broken', noPool);
+  drawPool();
+}
+
+function drawPool() {
+  if (!poolInput) poolInput = generatePoolInput();
+
+  const c = document.getElementById('poolCanvas');
+  const ctx = c.getContext('2d');
+  const W = c.width, H = c.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const inp = poolInput;
+  const cellSize = 44;
+  const inpX = 40, inpY = 60;
+  const poolSize = 2;
+  const outSize = 3;
+
+  // Compute pooled output
+  const poolOut = [];
+  const maxPositions = [];
+  for (let r = 0; r < outSize; r++) {
+    const row = [];
+    const posRow = [];
+    for (let cl = 0; cl < outSize; cl++) {
+      const vals = [];
+      let maxVal = -Infinity, maxR = 0, maxC = 0;
+      for (let m = 0; m < poolSize; m++) {
+        for (let n = 0; n < poolSize; n++) {
+          const v = inp[r * poolSize + m][cl * poolSize + n];
+          vals.push(v);
+          if (v > maxVal) { maxVal = v; maxR = r * poolSize + m; maxC = cl * poolSize + n; }
+        }
+      }
+      if (poolMode === 'max') {
+        row.push(maxVal);
+        posRow.push({ r: maxR, c: maxC });
+      } else {
+        row.push(Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 100) / 100);
+        posRow.push(null);
+      }
+    }
+    poolOut.push(row);
+    maxPositions.push(posRow);
+  }
+
+  // Draw input grid
+  ctx.font = 'bold 14px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#ff9f43';
+  ctx.fillText('Input 6x6', inpX, inpY - 15);
+
+  // Color the 2x2 blocks
+  const blockColors = [
+    ['rgba(255,107,107,0.15)', 'rgba(78,205,196,0.15)', 'rgba(255,217,61,0.15)'],
+    ['rgba(155,89,182,0.15)', 'rgba(46,204,113,0.15)', 'rgba(52,152,219,0.15)'],
+    ['rgba(230,126,34,0.15)', 'rgba(149,165,166,0.15)', 'rgba(241,196,15,0.15)']
+  ];
+
+  for (let r = 0; r < 6; r++) {
+    for (let cl = 0; cl < 6; cl++) {
+      const x = inpX + cl * cellSize;
+      const y = inpY + r * cellSize;
+      const br = Math.floor(r / 2), bc = Math.floor(cl / 2);
+      ctx.fillStyle = blockColors[br][bc];
+      ctx.fillRect(x, y, cellSize - 1, cellSize - 1);
+
+      // Highlight max values
+      if (poolMode === 'max' && maxPositions[br][bc] && maxPositions[br][bc].r === r && maxPositions[br][bc].c === cl) {
+        ctx.strokeStyle = '#ff9f43';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(x + 1, y + 1, cellSize - 3, cellSize - 3);
+      }
+
+      ctx.fillStyle = '#eee';
+      ctx.font = '14px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(inp[r][cl].toString(), x + cellSize / 2, y + cellSize / 2 + 5);
+    }
+  }
+
+  // Draw grid lines for 2x2 blocks
+  ctx.strokeStyle = '#ff9f43';
+  ctx.lineWidth = 2;
+  for (let i = 0; i <= 3; i++) {
+    ctx.beginPath();
+    ctx.moveTo(inpX + i * 2 * cellSize, inpY);
+    ctx.lineTo(inpX + i * 2 * cellSize, inpY + 6 * cellSize);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(inpX, inpY + i * 2 * cellSize);
+    ctx.lineTo(inpX + 6 * cellSize, inpY + i * 2 * cellSize);
+    ctx.stroke();
+  }
+
+  // Arrow
+  const arrowX = inpX + 6 * cellSize + 20;
+  const arrowY = inpY + 3 * cellSize;
+  ctx.strokeStyle = '#666';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(arrowX, arrowY);
+  ctx.lineTo(arrowX + 50, arrowY);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(arrowX + 45, arrowY - 6);
+  ctx.lineTo(arrowX + 50, arrowY);
+  ctx.lineTo(arrowX + 45, arrowY + 6);
+  ctx.stroke();
+
+  ctx.font = '12px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#ff9f43';
+  ctx.fillText(poolMode === 'max' ? 'Max Pool' : 'Avg Pool', arrowX + 25, arrowY - 12);
+  ctx.fillText('2x2, stride 2', arrowX + 25, arrowY + 20);
+
+  // Draw output
+  if (noPool) {
+    ctx.font = '16px Inter, sans-serif';
+    ctx.fillStyle = '#e74c3c';
+    ctx.textAlign = 'left';
+    ctx.fillText('No Pooling!', arrowX + 70, inpY + 30);
+    ctx.font = '12px Inter, sans-serif';
+    ctx.fillText('Output stays 6x6', arrowX + 70, inpY + 52);
+    ctx.fillText('Next conv: 6x6 instead of 3x3', arrowX + 70, inpY + 70);
+    ctx.fillText('= 4x more computation per layer', arrowX + 70, inpY + 88);
+    ctx.fillText('After 5 layers without pooling:', arrowX + 70, inpY + 116);
+    ctx.fillStyle = '#ff4444';
+    ctx.font = 'bold 14px Inter, sans-serif';
+    ctx.fillText('4^5 = 1024x more computation!', arrowX + 70, inpY + 140);
+    return;
+  }
+
+  const outX = arrowX + 70;
+  const outY = inpY + (6 * cellSize - outSize * cellSize) / 2;
+  const outCellSize = cellSize;
+
+  ctx.font = 'bold 14px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#ff9f43';
+  ctx.fillText('Output 3x3', outX, outY - 15);
+
+  for (let r = 0; r < outSize; r++) {
+    for (let cl = 0; cl < outSize; cl++) {
+      const x = outX + cl * outCellSize;
+      const y = outY + r * outCellSize;
+      ctx.fillStyle = blockColors[r][cl];
+      ctx.fillRect(x, y, outCellSize - 1, outCellSize - 1);
+      ctx.strokeStyle = '#3a3a5a';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x, y, outCellSize - 1, outCellSize - 1);
+
+      ctx.fillStyle = '#eee';
+      ctx.font = '14px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(poolOut[r][cl].toString(), x + outCellSize / 2, y + outCellSize / 2 + 5);
+    }
+  }
+
+  // Summary
+  ctx.font = '12px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#888';
+  ctx.fillText('6x6 -> 3x3 (75% spatial reduction, 0 parameters)', outX, outY + outSize * outCellSize + 20);
+}
+
+// ============================================================
+// 9.6 FULL CNN PIPELINE
+// ============================================================
+let fullCNNState = 'init'; // init, running, done
+let fullCNNStep = 0;
+let bigFC = false;
+
+// CNN weights (small, seeded)
+let cnnWeights = {};
+
+function initCNNWeights() {
+  const rng = seededRandom(42);
+  // Conv1: 4 filters, 1 input channel, 3x3
+  cnnWeights.conv1 = [];
+  for (let f = 0; f < 4; f++) {
+    const k = [];
+    for (let r = 0; r < 3; r++) {
+      const row = [];
+      for (let c = 0; c < 3; c++) row.push(Math.round((rng() * 2 - 1) * 100) / 100);
+      k.push(row);
+    }
+    cnnWeights.conv1.push(k);
+  }
+  // Conv2: 8 filters, 4 input channels, 3x3
+  cnnWeights.conv2 = [];
+  for (let f = 0; f < 8; f++) {
+    const chans = [];
+    for (let ch = 0; ch < 4; ch++) {
+      const k = [];
+      for (let r = 0; r < 3; r++) {
+        const row = [];
+        for (let c = 0; c < 3; c++) row.push(Math.round((rng() * 2 - 1) * 100) / 100);
+        k.push(row);
+      }
+      chans.push(k);
+    }
+    cnnWeights.conv2.push(chans);
+  }
+  // FC: 8 -> 3
+  cnnWeights.fc = [];
+  for (let i = 0; i < 3; i++) {
+    const row = [];
+    for (let j = 0; j < 8; j++) row.push(Math.round((rng() * 2 - 1) * 100) / 100);
+    cnnWeights.fc.push(row);
+  }
+  cnnWeights.fcBias = [
+    Math.round((rng() * 2 - 1) * 100) / 100,
+    Math.round((rng() * 2 - 1) * 100) / 100,
+    Math.round((rng() * 2 - 1) * 100) / 100
+  ];
+}
+
+function conv2d(input, kernels) {
+  const inH = input[0].length;
+  const inW = input[0][0].length;
+  const nIn = input.length;
+  const results = [];
+  for (let f = 0; f < kernels.length; f++) {
+    const outH = inH - 2, outW = inW - 2;
+    const fm = [];
+    for (let r = 0; r < outH; r++) {
+      const row = [];
+      for (let c = 0; c < outW; c++) {
+        let sum = 0;
+        for (let ch = 0; ch < nIn; ch++) {
+          const kern = Array.isArray(kernels[f][0]) && Array.isArray(kernels[f][0][0]) ? kernels[f][ch] : kernels[f];
+          for (let m = 0; m < 3; m++)
+            for (let n = 0; n < 3; n++)
+              sum += input[ch][r + m][c + n] * kern[m][n];
+        }
+        row.push(sum);
+      }
+      fm.push(row);
+    }
+    results.push(fm);
+  }
+  return results;
+}
+
+function relu2d(fmaps) {
+  return fmaps.map(fm => fm.map(row => row.map(v => Math.max(0, v))));
+}
+
+function maxpool2d(fmaps) {
+  return fmaps.map(fm => {
+    const outH = Math.floor(fm.length / 2);
+    const outW = Math.floor(fm[0].length / 2);
+    const out = [];
+    for (let r = 0; r < outH; r++) {
+      const row = [];
+      for (let c = 0; c < outW; c++) {
+        const v = Math.max(fm[r*2][c*2], fm[r*2][c*2+1], fm[r*2+1][c*2], fm[r*2+1][c*2+1]);
+        row.push(v);
+      }
+      out.push(row);
+    }
+    return out;
+  });
+}
+
+function runFullCNN() {
+  const input = [DIGIT_7]; // 1 channel 8x8
+  const c1out = conv2d(input, cnnWeights.conv1.map(k => [k])); // 4 x 6x6
+  const r1out = relu2d(c1out);
+  const p1out = maxpool2d(r1out); // 4 x 3x3
+  const c2out = conv2d(p1out, cnnWeights.conv2); // 8 x 1x1
+  const r2out = relu2d(c2out);
+  // Flatten (each is 1x1 so just take the value)
+  const flat = r2out.map(fm => fm[0][0]);
+  // FC
+  const logits = [];
+  for (let i = 0; i < 3; i++) {
+    let sum = cnnWeights.fcBias[i];
+    for (let j = 0; j < flat.length; j++) sum += flat[j] * cnnWeights.fc[i][j];
+    logits.push(sum);
+  }
+  // Softmax
+  const maxL = Math.max(...logits);
+  const exps = logits.map(l => Math.exp(l - maxL));
+  const sumExp = exps.reduce((a, b) => a + b, 0);
+  const probs = exps.map(e => e / sumExp);
+
+  return { input, c1out, r1out, p1out, c2out, r2out, flat, logits, probs };
+}
+
+function toggleBigFC() {
+  bigFC = !bigFC;
+  document.getElementById('breakBigFC').classList.toggle('broken', bigFC);
+  drawFullCNN();
+}
+
+function fullCNNForward() {
+  fullCNNState = 'done';
+  drawFullCNN();
+}
+
+function fullCNNReset() {
+  fullCNNState = 'init';
+  drawFullCNN();
+}
+
+function drawFullCNN() {
+  const c = document.getElementById('fullCNNCanvas');
+  const ctx = c.getContext('2d');
+  const W = c.width, H = c.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const result = runFullCNN();
+
+  const stages = [
+    { name: 'Input\n8x8x1', data: result.input, w: 8, h: 8, ch: 1 },
+    { name: 'Conv1\n6x6x4', data: result.c1out, w: 6, h: 6, ch: 4 },
+    { name: 'ReLU', data: result.r1out, w: 6, h: 6, ch: 4 },
+    { name: 'MaxPool\n3x3x4', data: result.p1out, w: 3, h: 3, ch: 4 },
+    { name: 'Conv2\n1x1x8', data: result.c2out, w: 1, h: 1, ch: 8 },
+    { name: 'ReLU', data: result.r2out, w: 1, h: 1, ch: 8 },
+    { name: 'FC\n3 classes', data: null, w: 0, h: 0, ch: 0 }
+  ];
+
+  const totalStages = stages.length;
+  const stageW = W / totalStages;
+
+  for (let s = 0; s < totalStages; s++) {
+    const stage = stages[s];
+    const cx = s * stageW + stageW / 2;
+
+    // Title
+    const lines = stage.name.split('\n');
+    ctx.font = 'bold 12px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#ff9f43';
+    lines.forEach((line, i) => {
+      ctx.fillText(line, cx, 25 + i * 16);
+    });
+
+    if (fullCNNState === 'init' && s > 0) {
+      ctx.fillStyle = '#333';
+      ctx.font = '11px Inter, sans-serif';
+      ctx.fillText('...', cx, 200);
+      continue;
+    }
+
+    // Draw feature maps
+    if (stage.data) {
+      const maxDim = Math.max(stage.w, stage.h);
+      const cellSize = Math.min(Math.floor((stageW - 20) / maxDim), Math.floor(250 / maxDim), 20);
+      const nShow = Math.min(stage.ch, 4);
+      const fmH = stage.h * cellSize;
+
+      for (let ch = 0; ch < nShow; ch++) {
+        const offY = 60 + ch * (fmH + 8);
+        const offX = cx - (stage.w * cellSize) / 2;
+
+        for (let r = 0; r < stage.h; r++) {
+          for (let cl = 0; cl < stage.w; cl++) {
+            const v = stage.data[ch][r][cl];
+            const x = offX + cl * cellSize;
+            const y = offY + r * cellSize;
+            const norm = Math.min(Math.abs(v) / 3, 1);
+            if (v >= 0)
+              ctx.fillStyle = `rgba(255,159,67,${0.1 + norm * 0.8})`;
+            else
+              ctx.fillStyle = `rgba(100,100,255,${0.1 + norm * 0.8})`;
+            ctx.fillRect(x, y, cellSize - 1, cellSize - 1);
+
+            if (cellSize >= 14 && stage.w <= 6) {
+              ctx.fillStyle = '#eee';
+              ctx.font = '8px monospace';
+              ctx.textAlign = 'center';
+              ctx.fillText(v.toFixed(1), x + cellSize / 2, y + cellSize / 2 + 3);
+            }
+          }
+        }
+      }
+      if (stage.ch > nShow) {
+        ctx.fillStyle = '#888';
+        ctx.font = '11px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('+' + (stage.ch - nShow) + ' more', cx, 60 + nShow * (stage.h * cellSize + 8) + 10);
+      }
+    } else if (s === totalStages - 1 && fullCNNState === 'done') {
+      // FC output
+      const classes = ['digit 0', 'digit 7', 'digit 9'];
+      for (let i = 0; i < 3; i++) {
+        const barW = result.probs[i] * 80;
+        const y = 80 + i * 40;
+        ctx.fillStyle = '#1a1a2e';
+        ctx.fillRect(cx - 45, y, 80, 24);
+        ctx.fillStyle = i === 1 ? '#2ecc71' : '#ff9f4388';
+        ctx.fillRect(cx - 45, y, barW, 24);
+        ctx.fillStyle = '#eee';
+        ctx.font = '11px Inter, sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(classes[i] + ': ' + (result.probs[i] * 100).toFixed(1) + '%', cx - 42, y + 16);
+      }
+    }
+
+    // Arrow to next
+    if (s < totalStages - 1) {
+      ctx.strokeStyle = fullCNNState === 'done' ? '#ff9f43' : '#333';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(cx + stageW / 2 - 12, H / 2);
+      ctx.lineTo(cx + stageW / 2, H / 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(cx + stageW / 2 - 4, H / 2 - 4);
+      ctx.lineTo(cx + stageW / 2, H / 2);
+      ctx.lineTo(cx + stageW / 2 - 4, H / 2 + 4);
+      ctx.stroke();
+    }
+  }
+
+  // Parameter counts
+  if (fullCNNState === 'done') {
+    ctx.font = '12px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    const paramY = H - 40;
+    if (bigFC) {
+      ctx.fillStyle = '#e74c3c';
+      ctx.fillText('If we flatten 3x3x4 directly to FC(1000): 3*3*4*1000 = 36,000 params in FC alone!', 30, paramY);
+      ctx.fillText('With GAP: 4 -> 1000 = 4,000 params. 9x fewer!', 30, paramY + 18);
+    } else {
+      ctx.fillStyle = '#2ecc71';
+      ctx.fillText('Conv1: 40 | Conv2: 296 | FC: 27 | Total: 363 parameters', 30, paramY);
+      ctx.fillStyle = '#888';
+      ctx.fillText('Compare: An MLP on 8x8 with same hidden sizes would need ~2,500+ parameters', 30, paramY + 18);
+    }
+  }
+}
+
+// ============================================================
+// 9.7 BACKPROP THROUGH CONVOLUTIONS
+// ============================================================
+let bpConvState = 0; // 0=init, 1-N=steps
+let bpConvAutoInterval = null;
+let bpNoFlip = false;
+
+function bpConvStep() {
+  bpConvState++;
+  if (bpConvState > 12) bpConvState = 12;
+  drawBPConv();
+}
+
+function bpConvAutoToggle() {
+  if (bpConvAutoInterval) {
+    clearInterval(bpConvAutoInterval);
+    bpConvAutoInterval = null;
+    document.getElementById('bpConvAutoBtn').classList.remove('active');
+  } else {
+    bpConvAutoInterval = setInterval(function() {
+      bpConvState++;
+      if (bpConvState > 12) {
+        clearInterval(bpConvAutoInterval);
+        bpConvAutoInterval = null;
+        document.getElementById('bpConvAutoBtn').classList.remove('active');
+      }
+      drawBPConv();
+    }, 700);
+    document.getElementById('bpConvAutoBtn').classList.add('active');
+  }
+}
+
+function bpConvReset() {
+  if (bpConvAutoInterval) { clearInterval(bpConvAutoInterval); bpConvAutoInterval = null; }
+  document.getElementById('bpConvAutoBtn').classList.remove('active');
+  bpConvState = 0;
+  drawBPConv();
+}
+
+function toggleNoFlip() {
+  bpNoFlip = !bpNoFlip;
+  document.getElementById('breakNoFlip').classList.toggle('broken', bpNoFlip);
+  drawBPConv();
+}
+
+function drawBPConv() {
+  const c = document.getElementById('bpConvCanvas');
+  const ctx = c.getContext('2d');
+  const W = c.width, H = c.height;
+  ctx.clearRect(0, 0, W, H);
+
+  // Simple 4x4 input, 3x3 kernel -> 2x2 output
+  const input = [
+    [1, 2, 0, 1],
+    [0, 1, 3, 2],
+    [2, 0, 1, 0],
+    [1, 3, 2, 1]
+  ];
+  const kernel = [
+    [1, 0, -1],
+    [0, 1, 0],
+    [-1, 0, 1]
+  ];
+  const flippedKernel = [
+    [1, 0, -1],
+    [0, 1, 0],
+    [-1, 0, 1]
+  ]; // This kernel happens to be symmetric, let's use a non-symmetric one
+  const kernelActual = [
+    [1, 2, 0],
+    [0, -1, 1],
+    [1, 0, -1]
+  ];
+  const flipped = [
+    [-1, 0, 1],
+    [1, -1, 0],
+    [0, 2, 1]
+  ];
+
+  // Forward: compute output
+  const output = [];
+  for (let r = 0; r < 2; r++) {
+    const row = [];
+    for (let c2 = 0; c2 < 2; c2++) {
+      let sum = 0;
+      for (let m = 0; m < 3; m++)
+        for (let n = 0; n < 3; n++)
+          sum += input[r + m][c2 + n] * kernelActual[m][n];
+      row.push(sum);
+    }
+    output.push(row);
+  }
+
+  // Upstream gradient (assume dL/dOutput = all 1s for simplicity)
+  const upstreamGrad = [[1, 1], [1, 1]];
+
+  // Compute dL/dInput via full convolution with flipped kernel on padded upstream
+  // Pad upstream to 4x4 (pad=2 on each side minus original=2 -> pad by 1 on each side of upstream)
+  // Actually: dL/dInput = full_conv(upstream, flip(kernel))
+  // full conv: pad upstream by (k-1) on each side -> 2+2+2=6 padded, then valid conv with flipped kernel -> 4x4
+  const padded = [];
+  for (let r = 0; r < 6; r++) {
+    const row = [];
+    for (let c2 = 0; c2 < 6; c2++) {
+      const ur = r - 2, uc = c2 - 2;
+      if (ur >= 0 && ur < 2 && uc >= 0 && uc < 2) row.push(upstreamGrad[ur][uc]);
+      else row.push(0);
+    }
+    padded.push(row);
+  }
+
+  const useKernel = bpNoFlip ? kernelActual : flipped;
+  const dInput = [];
+  for (let r = 0; r < 4; r++) {
+    const row = [];
+    for (let c2 = 0; c2 < 4; c2++) {
+      let sum = 0;
+      for (let m = 0; m < 3; m++)
+        for (let n = 0; n < 3; n++)
+          sum += padded[r + m][c2 + n] * useKernel[m][n];
+      row.push(sum);
+    }
+    dInput.push(row);
+  }
+
+  // Compute dL/dKernel
+  const dKernel = [];
+  for (let m = 0; m < 3; m++) {
+    const row = [];
+    for (let n = 0; n < 3; n++) {
+      let sum = 0;
+      for (let r = 0; r < 2; r++)
+        for (let c2 = 0; c2 < 2; c2++)
+          sum += input[r + m][c2 + n] * upstreamGrad[r][c2];
+      row.push(sum);
+    }
+    dKernel.push(row);
+  }
+
+  const cellSize = 44;
+  const section1X = 20;
+  const section1Y = 50;
+
+  // Phase based on bpConvState
+  const showForward = bpConvState >= 0;
+  const showUpstream = bpConvState >= 1;
+  const showFlipped = bpConvState >= 3;
+  const showDInput = bpConvState >= 5;
+  const showDKernel = bpConvState >= 9;
+
+  // Draw forward: Input
+  ctx.font = 'bold 13px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#4ecdc4';
+  ctx.fillText('Input 4x4', section1X, section1Y - 10);
+
+  for (let r = 0; r < 4; r++) {
+    for (let cl = 0; cl < 4; cl++) {
+      const x = section1X + cl * cellSize;
+      const y = section1Y + r * cellSize;
+      ctx.fillStyle = '#1a2a3a';
+      ctx.fillRect(x, y, cellSize - 2, cellSize - 2);
+
+      if (showDInput && bpConvState >= 5 + r * 4 + cl - 4) {
+        const dv = dInput[r][cl];
+        const norm = Math.min(Math.abs(dv) / 5, 1);
+        ctx.fillStyle = dv >= 0 ? `rgba(255,159,67,${norm * 0.5})` : `rgba(100,100,255,${norm * 0.5})`;
+        ctx.fillRect(x, y, cellSize - 2, cellSize - 2);
+      }
+
+      ctx.fillStyle = '#4ecdc4';
+      ctx.font = '12px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(input[r][cl].toString(), x + cellSize / 2 - 1, y + 16);
+
+      if (showDInput) {
+        ctx.fillStyle = '#ff9f43';
+        ctx.font = '10px monospace';
+        ctx.fillText('g:' + dInput[r][cl], x + cellSize / 2 - 1, y + cellSize - 8);
+      }
+    }
+  }
+
+  // Draw kernel
+  const kernelX = section1X + 4 * cellSize + 30;
+  ctx.font = 'bold 13px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#4ecdc4';
+  ctx.fillText('Kernel 3x3', kernelX, section1Y - 10);
+
+  for (let r = 0; r < 3; r++) {
+    for (let cl = 0; cl < 3; cl++) {
+      const x = kernelX + cl * cellSize;
+      const y = section1Y + r * cellSize;
+      ctx.fillStyle = '#1a2a2a';
+      ctx.fillRect(x, y, cellSize - 2, cellSize - 2);
+      ctx.fillStyle = '#4ecdc4';
+      ctx.font = '12px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(kernelActual[r][cl].toString(), x + cellSize / 2 - 1, y + 16);
+
+      if (showDKernel) {
+        ctx.fillStyle = '#ff9f43';
+        ctx.font = '10px monospace';
+        ctx.fillText('g:' + dKernel[r][cl], x + cellSize / 2 - 1, y + cellSize - 8);
+      }
+    }
+  }
+
+  // Draw output & upstream gradient
+  const outX = kernelX + 3 * cellSize + 30;
+  ctx.font = 'bold 13px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#4ecdc4';
+  ctx.fillText('Output 2x2', outX, section1Y - 10);
+
+  for (let r = 0; r < 2; r++) {
+    for (let cl = 0; cl < 2; cl++) {
+      const x = outX + cl * cellSize;
+      const y = section1Y + r * cellSize;
+      ctx.fillStyle = '#1a2a3a';
+      ctx.fillRect(x, y, cellSize - 2, cellSize - 2);
+      ctx.fillStyle = '#4ecdc4';
+      ctx.font = '12px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(output[r][cl].toString(), x + cellSize / 2 - 1, y + 16);
+
+      if (showUpstream) {
+        ctx.fillStyle = '#ff9f43';
+        ctx.font = '10px monospace';
+        ctx.fillText('dL=' + upstreamGrad[r][cl], x + cellSize / 2 - 1, y + cellSize - 8);
+      }
+    }
+  }
+
+  // Draw flipped kernel
+  if (showFlipped) {
+    const fkX = section1X;
+    const fkY = section1Y + 4 * cellSize + 40;
+    ctx.font = 'bold 13px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillStyle = bpNoFlip ? '#e74c3c' : '#e74c3c';
+    ctx.fillText(bpNoFlip ? 'Kernel (NOT flipped - WRONG!)' : 'Flipped Kernel (180 rotation)', fkX, fkY - 10);
+
+    for (let r = 0; r < 3; r++) {
+      for (let cl = 0; cl < 3; cl++) {
+        const x = fkX + cl * 38;
+        const y = fkY + r * 38;
+        ctx.fillStyle = bpNoFlip ? '#3a1a1a' : '#2a1a1a';
+        ctx.fillRect(x, y, 36, 36);
+        ctx.strokeStyle = '#e74c3c';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x, y, 36, 36);
+        ctx.fillStyle = '#e74c3c';
+        ctx.font = '12px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(useKernel[r][cl].toString(), x + 18, y + 22);
+      }
+    }
+
+    if (bpNoFlip) {
+      ctx.fillStyle = '#ff4444';
+      ctx.font = 'bold 12px Inter, sans-serif';
+      ctx.fillText('Without flipping, dL/dInput is WRONG!', fkX + 3 * 38 + 20, fkY + 20);
+      ctx.fillText('Gradients will point in wrong directions.', fkX + 3 * 38 + 20, fkY + 38);
+    }
+  }
+
+  // Step indicator
+  ctx.font = '12px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#888';
+  const stepLabels = [
+    'Forward pass complete. Press Step to begin backward.',
+    'Upstream gradient: dL/dOutput arrives (here: all 1s)',
+    'Computing dL/dInput...',
+    'Flip the kernel 180 degrees for input gradient',
+    'Full convolution: pad upstream, convolve with flipped kernel',
+    'Computing dL/dInput values...',
+    'dL/dInput = full_conv(upstream_grad, flipped_kernel)',
+    'Each input pixel accumulates gradients from all outputs it influenced',
+    'Now showing gradient values on input',
+    'Computing dL/dKernel...',
+    'dL/dKernel[m,n] = sum over positions of input_patch * upstream_grad',
+    'Weight sharing means gradient accumulates across ALL positions',
+    'Backprop through convolution complete!'
+  ];
+  const label = stepLabels[Math.min(bpConvState, stepLabels.length - 1)];
+  ctx.fillText('Step ' + bpConvState + ': ' + label, 20, H - 15);
+}
+
+// ============================================================
+// 9.8 ARCHITECTURE TIMELINE
+// ============================================================
+let currentArch = 'lenet';
+
+function setArch(name) {
+  currentArch = name;
+  document.querySelectorAll('#viz98 .tab-bar .btn').forEach(b => b.classList.remove('active'));
+  const ids = { lenet: 'archLenet', alexnet: 'archAlexnet', vgg: 'archVgg', resnet: 'archResnet' };
+  document.getElementById(ids[name]).classList.add('active');
+  drawArch();
+}
+
+function drawArch() {
+  const c = document.getElementById('archCanvas');
+  const ctx = c.getContext('2d');
+  const W = c.width, H = c.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const archs = {
+    lenet: {
+      name: 'LeNet-5 (1998)',
+      author: 'Yann LeCun',
+      layers: [
+        { name: 'Input', size: '32x32x1', w: 32, color: '#888' },
+        { name: 'Conv 5x5', size: '28x28x6', w: 28, color: '#ff9f43' },
+        { name: 'Pool 2x2', size: '14x14x6', w: 14, color: '#4ecdc4' },
+        { name: 'Conv 5x5', size: '10x10x16', w: 10, color: '#ff9f43' },
+        { name: 'Pool 2x2', size: '5x5x16', w: 5, color: '#4ecdc4' },
+        { name: 'FC 120', size: '120', w: 3, color: '#e74c3c' },
+        { name: 'FC 84', size: '84', w: 2, color: '#e74c3c' },
+        { name: 'FC 10', size: '10', w: 1, color: '#e74c3c' }
+      ],
+      params: '60K',
+      innovation: 'First successful CNN. Proved convolutions work for digit recognition.',
+      activation: 'Tanh/Sigmoid'
+    },
+    alexnet: {
+      name: 'AlexNet (2012)',
+      author: 'Krizhevsky et al.',
+      layers: [
+        { name: 'Input', size: '227x227x3', w: 50, color: '#888' },
+        { name: 'Conv 11x11/4', size: '55x55x96', w: 40, color: '#ff9f43' },
+        { name: 'Pool 3x3/2', size: '27x27x96', w: 30, color: '#4ecdc4' },
+        { name: 'Conv 5x5', size: '27x27x256', w: 30, color: '#ff9f43' },
+        { name: 'Pool 3x3/2', size: '13x13x256', w: 20, color: '#4ecdc4' },
+        { name: 'Conv 3x3 x3', size: '13x13x256', w: 20, color: '#ff9f43' },
+        { name: 'Pool', size: '6x6x256', w: 12, color: '#4ecdc4' },
+        { name: 'FC 4096', size: '4096', w: 6, color: '#e74c3c' },
+        { name: 'FC 1000', size: '1000', w: 3, color: '#e74c3c' }
+      ],
+      params: '61M',
+      innovation: 'Won ImageNet 2012. ReLU activation, dropout, GPU training.',
+      activation: 'ReLU'
+    },
+    vgg: {
+      name: 'VGG-16 (2014)',
+      author: 'Simonyan & Zisserman',
+      layers: [
+        { name: 'Input', size: '224x224x3', w: 50, color: '#888' },
+        { name: '3x3 Conv x2', size: '224x224x64', w: 45, color: '#ff9f43' },
+        { name: 'Pool', size: '112x112x64', w: 35, color: '#4ecdc4' },
+        { name: '3x3 Conv x2', size: '112x112x128', w: 35, color: '#ff9f43' },
+        { name: 'Pool', size: '56x56x128', w: 25, color: '#4ecdc4' },
+        { name: '3x3 Conv x3', size: '56x56x256', w: 25, color: '#ff9f43' },
+        { name: 'Pool', size: '28x28x256', w: 18, color: '#4ecdc4' },
+        { name: '3x3 Conv x3', size: '28x28x512', w: 18, color: '#ff9f43' },
+        { name: 'Pool', size: '14x14x512', w: 12, color: '#4ecdc4' },
+        { name: '3x3 Conv x3', size: '14x14x512', w: 12, color: '#ff9f43' },
+        { name: 'Pool', size: '7x7x512', w: 8, color: '#4ecdc4' },
+        { name: 'FC 4096x2', size: '4096', w: 5, color: '#e74c3c' },
+        { name: 'FC 1000', size: '1000', w: 3, color: '#e74c3c' }
+      ],
+      params: '138M',
+      innovation: 'All 3x3 convolutions. Showed depth matters more than kernel size.',
+      activation: 'ReLU'
+    },
+    resnet: {
+      name: 'ResNet-50 (2015)',
+      author: 'He et al.',
+      layers: [
+        { name: 'Input', size: '224x224x3', w: 50, color: '#888' },
+        { name: '7x7/2 Conv', size: '112x112x64', w: 40, color: '#ff9f43' },
+        { name: 'Pool 3x3/2', size: '56x56x64', w: 30, color: '#4ecdc4' },
+        { name: 'ResBlock x3', size: '56x56x256', w: 30, color: '#2ecc71' },
+        { name: 'ResBlock x4', size: '28x28x512', w: 22, color: '#2ecc71' },
+        { name: 'ResBlock x6', size: '14x14x1024', w: 16, color: '#2ecc71' },
+        { name: 'ResBlock x3', size: '7x7x2048', w: 10, color: '#2ecc71' },
+        { name: 'GAP', size: '2048', w: 5, color: '#9b59b6' },
+        { name: 'FC 1000', size: '1000', w: 3, color: '#e74c3c' }
+      ],
+      params: '25.6M',
+      innovation: 'Skip connections enable 50-152+ layers. Batch normalization everywhere.',
+      activation: 'ReLU + BatchNorm'
+    }
+  };
+
+  const arch = archs[currentArch];
+  const nLayers = arch.layers.length;
+  const layerSpacing = (W - 80) / nLayers;
+
+  // Title
+  ctx.font = 'bold 18px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#ff9f43';
+  ctx.fillText(arch.name, W / 2, 30);
+
+  ctx.font = '12px Inter, sans-serif';
+  ctx.fillStyle = '#888';
+  ctx.fillText(arch.author + ' | ' + arch.params + ' params | Activation: ' + arch.activation, W / 2, 48);
+
+  // Draw layers
+  for (let i = 0; i < nLayers; i++) {
+    const layer = arch.layers[i];
+    const cx = 40 + i * layerSpacing + layerSpacing / 2;
+    const maxH = 300;
+    const h = Math.max(20, layer.w / 50 * maxH);
+    const w = Math.max(15, layerSpacing - 10);
+    const y = 80 + (maxH - h) / 2;
+
+    // Layer block
+    ctx.fillStyle = layer.color + '44';
+    ctx.fillRect(cx - w / 2, y, w, h);
+    ctx.strokeStyle = layer.color;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(cx - w / 2, y, w, h);
+
+    // Skip connection arrow for ResNet
+    if (currentArch === 'resnet' && layer.name.startsWith('ResBlock')) {
+      ctx.strokeStyle = '#2ecc71';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
+      const skipH = y - 10;
+      ctx.beginPath();
+      ctx.moveTo(cx - w / 2, y + h / 2);
+      ctx.lineTo(cx - w / 2 - 8, y + h / 2);
+      ctx.lineTo(cx - w / 2 - 8, skipH);
+      ctx.lineTo(cx + w / 2 + 8, skipH);
+      ctx.lineTo(cx + w / 2 + 8, y + h / 2);
+      ctx.lineTo(cx + w / 2, y + h / 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // Arrow
+      ctx.beginPath();
+      ctx.moveTo(cx + w / 2 + 4, y + h / 2 - 4);
+      ctx.lineTo(cx + w / 2, y + h / 2);
+      ctx.lineTo(cx + w / 2 + 4, y + h / 2 + 4);
+      ctx.stroke();
+    }
+
+    // Labels
+    ctx.font = '10px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#eee';
+    ctx.fillText(layer.name, cx, y + h + 16);
+    ctx.fillStyle = '#888';
+    ctx.font = '9px monospace';
+    ctx.fillText(layer.size, cx, y + h + 28);
+
+    // Arrow
+    if (i < nLayers - 1) {
+      ctx.strokeStyle = '#444';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.moveTo(cx + w / 2 + 2, 80 + maxH / 2);
+      ctx.lineTo(cx + layerSpacing - w / 2 - 2, 80 + maxH / 2);
+      ctx.stroke();
+    }
+  }
+
+  // Innovation note
+  ctx.font = '13px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#ffd93d';
+  ctx.fillText('Key Innovation: ' + arch.innovation, W / 2, H - 20);
+}
+
+
+// ============================================================
+// QUIZ DATA
+// ============================================================
+const quizData = [
+  {
+    topic: "9.1: Why MLPs Fail on Images",
+    questions: [
+      { q: "Why does shifting an image by 2 pixels drastically change the MLP input vector?", options: ["A) The pixel values themselves change", "B) Flattening destroys spatial structure, so pixels move to completely different vector positions", "C) The image becomes blurry", "D) The MLP cannot read shifted images"], correct: 1, explanation: "When a 2D image is flattened to a 1D vector, each pixel's position in the vector is determined by its (row, col) coordinate. Shifting the image moves pixels to different coordinates, which maps to different vector positions. The MLP sees a completely different input even though the visual content is nearly identical." },
+      { q: "How many parameters does the first layer of an MLP need for a 224x224x3 input with 1000 hidden neurons?", options: ["A) 150,528", "B) 150,528,000", "C) 1,000,000", "D) 672,000"], correct: 1, explanation: "Input size = 224 * 224 * 3 = 150,528. First layer weights = 150,528 * 1000 = 150,528,000 (plus 1000 biases). This is over 150 million parameters in just one layer, which is why MLPs are impractical for raw image inputs." },
+      { q: "What inductive bias do CNNs encode that MLPs lack?", options: ["A) Depth", "B) Locality and translation equivariance", "C) More parameters", "D) Faster computation"], correct: 1, explanation: "CNNs encode two key inductive biases: (1) locality -- nearby pixels are more related than distant ones, and (2) translation equivariance -- the same pattern can appear anywhere in the image and should be detected the same way. MLPs treat every input dimension independently." },
+      { q: "If you scramble the pixel order of all training AND test images identically, how does MLP performance change?", options: ["A) Performance drops to zero", "B) Performance is unchanged -- the MLP has no spatial awareness anyway", "C) Performance improves", "D) The MLP crashes"], correct: 1, explanation: "Since an MLP treats each input position independently with no spatial structure, a consistent permutation of all images is just a relabeling of input features. The MLP can learn just as well on scrambled data, proving it has no spatial awareness. A CNN would fail on scrambled data." }
+    ]
+  },
+  {
+    topic: "9.2: Convolution: Sliding a Filter",
+    questions: [
+      { q: "Why does weight sharing help with translation invariance?", options: ["A) It makes the network faster", "B) The same kernel detects the same pattern regardless of position", "C) It uses more memory", "D) It prevents overfitting"], correct: 1, explanation: "Weight sharing means the exact same 3x3 kernel is applied at every spatial position. If this kernel has learned to detect a vertical edge, it will detect that edge whether it appears at the top-left or bottom-right of the image. This is translation equivariance (the detection translates with the pattern)." },
+      { q: "A 7x7 input convolved with a 3x3 kernel (stride 1, no padding) produces what output size?", options: ["A) 7x7", "B) 3x3", "C) 5x5", "D) 4x4"], correct: 2, explanation: "Output size = (input - kernel) / stride + 1 = (7 - 3) / 1 + 1 = 5. The kernel cannot be placed in the last 2 positions along each dimension, so the output shrinks by (kernel_size - 1)." },
+      { q: "How many multiply-accumulate operations does one position of a 3x3 convolution on 1 channel require?", options: ["A) 3", "B) 6", "C) 9", "D) 27"], correct: 2, explanation: "A 3x3 kernel has 9 elements. At each position, we perform 9 multiplications (element-wise) and sum them (8 additions). So 9 multiply-accumulate operations per position." },
+      { q: "What is the difference between convolution and cross-correlation in deep learning?", options: ["A) They are completely different operations", "B) Convolution flips the kernel before sliding; most DL frameworks use cross-correlation but call it 'convolution'", "C) Cross-correlation is faster", "D) There is no difference"], correct: 1, explanation: "Mathematically, convolution flips the kernel 180 degrees before sliding. Cross-correlation does not flip. Since the kernel weights are learned, flipping is irrelevant (the network learns the flipped version). All major DL frameworks implement cross-correlation but call it Conv2d." }
+    ]
+  },
+  {
+    topic: "9.3: Padding & Stride",
+    questions: [
+      { q: "If input is 32x32 with a 5x5 conv, stride 1, padding 2, what is the output size?", options: ["A) 28x28", "B) 30x30", "C) 32x32", "D) 34x34"], correct: 2, explanation: "output = floor((32 + 2*2 - 5) / 1) + 1 = floor(31/1) + 1 = 32. Padding 2 with a 5x5 kernel gives 'same' padding, preserving the spatial dimensions." },
+      { q: "If input is 32x32x3 with a 5x5 conv, stride 1, padding 2, how many output channels with 16 filters?", options: ["A) 3", "B) 16", "C) 32", "D) 48"], correct: 1, explanation: "The number of output channels equals the number of filters, regardless of input channels. With 16 filters, the output is 32x32x16. Each filter produces one output channel." },
+      { q: "What happens if you use stride=2 on a 7x7 input with a 3x3 kernel and no padding?", options: ["A) Output is 5x5", "B) Output is 4x4", "C) Output is 3x3", "D) Output is 2x2"], correct: 2, explanation: "output = floor((7 + 0 - 3) / 2) + 1 = floor(4/2) + 1 = 3. Stride=2 means the kernel jumps 2 pixels at a time, approximately halving the spatial dimensions." },
+      { q: "Why are even-sized kernels (e.g., 4x4) rarely used?", options: ["A) They are slower", "B) They cannot detect edges", "C) They make 'same' padding asymmetric -- you need different padding on opposite sides", "D) They require more memory"], correct: 2, explanation: "For a 4x4 kernel, 'same' padding requires (4-1)/2 = 1.5, which is not an integer. You'd need padding 1 on one side and 2 on the other, creating asymmetry. Odd kernels (3x3, 5x5) have symmetric padding and a clear center pixel." }
+    ]
+  },
+  {
+    topic: "9.4: Multiple Channels & Filters",
+    questions: [
+      { q: "A Conv2d(64, 128, 3) layer has how many parameters (including bias)?", options: ["A) 73,728", "B) 73,856", "C) 128", "D) 576"], correct: 1, explanation: "Each of the 128 filters has a 3x3 kernel for each of the 64 input channels: 128 * (64 * 3 * 3) = 73,728 weights. Plus 128 biases = 73,856 total parameters. Note this is independent of spatial input size." },
+      { q: "If convolution kernels were NOT shared (different weights at each spatial position), how would the parameter count change for a 32x32 input with 3x3 kernel, 64 filters, 3 input channels?", options: ["A) Same as with sharing", "B) Multiply by 32*32 = 1024x more parameters", "C) Multiply by 30*30 = 900x more parameters", "D) Double the parameters"], correct: 2, explanation: "With weight sharing, we have 64 * (3 * 3 * 3 + 1) = 1,792 parameters. Without sharing, each of the 30*30 = 900 output positions has its own set of weights: 900 * 1,792 = 1,612,800 parameters. That is 900x more, and this is just one layer." },
+      { q: "What does a 1x1 convolution do?", options: ["A) Nothing useful", "B) Mixes information across channels at each spatial position (per-pixel FC layer)", "C) Blurs the image", "D) Doubles the spatial resolution"], correct: 1, explanation: "A 1x1 convolution at each spatial position computes a weighted sum across all input channels, producing new channel values. It is equivalent to a fully-connected layer applied independently at each pixel. Used in GoogleNet, ResNet bottlenecks, and channel attention mechanisms." },
+      { q: "Why does the parameter count of a conv layer NOT depend on the input spatial size?", options: ["A) Because spatial dimensions are fixed", "B) Because weight sharing means the same kernel is used at every position", "C) Because biases absorb the spatial information", "D) Because padding compensates"], correct: 1, explanation: "Weight sharing is the key: the same C_out * (C_in * k * k + 1) parameters are reused at every spatial position. Whether the input is 32x32 or 512x512, the kernel weights are identical. Only the computation time (not parameter count) scales with spatial size." }
+    ]
+  },
+  {
+    topic: "9.5: Pooling",
+    questions: [
+      { q: "What would happen if you used stride=1 everywhere with no pooling in a 20-layer CNN on 224x224 input?", options: ["A) The network would be faster", "B) Feature maps remain 224x224 throughout, causing massive memory and compute costs with a tiny receptive field", "C) The network would perform better", "D) Nothing different from normal"], correct: 1, explanation: "Without downsampling, feature maps stay at 224x224 through all 20 layers. Memory: 224*224*channels at every layer. Computation: the conv at each layer processes the full spatial extent. Receptive field grows only by 2 pixels per layer (for 3x3 kernels), so after 20 layers it is only ~42x42 -- the network cannot see the full image." },
+      { q: "Max pooling has how many learnable parameters?", options: ["A) pool_size * pool_size", "B) 0 -- max pooling has no learnable parameters", "C) 1 (the threshold)", "D) pool_size * channels"], correct: 1, explanation: "Max pooling simply takes the maximum value in each window. There are no weights or biases to learn. This is why some modern architectures replace max pooling with strided convolutions (stride=2), which can learn how to downsample." },
+      { q: "Why has Global Average Pooling (GAP) largely replaced flatten+FC at the end of CNNs?", options: ["A) GAP is more accurate", "B) GAP reduces a H*W*C feature map to just C values, eliminating millions of FC parameters", "C) GAP is easier to implement", "D) GAP works without training"], correct: 1, explanation: "A 7x7x512 feature map flattened to FC(4096) requires 7*7*512*4096 = 102M parameters. With GAP, we average each 7x7 map to a single value, giving 512 values, and then FC(num_classes) has only 512*num_classes parameters. This is typically 100-1000x fewer parameters." }
+    ]
+  },
+  {
+    topic: "9.6: Full CNN Pipeline",
+    questions: [
+      { q: "In the pipeline Conv->ReLU->Pool->Conv->ReLU->Pool->FC, what would happen if you removed all ReLU activations?", options: ["A) Training would be faster", "B) The two conv layers would collapse into a single linear operation, losing representational power", "C) Pooling would not work", "D) The FC layer would compensate"], correct: 1, explanation: "Without nonlinear activations between conv layers, the composition of two linear convolutions is equivalent to a single convolution with a larger kernel. Conv2(Conv1(x)) = Conv_combined(x). The network loses the ability to learn nonlinear features. ReLU between layers is essential for building a hierarchical feature extractor." },
+      { q: "Why do channels typically double when spatial dimensions halve?", options: ["A) It is arbitrary convention", "B) It roughly preserves the total amount of information (computation) per layer", "C) It is required by the math", "D) To use more memory"], correct: 1, explanation: "When spatial dims halve (e.g., 56x56 -> 28x28), the number of spatial positions drops by 4x. Doubling channels (e.g., 128 -> 256) partially compensates, keeping the per-layer computation roughly constant: 56*56*128 ~ 28*28*256. This balanced design was discovered empirically to work well." },
+      { q: "What happens if you accidentally use kernel_size=8 in the first conv layer on an 8x8 input with no padding?", options: ["A) Output is 8x8", "B) Output is 1x1 -- the entire image is reduced to a single value per filter", "C) An error occurs", "D) Output is 0x0"], correct: 1, explanation: "Output size = (8 - 8)/1 + 1 = 1. Each filter sees the ENTIRE image at once, producing a single scalar. This is essentially a fully-connected layer (one weighted sum of all 64 inputs), completely defeating the purpose of using convolutions." },
+      { q: "How does the receptive field grow through the CNN pipeline?", options: ["A) It stays the same", "B) It grows with each conv and pool layer -- deeper neurons 'see' larger regions of the input", "C) It shrinks", "D) Only pooling increases it"], correct: 1, explanation: "Each 3x3 conv layer adds 2 pixels to the receptive field (1 on each side). Pooling with stride 2 doubles the effective receptive field. So Conv->Pool->Conv gives a much larger receptive field than the raw kernel size suggests. In deep CNNs, the final layers can 'see' the entire input image." }
+    ]
+  },
+  {
+    topic: "9.7: Backprop Through Convolutions",
+    questions: [
+      { q: "Why is the kernel flipped 180 degrees when computing the gradient w.r.t. the input?", options: ["A) To make computation faster", "B) The mathematical derivation of the chain rule through cross-correlation naturally produces a convolution (with flip)", "C) It is an arbitrary convention", "D) To prevent vanishing gradients"], correct: 1, explanation: "When you derive dL/dInput by applying the chain rule to cross-correlation, the resulting expression is a convolution of the upstream gradient with the kernel. True convolution includes a 180-degree flip. This is not arbitrary -- it follows directly from the calculus." },
+      { q: "The gradient w.r.t. a kernel weight sums contributions from all spatial positions. Why?", options: ["A) Because each position has a different weight", "B) Because weight sharing means the same weight influenced every output position, so its gradient accumulates across all positions", "C) Because of batch normalization", "D) Because of padding"], correct: 1, explanation: "Weight sharing means kernel[m,n] was used at EVERY output position. By the chain rule, dL/dkernel[m,n] sums dL/doutput[i,j] * input[i+m,j+n] over all valid (i,j). This is exactly the correlation of the input with the upstream gradient." },
+      { q: "If you skip the kernel flip during backprop, what happens?", options: ["A) Gradients are slightly off", "B) The gradient direction for input pixels is WRONG -- the network cannot learn correct spatial features", "C) Nothing changes", "D) Training is faster"], correct: 1, explanation: "Skipping the flip means you are computing cross-correlation instead of convolution for the input gradient. The resulting gradients point in the wrong spatial direction. For example, a gradient that should update the left side of a patch would incorrectly update the right side. The network's spatial feature learning breaks." },
+      { q: "How does the computational cost of the backward pass through a conv layer compare to the forward pass?", options: ["A) Much cheaper", "B) Roughly 2x the forward pass (one conv for dInput, one for dKernel)", "C) Same as forward", "D) 10x more expensive"], correct: 1, explanation: "The backward pass requires two convolution-like operations: (1) computing dL/dInput (full convolution of upstream grad with flipped kernel) and (2) computing dL/dKernel (correlation of input with upstream grad). Each is roughly as expensive as the forward convolution, so the backward pass is approximately 2x the forward pass." }
+    ]
+  },
+  {
+    topic: "9.8: Modern Architectures",
+    questions: [
+      { q: "Why did VGG use only 3x3 convolutions instead of larger kernels?", options: ["A) 3x3 is faster to compute", "B) Two 3x3 layers have the same receptive field as one 5x5 but with fewer parameters and more nonlinearity", "C) Larger kernels do not work", "D) 3x3 uses less memory"], correct: 1, explanation: "Two 3x3 conv layers have receptive field 5x5 (each adds 2 pixels). Parameters: 2 * (3*3*C*C) = 18C^2 vs one 5x5: 25C^2. That is 28% fewer parameters. Plus, two layers have two ReLU activations instead of one, adding more nonlinearity. Three 3x3 layers = 7x7 receptive field with even more savings." },
+      { q: "What problem do skip connections in ResNet solve?", options: ["A) They reduce parameters", "B) They provide gradient highways that prevent vanishing gradients in deep networks", "C) They speed up inference", "D) They improve data augmentation"], correct: 1, explanation: "In very deep networks (50+ layers), gradients must flow through many layers during backprop. Without skip connections, gradients can vanish to near-zero. Skip connections provide a direct additive path: the gradient for the identity branch is exactly 1, ensuring gradients always flow to early layers. This enables training of 100+ layer networks." },
+      { q: "ResNet learns F(x) = H(x) - x instead of H(x) directly. Why is this easier?", options: ["A) F(x) has fewer parameters", "B) If the optimal mapping is close to identity, learning a small residual F(x) near zero is easier than learning H(x) from scratch", "C) F(x) is always positive", "D) It prevents overfitting"], correct: 1, explanation: "If a layer should ideally be close to identity (pass input through unchanged), learning H(x) = x is hard for a conv layer. But learning F(x) = 0 is easy -- just push weights toward zero. The skip connection provides the identity baseline, and the layer only needs to learn small corrections. This makes optimization dramatically easier." },
+      { q: "BatchNorm is applied after every conv in modern CNNs. What does it primarily help with?", options: ["A) Reducing model size", "B) Stabilizing training by normalizing layer inputs, allowing higher learning rates", "C) Improving test accuracy on unseen data", "D) Reducing inference time"], correct: 1, explanation: "BatchNorm normalizes the activations of each layer to have zero mean and unit variance across the batch. This reduces internal covariate shift (the distribution of inputs to each layer changing during training), stabilizes gradients, and allows using much higher learning rates (10x or more), speeding up convergence." }
+    ]
+  }
+];
+
+// ============================================================
+// QUIZ RENDERING
+// ============================================================
+let topicScores = {};
+let totalCorrect = 0;
+let totalAnswered = 0;
+const totalQ = 30;
+
+quizData.forEach(function(t, ti) { topicScores[ti] = { correct: 0, answered: 0, total: t.questions.length }; });
+
+function buildQuiz() {
+  const container = document.getElementById('quizQuestions');
+  container.innerHTML = '';
+  quizData.forEach(function(topic, ti) {
+    const topicDiv = document.createElement('div');
+    topicDiv.className = 'quiz-topic';
+    const header = document.createElement('div');
+    header.className = 'quiz-topic-header';
+    header.innerHTML = '<h3>' + topic.topic + '</h3><span class="quiz-topic-score" id="topicScore' + ti + '">0 / ' + topic.questions.length + '</span>';
+    header.onclick = function() {
+      const qDiv = topicDiv.querySelector('.quiz-topic-questions');
+      qDiv.classList.toggle('open');
+    };
+    topicDiv.appendChild(header);
+    const questionsDiv = document.createElement('div');
+    questionsDiv.className = 'quiz-topic-questions';
+
+    topic.questions.forEach(function(question, qi) {
+      const qDiv = document.createElement('div');
+      qDiv.className = 'quiz-question';
+      qDiv.innerHTML = '<h4>Q' + (qi+1) + ': ' + question.q + '</h4>';
+      question.options.forEach(function(opt, oi) {
+        const btn = document.createElement('button');
+        btn.className = 'quiz-option';
+        btn.textContent = opt;
+        btn.onclick = function() { checkAnswer(ti, qi, oi, qDiv); };
+        btn.id = 'qopt_' + ti + '_' + qi + '_' + oi;
+        qDiv.appendChild(btn);
+      });
+      const expDiv = document.createElement('div');
+      expDiv.className = 'quiz-explanation';
+      expDiv.id = 'qexp_' + ti + '_' + qi;
+      expDiv.textContent = question.explanation;
+      qDiv.appendChild(expDiv);
+      questionsDiv.appendChild(qDiv);
+    });
+    topicDiv.appendChild(questionsDiv);
+    container.appendChild(topicDiv);
+  });
+}
+
+function checkAnswer(ti, qi, oi, qDiv) {
+  const question = quizData[ti].questions[qi];
+  const buttons = qDiv.querySelectorAll('.quiz-option');
+  const expDiv = document.getElementById('qexp_' + ti + '_' + qi);
+  if (buttons[0].disabled) return;
+  buttons.forEach(function(b, i) {
+    b.disabled = true;
+    if (i === question.correct) b.classList.add('correct');
+    if (i === oi && oi !== question.correct) b.classList.add('wrong');
+  });
+  totalAnswered++;
+  topicScores[ti].answered++;
+  if (oi === question.correct) {
+    totalCorrect++;
+    topicScores[ti].correct++;
+    expDiv.className = 'quiz-explanation show correct-exp';
+  } else {
+    expDiv.className = 'quiz-explanation show wrong-exp';
+  }
+  document.getElementById('quizScore').textContent = totalCorrect;
+  document.getElementById('topicScore' + ti).textContent = topicScores[ti].correct + ' / ' + topicScores[ti].total;
+  document.getElementById('quizProgressBar').style.width = (totalAnswered / totalQ * 100) + '%';
+}
+
+function resetQuiz() {
+  totalCorrect = 0;
+  totalAnswered = 0;
+  quizData.forEach(function(t, ti) { topicScores[ti] = { correct: 0, answered: 0, total: t.questions.length }; });
+  buildQuiz();
+  document.getElementById('quizScore').textContent = '0';
+  document.getElementById('quizProgressBar').style.width = '0%';
+}
+
+function toggleQuiz() {
+  const section = document.getElementById('quizSection');
+  if (section.style.display === 'none') {
+    section.style.display = 'block';
+    section.scrollIntoView({ behavior: 'smooth' });
+  } else {
+    section.style.display = 'none';
+  }
+}
+
+// ============================================================
+// INITIALIZATION
+// ============================================================
+window.addEventListener('DOMContentLoaded', function() {
+  drawMLPFail();
+  syncKernelInputs();
+  computeFullConvOutput();
+  drawConv();
+  drawPadStride();
+  drawChannels();
+  drawPool();
+  initCNNWeights();
+  drawFullCNN();
+  drawBPConv();
+  drawArch();
+  buildQuiz();
+});
+
+</script>
+</body>
+</html>

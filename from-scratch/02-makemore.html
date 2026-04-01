@@ -161,7 +161,9 @@
   <span class="mm-arrow">&rarr;</span>
   <span class="mm-step" data-section="viz26" onclick="scrollToViz('viz26')">6. Embeddings</span>
   <span class="mm-arrow">&rarr;</span>
-  <span class="mm-step" data-section="viz27" onclick="scrollToViz('viz27')">7. MLP LM</span>
+  <span class="mm-step" data-section="viz27" onclick="scrollToViz('viz27')">7. Emb Space</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz28" onclick="scrollToViz('viz28')">8. MLP LM</span>
 </div>
 
 <div class="container">
@@ -592,10 +594,89 @@ print(torch.allclose(vectors, manual))  # True</code></pre>
 </div>
 
 <!-- ============================================================ -->
-<!-- VIZ 2.7: MLP LANGUAGE MODEL — THE FULL PICTURE -->
+<!-- VIZ 2.7: EMBEDDING SPACE — WHERE CHARACTERS LIVE -->
 <!-- ============================================================ -->
 <div class="viz-section" id="viz27">
-  <h2>2.7 MLP Language Model &mdash; The Full Picture</h2>
+  <h2>2.7 Embedding Space: Where Characters Live</h2>
+  <p class="subtitle">We trained character embeddings to predict the next character. But what did the network actually learn? Let&rsquo;s look at WHERE each character lives in the embedding space.</p>
+
+  <div class="controls" style="margin-bottom:16px;margin-top:0;">
+    <div class="tab-bar">
+      <button class="btn active" id="espTrainedBtn" onclick="espSetMode('trained')">Trained Embeddings</button>
+      <button class="btn" id="espRandomBtn" onclick="espSetMode('random')">Random Embeddings</button>
+    </div>
+    <button class="btn" id="espAnalogyBtn" onclick="espToggleAnalogy()">Show Analogy Tool</button>
+  </div>
+
+  <div class="viz-canvas" style="position:relative;">
+    <canvas id="espCanvas" width="900" height="500"></canvas>
+    <div class="tooltip" id="espTooltip"></div>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:#ff6b6b;"></span> Vowels</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#4ecdc4;"></span> Common Consonants</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#888;"></span> Rare Letters</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#ffd93d;"></span> Special (.)</div>
+  </div>
+
+  <!-- Analogy tool (hidden by default) -->
+  <div id="espAnalogyPanel" style="display:none;margin-top:16px;">
+    <div style="background:#0d0d1a;border:1px solid #2a2a4a;border-radius:10px;padding:16px;">
+      <h3 style="color:#ffd93d;font-size:1em;margin-bottom:12px;">Embedding Arithmetic: A &rarr; B applied to C</h3>
+      <p style="color:#888;font-size:0.85em;margin-bottom:12px;">Pick three characters. The vector from A to B is applied to C. For characters this is illustrative &mdash; for word embeddings (word2vec), analogies like king&minus;man+woman=queen actually work.</p>
+      <div class="controls" style="margin-top:0;">
+        <div class="control-group">
+          <label>A</label>
+          <select id="espCharA" onchange="drawEspCanvas()"></select>
+        </div>
+        <div class="control-group">
+          <label>B</label>
+          <select id="espCharB" onchange="drawEspCanvas()"></select>
+        </div>
+        <div class="control-group">
+          <label>C</label>
+          <select id="espCharC" onchange="drawEspCanvas()"></select>
+        </div>
+        <div class="control-group">
+          <label>Result (C + B&minus;A)</label>
+          <span class="value" id="espAnalogyResult">?</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Embeddings are the bridge between discrete symbols and continuous mathematics. The network learns to place similar items nearby &mdash; this is how neural nets understand &ldquo;similarity&rdquo; without being told what similar means.
+    <div class="formula">$$\text{similarity}(a, b) = \cos(\mathbf{e}_a, \mathbf{e}_b) = \frac{\mathbf{e}_a \cdot \mathbf{e}_b}{\|\mathbf{e}_a\| \|\mathbf{e}_b\|}$$</div>
+    <div class="key-point">
+      <span class="label">Trained vs. Random:</span>
+      <span class="desc">Trained embeddings show clear clusters (vowels together, consonants together). Random embeddings show no structure. The clustering was LEARNED from co-occurrence patterns, not imposed.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Hyperparameter Guidance:</span>
+      <span class="desc">Embedding dimension: roughly log2(vocab_size) to sqrt(vocab_size). For 26 characters, 8&ndash;16 is plenty. For 50k BPE tokens, 512&ndash;1024. Larger embeddings capture more nuance but risk overfitting on small data.</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">When someone asks &ldquo;what do embeddings learn?&rdquo; the answer is: they learn to place tokens that appear in similar contexts at nearby points. Vowels cluster because they follow and precede similar consonants. This is the distributional hypothesis at work.</div>
+    <div class="mnemonic">Embedding dimension rule of thumb: d &asymp; log2(V) to sqrt(V). Characters (V=27): 2&ndash;8 dims. BPE tokens (V=50k): 512&ndash;1024. LLM subwords (V=50k&ndash;200k): 768&ndash;4096.</div>
+  </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3>&#9888;&#65039; Common Mistakes</h3>
+    <ul>
+      <li><strong>Mistake:</strong> Using one-hot vectors instead of learned embeddings for large vocabularies. One-hot for vocab size V means V-dimensional sparse vectors with no similarity structure. <strong>Fix:</strong> Learned embeddings compress to d dimensions with meaningful similarity. One-hot treats &ldquo;cat&rdquo; and &ldquo;dog&rdquo; as equally different from &ldquo;cat&rdquo; and &ldquo;quantum&rdquo;.</li>
+      <li><strong>Mistake:</strong> Setting embedding dimension too high for your data. <strong>Fix:</strong> For character-level models, 2&ndash;16 dimensions suffice. For word-level, 100&ndash;300. For subword (LLMs), 768&ndash;4096. Oversized embeddings overfit on small data and waste computation.</li>
+    </ul>
+  </div>
+  <div class="narrative-note">
+    &#128206; <strong>Looking ahead:</strong> In <a href="04-attention-sequences.html" style="color: #ff6b6b;">Ch 4 (Attention)</a>, the attention mechanism operates ON these embedding vectors &mdash; it decides which positions in the sequence to attend to by comparing embeddings. In <a href="06-transformer.html" style="color: #ff6b6b;">Ch 6 (Transformers)</a>, token embeddings are summed with positional embeddings before entering the transformer layers.
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 2.8: MLP LANGUAGE MODEL — THE FULL PICTURE -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz28">
+  <h2>2.8 MLP Language Model &mdash; The Full Picture</h2>
   <p class="subtitle">Wire it all together. Context embeddings &rarr; concatenate &rarr; hidden layer (ReLU) &rarr; softmax &rarr; next character prediction.</p>
   <div class="controls" style="margin-bottom:16px;margin-top:0;">
     <button class="btn" id="mlpTrainBtn" onclick="toggleMlpTraining()">Train MLP</button>
@@ -825,7 +906,7 @@ function scrollToViz(id) {
   document.getElementById(id).scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-var vizSections = ['viz21','viz22','viz23','viz24','viz25','viz26','viz27'];
+var vizSections = ['viz21','viz22','viz23','viz24','viz25','viz26','viz27','viz28'];
 window.addEventListener('scroll', function() {
   var steps = document.querySelectorAll('.mm-step');
   var activeIdx = 0;
@@ -1899,7 +1980,319 @@ function drawEmbeddings() {
 })();
 
 // ============================================================
-// VIZ 2.7: MLP LANGUAGE MODEL
+// VIZ 2.7: EMBEDDING SPACE VISUALIZATION
+// ============================================================
+var espState = {
+  mode: 'trained', // 'trained' or 'random'
+  showAnalogy: false,
+  hoveredIdx: -1,
+  // Trained 2D positions: realistic clustering based on character frequency/co-occurrence
+  // Vowels cluster center-left, common consonants center-right, rare letters are outliers
+  trainedPos: {
+    '.': [-3.2, 0.1],
+    'a': [0.8, 1.5], 'e': [1.2, 0.9], 'i': [0.6, 0.3], 'o': [1.4, -0.5], 'u': [0.3, -0.8],
+    't': [-0.8, 1.8], 'n': [-0.5, 1.2], 's': [-1.0, 0.6], 'r': [-0.3, 0.8],
+    'l': [-0.7, -0.2], 'h': [-1.2, 1.4], 'd': [-1.5, 0.2], 'c': [-1.8, -0.3],
+    'm': [-0.1, -1.2], 'p': [-1.6, -0.9], 'b': [-2.0, -0.6], 'g': [-1.3, -1.4],
+    'f': [-2.1, 0.8], 'w': [-2.3, -1.1], 'k': [-2.5, 0.3], 'v': [-1.9, -1.6],
+    'y': [0.1, 2.2], 'j': [-2.8, -1.8],
+    'q': [3.2, -2.5], 'x': [3.5, 1.8], 'z': [3.0, 2.8]
+  },
+  randomPos: null
+};
+
+function espInitRandom() {
+  var r = seededRandom(77777);
+  espState.randomPos = {};
+  for (var i = 0; i < VOCAB; i++) {
+    espState.randomPos[I2C[i]] = [(r() - 0.5) * 8, (r() - 0.5) * 6];
+  }
+}
+
+function espSetMode(mode) {
+  espState.mode = mode;
+  document.getElementById('espTrainedBtn').classList.toggle('active', mode === 'trained');
+  document.getElementById('espRandomBtn').classList.toggle('active', mode === 'random');
+  drawEspCanvas();
+}
+
+function espToggleAnalogy() {
+  espState.showAnalogy = !espState.showAnalogy;
+  document.getElementById('espAnalogyPanel').style.display = espState.showAnalogy ? 'block' : 'none';
+  document.getElementById('espAnalogyBtn').classList.toggle('active', espState.showAnalogy);
+  drawEspCanvas();
+}
+
+function espInitAnalogySelects() {
+  var selA = document.getElementById('espCharA');
+  var selB = document.getElementById('espCharB');
+  var selC = document.getElementById('espCharC');
+  var html = '';
+  for (var i = 1; i < VOCAB; i++) { // skip '.'
+    html += '<option value="' + i + '">' + I2C[i] + '</option>';
+  }
+  selA.innerHTML = html;
+  selB.innerHTML = html;
+  selC.innerHTML = html;
+  // defaults: a -> e applied to t
+  selA.value = C2I['a'];
+  selB.value = C2I['e'];
+  selC.value = C2I['t'];
+}
+
+function espGetPositions() {
+  return espState.mode === 'trained' ? espState.trainedPos : espState.randomPos;
+}
+
+function drawEspCanvas() {
+  var canvas = document.getElementById('espCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  var pos = espGetPositions();
+  if (!pos) return;
+
+  var vowels = 'aeiou';
+  var common = 'tnsr lhdcmpbgfwky';
+  var rare = 'qxzj';
+
+  // Collect all points for bounds
+  var allX = [], allY = [];
+  for (var i = 0; i < VOCAB; i++) {
+    var ch = I2C[i];
+    allX.push(pos[ch][0]);
+    allY.push(pos[ch][1]);
+  }
+  var xMin = Math.min.apply(null, allX), xMax = Math.max.apply(null, allX);
+  var yMin = Math.min.apply(null, allY), yMax = Math.max.apply(null, allY);
+  var pad = Math.max(xMax - xMin, yMax - yMin) * 0.15 + 0.3;
+  xMin -= pad; xMax += pad; yMin -= pad; yMax += pad;
+
+  var margin = { top: 50, bottom: 40, left: 50, right: 50 };
+  var plotW = W - margin.left - margin.right;
+  var plotH = H - margin.top - margin.bottom;
+
+  function toScreen(p) {
+    return [
+      margin.left + (p[0] - xMin) / (xMax - xMin) * plotW,
+      margin.top + (p[1] - yMin) / (yMax - yMin) * plotH
+    ];
+  }
+
+  // Title
+  ctx.fillStyle = '#888';
+  ctx.font = '13px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Embedding Space (' + (espState.mode === 'trained' ? 'Trained' : 'Random') + ') \u2014 Hover to see neighbors', W / 2, 25);
+
+  // Grid
+  ctx.strokeStyle = '#1a1a2e';
+  ctx.lineWidth = 1;
+  for (var i = 0; i <= 4; i++) {
+    var x = margin.left + plotW * i / 4;
+    var y = margin.top + plotH * i / 4;
+    ctx.beginPath(); ctx.moveTo(x, margin.top); ctx.lineTo(x, margin.top + plotH); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(margin.left, y); ctx.lineTo(margin.left + plotW, y); ctx.stroke();
+  }
+
+  // If hovered, compute nearest neighbors and draw lines
+  var nnSet = {};
+  if (espState.hoveredIdx >= 0) {
+    var hch = I2C[espState.hoveredIdx];
+    var hp = pos[hch];
+    var dists = [];
+    for (var j = 0; j < VOCAB; j++) {
+      if (j === espState.hoveredIdx) continue;
+      var och = I2C[j];
+      var op = pos[och];
+      var d = Math.sqrt((hp[0] - op[0]) * (hp[0] - op[0]) + (hp[1] - op[1]) * (hp[1] - op[1]));
+      dists.push({ idx: j, dist: d });
+    }
+    dists.sort(function(a, b) { return a.dist - b.dist; });
+    var neighbors = dists.slice(0, 4);
+    var hScreen = toScreen(hp);
+    for (var k = 0; k < neighbors.length; k++) {
+      var nch = I2C[neighbors[k].idx];
+      var nScreen = toScreen(pos[nch]);
+      nnSet[neighbors[k].idx] = true;
+      ctx.beginPath();
+      ctx.moveTo(hScreen[0], hScreen[1]);
+      ctx.lineTo(nScreen[0], nScreen[1]);
+      ctx.strokeStyle = '#ffd93d55';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+  }
+
+  // Analogy vectors
+  var analogyResult = null;
+  if (espState.showAnalogy) {
+    var idxA = parseInt(document.getElementById('espCharA').value);
+    var idxB = parseInt(document.getElementById('espCharB').value);
+    var idxC = parseInt(document.getElementById('espCharC').value);
+    var pA = pos[I2C[idxA]], pB = pos[I2C[idxB]], pC = pos[I2C[idxC]];
+    // D = C + (B - A)
+    var pD = [pC[0] + pB[0] - pA[0], pC[1] + pB[1] - pA[1]];
+    var sA = toScreen(pA), sB = toScreen(pB), sC = toScreen(pC), sD = toScreen(pD);
+
+    // Draw A->B vector
+    ctx.beginPath(); ctx.moveTo(sA[0], sA[1]); ctx.lineTo(sB[0], sB[1]);
+    ctx.strokeStyle = '#ff6b6b'; ctx.lineWidth = 2; ctx.setLineDash([6, 4]); ctx.stroke(); ctx.setLineDash([]);
+    // Arrow head on A->B
+    var angle = Math.atan2(sB[1] - sA[1], sB[0] - sA[0]);
+    ctx.beginPath(); ctx.moveTo(sB[0], sB[1]);
+    ctx.lineTo(sB[0] - 10 * Math.cos(angle - 0.4), sB[1] - 10 * Math.sin(angle - 0.4));
+    ctx.lineTo(sB[0] - 10 * Math.cos(angle + 0.4), sB[1] - 10 * Math.sin(angle + 0.4));
+    ctx.closePath(); ctx.fillStyle = '#ff6b6b'; ctx.fill();
+
+    // Draw C->D vector (same direction)
+    ctx.beginPath(); ctx.moveTo(sC[0], sC[1]); ctx.lineTo(sD[0], sD[1]);
+    ctx.strokeStyle = '#4ecdc4'; ctx.lineWidth = 2; ctx.setLineDash([6, 4]); ctx.stroke(); ctx.setLineDash([]);
+    // Arrow head on C->D
+    var angle2 = Math.atan2(sD[1] - sC[1], sD[0] - sC[0]);
+    ctx.beginPath(); ctx.moveTo(sD[0], sD[1]);
+    ctx.lineTo(sD[0] - 10 * Math.cos(angle2 - 0.4), sD[1] - 10 * Math.sin(angle2 - 0.4));
+    ctx.lineTo(sD[0] - 10 * Math.cos(angle2 + 0.4), sD[1] - 10 * Math.sin(angle2 + 0.4));
+    ctx.closePath(); ctx.fillStyle = '#4ecdc4'; ctx.fill();
+
+    // Draw result point D
+    ctx.beginPath(); ctx.arc(sD[0], sD[1], 10, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffd93d33'; ctx.fill();
+    ctx.strokeStyle = '#ffd93d'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#ffd93d'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('?', sD[0], sD[1]);
+
+    // Find nearest real character to D
+    var bestDist = Infinity, bestIdx = -1;
+    for (var j = 0; j < VOCAB; j++) {
+      var cp = pos[I2C[j]];
+      var dd = Math.sqrt((pD[0] - cp[0]) * (pD[0] - cp[0]) + (pD[1] - cp[1]) * (pD[1] - cp[1]));
+      if (dd < bestDist) { bestDist = dd; bestIdx = j; }
+    }
+    analogyResult = I2C[bestIdx];
+    document.getElementById('espAnalogyResult').textContent = '"' + analogyResult + '" (nearest to ' + I2C[idxC] + ' + ' + I2C[idxB] + ' \u2212 ' + I2C[idxA] + ')';
+  }
+
+  // Draw all characters
+  for (var i = 0; i < VOCAB; i++) {
+    var ch = I2C[i];
+    var p = pos[ch];
+    var s = toScreen(p);
+    var isVowel = vowels.indexOf(ch) >= 0;
+    var isRare = rare.indexOf(ch) >= 0;
+    var color;
+    if (i === 0) color = '#ffd93d';
+    else if (isVowel) color = '#ff6b6b';
+    else if (isRare) color = '#888';
+    else color = '#4ecdc4';
+
+    var radius = 10;
+    var isHighlighted = (i === espState.hoveredIdx || nnSet[i]);
+    if (isHighlighted) radius = 14;
+
+    ctx.beginPath();
+    ctx.arc(s[0], s[1], radius, 0, Math.PI * 2);
+    ctx.fillStyle = color + (isHighlighted ? '66' : '33');
+    ctx.fill();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = isHighlighted ? 3 : 1.5;
+    ctx.stroke();
+
+    ctx.fillStyle = isHighlighted ? '#fff' : color;
+    ctx.font = (isHighlighted ? 'bold 14px' : '12px') + ' monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(ch, s[0], s[1]);
+  }
+
+  // Label for random mode
+  if (espState.mode === 'random') {
+    ctx.fillStyle = '#ff6b6b88';
+    ctx.font = 'bold 18px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('No learned structure \u2014 positions are random', W / 2, H - 12);
+  }
+
+  ctx.textBaseline = 'alphabetic';
+}
+
+// Hover handler for embedding space canvas
+(function() {
+  var canvas = document.getElementById('espCanvas');
+  var tooltip = document.getElementById('espTooltip');
+  canvas.addEventListener('mousemove', function(e) {
+    var pos = espGetPositions();
+    if (!pos) return;
+    var rect = canvas.getBoundingClientRect();
+    var scaleX = canvas.width / rect.width;
+    var scaleY = canvas.height / rect.height;
+    var mx = (e.clientX - rect.left) * scaleX;
+    var my = (e.clientY - rect.top) * scaleY;
+
+    var allX = [], allY = [];
+    for (var i = 0; i < VOCAB; i++) { allX.push(pos[I2C[i]][0]); allY.push(pos[I2C[i]][1]); }
+    var xMin = Math.min.apply(null, allX), xMax = Math.max.apply(null, allX);
+    var yMin = Math.min.apply(null, allY), yMax = Math.max.apply(null, allY);
+    var pad = Math.max(xMax - xMin, yMax - yMin) * 0.15 + 0.3;
+    xMin -= pad; xMax += pad; yMin -= pad; yMax += pad;
+
+    var margin = { top: 50, bottom: 40, left: 50, right: 50 };
+    var plotW = canvas.width - margin.left - margin.right;
+    var plotH = canvas.height - margin.top - margin.bottom;
+
+    var best = -1, bestDist = Infinity;
+    for (var i = 0; i < VOCAB; i++) {
+      var p = pos[I2C[i]];
+      var px = margin.left + (p[0] - xMin) / (xMax - xMin) * plotW;
+      var py = margin.top + (p[1] - yMin) / (yMax - yMin) * plotH;
+      var d = Math.sqrt((mx - px) * (mx - px) + (my - py) * (my - py));
+      if (d < bestDist) { bestDist = d; best = i; }
+    }
+
+    if (best >= 0 && bestDist < 40) {
+      espState.hoveredIdx = best;
+      var ch = I2C[best];
+      var p = pos[ch];
+      // Nearest neighbors
+      var dists = [];
+      for (var j = 0; j < VOCAB; j++) {
+        if (j === best) continue;
+        var op = pos[I2C[j]];
+        var dd = Math.sqrt((p[0] - op[0]) * (p[0] - op[0]) + (p[1] - op[1]) * (p[1] - op[1]));
+        dists.push({ idx: j, dist: dd });
+      }
+      dists.sort(function(a, b) { return a.dist - b.dist; });
+      var nn = dists.slice(0, 4).map(function(d) { return I2C[d.idx]; }).join(', ');
+
+      var vowels = 'aeiou';
+      var rare = 'qxzj';
+      var category = (best === 0) ? 'Special token' : (vowels.indexOf(ch) >= 0 ? 'Vowel' : (rare.indexOf(ch) >= 0 ? 'Rare letter' : 'Consonant'));
+
+      tooltip.innerHTML = '<div class="tt-title">"' + ch + '" \u2014 ' + category + '</div>' +
+        'Position: [' + p[0].toFixed(2) + ', ' + p[1].toFixed(2) + ']<br>' +
+        'Nearest 4: ' + nn;
+      tooltip.style.display = 'block';
+      tooltip.style.left = (e.clientX - canvas.parentElement.getBoundingClientRect().left + 15) + 'px';
+      tooltip.style.top = (e.clientY - canvas.parentElement.getBoundingClientRect().top - 10) + 'px';
+      drawEspCanvas();
+    } else {
+      if (espState.hoveredIdx >= 0) {
+        espState.hoveredIdx = -1;
+        drawEspCanvas();
+      }
+      tooltip.style.display = 'none';
+    }
+  });
+  canvas.addEventListener('mouseleave', function() {
+    espState.hoveredIdx = -1;
+    tooltip.style.display = 'none';
+    drawEspCanvas();
+  });
+})();
+
+// ============================================================
+// VIZ 2.8: MLP LANGUAGE MODEL
 // ============================================================
 var mlpState = {
   training: false, timer: null, step: 0,
@@ -2473,7 +2866,7 @@ var quizData = [
     ]
   },
   {
-    topic: "2.7: MLP Language Model",
+    topic: "2.8: MLP Language Model",
     questions: [
       { q: "If you summed the context embeddings instead of concatenating them, what information would be lost?", options: ["A) No information would be lost", "B) Positional information — 'ab' and 'ba' would produce identical inputs, so the model could not distinguish word order", "C) The embedding magnitudes", "D) Only the first character's information"], correct: 1, explanation: "Summing is commutative: emb('a') + emb('b') = emb('b') + emb('a'). The hidden layer would receive identical inputs for 'ab' and 'ba', making it impossible to learn order-dependent patterns. Concatenation preserves position because each embedding occupies a fixed slot in the input vector: [emb_pos1 ; emb_pos2 ; emb_pos3]." },
       { q: "The MLP achieves NLL ~2.10 vs. the bigram's ~2.45. What two factors explain this improvement?", options: ["A) More data and faster training", "B) Longer context window (3 chars vs 1) AND generalization via learned embeddings to unseen contexts", "C) Better random initialization", "D) The softmax function is different"], correct: 1, explanation: "The MLP improves in two distinct ways: (1) It sees 3 characters of context instead of 1, capturing longer patterns like 'ann' -> 'a'. (2) Through embeddings, it can generalize — even contexts never seen in training get reasonable predictions because similar characters have similar embeddings. Both factors work together to reduce NLL." },
@@ -2591,6 +2984,9 @@ window.addEventListener('DOMContentLoaded', function() {
   drawNgramViz();
   initEmbeddings();
   drawEmbeddings();
+  espInitRandom();
+  espInitAnalogySelects();
+  drawEspCanvas();
   initMlpParams();
   drawMlpPipeline();
   drawMlpLoss();

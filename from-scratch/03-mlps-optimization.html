@@ -148,6 +148,8 @@
   <span class="mm-step" data-section="viz35" onclick="scrollToViz('viz35')">5. L2 Reg</span>
   <span class="mm-arrow">&rarr;</span>
   <span class="mm-step" data-section="viz36" onclick="scrollToViz('viz36')">6. Dropout</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz37" onclick="scrollToViz('viz37')">7. LR Schedules</span>
 </div>
 
 <div class="container">
@@ -708,8 +710,87 @@ print(f"Eval: outputs equal = {torch.equal(out3, out4)}")</code></pre>
   </div>
 </div>
 
+<!-- ============================================================ -->
+<!-- VIZ 3.7: LEARNING RATE SCHEDULES -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz37">
+  <h2>3.7 Learning Rate Schedules</h2>
+  <p class="subtitle">A fixed learning rate is rarely optimal. Schedules like warmup + cosine decay let you start gentle, ramp up, and then anneal — matching the geometry of the loss landscape at each training phase.</p>
+  <div class="narrative-note">
+    <strong>Spiral network connection:</strong> Our spiral classifier converges faster with warmup — the initial random weights need gentle updates before aggressive learning.
+  </div>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <div class="control-group">
+      <label>Base LR: <span id="lrBaseVal" class="value">0.0010</span></label>
+      <input type="range" id="lrBaseSlider" min="1" max="100" value="10" oninput="updateLRScheduleParams()">
+    </div>
+    <div class="control-group">
+      <label>Warmup Steps: <span id="lrWarmupVal" class="value">100</span></label>
+      <input type="range" id="lrWarmupSlider" min="0" max="200" value="100" oninput="updateLRScheduleParams()">
+    </div>
+    <button class="btn" id="btnLRAnimate" onclick="toggleLRAnimation()">Animate</button>
+    <button class="btn" id="btnLRTrain" onclick="runLRScheduleTraining()">Train with Schedule</button>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="lrScheduleCanvas" width="900" height="400"></canvas>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:#f39c12;"></span> Constant</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#e74c3c;"></span> Step Decay</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#9b59b6;"></span> Cosine Decay</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#2ecc71;"></span> Warmup + Cosine</div>
+  </div>
+  <p style="color:#aaa; font-size:0.9em; margin-top:16px; margin-bottom:8px;"><strong style="color:#4ecdc4;">Training Comparison</strong> &mdash; Real loss curves from 4 tiny networks (2-16-16-3) trained on spiral data, each with a different LR schedule</p>
+  <div class="viz-canvas">
+    <canvas id="lrTrainCanvas" width="900" height="300"></canvas>
+  </div>
+  <div class="legend" id="lrTrainLegend" style="display:none;">
+    <div class="legend-item"><span class="legend-dot" style="background:#f39c12;"></span> Constant</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#e74c3c;"></span> Step Decay</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#9b59b6;"></span> Cosine Decay</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#2ecc71;"></span> Warmup + Cosine</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Why warmup? Early gradients are computed from random weights — they point in roughly random directions. A high learning rate amplifies this noise, potentially sending weights to a region they can never recover from. Warmup lets the gradients "find their bearing" first.
+    <div class="formula">$$\eta_t = \begin{cases} \eta_{\max} \cdot \frac{t}{T_{\text{warm}}} & t < T_{\text{warm}} \\ \eta_{\min} + \frac{1}{2}(\eta_{\max} - \eta_{\min})(1 + \cos(\pi \cdot \frac{t - T_{\text{warm}}}{T - T_{\text{warm}}})) & t \geq T_{\text{warm}} \end{cases}$$</div>
+    <div class="key-point">
+      <span class="label">Constant:</span>
+      <span class="desc">Simplest baseline. Works for small problems but wastes capacity — the same LR cannot be optimal for both early chaotic exploration and late fine-tuning.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Step Decay:</span>
+      <span class="desc">Drop LR by a factor (e.g., 0.1x) at fixed milestones. Classic in CV (ResNet used steps at epochs 30 and 60). Requires manual tuning of milestones.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Cosine Decay:</span>
+      <span class="desc">Smooth annealing from peak to near-zero. No milestone hyperparameters. Widely used for vision and language models.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Warmup + Cosine:</span>
+      <span class="desc">Best of both worlds. Linear warmup stabilizes early training, then cosine annealing finetunes. Standard for transformers (GPT, BERT, ViT).</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">"Learning rate schedules matter because the loss landscape changes during training. Early on, large steps explore broadly. Later, small steps refine. Warmup prevents early instability from random initial gradients. Cosine decay provides smooth annealing without milestone hyperparameters."</div>
+  </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <h3 style="color:#ff6b6b; margin-bottom:8px;">Common Mistakes</h3>
+    <ul style="list-style:none; padding:0;">
+      <li style="margin-bottom:8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Using constant LR for transformer training. Transformers are especially sensitive to early learning rate — attention weights can diverge quickly. <strong style="color:#4ecdc4;">Fix:</strong> Always use warmup + decay for transformers.</li>
+      <li style="margin-bottom:8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Setting warmup too long (wastes compute) or too short (unstable early training). <strong style="color:#4ecdc4;">Fix:</strong> 1-5% of total steps is typical for warmup.</li>
+      <li><strong style="color:#ff6b6b;">Mistake:</strong> Forgetting to adjust LR when changing batch size. Larger batches produce lower-variance gradients that can tolerate higher LR. <strong style="color:#4ecdc4;">Fix:</strong> Linear scaling rule — double batch size, double LR.</li>
+    </ul>
+  </div>
+  <div class="narrative-note">
+    &#128736; <strong>Hyperparameter Guidance:</strong> Peak LR: ~1e-4 for fine-tuning, ~1e-3 for training from scratch. Warmup: 1-5% of total steps. For cosine decay, set min_lr to ~0.1&times; peak_lr (not zero). If loss spikes mid-training, your peak LR is too high.
+  </div>
+  <div class="cross-ref">
+    <strong>See also:</strong> <a href="06-transformer.html">Chapter 6 (Transformer Training)</a> — transformer training relies heavily on warmup + cosine schedules.
+    &bull; <a href="07-distillation-compression.html">Chapter 7 (Distillation &amp; Compression)</a> — distillation uses different schedules for teacher vs student networks.
+  </div>
+</div>
+
 <div class="narrative-note">
-  <strong>Chapter 3 payoff:</strong> You now have the full toolkit for training deep networks reliably: proper initialization, normalization, residual connections, modern optimizers, and regularization. These ingredients appear in <em>every</em> production neural network. Each technique we applied to our spiral classifier would apply equally to language models and image classifiers. Now you are ready to handle sequences.
+  <strong>Chapter 3 payoff:</strong> You now have the full toolkit for training deep networks reliably: proper initialization, normalization, residual connections, modern optimizers, regularization, and learning rate schedules. These ingredients appear in <em>every</em> production neural network. Each technique we applied to our spiral classifier would apply equally to language models and image classifiers. Now you are ready to handle sequences.
 </div>
 
 </div><!-- end container -->
@@ -1072,7 +1153,7 @@ function scrollToViz(id) {
   document.getElementById(id).scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-const vizSections = ['viz31','viz32','viz33','viz34','viz35','viz36'];
+const vizSections = ['viz31','viz32','viz33','viz34','viz35','viz36','viz37'];
 window.addEventListener('scroll', function() {
   const steps = document.querySelectorAll('.mm-step');
   let activeIdx = 0;
@@ -2749,6 +2830,392 @@ function drawDropoutViz() {
 }
 
 // ============================================================
+// VIZ 3.7: LEARNING RATE SCHEDULES
+// ============================================================
+let lrAnimId = null;
+let lrAnimStep = 0;
+let lrBaseLR = 0.001;
+let lrWarmupSteps = 100;
+const LR_TOTAL_STEPS = 1000;
+const LR_COLORS = { constant: '#f39c12', step: '#e74c3c', cosine: '#9b59b6', warmupCosine: '#2ecc71' };
+
+function updateLRScheduleParams() {
+  const baseVal = parseInt(document.getElementById('lrBaseSlider').value);
+  lrBaseLR = baseVal / 10000; // 1..100 -> 0.0001..0.01
+  document.getElementById('lrBaseVal').textContent = lrBaseLR.toFixed(4);
+  lrWarmupSteps = parseInt(document.getElementById('lrWarmupSlider').value);
+  document.getElementById('lrWarmupVal').textContent = lrWarmupSteps;
+  drawLRScheduleViz();
+}
+
+function getLR_constant(step, baseLR) {
+  return baseLR;
+}
+
+function getLR_stepDecay(step, baseLR) {
+  if (step >= 600) return baseLR * 0.01;
+  if (step >= 300) return baseLR * 0.1;
+  return baseLR;
+}
+
+function getLR_cosine(step, baseLR, totalSteps) {
+  return baseLR * 0.5 * (1 + Math.cos(Math.PI * step / totalSteps));
+}
+
+function getLR_warmupCosine(step, baseLR, warmupSteps, totalSteps) {
+  if (step < warmupSteps) {
+    return baseLR * (step / warmupSteps);
+  }
+  var progress = (step - warmupSteps) / (totalSteps - warmupSteps);
+  return baseLR * 0.5 * (1 + Math.cos(Math.PI * progress));
+}
+
+function drawLRScheduleViz() {
+  var canvas = document.getElementById('lrScheduleCanvas');
+  if (!canvas) return;
+  var dpr = window.devicePixelRatio || 1;
+  if (!canvas.dataset.cssW) { canvas.dataset.cssW = canvas.width; canvas.dataset.cssH = canvas.height; }
+  var cssW = parseInt(canvas.dataset.cssW), cssH = parseInt(canvas.dataset.cssH);
+  canvas.width = cssW * dpr; canvas.height = cssH * dpr;
+  canvas.style.width = cssW + 'px'; canvas.style.height = cssH + 'px';
+  var ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  var W = cssW, H = cssH;
+  ctx.clearRect(0, 0, W, H);
+
+  var pad = { l: 70, r: 30, t: 30, b: 50 };
+  var plotW = W - pad.l - pad.r;
+  var plotH = H - pad.t - pad.b;
+
+  // Find max LR for y-axis scaling
+  var maxLR = lrBaseLR * 1.1;
+
+  // Draw axes
+  ctx.strokeStyle = '#2a2a4a';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.l, pad.t);
+  ctx.lineTo(pad.l, pad.t + plotH);
+  ctx.lineTo(pad.l + plotW, pad.t + plotH);
+  ctx.stroke();
+
+  // Y-axis labels
+  ctx.fillStyle = '#888';
+  ctx.font = '11px Inter, sans-serif';
+  ctx.textAlign = 'right';
+  for (var i = 0; i <= 4; i++) {
+    var yVal = (maxLR / 4) * i;
+    var yPos = pad.t + plotH - (i / 4) * plotH;
+    ctx.fillText(yVal.toFixed(4), pad.l - 8, yPos + 4);
+    if (i > 0) {
+      ctx.strokeStyle = '#1a1a3a';
+      ctx.beginPath();
+      ctx.moveTo(pad.l, yPos);
+      ctx.lineTo(pad.l + plotW, yPos);
+      ctx.stroke();
+    }
+  }
+
+  // X-axis labels
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#888';
+  for (var i = 0; i <= 5; i++) {
+    var xVal = (LR_TOTAL_STEPS / 5) * i;
+    var xPos = pad.l + (i / 5) * plotW;
+    ctx.fillText(Math.round(xVal), xPos, pad.t + plotH + 20);
+  }
+
+  // Axis titles
+  ctx.fillStyle = '#aaa';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Training Step', pad.l + plotW / 2, H - 8);
+  ctx.save();
+  ctx.translate(16, pad.t + plotH / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('Learning Rate', 0, 0);
+  ctx.restore();
+
+  // Draw curves
+  var schedules = [
+    { name: 'constant', color: LR_COLORS.constant, fn: function(s) { return getLR_constant(s, lrBaseLR); } },
+    { name: 'step', color: LR_COLORS.step, fn: function(s) { return getLR_stepDecay(s, lrBaseLR); } },
+    { name: 'cosine', color: LR_COLORS.cosine, fn: function(s) { return getLR_cosine(s, lrBaseLR, LR_TOTAL_STEPS); } },
+    { name: 'warmupCosine', color: LR_COLORS.warmupCosine, fn: function(s) { return getLR_warmupCosine(s, lrBaseLR, lrWarmupSteps, LR_TOTAL_STEPS); } }
+  ];
+
+  for (var si = 0; si < schedules.length; si++) {
+    var sched = schedules[si];
+    ctx.strokeStyle = sched.color;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    for (var step = 0; step <= LR_TOTAL_STEPS; step += 2) {
+      var lr = sched.fn(step);
+      var x = pad.l + (step / LR_TOTAL_STEPS) * plotW;
+      var y = pad.t + plotH - (lr / maxLR) * plotH;
+      if (step === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+
+  // Draw animated current step vertical line
+  if (lrAnimStep > 0 && lrAnimStep <= LR_TOTAL_STEPS) {
+    var xLine = pad.l + (lrAnimStep / LR_TOTAL_STEPS) * plotW;
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(xLine, pad.t);
+    ctx.lineTo(xLine, pad.t + plotH);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Draw dots at intersection with each curve
+    for (var si = 0; si < schedules.length; si++) {
+      var sched = schedules[si];
+      var lr = sched.fn(lrAnimStep);
+      var dotY = pad.t + plotH - (lr / maxLR) * plotH;
+      ctx.fillStyle = sched.color;
+      ctx.beginPath();
+      ctx.arc(xLine, dotY, 5, 0, Math.PI * 2);
+      ctx.fill();
+      // Label
+      ctx.fillStyle = sched.color;
+      ctx.font = '11px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(lr.toFixed(5), xLine + 10, dotY + 4 + si * 14 - 21);
+    }
+
+    // Step label
+    ctx.fillStyle = '#fff';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Step ' + lrAnimStep, xLine, pad.t - 8);
+  }
+
+  // Title
+  ctx.fillStyle = '#4ecdc4';
+  ctx.font = 'bold 14px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Learning Rate Schedules', pad.l, pad.t - 10);
+}
+
+function toggleLRAnimation() {
+  if (lrAnimId) {
+    clearInterval(lrAnimId);
+    lrAnimId = null;
+    document.getElementById('btnLRAnimate').textContent = 'Animate';
+    return;
+  }
+  lrAnimStep = 0;
+  document.getElementById('btnLRAnimate').textContent = 'Stop';
+  lrAnimId = setInterval(function() {
+    lrAnimStep += 5;
+    if (lrAnimStep > LR_TOTAL_STEPS) {
+      lrAnimStep = 0;
+    }
+    drawLRScheduleViz();
+  }, 30);
+}
+
+// Training comparison
+let lrTrainAnimId = null;
+let lrTrainEpoch = 0;
+let lrTrainLosses = { constant: [], step: [], cosine: [], warmupCosine: [] };
+let lrTrainNets = {};
+
+function runLRScheduleTraining() {
+  if (lrTrainAnimId) { clearTimeout(lrTrainAnimId); lrTrainAnimId = null; return; }
+  lrTrainEpoch = 0;
+  lrTrainLosses = { constant: [], step: [], cosine: [], warmupCosine: [] };
+
+  var trainRng = seededRandom(42);
+  var trainData = generateSpiralData(30, 3, 0.3, trainRng);
+  var Xtrain = flattenX(trainData.X);
+  var nTrain = trainData.X.length;
+  var Ytrain = trainData.Y;
+
+  // Create 4 identical networks (same init seed)
+  lrTrainNets = {
+    constant: createTinyNet([2, 16, 16, 3], 2, 77),
+    step: createTinyNet([2, 16, 16, 3], 2, 77),
+    cosine: createTinyNet([2, 16, 16, 3], 2, 77),
+    warmupCosine: createTinyNet([2, 16, 16, 3], 2, 77)
+  };
+
+  var totalEpochs = 200;
+  var baseLR = lrBaseLR * 50; // Scale up for per-epoch training (fewer steps)
+  var warmupEpochs = Math.round(lrWarmupSteps / 5); // scale warmup proportionally
+
+  document.getElementById('lrTrainLegend').style.display = 'flex';
+
+  function simEpoch() {
+    if (lrTrainEpoch >= totalEpochs) { lrTrainAnimId = null; return; }
+
+    var step = lrTrainEpoch;
+
+    // Constant
+    var lr1 = baseLR;
+    var loss1 = trainOneEpoch(lrTrainNets.constant, Xtrain, Ytrain, nTrain, lr1, 0, false, 0);
+    lrTrainLosses.constant.push(loss1);
+
+    // Step decay
+    var lr2 = baseLR;
+    if (step >= totalEpochs * 0.6) lr2 = baseLR * 0.01;
+    else if (step >= totalEpochs * 0.3) lr2 = baseLR * 0.1;
+    var loss2 = trainOneEpoch(lrTrainNets.step, Xtrain, Ytrain, nTrain, lr2, 0, false, 0);
+    lrTrainLosses.step.push(loss2);
+
+    // Cosine decay
+    var lr3 = baseLR * 0.5 * (1 + Math.cos(Math.PI * step / totalEpochs));
+    var loss3 = trainOneEpoch(lrTrainNets.cosine, Xtrain, Ytrain, nTrain, lr3, 0, false, 0);
+    lrTrainLosses.cosine.push(loss3);
+
+    // Warmup + Cosine
+    var lr4;
+    if (step < warmupEpochs) {
+      lr4 = baseLR * (step / warmupEpochs);
+    } else {
+      var progress = (step - warmupEpochs) / (totalEpochs - warmupEpochs);
+      lr4 = baseLR * 0.5 * (1 + Math.cos(Math.PI * progress));
+    }
+    if (lr4 < 1e-8) lr4 = 1e-8;
+    var loss4 = trainOneEpoch(lrTrainNets.warmupCosine, Xtrain, Ytrain, nTrain, lr4, 0, false, 0);
+    lrTrainLosses.warmupCosine.push(loss4);
+
+    lrTrainEpoch++;
+    drawLRTrainViz();
+    lrTrainAnimId = setTimeout(simEpoch, 25);
+  }
+  simEpoch();
+}
+
+function drawLRTrainViz() {
+  var canvas = document.getElementById('lrTrainCanvas');
+  if (!canvas) return;
+  var dpr = window.devicePixelRatio || 1;
+  if (!canvas.dataset.cssW) { canvas.dataset.cssW = canvas.width; canvas.dataset.cssH = canvas.height; }
+  var cssW = parseInt(canvas.dataset.cssW), cssH = parseInt(canvas.dataset.cssH);
+  canvas.width = cssW * dpr; canvas.height = cssH * dpr;
+  canvas.style.width = cssW + 'px'; canvas.style.height = cssH + 'px';
+  var ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  var W = cssW, H = cssH;
+  ctx.clearRect(0, 0, W, H);
+
+  var pad = { l: 60, r: 20, t: 30, b: 40 };
+  var plotW = W - pad.l - pad.r;
+  var plotH = H - pad.t - pad.b;
+
+  var allLosses = [lrTrainLosses.constant, lrTrainLosses.step, lrTrainLosses.cosine, lrTrainLosses.warmupCosine];
+  var numEpochs = allLosses[0].length;
+
+  if (numEpochs === 0) {
+    ctx.fillStyle = '#555';
+    ctx.font = '13px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Click "Train with Schedule" to compare LR schedules on spiral data', W / 2, H / 2);
+    return;
+  }
+
+  // Find max loss for y-axis (cap at reasonable value)
+  var maxLoss = 0;
+  for (var si = 0; si < allLosses.length; si++) {
+    for (var i = 0; i < allLosses[si].length; i++) {
+      var v = allLosses[si][i];
+      if (isFinite(v) && v > maxLoss) maxLoss = v;
+    }
+  }
+  maxLoss = Math.min(maxLoss, 3.0);
+  if (maxLoss < 0.5) maxLoss = 0.5;
+
+  // Axes
+  ctx.strokeStyle = '#2a2a4a';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.l, pad.t);
+  ctx.lineTo(pad.l, pad.t + plotH);
+  ctx.lineTo(pad.l + plotW, pad.t + plotH);
+  ctx.stroke();
+
+  // Y-axis labels
+  ctx.fillStyle = '#888';
+  ctx.font = '11px Inter, sans-serif';
+  ctx.textAlign = 'right';
+  for (var i = 0; i <= 4; i++) {
+    var yVal = (maxLoss / 4) * i;
+    var yPos = pad.t + plotH - (i / 4) * plotH;
+    ctx.fillText(yVal.toFixed(2), pad.l - 8, yPos + 4);
+    if (i > 0) {
+      ctx.strokeStyle = '#1a1a3a';
+      ctx.beginPath();
+      ctx.moveTo(pad.l, yPos);
+      ctx.lineTo(pad.l + plotW, yPos);
+      ctx.stroke();
+    }
+  }
+
+  // X-axis labels
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#888';
+  var totalEpochs = 200;
+  for (var i = 0; i <= 4; i++) {
+    var xVal = (totalEpochs / 4) * i;
+    var xPos = pad.l + (i / 4) * plotW;
+    ctx.fillText(Math.round(xVal), xPos, pad.t + plotH + 20);
+  }
+
+  ctx.fillStyle = '#aaa';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Epoch', pad.l + plotW / 2, H - 6);
+
+  // Draw curves
+  var names = ['constant', 'step', 'cosine', 'warmupCosine'];
+  var colors = [LR_COLORS.constant, LR_COLORS.step, LR_COLORS.cosine, LR_COLORS.warmupCosine];
+
+  for (var si = 0; si < names.length; si++) {
+    var losses = lrTrainLosses[names[si]];
+    ctx.strokeStyle = colors[si];
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    var started = false;
+    for (var i = 0; i < losses.length; i++) {
+      var v = Math.min(losses[i], maxLoss);
+      if (!isFinite(v)) continue;
+      var x = pad.l + (i / totalEpochs) * plotW;
+      var y = pad.t + plotH - (v / maxLoss) * plotH;
+      if (!started) { ctx.moveTo(x, y); started = true; }
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Label final loss
+    if (losses.length > 0) {
+      var finalLoss = losses[losses.length - 1];
+      if (isFinite(finalLoss)) {
+        var fx = pad.l + ((losses.length - 1) / totalEpochs) * plotW;
+        var fy = pad.t + plotH - (Math.min(finalLoss, maxLoss) / maxLoss) * plotH;
+        ctx.fillStyle = colors[si];
+        ctx.beginPath();
+        ctx.arc(fx, fy, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.font = '10px monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText(finalLoss.toFixed(3), fx + 8, fy + 4);
+      }
+    }
+  }
+
+  // Title
+  ctx.fillStyle = '#4ecdc4';
+  ctx.font = 'bold 13px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Training Loss by LR Schedule', pad.l, pad.t - 10);
+}
+
+// ============================================================
 // QUIZ DATA: 30 questions (5 per visualization)
 // ~40% replaced with understanding/scenario questions
 // ============================================================
@@ -2923,6 +3390,7 @@ window.addEventListener('DOMContentLoaded', function() {
   resetOptimizers();
   drawL2Viz();
   sampleDropoutMask();
+  drawLRScheduleViz();
   buildQuiz();
 });
 

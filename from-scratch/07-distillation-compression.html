@@ -141,6 +141,10 @@
   <span class="mm-step" data-section="viz76" onclick="scrollToViz('viz76')">6. Pruning</span>
   <span class="mm-arrow">&rarr;</span>
   <span class="mm-step" data-section="viz77" onclick="scrollToViz('viz77')">7. Compression Toolkit</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz78" onclick="scrollToViz('viz78')">8. LoRA</span>
+  <span class="mm-arrow">&rarr;</span>
+  <span class="mm-step" data-section="viz79" onclick="scrollToViz('viz79')">9. PEFT</span>
 </div>
 
 <div class="container">
@@ -694,6 +698,143 @@ compressed = torch.quantization.quantize_dynamic(
   </div>
 </div>
 
+<!-- ============================================================ -->
+<!-- VIZ 7.8: LoRA — LOW-RANK ADAPTATION -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz78">
+  <h2>7.8 LoRA &mdash; Low-Rank Adaptation</h2>
+  <p class="subtitle">We've compressed models for inference (pruning, quantization). But what about training? Fine-tuning a 7B parameter model requires storing 7B gradients and optimizer states. LoRA asks: what if most weight updates are low-rank?</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <div class="control-group">
+      <label>Rank r</label>
+      <input type="range" id="loraRankSlider" min="1" max="8" step="1" value="4" oninput="updateLoRA()">
+      <span class="value" id="loraRankValue">r = 4</span>
+    </div>
+    <button class="btn" onclick="randomizeLoRA()">Randomize Matrices</button>
+    <button class="break-toggle" id="breakLoraRank" onclick="toggleLoraBreak()">Break It: Rank = 0 (No Adaptation)</button>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="loraCanvas" width="900" height="450"></canvas>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:#4a9eff;"></span> Original weight update &Delta;W</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#e056fd;"></span> LoRA reconstruction A &times; B</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#ff6b6b;"></span> Reconstruction error</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> LoRA exploits a key finding: fine-tuning weight updates have low intrinsic rank. A 12288&times;12288 attention weight matrix might only need rank 8-64 updates for adaptation. This means 99.9% parameter reduction with minimal quality loss.
+    <div class="formula">$$W' = W + \Delta W = W + A \cdot B \quad\text{where } A \in \mathbb{R}^{d \times r},\; B \in \mathbb{R}^{r \times d},\; r \ll d$$</div>
+    <div class="key-point">
+      <span class="label">Full fine-tuning:</span>
+      <span class="desc">\(d \times d\) trainable parameters. For d=12288: 150M params per layer.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">LoRA (r=16):</span>
+      <span class="desc">\(d \times r + r \times d = 2dr\) trainable parameters. For d=12288, r=16: 393K params per layer (0.26%).</span>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">LoRA freezes the original pretrained weights W and only trains the low-rank decomposition A and B. At inference time, you can merge W + AB into a single matrix with zero additional latency.</div>
+    <div class="mnemonic">LoRA = "freeze the base, train the delta." The delta is low-rank because fine-tuning only needs to nudge a few directions in weight space, not rewrite the entire matrix.</div>
+  </div>
+  <div class="insight-box" style="border-left-color: #ff6b6b;">
+    <strong style="color: #ff6b6b;">&#9888;&#65039; Common Mistakes</strong>
+    <ul style="margin-top: 8px; padding-left: 18px; line-height: 2;">
+      <li><strong>Mistake:</strong> Applying LoRA only to attention Q/V projections. <strong>Fix:</strong> Recent work shows applying to all linear layers (including MLP) works better.</li>
+      <li><strong>Mistake:</strong> Using too high a rank "just to be safe". <strong>Fix:</strong> Start with r=8-16, increase only if quality drops. Higher rank wastes memory and can overfit.</li>
+      <li><strong>Mistake:</strong> Forgetting to scale by &alpha;/r. <strong>Fix:</strong> The scaling factor &alpha;/r keeps the magnitude of updates consistent as you change rank.</li>
+    </ul>
+  </div>
+  <div class="insight-box">
+    <strong>&#128295; Hyperparameter Guidance</strong>
+    <div class="key-point"><span class="label">Rank r:</span><span class="desc">8-64 typical (8 for simple tasks, 32-64 for complex). Start with r=16.</span></div>
+    <div class="key-point"><span class="label">Alpha &alpha;:</span><span class="desc">Usually set to r or 2r. Controls the scaling of the update: &Delta;W = (&alpha;/r) &middot; A &middot; B.</span></div>
+    <div class="key-point"><span class="label">Apply to:</span><span class="desc">All linear layers, not just attention. Include Q, K, V, O projections and MLP layers.</span></div>
+    <div class="key-point"><span class="label">Learning rate:</span><span class="desc">2-10x higher than full fine-tuning (1e-4 to 3e-4) since only a small number of parameters are updated.</span></div>
+  </div>
+  <div class="code-example">
+    <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+      <span class="code-toggle-icon">&#9654;</span> Framework Example: LoRA with PEFT Library
+    </button>
+    <div class="code-content">
+      <pre><code class="language-python">from peft import LoraConfig, get_peft_model
+from transformers import AutoModelForCausalLM
+
+model = AutoModelForCausalLM.from_pretrained("meta-llama/Llama-2-7b")
+
+lora_config = LoraConfig(
+    r=16,              # rank
+    lora_alpha=32,     # scaling factor (alpha/r applied internally)
+    target_modules=["q_proj", "k_proj", "v_proj", "o_proj",
+                     "gate_proj", "up_proj", "down_proj"],
+    lora_dropout=0.05,
+)
+peft_model = get_peft_model(model, lora_config)
+peft_model.print_trainable_parameters()
+# trainable: 20M / 7B total (0.28%)</code></pre>
+      <p class="code-note">LoRA adapters can be saved/loaded independently (~80MB vs 14GB for the full model).</p>
+    </div>
+  </div>
+  <div class="narrative-note">
+    <strong>Cross-reference &rarr; Ch 03:</strong> L2 regularization (weight decay) implicitly encourages low-rank weight matrices by penalizing large singular values. LoRA makes this low-rank assumption explicit.
+  </div>
+  <div class="narrative-note">
+    <strong>Cross-reference &rarr; Ch 06:</strong> LoRA targets the linear projections in the transformer architecture &mdash; the Q, K, V, and output projections in attention, plus the MLP layers you built in Chapter 6.
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- VIZ 7.9: PEFT LANDSCAPE -->
+<!-- ============================================================ -->
+<div class="viz-section" id="viz79">
+  <h2>7.9 PEFT Landscape: Parameter-Efficient Fine-Tuning</h2>
+  <p class="subtitle">LoRA is one of many parameter-efficient fine-tuning methods. Compare trainable parameters and memory across techniques as model size scales.</p>
+  <div class="controls" style="margin-bottom: 16px; margin-top: 0;">
+    <div class="control-group">
+      <label>Base Model Size (Billions)</label>
+      <input type="range" id="peftModelSize" min="1" max="70" step="1" value="7" oninput="updatePEFT()">
+      <span class="value" id="peftModelSizeValue">7B parameters</span>
+    </div>
+  </div>
+  <div class="viz-canvas">
+    <canvas id="peftCanvas" width="900" height="480"></canvas>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:#ff6b6b;"></span> Full Fine-Tuning</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#e056fd;"></span> LoRA (r=16)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#4ecdc4;"></span> QLoRA (4-bit + LoRA)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#ffd93d;"></span> Prefix Tuning</div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> All PEFT methods share one goal: freeze most pretrained weights and train only a tiny fraction. They differ in <em>what</em> they train.
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title" style="color: #e056fd;">LoRA</div>
+        <div class="opt-desc">Trains low-rank matrices A, B added to existing weight matrices. ~0.1-1% of params. No inference overhead (merge AB into W).</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #4ecdc4;">QLoRA</div>
+        <div class="opt-desc">LoRA + 4-bit quantized base model. Same trainable params as LoRA but 4x less memory for frozen weights. Enables 65B fine-tuning on a single 48GB GPU.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #ffd93d;">Prefix Tuning</div>
+        <div class="opt-desc">Prepends trainable "virtual tokens" to the input of each layer. Very few params (~0.01%) but can underperform on complex tasks.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #4a9eff;">Adapters</div>
+        <div class="opt-desc">Inserts small bottleneck layers between existing layers. ~1-3% of params. Adds slight inference latency (extra layers to compute).</div>
+      </div>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">When asked "how would you fine-tune a 70B model?", answer: "QLoRA. Quantize the base model to 4-bit (18GB instead of 140GB), attach LoRA adapters (r=16, ~40M trainable params), and fine-tune on a single A100 80GB GPU."</div>
+  </div>
+  <div class="narrative-note">
+    <strong>Cross-reference &rarr; Ch 03:</strong> L2 regularization acts as an implicit low-rank bias on weight matrices. PEFT methods make this explicit &mdash; LoRA directly constrains the update to be low-rank.
+  </div>
+  <div class="narrative-note">
+    <strong>Cross-reference &rarr; Ch 06:</strong> LoRA adapters target the transformer layers from Chapter 6. Prefix tuning modifies the attention mechanism by prepending learnable key-value pairs to each layer's attention computation.
+  </div>
+</div>
+
 </div><!-- end container -->
 
 <!-- ============================================================ -->
@@ -702,9 +843,9 @@ compressed = torch.quantization.quantize_dynamic(
 <div id="quizSection" style="display:none">
 <div class="quiz-container">
   <h2 style="text-align:center;color:#e056fd;margin-bottom:10px;font-size:1.8em;">Distillation & Compression Quiz</h2>
-  <p style="text-align:center;color:#888;margin-bottom:20px;">5 questions per visualization &bull; 35 questions total &bull; Click answers to reveal explanations</p>
+  <p style="text-align:center;color:#888;margin-bottom:20px;">5 questions per visualization &bull; 45 questions total &bull; Click answers to reveal explanations</p>
   <div class="quiz-progress"><div class="quiz-progress-bar" id="quizProgressBar" style="width:0%"></div></div>
-  <div class="quiz-score">Score: <span id="quizScore">0</span> / <span id="quizTotal">35</span></div>
+  <div class="quiz-score">Score: <span id="quizScore">0</span> / <span id="quizTotal">45</span></div>
   <div class="quiz-actions">
     <button onclick="resetQuiz()">&#8634; Reset All</button>
     <button onclick="toggleQuiz()">&#10005; Hide Quiz</button>
@@ -815,7 +956,7 @@ function scrollToViz(id) {
 }
 
 function updateMinimap() {
-  const sections = ['viz71', 'viz72', 'viz73', 'viz74', 'viz75', 'viz76', 'viz77'];
+  const sections = ['viz71', 'viz72', 'viz73', 'viz74', 'viz75', 'viz76', 'viz77', 'viz78', 'viz79'];
   const steps = document.querySelectorAll('.mm-step');
   let activeIdx = 0;
   sections.forEach(function(id, i) {
@@ -2084,6 +2225,433 @@ function drawToolkit() {
 }
 
 // ============================================================
+// 7.8 LoRA — LOW-RANK ADAPTATION
+// ============================================================
+let loraD = 8; // matrix dimension
+let loraDeltaW = []; // target delta W (d x d)
+let loraA = []; // A matrix (d x r)
+let loraB = []; // B matrix (r x d)
+let loraBroken = false;
+
+function initLoRAMatrices() {
+  // Generate a random low-rank-ish delta W
+  loraDeltaW = [];
+  for (let i = 0; i < loraD; i++) {
+    loraDeltaW[i] = [];
+    for (let j = 0; j < loraD; j++) {
+      loraDeltaW[i][j] = (Math.random() - 0.5) * 2;
+    }
+  }
+  updateLoRADecomposition();
+}
+
+function updateLoRADecomposition() {
+  const r = loraBroken ? 0 : parseInt(document.getElementById('loraRankSlider').value);
+  loraA = [];
+  loraB = [];
+  if (r === 0) return;
+  // Simple: take SVD-like decomposition by generating A, B that approximate deltW
+  // Use random A, then solve B = pinv(A) * deltaW approximately
+  // For visualization: generate A randomly, compute B = (A^T A)^{-1} A^T deltaW via least squares
+  // Simpler approach: random A, B = A^T * deltaW / (A^T * A diagonal approx)
+  // Most illustrative: just use random A and B, then show reconstruction
+  for (let i = 0; i < loraD; i++) {
+    loraA[i] = [];
+    for (let j = 0; j < r; j++) {
+      loraA[i][j] = (Math.random() - 0.5) * 1.5;
+    }
+  }
+  for (let i = 0; i < r; i++) {
+    loraB[i] = [];
+    for (let j = 0; j < loraD; j++) {
+      loraB[i][j] = (Math.random() - 0.5) * 1.5;
+    }
+  }
+  // Improve B via one step of least squares: B = (A^T A)^{-1} A^T deltaW
+  // Compute A^T A (r x r)
+  const AtA = [];
+  for (let i = 0; i < r; i++) {
+    AtA[i] = [];
+    for (let j = 0; j < r; j++) {
+      let s = 0;
+      for (let k = 0; k < loraD; k++) s += loraA[k][i] * loraA[k][j];
+      AtA[i][j] = s;
+    }
+  }
+  // Regularize
+  for (let i = 0; i < r; i++) AtA[i][i] += 0.01;
+  // Invert AtA via Gauss-Jordan for small r
+  const inv = invertMatrix(AtA, r);
+  if (!inv) return;
+  // Compute A^T deltaW (r x d)
+  const AtDW = [];
+  for (let i = 0; i < r; i++) {
+    AtDW[i] = [];
+    for (let j = 0; j < loraD; j++) {
+      let s = 0;
+      for (let k = 0; k < loraD; k++) s += loraA[k][i] * loraDeltaW[k][j];
+      AtDW[i][j] = s;
+    }
+  }
+  // B = inv * AtDW
+  for (let i = 0; i < r; i++) {
+    loraB[i] = [];
+    for (let j = 0; j < loraD; j++) {
+      let s = 0;
+      for (let k = 0; k < r; k++) s += inv[i][k] * AtDW[k][j];
+      loraB[i][j] = s;
+    }
+  }
+}
+
+function invertMatrix(mat, n) {
+  // Augmented matrix
+  const aug = [];
+  for (let i = 0; i < n; i++) {
+    aug[i] = [];
+    for (let j = 0; j < n; j++) aug[i][j] = mat[i][j];
+    for (let j = 0; j < n; j++) aug[i][n + j] = (i === j) ? 1 : 0;
+  }
+  for (let i = 0; i < n; i++) {
+    let maxRow = i;
+    for (let k = i + 1; k < n; k++) if (Math.abs(aug[k][i]) > Math.abs(aug[maxRow][i])) maxRow = k;
+    [aug[i], aug[maxRow]] = [aug[maxRow], aug[i]];
+    if (Math.abs(aug[i][i]) < 1e-10) return null;
+    const pivot = aug[i][i];
+    for (let j = 0; j < 2 * n; j++) aug[i][j] /= pivot;
+    for (let k = 0; k < n; k++) {
+      if (k === i) continue;
+      const factor = aug[k][i];
+      for (let j = 0; j < 2 * n; j++) aug[k][j] -= factor * aug[i][j];
+    }
+  }
+  const inv = [];
+  for (let i = 0; i < n; i++) {
+    inv[i] = [];
+    for (let j = 0; j < n; j++) inv[i][j] = aug[i][n + j];
+  }
+  return inv;
+}
+
+function matMul(A, B, m, k, n) {
+  const C = [];
+  for (let i = 0; i < m; i++) {
+    C[i] = [];
+    for (let j = 0; j < n; j++) {
+      let s = 0;
+      for (let p = 0; p < k; p++) s += A[i][p] * B[p][j];
+      C[i][j] = s;
+    }
+  }
+  return C;
+}
+
+function frobeniusNorm(M1, M2, d) {
+  let sum = 0;
+  for (let i = 0; i < d; i++)
+    for (let j = 0; j < d; j++)
+      sum += (M1[i][j] - M2[i][j]) ** 2;
+  return Math.sqrt(sum);
+}
+
+function updateLoRA() {
+  const r = parseInt(document.getElementById('loraRankSlider').value);
+  document.getElementById('loraRankValue').textContent = 'r = ' + r;
+  updateLoRADecomposition();
+  drawLoRA();
+}
+
+function randomizeLoRA() {
+  initLoRAMatrices();
+  drawLoRA();
+}
+
+function toggleLoraBreak() {
+  loraBroken = !loraBroken;
+  const btn = document.getElementById('breakLoraRank');
+  btn.classList.toggle('broken', loraBroken);
+  btn.textContent = loraBroken ? 'Fix: Restore LoRA Rank' : 'Break It: Rank = 0 (No Adaptation)';
+  if (loraBroken) {
+    loraA = [];
+    loraB = [];
+  } else {
+    updateLoRADecomposition();
+  }
+  drawLoRA();
+}
+
+function drawLoRA() {
+  if (loraDeltaW.length === 0) initLoRAMatrices();
+  const { ctx, w, h } = getCanvasCtx('loraCanvas');
+  ctx.clearRect(0, 0, w, h);
+
+  const r = loraBroken ? 0 : parseInt(document.getElementById('loraRankSlider').value);
+  const d = loraD;
+  const cellSize = 32;
+  const matGap = 20;
+
+  // Compute reconstruction
+  let recon = [];
+  for (let i = 0; i < d; i++) {
+    recon[i] = [];
+    for (let j = 0; j < d; j++) recon[i][j] = 0;
+  }
+  if (r > 0 && loraA.length > 0 && loraB.length > 0) {
+    recon = matMul(loraA, loraB, d, r, d);
+  }
+
+  const error = frobeniusNorm(loraDeltaW, recon, d);
+  const maxAbsDW = Math.max(...loraDeltaW.flat().map(Math.abs), 0.01);
+
+  function valToColor(v, maxV) {
+    const norm = v / maxV;
+    if (norm > 0) {
+      const intensity = Math.min(norm, 1);
+      return 'rgba(74,158,255,' + (0.2 + intensity * 0.8) + ')';
+    } else {
+      const intensity = Math.min(-norm, 1);
+      return 'rgba(255,106,107,' + (0.2 + intensity * 0.8) + ')';
+    }
+  }
+
+  function drawMatrix(mat, rows, cols, startX, startY, maxV, label) {
+    drawText(ctx, label, startX + cols * cellSize / 2, startY - 12, '#aaa', 11, 'center', '600');
+    for (let i = 0; i < rows; i++) {
+      for (let j = 0; j < cols; j++) {
+        const x = startX + j * cellSize;
+        const y = startY + i * cellSize;
+        ctx.fillStyle = valToColor(mat[i][j], maxV);
+        drawRoundedRect(ctx, x + 1, y + 1, cellSize - 2, cellSize - 2, 3);
+        ctx.fill();
+        ctx.strokeStyle = '#2a2a4a';
+        ctx.lineWidth = 0.5;
+        drawRoundedRect(ctx, x + 1, y + 1, cellSize - 2, cellSize - 2, 3);
+        ctx.stroke();
+      }
+    }
+    // Dimension label below
+    drawText(ctx, rows + 'x' + cols, startX + cols * cellSize / 2, startY + rows * cellSize + 14, '#666', 10, 'center', '400');
+  }
+
+  const topY = 45;
+  // LEFT: Original delta W
+  const dwX = 30;
+  drawText(ctx, 'Target: \u0394W', dwX + d * cellSize / 2, topY - 30, '#4a9eff', 14, 'center', '700');
+  drawMatrix(loraDeltaW, d, d, dwX, topY, maxAbsDW, '');
+
+  // CENTER: A and B matrices
+  const centerX = dwX + d * cellSize + matGap + 30;
+  drawText(ctx, 'LoRA Decomposition: A \u00d7 B', centerX + (d * cellSize + r * cellSize) / 2 + matGap / 2, topY - 30, ACCENT, 14, 'center', '700');
+
+  if (r > 0 && loraA.length > 0) {
+    const maxAbsA = Math.max(...loraA.flat().map(Math.abs), 0.01);
+    drawMatrix(loraA, d, r, centerX, topY, maxAbsA, 'A (' + d + 'x' + r + ')');
+    // Multiplication sign
+    const mulX = centerX + r * cellSize + matGap / 2;
+    drawText(ctx, '\u00d7', mulX, topY + d * cellSize / 2, '#e056fd', 20, 'center', '700');
+    // B matrix
+    const bX = centerX + r * cellSize + matGap;
+    const maxAbsB = Math.max(...loraB.flat().map(Math.abs), 0.01);
+    drawMatrix(loraB, r, d, bX, topY + (d - r) * cellSize / 2, maxAbsB, 'B (' + r + 'x' + d + ')');
+  } else {
+    // Broken state
+    drawText(ctx, 'r = 0', centerX + 60, topY + d * cellSize / 2, '#ff4444', 24, 'center', '700');
+    drawText(ctx, 'No adaptation possible!', centerX + 60, topY + d * cellSize / 2 + 30, '#ff4444', 13, 'center', '600');
+    drawText(ctx, 'Output = base model exactly', centerX + 60, topY + d * cellSize / 2 + 50, '#ff6b6b', 11, 'center', '400');
+  }
+
+  // RIGHT: Reconstruction A*B
+  const reconX = w - d * cellSize - 30;
+  drawText(ctx, 'Reconstruction: A\u00d7B', reconX + d * cellSize / 2, topY - 30, '#e056fd', 14, 'center', '700');
+  drawMatrix(recon, d, d, reconX, topY, maxAbsDW, '');
+
+  // Bottom stats
+  const statsY = topY + d * cellSize + 40;
+  const fullParams = d * d;
+  const loraParams = r > 0 ? d * r + r * d : 0;
+  const savings = r > 0 ? ((1 - loraParams / fullParams) * 100).toFixed(1) : '100.0';
+  const errorNorm = error.toFixed(2);
+  const maxError = frobeniusNorm(loraDeltaW, recon.map(function(row) { return row.map(function() { return 0; }); }), d).toFixed(2);
+  const errorPct = maxError > 0 ? ((error / parseFloat(maxError)) * 100).toFixed(1) : '0.0';
+
+  // Parameter comparison bar
+  const barY = statsY + 5;
+  const barMaxW = 350;
+  const barH = 22;
+  const barX = 50;
+
+  // Full fine-tune bar
+  drawText(ctx, 'Full fine-tune:', barX + barMaxW / 2, barY - 10, '#888', 11, 'center', '600');
+  ctx.fillStyle = '#4a9eff33';
+  drawRoundedRect(ctx, barX, barY, barMaxW, barH, 4);
+  ctx.fill();
+  ctx.strokeStyle = '#4a9eff';
+  ctx.lineWidth = 1;
+  drawRoundedRect(ctx, barX, barY, barMaxW, barH, 4);
+  ctx.stroke();
+  drawText(ctx, fullParams + ' params', barX + barMaxW / 2, barY + barH / 2, '#4a9eff', 11, 'center', '700');
+
+  // LoRA bar
+  const loraBarW = r > 0 ? Math.max(barMaxW * (loraParams / fullParams), 8) : 0;
+  drawText(ctx, 'LoRA (r=' + r + '):', barX + barMaxW / 2, barY + barH + 18, '#888', 11, 'center', '600');
+  if (r > 0) {
+    ctx.fillStyle = '#e056fd33';
+    drawRoundedRect(ctx, barX, barY + barH + 28, loraBarW, barH, 4);
+    ctx.fill();
+    ctx.strokeStyle = ACCENT;
+    ctx.lineWidth = 1;
+    drawRoundedRect(ctx, barX, barY + barH + 28, loraBarW, barH, 4);
+    ctx.stroke();
+    drawText(ctx, loraParams + ' params (' + savings + '% saved)', barX + Math.max(loraBarW, 120), barY + barH + 28 + barH / 2, ACCENT, 11, 'left', '700');
+  } else {
+    drawText(ctx, '0 params (no training possible)', barX, barY + barH + 28 + barH / 2, '#ff4444', 11, 'left', '700');
+  }
+
+  // Error display
+  const errX = 530;
+  drawText(ctx, 'Reconstruction Error', errX + 150, barY - 10, '#888', 11, 'center', '600');
+  drawText(ctx, 'Frobenius norm: ' + errorNorm, errX + 150, barY + 10, '#ff6b6b', 13, 'center', '700');
+  drawText(ctx, 'vs max (' + maxError + ' if r=0): ' + errorPct + '% of worst case', errX + 150, barY + 30, '#aaa', 11, 'center', '400');
+
+  // Error bar
+  const errBarW = 280;
+  const errBarH = 14;
+  const errBarX = errX + 10;
+  const errBarY = barY + 48;
+  ctx.fillStyle = '#1a1a2e';
+  drawRoundedRect(ctx, errBarX, errBarY, errBarW, errBarH, 4);
+  ctx.fill();
+  const errFill = parseFloat(maxError) > 0 ? Math.min(error / parseFloat(maxError), 1) : 0;
+  ctx.fillStyle = errFill > 0.7 ? '#ff4444' : errFill > 0.3 ? '#ffd93d' : '#4ecdc4';
+  drawRoundedRect(ctx, errBarX, errBarY, errBarW * errFill, errBarH, 4);
+  ctx.fill();
+}
+
+// ============================================================
+// 7.9 PEFT LANDSCAPE
+// ============================================================
+function updatePEFT() {
+  const size = parseInt(document.getElementById('peftModelSize').value);
+  document.getElementById('peftModelSizeValue').textContent = size + 'B parameters';
+  drawPEFT();
+}
+
+function drawPEFT() {
+  const { ctx, w, h } = getCanvasCtx('peftCanvas');
+  ctx.clearRect(0, 0, w, h);
+
+  const modelB = parseInt(document.getElementById('peftModelSize').value);
+  const margin = { top: 50, bottom: 60, left: 160, right: 60 };
+
+  drawText(ctx, 'PEFT Comparison: ' + modelB + 'B Parameter Model', w / 2, 25, '#e0e0e0', 16, 'center', '700');
+
+  // Methods data
+  const methods = [
+    {
+      name: 'Full Fine-Tuning',
+      trainableB: modelB,
+      memoryGB: modelB * 2 * 4, // FP32 weights + gradients + optimizer (4x)
+      color: '#ff6b6b',
+      desc: 'All params trainable'
+    },
+    {
+      name: 'LoRA (r=16)',
+      trainableB: modelB * 0.003, // ~0.3% of params
+      memoryGB: modelB * 2 + modelB * 0.003 * 4 * 2, // FP16 base + FP32 LoRA w/ optim
+      color: '#e056fd',
+      desc: '~' + (modelB * 0.003 * 1000).toFixed(0) + 'M trainable'
+    },
+    {
+      name: 'QLoRA (4-bit + LoRA)',
+      trainableB: modelB * 0.003,
+      memoryGB: modelB * 0.5 + modelB * 0.003 * 4 * 2, // 4-bit base + FP32 LoRA w/ optim
+      color: '#4ecdc4',
+      desc: '~' + (modelB * 0.003 * 1000).toFixed(0) + 'M trainable, 4-bit base'
+    },
+    {
+      name: 'Prefix Tuning',
+      trainableB: modelB * 0.0001, // ~0.01%
+      memoryGB: modelB * 2 + modelB * 0.0001 * 4 * 2, // FP16 base + small trainable
+      color: '#ffd93d',
+      desc: '~' + (modelB * 0.0001 * 1000).toFixed(1) + 'M trainable'
+    }
+  ];
+
+  const chartH = h - margin.top - margin.bottom;
+  const rowH = chartH / methods.length;
+  const chartW = w - margin.left - margin.right;
+
+  // Two side-by-side charts: trainable params (left half), GPU memory (right half)
+  const halfW = (chartW - 40) / 2;
+  const leftX = margin.left;
+  const rightX = margin.left + halfW + 40;
+
+  // Headers
+  drawText(ctx, 'Trainable Parameters', leftX + halfW / 2, margin.top - 10, '#ccc', 12, 'center', '700');
+  drawText(ctx, 'GPU Memory Required', rightX + halfW / 2, margin.top - 10, '#ccc', 12, 'center', '700');
+
+  const maxTrainable = methods[0].trainableB;
+  const maxMemory = methods[0].memoryGB;
+
+  for (let i = 0; i < methods.length; i++) {
+    const m = methods[i];
+    const y = margin.top + i * rowH + rowH * 0.15;
+    const barH = rowH * 0.5;
+
+    // Label
+    drawText(ctx, m.name, margin.left - 10, y + barH / 2, m.color, 12, 'right', '700');
+    drawText(ctx, m.desc, margin.left - 10, y + barH / 2 + 16, '#888', 10, 'right', '400');
+
+    // Trainable params bar (log scale)
+    const logMax = Math.log10(maxTrainable * 1e9);
+    const logVal = m.trainableB > 0 ? Math.log10(m.trainableB * 1e9) : 0;
+    const logMin = Math.log10(methods[3].trainableB * 1e9) - 0.5; // slightly below smallest
+    const trainBarW = Math.max(((logVal - logMin) / (logMax - logMin)) * halfW, 4);
+
+    ctx.fillStyle = m.color + '33';
+    drawRoundedRect(ctx, leftX, y, trainBarW, barH, 4);
+    ctx.fill();
+    ctx.strokeStyle = m.color;
+    ctx.lineWidth = 1.5;
+    drawRoundedRect(ctx, leftX, y, trainBarW, barH, 4);
+    ctx.stroke();
+
+    // Value text
+    let paramText;
+    if (m.trainableB >= 1) paramText = m.trainableB.toFixed(1) + 'B';
+    else if (m.trainableB >= 0.001) paramText = (m.trainableB * 1000).toFixed(0) + 'M';
+    else paramText = (m.trainableB * 1e6).toFixed(0) + 'K';
+    drawText(ctx, paramText, leftX + trainBarW + 8, y + barH / 2, m.color, 11, 'left', '700');
+
+    // Memory bar (linear scale)
+    const memBarW = Math.max((m.memoryGB / maxMemory) * halfW, 4);
+
+    ctx.fillStyle = m.color + '33';
+    drawRoundedRect(ctx, rightX, y, memBarW, barH, 4);
+    ctx.fill();
+    ctx.strokeStyle = m.color;
+    ctx.lineWidth = 1.5;
+    drawRoundedRect(ctx, rightX, y, memBarW, barH, 4);
+    ctx.stroke();
+
+    let memText;
+    if (m.memoryGB >= 1000) memText = (m.memoryGB / 1000).toFixed(1) + 'TB';
+    else memText = m.memoryGB.toFixed(0) + 'GB';
+    drawText(ctx, memText, rightX + memBarW + 8, y + barH / 2, m.color, 11, 'left', '700');
+  }
+
+  // Scale labels
+  drawText(ctx, '(log scale)', leftX + halfW / 2, h - margin.bottom + 25, '#555', 10, 'center', '400');
+  drawText(ctx, '(linear scale)', rightX + halfW / 2, h - margin.bottom + 25, '#555', 10, 'center', '400');
+
+  // Summary box at bottom
+  const summaryY = h - 30;
+  const ratio = (maxTrainable / methods[2].trainableB).toFixed(0);
+  const memRatio = (methods[0].memoryGB / methods[2].memoryGB).toFixed(1);
+  drawText(ctx, 'QLoRA: ' + ratio + 'x fewer trainable params, ' + memRatio + 'x less memory vs full fine-tuning', w / 2, summaryY, '#4ecdc4', 13, 'center', '700');
+}
+
+// ============================================================
 // BREAK IT TOGGLES
 // ============================================================
 
@@ -2213,6 +2781,26 @@ const quizData = [
       { q: "You are deploying a model to a phone. Would you distill, quantize, prune, or all three? In what order and why?", options: ["A) Only quantize -- it is the simplest", "B) All three: distill first (smaller architecture), then prune (remove redundancy), then quantize (reduce precision) -- each targets a different compression axis", "C) Only prune -- phones have sparse hardware", "D) All three but in reverse order: quantize, prune, distill"], correct: 1, explanation: "For maximum compression to fit on a phone, apply all three: (1) Distill to get a smaller architecture (fewer layers/neurons). (2) Prune to remove redundant weights within that architecture. (3) Quantize to INT4/INT8 to reduce memory per weight. This order makes sense because distillation changes the architecture first, and quantization should be the last step since it works on any model." },
       { q: "How does this chapter connect to the full ML pipeline?", options: ["A) Compression is unrelated to training", "B) Ch 6 builds the large model, Ch 7 compresses it for deployment -- this is exactly how production LLMs are shipped", "C) Compression should be done before training", "D) Only researchers need compression"], correct: 1, explanation: "The full lifecycle: train a large, powerful teacher model (Ch 6 transformer), then compress it for deployment (Ch 7). GPT-4 trains as a huge model, then is served via smaller distilled/quantized variants. Llama 70B becomes Llama 7B through distillation. This chapter completes the production ML pipeline." }
     ]
+  },
+  {
+    topic: "7.8: LoRA -- Low-Rank Adaptation",
+    questions: [
+      { q: "What does LoRA freeze and what does it train?", options: ["A) Freezes nothing, trains everything", "B) Freezes the pretrained weights W and trains low-rank matrices A and B such that the update is delta_W = A*B", "C) Freezes the optimizer and trains the learning rate", "D) Freezes the input layer and trains the output layer"], correct: 1, explanation: "LoRA freezes the original pretrained weight matrices W and only trains two small low-rank matrices A (d x r) and B (r x d). The effective weight becomes W + A*B. Since r << d, the number of trainable parameters is dramatically reduced." },
+      { q: "For a weight matrix of size 4096x4096, how many trainable parameters does LoRA with r=16 require vs full fine-tuning?", options: ["A) Full: 16M, LoRA: 16M (same)", "B) Full: 16.8M, LoRA: 131K (0.78%)", "C) Full: 4096, LoRA: 16", "D) Full: 16.8M, LoRA: 8.4M (50%)"], correct: 1, explanation: "Full fine-tuning: 4096 x 4096 = 16.8M parameters. LoRA: 4096 x 16 + 16 x 4096 = 65536 + 65536 = 131072 parameters. That is 131K vs 16.8M, or about 0.78% of the original. This is the key efficiency of LoRA." },
+      { q: "Why does LoRA add zero inference latency after training?", options: ["A) It uses a faster GPU", "B) The low-rank matrices A*B can be merged into W to produce a single matrix W' = W + AB, with the same shape as the original", "C) LoRA skips some layers at inference", "D) The rank is set to zero at inference"], correct: 1, explanation: "After training, you compute W' = W + A*B once and replace the original weight matrix. The merged W' has exactly the same shape as W, so inference uses the same architecture with zero additional computation. This is a key advantage over adapters which add extra layers." },
+      { q: "What is the role of the scaling factor alpha/r in LoRA?", options: ["A) It controls the learning rate", "B) It keeps the magnitude of the LoRA update consistent as you change rank, preventing the update from growing with r", "C) It determines the number of layers", "D) It is only used during evaluation"], correct: 1, explanation: "The effective update is (alpha/r) * A * B. Without this scaling, increasing rank r would increase the magnitude of the update (more terms summed in the matrix product). The alpha/r factor normalizes this so you can change r without retuning the learning rate. Typically alpha = r or alpha = 2r." },
+      { q: "Why does LoRA work despite using such a low rank?", options: ["A) Neural networks do not actually need weight updates", "B) Fine-tuning weight updates empirically have low intrinsic dimensionality -- the change needed for a new task lives in a low-dimensional subspace", "C) Low rank matrices are faster to multiply", "D) The pretrained model was poorly trained and needs minimal changes"], correct: 1, explanation: "Research by Aghajanyan et al. (2020) showed that fine-tuning updates have low intrinsic dimensionality. The weight changes needed to adapt a pretrained model to a new task lie in a low-rank subspace. A 12288x12288 matrix might only need rank 8-64 updates. LoRA directly exploits this finding." }
+    ]
+  },
+  {
+    topic: "7.9: PEFT Landscape",
+    questions: [
+      { q: "What do all PEFT methods have in common?", options: ["A) They all use low-rank matrices", "B) They all freeze most pretrained weights and only train a small number of new parameters", "C) They all require quantization", "D) They all modify the attention mechanism"], correct: 1, explanation: "The defining feature of all Parameter-Efficient Fine-Tuning (PEFT) methods is freezing the bulk of pretrained weights and only training a tiny fraction of parameters. They differ in what those trainable parameters are: LoRA uses low-rank matrices, prefix tuning uses virtual tokens, adapters use bottleneck layers." },
+      { q: "How does QLoRA differ from standard LoRA?", options: ["A) QLoRA uses a higher rank", "B) QLoRA quantizes the base model to 4-bit before applying LoRA, dramatically reducing memory for the frozen weights", "C) QLoRA trains all parameters", "D) QLoRA does not use low-rank matrices"], correct: 1, explanation: "QLoRA = LoRA + 4-bit quantization of the frozen base model. The trainable LoRA parameters are still in full precision, but the frozen pretrained weights are stored in 4-bit NormalFloat format. This reduces memory by ~4x for the base model, enabling fine-tuning of 65B models on a single 48GB GPU." },
+      { q: "Which PEFT method adds inference latency?", options: ["A) LoRA (merged into base weights)", "B) Prefix tuning (virtual tokens processed by existing attention)", "C) Adapters (extra bottleneck layers that must be computed at inference time)", "D) QLoRA (quantized weights are faster)"], correct: 2, explanation: "Adapters insert additional small layers between existing transformer layers. These must be computed during inference, adding latency. LoRA can be merged into the base weights (zero overhead). Prefix tuning adds virtual tokens but uses existing attention computation. Adapters are the only method that fundamentally adds new computation paths." },
+      { q: "You need to fine-tune a 70B model on a single 80GB GPU. Which approach works?", options: ["A) Full fine-tuning in FP32", "B) Full fine-tuning in FP16", "C) QLoRA: 4-bit base model (~35GB) + LoRA adapters + optimizer states fit in 80GB", "D) Just use a larger GPU"], correct: 2, explanation: "A 70B model in FP32 needs ~280GB, in FP16 needs ~140GB -- neither fits on 80GB. QLoRA quantizes the base to 4-bit (~35GB), adds LoRA adapters (~40M params in FP16, ~80MB), plus optimizer states for those 40M params (~320MB). Total: ~36GB, well within 80GB. This is exactly how production fine-tuning of large models works." },
+      { q: "When would you choose prefix tuning over LoRA?", options: ["A) Always, it is strictly better", "B) When you need the absolute minimum number of trainable parameters and the task is relatively simple (e.g., classification)", "C) When you need the best accuracy on complex generation tasks", "D) When the model has no attention layers"], correct: 1, explanation: "Prefix tuning uses very few parameters (~0.01% vs LoRA's 0.1-1%) by prepending learnable virtual tokens. It works well for simple tasks like classification but can underperform on complex generation tasks where LoRA's modification of weight matrices provides more expressiveness. Choose prefix tuning when parameter budget is extremely tight and the task is straightforward." }
+    ]
   }
 ];
 
@@ -2222,7 +2810,7 @@ const quizData = [
 let topicScores = {};
 let totalCorrect = 0;
 let totalAnswered = 0;
-const totalQ = 35;
+const totalQ = 45;
 
 quizData.forEach(function(t, ti) { topicScores[ti] = { correct: 0, answered: 0, total: t.questions.length }; });
 
@@ -2321,6 +2909,8 @@ window.addEventListener('DOMContentLoaded', function() {
   drawQuantization();
   updatePruning();
   drawToolkit();
+  drawLoRA();
+  drawPEFT();
   buildQuiz();
 });
 
@@ -2332,6 +2922,8 @@ window.addEventListener('resize', function() {
   drawQuantization();
   updatePruning();
   drawToolkit();
+  drawLoRA();
+  drawPEFT();
 });
 
 </script>
