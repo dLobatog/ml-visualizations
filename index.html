@@ -160,12 +160,12 @@
 
   <!-- Hero Canvas Visualization -->
   <div class="hero-viz">
-    <div class="hero-viz-label">Try it: drag the learning rate</div>
-    <canvas id="hero-canvas" width="900" height="350"></canvas>
+    <div class="hero-viz-label">Gradient descent on the Rosenbrock function — drag the learning rate, switch optimizers</div>
+    <canvas id="hero-canvas" width="900" height="350" style="border-radius:12px;"></canvas>
     <div class="hero-viz-controls">
       <div class="hero-slider-row">
         <label for="lr-slider" class="hero-slider-label">Learning Rate:</label>
-        <input type="range" id="lr-slider" class="hero-slider" min="1" max="200" value="50">
+        <input type="range" id="lr-slider" class="hero-slider" min="1" max="200" value="30">
         <span id="lr-value" class="hero-slider-value">0.030</span>
       </div>
       <div class="hero-opt-buttons">
@@ -750,50 +750,55 @@ document.addEventListener('keydown', function(e) {
   var W = 900, H = 350;
   canvas.width = W; canvas.height = H;
 
-  // Loss surface: Rosenbrock-ish with two basins for visual interest
-  // f(x,y) = (1-x)^2 + 10*(y-x^2)^2  (scaled/shifted for visual appeal)
-  function loss(x, y) {
-    // Map canvas coords [0,W]x[0,H] to [-2,2]x[-1,3]
-    var fx = (x / W) * 4 - 2;
-    var fy = (y / H) * 4 - 1;
-    return Math.pow(1 - fx, 2) + 10 * Math.pow(fy - fx * fx, 2);
+  // Function space: x in [-2, 2], y in [-1, 3]
+  var xMin = -2, xMax = 2, yMin = -1, yMax = 3;
+  // Rosenbrock minimum is at (1, 1)
+  var fMinX = 1, fMinY = 1;
+
+  function toCanvas(fx, fy) {
+    return [(fx - xMin) / (xMax - xMin) * W, (fy - yMin) / (yMax - yMin) * H];
+  }
+  function toFunc(cx, cy) {
+    return [xMin + cx / W * (xMax - xMin), yMin + cy / H * (yMax - yMin)];
   }
 
-  // Gradient of loss in function space (gives pixel-visible movements with LR ~0.01-0.1)
-  function gradient(x, y) {
-    var fx = (x / W) * 4 - 2;
-    var fy = (y / H) * 4 - 1;
+  // Loss: Rosenbrock f(x,y) = (1-x)^2 + 10*(y-x^2)^2
+  function loss(fx, fy) {
+    return Math.pow(1 - fx, 2) + 10 * Math.pow(fy - fx * fx, 2);
+  }
+  function gradient(fx, fy) {
     var dfdx = -2 * (1 - fx) + 10 * 2 * (fy - fx * fx) * (-2 * fx);
     var dfdy = 10 * 2 * (fy - fx * fx);
     return [dfdx, dfdy];
   }
 
-  // Render loss landscape as color image
+  // Pre-render landscape
   var landscapeData = ctx.createImageData(W, H);
   var maxLoss = 0;
   var lossGrid = new Float32Array(W * H);
   for (var py = 0; py < H; py++) {
     for (var px = 0; px < W; px++) {
-      var l = loss(px, py);
+      var f = toFunc(px, py);
+      var l = loss(f[0], f[1]);
       lossGrid[py * W + px] = l;
       if (l > maxLoss) maxLoss = l;
     }
   }
-  // Color mapping: dark blue (high) -> teal -> green -> yellow (low)
+  // Color: dark navy (high loss) → muted blue → teal → soft white (low loss)
+  // Designed for readability: no bright yellows/greens that kill text contrast
   function lossColor(val) {
-    var t = Math.pow(Math.max(0, 1 - val / (maxLoss * 0.4)), 1.5); // nonlinear for more contrast near minimum
+    var t = Math.pow(Math.max(0, 1 - val / (maxLoss * 0.3)), 1.5);
     t = Math.max(0, Math.min(1, t));
-    // dark blue -> teal -> green -> bright yellow
     var r, g, b;
     if (t < 0.33) {
       var s = t / 0.33;
-      r = 10 + s * 10;   g = 10 + s * 80;  b = 40 + s * 60;
+      r = 8 + s * 8;   g = 8 + s * 30;  b = 20 + s * 40;
     } else if (t < 0.66) {
       var s = (t - 0.33) / 0.33;
-      r = 20 + s * 40;   g = 90 + s * 100;  b = 100 - s * 60;
+      r = 16 + s * 20;  g = 38 + s * 70;  b = 60 + s * 50;
     } else {
       var s = (t - 0.66) / 0.34;
-      r = 60 + s * 195;  g = 190 + s * 65;  b = 40 - s * 20;
+      r = 36 + s * 60;  g = 108 + s * 80; b = 110 + s * 30;
     }
     return [r|0, g|0, b|0];
   }
@@ -801,32 +806,30 @@ document.addEventListener('keydown', function(e) {
     for (var px = 0; px < W; px++) {
       var idx = (py * W + px) * 4;
       var c = lossColor(lossGrid[py * W + px]);
-      landscapeData.data[idx]     = c[0];
-      landscapeData.data[idx + 1] = c[1];
-      landscapeData.data[idx + 2] = c[2];
-      landscapeData.data[idx + 3] = 255;
+      landscapeData.data[idx] = c[0];
+      landscapeData.data[idx+1] = c[1];
+      landscapeData.data[idx+2] = c[2];
+      landscapeData.data[idx+3] = 255;
     }
   }
 
-  // State
+  // State — all in function space
   var optimizer = 'sgd';
   var lrSlider = document.getElementById('lr-slider');
   var lrDisplay = document.getElementById('lr-value');
   var trail = [];
-  var ballX, ballY, vx, vy, mx, my, vxAdam, vyAdam, adamT;
+  var bx, by, vx, vy, mx, my, vxA, vyA, adamT;
+  var stepCount = 0;
+  var converged = false;
 
   function resetBall() {
-    ballX = W * 0.15;
-    ballY = H * 0.2;
-    vx = 0; vy = 0;
-    mx = 0; my = 0;
-    vxAdam = 0; vyAdam = 0;
-    adamT = 0;
-    trail = [{x: ballX, y: ballY}];
+    bx = -1.2; by = -0.5; // start upper-left of canvas, descends into valley toward (1,1)
+    vx = 0; vy = 0; mx = 0; my = 0; vxA = 0; vyA = 0; adamT = 0;
+    stepCount = 0; converged = false;
+    trail = [{x: bx, y: by}];
   }
   resetBall();
 
-  // Optimizer buttons
   var optBtns = document.querySelectorAll('.opt-btn');
   optBtns.forEach(function(btn) {
     btn.addEventListener('click', function() {
@@ -836,7 +839,6 @@ document.addEventListener('keydown', function(e) {
       resetBall();
     });
   });
-
   lrSlider.addEventListener('input', function() {
     lrDisplay.textContent = (lrSlider.value / 1000).toFixed(3);
     resetBall();
@@ -844,113 +846,177 @@ document.addEventListener('keydown', function(e) {
   lrDisplay.textContent = (lrSlider.value / 1000).toFixed(3);
 
   function step() {
+    if (converged) return;
     var lr = lrSlider.value / 1000;
-    var g = gradient(ballX, ballY);
+    var g = gradient(bx, by);
     var gx = g[0], gy = g[1];
+    // Clip gradient magnitude to prevent divergence
+    var gMag = Math.sqrt(gx*gx + gy*gy);
+    if (gMag > 50) { gx = gx/gMag*50; gy = gy/gMag*50; }
 
     if (optimizer === 'sgd') {
-      ballX -= lr * gx;
-      ballY -= lr * gy;
+      bx -= lr * gx;
+      by -= lr * gy;
     } else if (optimizer === 'momentum') {
-      var mu = 0.9;
-      vx = mu * vx + lr * gx;
-      vy = mu * vy + lr * gy;
-      ballX -= vx;
-      ballY -= vy;
-    } else if (optimizer === 'adam') {
+      vx = 0.9 * vx + lr * gx;
+      vy = 0.9 * vy + lr * gy;
+      bx -= vx; by -= vy;
+    } else {
       adamT++;
-      var beta1 = 0.9, beta2 = 0.999, eps = 1e-8;
-      mx = beta1 * mx + (1 - beta1) * gx;
-      my = beta1 * my + (1 - beta1) * gy;
-      vxAdam = beta2 * vxAdam + (1 - beta2) * gx * gx;
-      vyAdam = beta2 * vyAdam + (1 - beta2) * gy * gy;
-      var mxh = mx / (1 - Math.pow(beta1, adamT));
-      var myh = my / (1 - Math.pow(beta1, adamT));
-      var vxh = vxAdam / (1 - Math.pow(beta2, adamT));
-      var vyh = vyAdam / (1 - Math.pow(beta2, adamT));
-      ballX -= lr * mxh / (Math.sqrt(vxh) + eps);
-      ballY -= lr * myh / (Math.sqrt(vyh) + eps);
+      var b1=0.9, b2=0.999, eps=1e-8;
+      mx = b1*mx + (1-b1)*gx; my = b1*my + (1-b1)*gy;
+      vxA = b2*vxA + (1-b2)*gx*gx; vyA = b2*vyA + (1-b2)*gy*gy;
+      var mxh=mx/(1-Math.pow(b1,adamT)), myh=my/(1-Math.pow(b1,adamT));
+      var vxh=vxA/(1-Math.pow(b2,adamT)), vyh=vyA/(1-Math.pow(b2,adamT));
+      bx -= lr * mxh/(Math.sqrt(vxh)+eps);
+      by -= lr * myh/(Math.sqrt(vyh)+eps);
     }
-
-    // Clamp to canvas
-    ballX = Math.max(0, Math.min(W, ballX));
-    ballY = Math.max(0, Math.min(H, ballY));
-
-    trail.push({x: ballX, y: ballY});
-    if (trail.length > 600) trail.shift();
+    // Clamp to function space bounds
+    bx = Math.max(xMin+0.01, Math.min(xMax-0.01, bx));
+    by = Math.max(yMin+0.01, Math.min(yMax-0.01, by));
+    stepCount++;
+    trail.push({x: bx, y: by});
+    if (trail.length > 800) trail.shift();
+    // Check convergence
+    if (loss(bx, by) < 0.001) converged = true;
   }
 
-  var lastTime = 0;
-  var accumulator = 0;
-  var stepInterval = 16; // ~60 steps/sec
-
-  function render(time) {
-    // Steps
-    var dt = lastTime ? time - lastTime : 16;
-    lastTime = time;
-    accumulator += dt;
-    var stepsThisFrame = 0;
-    while (accumulator >= stepInterval && stepsThisFrame < 4) {
-      step();
-      accumulator -= stepInterval;
-      stepsThisFrame++;
-    }
-    if (accumulator > stepInterval * 4) accumulator = 0;
+  var frameCount = 0;
+  function render() {
+    frameCount++;
+    // 2 optimization steps per frame
+    step(); step();
 
     // Draw landscape
     ctx.putImageData(landscapeData, 0, 0);
 
-    // Draw contour lines (subtle)
-    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    // Draw contour lines for clarity
     ctx.lineWidth = 0.5;
-    var contourLevels = [0.5, 1, 2, 4, 8, 16, 32, 64];
-    // skip contour for perf, the color gradient is enough
+    var levels = [0.1, 0.5, 1, 2, 5, 10, 20, 50, 100, 200];
+    for (var li = 0; li < levels.length; li++) {
+      var lev = levels[li];
+      ctx.strokeStyle = 'rgba(255,255,255,' + (lev < 5 ? '0.12' : '0.05') + ')';
+      ctx.beginPath();
+      var started = false;
+      // March horizontally through grid
+      for (var py = 0; py < H; py += 2) {
+        for (var px = 0; px < W - 1; px += 2) {
+          var v1 = lossGrid[py * W + px];
+          var v2 = lossGrid[py * W + px + 2];
+          if ((v1 <= lev && v2 > lev) || (v1 > lev && v2 <= lev)) {
+            var t = (lev - v1) / (v2 - v1);
+            ctx.moveTo(px + t * 2, py);
+            ctx.lineTo(px + t * 2 + 0.5, py + 0.5);
+          }
+        }
+      }
+      ctx.stroke();
+    }
+
+    // Draw minimum target with pulsing ring
+    var mc = toCanvas(fMinX, fMinY);
+    var pulse = 0.5 + 0.5 * Math.sin(frameCount * 0.06);
+    // Outer pulsing ring
+    ctx.beginPath();
+    ctx.arc(mc[0], mc[1], 12 + pulse * 6, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255, 215, 0, ' + (0.15 + pulse * 0.15) + ')';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    // Inner crosshair
+    ctx.beginPath();
+    ctx.arc(mc[0], mc[1], 4, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255, 215, 0, 0.7)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    // Crosshair lines
+    ctx.beginPath();
+    ctx.moveTo(mc[0]-8, mc[1]); ctx.lineTo(mc[0]+8, mc[1]);
+    ctx.moveTo(mc[0], mc[1]-8); ctx.lineTo(mc[0], mc[1]+8);
+    ctx.strokeStyle = 'rgba(255, 215, 0, 0.4)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    // Label with background for contrast
+    ctx.font = 'bold 11px Inter, system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    var labelW = ctx.measureText('minimum (1, 1)').width + 12;
+    ctx.fillStyle = 'rgba(6, 6, 12, 0.8)';
+    ctx.fillRect(mc[0] - labelW/2, mc[1] + 16, labelW, 18);
+    ctx.fillStyle = '#ffd93d';
+    ctx.fillText('minimum (1, 1)', mc[0], mc[1] + 30);
 
     // Draw trail
     if (trail.length > 1) {
       for (var i = 1; i < trail.length; i++) {
-        var alpha = (i / trail.length) * 0.7;
+        var alpha = (i / trail.length) * 0.8;
+        var p0 = toCanvas(trail[i-1].x, trail[i-1].y);
+        var p1 = toCanvas(trail[i].x, trail[i].y);
         ctx.beginPath();
         ctx.strokeStyle = 'rgba(100, 255, 218,' + alpha.toFixed(2) + ')';
-        ctx.lineWidth = 1.5;
-        ctx.moveTo(trail[i-1].x, trail[i-1].y);
-        ctx.lineTo(trail[i].x, trail[i].y);
+        ctx.lineWidth = 2;
+        ctx.moveTo(p0[0], p0[1]);
+        ctx.lineTo(p1[0], p1[1]);
         ctx.stroke();
       }
     }
 
     // Draw ball with glow
+    var bc = toCanvas(bx, by);
     ctx.beginPath();
-    var grd = ctx.createRadialGradient(ballX, ballY, 0, ballX, ballY, 16);
-    grd.addColorStop(0, 'rgba(100, 255, 218, 0.6)');
-    grd.addColorStop(0.4, 'rgba(100, 255, 218, 0.15)');
+    var grd = ctx.createRadialGradient(bc[0], bc[1], 0, bc[0], bc[1], 20);
+    grd.addColorStop(0, 'rgba(100, 255, 218, 0.7)');
+    grd.addColorStop(0.4, 'rgba(100, 255, 218, 0.2)');
     grd.addColorStop(1, 'rgba(100, 255, 218, 0)');
     ctx.fillStyle = grd;
-    ctx.arc(ballX, ballY, 16, 0, Math.PI * 2);
+    ctx.arc(bc[0], bc[1], 20, 0, Math.PI * 2);
     ctx.fill();
     ctx.beginPath();
-    ctx.arc(ballX, ballY, 5, 0, Math.PI * 2);
+    ctx.arc(bc[0], bc[1], 5, 0, Math.PI * 2);
     ctx.fillStyle = '#64ffda';
     ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+    ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    // Label at the minimum area
-    var minCX = W * 0.625; // approximate canvas x for Rosenbrock minimum at (1,1)
-    var minCY = H * 0.5;
-    ctx.font = '11px Inter, system-ui, sans-serif';
-    ctx.fillStyle = 'rgba(255,255,255,0.35)';
-    ctx.textAlign = 'center';
-    ctx.fillText('minimum', minCX, minCY + 28);
-
-    // Current loss value
-    var currentLoss = loss(ballX, ballY);
-    ctx.font = '12px monospace';
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    // HUD overlay — top left with solid background
+    var currentLoss = loss(bx, by);
+    ctx.fillStyle = 'rgba(6, 6, 12, 0.85)';
+    ctx.fillRect(0, 0, 200, 68);
+    ctx.fillStyle = 'rgba(40, 40, 60, 0.5)';
+    ctx.fillRect(200, 0, 1, 68);
+    ctx.font = 'bold 13px monospace';
     ctx.textAlign = 'left';
-    ctx.fillText('loss: ' + currentLoss.toFixed(2), 12, 20);
-    ctx.fillText('step: ' + trail.length, 12, 36);
+    ctx.fillStyle = '#64ffda';
+    ctx.fillText('Loss: ' + currentLoss.toFixed(4), 14, 22);
+    ctx.fillStyle = '#ddd';
+    ctx.fillText('Step: ' + stepCount, 14, 40);
+    ctx.font = '12px monospace';
+    ctx.fillStyle = '#aaa';
+    ctx.fillText('Optimizer: ' + optimizer.toUpperCase(), 14, 56);
+
+    // Right side legend with solid background
+    ctx.fillStyle = 'rgba(6, 6, 12, 0.85)';
+    ctx.fillRect(W - 220, 0, 220, 52);
+    ctx.fillStyle = 'rgba(40, 40, 60, 0.5)';
+    ctx.fillRect(W - 221, 0, 1, 52);
+    ctx.font = '11px Inter, system-ui, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#bbb';
+    ctx.fillText('Bright = low loss, Dark = high loss', W - 12, 20);
+    ctx.fillStyle = '#888';
+    ctx.fillText('Ball follows the negative gradient', W - 12, 38);
+
+    // Convergence message
+    if (converged) {
+      ctx.fillStyle = 'rgba(6, 6, 12, 0.9)';
+      ctx.fillRect(W/2 - 110, H/2 - 22, 220, 44);
+      ctx.strokeStyle = '#64ffda';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(W/2 - 110, H/2 - 22, 220, 44);
+      ctx.font = 'bold 16px Inter, system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#64ffda';
+      ctx.fillText('Converged!', W/2, H/2 + 6);
+    }
 
     requestAnimationFrame(render);
   }
