@@ -174,8 +174,11 @@
       </div>
       <div class="hero-opt-buttons">
         <button class="opt-btn opt-btn--active" data-opt="sgd">SGD<span class="opt-tip"><strong>Stochastic Gradient Descent</strong><br>The simplest optimizer. Moves directly downhill at each step. Simple but slow on curved surfaces like this one.</span></button>
-        <button class="opt-btn" data-opt="momentum">Momentum<span class="opt-tip"><strong>SGD + Momentum</strong><br>Adds "velocity" — like a ball rolling downhill, it builds up speed. Moves faster through valleys and dampens oscillations.</span></button>
-        <button class="opt-btn" data-opt="adam">Adam<span class="opt-tip"><strong>Adaptive Moment Estimation</strong><br>Adapts the learning rate per-parameter. Combines momentum with per-dimension scaling. The default choice for most deep learning.</span></button>
+        <button class="opt-btn" data-opt="momentum">Momentum<span class="opt-tip"><strong>SGD + Momentum</strong><br>Adds "velocity" &mdash; like a ball rolling downhill, it builds up speed. Moves faster through valleys and dampens oscillations.</span></button>
+        <button class="opt-btn" data-opt="rmsprop">RMSprop<span class="opt-tip"><strong>Root Mean Square Propagation</strong><br>Divides the learning rate by a running average of gradient magnitudes. Slows down in steep directions, speeds up in flat ones. Adam's predecessor.</span></button>
+        <button class="opt-btn" data-opt="adam">Adam<span class="opt-tip"><strong>Adaptive Moment Estimation</strong><br>Combines Momentum + RMSprop. Adapts the learning rate per-parameter using both gradient history and magnitude. The workhorse of deep learning.</span></button>
+        <button class="opt-btn" data-opt="adamw">AdamW<span class="opt-tip"><strong>Adam + Decoupled Weight Decay</strong><br>Fixes a subtle bug in Adam's L2 regularization. The actual default for training transformers (GPT, BERT, LLaMA all use this).</span></button>
+        <button class="opt-btn" data-opt="lion">Lion<span class="opt-tip"><strong>Evolved Sign Momentum</strong> (2023)<br>Discovered by Google via program search. Uses only the sign of the gradient (not magnitude). Simpler, uses less memory than Adam, often matches its quality.</span></button>
       </div>
     </div>
   </div>
@@ -822,12 +825,17 @@ document.addEventListener('keydown', function(e) {
   var lrSlider = document.getElementById('lr-slider');
   var lrDisplay = document.getElementById('lr-value');
   var trail = [];
-  var bx, by, vx, vy, mx, my, vxA, vyA, adamT;
+  // Shared state for all optimizers
+  var bx, by;
+  var vx, vy;          // momentum velocity
+  var mx, my;           // 1st moment (Adam/AdamW/Lion)
+  var vxA, vyA;         // 2nd moment (Adam/AdamW/RMSprop)
+  var adamT;            // timestep
   var stepCount = 0;
   var converged = false;
 
   function resetBall() {
-    bx = -1.2; by = -0.5; // start upper-left of canvas, descends into valley toward (1,1)
+    bx = -1.2; by = -0.5;
     vx = 0; vy = 0; mx = 0; my = 0; vxA = 0; vyA = 0; adamT = 0;
     stepCount = 0; converged = false;
     trail = [{x: bx, y: by}];
@@ -858,6 +866,7 @@ document.addEventListener('keydown', function(e) {
     var gMag = Math.sqrt(gx*gx + gy*gy);
     if (gMag > 50) { gx = gx/gMag*50; gy = gy/gMag*50; }
 
+    var b1=0.9, b2=0.999, eps=1e-8;
     if (optimizer === 'sgd') {
       bx -= lr * gx;
       by -= lr * gy;
@@ -865,15 +874,41 @@ document.addEventListener('keydown', function(e) {
       vx = 0.9 * vx + lr * gx;
       vy = 0.9 * vy + lr * gy;
       bx -= vx; by -= vy;
-    } else {
+    } else if (optimizer === 'rmsprop') {
+      // RMSprop: divide LR by running RMS of gradient
+      vxA = b2*vxA + (1-b2)*gx*gx;
+      vyA = b2*vyA + (1-b2)*gy*gy;
+      bx -= lr * gx / (Math.sqrt(vxA) + eps);
+      by -= lr * gy / (Math.sqrt(vyA) + eps);
+    } else if (optimizer === 'adam') {
       adamT++;
-      var b1=0.9, b2=0.999, eps=1e-8;
-      mx = b1*mx + (1-b1)*gx; my = b1*my + (1-b1)*gy;
-      vxA = b2*vxA + (1-b2)*gx*gx; vyA = b2*vyA + (1-b2)*gy*gy;
+      mx = b1*mx + (1-b1)*gx;       my = b1*my + (1-b1)*gy;
+      vxA = b2*vxA + (1-b2)*gx*gx;  vyA = b2*vyA + (1-b2)*gy*gy;
       var mxh=mx/(1-Math.pow(b1,adamT)), myh=my/(1-Math.pow(b1,adamT));
       var vxh=vxA/(1-Math.pow(b2,adamT)), vyh=vyA/(1-Math.pow(b2,adamT));
       bx -= lr * mxh/(Math.sqrt(vxh)+eps);
       by -= lr * myh/(Math.sqrt(vyh)+eps);
+    } else if (optimizer === 'adamw') {
+      // AdamW: same as Adam but weight decay is decoupled (applied directly to params)
+      adamT++;
+      var wd = 0.01; // weight decay
+      mx = b1*mx + (1-b1)*gx;       my = b1*my + (1-b1)*gy;
+      vxA = b2*vxA + (1-b2)*gx*gx;  vyA = b2*vyA + (1-b2)*gy*gy;
+      var mxh=mx/(1-Math.pow(b1,adamT)), myh=my/(1-Math.pow(b1,adamT));
+      var vxh=vxA/(1-Math.pow(b2,adamT)), vyh=vyA/(1-Math.pow(b2,adamT));
+      bx -= lr * (mxh/(Math.sqrt(vxh)+eps) + wd * bx);
+      by -= lr * (myh/(Math.sqrt(vyh)+eps) + wd * by);
+    } else if (optimizer === 'lion') {
+      // Lion: uses sign of interpolated momentum, then updates momentum
+      var lionB1 = 0.9, lionB2 = 0.99;
+      // Update direction = sign(beta1 * m + (1-beta1) * g)
+      var cx = lionB1 * mx + (1 - lionB1) * gx;
+      var cy = lionB1 * my + (1 - lionB1) * gy;
+      bx -= lr * Math.sign(cx);
+      by -= lr * Math.sign(cy);
+      // Update momentum with different beta
+      mx = lionB2 * mx + (1 - lionB2) * gx;
+      my = lionB2 * my + (1 - lionB2) * gy;
     }
     // Clamp to function space bounds
     bx = Math.max(xMin+0.01, Math.min(xMax-0.01, bx));
