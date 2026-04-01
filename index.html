@@ -54,12 +54,34 @@
   .badge-viz { background: rgba(100,255,218,0.1); color: #64ffda; border: 1px solid rgba(100,255,218,0.2); }
   .badge-quiz { background: rgba(255,217,61,0.1); color: #ffd93d; border: 1px solid rgba(255,217,61,0.2); }
 
-  /* Features section */
-  .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin: 40px 0; }
-  .feature { background: #12121f; border: 1px solid #2a2a4a; border-radius: 12px; padding: 24px; text-align: center; }
-  .feature-icon { font-size: 2em; margin-bottom: 12px; }
-  .feature h3 { color: #e0e0e0; font-size: 1em; margin-bottom: 6px; }
-  .feature p { color: #888; font-size: 0.85em; }
+  /* Hero visualization */
+  .hero-viz { position: relative; margin-top: 36px; max-width: 900px; margin-left: auto; margin-right: auto; }
+  .hero-viz-label { font-size: 0.85em; color: #64ffda; letter-spacing: 0.5px; margin-bottom: 10px; animation: labelPulse 2.5s ease-in-out infinite; }
+  @keyframes labelPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+  #hero-canvas { width: 100%; max-width: 900px; height: auto; border-radius: 12px; border: 1px solid #2a2a4a; background: #0a0a0f; display: block; }
+  .hero-viz-controls { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-top: 12px; flex-wrap: wrap; }
+  .hero-slider-row { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 250px; }
+  .hero-slider-label { font-size: 0.82em; color: #888; white-space: nowrap; }
+  .hero-slider { flex: 1; -webkit-appearance: none; appearance: none; height: 6px; border-radius: 3px; background: #2a2a4a; outline: none; cursor: pointer; }
+  .hero-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #64ffda; cursor: pointer; box-shadow: 0 0 10px rgba(100,255,218,0.4); }
+  .hero-slider::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: #64ffda; cursor: pointer; border: none; box-shadow: 0 0 10px rgba(100,255,218,0.4); }
+  .hero-slider-value { font-size: 0.85em; color: #64ffda; font-weight: 600; font-family: monospace; min-width: 50px; }
+  .hero-opt-buttons { display: flex; gap: 8px; }
+  .opt-btn { background: #1a1a2e; border: 1px solid #2a2a4a; color: #888; padding: 6px 16px; border-radius: 8px; font-size: 0.8em; cursor: pointer; transition: all 0.2s; font-family: inherit; }
+  .opt-btn:hover { border-color: #4a4a6a; color: #ccc; }
+  .opt-btn--active { border-color: #64ffda; color: #64ffda; background: rgba(100,255,218,0.08); }
+
+  /* Scroll hint */
+  .scroll-hint { margin-top: 32px; display: flex; flex-direction: column; align-items: center; gap: 4px; animation: scrollBounce 2s ease-in-out infinite; position: relative; }
+  .scroll-hint-text { font-size: 0.72em; color: #555; letter-spacing: 1px; text-transform: uppercase; }
+  .scroll-hint-arrow { color: #555; }
+  @keyframes scrollBounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
+
+  /* Path badges */
+  .path-badges { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .path-badge { font-size: 0.72em; padding: 3px 10px; border-radius: 10px; font-weight: 600; }
+  .path-badge--viz { background: rgba(100,255,218,0.08); color: #64ffda; border: 1px solid rgba(100,255,218,0.15); }
+  .path-badge--ch { background: rgba(255,217,61,0.08); color: #ffd93d; border: 1px solid rgba(255,217,61,0.15); }
 
   /* Footer */
   .footer { text-align: center; padding: 40px; color: #555; font-size: 0.85em; border-top: 1px solid #1a1a2e; }
@@ -119,41 +141,51 @@
     .card::after { display: none; }
     .card-coming-soon, .card-available { position: static; display: inline-block; margin-bottom: 8px; }
     .card-topics { justify-content: center; }
+    .hero-viz-controls { flex-direction: column; align-items: stretch; }
+    .hero-opt-buttons { justify-content: center; }
   }
 </style>
 </head>
 <body>
 <div class="header">
   <h1>Daniel Lobato's ML Visualizations</h1>
-  <p>I find myself always going back to the concepts in this guide, one way or another, at work, research, interview prep, or whenever I'm playing with something new. These references and from-scratch guides are not perfect for a newbie, I'll acknowledge that, but I do believe they're great to help you refresh concepts and keep them in your mind.</p>
+  <p>Interactive ML from first principles. Every visualization computes real values — drag a slider and watch backprop happen, attention weights shift, or gradient descent converge.</p>
   <p class="subtitle">Two learning paths &bull; 100% client-side &bull; Zero dependencies &bull; Works offline &bull; Open source</p>
   <div class="stats">
-    <div class="stat"><div class="stat-num">12</div><div class="stat-label">Topic Pages</div></div>
-    <div class="stat"><div class="stat-num gold">100+</div><div class="stat-label">Visualizations</div></div>
-    <div class="stat"><div class="stat-num pink">500+</div><div class="stat-label">Quiz Questions</div></div>
-    <div class="stat"><div class="stat-num">0</div><div class="stat-label">Dependencies</div></div>
+    <div class="stat"><div class="stat-num" data-target="12" data-suffix="">12</div><div class="stat-label">Topic Pages</div></div>
+    <div class="stat"><div class="stat-num gold" data-target="100" data-suffix="+">100+</div><div class="stat-label">Visualizations</div></div>
+    <div class="stat"><div class="stat-num pink" data-target="500" data-suffix="+">500+</div><div class="stat-label">Quiz Questions</div></div>
+    <div class="stat"><div class="stat-num" data-target="0" data-suffix="">0</div><div class="stat-label">Dependencies</div></div>
+  </div>
+
+  <!-- Hero Canvas Visualization -->
+  <div class="hero-viz">
+    <div class="hero-viz-label">Try it: drag the learning rate</div>
+    <canvas id="hero-canvas" width="900" height="350"></canvas>
+    <div class="hero-viz-controls">
+      <div class="hero-slider-row">
+        <label for="lr-slider" class="hero-slider-label">Learning Rate:</label>
+        <input type="range" id="lr-slider" class="hero-slider" min="1" max="200" value="50">
+        <span id="lr-value" class="hero-slider-value">0.030</span>
+      </div>
+      <div class="hero-opt-buttons">
+        <button class="opt-btn opt-btn--active" data-opt="sgd">SGD</button>
+        <button class="opt-btn" data-opt="momentum">Momentum</button>
+        <button class="opt-btn" data-opt="adam">Adam</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scroll hint -->
+  <div class="scroll-hint">
+    <span class="scroll-hint-text">Explore topics</span>
+    <svg class="scroll-hint-arrow" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
   </div>
 </div>
 
 <div class="container">
 
-  <div class="features">
-    <div class="feature">
-      <div class="feature-icon">🎨</div>
-      <h3>Interactive Canvas Visualizations</h3>
-      <p>Drag sliders, click elements, and watch concepts come alive with real-time rendering</p>
-    </div>
-    <div class="feature">
-      <div class="feature-icon">🧠</div>
-      <h3>Per-Topic Quiz Mode</h3>
-      <p>5 questions per topic with instant feedback and detailed explanations</p>
-    </div>
-    <div class="feature">
-      <div class="feature-icon">📐</div>
-      <h3>KaTeX Math Rendering</h3>
-      <p>Proper mathematical notation for every formula — fractions, subscripts, Greek letters</p>
-    </div>
-  </div>
+  <!-- features section removed, replaced by hero canvas above -->
 
   <!-- Path Selector -->
   <div class="path-selector">
@@ -161,11 +193,13 @@
       <div class="path-card-icon">&#x1F4DA;</div>
       <h3 style="color:#64ffda">Reference Library</h3>
       <p>12 topic pages, 100+ visualizations, 500+ quiz questions. Jump to any topic. Perfect for interview prep.</p>
+      <div class="path-badges"><span class="path-badge path-badge--viz">120 visualizations</span><span class="path-badge path-badge--ch">12 chapters</span></div>
     </a>
     <a class="path-card path-card--scratch" href="#from-scratch-series" onclick="document.getElementById('from-scratch-series').scrollIntoView({behavior:'smooth'});return false;">
       <div class="path-card-icon">&#x1F9F1;</div>
       <h3 style="color:#ff6b6b">From Scratch Series <span class="path-new-badge">NEW</span></h3>
       <p>Build ML systems from first principles. 10 chapters that construct entire systems step-by-step, from a single neuron to a full transformer, CNNs, RLHF, and beyond.</p>
+      <div class="path-badges"><span class="path-badge path-badge--viz">75 visualizations</span><span class="path-badge path-badge--ch">10 chapters</span></div>
     </a>
   </div>
 
@@ -703,33 +737,225 @@ document.addEventListener('keydown', function(e) {
   if (num === 0) num = 10;
   if (num >= 1 && num <= 12) window.location.href = refPages[num - 1];
 });
-// Count-up animation for stat numbers
-function animateStats() {
-  var stats = document.querySelectorAll('.stat-num');
-  stats.forEach(function(el) {
-    var text = el.textContent.trim();
-    var suffix = text.replace(/[0-9]/g, '');
-    var target = parseInt(text);
-    if (isNaN(target)) return;
-    var duration = 1200;
-    var start = performance.now();
-    el.textContent = '0' + suffix;
-    function tick(now) {
-      var progress = Math.min((now - start) / duration, 1);
-      var eased = 1 - Math.pow(1 - progress, 3);
-      el.textContent = Math.round(target * eased) + suffix;
-      if (progress < 1) requestAnimationFrame(tick);
+
+// Stats are static — no animation needed, avoids mid-count display bugs
+
+// ============================================================
+// Hero Gradient Descent Visualization
+// ============================================================
+(function() {
+  var canvas = document.getElementById('hero-canvas');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var W = 900, H = 350;
+  canvas.width = W; canvas.height = H;
+
+  // Loss surface: Rosenbrock-ish with two basins for visual interest
+  // f(x,y) = (1-x)^2 + 10*(y-x^2)^2  (scaled/shifted for visual appeal)
+  function loss(x, y) {
+    // Map canvas coords [0,W]x[0,H] to [-2,2]x[-1,3]
+    var fx = (x / W) * 4 - 2;
+    var fy = (y / H) * 4 - 1;
+    return Math.pow(1 - fx, 2) + 10 * Math.pow(fy - fx * fx, 2);
+  }
+
+  // Gradient of loss in function space (gives pixel-visible movements with LR ~0.01-0.1)
+  function gradient(x, y) {
+    var fx = (x / W) * 4 - 2;
+    var fy = (y / H) * 4 - 1;
+    var dfdx = -2 * (1 - fx) + 10 * 2 * (fy - fx * fx) * (-2 * fx);
+    var dfdy = 10 * 2 * (fy - fx * fx);
+    return [dfdx, dfdy];
+  }
+
+  // Render loss landscape as color image
+  var landscapeData = ctx.createImageData(W, H);
+  var maxLoss = 0;
+  var lossGrid = new Float32Array(W * H);
+  for (var py = 0; py < H; py++) {
+    for (var px = 0; px < W; px++) {
+      var l = loss(px, py);
+      lossGrid[py * W + px] = l;
+      if (l > maxLoss) maxLoss = l;
     }
-    requestAnimationFrame(tick);
+  }
+  // Color mapping: dark blue (high) -> teal -> green -> yellow (low)
+  function lossColor(val) {
+    var t = Math.pow(Math.max(0, 1 - val / (maxLoss * 0.4)), 1.5); // nonlinear for more contrast near minimum
+    t = Math.max(0, Math.min(1, t));
+    // dark blue -> teal -> green -> bright yellow
+    var r, g, b;
+    if (t < 0.33) {
+      var s = t / 0.33;
+      r = 10 + s * 10;   g = 10 + s * 80;  b = 40 + s * 60;
+    } else if (t < 0.66) {
+      var s = (t - 0.33) / 0.33;
+      r = 20 + s * 40;   g = 90 + s * 100;  b = 100 - s * 60;
+    } else {
+      var s = (t - 0.66) / 0.34;
+      r = 60 + s * 195;  g = 190 + s * 65;  b = 40 - s * 20;
+    }
+    return [r|0, g|0, b|0];
+  }
+  for (var py = 0; py < H; py++) {
+    for (var px = 0; px < W; px++) {
+      var idx = (py * W + px) * 4;
+      var c = lossColor(lossGrid[py * W + px]);
+      landscapeData.data[idx]     = c[0];
+      landscapeData.data[idx + 1] = c[1];
+      landscapeData.data[idx + 2] = c[2];
+      landscapeData.data[idx + 3] = 255;
+    }
+  }
+
+  // State
+  var optimizer = 'sgd';
+  var lrSlider = document.getElementById('lr-slider');
+  var lrDisplay = document.getElementById('lr-value');
+  var trail = [];
+  var ballX, ballY, vx, vy, mx, my, vxAdam, vyAdam, adamT;
+
+  function resetBall() {
+    ballX = W * 0.15;
+    ballY = H * 0.2;
+    vx = 0; vy = 0;
+    mx = 0; my = 0;
+    vxAdam = 0; vyAdam = 0;
+    adamT = 0;
+    trail = [{x: ballX, y: ballY}];
+  }
+  resetBall();
+
+  // Optimizer buttons
+  var optBtns = document.querySelectorAll('.opt-btn');
+  optBtns.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      optBtns.forEach(function(b) { b.classList.remove('opt-btn--active'); });
+      btn.classList.add('opt-btn--active');
+      optimizer = btn.getAttribute('data-opt');
+      resetBall();
+    });
   });
-}
-// Run when stats scroll into view
-var observer = new IntersectionObserver(function(entries) {
-  entries.forEach(function(entry) {
-    if (entry.isIntersecting) { animateStats(); observer.disconnect(); }
+
+  lrSlider.addEventListener('input', function() {
+    lrDisplay.textContent = (lrSlider.value / 1000).toFixed(3);
+    resetBall();
   });
-}, { threshold: 0.5 });
-observer.observe(document.querySelector('.stats'));
+  lrDisplay.textContent = (lrSlider.value / 1000).toFixed(3);
+
+  function step() {
+    var lr = lrSlider.value / 1000;
+    var g = gradient(ballX, ballY);
+    var gx = g[0], gy = g[1];
+
+    if (optimizer === 'sgd') {
+      ballX -= lr * gx;
+      ballY -= lr * gy;
+    } else if (optimizer === 'momentum') {
+      var mu = 0.9;
+      vx = mu * vx + lr * gx;
+      vy = mu * vy + lr * gy;
+      ballX -= vx;
+      ballY -= vy;
+    } else if (optimizer === 'adam') {
+      adamT++;
+      var beta1 = 0.9, beta2 = 0.999, eps = 1e-8;
+      mx = beta1 * mx + (1 - beta1) * gx;
+      my = beta1 * my + (1 - beta1) * gy;
+      vxAdam = beta2 * vxAdam + (1 - beta2) * gx * gx;
+      vyAdam = beta2 * vyAdam + (1 - beta2) * gy * gy;
+      var mxh = mx / (1 - Math.pow(beta1, adamT));
+      var myh = my / (1 - Math.pow(beta1, adamT));
+      var vxh = vxAdam / (1 - Math.pow(beta2, adamT));
+      var vyh = vyAdam / (1 - Math.pow(beta2, adamT));
+      ballX -= lr * mxh / (Math.sqrt(vxh) + eps);
+      ballY -= lr * myh / (Math.sqrt(vyh) + eps);
+    }
+
+    // Clamp to canvas
+    ballX = Math.max(0, Math.min(W, ballX));
+    ballY = Math.max(0, Math.min(H, ballY));
+
+    trail.push({x: ballX, y: ballY});
+    if (trail.length > 600) trail.shift();
+  }
+
+  var lastTime = 0;
+  var accumulator = 0;
+  var stepInterval = 16; // ~60 steps/sec
+
+  function render(time) {
+    // Steps
+    var dt = lastTime ? time - lastTime : 16;
+    lastTime = time;
+    accumulator += dt;
+    var stepsThisFrame = 0;
+    while (accumulator >= stepInterval && stepsThisFrame < 4) {
+      step();
+      accumulator -= stepInterval;
+      stepsThisFrame++;
+    }
+    if (accumulator > stepInterval * 4) accumulator = 0;
+
+    // Draw landscape
+    ctx.putImageData(landscapeData, 0, 0);
+
+    // Draw contour lines (subtle)
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.lineWidth = 0.5;
+    var contourLevels = [0.5, 1, 2, 4, 8, 16, 32, 64];
+    // skip contour for perf, the color gradient is enough
+
+    // Draw trail
+    if (trail.length > 1) {
+      for (var i = 1; i < trail.length; i++) {
+        var alpha = (i / trail.length) * 0.7;
+        ctx.beginPath();
+        ctx.strokeStyle = 'rgba(100, 255, 218,' + alpha.toFixed(2) + ')';
+        ctx.lineWidth = 1.5;
+        ctx.moveTo(trail[i-1].x, trail[i-1].y);
+        ctx.lineTo(trail[i].x, trail[i].y);
+        ctx.stroke();
+      }
+    }
+
+    // Draw ball with glow
+    ctx.beginPath();
+    var grd = ctx.createRadialGradient(ballX, ballY, 0, ballX, ballY, 16);
+    grd.addColorStop(0, 'rgba(100, 255, 218, 0.6)');
+    grd.addColorStop(0.4, 'rgba(100, 255, 218, 0.15)');
+    grd.addColorStop(1, 'rgba(100, 255, 218, 0)');
+    ctx.fillStyle = grd;
+    ctx.arc(ballX, ballY, 16, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(ballX, ballY, 5, 0, Math.PI * 2);
+    ctx.fillStyle = '#64ffda';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Label at the minimum area
+    var minCX = W * 0.625; // approximate canvas x for Rosenbrock minimum at (1,1)
+    var minCY = H * 0.5;
+    ctx.font = '11px Inter, system-ui, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.textAlign = 'center';
+    ctx.fillText('minimum', minCX, minCY + 28);
+
+    // Current loss value
+    var currentLoss = loss(ballX, ballY);
+    ctx.font = '12px monospace';
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.textAlign = 'left';
+    ctx.fillText('loss: ' + currentLoss.toFixed(2), 12, 20);
+    ctx.fillText('step: ' + trail.length, 12, 36);
+
+    requestAnimationFrame(render);
+  }
+  requestAnimationFrame(render);
+})();
 </script>
 </body>
 </html>
