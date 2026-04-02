@@ -79,6 +79,497 @@
 
 <div class="container">
 
+<!-- 0A. WHAT IS A NEURON? -->
+<div class="viz-section">
+  <h2>What Is a Neuron?</h2>
+  <p class="subtitle">A neuron is a tiny decision-maker. Each weight says how much it cares about that input. The bias shifts the threshold. ReLU says: if the sum is positive, pass it through; if negative, output zero.</p>
+  <canvas id="neuronCanvas" width="700" height="300"></canvas>
+  <div id="neuronComputation" style="min-height:40px;margin:8px 0 12px;padding:12px 18px;border-radius:8px;background:rgba(20,20,40,0.85);border-left:3px solid #444;font-size:0.92em;color:#c8d6e5;line-height:1.8;font-family:'Courier New',monospace;"></div>
+  <div class="controls">
+    <div class="control-group">
+      <label>Weight w&#8321;</label>
+      <input type="range" id="neuronW1" min="-20" max="20" value="8" step="1" oninput="updateNeuron()">
+      <span class="value" id="neuronW1Val">0.8</span>
+    </div>
+    <div class="control-group">
+      <label>Weight w&#8322;</label>
+      <input type="range" id="neuronW2" min="-20" max="20" value="5" step="1" oninput="updateNeuron()">
+      <span class="value" id="neuronW2Val">0.5</span>
+    </div>
+    <div class="control-group">
+      <label>Bias b</label>
+      <input type="range" id="neuronB" min="-20" max="20" value="0" step="1" oninput="updateNeuron()">
+      <span class="value" id="neuronBVal">0.0</span>
+    </div>
+    <div class="control-group">
+      <label>Input x&#8321;</label>
+      <input type="range" id="neuronX1" min="-20" max="20" value="10" step="1" oninput="updateNeuron()">
+      <span class="value" id="neuronX1Val">1.0</span>
+    </div>
+    <div class="control-group">
+      <label>Input x&#8322;</label>
+      <input type="range" id="neuronX2" min="-20" max="20" value="5" step="1" oninput="updateNeuron()">
+      <span class="value" id="neuronX2Val">0.5</span>
+    </div>
+  </div>
+  <div class="insight-box">
+    <strong>Key Concepts:</strong>
+    <div class="key-point">
+      <span class="label">Weights (w):</span>
+      <span class="desc">Control how much each input matters. Large positive weight = strong positive influence. Negative weight = inhibitory.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Bias (b):</span>
+      <span class="desc">Shifts the activation threshold. A large negative bias makes the neuron harder to activate; positive bias makes it easier.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">ReLU activation:</span>
+      <span class="desc">ReLU(z) = max(0, z). If the weighted sum is positive, pass it through unchanged. If negative, output zero. This introduces non-linearity.</span>
+    </div>
+    <div class="formula">$$\text{output} = \text{ReLU}(w_1 \cdot x_1 + w_2 \cdot x_2 + b) = \max(0,\; z)$$</div>
+    <div class="interview-tip">A single neuron computes a linear function followed by a non-linearity. Without the activation function, stacking neurons would still be linear.</div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const canvas = document.getElementById('neuronCanvas');
+  const ctx = canvas.getContext('2d');
+
+  function getVals() {
+    const w1 = parseInt(document.getElementById('neuronW1').value) / 10;
+    const w2 = parseInt(document.getElementById('neuronW2').value) / 10;
+    const b  = parseInt(document.getElementById('neuronB').value) / 10;
+    const x1 = parseInt(document.getElementById('neuronX1').value) / 10;
+    const x2 = parseInt(document.getElementById('neuronX2').value) / 10;
+    return { w1, w2, b, x1, x2 };
+  }
+
+  function drawNeuron() {
+    const { w1, w2, b, x1, x2 } = getVals();
+    const z = w1 * x1 + w2 * x2 + b;
+    const output = Math.max(0, z);
+    const active = z > 0;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const W = canvas.width, H = canvas.height;
+    const cx = W / 2, cy = H / 2;
+
+    // positions
+    const inX = 100, in1Y = H * 0.3, in2Y = H * 0.7;
+    const nX = cx, nY = cy;
+    const outX = W - 100, outY = cy;
+
+    // edges with weight-proportional thickness
+    function drawEdge(x1p, y1p, x2p, y2p, w, label) {
+      const thick = Math.min(Math.abs(w) * 3 + 1, 8);
+      ctx.beginPath();
+      ctx.moveTo(x1p, y1p);
+      ctx.lineTo(x2p, y2p);
+      ctx.strokeStyle = w >= 0 ? '#64ffda' : '#ff6b6b';
+      ctx.lineWidth = thick;
+      ctx.globalAlpha = 0.7;
+      ctx.stroke();
+      ctx.globalAlpha = 1.0;
+      // label
+      const mx = (x1p + x2p) / 2, my = (y1p + y2p) / 2;
+      ctx.font = 'bold 13px monospace';
+      ctx.fillStyle = '#fff';
+      ctx.textAlign = 'center';
+      ctx.fillText(label, mx, my - 10);
+    }
+
+    drawEdge(inX + 20, in1Y, nX - 30, nY, w1, 'w\u2081=' + w1.toFixed(1));
+    drawEdge(inX + 20, in2Y, nX - 30, nY, w2, 'w\u2082=' + w2.toFixed(1));
+    drawEdge(nX + 30, nY, outX - 20, outY, 1, '');
+
+    // input nodes
+    function drawNode(x, y, text, color) {
+      ctx.beginPath();
+      ctx.arc(x, y, 22, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.strokeStyle = '#4a4a7a';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.font = 'bold 14px monospace';
+      ctx.fillStyle = '#fff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, x, y);
+    }
+
+    drawNode(inX, in1Y, 'x\u2081', '#2a4a6a');
+    drawNode(inX, in2Y, 'x\u2082', '#2a4a6a');
+
+    // input values beside nodes
+    ctx.font = '13px monospace';
+    ctx.fillStyle = '#aaa';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('=' + x1.toFixed(1), inX - 28, in1Y);
+    ctx.fillText('=' + x2.toFixed(1), inX - 28, in2Y);
+
+    // neuron body
+    ctx.beginPath();
+    ctx.arc(nX, nY, 32, 0, Math.PI * 2);
+    const grad = ctx.createRadialGradient(nX, nY, 5, nX, nY, 32);
+    grad.addColorStop(0, active ? '#1a5a4a' : '#4a1a1a');
+    grad.addColorStop(1, active ? '#0d3a2a' : '#2a0d0d');
+    ctx.fillStyle = grad;
+    ctx.fill();
+    ctx.strokeStyle = active ? '#64ffda' : '#ff6b6b';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.font = 'bold 12px sans-serif';
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('ReLU', nX, nY - 8);
+    ctx.font = '11px monospace';
+    ctx.fillStyle = '#aaa';
+    ctx.fillText('b=' + b.toFixed(1), nX, nY + 10);
+
+    // output node
+    drawNode(outX, outY, '', active ? '#1a5a3a' : '#4a1a1a');
+    ctx.font = 'bold 14px monospace';
+    ctx.fillStyle = active ? '#64ffda' : '#ff6b6b';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(output.toFixed(2), outX, outY);
+
+    // output label
+    ctx.font = '13px sans-serif';
+    ctx.fillStyle = '#888';
+    ctx.fillText('output', outX, outY + 38);
+
+    // status indicator
+    ctx.font = 'bold 13px sans-serif';
+    ctx.fillStyle = active ? '#64ffda' : '#ff6b6b';
+    ctx.textAlign = 'center';
+    ctx.fillText(active ? 'ACTIVE (passes)' : 'KILLED (blocked)', outX, outY - 38);
+
+    // update computation text
+    const comp = document.getElementById('neuronComputation');
+    comp.innerHTML =
+      '<span style="color:#aaa;">Step 1:</span> z = w\u2081\u00b7x\u2081 + w\u2082\u00b7x\u2082 + b = ' +
+      '<span style="color:#64ffda;">' + w1.toFixed(1) + '</span>\u00b7' +
+      '<span style="color:#ddd;">' + x1.toFixed(1) + '</span> + ' +
+      '<span style="color:#64ffda;">' + w2.toFixed(1) + '</span>\u00b7' +
+      '<span style="color:#ddd;">' + x2.toFixed(1) + '</span> + ' +
+      '<span style="color:#ffd93d;">' + b.toFixed(1) + '</span> = ' +
+      '<span style="color:#fff;font-weight:bold;">' + z.toFixed(2) + '</span><br>' +
+      '<span style="color:#aaa;">Step 2:</span> output = ReLU(z) = max(0, ' + z.toFixed(2) + ') = ' +
+      '<span style="color:' + (active ? '#64ffda' : '#ff6b6b') + ';font-weight:bold;">' + output.toFixed(2) + '</span>' +
+      (active ? '' : ' <span style="color:#ff6b6b;"> \u2190 blocked!</span>');
+
+    // update slider display values
+    document.getElementById('neuronW1Val').textContent = w1.toFixed(1);
+    document.getElementById('neuronW2Val').textContent = w2.toFixed(1);
+    document.getElementById('neuronBVal').textContent = b.toFixed(1);
+    document.getElementById('neuronX1Val').textContent = x1.toFixed(1);
+    document.getElementById('neuronX2Val').textContent = x2.toFixed(1);
+  }
+
+  window.updateNeuron = drawNeuron;
+  drawNeuron();
+})();
+</script>
+
+<!-- 0B. FROM NEURON TO DECISION BOUNDARY -->
+<div class="viz-section">
+  <h2>From Neuron to Decision Boundary</h2>
+  <p class="subtitle">A single neuron with 2 inputs draws one straight line in 2D. Points on one side activate it; points on the other side get blocked. Drag the sliders to move the line and see why one neuron can never solve XOR.</p>
+  <canvas id="boundaryCanvas" width="700" height="350"></canvas>
+  <div class="controls">
+    <div class="control-group">
+      <label>Weight w&#8321;</label>
+      <input type="range" id="bdW1" min="-20" max="20" value="10" step="1" oninput="updateBoundary()">
+      <span class="value" id="bdW1Val">1.0</span>
+    </div>
+    <div class="control-group">
+      <label>Weight w&#8322;</label>
+      <input type="range" id="bdW2" min="-20" max="20" value="10" step="1" oninput="updateBoundary()">
+      <span class="value" id="bdW2Val">1.0</span>
+    </div>
+    <div class="control-group">
+      <label>Bias b</label>
+      <input type="range" id="bdB" min="-30" max="30" value="0" step="1" oninput="updateBoundary()">
+      <span class="value" id="bdBVal">0.0</span>
+    </div>
+    <button class="btn" id="bdLinearBtn" onclick="setBoundaryData('linear')" style="background:#ff6b6b33;">Linear Data</button>
+    <button class="btn" onclick="setBoundaryData('xor')">Try XOR</button>
+    <button class="btn" onclick="setBoundaryData('circle')">Try Circle</button>
+  </div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> One neuron = one straight line. That is why we need layers of neurons &mdash; each adds another line, and together they carve complex shapes. This is the key insight behind deep learning.
+    <div class="formula">$$\text{Decision boundary: } w_1 x + w_2 y + b = 0$$</div>
+    <div class="key-point">
+      <span class="label">Linear separability:</span>
+      <span class="desc">A single neuron can only classify data that is separable by a straight line (or hyperplane in higher dimensions).</span>
+    </div>
+    <div class="key-point">
+      <span class="label">XOR problem:</span>
+      <span class="desc">XOR requires at least 2 neurons (a hidden layer) because no single line can separate the classes. This was the key insight that motivated multi-layer networks.</span>
+    </div>
+    <div class="interview-tip">The XOR problem was historically important: Minsky &amp; Papert (1969) showed perceptrons could not solve XOR, which led to the first AI winter. The solution? Hidden layers.</div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const canvas = document.getElementById('boundaryCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  // Split: left half = neuron diagram, right half = scatter plot
+  const plotL = W * 0.38, plotR = W - 20, plotT = 20, plotB = H - 30;
+  const plotW = plotR - plotL, plotH = plotB - plotT;
+  // Data range for plot: -3 to 3
+  const dMin = -3, dMax = 3, dRange = dMax - dMin;
+
+  let dataPoints = [];
+  let currentDataset = 'linear';
+
+  function toCanvasX(dx) { return plotL + (dx - dMin) / dRange * plotW; }
+  function toCanvasY(dy) { return plotB - (dy - dMin) / dRange * plotH; }
+
+  function makeLinearData() {
+    return [
+      { x: 1.5, y: 2.0, c: 1 }, { x: 2.0, y: 1.5, c: 1 }, { x: 1.0, y: 2.5, c: 1 },
+      { x: 2.5, y: 2.0, c: 1 }, { x: 1.8, y: 2.8, c: 1 },
+      { x: -1.5, y: -1.0, c: 0 }, { x: -2.0, y: -1.5, c: 0 }, { x: -1.0, y: -2.0, c: 0 },
+      { x: -0.5, y: -1.5, c: 0 }, { x: -1.8, y: -0.5, c: 0 }
+    ];
+  }
+  function makeXORData() {
+    return [
+      { x: 1.5, y: 1.5, c: 0 }, { x: -1.5, y: -1.5, c: 0 },
+      { x: 1.5, y: -1.5, c: 1 }, { x: -1.5, y: 1.5, c: 1 },
+      { x: 1.0, y: 1.0, c: 0 }, { x: -1.0, y: -1.0, c: 0 },
+      { x: 1.0, y: -1.0, c: 1 }, { x: -1.0, y: 1.0, c: 1 }
+    ];
+  }
+  function makeCircleData() {
+    const pts = [];
+    for (let i = 0; i < 8; i++) {
+      const a = Math.PI * 2 * i / 8;
+      pts.push({ x: Math.cos(a) * 2, y: Math.sin(a) * 2, c: 1 });
+    }
+    for (let i = 0; i < 6; i++) {
+      const a = Math.PI * 2 * i / 6;
+      pts.push({ x: Math.cos(a) * 0.7, y: Math.sin(a) * 0.7, c: 0 });
+    }
+    return pts;
+  }
+
+  window.setBoundaryData = function(type) {
+    currentDataset = type;
+    if (type === 'linear') dataPoints = makeLinearData();
+    else if (type === 'xor') dataPoints = makeXORData();
+    else dataPoints = makeCircleData();
+    // highlight active button
+    document.getElementById('bdLinearBtn').style.background = type === 'linear' ? '#ff6b6b33' : 'transparent';
+    drawBoundary();
+  };
+
+  function getVals() {
+    const w1 = parseInt(document.getElementById('bdW1').value) / 10;
+    const w2 = parseInt(document.getElementById('bdW2').value) / 10;
+    const b  = parseInt(document.getElementById('bdB').value) / 10;
+    return { w1, w2, b };
+  }
+
+  function drawBoundary() {
+    const { w1, w2, b } = getVals();
+    ctx.clearRect(0, 0, W, H);
+
+    // --- LEFT HALF: mini neuron diagram ---
+    const lW = W * 0.34;
+    const lcx = lW / 2, lcy = H / 2;
+    const inX = 40, in1Y = H * 0.28, in2Y = H * 0.72;
+    const nX = lcx + 20, nY = lcy;
+
+    // edges
+    function miniEdge(x1p, y1p, x2p, y2p, w, label) {
+      const thick = Math.min(Math.abs(w) * 3 + 1, 6);
+      ctx.beginPath();
+      ctx.moveTo(x1p, y1p);
+      ctx.lineTo(x2p, y2p);
+      ctx.strokeStyle = w >= 0 ? '#64ffda' : '#ff6b6b';
+      ctx.lineWidth = thick;
+      ctx.globalAlpha = 0.6;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      const mx = (x1p + x2p) / 2, my = (y1p + y2p) / 2;
+      ctx.font = 'bold 11px monospace';
+      ctx.fillStyle = '#ccc';
+      ctx.textAlign = 'center';
+      ctx.fillText(label, mx, my - 8);
+    }
+    miniEdge(inX + 16, in1Y, nX - 22, nY, w1, 'w\u2081=' + w1.toFixed(1));
+    miniEdge(inX + 16, in2Y, nX - 22, nY, w2, 'w\u2082=' + w2.toFixed(1));
+
+    // nodes
+    function miniNode(x, y, text, color, r) {
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.strokeStyle = '#4a4a7a';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.font = 'bold 12px monospace';
+      ctx.fillStyle = '#fff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, x, y);
+    }
+    miniNode(inX, in1Y, 'x', '#2a4a6a', 16);
+    miniNode(inX, in2Y, 'y', '#2a4a6a', 16);
+    miniNode(nX, nY, '\u03C3', '#2a3a5a', 24);
+    ctx.font = '10px monospace';
+    ctx.fillStyle = '#aaa';
+    ctx.textAlign = 'center';
+    ctx.fillText('b=' + b.toFixed(1), nX, nY + 36);
+
+    // separator line between halves
+    ctx.beginPath();
+    ctx.moveTo(plotL - 10, 10);
+    ctx.lineTo(plotL - 10, H - 10);
+    ctx.strokeStyle = '#2a2a4a';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // --- RIGHT HALF: scatter plot ---
+    // axes
+    ctx.strokeStyle = '#3a3a5a';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(plotL, plotB);
+    ctx.lineTo(plotR, plotB);
+    ctx.moveTo(plotL, plotB);
+    ctx.lineTo(plotL, plotT);
+    ctx.stroke();
+
+    // axis labels
+    ctx.font = '11px sans-serif';
+    ctx.fillStyle = '#666';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText('x', (plotL + plotR) / 2, plotB + 6);
+    ctx.save();
+    ctx.translate(plotL - 12, (plotT + plotB) / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('y', 0, 0);
+    ctx.restore();
+
+    // grid ticks
+    ctx.font = '9px monospace';
+    ctx.fillStyle = '#555';
+    for (let v = -2; v <= 2; v++) {
+      const px = toCanvasX(v), py = toCanvasY(v);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillText(v, px, plotB + 2);
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(v, plotL - 4, py);
+      // grid lines
+      ctx.beginPath();
+      ctx.moveTo(px, plotT);
+      ctx.lineTo(px, plotB);
+      ctx.moveTo(plotL, py);
+      ctx.lineTo(plotR, py);
+      ctx.strokeStyle = '#1a1a2a';
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
+    }
+
+    // shade regions (positive side = green tint, negative side = red tint)
+    const imgData = ctx.createImageData(Math.round(plotW), Math.round(plotH));
+    for (let py = 0; py < Math.round(plotH); py++) {
+      for (let px = 0; px < Math.round(plotW); px++) {
+        const dx = dMin + (px / plotW) * dRange;
+        const dy = dMax - (py / plotH) * dRange;
+        const val = w1 * dx + w2 * dy + b;
+        const idx = (py * Math.round(plotW) + px) * 4;
+        if (val > 0) {
+          imgData.data[idx] = 100; imgData.data[idx + 1] = 255; imgData.data[idx + 2] = 218; imgData.data[idx + 3] = 18;
+        } else {
+          imgData.data[idx] = 255; imgData.data[idx + 1] = 107; imgData.data[idx + 2] = 107; imgData.data[idx + 3] = 18;
+        }
+      }
+    }
+    ctx.putImageData(imgData, Math.round(plotL), Math.round(plotT));
+
+    // decision boundary line: w1*x + w2*y + b = 0 => y = -(w1*x + b) / w2
+    ctx.beginPath();
+    ctx.strokeStyle = '#ffd93d';
+    ctx.lineWidth = 2.5;
+    if (Math.abs(w2) > 0.001) {
+      const y1 = -(w1 * dMin + b) / w2;
+      const y2 = -(w1 * dMax + b) / w2;
+      ctx.moveTo(toCanvasX(dMin), toCanvasY(y1));
+      ctx.lineTo(toCanvasX(dMax), toCanvasY(y2));
+    } else if (Math.abs(w1) > 0.001) {
+      const xv = -b / w1;
+      ctx.moveTo(toCanvasX(xv), plotT);
+      ctx.lineTo(toCanvasX(xv), plotB);
+    }
+    ctx.stroke();
+
+    // boundary label
+    ctx.font = 'bold 11px sans-serif';
+    ctx.fillStyle = '#ffd93d';
+    ctx.textAlign = 'left';
+    ctx.fillText('w\u2081x + w\u2082y + b = 0', plotL + 8, plotT + 14);
+
+    // data points
+    dataPoints.forEach(function(p) {
+      const px = toCanvasX(p.x), py = toCanvasY(p.y);
+      ctx.beginPath();
+      ctx.arc(px, py, 7, 0, Math.PI * 2);
+      ctx.fillStyle = p.c === 1 ? '#ff6b6b' : '#4a9eff';
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    });
+
+    // count misclassified
+    let correct = 0, total = dataPoints.length;
+    dataPoints.forEach(function(p) {
+      const val = w1 * p.x + w2 * p.y + b;
+      const predicted = val > 0 ? 1 : 0;
+      if (predicted === p.c) correct++;
+    });
+    if (total > 0) {
+      ctx.font = 'bold 12px sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillStyle = correct === total ? '#64ffda' : '#ff6b6b';
+      ctx.fillText('Accuracy: ' + correct + '/' + total, plotR - 6, plotT + 14);
+    }
+
+    // legend
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.beginPath(); ctx.arc(plotL + 10, plotB - 14, 5, 0, Math.PI * 2); ctx.fillStyle = '#4a9eff'; ctx.fill();
+    ctx.fillStyle = '#aaa'; ctx.fillText('Class 0', plotL + 20, plotB - 10);
+    ctx.beginPath(); ctx.arc(plotL + 80, plotB - 14, 5, 0, Math.PI * 2); ctx.fillStyle = '#ff6b6b'; ctx.fill();
+    ctx.fillStyle = '#aaa'; ctx.fillText('Class 1', plotL + 90, plotB - 10);
+
+    // update slider values
+    document.getElementById('bdW1Val').textContent = w1.toFixed(1);
+    document.getElementById('bdW2Val').textContent = w2.toFixed(1);
+    document.getElementById('bdBVal').textContent = b.toFixed(1);
+  }
+
+  window.updateBoundary = drawBoundary;
+  dataPoints = makeLinearData();
+  drawBoundary();
+})();
+</script>
+
 <!-- 1. NEURAL NETWORK FORWARD & BACKWARD PASS -->
 <div class="viz-section">
   <h2>Neural Network: Forward & Backward Pass</h2>
