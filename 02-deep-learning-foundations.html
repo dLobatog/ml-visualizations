@@ -1136,6 +1136,10 @@ loss.backward()            # backward pass computes all gradients</code></pre>
       <span class="label">Exploding gradients:</span>
       <span class="desc">Gradients multiply, grow exponentially. Weights become NaN/Inf. Solution: gradient clipping.</span>
     </div>
+    <div class="key-point">
+      <span class="label">Why vanishing gradients matter:</span>
+      <span class="desc">Each backprop step multiplies gradients through layers. Sigmoid's max derivative is 0.25 — after 10 layers, gradients shrink to 0.25^10 ≈ 0.000001. The first layers stop learning entirely. ReLU's derivative is 1 for positive inputs, so gradients pass through unchanged.</span>
+    </div>
     <hr class="divider">
     <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
     <div class="comparison" style="grid-template-columns: 1fr 1fr; margin-top: 10px;">
@@ -1428,6 +1432,10 @@ print(model(x).shape)           # torch.Size([8, 10])</code></pre>
         <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Object detection (small batches due to large images), video models, 3D medical imaging, distributed training with small local batches.</div>
       </div>
     </div>
+    <div class="key-point">
+      <span class="label">Choosing normalization:</span>
+      <span class="desc">Use BatchNorm for CNNs with fixed batch sizes ≥32. Use LayerNorm for transformers and any model where batch size varies or equals 1 (like autoregressive generation). BatchNorm breaks at batch_size=1 because you can't compute statistics from one sample.</span>
+    </div>
     <hr class="divider">
     <div class="interview-tip">CNNs are the backbone of computer vision. Receptive field grows with depth. Understand how filter size and stride affect output dimensions.</div>
     <div class="mnemonic">CNN = local pattern matching with weight sharing. Captures spatial hierarchies. Deep = large receptive fields = global context.
@@ -1507,6 +1515,10 @@ rms = nn.RMSNorm(features)</code></pre>
     <div class="key-point">
       <span class="label">LSTM/GRU solutions:</span>
       <span class="desc">Gated mechanisms control information flow. Cell state = long-term memory. Much better at learning long-range dependencies.</span>
+    </div>
+    <div class="key-point">
+      <span class="label">Cell state highway:</span>
+      <span class="desc">The cell state C_t acts as a gradient highway — it's a straight path where gradients can flow unchanged across many timesteps. Without it, gradients vanish after ~10 steps (same problem as deep networks with sigmoid).</span>
     </div>
     <hr class="divider">
     <strong style="color: #ffd93d; font-size: 1.05em;">When to Use Each Architecture</strong>
@@ -1602,6 +1614,7 @@ output, h_n = gru(x)  # no c_n returned</code></pre>
   <div class="insight-box">
     <strong>Key Insight:</strong> Flash Attention is an IO-aware algorithm that computes exact attention while dramatically reducing memory reads/writes to slow GPU memory (HBM).
     <div class="formula">$$\text{Standard: } O(N^2) \text{ HBM memory} \quad \Rightarrow \quad \text{Flash: } O(N) \text{ HBM memory}$$</div>
+    <div class="key-point"><span class="label">GPU memory basics:</span><span class="desc">GPUs have two memory types: SRAM (fast but tiny, ~20MB) and HBM (slow but large, ~40GB). Standard attention builds an N×N matrix that lives in slow HBM. Flash Attention computes attention in small tiles that fit in fast SRAM — same math, 2-4× faster.</span></div>
     <div class="key-point"><span class="label">The bottleneck:</span><span class="desc">Standard attention materializes the full \(N \times N\) attention matrix in HBM (slow GPU memory). Memory, not compute, is the bottleneck.</span></div>
     <div class="key-point"><span class="label">Memory hierarchy:</span><span class="desc">GPU SRAM is fast (~19 TB/s) but small (~20 MB). HBM is large (~40 GB) but slow (~1.5 TB/s). Flash Attention exploits this gap.</span></div>
     <div class="key-point"><span class="label">Tiling strategy:</span><span class="desc">Splits Q, K, V into blocks that fit in SRAM. Computes attention tile-by-tile, never materializing the full \(N \times N\) matrix in HBM.</span></div>
@@ -1701,6 +1714,7 @@ out_flash = F.scaled_dot_product_attention(Q, K, V)</code></pre>
     <div class="key-point"><span class="label">\(L(N, D)\):</span><span class="desc">Test loss as a function of parameters N and data tokens D. Follows smooth power laws over many orders of magnitude.</span></div>
     <div class="key-point"><span class="label">\(\alpha \approx 0.34\):</span><span class="desc">Exponent for model size scaling. Loss decreases as \(N^{-0.34}\). Diminishing returns: 10x params gives ~2x loss reduction.</span></div>
     <div class="key-point"><span class="label">\(\beta \approx 0.28\):</span><span class="desc">Exponent for data scaling. Loss decreases as \(D^{-0.28}\). Data scaling is slightly less efficient than parameter scaling.</span></div>
+    <div class="key-point"><span class="label">What the exponents mean:</span><span class="desc">The exponents (α≈0.34, β≈0.28) are empirical — fitted to thousands of training runs by Kaplan et al. (2020). They differ because parameters and data don't help equally: doubling parameters helps more than doubling data. This means big models trained on less data can match smaller models trained on more.</span></div>
     <div class="key-point"><span class="label">\(L_{\infty}\):</span><span class="desc">Irreducible loss (entropy of natural language). Even infinite model + data cannot go below this floor (~1.69 nats).</span></div>
     <div class="key-point">
       <span class="label">Chinchilla optimal:</span>
