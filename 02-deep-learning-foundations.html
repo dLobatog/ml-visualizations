@@ -87,7 +87,7 @@
     <canvas id="nnCanvas" width="1000" height="420"></canvas>
     <div id="nnTooltip" style="display:none;position:absolute;background:rgba(12,12,24,0.95);border:1px solid #64ffda;border-radius:10px;padding:12px 16px;font-size:13px;line-height:1.6;color:#c8d6e5;max-width:280px;pointer-events:none;z-index:10;font-family:monospace;"></div>
   </div>
-  <div id="nnStepExplain" style="min-height:48px;margin:8px 0 12px;padding:10px 16px;border-radius:8px;background:rgba(30,30,50,0.7);border-left:3px solid #444;font-size:0.92em;color:#8892b0;line-height:1.5;transition:all 0.3s;">Click <strong>Next Step</strong> to walk through the forward pass, then the backward pass, one layer at a time.</div>
+  <div id="nnStepExplain" style="min-height:48px;margin:8px 0 12px;padding:12px 18px;border-radius:8px;background:rgba(20,20,40,0.85);border-left:3px solid #444;font-size:0.88em;color:#c8d6e5;line-height:1.7;transition:all 0.3s;font-family:Inter,system-ui,sans-serif;">Click <strong>Next Step</strong> to walk through the forward pass, then the backward pass, one layer at a time.</div>
   <div class="controls">
     <button class="btn" id="nnStepBtn" onclick="nnNextStep()" style="background:rgba(100,255,218,0.15);border-color:#64ffda;color:#64ffda;font-weight:bold;">Next Step</button>
     <button class="btn" onclick="resetNN()">Reset</button>
@@ -1108,16 +1108,81 @@ function drawNN() {
 // ---- Unified step-through: 6 steps total (3 forward + 3 backward) ----
 // globalStep: 0=idle, 1-3=forward steps, 4-6=backward steps, 7=done
 var nnGlobalStep = 0;
-const stepExplains = [
-  'Click <strong style="color:#64ffda">Next Step</strong> to walk through the forward pass, then the backward pass, one layer at a time.',
-  '<span style="color:#64ffda">Forward 1/3:</span> Inputs x₁ and x₂ enter the network. These are the raw features we want to classify.',
-  '<span style="color:#64ffda">Forward 2/3:</span> Each hidden neuron computes <code>z = w₁·x₁ + w₂·x₂ + b</code>, then applies <code>ReLU(z) = max(0, z)</code>. <strong>Hover a node</strong> to see the exact math.',
-  '<span style="color:#64ffda">Forward 3/3:</span> Output layer computes logits (raw scores), then <code>softmax</code> converts them to probabilities. The loss = -log(probability of correct class).',
-  '<span style="color:#ff6b6b">Backward 1/3:</span> Start at the output. The gradient of the loss w.r.t. each output = <code>ŷ - y</code> (prediction minus target). This is the <em>error signal</em>.',
-  '<span style="color:#ff6b6b">Backward 2/3:</span> Gradients flow back through weights to hidden nodes via the <strong>chain rule</strong>: <code>dL/dh = Wᵀ · dL/dz₂</code>. <strong>Hover a node</strong> to see its gradient.',
-  '<span style="color:#ff6b6b">Backward 3/3:</span> Gradients reach the first layer weights. Each gradient says: "to reduce the loss, adjust this weight by this much." That\'s learning!',
-  '<span style="color:#ffd93d">Done!</span> The network now knows how to update every weight. In training, we\'d apply these gradients (× learning rate) and repeat. Click <strong>Reset</strong> to try different inputs.'
-];
+
+function buildStepExplain(step) {
+  var v = computeNN(
+    parseInt(document.getElementById('nnX1').value) / 10,
+    parseInt(document.getElementById('nnX2').value) / 10
+  );
+  var w1 = nnWeights.w1, b1 = nnWeights.b1, w2 = nnWeights.w2, b2 = nnWeights.b2;
+  var f = function(x) { return x.toFixed(2); };
+  var f3 = function(x) { return x.toFixed(3); };
+  var c = '<span style="color:#64ffda">';  // cyan
+  var r = '<span style="color:#ff6b6b">';  // red
+  var y = '<span style="color:#ffd93d">';  // yellow
+  var g = '<span style="color:#8892b0">';  // grey
+  var e = '</span>';
+  var code = function(s) { return '<code style="background:rgba(100,255,218,0.08);padding:1px 5px;border-radius:3px;">' + s + '</code>'; };
+  var rcode = function(s) { return '<code style="background:rgba(255,107,107,0.08);padding:1px 5px;border-radius:3px;">' + s + '</code>'; };
+
+  if (step === 0) {
+    return 'Click <strong style="color:#64ffda">Next Step</strong> to walk through the forward and backward pass, one layer at a time. Every number is computed live — nothing is hand-waved.';
+  }
+  if (step === 1) {
+    return c + 'Forward 1/3 — Inputs' + e + '<br>' +
+      'We feed in two numbers: ' + code('x₁ = ' + f(v.x[0])) + ' and ' + code('x₂ = ' + f(v.x[1])) +
+      '. These are the raw features. The goal: classify this input as class ' + v.targetClass + ' (target ' + code('y = [' + v.yTrue.join(', ') + ']') + ').';
+  }
+  if (step === 2) {
+    var lines = '';
+    for (var i = 0; i < 3; i++) {
+      var alive = v.z1[i] > 0;
+      lines += '<br>' + g + 'h' + (i+1) + ':' + e + ' z = ' +
+        code(f(w1[i][0]) + '×' + f(v.x[0]) + ' + ' + f(w1[i][1]) + '×' + f(v.x[1]) + ' + ' + f(b1[i]) + ' = ' + f(v.z1[i])) +
+        ' → ReLU(' + f(v.z1[i]) + ') = ' + (alive ? '<strong>' + f(v.a1[i]) + '</strong>' : '<strong style="color:#ff6b6b">0.00</strong> ' + g + '(killed — negative input!)' + e);
+    }
+    return c + 'Forward 2/3 — Hidden Layer' + e + '<br>' +
+      'Each neuron multiplies inputs by its weights, adds a bias, then passes through ' + code('ReLU(z) = max(0, z)') + ':' + lines;
+  }
+  if (step === 3) {
+    return c + 'Forward 3/3 — Output & Loss' + e + '<br>' +
+      'Logits (raw scores): ' + code('z = [' + f(v.z2[0]) + ', ' + f(v.z2[1]) + ']') + '<br>' +
+      'Softmax converts logits to probabilities: ' + code('ŷ = [' + f3(v.a2[0]) + ', ' + f3(v.a2[1]) + ']') +
+      ' ' + g + '(e^z / Σe^z)' + e + '<br>' +
+      'The loss measures how wrong we are: ' + code('Loss = -log(ŷ[' + v.targetClass + ']) = -log(' + f3(v.a2[v.targetClass]) + ') = ' + f(v.loss)) +
+      ' ' + g + '(lower = better, 0 = perfect)' + e;
+  }
+  if (step === 4) {
+    return r + 'Backward 1/3 — Output Gradients' + e + '<br>' +
+      'How wrong was each output? The gradient is simply ' + rcode('dL/dz = ŷ - y') + ' (prediction minus target):<br>' +
+      rcode('dL/dz₁ = ' + f3(v.a2[0]) + ' - ' + v.yTrue[0] + ' = ' + f3(v.da2[0])) + ' ' + g + '(' + (v.da2[0] < 0 ? 'need to increase ŷ₁' : 'need to decrease ŷ₁') + ')' + e + '<br>' +
+      rcode('dL/dz₂ = ' + f3(v.a2[1]) + ' - ' + v.yTrue[1] + ' = ' + f3(v.da2[1])) + ' ' + g + '(' + (v.da2[1] < 0 ? 'need to increase ŷ₂' : 'need to decrease ŷ₂') + ')' + e;
+  }
+  if (step === 5) {
+    var lines = '';
+    for (var i = 0; i < 3; i++) {
+      var sumParts = [];
+      for (var j = 0; j < 2; j++) {
+        sumParts.push(f(w2[j][i]) + '×' + f3(v.da2[j]));
+      }
+      var alive = v.z1[i] > 0;
+      lines += '<br>' + g + 'h' + (i+1) + ':' + e + ' dL/dh = ' + rcode(sumParts.join(' + ') + ' = ' + f3(v.da1[i])) +
+        ' → ×ReLU\'(' + f(v.z1[i]) + ') = ' + (alive
+          ? '<strong>' + f3(v.dz1[i]) + '</strong>'
+          : '<strong style="color:#888">0</strong> ' + g + '(ReLU was off → gradient dies!)' + e);
+    }
+    return r + 'Backward 2/3 — Hidden Gradients (Chain Rule)' + e + '<br>' +
+      'Each hidden neuron\'s gradient = sum of (outgoing weight × output grad), then multiply by ReLU derivative:' + lines;
+  }
+  if (step === 6) {
+    var ex = 'dw = input × gradient. E.g. for w(x₁→h₁): ' + rcode('dw = ' + f(v.x[0]) + ' × ' + f3(v.dz1[0]) + ' = ' + f3(v.x[0] * v.dz1[0]));
+    return r + 'Backward 3/3 — Weight Gradients' + e + '<br>' +
+      'Now we know how to update every weight! Each weight gradient = its input × the gradient at its output node:<br>' + ex + '<br>' +
+      g + 'With a learning rate (e.g. 0.01), the update would be: ' + rcode('w_new = w - lr × dw') + e;
+  }
+  return y + 'Done!' + e + ' Every weight now has a gradient telling it which direction to change. ' +
+    'In training, we\'d do ' + code('w = w - lr × gradient') + ' and repeat for thousands of batches. Click <strong>Reset</strong> to try different inputs or change the target class.';
+}
 
 function updateStepExplain() {
   const el = document.getElementById('nnStepExplain');
@@ -1129,7 +1194,7 @@ function updateStepExplain() {
   } else {
     el.style.borderLeftColor = '#ff6b6b';
   }
-  el.innerHTML = stepExplains[Math.min(nnGlobalStep, stepExplains.length - 1)];
+  el.innerHTML = buildStepExplain(nnGlobalStep);
   // Update button label
   const btn = document.getElementById('nnStepBtn');
   if (btn) {
