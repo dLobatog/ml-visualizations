@@ -570,6 +570,432 @@
 })();
 </script>
 
+<!-- 0C. HOW DOES A NEURON LEARN? -->
+<div class="viz-section">
+  <h2>How Does a Neuron Learn?</h2>
+  <p class="subtitle">Before we look at full networks, let's see how a single weight gets updated. Click "Train Step" to walk through gradient descent one micro-step at a time — no jargon, just arithmetic.</p>
+
+  <!-- PART A: Single neuron learning -->
+  <h3 style="color:#ffd93d;margin-bottom:8px;font-size:1.15em;">Part A: One Weight, One Goal</h3>
+  <canvas id="learnCanvas1" width="800" height="250"></canvas>
+  <div id="learnStep1Explain" style="min-height:48px;margin:8px 0 12px;padding:12px 18px;border-radius:8px;background:rgba(20,20,40,0.85);border-left:3px solid #ffd93d;font-size:0.88em;color:#c8d6e5;line-height:1.7;font-family:Inter,system-ui,sans-serif;">Click <strong>Train Step</strong> to see how the weight learns to match the target.</div>
+  <div class="controls">
+    <button class="btn" id="learnStepBtn1" onclick="learnStep1()" style="background:rgba(255,217,61,0.15);border-color:#ffd93d;color:#ffd93d;font-weight:bold;">Train Step</button>
+    <button class="btn" onclick="resetLearn1()" style="border-color:#ffd93d;color:#ffd93d;">Reset</button>
+    <div class="control-group">
+      <label>Learning Rate</label>
+      <input type="range" id="learnLR1" min="1" max="50" value="10" step="1" oninput="document.getElementById('learnLR1Val').textContent=( this.value/100).toFixed(2)">
+      <span class="value" id="learnLR1Val" style="color:#ffd93d;">0.10</span>
+    </div>
+    <div class="control-group">
+      <label>Target</label>
+      <input type="range" id="learnTarget1" min="0" max="40" value="15" step="1" oninput="resetLearn1()">
+      <span class="value" id="learnTarget1Val" style="color:#ffd93d;">1.5</span>
+    </div>
+  </div>
+
+  <div class="insight-box" style="border-left-color:#ffd93d;margin-bottom:32px;">
+    <strong style="color:#ffd93d;">That's gradient descent.</strong> We measure the error, figure out which direction to nudge the weight, and take a small step. The "gradient" is just the answer to: <em>if I change this weight a tiny bit, how much does the error change?</em>
+  </div>
+
+  <!-- PART B: Two neurons chained -->
+  <h3 style="color:#ffd93d;margin-bottom:8px;font-size:1.15em;">Part B: Two Neurons Chained — The Birth of Backpropagation</h3>
+  <p class="subtitle">Now chain two neurons. The first one is "hidden" — it doesn't touch the output directly. How do we fix its weight?</p>
+  <canvas id="learnCanvas2" width="800" height="280"></canvas>
+  <div id="learnStep2Explain" style="min-height:48px;margin:8px 0 12px;padding:12px 18px;border-radius:8px;background:rgba(20,20,40,0.85);border-left:3px solid #ffd93d;font-size:0.88em;color:#c8d6e5;line-height:1.7;font-family:Inter,system-ui,sans-serif;">Click <strong>Train Step</strong> to see how errors flow backward through two neurons.</div>
+  <div class="controls">
+    <button class="btn" id="learnStepBtn2" onclick="learnStep2()" style="background:rgba(255,217,61,0.15);border-color:#ffd93d;color:#ffd93d;font-weight:bold;">Train Step</button>
+    <button class="btn" onclick="resetLearn2()" style="border-color:#ffd93d;color:#ffd93d;">Reset</button>
+    <div class="control-group">
+      <label>Learning Rate</label>
+      <input type="range" id="learnLR2" min="1" max="50" value="10" step="1" oninput="document.getElementById('learnLR2Val').textContent=(this.value/100).toFixed(2)">
+      <span class="value" id="learnLR2Val" style="color:#ffd93d;">0.10</span>
+    </div>
+  </div>
+
+  <div class="insight-box" style="border-left-color:#ffd93d;">
+    <strong style="color:#ffd93d;">That's backpropagation.</strong> The error flows backward through the network — each neuron receives the error from the neuron it feeds into, scaled by the connecting weight. Then it uses that to update its own weight. The "chain rule" is just multiplying these error signals along the chain.
+    <div class="formula" style="border-color:#554400;">$$\frac{\partial L}{\partial w_1} = \underbrace{\frac{\partial L}{\partial \text{out}}}_{\text{error}} \times \underbrace{\frac{\partial \text{out}}{\partial h}}_{ w_2} \times \underbrace{\frac{\partial h}{\partial w_1}}_{\text{ReLU}'(z_1) \cdot x}$$</div>
+    <div class="interview-tip">Backprop is just the chain rule applied systematically. The key insight: each node only needs its <em>local</em> gradient and the upstream error signal. No node needs to "see" the whole network.</div>
+  </div>
+</div>
+
+<script>
+// ============ PART A: Single neuron learning ============
+(function() {
+  const canvas = document.getElementById('learnCanvas1');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  let w = 0.3;
+  const x = 2.0;
+  let stepPhase = 0; // 0=ready, 1=showError, 2=showDirection, 3=showUpdate
+  let converged = false;
+  let stepCount = 0;
+
+  function getTarget() { return parseInt(document.getElementById('learnTarget1').value) / 10; }
+  function getLR() { return parseInt(document.getElementById('learnLR1').value) / 100; }
+
+  function draw() {
+    const target = getTarget();
+    const output = w * x;
+    const error = output - target;
+    ctx.clearRect(0, 0, W, H);
+
+    // Node positions
+    const xNode = { x: 100, y: H / 2 };
+    const wMid = { x: 270, y: H / 2 };
+    const outNode = { x: 460, y: H / 2 };
+    const tarNode = { x: 660, y: H / 2 };
+
+    // Edge: input to output (weight edge)
+    ctx.beginPath();
+    ctx.moveTo(xNode.x + 25, xNode.y);
+    ctx.lineTo(outNode.x - 30, outNode.y);
+    const thick = Math.min(Math.abs(w) * 4 + 2, 10);
+    ctx.strokeStyle = '#ffd93d';
+    ctx.lineWidth = thick;
+    ctx.globalAlpha = 0.7;
+    ctx.stroke();
+    ctx.globalAlpha = 1.0;
+
+    // Weight label on edge
+    ctx.font = 'bold 15px monospace';
+    ctx.fillStyle = '#ffd93d';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('w = ' + w.toFixed(3), wMid.x, wMid.y - 16);
+
+    // Dashed error arrow from output to target
+    ctx.beginPath();
+    ctx.setLineDash([6, 4]);
+    ctx.moveTo(outNode.x + 32, outNode.y);
+    ctx.lineTo(tarNode.x - 32, tarNode.y);
+    ctx.strokeStyle = Math.abs(error) < 0.05 ? '#64ffda' : '#ff6b6b';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Error badge
+    const errX = (outNode.x + tarNode.x) / 2;
+    const errY = outNode.y - 30;
+    ctx.fillStyle = Math.abs(error) < 0.05 ? 'rgba(100,255,218,0.15)' : 'rgba(255,107,107,0.15)';
+    const errText = 'error = ' + error.toFixed(3);
+    const tw = ctx.measureText(errText).width;
+    ctx.beginPath();
+    ctx.roundRect(errX - tw / 2 - 10, errY - 12, tw + 20, 26, 6);
+    ctx.fill();
+    ctx.strokeStyle = Math.abs(error) < 0.05 ? '#64ffda' : '#ff6b6b';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.font = 'bold 13px monospace';
+    ctx.fillStyle = Math.abs(error) < 0.05 ? '#64ffda' : '#ff6b6b';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(errText, errX, errY);
+
+    // Draw nodes
+    function drawNode(nx, ny, label, value, color) {
+      ctx.beginPath();
+      ctx.arc(nx, ny, 28, 0, Math.PI * 2);
+      const grad = ctx.createRadialGradient(nx, ny, 5, nx, ny, 28);
+      grad.addColorStop(0, color);
+      grad.addColorStop(1, '#0d0d1a');
+      ctx.fillStyle = grad;
+      ctx.fill();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+      ctx.font = 'bold 14px monospace';
+      ctx.fillStyle = '#fff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(value, nx, ny);
+      ctx.font = '12px sans-serif';
+      ctx.fillStyle = '#aaa';
+      ctx.fillText(label, nx, ny + 44);
+    }
+
+    drawNode(xNode.x, xNode.y, 'input (x)', x.toFixed(1), '#2a4a6a');
+    drawNode(outNode.x, outNode.y, 'output = w\u00d7x', output.toFixed(3), '#1a5a4a');
+    drawNode(tarNode.x, tarNode.y, 'target', target.toFixed(1), '#6a4a1a');
+
+    // Converged badge
+    if (Math.abs(error) < 0.05) {
+      converged = true;
+      ctx.font = 'bold 18px sans-serif';
+      ctx.fillStyle = '#64ffda';
+      ctx.textAlign = 'center';
+      ctx.fillText('Converged!', W / 2, 30);
+    } else {
+      converged = false;
+    }
+
+    // Step count
+    ctx.font = '12px sans-serif';
+    ctx.fillStyle = '#666';
+    ctx.textAlign = 'right';
+    ctx.fillText('Steps: ' + stepCount, W - 20, 20);
+
+    document.getElementById('learnTarget1Val').textContent = target.toFixed(1);
+  }
+
+  window.learnStep1 = function() {
+    if (converged) return;
+    const target = getTarget();
+    const lr = getLR();
+    const output = w * x;
+    const error = output - target;
+    const explain = document.getElementById('learnStep1Explain');
+
+    stepPhase++;
+    if (stepPhase === 1) {
+      explain.innerHTML = '<span style="color:#ffd93d;font-weight:bold;">Step 1 — How wrong are we?</span><br>' +
+        '<code>error = output - target = ' + output.toFixed(3) + ' - ' + target.toFixed(1) + ' = <span style="color:#ff6b6b;font-weight:bold;">' + error.toFixed(3) + '</span></code>';
+      explain.style.borderLeftColor = '#ff6b6b';
+    } else if (stepPhase === 2) {
+      const direction = error < 0 ? 'increase' : 'decrease';
+      const reason = error < 0 ? 'we need MORE output (error is negative)' : 'we need LESS output (error is positive)';
+      explain.innerHTML = '<span style="color:#ffd93d;font-weight:bold;">Step 2 — Which direction should w change?</span><br>' +
+        'If we increase <code>w</code>, output increases by <code>x = ' + x.toFixed(1) + '</code> per unit of <code>w</code>.<br>' +
+        'Since ' + reason + ', we should <strong style="color:#ffd93d;">' + direction + ' w</strong>.';
+      explain.style.borderLeftColor = '#ffd93d';
+    } else if (stepPhase >= 3) {
+      const gradient = error * x;
+      const wNew = w - lr * gradient;
+      explain.innerHTML = '<span style="color:#ffd93d;font-weight:bold;">Step 3 — Update the weight</span><br>' +
+        '<code>w<sub>new</sub> = w - lr \u00d7 error \u00d7 x = ' + w.toFixed(3) + ' - ' + lr.toFixed(2) + ' \u00d7 (' + error.toFixed(3) + ') \u00d7 ' + x.toFixed(1) + ' = ' + w.toFixed(3) + ' + ' + (lr * -error * x).toFixed(4) + ' = <span style="color:#64ffda;font-weight:bold;">' + wNew.toFixed(4) + '</span></code>';
+      explain.style.borderLeftColor = '#64ffda';
+      w = wNew;
+      stepCount++;
+      stepPhase = 0;
+      draw();
+      return;
+    }
+    draw();
+  };
+
+  window.resetLearn1 = function() {
+    w = 0.3;
+    stepPhase = 0;
+    converged = false;
+    stepCount = 0;
+    const explain = document.getElementById('learnStep1Explain');
+    explain.innerHTML = 'Click <strong>Train Step</strong> to see how the weight learns to match the target.';
+    explain.style.borderLeftColor = '#ffd93d';
+    draw();
+  };
+
+  draw();
+})();
+
+// ============ PART B: Two neurons chained ============
+(function() {
+  const canvas = document.getElementById('learnCanvas2');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  let w1 = 0.5, w2 = 0.8;
+  const x = 2.0;
+  const target = 1.5;
+  let stepPhase = 0;
+  let converged = false;
+  let stepCount = 0;
+
+  function getLR() { return parseInt(document.getElementById('learnLR2').value) / 100; }
+
+  function forward() {
+    const z1 = w1 * x;
+    const h = Math.max(0, z1);
+    const output = w2 * h;
+    return { z1, h, output, error: output - target };
+  }
+
+  function draw() {
+    const { z1, h, output, error } = forward();
+    ctx.clearRect(0, 0, W, H);
+
+    // Node positions
+    const xPos = { x: 60, y: H / 2 };
+    const n1Pos = { x: 230, y: H / 2 };
+    const n2Pos = { x: 440, y: H / 2 };
+    const tarPos = { x: 660, y: H / 2 };
+    const reluActive = z1 > 0;
+
+    // Edge: x -> neuron1 (w1)
+    ctx.beginPath();
+    ctx.moveTo(xPos.x + 25, xPos.y);
+    ctx.lineTo(n1Pos.x - 30, n1Pos.y);
+    ctx.strokeStyle = '#ffd93d';
+    ctx.lineWidth = Math.min(Math.abs(w1) * 4 + 2, 10);
+    ctx.globalAlpha = 0.7;
+    ctx.stroke();
+    ctx.globalAlpha = 1.0;
+    // w1 label
+    ctx.font = 'bold 14px monospace';
+    ctx.fillStyle = '#ffd93d';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('w\u2081=' + w1.toFixed(3), (xPos.x + n1Pos.x) / 2, xPos.y - 14);
+
+    // Edge: neuron1 -> neuron2 (w2)
+    ctx.beginPath();
+    ctx.moveTo(n1Pos.x + 30, n1Pos.y);
+    ctx.lineTo(n2Pos.x - 30, n2Pos.y);
+    ctx.strokeStyle = '#ffd93d';
+    ctx.lineWidth = Math.min(Math.abs(w2) * 4 + 2, 10);
+    ctx.globalAlpha = 0.7;
+    ctx.stroke();
+    ctx.globalAlpha = 1.0;
+    // w2 label
+    ctx.font = 'bold 14px monospace';
+    ctx.fillStyle = '#ffd93d';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('w\u2082=' + w2.toFixed(3), (n1Pos.x + n2Pos.x) / 2, n1Pos.y - 14);
+
+    // Dashed error line: output -> target
+    ctx.beginPath();
+    ctx.setLineDash([6, 4]);
+    ctx.moveTo(n2Pos.x + 32, n2Pos.y);
+    ctx.lineTo(tarPos.x - 32, tarPos.y);
+    ctx.strokeStyle = Math.abs(error) < 0.05 ? '#64ffda' : '#ff6b6b';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Error badge
+    const errX = (n2Pos.x + tarPos.x) / 2;
+    const errY = n2Pos.y - 36;
+    const errText = 'error = ' + error.toFixed(3);
+    const tw2 = ctx.measureText(errText).width;
+    ctx.fillStyle = Math.abs(error) < 0.05 ? 'rgba(100,255,218,0.15)' : 'rgba(255,107,107,0.15)';
+    ctx.beginPath();
+    ctx.roundRect(errX - tw2 / 2 - 10, errY - 12, tw2 + 20, 26, 6);
+    ctx.fill();
+    ctx.strokeStyle = Math.abs(error) < 0.05 ? '#64ffda' : '#ff6b6b';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.font = 'bold 13px monospace';
+    ctx.fillStyle = Math.abs(error) < 0.05 ? '#64ffda' : '#ff6b6b';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(errText, errX, errY);
+
+    // Draw nodes
+    function drawNode(nx, ny, topText, botLabel, color) {
+      ctx.beginPath();
+      ctx.arc(nx, ny, 28, 0, Math.PI * 2);
+      const grad = ctx.createRadialGradient(nx, ny, 5, nx, ny, 28);
+      grad.addColorStop(0, color);
+      grad.addColorStop(1, '#0d0d1a');
+      ctx.fillStyle = grad;
+      ctx.fill();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+      ctx.font = 'bold 13px monospace';
+      ctx.fillStyle = '#fff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(topText, nx, ny);
+      ctx.font = '11px sans-serif';
+      ctx.fillStyle = '#aaa';
+      ctx.fillText(botLabel, nx, ny + 44);
+    }
+
+    drawNode(xPos.x, xPos.y, x.toFixed(1), 'input (x)', '#2a4a6a');
+    drawNode(n1Pos.x, n1Pos.y, h.toFixed(3), 'h = ReLU(w\u2081\u00d7x)', reluActive ? '#1a5a4a' : '#4a1a1a');
+    drawNode(n2Pos.x, n2Pos.y, output.toFixed(3), 'out = w\u2082\u00d7h', '#1a5a4a');
+    drawNode(tarPos.x, tarPos.y, target.toFixed(1), 'target', '#6a4a1a');
+
+    // ReLU indicator
+    ctx.font = 'bold 11px monospace';
+    ctx.fillStyle = reluActive ? '#64ffda' : '#ff6b6b';
+    ctx.textAlign = 'center';
+    ctx.fillText(reluActive ? 'ReLU ON' : 'ReLU OFF', n1Pos.x, n1Pos.y - 40);
+
+    // Converged badge
+    if (Math.abs(error) < 0.05) {
+      converged = true;
+      ctx.font = 'bold 18px sans-serif';
+      ctx.fillStyle = '#64ffda';
+      ctx.textAlign = 'center';
+      ctx.fillText('Converged!', W / 2, 24);
+    } else {
+      converged = false;
+    }
+
+    // Step count
+    ctx.font = '12px sans-serif';
+    ctx.fillStyle = '#666';
+    ctx.textAlign = 'right';
+    ctx.fillText('Steps: ' + stepCount, W - 20, 20);
+  }
+
+  window.learnStep2 = function() {
+    if (converged) return;
+    const lr = getLR();
+    const { z1, h, output, error } = forward();
+    const explain = document.getElementById('learnStep2Explain');
+
+    stepPhase++;
+    if (stepPhase === 1) {
+      explain.innerHTML = '<span style="color:#ffd93d;font-weight:bold;">Step 1 — Forward: compute the output</span><br>' +
+        '<code>h = ReLU(w\u2081 \u00d7 x) = ReLU(' + w1.toFixed(3) + ' \u00d7 ' + x.toFixed(1) + ') = ReLU(' + z1.toFixed(3) + ') = <span style="color:#64ffda;">' + h.toFixed(3) + '</span></code><br>' +
+        '<code>output = w\u2082 \u00d7 h = ' + w2.toFixed(3) + ' \u00d7 ' + h.toFixed(3) + ' = <span style="color:#64ffda;">' + output.toFixed(3) + '</span></code>';
+      explain.style.borderLeftColor = '#64ffda';
+    } else if (stepPhase === 2) {
+      explain.innerHTML = '<span style="color:#ffd93d;font-weight:bold;">Step 2 — How wrong?</span><br>' +
+        '<code>error = output - target = ' + output.toFixed(3) + ' - ' + target.toFixed(1) + ' = <span style="color:#ff6b6b;">' + error.toFixed(3) + '</span></code>';
+      explain.style.borderLeftColor = '#ff6b6b';
+    } else if (stepPhase === 3) {
+      const dw2 = error * h;
+      const w2New = w2 - lr * dw2;
+      explain.innerHTML = '<span style="color:#ffd93d;font-weight:bold;">Step 3 — Fix w\u2082 (the output weight)</span><br>' +
+        'Same as Part A: <code>dError/dw\u2082 = h = ' + h.toFixed(3) + '</code><br>' +
+        '<code>w\u2082_new = ' + w2.toFixed(3) + ' - ' + lr.toFixed(2) + ' \u00d7 (' + error.toFixed(3) + ') \u00d7 ' + h.toFixed(3) + ' = <span style="color:#64ffda;">' + w2New.toFixed(4) + '</span></code>';
+      explain.style.borderLeftColor = '#ffd93d';
+    } else if (stepPhase >= 4) {
+      const reluDeriv = z1 > 0 ? 1 : 0;
+      const errorForH = error * w2;
+      const dw1 = errorForH * reluDeriv * x;
+      const dw2 = error * h;
+      const w1New = w1 - lr * dw1;
+      const w2New = w2 - lr * dw2;
+      explain.innerHTML = '<span style="color:#ffd93d;font-weight:bold;">Step 4 — But how do we fix w\u2081? It\'s hidden!</span><br>' +
+        'w\u2081 doesn\'t touch the output directly. But changing w\u2081 changes h, and changing h changes the output. <strong style="color:#ffd93d;">Pass the error backward through w\u2082:</strong><br>' +
+        '<code>error_for_h = error \u00d7 w\u2082 = ' + error.toFixed(3) + ' \u00d7 ' + w2.toFixed(3) + ' = <span style="color:#ff6b6b;">' + errorForH.toFixed(4) + '</span></code><br>' +
+        'Was ReLU active? z\u2081 = ' + z1.toFixed(3) + (z1 > 0 ? ' > 0, so <span style="color:#64ffda;">yes (\u00d71)</span>' : ' \u2264 0, so <span style="color:#ff6b6b;">no (\u00d70)</span>') + '<br>' +
+        '<code>dError/dw\u2081 = error_for_h \u00d7 ReLU\'(z\u2081) \u00d7 x = ' + errorForH.toFixed(4) + ' \u00d7 ' + reluDeriv + ' \u00d7 ' + x.toFixed(1) + ' = <span style="color:#ff6b6b;">' + dw1.toFixed(4) + '</span></code><br>' +
+        '<code>w\u2081_new = ' + w1.toFixed(3) + ' - ' + lr.toFixed(2) + ' \u00d7 (' + dw1.toFixed(4) + ') = <span style="color:#64ffda;">' + w1New.toFixed(4) + '</span></code>';
+      explain.style.borderLeftColor = '#ff6b6b';
+      w1 = w1New;
+      w2 = w2New;
+      stepCount++;
+      stepPhase = 0;
+      draw();
+      return;
+    }
+    draw();
+  };
+
+  window.resetLearn2 = function() {
+    w1 = 0.5;
+    w2 = 0.8;
+    stepPhase = 0;
+    converged = false;
+    stepCount = 0;
+    const explain = document.getElementById('learnStep2Explain');
+    explain.innerHTML = 'Click <strong>Train Step</strong> to see how errors flow backward through two neurons.';
+    explain.style.borderLeftColor = '#ffd93d';
+    draw();
+  };
+
+  draw();
+})();
+</script>
+
 <!-- 1. NEURAL NETWORK FORWARD & BACKWARD PASS -->
 <div class="viz-section">
   <h2>Neural Network: Forward & Backward Pass</h2>
