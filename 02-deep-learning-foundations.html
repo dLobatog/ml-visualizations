@@ -82,12 +82,15 @@
 <!-- 1. NEURAL NETWORK FORWARD & BACKWARD PASS -->
 <div class="viz-section">
   <h2>Neural Network: Forward & Backward Pass</h2>
-  <p class="subtitle">Hover over nodes during forward pass to see activation values (blue arrows). Then hover during backward pass to see gradient flow (red arrows). Notice how gradients combine at nodes via the chain rule. Watch the weights update after each backward pass.</p>
-  <canvas id="nnCanvas" width="800" height="450"></canvas>
+  <p class="subtitle">Click <em>Forward</em> to push inputs through the network, then <em>Backward</em> to see gradients flow back. Hover any node to see its computation details. The network learns by adjusting weights to reduce the loss.</p>
+  <div style="position:relative;">
+    <canvas id="nnCanvas" width="1000" height="420"></canvas>
+    <div id="nnTooltip" style="display:none;position:absolute;background:rgba(12,12,24,0.95);border:1px solid #64ffda;border-radius:10px;padding:12px 16px;font-size:13px;line-height:1.6;color:#c8d6e5;max-width:280px;pointer-events:none;z-index:10;font-family:monospace;"></div>
+  </div>
+  <div id="nnStepExplain" style="min-height:48px;margin:8px 0 12px;padding:10px 16px;border-radius:8px;background:rgba(30,30,50,0.7);border-left:3px solid #444;font-size:0.92em;color:#8892b0;line-height:1.5;transition:all 0.3s;">Click <strong>Next Step</strong> to walk through the forward pass, then the backward pass, one layer at a time.</div>
   <div class="controls">
-    <button class="btn" id="nnFwdBtn" onclick="runForward()">→ Forward Pass</button>
-    <button class="btn" id="nnBwdBtn" onclick="runBackward()">← Backward Pass</button>
-    <button class="btn" onclick="resetNN()">↺ Reset</button>
+    <button class="btn" id="nnStepBtn" onclick="nnNextStep()" style="background:rgba(100,255,218,0.15);border-color:#64ffda;color:#64ffda;font-weight:bold;">Next Step</button>
+    <button class="btn" onclick="resetNN()">Reset</button>
     <div class="control-group">
       <label>Input x₁</label>
       <input type="range" id="nnX1" min="-20" max="20" value="10" oninput="resetNN()">
@@ -97,6 +100,13 @@
       <label>Input x₂</label>
       <input type="range" id="nnX2" min="-20" max="20" value="-5" oninput="resetNN()">
       <span class="value" id="nnX2Val">-0.5</span>
+    </div>
+    <div class="control-group">
+      <label>Target class</label>
+      <select id="nnTarget" onchange="resetNN()" style="background:#1a1a2e;color:#c8d6e5;border:1px solid #444;border-radius:4px;padding:4px 8px;">
+        <option value="0" selected>Class 0 (y=[1,0])</option>
+        <option value="1">Class 1 (y=[0,1])</option>
+      </select>
     </div>
   </div>
   <div class="insight-box">
@@ -863,14 +873,17 @@ function relu(x) { return Math.max(0, x); }
 function reluDeriv(x) { return x > 0 ? 1 : 0; }
 
 function computeNN(x1, x2) {
+  const targetEl = document.getElementById('nnTarget');
+  const targetClass = targetEl ? parseInt(targetEl.value) : 0;
   const z1 = nnWeights.w1.map((w, i) => w[0]*x1 + w[1]*x2 + nnWeights.b1[i]);
   const a1 = z1.map(relu);
   const z2 = nnWeights.w2.map((w, i) => w[0]*a1[0] + w[1]*a1[1] + w[2]*a1[2] + nnWeights.b2[i]);
   const expZ = z2.map(z => Math.exp(z));
   const sumExp = expZ.reduce((a,b) => a+b, 0);
   const a2 = expZ.map(e => e / sumExp);
-  const loss = -Math.log(a2[0] + 1e-8);
-  const da2 = [a2[0] - 1, a2[1]];
+  const yTrue = [0, 0]; yTrue[targetClass] = 1;
+  const loss = -Math.log(a2[targetClass] + 1e-8);
+  const da2 = [a2[0] - yTrue[0], a2[1] - yTrue[1]];
   const dz2 = da2;
   const da1 = [0, 0, 0];
   for (let j = 0; j < 3; j++) {
@@ -879,8 +892,11 @@ function computeNN(x1, x2) {
     }
   }
   const dz1 = da1.map((d, i) => d * reluDeriv(z1[i]));
-  return { x: [x1, x2], z1, a1, z2, a2, loss, da2, dz2, da1, dz1 };
+  return { x: [x1, x2], z1, a1, z2, a2, loss, da2, dz2, da1, dz1, yTrue, targetClass };
 }
+
+// Node positions for hit-testing hover
+var nnNodePositions = []; // [{x, y, layer, index}]
 
 function drawNN() {
   const canvas = document.getElementById('nnCanvas');
@@ -895,200 +911,339 @@ function drawNN() {
 
   const vals = computeNN(x1, x2);
   const layers = [
-    { label: 'Input', nodes: [`x₁=${x1.toFixed(1)}`, `x₂=${x2.toFixed(1)}`], values: vals.x, grads: [0,0] },
+    { label: 'Input', nodes: ['x₁', 'x₂'], values: vals.x, grads: [0,0] },
     { label: 'Hidden (ReLU)', nodes: ['h₁', 'h₂', 'h₃'], values: vals.a1, grads: vals.dz1, preact: vals.z1 },
     { label: 'Output (Softmax)', nodes: ['ŷ₁', 'ŷ₂'], values: vals.a2, grads: vals.da2 }
   ];
 
-  const layerX = [120, 350, 600];
+  // Spread layers across the canvas — leave right margin for info panel
+  const layerX = [110, 400, 680];
   const phase = nnState.phase;
+  const nodeR = 28;
+  const nodeSpacing = 90;
 
-  // Draw connections with computation labels
+  // Rebuild node positions for hover detection
+  nnNodePositions = [];
+
+  // ---- Draw connections (edges) ----
   for (let l = 0; l < layers.length - 1; l++) {
     const n1 = layers[l].nodes.length;
     const n2 = layers[l + 1].nodes.length;
     for (let i = 0; i < n1; i++) {
       for (let j = 0; j < n2; j++) {
-        const y1 = H / 2 + (i - (n1 - 1) / 2) * 80;
-        const y2 = H / 2 + (j - (n2 - 1) / 2) * 80;
+        const y1 = H / 2 + (i - (n1 - 1) / 2) * nodeSpacing;
+        const y2 = H / 2 + (j - (n2 - 1) / 2) * nodeSpacing;
         const weight = l === 0 ? nnWeights.w1[j][i] : nnWeights.w2[j][i];
-        const alpha = Math.min(1, Math.abs(weight) * 1.5);
+        const absW = Math.abs(weight);
 
-        if (phase === 'forward' && nnState.step > l) {
-          ctx.strokeStyle = `rgba(100,255,218,${alpha * 0.6})`;
-          ctx.lineWidth = Math.abs(weight) * 3;
-        } else if (phase === 'backward' && nnState.step > (layers.length - 2 - l)) {
-          ctx.strokeStyle = `rgba(255,107,107,${alpha * 0.6})`;
-          ctx.lineWidth = Math.abs(weight) * 3;
+        const isFwdActive = phase === 'forward' && nnState.step > l;
+        const isBwdActive = phase === 'backward' && nnState.step > (layers.length - 2 - l);
+
+        if (isFwdActive) {
+          ctx.strokeStyle = weight > 0
+            ? `rgba(100,255,218,${Math.min(0.7, absW)})`
+            : `rgba(255,150,150,${Math.min(0.7, absW)})`;
+          ctx.lineWidth = 1 + absW * 3;
+        } else if (isBwdActive) {
+          ctx.strokeStyle = `rgba(255,107,107,${Math.min(0.7, absW)})`;
+          ctx.lineWidth = 1 + absW * 3;
         } else {
-          ctx.strokeStyle = `rgba(100,100,150,${alpha * 0.3})`;
+          ctx.strokeStyle = 'rgba(80,80,120,0.25)';
           ctx.lineWidth = 1;
         }
 
         ctx.beginPath();
-        ctx.moveTo(layerX[l] + 25, y1);
-        ctx.lineTo(layerX[l + 1] - 25, y2);
+        ctx.moveTo(layerX[l] + nodeR, y1);
+        ctx.lineTo(layerX[l + 1] - nodeR, y2);
         ctx.stroke();
 
-        // Draw weight value on edge (offset per connection to avoid overlap)
-        const midX = (layerX[l] + 25 + layerX[l + 1] - 25) / 2;
-        const midY = (y1 + y2) / 2;
-        const offsetX = (i - (n1 - 1) / 2) * 18;
-        const offsetY = (j - (n2 - 1) / 2) * 10 - 8;
-        ctx.fillStyle = '#b0b0c0';
-        ctx.font = '10px monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText(`${weight.toFixed(2)}`, midX + offsetX, midY + offsetY);
+        // Weight label: only show when this connection's layers are active (not all at once)
+        if (isFwdActive || isBwdActive) {
+          const t = 0.2 + (i * n2 + j) * (0.5 / (n1 * n2)); // stagger labels evenly along edge
+          const lx = layerX[l] + nodeR + (layerX[l+1] - nodeR - layerX[l] - nodeR) * t;
+          const ly = y1 + (y2 - y1) * t - 6;
+          ctx.fillStyle = 'rgba(10,10,20,0.8)';
+          const tw = ctx.measureText(weight.toFixed(2)).width;
+          ctx.fillRect(lx - tw/2 - 3, ly - 8, tw + 6, 13);
+          ctx.fillStyle = weight > 0 ? '#8be9c0' : '#ffaaaa';
+          ctx.font = '10px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText(weight.toFixed(2), lx, ly);
+        }
       }
     }
   }
 
+  // ---- Draw nodes ----
   for (let l = 0; l < layers.length; l++) {
     const layer = layers[l];
     const n = layer.nodes.length;
 
+    // Layer label
     ctx.fillStyle = '#ff6b6b';
-    ctx.font = '17px Inter';
+    ctx.font = 'bold 14px Inter, system-ui, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(layer.label, layerX[l], 25);
+    ctx.fillText(layer.label, layerX[l], 28);
 
     for (let i = 0; i < n; i++) {
-      const y = H / 2 + (i - (n - 1) / 2) * 80;
+      const y = H / 2 + (i - (n - 1) / 2) * nodeSpacing;
       const isActiveFwd = phase === 'forward' && nnState.step > l;
       const isActiveBwd = phase === 'backward' && nnState.step > (layers.length - 1 - l);
 
-      const gradient = ctx.createRadialGradient(layerX[l], y, 0, layerX[l], y, 25);
-      if (isActiveFwd) {
-        gradient.addColorStop(0, '#64ffda55');
-        gradient.addColorStop(1, '#64ffda11');
-      } else if (isActiveBwd) {
-        gradient.addColorStop(0, '#ff6b6b55');
-        gradient.addColorStop(1, '#ff6b6b11');
-      } else {
-        gradient.addColorStop(0, '#33335555');
-        gradient.addColorStop(1, '#33335511');
-      }
-      ctx.fillStyle = gradient;
-      ctx.beginPath();
-      ctx.arc(layerX[l], y, 25, 0, Math.PI * 2);
-      ctx.fill();
+      nnNodePositions.push({ x: layerX[l], y: y, layer: l, index: i });
 
-      ctx.strokeStyle = isActiveFwd ? '#64ffda' : isActiveBwd ? '#ff6b6b' : '#444';
+      // Node circle
+      const grad = ctx.createRadialGradient(layerX[l], y, 0, layerX[l], y, nodeR);
+      if (isActiveFwd) {
+        grad.addColorStop(0, 'rgba(100,255,218,0.3)');
+        grad.addColorStop(1, 'rgba(100,255,218,0.05)');
+        ctx.strokeStyle = '#64ffda';
+      } else if (isActiveBwd) {
+        grad.addColorStop(0, 'rgba(255,107,107,0.3)');
+        grad.addColorStop(1, 'rgba(255,107,107,0.05)');
+        ctx.strokeStyle = '#ff6b6b';
+      } else {
+        grad.addColorStop(0, 'rgba(50,50,80,0.3)');
+        grad.addColorStop(1, 'rgba(50,50,80,0.05)');
+        ctx.strokeStyle = '#555';
+      }
+      ctx.fillStyle = grad;
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.arc(layerX[l], y, 25, 0, Math.PI * 2);
+      ctx.arc(layerX[l], y, nodeR, 0, Math.PI * 2);
+      ctx.fill();
       ctx.stroke();
 
-      // Draw activation value
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '15px monospace';
+      // Value inside node
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 14px monospace';
       ctx.textAlign = 'center';
-      const val = layer.values[i];
-      ctx.fillText(val.toFixed(2), layerX[l], y + 4);
+      ctx.fillText(layer.values[i].toFixed(2), layerX[l], y + 5);
 
-      // Draw node label
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '15px Inter';
-      ctx.fillText(layer.nodes[i], layerX[l], y - 35);
+      // Node name above
+      ctx.fillStyle = '#aaa';
+      ctx.font = '12px Inter, system-ui, sans-serif';
+      ctx.fillText(layer.nodes[i], layerX[l], y - nodeR - 8);
 
-      // For forward pass: show pre-activation and detailed computation
-      if (phase === 'forward' && isActiveFwd && l === 1 && layer.preact !== undefined) {
-        ctx.fillStyle = '#64ffda';
-        ctx.font = '13px monospace';
-        const preactVal = layer.preact[i];
-        const x1 = vals.x[0], x2 = vals.x[1];
-        const w0 = nnWeights.w1[i][0], w1 = nnWeights.w1[i][1], b = nnWeights.b1[i];
-        ctx.fillText(`z = ${w0.toFixed(1)}*${x1.toFixed(1)} + ${w1.toFixed(1)}*${x2.toFixed(1)} + ${b.toFixed(1)} = ${preactVal.toFixed(2)}`, layerX[l], y + 40);
-        ctx.fillText(`a = ReLU(${preactVal.toFixed(2)}) = ${layer.values[i].toFixed(2)}`, layerX[l], y + 56);
-      }
-      if (phase === 'forward' && isActiveFwd && l === 2) {
-        ctx.fillStyle = '#64ffda';
-        ctx.font = '13px monospace';
-        const preactVal = vals.z2[i];
-        ctx.fillText(`z = Σ(wⱼ·hⱼ)+b = ${preactVal.toFixed(2)}`, layerX[l], y + 40);
-        ctx.fillText(`ŷ = softmax(z) = ${layer.values[i].toFixed(3)}`, layerX[l], y + 56);
-      }
-
-      // For backward pass: show gradient computation (abbreviated to avoid overflow)
-      if (phase === 'backward' && isActiveBwd && l === 2) {
-        ctx.fillStyle = '#ff6b6b';
-        ctx.font = '12px monospace';
-        const bwdX2 = Math.min(layerX[l], W - 20);
-        ctx.fillText(`dL/dz = ${layer.grads[i].toFixed(3)}`, bwdX2, y + 40);
-      }
-      if (phase === 'backward' && isActiveBwd && l === 1) {
-        ctx.fillStyle = '#ff6b6b';
-        ctx.font = '12px monospace';
-        const bwdX1 = Math.min(layerX[l], W - 20);
-        ctx.fillText(`dL/dh = ${vals.da1[i].toFixed(3)}`, bwdX1, y + 40);
-        ctx.fillText(`dL/dz = ${layer.grads[i].toFixed(3)}`, bwdX1, y + 56);
+      // Gradient badge below node (backward only, compact)
+      if (isActiveBwd && l > 0) {
+        const gradVal = l === 2 ? layer.grads[i] : vals.dz1[i];
+        const gradLabel = 'grad: ' + gradVal.toFixed(3);
+        const tw = ctx.measureText(gradLabel).width;
+        ctx.fillStyle = 'rgba(255,80,80,0.15)';
+        ctx.beginPath();
+        ctx.roundRect(layerX[l] - tw/2 - 6, y + nodeR + 4, tw + 12, 20, 6);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,107,107,0.4)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(layerX[l] - tw/2 - 6, y + nodeR + 4, tw + 12, 20, 6);
+        ctx.stroke();
+        ctx.fillStyle = '#ff8888';
+        ctx.font = '11px monospace';
+        ctx.fillText(gradLabel, layerX[l], y + nodeR + 18);
       }
     }
   }
 
-  // Draw computation formula in the center
-  const formulaX = 580, formulaY = 80;
-  ctx.fillStyle = '#ffd93d';
-  ctx.font = '17px Inter';
+  // ---- Info panel (top right): target, logits, loss ----
+  const panelX = W - 200, panelY = 46;
+  ctx.fillStyle = 'rgba(10,10,20,0.9)';
+  const panelH = phase !== 'idle' ? 90 : 50;
+  ctx.fillRect(panelX, panelY, 192, panelH);
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(panelX, panelY, 192, panelH);
   ctx.textAlign = 'left';
-  ctx.fillText('Forward:', formulaX, formulaY);
-
-  ctx.fillStyle = '#ffffff';
-  ctx.font = '15px monospace';
-  ctx.fillText('z₁ᵢ = Σⱼ(wᵢⱼ·xⱼ) + bᵢ', formulaX, formulaY + 22);
-  ctx.fillText('h₁ᵢ = ReLU(z₁ᵢ)', formulaX, formulaY + 42);
-  ctx.fillText('z₂ⱼ = Σᵢ(wⱼᵢ·h₁ᵢ) + bⱼ', formulaX, formulaY + 62);
-  ctx.fillText('ŷ = softmax(z₂)', formulaX, formulaY + 82);
-
-  ctx.fillStyle = '#ffd93d';
-  ctx.font = '17px Inter';
-  ctx.fillText('Backward:', formulaX, formulaY + 120);
-
-  ctx.fillStyle = '#ffffff';
-  ctx.font = '13px monospace';
-  ctx.fillText('dL/dz₂ = y\u0302 - y', formulaX, formulaY + 142);
-  ctx.fillText('dL/dw = dL/dz \u00B7 dz/dw', formulaX, formulaY + 162);
-  ctx.fillText('dL/dh₁ = w\u1D40 \u00B7 dL/dz₂', formulaX, formulaY + 182);
-
-  ctx.fillStyle = '#ffd93d';
-  ctx.font = '15px monospace';
-  ctx.textAlign = 'left';
-  ctx.fillText(`Loss = ${vals.loss.toFixed(4)}`, formulaX, formulaY + 220);
-
+  ctx.font = '11px monospace';
+  ctx.fillStyle = '#888';
+  ctx.fillText(`Target: class ${vals.targetClass}`, panelX + 10, panelY + 18);
+  ctx.fillText(`y = [${vals.yTrue[0]}, ${vals.yTrue[1]}]`, panelX + 10, panelY + 34);
   if (phase !== 'idle') {
-    ctx.fillStyle = phase === 'forward' ? '#64ffda' : '#ff6b6b';
-    ctx.font = '17px Inter';
-    ctx.textAlign = 'right';
-    ctx.fillText(phase === 'forward' ? '-> Forward Pass' : '<- Backward Pass', W - 20, 25);
+    ctx.fillStyle = '#aaa';
+    ctx.fillText(`Logits: [${vals.z2[0].toFixed(2)}, ${vals.z2[1].toFixed(2)}]`, panelX + 10, panelY + 52);
+    ctx.fillText(`Softmax: [${vals.a2[0].toFixed(3)}, ${vals.a2[1].toFixed(3)}]`, panelX + 10, panelY + 68);
+    ctx.fillStyle = '#ffd93d';
+    ctx.font = 'bold 12px monospace';
+    ctx.fillText(`Loss = ${vals.loss.toFixed(4)}`, panelX + 10, panelY + 85);
+  }
+
+  // ---- Phase indicator (top left) ----
+  if (phase !== 'idle') {
+    const phaseLabel = phase === 'forward' ? 'Forward Pass →' : '← Backward Pass';
+    const phaseColor = phase === 'forward' ? '#64ffda' : '#ff6b6b';
+    ctx.fillStyle = 'rgba(10,10,20,0.85)';
+    ctx.fillRect(8, 10, 160, 30);
+    ctx.fillStyle = phaseColor;
+    ctx.font = 'bold 14px Inter, system-ui, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(phaseLabel, 16, 30);
+  }
+
+  // ---- Directional arrows showing data flow ----
+  if (phase !== 'idle') {
+    const arrowColor = phase === 'forward' ? '#64ffda' : '#ff6b6b';
+    ctx.strokeStyle = arrowColor;
+    ctx.fillStyle = arrowColor;
+    ctx.lineWidth = 2;
+    ctx.globalAlpha = 0.3;
+    for (let l = 0; l < 2; l++) {
+      const ax = (layerX[l] + layerX[l+1]) / 2;
+      const ay = H - 25;
+      const dir = phase === 'forward' ? 1 : -1;
+      ctx.beginPath();
+      ctx.moveTo(ax - dir * 20, ay);
+      ctx.lineTo(ax + dir * 20, ay);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(ax + dir * 20, ay);
+      ctx.lineTo(ax + dir * 12, ay - 5);
+      ctx.lineTo(ax + dir * 12, ay + 5);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
   }
 }
 
-let nnAnimId;
-function runForward() {
-  nnState.phase = 'forward';
-  nnState.step = 0;
-  clearInterval(nnAnimId);
-  nnAnimId = setInterval(() => {
-    nnState.step++;
-    drawNN();
-    if (nnState.step >= 3) clearInterval(nnAnimId);
-  }, 500);
+// ---- Unified step-through: 6 steps total (3 forward + 3 backward) ----
+// globalStep: 0=idle, 1-3=forward steps, 4-6=backward steps, 7=done
+var nnGlobalStep = 0;
+const stepExplains = [
+  'Click <strong style="color:#64ffda">Next Step</strong> to walk through the forward pass, then the backward pass, one layer at a time.',
+  '<span style="color:#64ffda">Forward 1/3:</span> Inputs x₁ and x₂ enter the network. These are the raw features we want to classify.',
+  '<span style="color:#64ffda">Forward 2/3:</span> Each hidden neuron computes <code>z = w₁·x₁ + w₂·x₂ + b</code>, then applies <code>ReLU(z) = max(0, z)</code>. <strong>Hover a node</strong> to see the exact math.',
+  '<span style="color:#64ffda">Forward 3/3:</span> Output layer computes logits (raw scores), then <code>softmax</code> converts them to probabilities. The loss = -log(probability of correct class).',
+  '<span style="color:#ff6b6b">Backward 1/3:</span> Start at the output. The gradient of the loss w.r.t. each output = <code>ŷ - y</code> (prediction minus target). This is the <em>error signal</em>.',
+  '<span style="color:#ff6b6b">Backward 2/3:</span> Gradients flow back through weights to hidden nodes via the <strong>chain rule</strong>: <code>dL/dh = Wᵀ · dL/dz₂</code>. <strong>Hover a node</strong> to see its gradient.',
+  '<span style="color:#ff6b6b">Backward 3/3:</span> Gradients reach the first layer weights. Each gradient says: "to reduce the loss, adjust this weight by this much." That\'s learning!',
+  '<span style="color:#ffd93d">Done!</span> The network now knows how to update every weight. In training, we\'d apply these gradients (× learning rate) and repeat. Click <strong>Reset</strong> to try different inputs.'
+];
+
+function updateStepExplain() {
+  const el = document.getElementById('nnStepExplain');
+  if (!el) return;
+  if (nnGlobalStep <= 0) {
+    el.style.borderLeftColor = '#444';
+  } else if (nnGlobalStep <= 3) {
+    el.style.borderLeftColor = '#64ffda';
+  } else {
+    el.style.borderLeftColor = '#ff6b6b';
+  }
+  el.innerHTML = stepExplains[Math.min(nnGlobalStep, stepExplains.length - 1)];
+  // Update button label
+  const btn = document.getElementById('nnStepBtn');
+  if (btn) {
+    if (nnGlobalStep >= 7) {
+      btn.textContent = 'Done';
+      btn.style.opacity = '0.5';
+    } else if (nnGlobalStep >= 3) {
+      btn.textContent = 'Next Step (Backward)';
+      btn.style.background = 'rgba(255,107,107,0.15)';
+      btn.style.borderColor = '#ff6b6b';
+      btn.style.color = '#ff6b6b';
+      btn.style.opacity = '1';
+    } else {
+      btn.textContent = 'Next Step';
+      btn.style.background = 'rgba(100,255,218,0.15)';
+      btn.style.borderColor = '#64ffda';
+      btn.style.color = '#64ffda';
+      btn.style.opacity = '1';
+    }
+  }
 }
 
-function runBackward() {
-  nnState.phase = 'backward';
-  nnState.step = 0;
-  clearInterval(nnAnimId);
-  nnAnimId = setInterval(() => {
-    nnState.step++;
-    drawNN();
-    if (nnState.step >= 3) clearInterval(nnAnimId);
-  }, 500);
+function syncStateFromGlobal() {
+  if (nnGlobalStep <= 0) {
+    nnState.phase = 'idle'; nnState.step = 0;
+  } else if (nnGlobalStep <= 3) {
+    nnState.phase = 'forward'; nnState.step = nnGlobalStep;
+  } else {
+    nnState.phase = 'backward'; nnState.step = nnGlobalStep - 3;
+  }
 }
+
+// ---- Hover tooltip ----
+(function() {
+  const canvas = document.getElementById('nnCanvas');
+  if (!canvas) return;
+  const tooltip = document.getElementById('nnTooltip');
+  canvas.addEventListener('mousemove', function(e) {
+    const rect = canvas.getBoundingClientRect();
+    const mx = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const my = (e.clientY - rect.top) * (canvas.height / rect.height);
+    let hit = null;
+    for (const np of nnNodePositions) {
+      if (Math.hypot(mx - np.x, my - np.y) < 32) { hit = np; break; }
+    }
+    if (hit && nnState.phase !== 'idle') {
+      const vals = computeNN(
+        parseInt(document.getElementById('nnX1').value) / 10,
+        parseInt(document.getElementById('nnX2').value) / 10
+      );
+      let html = '';
+      const l = hit.layer, i = hit.index;
+      if (l === 0) {
+        html = `<strong style="color:#64ffda">${['x₁','x₂'][i]}</strong><br>Input value: <strong>${vals.x[i].toFixed(2)}</strong>`;
+      } else if (l === 1) {
+        const w = nnWeights.w1[i];
+        const b = nnWeights.b1[i];
+        const z = vals.z1[i];
+        const a = vals.a1[i];
+        html = `<strong style="color:#64ffda">h${i+1}</strong> — Hidden neuron<br><br>`;
+        html += `<strong>Forward:</strong><br>`;
+        html += `z = ${w[0].toFixed(2)}·x₁ + ${w[1].toFixed(2)}·x₂ + ${b.toFixed(2)}<br>`;
+        html += `&nbsp; = ${w[0].toFixed(2)}·${vals.x[0].toFixed(1)} + ${w[1].toFixed(2)}·${vals.x[1].toFixed(1)} + ${b.toFixed(2)}<br>`;
+        html += `&nbsp; = <strong>${z.toFixed(3)}</strong><br>`;
+        html += `a = ReLU(${z.toFixed(3)}) = <strong>${a.toFixed(3)}</strong>`;
+        if (nnState.phase === 'backward') {
+          html += `<br><br><strong style="color:#ff6b6b">Backward:</strong><br>`;
+          html += `dL/dh = ${vals.da1[i].toFixed(4)}<br>`;
+          html += `dL/dz = dL/dh · ReLU'(z)<br>`;
+          html += `&nbsp;&nbsp;&nbsp;&nbsp; = ${vals.da1[i].toFixed(4)} · ${z > 0 ? '1' : '0'} = <strong>${vals.dz1[i].toFixed(4)}</strong>`;
+        }
+      } else if (l === 2) {
+        const z = vals.z2[i];
+        const a = vals.a2[i];
+        html = `<strong style="color:#64ffda">ŷ${i+1}</strong> — Output neuron<br><br>`;
+        html += `<strong>Forward:</strong><br>`;
+        html += `z = Σ(wⱼ·hⱼ) + b = <strong>${z.toFixed(3)}</strong><br>`;
+        html += `ŷ = softmax(z) = <strong>${a.toFixed(4)}</strong>`;
+        if (nnState.phase === 'backward') {
+          html += `<br><br><strong style="color:#ff6b6b">Backward:</strong><br>`;
+          html += `dL/dz = ŷ - y = ${vals.da2[i].toFixed(4)}`;
+        }
+      }
+      tooltip.innerHTML = html;
+      tooltip.style.display = 'block';
+      // Position tooltip relative to canvas container
+      const tipX = e.clientX - rect.left + 20;
+      const tipY = e.clientY - rect.top - 10;
+      tooltip.style.left = Math.min(tipX, rect.width - 300) + 'px';
+      tooltip.style.top = tipY + 'px';
+    } else {
+      tooltip.style.display = 'none';
+    }
+  });
+  canvas.addEventListener('mouseleave', function() {
+    tooltip.style.display = 'none';
+  });
+})();
+
+function nnNextStep() {
+  if (nnGlobalStep >= 7) return;
+  nnGlobalStep++;
+  syncStateFromGlobal();
+  updateStepExplain();
+  drawNN();
+}
+
+function runForward() { /* legacy compat */ nnGlobalStep = 0; for (var i = 0; i < 3; i++) nnNextStep(); }
+function runBackward() { /* legacy compat */ nnGlobalStep = 3; for (var i = 0; i < 3; i++) nnNextStep(); }
 
 function resetNN() {
+  nnGlobalStep = 0;
   nnState = { phase: 'idle', step: 0 };
-  clearInterval(nnAnimId);
+  updateStepExplain();
   drawNN();
 }
 
