@@ -214,6 +214,7 @@
     <hr class="divider">
     <div class="interview-tip">Tokenization happens BEFORE the model sees anything. A "token" is the fundamental unit the transformer processes. Different tokenizers can produce different results for the same text.</div>
     <div class="mnemonic">Rare words split, common words stay whole. "the" = 1 token. "cryptocurrency" = "crypto" + "currency" = 2 tokens.</div>
+    <div class="interview-tip">💡 Real-world: Tokenization directly affects cost and quality. GPT-4 charges per token (~$0.03/1K tokens). A better tokenizer that uses fewer tokens for the same text literally saves millions of dollars at scale. That's why every major lab builds custom tokenizers.</div>
 <div class="code-example">
   <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
     <span class="code-toggle-icon">&#9654;</span> Framework Example: BPE Tokenization with tiktoken
@@ -281,6 +282,7 @@ print(len(enc.encode('the')))  # 1 token</code></pre>
     <div class="interview-tip">Unlike RNNs which process sequentially (inherently knowing position), transformers process all tokens in parallel. Positional encoding is the explicit signal that tells the model WHERE each token is. As explored in Ch 04, attention is permutation-invariant without this signal &mdash; the order of tokens would be invisible.</div>
     <div class="mnemonic">Token embedding = WHAT the token is. Positional encoding = WHERE it is. Sum them = the model knows both.</div>
     <div class="interview-tip" style="background:rgba(1,163,164,0.05); border:1px solid rgba(1,163,164,0.2); color:#88dddd;">&#128206; See Ch 4 where we show attention is permutation-invariant &mdash; positional encoding is the fix that gives the model awareness of token order.</div>
+    <div class="interview-tip">💡 Real-world: RoPE (Rotary Position Embeddings) replaced sinusoidal encoding in LLaMA, Mistral, and most modern models. It enables context length extension — going from 4K to 128K tokens — which is why Claude and GPT-4 can read entire codebases.</div>
 <div class="code-example">
   <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
     <span class="code-toggle-icon">&#9654;</span> Framework Example: Sinusoidal Positional Encoding
@@ -712,6 +714,7 @@ def generate(model, prompt_ids, max_new=50, temperature=0.8):
     <div class="interview-tip">This is why LLMs are so data-efficient: one document of N tokens provides N-1 supervised training examples. No labeling required &mdash; the text IS the label (shifted by one position).</div>
     <div class="mnemonic">Self-supervised learning: the input IS the label. Position t predicts position t+1. Slide a window across all text ever written = unlimited training data. The backpropagation that makes this work is the same engine you built in Ch 01 &mdash; gradients flow back through every component.</div>
     <div class="interview-tip" style="background:rgba(1,163,164,0.05); border:1px solid rgba(1,163,164,0.2); color:#88dddd;">&#128206; All these gradients flow through the computation graph from Ch 1 (Backprop). The chain rule applies through every LayerNorm, attention head, and FFN &mdash; the same derivative mechanics, just many more parameters.</div>
+    <div class="interview-tip">💡 Real-world: Next-token prediction on internet text is the recipe behind GPT, LLaMA, and Claude. The stunning fact: this simple objective — just predict the next word — produces models that can write code, do math, and reason. No explicit programming of these skills.</div>
 <div class="code-example">
   <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
     <span class="code-toggle-icon">&#9654;</span> Framework Example: Next-Token Prediction Training Step

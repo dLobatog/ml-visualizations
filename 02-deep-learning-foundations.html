@@ -128,6 +128,7 @@
     </div>
     <div class="formula">$$\text{output} = \text{ReLU}(w_1 \cdot x_1 + w_2 \cdot x_2 + b) = \max(0,\; z)$$</div>
     <div class="interview-tip">A single neuron computes a linear function followed by a non-linearity. Without the activation function, stacking neurons would still be linear.</div>
+    <div class="interview-tip">💡 Real-world: Every neural network — from a spam filter to GPT-4 — is built from this basic unit. Understanding one neuron means understanding the building block of all deep learning.</div>
   </div>
 </div>
 
@@ -617,6 +618,7 @@
     <strong style="color:#ffd93d;">That's backpropagation.</strong> The error flows backward through the network — each neuron receives the error from the neuron it feeds into, scaled by the connecting weight. Then it uses that to update its own weight. The "chain rule" is just multiplying these error signals along the chain.
     <div class="formula" style="border-color:#554400;">$$\frac{\partial L}{\partial w_1} = \underbrace{\frac{\partial L}{\partial \text{out}}}_{\text{error}} \times \underbrace{\frac{\partial \text{out}}{\partial h}}_{ w_2} \times \underbrace{\frac{\partial h}{\partial w_1}}_{\text{ReLU}'(z_1) \cdot x}$$</div>
     <div class="interview-tip">Backprop is just the chain rule applied systematically. The key insight: each node only needs its <em>local</em> gradient and the upstream error signal. No node needs to "see" the whole network.</div>
+    <div class="interview-tip">💡 Real-world: This weight update rule is running right now on thousands of GPUs across Google, Meta, and OpenAI. A single training run for a frontier model performs this operation quadrillions of times. The math is simple — the scale is what makes it expensive ($100M+ per run).</div>
   </div>
 </div>
 
@@ -1438,6 +1440,7 @@ print(model(x).shape)           # torch.Size([8, 10])</code></pre>
     </div>
     <hr class="divider">
     <div class="interview-tip">CNNs are the backbone of computer vision. Receptive field grows with depth. Understand how filter size and stride affect output dimensions.</div>
+    <div class="interview-tip">💡 Real-world: RMSNorm (a simplified LayerNorm) is used in LLaMA, Mistral, and most modern transformers. It's 10-15% faster than LayerNorm with no quality loss — at the scale of training a 70B model, that saves weeks of GPU time.</div>
     <div class="mnemonic">CNN = local pattern matching with weight sharing. Captures spatial hierarchies. Deep = large receptive fields = global context.
     <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Select Batch Norm. Colored region highlights entire column (normalize across batch). Batch size = 32 activations, all scaled together. Switch to Layer Norm — colored region is entire row (normalize across features for each sample independently). RMSNorm normalizes only by variance, not mean.</div>
   
@@ -1660,7 +1663,8 @@ output, h_n = gru(x)  # no c_n returned</code></pre>
     <div class="interview-tip">Flash Attention is IO-aware: it optimizes data movement between fast SRAM and slow HBM, not the number of FLOPs. Same math, fewer memory transfers.</div>
     <div class="mnemonic">Flash = tiling + online softmax + recomputation. Never stores full N x N matrix. Exact, not approximate.</div>
     <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">Try this: Sequence length = 100. Standard Attention materializes 100x100 matrix (10K values in slow memory). Flash Attention: tiles into 4x4 blocks (only 25 values in fast memory at a time). Result is identical, but memory bandwidth drops 4-10x. This is why Flash Attention made long sequences practical.</div>
-  
+    <div class="interview-tip">💡 Real-world: Flash Attention (Dao, 2022) made it practical to train models with 100K+ context windows. Without it, the O(N²) memory cost of attention would require prohibitively expensive hardware. It's now the default in PyTorch and every major training framework.</div>
+
     <div class="code-example">
       <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
         <span class="code-toggle-icon">&#9654;</span> Framework Example: Scaled Dot-Product Attention
@@ -1760,6 +1764,7 @@ out_flash = F.scaled_dot_product_attention(Q, K, V)</code></pre>
     <div class="interview-tip">Chinchilla showed most large models were undertrained (too many params, too little data). Optimal: ~20 tokens per parameter. Scaling laws let you predict loss before training.</div>
     <div class="mnemonic">Scaling = power laws. More params + more data = lower loss, but diminishing returns. Chinchilla = balance params and data equally.</div>
     <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">Try this: Move compute budget left (favor parameters, 80/20 split) -- loss plateaus (data bottleneck). Move right (80/20 data favoring) -- loss plateaus (parameter bottleneck). The diagonal (50/50 split) is optimal. Chinchilla discovered this: equal compute to parameters and data.</div>
+    <div class="interview-tip">💡 Real-world: Scaling laws let labs predict performance BEFORE spending $100M on a training run. OpenAI used them to plan GPT-4: train small models, fit the power law, extrapolate to the target size. It's the closest thing to a crystal ball in ML.</div>
     <div class="code-example">
       <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
         <span class="code-toggle-icon">&#9654;</span> Framework Example: Training Loop with LR Schedule
