@@ -1054,6 +1054,145 @@ sim = torch.cosine_similarity(q_emb, d_emb)  # ~0.85</code></pre>
   </div>
 </div>
 
+<!-- 14. GENERATIVE RECOMMENDERS: Next-Token Prediction for Recs -->
+<div class="viz-section">
+  <h2>Generative Recommenders: Next-Token Prediction for Recs</h2>
+  <p class="subtitle">Traditional rec systems use a 3-stage pipeline (retrieve&#8594;rank&#8594;rerank). Generative recommenders replace this with a single LLM that generates the next item directly &#8212; just like GPT generates the next word. Click through the steps to see how items become tokens and how the model generates recommendations.</p>
+  <div class="viz-canvas">
+    <canvas id="genrecCanvas" width="1100" height="600"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>View Mode</label>
+      <select id="genrecMode" onchange="drawGenRec()">
+        <option value="traditional">Traditional Pipeline</option>
+        <option value="generative">Generative (PLUM/OneRec)</option>
+      </select>
+    </div>
+    <button class="btn" onclick="advanceGenRecStep()">Next Step &#9654;</button>
+    <button class="btn" onclick="resetGenRec()">&#8635; Reset</button>
+  </div>
+  <div class="metric-box" id="genrecMetrics">Traditional: 3 models, 10B params in embeddings, ~500ms | Generative: 1 model, 0 embedding tables, ~200ms</div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Generative recommenders reframe recommendation as sequence modeling &#8212; predicting the next "item token" just like LLMs predict the next word token.
+    <div class="key-point"><span class="label">Semantic IDs (SID):</span><span class="desc">Items are compressed into short token sequences using RQ-VAE (Residual Quantized VAE) &#8212; a neural network that learns hierarchical codebooks to assign each item a "zip code." Level 1 captures broad category (genre), Level 2 captures sub-category, Level 3 identifies the specific item. Similar items share token prefixes, enabling generalization to unseen items. YouTube's SID-v2 uses codebooks of decreasing size (2048&#8594;1024 entries).</span></div>
+    <div class="key-point"><span class="label">No embedding tables:</span><span class="desc">Traditional models need O(catalog_size) embedding parameters. PLUM allocates 90% of parameters to neural networks vs 0.4% in traditional models. This enables better generalization.</span></div>
+    <div class="key-point"><span class="label">Cold start solved:</span><span class="desc">New items get Semantic IDs from their content (video/audio/text) immediately &#8212; no need for interaction history.</span></div>
+    <div class="key-point"><span class="label">Scaling laws apply:</span><span class="desc">Like LLMs, generative rec performance scales predictably with model size and compute (power-law).</span></div>
+    <div class="key-point"><span class="label">PLUM results:</span><span class="desc">+4.96% CTR on YouTube Shorts, 13x vocabulary coverage vs traditional models, first neural model without embedding tables in YouTube production.</span></div>
+    <div class="key-point"><span class="label">OneRec results:</span><span class="desc">Replaced entire Kuaishou pipeline, 0.54% engagement gain, 90% cost reduction, 10x FLOPs improvement.</span></div>
+    <hr class="divider">
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title" style="color: #ff9ff3;">Traditional Pipeline</div>
+        <div class="opt-desc">3 separate models (retrieval, ranking, reranking), each optimized separately. Embedding tables scale with catalog (10M items = huge table). Slow to iterate, cold-start problem.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #7fff7f;">Generative Recommender</div>
+        <div class="opt-desc">Single LLM generates item tokens directly. No embedding tables. Content-based Semantic IDs solve cold start. Scaling laws enable predictable improvement.</div>
+      </div>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Interview tip: "Generative recommenders unify retrieve+rank into one model by treating items as token sequences. The key innovation is Semantic IDs &#8212; RQ-VAE compresses items into discrete tokens the LLM can generate. This is the 'ChatGPT moment' for RecSys."</div>
+    <div class="interview-tip">Real-world tip: YouTube's PLUM is in production serving both Shorts and long-form video. Kuaishou's OneRec serves hundreds of millions of daily users. This is not theoretical &#8212; it's the direction the industry is moving.</div>
+    <div class="mnemonic">Traditional = "search then score" (embedding lookup &#8594; dot product &#8594; rerank). Generative = "just say the answer" (generate item tokens directly, like completing a sentence).</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Conceptual Example: Generative Retrieval with Semantic IDs
+      </button>
+      <div class="code-content">
+        <pre><code class="language-python"># Conceptual: Generative Retrieval with Semantic IDs
+# Step 1: Tokenize items into Semantic IDs via RQ-VAE
+semantic_ids = rqvae.encode(item_features)  # [N, L] L=3 levels
+# e.g., video_123 -> [42, 817, 3]
+
+# Step 2: Format user history as token sequence
+input_tokens = []
+for item in user_history:
+    input_tokens.extend(semantic_ids[item])  # flatten SIDs
+input_tokens.append(NEXT_ITEM_TOKEN)
+
+# Step 3: Autoregressive generation (beam search)
+candidates = model.generate(
+    input_tokens,
+    num_beams=100,      # explore 100 paths
+    max_new_tokens=3,   # 3 SID levels per item
+)
+# Each beam -> 3 tokens -> maps to a real item
+recommended_items = sid_to_item[candidates]</code></pre>
+        <p class="code-note">Treats recommendation as next-token prediction. Items become token sequences via RQ-VAE; the LLM generates recommended item tokens autoregressively.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 15. GENERATIVE RETRIEVAL: Search Without an Index -->
+<div class="viz-section">
+  <h2>Generative Retrieval: Search Without an Index</h2>
+  <p class="subtitle">The same Semantic ID / next-token-prediction paradigm from Generative Recommenders extends to document search. Instead of building a separate vector index (FAISS), a single Transformer memorizes the entire corpus and retrieves documents by generating their IDs directly from a query. Click through steps to see how indexing becomes training and retrieval becomes generation.</p>
+  <div class="viz-canvas">
+    <canvas id="genSearchCanvas" width="1100" height="550"></canvas>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label>View Mode</label>
+      <select id="genSearchMode" onchange="drawGenSearch()">
+        <option value="traditional">Traditional Search Pipeline</option>
+        <option value="generative">Generative Retrieval (DSI / GENRE)</option>
+      </select>
+    </div>
+    <button class="btn" onclick="advanceGenSearchStep()">Next Step &#9654;</button>
+    <button class="btn" onclick="resetGenSearch()">&#8635; Reset</button>
+  </div>
+  <div class="metric-box" id="genSearchMetrics">Traditional: Query &#8594; Embedding &#8594; ANN Index &#8594; Re-ranker = 2 models + external index | Generative: Single model, no index</div>
+  <div class="insight-box">
+    <strong>Key Insight:</strong> Generative retrieval memorizes the corpus INSIDE the model &#8212; no separate index needed. A query goes in, a document ID comes out. The model IS the index.
+    <div class="key-point"><span class="label">DSI (Google 2022):</span><span class="desc">Differentiable Search Index &#8212; a single Transformer memorizes the entire corpus and retrieves by generating document IDs from queries. Indexing = training, retrieval = generation.</span></div>
+    <div class="key-point"><span class="label">GENRE (Meta 2021):</span><span class="desc">Autoregressive entity retrieval &#8212; generates entity names character by character using constrained beam search.</span></div>
+    <div class="key-point"><span class="label">Semantic IDs bridge search + recs:</span><span class="desc">Spotify's research shows you can build shared Semantic IDs for BOTH search and recommendation in one model, though there is a trade-off between the two objectives.</span></div>
+    <div class="key-point"><span class="label">Scalability challenge:</span><span class="desc">Current generative retrieval struggles with very large corpora (100M+ docs) since all knowledge is stored in model parameters, not an external index.</span></div>
+    <div class="key-point"><span class="label">Cold-start advantage:</span><span class="desc">New documents get Semantic IDs from their content instantly &#8212; no interaction history needed. The encoder maps content to tokens on the fly.</span></div>
+    <div class="key-point"><span class="label">DSI-QG:</span><span class="desc">Addresses distribution mismatch between long document texts (indexing) and short queries (retrieval) by generating synthetic queries during training.</span></div>
+    <hr class="divider">
+    <div class="comparison">
+      <div class="option">
+        <div class="opt-title" style="color: #ff9ff3;">Traditional Search</div>
+        <div class="opt-desc">Separate embedding model + ANN index (FAISS/ScaNN) + re-ranker. Scales to billions of documents. Requires maintaining and updating external index infrastructure.</div>
+      </div>
+      <div class="option">
+        <div class="opt-title" style="color: #7fff7f;">Generative Retrieval</div>
+        <div class="opt-desc">Single model, no external index. Generates document IDs directly. Excels at cold-start and end-to-end optimization. Scalability still being proven beyond millions.</div>
+      </div>
+    </div>
+    <hr class="divider">
+    <div class="interview-tip">Interview tip: "Generative retrieval memorizes the corpus INSIDE the model &#8212; no separate index. Query goes in, document ID comes out. The key challenge is scaling: embedding-based retrieval with FAISS scales to billions, while generative retrieval is still proving itself beyond millions."</div>
+    <div class="interview-tip">Real-world tip: "Google's DSI showed this is viable for search. Spotify is researching joint search+recommendation with shared Semantic IDs. PLUM (YouTube) is already in production for retrieval. This is the convergence of search and recommendations into one paradigm."</div>
+    <div class="mnemonic">Traditional search = "look it up in the index" (like a library card catalog). Generative search = "just remember where everything is" (like a librarian who memorized the whole library).</div>
+    <div class="code-example">
+      <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
+        <span class="code-toggle-icon">&#9654;</span> Conceptual Example: DSI-style Generative Retrieval
+      </button>
+      <div class="code-content">
+        <pre><code class="language-python"># Generative Retrieval: DSI-style
+# Indexing phase: model learns doc_text -> docid
+for doc in corpus:
+    sid = semantic_id(doc.embedding)  # e.g., [12, 45, 7]
+    model.train(input=doc.text, target=sid)
+
+# Retrieval phase: query -> generate docid
+query = "best pizza restaurants in NYC"
+doc_ids = model.generate(
+    query,
+    num_beams=10,
+    max_new_tokens=3,  # 3-level Semantic ID
+)
+results = [sid_to_doc[did] for did in doc_ids]</code></pre>
+        <p class="code-note">The model memorizes doc_text &#8594; Semantic ID mappings during training. At inference, it generates document IDs directly from queries &#8212; no external index lookup.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
 </div>
 
 <script>
@@ -2829,6 +2968,1676 @@ function drawDenseRetrieval() {
   document.getElementById('denseMetrics').textContent = `Candidates: ${candStr} | Bi-encoder: 1ms | ColBERT: 50ms | Cross-encoder: 500ms`;
 }
 
+// ============ GENERATIVE RECOMMENDERS ============
+let genrecStep = 0;
+let genrecAnimFrame = null;
+let genrecAnimProgress = 0;
+
+function resetGenRec() {
+  genrecStep = 0;
+  genrecAnimProgress = 0;
+  if (genrecAnimFrame) cancelAnimationFrame(genrecAnimFrame);
+  drawGenRec();
+}
+
+function advanceGenRecStep() {
+  const mode = document.getElementById('genrecMode').value;
+  if (mode === 'traditional') {
+    drawGenRec();
+    return;
+  }
+  genrecStep = (genrecStep + 1) % 5;
+  genrecAnimProgress = 0;
+  drawGenRec();
+}
+
+function drawGenRec() {
+  const mode = document.getElementById('genrecMode').value;
+  if (mode === 'traditional') {
+    drawTraditionalPipeline();
+  } else {
+    drawGenerativeStep(genrecStep);
+  }
+}
+
+function drawTraditionalPipeline() {
+  const canvas = document.getElementById('genrecCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.fillStyle = '#ff9ff3';
+  ctx.font = 'bold 18px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Traditional Recommendation Pipeline', W / 2, 35);
+
+  // Stage boxes
+  const stages = [
+    { label: 'Catalog', count: '10M items', x: 60, color: '#555' },
+    { label: 'Candidate Gen', count: '~1000 items', x: 290, color: '#3a6b8a' },
+    { label: 'Ranking Model', count: '~100 items', x: 530, color: '#6a3a8a' },
+    { label: 'Re-ranking', count: '~20 items', x: 770, color: '#8a5a3a' }
+  ];
+
+  const stageW = 190, stageH = 120, stageY = 100;
+  stages.forEach((s, i) => {
+    // Box
+    ctx.fillStyle = s.color;
+    ctx.strokeStyle = '#ff9ff3';
+    ctx.lineWidth = 2;
+    ctx.fillRect(s.x, stageY, stageW, stageH);
+    ctx.strokeRect(s.x, stageY, stageW, stageH);
+
+    // Label
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 15px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(s.label, s.x + stageW / 2, stageY + 40);
+    ctx.fillStyle = '#ffd93d';
+    ctx.font = '14px monospace';
+    ctx.fillText(s.count, s.x + stageW / 2, stageY + 65);
+
+    // Arrow
+    if (i < stages.length - 1) {
+      const ax = s.x + stageW;
+      const bx = stages[i + 1].x;
+      ctx.strokeStyle = '#ff9ff3';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(ax, stageY + stageH / 2);
+      ctx.lineTo(bx, stageY + stageH / 2);
+      ctx.stroke();
+      // arrowhead
+      ctx.beginPath();
+      ctx.moveTo(bx, stageY + stageH / 2);
+      ctx.lineTo(bx - 10, stageY + stageH / 2 - 6);
+      ctx.lineTo(bx - 10, stageY + stageH / 2 + 6);
+      ctx.closePath();
+      ctx.fillStyle = '#ff9ff3';
+      ctx.fill();
+    }
+  });
+
+  // Details under each stage
+  const details = [
+    ['Embedding Table', '10M x 128 dims', '~5GB memory'],
+    ['ANN Search', 'FAISS / ScaNN', 'Model #1'],
+    ['Deep Network', 'Scores 1000 items', 'Model #2'],
+    ['Business Rules', 'Diversity, freshness', 'Model #3']
+  ];
+  ctx.font = '12px monospace';
+  details.forEach((lines, i) => {
+    const s = stages[i];
+    lines.forEach((line, li) => {
+      ctx.fillStyle = li === 2 ? '#ff6b6b' : '#88ccff';
+      ctx.textAlign = 'center';
+      ctx.fillText(line, s.x + stageW / 2, stageY + stageH + 25 + li * 18);
+    });
+  });
+
+  // Problems section
+  const probY = 340;
+  ctx.fillStyle = '#ff6b6b';
+  ctx.font = 'bold 16px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('Problems with Traditional Pipeline:', 60, probY);
+
+  const problems = [
+    '3 separate models to train, deploy, and maintain independently',
+    'Embedding tables grow O(catalog_size) - 10M items = massive memory',
+    'Each stage optimized separately - no end-to-end learning',
+    'Cold-start: new items have no embeddings until interaction data exists',
+    'Latency: sequential stages add up (~500ms total)',
+    '99.6% of model parameters are in embedding tables (wasted capacity)'
+  ];
+  ctx.font = '13px monospace';
+  problems.forEach((p, i) => {
+    ctx.fillStyle = '#ff9999';
+    ctx.fillText('  x  ' + p, 70, probY + 28 + i * 22);
+  });
+
+  // Visual: item dots flowing through funnel
+  const dotY = 530;
+  ctx.fillStyle = '#333';
+  ctx.fillRect(60, dotY, W - 120, 50);
+  // many dots -> fewer -> fewer -> few
+  const dotCounts = [40, 8, 4, 2];
+  const dotColors = ['#555', '#3a6b8a', '#6a3a8a', '#8a5a3a'];
+  dotCounts.forEach((count, si) => {
+    const sx = stages[si].x;
+    for (let d = 0; d < count; d++) {
+      ctx.fillStyle = dotColors[si];
+      ctx.beginPath();
+      ctx.arc(sx + 10 + (d % 20) * 9, dotY + 15 + Math.floor(d / 20) * 14, 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  });
+  ctx.fillStyle = '#888';
+  ctx.font = '12px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('10M items', stages[0].x + stageW / 2, dotY + 48);
+  ctx.fillText('1000', stages[1].x + stageW / 2, dotY + 48);
+  ctx.fillText('100', stages[2].x + stageW / 2, dotY + 48);
+  ctx.fillText('20', stages[3].x + stageW / 2, dotY + 48);
+
+  document.getElementById('genrecMetrics').textContent = 'Traditional: 3 models | ~10B embedding params | ~500ms latency | 99.6% params in embedding tables';
+}
+
+function drawGenerativeStep(step) {
+  const canvas = document.getElementById('genrecCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, W, H);
+
+  // Step indicator
+  const stepLabels = [
+    'Step 0: Items in Catalog',
+    'Step 1: Item Tokenization (Semantic IDs via RQ-VAE)',
+    'Step 2: User History as Token Sequence',
+    'Step 3: Next-Token Generation (Beam Search)',
+    'Step 4: Result - Single Model Replaces Pipeline'
+  ];
+  ctx.fillStyle = '#ff9ff3';
+  ctx.font = 'bold 18px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Generative Recommender (PLUM / OneRec)', W / 2, 30);
+
+  // Step tabs
+  for (let i = 0; i < 5; i++) {
+    const tx = 50 + i * 210;
+    ctx.fillStyle = i === step ? '#ff9ff3' : '#333';
+    ctx.fillRect(tx, 45, 200, 28);
+    ctx.fillStyle = i === step ? '#0d0d1a' : '#888';
+    ctx.font = i === step ? 'bold 12px monospace' : '12px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(stepLabels[i].substring(0, 28), tx + 100, 64);
+  }
+
+  if (step === 0) drawGenStep0(ctx, W, H);
+  else if (step === 1) drawGenStep1(ctx, W, H);
+  else if (step === 2) drawGenStep2(ctx, W, H);
+  else if (step === 3) drawGenStep3(ctx, W, H);
+  else if (step === 4) drawGenStep4(ctx, W, H);
+
+  document.getElementById('genrecMetrics').textContent = stepLabels[step] + ' | Click "Next Step" to advance';
+}
+
+function drawGenStep0(ctx, W, H) {
+  // Show items as colored rectangles (representing videos)
+  ctx.fillStyle = '#88ccff';
+  ctx.font = 'bold 15px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Item Catalog (Videos, Products, Articles...)', W / 2, 100);
+
+  const itemColors = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#e67e22', '#e84393',
+                       '#00cec9', '#6c5ce7', '#fd79a8', '#00b894', '#fdcb6e', '#74b9ff', '#a29bfe', '#55efc4'];
+  const itemNames = ['Action Movie', 'Cooking Show', 'Tech Review', 'Travel Vlog', 'Music Video', 'Comedy Skit',
+                      'Tutorial', 'News Clip', 'Sports', 'Documentary', 'Podcast', 'Animation', 'Drama', 'Sci-Fi', 'Horror', 'Romance'];
+  const cols = 8, rows = 2;
+  const itemW = 110, itemH = 65, gap = 15;
+  const startX = (W - cols * (itemW + gap)) / 2;
+  const startY = 130;
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const idx = r * cols + c;
+      const x = startX + c * (itemW + gap);
+      const y = startY + r * (itemH + gap);
+      // Item thumbnail placeholder
+      ctx.fillStyle = itemColors[idx];
+      ctx.fillRect(x, y, itemW, itemH);
+      ctx.strokeStyle = '#ffffff33';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x, y, itemW, itemH);
+      // Play icon
+      ctx.fillStyle = '#ffffffaa';
+      ctx.beginPath();
+      ctx.moveTo(x + itemW / 2 - 8, y + itemH / 2 - 10);
+      ctx.lineTo(x + itemW / 2 + 10, y + itemH / 2);
+      ctx.lineTo(x + itemW / 2 - 8, y + itemH / 2 + 10);
+      ctx.closePath();
+      ctx.fill();
+      // Name
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '10px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(itemNames[idx], x + itemW / 2, y + itemH + 12);
+    }
+  }
+
+  // Question
+  ctx.fillStyle = '#ffd93d';
+  ctx.font = 'bold 16px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('How do we turn these items into tokens an LLM can generate?', W / 2, 380);
+  ctx.fillStyle = '#88ccff';
+  ctx.font = '14px monospace';
+  ctx.fillText('Key idea: compress each item into a short sequence of discrete tokens', W / 2, 410);
+  ctx.fillText('using Residual Quantized Variational Autoencoder (RQ-VAE)', W / 2, 432);
+
+  // Arrow down
+  ctx.strokeStyle = '#ff9ff3';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(W / 2, 450);
+  ctx.lineTo(W / 2, 500);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(W / 2, 500);
+  ctx.lineTo(W / 2 - 8, 488);
+  ctx.moveTo(W / 2, 500);
+  ctx.lineTo(W / 2 + 8, 488);
+  ctx.stroke();
+
+  ctx.fillStyle = '#7fff7f';
+  ctx.font = 'bold 14px monospace';
+  ctx.fillText('Click "Next Step" to see Item Tokenization', W / 2, 530);
+}
+
+function drawGenStep1(ctx, W, H) {
+  // Item Tokenization via RQ-VAE
+  ctx.fillStyle = '#88ccff';
+  ctx.font = 'bold 15px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Item Tokenization: RQ-VAE compresses items into Semantic IDs', W / 2, 100);
+
+  // Show 3 example items going through encoder
+  const items = [
+    { name: 'Action Movie', color: '#e74c3c', tokens: [42, 817, 3] },
+    { name: 'Action Sequel', color: '#c0392b', tokens: [42, 817, 91] },
+    { name: 'Cooking Show', color: '#2ecc71', tokens: [108, 234, 56] }
+  ];
+
+  const rowH = 130;
+  items.forEach((item, i) => {
+    const y = 130 + i * rowH;
+
+    // Item thumbnail
+    ctx.fillStyle = item.color;
+    ctx.fillRect(60, y, 90, 55);
+    ctx.fillStyle = '#fff';
+    ctx.font = '11px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(item.name, 105, y + 75);
+
+    // Arrow to encoder
+    ctx.strokeStyle = '#ff9ff3';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(155, y + 28);
+    ctx.lineTo(220, y + 28);
+    ctx.stroke();
+
+    // Encoder box
+    ctx.fillStyle = '#1a3a5a';
+    ctx.fillRect(225, y, 120, 55);
+    ctx.strokeStyle = '#88ccff';
+    ctx.strokeRect(225, y, 120, 55);
+    ctx.fillStyle = '#88ccff';
+    ctx.font = 'bold 12px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('RQ-VAE', 285, y + 22);
+    ctx.fillText('Encoder', 285, y + 40);
+
+    // Arrow to codebooks
+    ctx.strokeStyle = '#ff9ff3';
+    ctx.beginPath();
+    ctx.moveTo(350, y + 28);
+    ctx.lineTo(420, y + 28);
+    ctx.stroke();
+
+    // Codebook lookups (3 levels)
+    const cbLabels = ['Level 1', 'Level 2', 'Level 3'];
+    const cbColors = ['#4a1a6a', '#3a2a7a', '#2a3a6a'];
+    for (let l = 0; l < 3; l++) {
+      const cx = 425 + l * 100;
+      ctx.fillStyle = cbColors[l];
+      ctx.fillRect(cx, y, 85, 55);
+      ctx.strokeStyle = '#a29bfe';
+      ctx.strokeRect(cx, y, 85, 55);
+      ctx.fillStyle = '#a29bfe';
+      ctx.font = '10px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(cbLabels[l], cx + 42, y + 18);
+      ctx.fillText('Codebook', cx + 42, y + 32);
+      ctx.fillStyle = '#ffd93d';
+      ctx.font = 'bold 14px monospace';
+      ctx.fillText('tok_' + item.tokens[l], cx + 42, y + 49);
+
+      // Arrow between codebooks
+      if (l < 2) {
+        ctx.strokeStyle = '#666';
+        ctx.beginPath();
+        ctx.moveTo(cx + 85, y + 28);
+        ctx.lineTo(cx + 100, y + 28);
+        ctx.stroke();
+      }
+    }
+
+    // Arrow to result
+    ctx.strokeStyle = '#ff9ff3';
+    ctx.beginPath();
+    ctx.moveTo(720, y + 28);
+    ctx.lineTo(770, y + 28);
+    ctx.stroke();
+
+    // Semantic ID result
+    ctx.fillStyle = '#1a4a2a';
+    ctx.fillRect(775, y, 270, 55);
+    ctx.strokeStyle = '#7fff7f';
+    ctx.strokeRect(775, y, 270, 55);
+    ctx.fillStyle = '#7fff7f';
+    ctx.font = 'bold 13px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('SID: [' + item.tokens.join(', ') + ']', 910, y + 35);
+  });
+
+  // Key insight at bottom
+  ctx.fillStyle = '#ffd93d';
+  ctx.font = 'bold 14px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Notice: "Action Movie" and "Action Sequel" share prefix [42, 817, ...]', W / 2, 530);
+  ctx.fillStyle = '#88ccff';
+  ctx.font = '13px monospace';
+  ctx.fillText('Similar items get similar token prefixes - like words sharing etymological roots!', W / 2, 555);
+  ctx.fillText('Hierarchy: genre (Level 1) -> subgenre (Level 2) -> specific item (Level 3)', W / 2, 577);
+}
+
+function drawGenStep2(ctx, W, H) {
+  // User history as token sequence
+  ctx.fillStyle = '#88ccff';
+  ctx.font = 'bold 15px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('User History Becomes a Token Sequence (Like a Sentence)', W / 2, 100);
+
+  // User icon
+  ctx.fillStyle = '#3498db';
+  ctx.beginPath();
+  ctx.arc(100, 170, 30, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 14px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('User', 100, 175);
+
+  // Watch history items
+  ctx.fillStyle = '#ddd';
+  ctx.font = '13px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('Watch History:', 160, 145);
+
+  const history = [
+    { name: 'Action Movie', color: '#e74c3c', sid: [42, 817, 3] },
+    { name: 'Action Sequel', color: '#c0392b', sid: [42, 817, 91] },
+    { name: 'Comedy Skit', color: '#f39c12', sid: [77, 301, 15] },
+    { name: 'Tech Review', color: '#3498db', sid: [108, 512, 44] }
+  ];
+
+  history.forEach((item, i) => {
+    const x = 160 + i * 200;
+    ctx.fillStyle = item.color;
+    ctx.fillRect(x, 160, 80, 45);
+    ctx.fillStyle = '#fff';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(item.name, x + 40, 220);
+    if (i < history.length - 1) {
+      ctx.strokeStyle = '#666';
+      ctx.beginPath();
+      ctx.moveTo(x + 85, 182);
+      ctx.lineTo(x + 195, 182);
+      ctx.stroke();
+    }
+  });
+
+  // Arrow down
+  ctx.strokeStyle = '#ff9ff3';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(W / 2, 240);
+  ctx.lineTo(W / 2, 285);
+  ctx.stroke();
+  ctx.fillStyle = '#ff9ff3';
+  ctx.beginPath();
+  ctx.moveTo(W / 2, 290);
+  ctx.lineTo(W / 2 - 8, 278);
+  ctx.lineTo(W / 2 + 8, 278);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = '#ffd93d';
+  ctx.font = 'bold 13px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Convert to Semantic ID token sequence:', W / 2, 310);
+
+  // Token sequence visualization
+  const tokenSeq = ['[CTX]', '42', '817', '3', '|', '42', '817', '91', '|', '77', '301', '15', '|', '108', '512', '44', '|', '[NEXT]'];
+  const tokenColors = ['#ff9ff3', '#e74c3c', '#e74c3c', '#e74c3c', '#555',
+                        '#c0392b', '#c0392b', '#c0392b', '#555',
+                        '#f39c12', '#f39c12', '#f39c12', '#555',
+                        '#3498db', '#3498db', '#3498db', '#555', '#7fff7f'];
+  const tokW = 52, tokH = 36, tokGap = 6;
+  const seqStartX = (W - tokenSeq.length * (tokW + tokGap)) / 2;
+  const seqY = 330;
+
+  tokenSeq.forEach((tok, i) => {
+    const x = seqStartX + i * (tokW + tokGap);
+    ctx.fillStyle = tok === '|' ? '#333' : '#1a2a3a';
+    ctx.fillRect(x, seqY, tokW, tokH);
+    ctx.strokeStyle = tokenColors[i];
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(x, seqY, tokW, tokH);
+    ctx.fillStyle = tokenColors[i];
+    ctx.font = tok === '[CTX]' || tok === '[NEXT]' ? 'bold 10px monospace' : '13px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(tok, x + tokW / 2, seqY + 23);
+  });
+
+  // Annotation
+  ctx.fillStyle = '#888';
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('context', seqStartX + tokW / 2, seqY + 52);
+  ctx.fillText('item 1 SID', seqStartX + 2.5 * (tokW + tokGap), seqY + 52);
+  ctx.fillText('item 2 SID', seqStartX + 6.5 * (tokW + tokGap), seqY + 52);
+  ctx.fillText('item 3 SID', seqStartX + 10.5 * (tokW + tokGap), seqY + 52);
+  ctx.fillText('item 4 SID', seqStartX + 14.5 * (tokW + tokGap), seqY + 52);
+  ctx.fillStyle = '#7fff7f';
+  ctx.fillText('predict!', seqStartX + 17 * (tokW + tokGap) + tokW / 2, seqY + 52);
+
+  // Analogy
+  ctx.fillStyle = '#ffd93d';
+  ctx.font = 'bold 14px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Just like language modeling:', W / 2, 430);
+
+  ctx.fillStyle = '#88ccff';
+  ctx.font = '13px monospace';
+  ctx.fillText('NLP:  "The cat sat on the ___"  -> predict next word', W / 2, 460);
+  ctx.fillStyle = '#7fff7f';
+  ctx.fillText('Rec:  [action][action][comedy][tech] ___  -> predict next item tokens', W / 2, 485);
+
+  ctx.fillStyle = '#ff9ff3';
+  ctx.font = '12px monospace';
+  ctx.fillText('The LLM learns item "grammar" - which items naturally follow which patterns', W / 2, 525);
+}
+
+function drawGenStep3(ctx, W, H) {
+  // Next-token generation with beam search
+  ctx.fillStyle = '#88ccff';
+  ctx.font = 'bold 15px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Autoregressive Generation: LLM Generates Next Item Tokens', W / 2, 100);
+
+  // Input sequence (condensed)
+  ctx.fillStyle = '#ddd';
+  ctx.font = '12px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('Input: [CTX] 42 817 3 | 42 817 91 | 77 301 15 | 108 512 44 | [NEXT]', 60, 130);
+
+  // LLM box
+  ctx.fillStyle = '#2a1a4a';
+  ctx.fillRect(W / 2 - 120, 150, 240, 60);
+  ctx.strokeStyle = '#a29bfe';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(W / 2 - 120, 150, 240, 60);
+  ctx.fillStyle = '#a29bfe';
+  ctx.font = 'bold 16px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Transformer LLM', W / 2, 178);
+  ctx.font = '11px monospace';
+  ctx.fillText('(autoregressive decoder)', W / 2, 196);
+
+  // Arrow down
+  ctx.strokeStyle = '#ff9ff3';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(W / 2, 215);
+  ctx.lineTo(W / 2, 245);
+  ctx.stroke();
+
+  // Beam search tree
+  ctx.fillStyle = '#ffd93d';
+  ctx.font = 'bold 14px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Beam Search (100 beams) - Generating 3 SID tokens:', W / 2, 265);
+
+  // Level 1: top token predictions
+  const level1 = [
+    { tok: 'tok_42', prob: 0.35, x: 200 },
+    { tok: 'tok_77', prob: 0.25, x: 420 },
+    { tok: 'tok_108', prob: 0.20, x: 640 },
+    { tok: 'tok_15', prob: 0.12, x: 860 }
+  ];
+
+  const levelY = [295, 385, 475];
+  const levelLabels = ['Level 1 (Genre)', 'Level 2 (Sub-genre)', 'Level 3 (Specific)'];
+
+  // Draw level labels
+  levelLabels.forEach((lbl, i) => {
+    ctx.fillStyle = '#666';
+    ctx.font = '11px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(lbl, 170, levelY[i] + 25);
+  });
+
+  // Level 1 nodes
+  level1.forEach((node) => {
+    // Probability bar
+    ctx.fillStyle = '#1a3a2a';
+    ctx.fillRect(node.x - 55, levelY[0], 110, 50);
+    ctx.fillStyle = '#7fff7f';
+    ctx.fillRect(node.x - 55, levelY[0], 110 * node.prob / 0.4, 8);
+    ctx.strokeStyle = '#7fff7f';
+    ctx.strokeRect(node.x - 55, levelY[0], 110, 50);
+    ctx.fillStyle = '#ffd93d';
+    ctx.font = 'bold 13px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(node.tok, node.x, levelY[0] + 30);
+    ctx.fillStyle = '#7fff7f';
+    ctx.font = '11px monospace';
+    ctx.fillText('p=' + node.prob.toFixed(2), node.x, levelY[0] + 46);
+  });
+
+  // Level 2: branches from top-2 beams
+  const level2 = [
+    { tok: 'tok_817', prob: 0.40, x: 150, parent: 200 },
+    { tok: 'tok_503', prob: 0.28, x: 290, parent: 200 },
+    { tok: 'tok_301', prob: 0.45, x: 420, parent: 420 },
+    { tok: 'tok_122', prob: 0.22, x: 560, parent: 420 }
+  ];
+
+  level2.forEach((node) => {
+    // Line from parent
+    ctx.strokeStyle = '#555';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(node.parent, levelY[0] + 50);
+    ctx.lineTo(node.x, levelY[1]);
+    ctx.stroke();
+
+    ctx.fillStyle = '#1a2a3a';
+    ctx.fillRect(node.x - 50, levelY[1], 100, 50);
+    ctx.fillStyle = '#88ccff';
+    ctx.fillRect(node.x - 50, levelY[1], 100 * node.prob / 0.5, 8);
+    ctx.strokeStyle = '#88ccff';
+    ctx.strokeRect(node.x - 50, levelY[1], 100, 50);
+    ctx.fillStyle = '#ffd93d';
+    ctx.font = 'bold 12px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(node.tok, node.x, levelY[1] + 30);
+    ctx.fillStyle = '#88ccff';
+    ctx.font = '11px monospace';
+    ctx.fillText('p=' + node.prob.toFixed(2), node.x, levelY[1] + 46);
+  });
+
+  // Level 3: final tokens
+  const level3 = [
+    { tok: 'tok_7', prob: 0.52, x: 150, parent: 150, fullSid: '[42, 817, 7]', item: 'Action Drama' },
+    { tok: 'tok_91', prob: 0.31, x: 290, parent: 290, fullSid: '[42, 503, 91]', item: 'Action Comedy' },
+    { tok: 'tok_88', prob: 0.48, x: 420, parent: 420, fullSid: '[77, 301, 88]', item: 'Standup Special' },
+    { tok: 'tok_3', prob: 0.25, x: 560, parent: 560, fullSid: '[77, 122, 3]', item: 'Sitcom Ep.5' }
+  ];
+
+  level3.forEach((node, i) => {
+    ctx.strokeStyle = '#555';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(node.parent, levelY[1] + 50);
+    ctx.lineTo(node.x, levelY[2]);
+    ctx.stroke();
+
+    const isTop = i === 0;
+    ctx.fillStyle = isTop ? '#2a3a1a' : '#1a2a2a';
+    ctx.fillRect(node.x - 55, levelY[2], 110, 60);
+    ctx.fillStyle = isTop ? '#7fff7f' : '#ff9ff3';
+    ctx.fillRect(node.x - 55, levelY[2], 110 * node.prob / 0.6, 8);
+    ctx.strokeStyle = isTop ? '#7fff7f' : '#ff9ff3';
+    ctx.lineWidth = isTop ? 3 : 1;
+    ctx.strokeRect(node.x - 55, levelY[2], 110, 60);
+    ctx.fillStyle = '#ffd93d';
+    ctx.font = 'bold 12px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(node.tok, node.x, levelY[2] + 28);
+    ctx.fillStyle = '#7fff7f';
+    ctx.font = '10px monospace';
+    ctx.fillText(node.fullSid, node.x, levelY[2] + 43);
+    ctx.fillStyle = '#ff9ff3';
+    ctx.fillText(node.item, node.x, levelY[2] + 56);
+  });
+
+  // Result annotation
+  ctx.fillStyle = '#7fff7f';
+  ctx.font = 'bold 14px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Top recommendation: "Action Drama" SID=[42, 817, 7]', W / 2 + 200, levelY[2] + 40);
+
+  // Note
+  ctx.fillStyle = '#888';
+  ctx.font = '12px monospace';
+  ctx.fillText('Beam search explores multiple paths; best beam = recommended item', W / 2 + 200, levelY[2] + 60);
+}
+
+function drawGenStep4(ctx, W, H) {
+  // Comparison: traditional vs generative
+  ctx.fillStyle = '#88ccff';
+  ctx.font = 'bold 15px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Result: Single Model Replaces Entire Pipeline', W / 2, 100);
+
+  const colW = 460, colH = 250;
+  const leftX = 50, rightX = W / 2 + 40;
+  const topY = 130;
+
+  // Traditional side
+  ctx.fillStyle = '#1a1a2a';
+  ctx.fillRect(leftX, topY, colW, colH);
+  ctx.strokeStyle = '#ff6b6b';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(leftX, topY, colW, colH);
+  ctx.fillStyle = '#ff6b6b';
+  ctx.font = 'bold 15px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Traditional Pipeline', leftX + colW / 2, topY + 25);
+
+  const tradLines = [
+    { label: 'Models:', value: '3 (retrieval + ranking + reranking)', color: '#ff9999' },
+    { label: 'Embedding table:', value: '10M items x 128d = ~5GB', color: '#ff9999' },
+    { label: 'Param allocation:', value: '99.6% in embeddings, 0.4% neural', color: '#ff9999' },
+    { label: 'Cold start:', value: 'New items need interaction data', color: '#ff9999' },
+    { label: 'Latency:', value: '~500ms (sequential stages)', color: '#ff9999' },
+    { label: 'Vocab coverage:', value: '1x baseline', color: '#ff9999' },
+    { label: 'Scaling:', value: 'Add items = grow embedding table', color: '#ff9999' }
+  ];
+
+  tradLines.forEach((line, i) => {
+    const y = topY + 50 + i * 28;
+    ctx.fillStyle = '#aaa';
+    ctx.font = '12px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(line.label, leftX + 15, y);
+    ctx.fillStyle = line.color;
+    ctx.fillText(line.value, leftX + 155, y);
+  });
+
+  // Cross out (X marks)
+  ctx.strokeStyle = '#ff6b6b44';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(leftX + 10, topY + 40);
+  ctx.lineTo(leftX + colW - 10, topY + colH - 10);
+  ctx.moveTo(leftX + colW - 10, topY + 40);
+  ctx.lineTo(leftX + 10, topY + colH - 10);
+  ctx.stroke();
+
+  // Generative side
+  ctx.fillStyle = '#1a2a1a';
+  ctx.fillRect(rightX, topY, colW, colH);
+  ctx.strokeStyle = '#7fff7f';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(rightX, topY, colW, colH);
+  ctx.fillStyle = '#7fff7f';
+  ctx.font = 'bold 15px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Generative (PLUM / OneRec)', rightX + colW / 2, topY + 25);
+
+  const genLines = [
+    { label: 'Models:', value: '1 unified LLM', color: '#7fff7f' },
+    { label: 'Embedding table:', value: 'NONE (Semantic ID tokens)', color: '#7fff7f' },
+    { label: 'Param allocation:', value: '90% neural, 10% token embeddings', color: '#7fff7f' },
+    { label: 'Cold start:', value: 'Content -> SID instantly', color: '#7fff7f' },
+    { label: 'Latency:', value: '~200ms (single forward pass)', color: '#7fff7f' },
+    { label: 'Vocab coverage:', value: '13x (PLUM YouTube result)', color: '#7fff7f' },
+    { label: 'Scaling:', value: 'Power-law: more compute = better', color: '#7fff7f' }
+  ];
+
+  genLines.forEach((line, i) => {
+    const y = topY + 50 + i * 28;
+    ctx.fillStyle = '#aaa';
+    ctx.font = '12px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(line.label, rightX + 15, y);
+    ctx.fillStyle = line.color;
+    ctx.fillText(line.value, rightX + 155, y);
+  });
+
+  // Check mark
+  ctx.fillStyle = '#7fff7f';
+  ctx.font = 'bold 60px monospace';
+  ctx.textAlign = 'center';
+  ctx.globalAlpha = 0.15;
+  ctx.fillText('OK', rightX + colW / 2, topY + colH / 2 + 30);
+  ctx.globalAlpha = 1;
+
+  // Production results
+  const resY = topY + colH + 30;
+  ctx.fillStyle = '#ffd93d';
+  ctx.font = 'bold 15px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Production Results', W / 2, resY);
+
+  // PLUM
+  ctx.fillStyle = '#1a2a3a';
+  ctx.fillRect(leftX, resY + 15, colW, 80);
+  ctx.strokeStyle = '#88ccff';
+  ctx.strokeRect(leftX, resY + 15, colW, 80);
+  ctx.fillStyle = '#88ccff';
+  ctx.font = 'bold 13px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('PLUM (YouTube / Google)', leftX + colW / 2, resY + 35);
+  ctx.font = '12px monospace';
+  ctx.fillStyle = '#7fff7f';
+  ctx.fillText('+4.96% CTR on Shorts | 13x vocab coverage', leftX + colW / 2, resY + 55);
+  ctx.fillStyle = '#ddd';
+  ctx.fillText('First embedding-table-free model in YouTube prod', leftX + colW / 2, resY + 73);
+
+  // OneRec
+  ctx.fillStyle = '#1a2a3a';
+  ctx.fillRect(rightX, resY + 15, colW, 80);
+  ctx.strokeStyle = '#88ccff';
+  ctx.strokeRect(rightX, resY + 15, colW, 80);
+  ctx.fillStyle = '#88ccff';
+  ctx.font = 'bold 13px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('OneRec (Kuaishou)', rightX + colW / 2, resY + 35);
+  ctx.font = '12px monospace';
+  ctx.fillStyle = '#7fff7f';
+  ctx.fillText('+0.54% engagement | 90% cost reduction', rightX + colW / 2, resY + 55);
+  ctx.fillStyle = '#ddd';
+  ctx.fillText('Serves 100s of millions daily | 10x FLOPs gain', rightX + colW / 2, resY + 73);
+
+  // Bottom summary
+  ctx.fillStyle = '#ff9ff3';
+  ctx.font = 'bold 14px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('The "ChatGPT moment" for RecSys: generate recommendations, don\'t just search for them', W / 2, resY + 120);
+
+  document.getElementById('genrecMetrics').textContent = 'PLUM: +4.96% CTR, 13x coverage | OneRec: +0.54% engagement, 90% cost reduction, 10x FLOPs';
+}
+
+// ============ GENERATIVE RETRIEVAL (SEARCH) ============
+let genSearchStep = 0;
+
+function resetGenSearch() {
+  genSearchStep = 0;
+  drawGenSearch();
+}
+
+function advanceGenSearchStep() {
+  const mode = document.getElementById('genSearchMode').value;
+  if (mode === 'traditional') {
+    drawGenSearch();
+    return;
+  }
+  genSearchStep = (genSearchStep + 1) % 5;
+  drawGenSearch();
+}
+
+function drawGenSearch() {
+  const mode = document.getElementById('genSearchMode').value;
+  if (mode === 'traditional') {
+    drawTraditionalSearch();
+  } else {
+    drawGenSearchStep(genSearchStep);
+  }
+}
+
+function drawTraditionalSearch() {
+  const canvas = document.getElementById('genSearchCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.fillStyle = '#ff9ff3';
+  ctx.font = 'bold 18px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Traditional Search Pipeline', W / 2, 35);
+
+  // Pipeline stages
+  const stages = [
+    { label: 'Query', sub: 'User input', x: 30, color: '#3a5a8a', w: 130 },
+    { label: 'Embedding', sub: 'Bi-Encoder', x: 195, color: '#3a6b8a', w: 140 },
+    { label: 'ANN Index', sub: 'FAISS / ScaNN', x: 370, color: '#4a3a8a', w: 155 },
+    { label: 'Top-K Docs', sub: '~100 candidates', x: 560, color: '#6a3a6a', w: 155 },
+    { label: 'Re-ranker', sub: 'Cross-Encoder', x: 750, color: '#8a5a3a', w: 145 },
+    { label: 'Results', sub: 'Top 10', x: 930, color: '#3a8a5a', w: 130 }
+  ];
+
+  const stageH = 90, stageY = 65;
+  stages.forEach((s, i) => {
+    ctx.fillStyle = s.color;
+    ctx.strokeStyle = '#ff9ff3';
+    ctx.lineWidth = 2;
+    ctx.fillRect(s.x, stageY, s.w, stageH);
+    ctx.strokeRect(s.x, stageY, s.w, stageH);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 14px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(s.label, s.x + s.w / 2, stageY + 35);
+    ctx.fillStyle = '#ffd93d';
+    ctx.font = '12px monospace';
+    ctx.fillText(s.sub, s.x + s.w / 2, stageY + 55);
+
+    // Arrow
+    if (i < stages.length - 1) {
+      const ax = s.x + s.w;
+      const bx = stages[i + 1].x;
+      ctx.strokeStyle = '#ff9ff3';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(ax, stageY + stageH / 2);
+      ctx.lineTo(bx, stageY + stageH / 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(bx, stageY + stageH / 2);
+      ctx.lineTo(bx - 8, stageY + stageH / 2 - 5);
+      ctx.lineTo(bx - 8, stageY + stageH / 2 + 5);
+      ctx.closePath();
+      ctx.fillStyle = '#ff9ff3';
+      ctx.fill();
+    }
+  });
+
+  // Latency labels
+  const latencies = [
+    { label: '~5ms', x: 95, y: stageY + stageH + 18 },
+    { label: '~10ms', x: 265, y: stageY + stageH + 18 },
+    { label: '~20ms', x: 447, y: stageY + stageH + 18 },
+    { label: '~5ms', x: 637, y: stageY + stageH + 18 },
+    { label: '~100ms', x: 822, y: stageY + stageH + 18 },
+    { label: '~0ms', x: 995, y: stageY + stageH + 18 }
+  ];
+  ctx.font = '11px monospace';
+  latencies.forEach(l => {
+    ctx.fillStyle = '#ffd93d';
+    ctx.textAlign = 'center';
+    ctx.fillText(l.label, l.x, l.y);
+  });
+  ctx.fillStyle = '#888';
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Total latency: ~140ms (dominated by cross-encoder re-ranking)', W / 2, stageY + stageH + 36);
+
+  // External index infrastructure box
+  const idxY = 210;
+  ctx.fillStyle = '#1a1a2a';
+  ctx.fillRect(60, idxY, W - 120, 120);
+  ctx.strokeStyle = '#ff6b6b';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(60, idxY, W - 120, 120);
+
+  ctx.fillStyle = '#ff6b6b';
+  ctx.font = 'bold 14px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('External Infrastructure Required', W / 2, idxY + 22);
+
+  const infraItems = [
+    { icon: 'FAISS Index', desc: 'Pre-built vector index of all document embeddings (~billions of vectors)', x: 150 },
+    { icon: 'Embedding Model', desc: 'Bi-encoder to embed queries and documents into same vector space', x: 550 },
+    { icon: 'Re-ranker Model', desc: 'Cross-encoder scores query-doc pairs (expensive but accurate)', x: 900 }
+  ];
+  infraItems.forEach(item => {
+    ctx.fillStyle = '#88ccff';
+    ctx.font = 'bold 12px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(item.icon, item.x, idxY + 50);
+    ctx.fillStyle = '#aaa';
+    ctx.font = '11px monospace';
+    // Word-wrap the description
+    const words = item.desc.split(' ');
+    let line = '';
+    let lineY = idxY + 68;
+    words.forEach(w => {
+      const test = line + w + ' ';
+      if (test.length > 45) {
+        ctx.fillText(line.trim(), item.x, lineY);
+        line = w + ' ';
+        lineY += 15;
+      } else {
+        line = test;
+      }
+    });
+    ctx.fillText(line.trim(), item.x, lineY);
+  });
+
+  // Problems section
+  const probY = 350;
+  ctx.fillStyle = '#ff6b6b';
+  ctx.font = 'bold 15px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('Challenges with Traditional Search:', 60, probY);
+
+  const problems = [
+    'Two separate models: bi-encoder for retrieval + cross-encoder for re-ranking',
+    'External ANN index must be built, stored, and updated (FAISS / ScaNN)',
+    'Index update lag: new documents not searchable until re-indexed',
+    'No end-to-end optimization: retrieval and ranking trained separately',
+    'Embedding collapse: bi-encoders can miss nuanced semantic matches',
+    'Memory: storing billions of 768d vectors = hundreds of GB'
+  ];
+  ctx.font = '13px monospace';
+  problems.forEach((p, i) => {
+    ctx.fillStyle = '#ff9999';
+    ctx.fillText('  x  ' + p, 70, probY + 26 + i * 22);
+  });
+
+  // Visual: document dots in the index
+  const dotY = 500;
+  ctx.fillStyle = '#333';
+  ctx.fillRect(60, dotY, W - 120, 40);
+  ctx.fillStyle = '#888';
+  ctx.font = '12px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Document corpus: millions to billions of pre-indexed vectors', W / 2, dotY + 15);
+  // Scattered dots representing documents
+  for (let d = 0; d < 80; d++) {
+    ctx.fillStyle = ['#3a6b8a', '#4a3a8a', '#6a3a6a', '#3a8a5a'][d % 4];
+    ctx.beginPath();
+    ctx.arc(80 + d * 12, dotY + 30, 3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  document.getElementById('genSearchMetrics').textContent = 'Traditional: 2 models (bi-encoder + cross-encoder) | External FAISS index | ~140ms latency | Scales to billions';
+}
+
+function drawGenSearchStep(step) {
+  const canvas = document.getElementById('genSearchCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, W, H);
+
+  // Step indicator
+  const stepLabels = [
+    'Step 0: The Problem',
+    'Step 1: Document Tokenization',
+    'Step 2: Indexing = Training',
+    'Step 3: Query -> Generate DocID',
+    'Step 4: Comparison'
+  ];
+  ctx.fillStyle = '#ff9ff3';
+  ctx.font = 'bold 18px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Generative Retrieval (DSI / GENRE)', W / 2, 30);
+
+  // Step tabs
+  for (let i = 0; i < 5; i++) {
+    const tx = 50 + i * 210;
+    ctx.fillStyle = i === step ? '#ff9ff3' : '#333';
+    ctx.fillRect(tx, 45, 200, 28);
+    ctx.fillStyle = i === step ? '#0d0d1a' : '#888';
+    ctx.font = i === step ? 'bold 12px monospace' : '12px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(stepLabels[i], tx + 100, 64);
+  }
+
+  if (step === 0) drawGSStep0(ctx, W, H);
+  else if (step === 1) drawGSStep1(ctx, W, H);
+  else if (step === 2) drawGSStep2(ctx, W, H);
+  else if (step === 3) drawGSStep3(ctx, W, H);
+  else if (step === 4) drawGSStep4(ctx, W, H);
+
+  document.getElementById('genSearchMetrics').textContent = stepLabels[step] + ' | Click "Next Step" to advance';
+}
+
+function drawGSStep0(ctx, W, H) {
+  // The Problem: corpus that needs indexing
+  ctx.fillStyle = '#88ccff';
+  ctx.font = 'bold 15px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('The Problem: Every Document Needs a Separate Index', W / 2, 100);
+
+  // Show a document corpus
+  const docColors = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c',
+                     '#e67e22', '#e84393', '#00cec9', '#6c5ce7', '#fd79a8', '#00b894'];
+  const docNames = ['NYC Pizza Guide', 'ML Tutorial', 'Travel Tips', 'Python Docs',
+                    'Health Article', 'Sports News', 'Cooking Recipe', 'Tech Review',
+                    'History Essay', 'Music Theory', 'Finance 101', 'Art Gallery'];
+  const cols = 6, rows = 2;
+  const docW = 140, docH = 50, gap = 15;
+  const startX = (W - cols * (docW + gap)) / 2;
+  const startY = 120;
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const idx = r * cols + c;
+      const x = startX + c * (docW + gap);
+      const y = startY + r * (docH + gap + 12);
+      ctx.fillStyle = docColors[idx];
+      ctx.globalAlpha = 0.7;
+      ctx.fillRect(x, y, docW, docH);
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = '#ffffff33';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x, y, docW, docH);
+      // Doc icon
+      ctx.fillStyle = '#ffffffcc';
+      ctx.fillRect(x + 8, y + 8, 18, 22);
+      ctx.fillStyle = docColors[idx];
+      ctx.fillRect(x + 10, y + 14, 14, 2);
+      ctx.fillRect(x + 10, y + 19, 14, 2);
+      ctx.fillRect(x + 10, y + 24, 10, 2);
+      // Name
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '10px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(docNames[idx], x + docW / 2, y + docH + 11);
+    }
+  }
+
+  // Traditional approach arrow
+  const arrY = 310;
+  ctx.strokeStyle = '#ff6b6b';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([6, 4]);
+  ctx.beginPath();
+  ctx.moveTo(W / 2, arrY - 10);
+  ctx.lineTo(W / 2, arrY + 30);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Traditional approach box
+  ctx.fillStyle = '#1a1a2a';
+  ctx.fillRect(150, arrY + 35, W - 300, 100);
+  ctx.strokeStyle = '#ff6b6b';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(150, arrY + 35, W - 300, 100);
+
+  ctx.fillStyle = '#ff6b6b';
+  ctx.font = 'bold 14px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Traditional Approach: Build & Maintain External Index', W / 2, arrY + 58);
+
+  ctx.fillStyle = '#ff9999';
+  ctx.font = '12px monospace';
+  ctx.fillText('1. Encode every document with embedding model', W / 2, arrY + 82);
+  ctx.fillText('2. Store all vectors in FAISS/ScaNN index (hundreds of GB)', W / 2, arrY + 100);
+  ctx.fillText('3. Re-index when corpus changes (expensive!)', W / 2, arrY + 118);
+
+  // Question
+  ctx.fillStyle = '#ffd93d';
+  ctx.font = 'bold 16px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('What if the model could just MEMORIZE where every document is?', W / 2, 475);
+  ctx.fillStyle = '#88ccff';
+  ctx.font = '14px monospace';
+  ctx.fillText('Key idea: replace the external index with model parameters', W / 2, 500);
+
+  ctx.fillStyle = '#7fff7f';
+  ctx.font = 'bold 14px monospace';
+  ctx.fillText('Click "Next Step" to see Document Tokenization', W / 2, 535);
+}
+
+function drawGSStep1(ctx, W, H) {
+  // Document Tokenization via Semantic IDs
+  ctx.fillStyle = '#88ccff';
+  ctx.font = 'bold 15px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Document Tokenization: Content -> Encoder -> Semantic ID', W / 2, 100);
+
+  // Show 3 example documents going through encoder to Semantic IDs
+  const docs = [
+    { name: 'NYC Pizza Guide', color: '#e74c3c', tokens: [12, 45, 7], category: 'Food/NYC' },
+    { name: 'NYC Pasta Review', color: '#c0392b', tokens: [12, 45, 82], category: 'Food/NYC' },
+    { name: 'ML Tutorial', color: '#3498db', tokens: [77, 201, 33], category: 'Tech/ML' }
+  ];
+
+  const rowH = 120;
+  docs.forEach((doc, i) => {
+    const y = 125 + i * rowH;
+
+    // Document box
+    ctx.fillStyle = doc.color;
+    ctx.globalAlpha = 0.7;
+    ctx.fillRect(40, y, 120, 50);
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = '#ffffff33';
+    ctx.strokeRect(40, y, 120, 50);
+    ctx.fillStyle = '#fff';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(doc.name, 100, y + 30);
+    ctx.fillStyle = '#ffd93d';
+    ctx.font = '9px monospace';
+    ctx.fillText('(' + doc.category + ')', 100, y + 44);
+
+    // Arrow to encoder
+    ctx.strokeStyle = '#ff9ff3';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(165, y + 25);
+    ctx.lineTo(220, y + 25);
+    ctx.stroke();
+
+    // Encoder box
+    ctx.fillStyle = '#1a3a5a';
+    ctx.fillRect(225, y, 130, 50);
+    ctx.strokeStyle = '#88ccff';
+    ctx.strokeRect(225, y, 130, 50);
+    ctx.fillStyle = '#88ccff';
+    ctx.font = 'bold 12px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('Encoder', 290, y + 20);
+    ctx.font = '10px monospace';
+    ctx.fillText('(hierarchical', 290, y + 34);
+    ctx.fillText('clustering/RQ-VAE)', 290, y + 46);
+
+    // Arrow to codebooks
+    ctx.strokeStyle = '#ff9ff3';
+    ctx.beginPath();
+    ctx.moveTo(360, y + 25);
+    ctx.lineTo(410, y + 25);
+    ctx.stroke();
+
+    // Codebook lookups (3 levels)
+    const cbLabels = ['Level 1', 'Level 2', 'Level 3'];
+    const cbColors = ['#4a1a6a', '#3a2a7a', '#2a3a6a'];
+    for (let l = 0; l < 3; l++) {
+      const cx = 415 + l * 90;
+      ctx.fillStyle = cbColors[l];
+      ctx.fillRect(cx, y, 78, 50);
+      ctx.strokeStyle = '#a29bfe';
+      ctx.strokeRect(cx, y, 78, 50);
+      ctx.fillStyle = '#a29bfe';
+      ctx.font = '9px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(cbLabels[l], cx + 39, y + 16);
+      ctx.fillStyle = '#ffd93d';
+      ctx.font = 'bold 13px monospace';
+      ctx.fillText('tok_' + doc.tokens[l], cx + 39, y + 38);
+
+      if (l < 2) {
+        ctx.strokeStyle = '#666';
+        ctx.beginPath();
+        ctx.moveTo(cx + 78, y + 25);
+        ctx.lineTo(cx + 90, y + 25);
+        ctx.stroke();
+      }
+    }
+
+    // Arrow to result
+    ctx.strokeStyle = '#ff9ff3';
+    ctx.beginPath();
+    ctx.moveTo(685, y + 25);
+    ctx.lineTo(720, y + 25);
+    ctx.stroke();
+
+    // Semantic ID result
+    ctx.fillStyle = '#1a4a2a';
+    ctx.fillRect(725, y - 2, 330, 54);
+    ctx.strokeStyle = '#7fff7f';
+    ctx.strokeRect(725, y - 2, 330, 54);
+    ctx.fillStyle = '#7fff7f';
+    ctx.font = 'bold 13px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('SID: [' + doc.tokens.join(', ') + ']', 890, y + 20);
+    ctx.fillStyle = '#ddd';
+    ctx.font = '10px monospace';
+    ctx.fillText(doc.name + ' -> "' + doc.tokens.map(t => 'tok_' + t).join(', ') + '"', 890, y + 40);
+  });
+
+  // Highlight shared prefixes
+  ctx.fillStyle = '#ffd93d';
+  ctx.font = 'bold 14px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Notice: NYC Pizza Guide and NYC Pasta Review share prefix [12, 45, ...]', W / 2, 490);
+  ctx.fillStyle = '#88ccff';
+  ctx.font = '13px monospace';
+  ctx.fillText('Similar documents share Semantic ID prefixes (like similar URLs share domain paths)', W / 2, 515);
+  ctx.fillStyle = '#7fff7f';
+  ctx.font = 'bold 12px monospace';
+  ctx.fillText('Same technique as item tokenization in Generative Recommenders!', W / 2, 540);
+}
+
+function drawGSStep2(ctx, W, H) {
+  // Indexing = Training
+  ctx.fillStyle = '#88ccff';
+  ctx.font = 'bold 15px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Indexing = Training: The Model Memorizes the Corpus', W / 2, 100);
+
+  // Left side: Traditional indexing
+  const leftX = 40, rightX = W / 2 + 30;
+  const colW = W / 2 - 60;
+  const topY = 120;
+
+  // Traditional side
+  ctx.fillStyle = '#1a1a2a';
+  ctx.fillRect(leftX, topY, colW, 200);
+  ctx.strokeStyle = '#ff6b6b';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(leftX, topY, colW, 200);
+  ctx.fillStyle = '#ff6b6b';
+  ctx.font = 'bold 14px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Traditional: Build External Index', leftX + colW / 2, topY + 22);
+
+  // FAISS index illustration
+  ctx.fillStyle = '#2a2a4a';
+  ctx.fillRect(leftX + 30, topY + 40, colW - 60, 80);
+  ctx.strokeStyle = '#666';
+  ctx.strokeRect(leftX + 30, topY + 40, colW - 60, 80);
+  ctx.fillStyle = '#888';
+  ctx.font = '12px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('FAISS / ScaNN Index', leftX + colW / 2, topY + 60);
+  ctx.fillText('Billions of 768d vectors', leftX + colW / 2, topY + 78);
+  ctx.fillText('Stored on disk/memory', leftX + colW / 2, topY + 96);
+
+  // Dots in the index
+  for (let d = 0; d < 40; d++) {
+    ctx.fillStyle = '#4a4a6a';
+    ctx.beginPath();
+    ctx.arc(leftX + 50 + (d % 20) * 22, topY + 112 + Math.floor(d / 20) * 12, 3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.fillStyle = '#ff9999';
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Separate infrastructure to build, store, update', leftX + colW / 2, topY + 150);
+  ctx.fillText('Must re-index when documents change', leftX + colW / 2, topY + 168);
+  ctx.fillText('Hundreds of GB for large corpora', leftX + colW / 2, topY + 186);
+
+  // Generative side
+  ctx.fillStyle = '#1a2a1a';
+  ctx.fillRect(rightX, topY, colW, 200);
+  ctx.strokeStyle = '#7fff7f';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(rightX, topY, colW, 200);
+  ctx.fillStyle = '#7fff7f';
+  ctx.font = 'bold 14px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('DSI: Train Model to Memorize', rightX + colW / 2, topY + 22);
+
+  // Transformer box
+  ctx.fillStyle = '#2a1a4a';
+  ctx.fillRect(rightX + 30, topY + 40, colW - 60, 80);
+  ctx.strokeStyle = '#a29bfe';
+  ctx.strokeRect(rightX + 30, topY + 40, colW - 60, 80);
+  ctx.fillStyle = '#a29bfe';
+  ctx.font = 'bold 14px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Transformer', rightX + colW / 2, topY + 60);
+  ctx.font = '12px monospace';
+  ctx.fillText('doc_text -> Semantic ID', rightX + colW / 2, topY + 78);
+  ctx.fillStyle = '#ffd93d';
+  ctx.fillText('All knowledge in parameters!', rightX + colW / 2, topY + 96);
+
+  // Training arrows flowing in
+  ctx.strokeStyle = '#7fff7f';
+  ctx.lineWidth = 1;
+  for (let d = 0; d < 5; d++) {
+    const ax = rightX + 60 + d * 80;
+    ctx.beginPath();
+    ctx.moveTo(ax, topY + 126);
+    ctx.lineTo(ax, topY + 140);
+    ctx.stroke();
+    ctx.fillStyle = '#7fff7f';
+    ctx.beginPath();
+    ctx.moveTo(ax, topY + 140);
+    ctx.lineTo(ax - 4, topY + 134);
+    ctx.lineTo(ax + 4, topY + 134);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  ctx.fillStyle = '#7fff7f';
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('No external index needed!', rightX + colW / 2, topY + 158);
+  ctx.fillText('Model parameters ARE the index', rightX + colW / 2, topY + 176);
+  ctx.fillText('New docs = fine-tune or retrain', rightX + colW / 2, topY + 194);
+
+  // Training example below
+  const exY = 345;
+  ctx.fillStyle = '#ffd93d';
+  ctx.font = 'bold 14px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Training Examples (DSI Indexing Phase):', W / 2, exY);
+
+  const examples = [
+    { input: '"Best pizza places in New York City..."', output: '[12, 45, 7]', doc: 'NYC Pizza Guide' },
+    { input: '"How to make fresh pasta at home..."', output: '[12, 45, 82]', doc: 'NYC Pasta Review' },
+    { input: '"Introduction to neural networks..."', output: '[77, 201, 33]', doc: 'ML Tutorial' }
+  ];
+
+  examples.forEach((ex, i) => {
+    const ey = exY + 20 + i * 50;
+    ctx.fillStyle = '#1a2a3a';
+    ctx.fillRect(60, ey, W - 120, 42);
+    ctx.strokeStyle = '#3a4a6a';
+    ctx.strokeRect(60, ey, W - 120, 42);
+
+    ctx.fillStyle = '#88ccff';
+    ctx.font = '12px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('Input: ' + ex.input, 75, ey + 16);
+    ctx.fillStyle = '#7fff7f';
+    ctx.fillText('Target: ' + ex.output, 75, ey + 34);
+    ctx.fillStyle = '#ff9ff3';
+    ctx.textAlign = 'right';
+    ctx.fillText(ex.doc, W - 75, ey + 25);
+  });
+
+  // DSI-QG note
+  ctx.fillStyle = '#888';
+  ctx.font = '12px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('DSI-QG: Also trains on synthetic queries to bridge doc/query distribution gap', W / 2, 530);
+}
+
+function drawGSStep3(ctx, W, H) {
+  // Query -> Generate DocID
+  ctx.fillStyle = '#88ccff';
+  ctx.font = 'bold 15px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Retrieval: Query -> Autoregressive DocID Generation', W / 2, 100);
+
+  // Input query
+  ctx.fillStyle = '#1a3a5a';
+  ctx.fillRect(60, 120, W - 120, 40);
+  ctx.strokeStyle = '#88ccff';
+  ctx.strokeRect(60, 120, W - 120, 40);
+  ctx.fillStyle = '#ffd93d';
+  ctx.font = 'bold 14px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('Query: "best pizza restaurants in NYC"', 80, 145);
+
+  // Arrow down
+  ctx.strokeStyle = '#ff9ff3';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(W / 2, 165);
+  ctx.lineTo(W / 2, 190);
+  ctx.stroke();
+
+  // Transformer box
+  ctx.fillStyle = '#2a1a4a';
+  ctx.fillRect(W / 2 - 130, 195, 260, 55);
+  ctx.strokeStyle = '#a29bfe';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(W / 2 - 130, 195, 260, 55);
+  ctx.fillStyle = '#a29bfe';
+  ctx.font = 'bold 16px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Transformer (DSI)', W / 2, 220);
+  ctx.font = '11px monospace';
+  ctx.fillText('(generates docid tokens)', W / 2, 238);
+
+  // Arrow down
+  ctx.strokeStyle = '#ff9ff3';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(W / 2, 255);
+  ctx.lineTo(W / 2, 280);
+  ctx.stroke();
+
+  // Beam search tree
+  ctx.fillStyle = '#ffd93d';
+  ctx.font = 'bold 14px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Beam Search (10 beams) - Generating 3-level Semantic ID:', W / 2, 298);
+
+  // Level 1
+  const level1 = [
+    { tok: 'tok_12', prob: 0.42, x: 180 },
+    { tok: 'tok_77', prob: 0.23, x: 400 },
+    { tok: 'tok_55', prob: 0.15, x: 620 },
+    { tok: 'tok_3', prob: 0.08, x: 840 }
+  ];
+
+  const levelY = [315, 395, 460];
+  const levelLabels = ['Level 1 (Topic)', 'Level 2 (Subtopic)', 'Level 3 (Specific)'];
+
+  levelLabels.forEach((lbl, i) => {
+    ctx.fillStyle = '#666';
+    ctx.font = '11px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(lbl, 145, levelY[i] + 22);
+  });
+
+  // Level 1 nodes
+  level1.forEach((node) => {
+    ctx.fillStyle = '#1a3a2a';
+    ctx.fillRect(node.x - 55, levelY[0], 110, 45);
+    ctx.fillStyle = '#7fff7f';
+    ctx.fillRect(node.x - 55, levelY[0], 110 * node.prob / 0.5, 7);
+    ctx.strokeStyle = '#7fff7f';
+    ctx.strokeRect(node.x - 55, levelY[0], 110, 45);
+    ctx.fillStyle = '#ffd93d';
+    ctx.font = 'bold 13px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(node.tok, node.x, levelY[0] + 26);
+    ctx.fillStyle = '#7fff7f';
+    ctx.font = '11px monospace';
+    ctx.fillText('p=' + node.prob.toFixed(2), node.x, levelY[0] + 41);
+  });
+
+  // Level 2
+  const level2 = [
+    { tok: 'tok_45', prob: 0.55, x: 130, parent: 180 },
+    { tok: 'tok_91', prob: 0.20, x: 270, parent: 180 },
+    { tok: 'tok_201', prob: 0.38, x: 440, parent: 400 },
+    { tok: 'tok_88', prob: 0.15, x: 580, parent: 400 }
+  ];
+
+  level2.forEach((node) => {
+    ctx.strokeStyle = '#555';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(node.parent, levelY[0] + 45);
+    ctx.lineTo(node.x, levelY[1]);
+    ctx.stroke();
+
+    ctx.fillStyle = '#1a2a3a';
+    ctx.fillRect(node.x - 50, levelY[1], 100, 42);
+    ctx.fillStyle = '#88ccff';
+    ctx.fillRect(node.x - 50, levelY[1], 100 * node.prob / 0.6, 7);
+    ctx.strokeStyle = '#88ccff';
+    ctx.strokeRect(node.x - 50, levelY[1], 100, 42);
+    ctx.fillStyle = '#ffd93d';
+    ctx.font = 'bold 12px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(node.tok, node.x, levelY[1] + 25);
+    ctx.fillStyle = '#88ccff';
+    ctx.font = '11px monospace';
+    ctx.fillText('p=' + node.prob.toFixed(2), node.x, levelY[1] + 39);
+  });
+
+  // Level 3
+  const level3 = [
+    { tok: 'tok_7', prob: 0.62, x: 130, parent: 130, fullSid: '[12, 45, 7]', doc: 'NYC Pizza Guide' },
+    { tok: 'tok_82', prob: 0.28, x: 270, parent: 270, fullSid: '[12, 91, 82]', doc: 'NYC Food Blog' },
+    { tok: 'tok_33', prob: 0.35, x: 440, parent: 440, fullSid: '[77, 201, 33]', doc: 'ML Tutorial' },
+    { tok: 'tok_5', prob: 0.12, x: 580, parent: 580, fullSid: '[77, 88, 5]', doc: 'CS Textbook' }
+  ];
+
+  level3.forEach((node, i) => {
+    ctx.strokeStyle = '#555';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(node.parent, levelY[1] + 42);
+    ctx.lineTo(node.x, levelY[2]);
+    ctx.stroke();
+
+    const isTop = i === 0;
+    ctx.fillStyle = isTop ? '#2a3a1a' : '#1a2a2a';
+    ctx.fillRect(node.x - 60, levelY[2], 120, 55);
+    ctx.fillStyle = isTop ? '#7fff7f' : '#ff9ff3';
+    ctx.fillRect(node.x - 60, levelY[2], 120 * node.prob / 0.7, 7);
+    ctx.strokeStyle = isTop ? '#7fff7f' : '#ff9ff3';
+    ctx.lineWidth = isTop ? 3 : 1;
+    ctx.strokeRect(node.x - 60, levelY[2], 120, 55);
+    ctx.fillStyle = '#ffd93d';
+    ctx.font = 'bold 11px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(node.tok, node.x, levelY[2] + 22);
+    ctx.fillStyle = '#7fff7f';
+    ctx.font = '10px monospace';
+    ctx.fillText(node.fullSid, node.x, levelY[2] + 36);
+    ctx.fillStyle = '#ff9ff3';
+    ctx.fillText(node.doc, node.x, levelY[2] + 50);
+  });
+
+  // Result annotation
+  ctx.fillStyle = '#7fff7f';
+  ctx.font = 'bold 14px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Top result: "NYC Pizza Guide" SID=[12, 45, 7]', W / 2 + 220, levelY[2] + 28);
+
+  ctx.fillStyle = '#888';
+  ctx.font = '12px monospace';
+  ctx.fillText('No index lookup! Model generated the doc ID directly.', W / 2 + 220, levelY[2] + 48);
+
+  // Bottom note
+  ctx.fillStyle = '#ff9ff3';
+  ctx.font = '12px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('GENRE variant: generates entity names character by character (e.g., "N","Y","C"," ","P","i","z","z","a"...)', W / 2, 540);
+}
+
+function drawGSStep4(ctx, W, H) {
+  // Comparison: traditional search vs generative retrieval
+  ctx.fillStyle = '#88ccff';
+  ctx.font = 'bold 15px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Comparison: Traditional Search vs Generative Retrieval', W / 2, 100);
+
+  const colW = 480, colH = 220;
+  const leftX = 30, rightX = W / 2 + 30;
+  const topY = 120;
+
+  // Traditional side
+  ctx.fillStyle = '#1a1a2a';
+  ctx.fillRect(leftX, topY, colW, colH);
+  ctx.strokeStyle = '#ff6b6b';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(leftX, topY, colW, colH);
+  ctx.fillStyle = '#ff6b6b';
+  ctx.font = 'bold 14px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Traditional Search', leftX + colW / 2, topY + 22);
+
+  const tradLines = [
+    { label: 'Models:', value: '2 (bi-encoder + cross-encoder)', color: '#ff9999' },
+    { label: 'External index:', value: 'FAISS/ScaNN (hundreds of GB)', color: '#ff9999' },
+    { label: 'Scalability:', value: 'Billions of documents (proven)', color: '#7fff7f' },
+    { label: 'Index updates:', value: 'Must re-index (batch process)', color: '#ff9999' },
+    { label: 'Cold start:', value: 'Embed new doc, add to index', color: '#ffd93d' },
+    { label: 'Latency:', value: '~140ms (retrieve + rerank)', color: '#ff9999' },
+    { label: 'Optimization:', value: 'Separate (retrieval != ranking)', color: '#ff9999' }
+  ];
+
+  tradLines.forEach((line, i) => {
+    const y = topY + 42 + i * 25;
+    ctx.fillStyle = '#aaa';
+    ctx.font = '12px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(line.label, leftX + 12, y);
+    ctx.fillStyle = line.color;
+    ctx.fillText(line.value, leftX + 145, y);
+  });
+
+  // Generative side
+  ctx.fillStyle = '#1a2a1a';
+  ctx.fillRect(rightX, topY, colW, colH);
+  ctx.strokeStyle = '#7fff7f';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(rightX, topY, colW, colH);
+  ctx.fillStyle = '#7fff7f';
+  ctx.font = 'bold 14px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Generative Retrieval (DSI/GENRE)', rightX + colW / 2, topY + 22);
+
+  const genLines = [
+    { label: 'Models:', value: '1 single Transformer', color: '#7fff7f' },
+    { label: 'External index:', value: 'NONE (model IS the index)', color: '#7fff7f' },
+    { label: 'Scalability:', value: '~Millions (still scaling up)', color: '#ffd93d' },
+    { label: 'Index updates:', value: 'Fine-tune / retrain model', color: '#ffd93d' },
+    { label: 'Cold start:', value: 'Content -> SID instantly', color: '#7fff7f' },
+    { label: 'Latency:', value: '~50ms (single pass generation)', color: '#7fff7f' },
+    { label: 'Optimization:', value: 'End-to-end (unified objective)', color: '#7fff7f' }
+  ];
+
+  genLines.forEach((line, i) => {
+    const y = topY + 42 + i * 25;
+    ctx.fillStyle = '#aaa';
+    ctx.font = '12px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(line.label, rightX + 12, y);
+    ctx.fillStyle = line.color;
+    ctx.fillText(line.value, rightX + 145, y);
+  });
+
+  // Trade-offs section
+  const tradeY = topY + colH + 20;
+  ctx.fillStyle = '#ffd93d';
+  ctx.font = 'bold 14px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Key Trade-offs', W / 2, tradeY);
+
+  const tradeoffs = [
+    { label: 'Scalability', trad: 'Billions (FAISS proven)', gen: 'Millions (model capacity limit)', winner: 'trad' },
+    { label: 'Simplicity', trad: '2+ models + infra', gen: '1 model, no infra', winner: 'gen' },
+    { label: 'Cold Start', trad: 'Needs embedding + index add', gen: 'Content -> SID instant', winner: 'gen' },
+    { label: 'End-to-end', trad: 'Separately optimized', gen: 'Jointly optimized', winner: 'gen' }
+  ];
+
+  const tblY = tradeY + 15;
+  // Header
+  ctx.fillStyle = '#333';
+  ctx.fillRect(100, tblY, W - 200, 22);
+  ctx.fillStyle = '#ff9ff3';
+  ctx.font = 'bold 11px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Dimension', 210, tblY + 15);
+  ctx.fillText('Traditional', 430, tblY + 15);
+  ctx.fillText('Generative', 650, tblY + 15);
+  ctx.fillText('Winner', 870, tblY + 15);
+
+  tradeoffs.forEach((t, i) => {
+    const ry = tblY + 26 + i * 24;
+    ctx.fillStyle = i % 2 === 0 ? '#1a1a2a' : '#15152a';
+    ctx.fillRect(100, ry, W - 200, 22);
+
+    ctx.fillStyle = '#ddd';
+    ctx.font = '11px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(t.label, 210, ry + 15);
+    ctx.fillStyle = t.winner === 'trad' ? '#7fff7f' : '#aaa';
+    ctx.fillText(t.trad, 430, ry + 15);
+    ctx.fillStyle = t.winner === 'gen' ? '#7fff7f' : '#aaa';
+    ctx.fillText(t.gen, 650, ry + 15);
+    ctx.fillStyle = '#ffd93d';
+    ctx.fillText(t.winner === 'trad' ? 'Traditional' : 'Generative', 870, ry + 15);
+  });
+
+  // Production references
+  const refY = tblY + 130;
+  ctx.fillStyle = '#1a2a3a';
+  ctx.fillRect(60, refY, W - 120, 65);
+  ctx.strokeStyle = '#88ccff';
+  ctx.strokeRect(60, refY, W - 120, 65);
+  ctx.fillStyle = '#88ccff';
+  ctx.font = 'bold 13px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Research & Production References', W / 2, refY + 18);
+  ctx.font = '11px monospace';
+  ctx.fillStyle = '#7fff7f';
+  ctx.fillText('DSI (Google 2022) | GENRE (Meta 2021) | DSI-QG (2023) | NCI (2022)', W / 2, refY + 38);
+  ctx.fillStyle = '#ddd';
+  ctx.fillText('PLUM (YouTube prod) | Spotify shared SIDs for search+recs | Convergence of search & recs', W / 2, refY + 55);
+}
+
 // ============ INIT ============
 window.addEventListener('load', () => {
   initMatrixFactorization();
@@ -2847,6 +4656,7 @@ window.addEventListener('load', () => {
   setAdsMode('attribution');
   drawAds();
   drawDenseRetrieval();
+  drawGenRec();
 });
 </script>
 

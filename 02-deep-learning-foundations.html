@@ -574,7 +574,7 @@
 <!-- 0C. HOW DOES A NEURON LEARN? -->
 <div class="viz-section">
   <h2>How Does a Neuron Learn?</h2>
-  <p class="subtitle">Before we look at full networks, let's see how a single weight gets updated. Click "Train Step" to walk through gradient descent one micro-step at a time — no jargon, just arithmetic.</p>
+  <p class="subtitle">In the previous section, you moved the decision boundary by hand with sliders. But how does the network move it <em>automatically</em>? It compares its prediction against a known answer (a "label"), measures the error, and nudges the weights to reduce that error. Click "Train Step" to walk through this process one micro-step at a time — no jargon, just arithmetic.</p>
 
   <!-- PART A: Single neuron learning -->
   <h3 style="color:#ffd93d;margin-bottom:8px;font-size:1.15em;">Part A: One Weight, One Goal</h3>
@@ -616,7 +616,7 @@
 
   <div class="insight-box" style="border-left-color:#ffd93d;">
     <strong style="color:#ffd93d;">That's backpropagation.</strong> The error flows backward through the network — each neuron receives the error from the neuron it feeds into, scaled by the connecting weight. Then it uses that to update its own weight. The "chain rule" is just multiplying these error signals along the chain.
-    <div class="formula" style="border-color:#554400;">$$\frac{\partial L}{\partial w_1} = \underbrace{\frac{\partial L}{\partial \text{out}}}_{\text{error}} \times \underbrace{\frac{\partial \text{out}}{\partial h}}_{ w_2} \times \underbrace{\frac{\partial h}{\partial w_1}}_{\text{ReLU}'(z_1) \cdot x}$$</div>
+    <div class="formula" style="border-color:#554400;">$$\frac{\partial L}{\partial w_1} = \underbrace{\frac{\partial L}{\partial \text{out}}}_{\text{error at output}} \times \underbrace{\frac{\partial \text{out}}{\partial h}}_{= w_2 \text{ (the connecting weight!)}} \times \underbrace{\frac{\partial h}{\partial w_1}}_{= \text{ReLU}'(z_1) \cdot x}$$</div>
     <div class="interview-tip">Backprop is just the chain rule applied systematically. The key insight: each node only needs its <em>local</em> gradient and the upstream error signal. No node needs to "see" the whole network.</div>
     <div class="interview-tip">💡 Real-world: This weight update rule is running right now on thousands of GPUs across Google, Meta, and OpenAI. A single training run for a frontier model performs this operation quadrillions of times. The math is simple — the scale is what makes it expensive ($100M+ per run).</div>
   </div>
@@ -1116,31 +1116,20 @@ loss.backward()            # backward pass computes all gradients</code></pre>
     <label style="font-size:0.85em; color:#aaa;"><input type="checkbox" id="actShowDeriv" checked onchange="drawAct()"> Show derivatives</label>
   </div>
   <div class="insight-box">
-    <strong>Key Insight:</strong> Backpropagation efficiently computes gradients for all weights using the chain rule.
-    <div class="formula">$$\frac{\partial L}{\partial W} = \frac{\partial L}{\partial \text{output}} \cdot \frac{\partial \text{output}}{\partial W}$$</div>
-    <div class="key-point"><span class="label">\(\frac{\partial L}{\partial W}\):</span><span class="desc">Gradient of loss w.r.t. weights. Tells how much each weight affects final loss. Used to update weights.</span></div>
-    <div class="key-point"><span class="label">\(\frac{\partial L}{\partial \text{output}}\):</span><span class="desc">Gradient of loss w.r.t. final output. How much the output contributes to loss.</span></div>
-    <div class="key-point"><span class="label">\(\frac{\partial \text{output}}{\partial W}\):</span><span class="desc">Gradient of output w.r.t. weights. How much changing W changes the output.</span></div>
-    <div class="key-point"><span class="label">Chain rule (\(\cdot\)):</span><span class="desc">Multiply gradients along the computation path. Example: if loss depends on output, and output depends on W, then \(\frac{\partial L}{\partial W} = \frac{\partial L}{\partial \text{output}} \times \frac{\partial \text{output}}{\partial W}\)</span></div>
+    <strong>Key Insight:</strong> Activation functions introduce nonlinearity — without them, stacking layers would just be matrix multiplication (a deep network would collapse to a single linear layer).
+    <div class="formula">$$\text{output} = \sigma(Wx + b)$$</div>
+    <div class="key-point"><span class="label">\(\sigma\):</span><span class="desc">The activation function. Applied element-wise after the linear transform. This is what makes neural networks able to learn curved, complex decision boundaries.</span></div>
+    <div class="key-point"><span class="label">ReLU: max(0, x):</span><span class="desc">Zero for negative inputs, identity for positive. Derivative is 1 (positive) or 0 (negative). Simple, fast, and avoids vanishing gradients. The default for hidden layers.</span></div>
+    <div class="key-point"><span class="label">Sigmoid: 1/(1+e⁻ˣ):</span><span class="desc">Squashes to (0,1). Max derivative is only 0.25 — after 10 layers, gradients shrink to 0.25¹⁰ ≈ 0.000001. First layers stop learning. Use only for output gates.</span></div>
+    <div class="key-point"><span class="label">GELU / SiLU:</span><span class="desc">Smooth approximations of ReLU with non-zero gradients for slightly negative inputs. GELU is standard in transformers (GPT, BERT). SiLU/Swish in LLaMA, EfficientNet.</span></div>
+    <div class="key-point"><span class="label">Tanh:</span><span class="desc">Zero-centered output (-1 to 1). Better than sigmoid for hidden layers but still saturates at extremes. Used in RNN/LSTM hidden states.</span></div>
     <div class="key-point">
-      <span class="label">Chain rule in networks:</span>
-      <span class="desc">Error at output flows backward through layers. Each layer contributes to gradient via local \(\frac{\partial h}{\partial W}\).</span>
+      <span class="label">Why the derivative matters:</span>
+      <span class="desc">During backprop, gradients multiply through each layer's activation derivative. If derivatives are small (sigmoid), gradients vanish. If derivatives are ~1 (ReLU), gradients flow unchanged. This is why activation choice determines whether deep networks can train at all.</span>
     </div>
     <div class="key-point">
-      <span class="label">Computational complexity:</span>
-      <span class="desc">One forward pass + one backward pass. Backward cost ≈ 2× forward. Much cheaper than numerical gradients.</span>
-    </div>
-    <div class="key-point">
-      <span class="label">Vanishing gradients:</span>
-      <span class="desc">Gradients multiply as they flow backward. With small derivatives (<0.1), deep layers get tiny gradients. Training stalls.</span>
-    </div>
-    <div class="key-point">
-      <span class="label">Exploding gradients:</span>
-      <span class="desc">Gradients multiply, grow exponentially. Weights become NaN/Inf. Solution: gradient clipping.</span>
-    </div>
-    <div class="key-point">
-      <span class="label">Why vanishing gradients matter:</span>
-      <span class="desc">Each backprop step multiplies gradients through layers. Sigmoid's max derivative is 0.25 — after 10 layers, gradients shrink to 0.25^10 ≈ 0.000001. The first layers stop learning entirely. ReLU's derivative is 1 for positive inputs, so gradients pass through unchanged.</span>
+      <span class="label">Dead neurons:</span>
+      <span class="desc">ReLU outputs exactly 0 for negative inputs. If a neuron's weights shift so all inputs are negative, it never activates again — it's "dead." Leaky ReLU (small slope for negatives) prevents this.</span>
     </div>
     <hr class="divider">
     <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
@@ -1386,29 +1375,24 @@ print(model(x).shape)           # torch.Size([8, 10])</code></pre>
     </div>
   </div>
   <div class="insight-box">
-    <strong>Key Insight:</strong> Convolutional layers learn local spatial patterns via weight sharing and local connections.
-    <div class="formula">$$\text{Conv output: } y[i,j] = \sum w[a,b] \cdot x[i+a, j+b] + b$$</div>
-    <div class="key-point"><span class="label">y[i,j]:</span><span class="desc">Output activation at spatial position (i,j). Shape across all filters: (height_out, width_out, num_filters)</span></div>
-    <div class="key-point"><span class="label">w[a,b]:</span><span class="desc">Filter/kernel weights at local offset (a,b). Learned parameter. Size: (kernel_h, kernel_w). Same for all positions (weight sharing).</span></div>
-    <div class="key-point"><span class="label">x[i+a, j+b]:</span><span class="desc">Input values in the receptive field—rectangular region around position (i,j). Sliding window centered at (i,j).</span></div>
-    <div class="key-point"><span class="label">\(\sum w[a,b] \cdot x[i{+}a, j{+}b]\):</span><span class="desc">Dot product of filter and local patch. Computes correlation/match between filter and local region.</span></div>
-    <div class="key-point"><span class="label">+ b:</span><span class="desc">Bias term—learned scalar added to dot product. Same bias for all spatial positions.</span></div>
-    <div class="key-point"><span class="label">Spatial locality:</span><span class="desc">Only uses values in small receptive field around (i,j), not entire image. Efficient and captures local features.</span></div>
+    <strong>Key Insight:</strong> Normalization stabilizes training by controlling the distribution of activations at each layer — without it, activations can drift wildly as weights update, slowing or breaking training.
+    <div class="formula">$$\hat{x} = \frac{x - \mu}{\sqrt{\sigma^2 + \epsilon}} \cdot \gamma + \beta$$</div>
+    <div class="key-point"><span class="label">\(\mu, \sigma^2\):</span><span class="desc">Mean and variance computed over a specific set of activations. WHICH activations you normalize over is the key difference between methods.</span></div>
+    <div class="key-point"><span class="label">\(\gamma, \beta\):</span><span class="desc">Learned scale and shift parameters. After normalizing to zero-mean unit-variance, the network can learn to undo the normalization if needed. This preserves representational power.</span></div>
+    <div class="key-point"><span class="label">BatchNorm (across batch):</span><span class="desc">Computes mean/variance across all samples in a batch for each feature. Requires batch size ≥ 32 to get stable statistics. Different behavior at train (batch stats) vs test (running average). Breaks at batch_size=1.</span></div>
+    <div class="key-point"><span class="label">LayerNorm (across features):</span><span class="desc">Computes mean/variance across all features for each sample independently. Batch-size independent — works with batch=1. Same behavior at train and test. The standard for Transformers.</span></div>
+    <div class="key-point"><span class="label">RMSNorm:</span><span class="desc">Like LayerNorm but skips the mean subtraction — only divides by root-mean-square. ~10-15% faster with similar performance. Used in LLaMA, Mistral, and most modern LLMs.</span></div>
     <div class="key-point">
-      <span class="label">Weight sharing:</span>
-      <span class="desc">Same filter applied at every position. Much fewer parameters than fully connected. Captures translation invariance.</span>
+      <span class="label">GroupNorm:</span>
+      <span class="desc">Splits channels into groups, normalizes within each group. Works with any batch size. Used in object detection (Mask R-CNN) and generative models where batch sizes are small.</span>
     </div>
     <div class="key-point">
-      <span class="label">Spatial hierarchy:</span>
-      <span class="desc">Early layers: edge, texture detectors. Middle: shape, part detectors. Deep: object detectors. Learns hierarchical representations.</span>
+      <span class="label">Why it works:</span>
+      <span class="desc">Without normalization, small weight changes in early layers cause large activation shifts in later layers ("internal covariate shift"). Normalization keeps activations in a stable range, allowing higher learning rates and faster convergence.</span>
     </div>
     <div class="key-point">
-      <span class="label">Hyperparameters:</span>
-      <span class="desc">Filter size (3×3, 5×5), stride (step between positions), padding (border handling), number of filters (output channels).</span>
-    </div>
-    <div class="key-point">
-      <span class="label">Pooling:</span>
-      <span class="desc">Max/average pooling reduces spatial dimensions. Provides small translation invariance. Reduces parameters.</span>
+      <span class="label">Choosing normalization:</span>
+      <span class="desc">CNNs with large batches → BatchNorm. Transformers/sequences → LayerNorm or RMSNorm. Small batches or detection → GroupNorm. When in doubt, LayerNorm is the safest default.</span>
     </div>
     <hr class="divider">
     <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
