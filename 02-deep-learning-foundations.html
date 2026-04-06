@@ -3332,6 +3332,8 @@ function drawFlash() {
   const title = attentionType === 'standard' ? 'Standard Attention: Materialize QK^T' : 'Flash Attention: Tiled Computation';
   ctx.fillText(title, W / 2, 30);
 
+  const totalMem = 3*N*d + 2*N*N + N*d;
+
   if (attentionType === 'standard') {
     ctx.fillStyle = '#b0b0c0';
     ctx.font = '15px Inter';
@@ -3368,7 +3370,6 @@ function drawFlash() {
       y += 30;
     });
 
-    const totalMem = 3*N*d + 2*N*N + N*d;
     ctx.fillStyle = '#ffd93d';
     ctx.font = '13px Inter';
     ctx.fillText(`Total: ~${(totalMem / (1024*1024)).toFixed(1)}MB (for N=${N}, d=${d})`, pad.l, y + 30);
@@ -3412,14 +3413,12 @@ function drawFlash() {
       x += tileW + 5;
     }
 
-    const memReduction = 100 * (1 - (3*N*d) / totalMem);
     ctx.fillStyle = '#64ffda';
     ctx.font = '13px Inter';
     ctx.textAlign = 'left';
     ctx.fillText(`Memory: O(N) instead of O(N²). Same FLOPs, ~4-10x faster due to reduced IO.`, pad.l, pad.t + 160);
   }
 
-  const totalMem = 3*N*d + 2*N*N + N*d;
   ctx.fillStyle = '#aaa';
   ctx.font = '13px Inter';
   ctx.textAlign = 'left';
