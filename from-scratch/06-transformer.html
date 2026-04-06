@@ -166,6 +166,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-okaidia.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+<link rel="stylesheet" href="../static/learning-tools.css">
 </head>
 <body>
 <button id="quizToggle" onclick="toggleQuiz()">&#x1F9E0; Quiz Mode</button>
@@ -450,6 +451,18 @@ class TransformerBlock(nn.Module):
     </div>
     <button class="btn" onclick="animateDepth()">Animate Layers</button>
   </div>
+  <div class="predict-box" id="predict-depth">
+    <div class="predict-label">Predict</div>
+    <div class="predict-question">As you increase the number of transformer layers from 1 to 12, what happens to the token representations?</div>
+    <div class="predict-options">
+      <button class="predict-btn" data-choice="diverse">They become more diverse — each token is more unique</button>
+      <button class="predict-btn" data-choice="collapse">They all collapse to the same vector</button>
+      <button class="predict-btn" data-choice="similar" data-correct>They become more similar — representations converge</button>
+      <button class="predict-btn" data-choice="random">They become random noise</button>
+    </div>
+    <div class="predict-locked-msg">Prediction locked. Drag the layers slider to 12 and watch the similarity matrix.</div>
+    <div class="predict-result" data-correct-text="Right! This is the 'representation collapse' or 'over-smoothing' problem. Each attention layer mixes token representations together, so after many layers they converge. This is why PreNorm (LayerNorm before attention) and residual connections are critical — they preserve token identity. It's also why most practical transformers use 6-24 layers, not 100." data-wrong-text="Actually, they become more similar! Each self-attention layer mixes information between tokens, so after many layers the representations converge toward each other. This is called 'over-smoothing' or 'representation collapse'. Residual connections and LayerNorm placement are the key mitigations — without them, deep transformers fail to train."></div>
+  </div>
   <div class="viz-canvas">
     <canvas id="depthCanvas" width="900" height="420"></canvas>
   </div>
@@ -511,6 +524,31 @@ out = encoder(x)  # same shape, refined representations</code></pre>
       <li><strong>Mistake:</strong> Forgetting that attention is O(n&sup2;) &mdash; doubling context quadruples memory. <strong>Fix:</strong> Use efficient attention (FlashAttention) or limit context length.</li>
       <li><strong>Mistake:</strong> Not applying final LayerNorm before the output projection head. <strong>Fix:</strong> Always include the final norm &mdash; it stabilizes the last layer's representations before projecting to vocabulary logits.</li>
     </ul>
+  </div>
+  <div class="challenge-box" id="challenge-depth">
+    <div class="challenge-label">Challenge</div>
+    <ul class="challenge-list">
+      <li class="challenge-item" data-idx="0">
+        <span class="challenge-check"></span>
+        <span class="challenge-difficulty easy">Easy</span>
+        <span>Compare 1-layer vs 6-layer representations</span>
+      </li>
+      <li class="challenge-item" data-idx="1">
+        <span class="challenge-check"></span>
+        <span class="challenge-difficulty medium">Medium</span>
+        <span>Find the depth where representations start looking very similar</span>
+      </li>
+      <li class="challenge-item" data-idx="2">
+        <span class="challenge-check"></span>
+        <span class="challenge-difficulty hard">Hard</span>
+        <span>Set layers to 12 — can you see why GPT-2 (12 layers) needs residual connections?</span>
+      </li>
+    </ul>
+    <div class="challenge-progress">
+      <div class="challenge-progress-bar"><div class="challenge-progress-fill"></div></div>
+      <span class="challenge-progress-text">0/3</span>
+    </div>
+    <div class="challenge-celebration"></div>
   </div>
 </div>
 
@@ -2450,6 +2488,18 @@ window.addEventListener('DOMContentLoaded', function() {
   buildQuiz();
 });
 
+</script>
+<script src="../static/learning-tools.js"></script>
+<script>
+new PredictBox('predict-depth', 'depthSlider');
+
+const challengeDepth = new ChallengeBox('challenge-depth', [
+  { test: function() { var d = parseInt(document.getElementById('depthSlider').value); return d >= 6; }, celebration: 'At 6 layers you can see the representations becoming more uniform. GPT-2 Small uses exactly 12 layers — without residual connections, this depth would cause complete collapse.' },
+  { test: function() { var d = parseInt(document.getElementById('depthSlider').value); return d >= 8; }, celebration: 'Around 8+ layers, the similarity matrix gets noticeably more uniform. This is why the original "Attention Is All You Need" paper used 6 layers — a good tradeoff between expressiveness and stability.' },
+  { test: function() { var d = parseInt(document.getElementById('depthSlider').value); return d >= 12; }, celebration: 'At 12 layers without residuals, representations would collapse completely. The residual connection x + Attention(x) is what saves deep transformers — it preserves the original token identity while adding contextual information. This simple addition made 100+ layer transformers possible.' }
+]);
+
+setInterval(function() { challengeDepth.check(); }, 500);
 </script>
 </body>
 </html>

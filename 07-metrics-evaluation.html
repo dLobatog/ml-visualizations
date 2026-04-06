@@ -410,6 +410,7 @@
     .metric-box { font-size: 0.82em; }
   }
 </style>
+<link rel="stylesheet" href="static/learning-tools.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '\\(', right: '\\)', display: false}]});"></script>
@@ -431,6 +432,18 @@
             <p class="subtitle">Drag the Classification Threshold slider left (toward 0.0) and right (toward 1.0). Watch TPR rise (catch more positives) while FPR also rises (more false alarms). The ROC curve traces all tradeoffs. Diagonal line = random guessing (Area Under the Curve = 0.5). Your curve should bow toward top-left.</p>
             <div class="section-content">
                 <div class="viz-area">
+                    <div class="predict-box" id="predict-roc">
+                      <div class="predict-label">Predict</div>
+                      <div class="predict-question">You're about to move the classification threshold from 0.5 to 0.9. What happens to the True Positive Rate (TPR) and False Positive Rate (FPR)?</div>
+                      <div class="predict-options">
+                        <button class="predict-btn" data-choice="both-drop" data-correct>Both TPR and FPR decrease</button>
+                        <button class="predict-btn" data-choice="tpr-up">TPR goes up, FPR goes down</button>
+                        <button class="predict-btn" data-choice="both-up">Both increase</button>
+                        <button class="predict-btn" data-choice="fpr-up">TPR stays same, FPR drops</button>
+                      </div>
+                      <div class="predict-locked-msg">Prediction locked. Now drag the threshold slider to 0.9 and watch the metrics.</div>
+                      <div class="predict-result" data-correct-text="Correct! A higher threshold means you only predict 'positive' when the model is very confident. You catch fewer true positives (TPR drops) but also make fewer false alarms (FPR drops). You're trading recall for precision. This is the fundamental precision-recall tradeoff." data-wrong-text="Actually, both drop. A higher threshold means the model only says 'positive' when it's very confident (score > 0.9). This means fewer things get classified as positive overall — so you miss more true positives (TPR drops) AND make fewer false alarms (FPR drops). You're trading recall for precision."></div>
+                    </div>
                     <canvas id="rocCanvas" width="400" height="400"></canvas>
                 </div>
                 <div class="control-panel">
@@ -542,6 +555,31 @@
                         <p class="code-note">roc_curve returns FPR, TPR arrays for plotting; roc_auc_score gives the scalar AUC.</p>
                       </div>
                     </div>
+                </div>
+                <div class="challenge-box" id="challenge-roc">
+                  <div class="challenge-label">Challenge</div>
+                  <ul class="challenge-list">
+                    <li class="challenge-item" data-idx="0">
+                      <span class="challenge-check"></span>
+                      <span class="challenge-difficulty easy">Easy</span>
+                      <span>Find a threshold where TPR > 0.8 (catching most positives)</span>
+                    </li>
+                    <li class="challenge-item" data-idx="1">
+                      <span class="challenge-check"></span>
+                      <span class="challenge-difficulty medium">Medium</span>
+                      <span>Find a threshold where FPR < 0.1 (very few false alarms)</span>
+                    </li>
+                    <li class="challenge-item" data-idx="2">
+                      <span class="challenge-check"></span>
+                      <span class="challenge-difficulty hard">Hard</span>
+                      <span>Find the threshold that maximizes TPR - FPR (Youden's J statistic)</span>
+                    </li>
+                  </ul>
+                  <div class="challenge-progress">
+                    <div class="challenge-progress-bar"><div class="challenge-progress-fill"></div></div>
+                    <span class="challenge-progress-text">0/3</span>
+                  </div>
+                  <div class="challenge-celebration"></div>
                 </div>
             </div>
         </div>
@@ -1750,6 +1788,35 @@
   window.resetQuiz = buildQuiz;
   buildQuiz();
 })();
+</script>
+<script src="static/learning-tools.js"></script>
+<script>
+new PredictBox('predict-roc', 'rocThreshold');
+
+const challengeROC = new ChallengeBox('challenge-roc', [
+  { test: function() {
+      var el = document.getElementById('rocTPR');
+      if (!el) return false;
+      var val = parseFloat(el.textContent);
+      return !isNaN(val) && val > 0.8;
+    }, celebration: 'High recall! You\'re catching 80%+ of positives. In medical screening, this is often the priority — you don\'t want to miss sick patients, even if it means more false alarms.' },
+  { test: function() {
+      var el = document.getElementById('rocFPR');
+      if (!el) return false;
+      var val = parseFloat(el.textContent);
+      return !isNaN(val) && val < 0.1;
+    }, celebration: 'Very few false alarms! In spam detection, low FPR matters — you don\'t want to send real emails to spam. But check TPR... you might be missing a lot of actual spam.' },
+  { test: function() {
+      var tprEl = document.getElementById('rocTPR');
+      var fprEl = document.getElementById('rocFPR');
+      if (!tprEl || !fprEl) return false;
+      var tpr = parseFloat(tprEl.textContent);
+      var fpr = parseFloat(fprEl.textContent);
+      return !isNaN(tpr) && !isNaN(fpr) && (tpr - fpr) > 0.5;
+    }, celebration: 'Excellent! Maximizing TPR - FPR (Youden\'s J) gives you the "optimal" threshold for balanced classification. This is the point on the ROC curve farthest from the diagonal.' }
+]);
+
+setInterval(function() { challengeROC.check(); }, 500);
 </script>
 </body>
 </html>

@@ -88,6 +88,7 @@
   }
 
 </style>
+<link rel="stylesheet" href="static/learning-tools.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '\\(', right: '\\)', display: false}]});"></script>
@@ -119,6 +120,18 @@
     </div>
     <button class="btn" onclick="initMatrixFactorization()">↺ Reset</button>
   </div>
+  <div class="predict-box" id="predict-mf">
+  <div class="predict-label">Predict</div>
+  <div class="predict-question">You're about to change the number of latent dimensions (k) from 2 to 20. What happens to the reconstruction error (RMSE)?</div>
+  <div class="predict-options">
+    <button class="predict-btn" data-choice="drops" data-correct>RMSE drops — more dimensions capture more signal</button>
+    <button class="predict-btn" data-choice="rises">RMSE rises — too many dimensions overfit</button>
+    <button class="predict-btn" data-choice="same">No change — 2 dimensions is already enough</button>
+    <button class="predict-btn" data-choice="zero">RMSE hits exactly zero — perfect reconstruction</button>
+  </div>
+  <div class="predict-locked-msg">Prediction locked. Now drag the k slider to 20 and watch the RMSE metric.</div>
+  <div class="predict-result" data-correct-text="Right! More latent dimensions means the factorization can capture finer-grained preference patterns. With k=rank(R), you'd reconstruct perfectly. In practice, moderate k (10-100) works best because very high k overfits to noise in sparse ratings. This is why k is the key hyperparameter in collaborative filtering." data-wrong-text="Actually, RMSE drops with more dimensions. Each additional latent factor captures another pattern in user preferences (e.g., 'likes action movies', 'prefers short films'). With k = rank of the matrix, reconstruction would be perfect. In practice though, you'd cross-validate k because very high k overfits to noise in sparse data."></div>
+</div>
   <div class="metric-box" id="mfMetrics">Reconstruction Error: --</div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Singular Value Decomposition decomposes user-item matrix R into low-rank factors U, Σ, V, enabling scalable collaborative filtering despite sparse data.
@@ -171,6 +184,31 @@ class MF(nn.Module):
       </div>
     </div>
   </div>
+  <div class="challenge-box" id="challenge-mf">
+  <div class="challenge-label">Challenge</div>
+  <ul class="challenge-list">
+    <li class="challenge-item" data-idx="0">
+      <span class="challenge-check"></span>
+      <span class="challenge-difficulty easy">Easy</span>
+      <span>Get the RMSE below 1.0 by adjusting k</span>
+    </li>
+    <li class="challenge-item" data-idx="1">
+      <span class="challenge-check"></span>
+      <span class="challenge-difficulty medium">Medium</span>
+      <span>Find the k where adding more dimensions barely helps (diminishing returns)</span>
+    </li>
+    <li class="challenge-item" data-idx="2">
+      <span class="challenge-check"></span>
+      <span class="challenge-difficulty hard">Hard</span>
+      <span>Get RMSE below 0.3</span>
+    </li>
+  </ul>
+  <div class="challenge-progress">
+    <div class="challenge-progress-bar"><div class="challenge-progress-fill"></div></div>
+    <span class="challenge-progress-text">0/3</span>
+  </div>
+  <div class="challenge-celebration"></div>
+</div>
 </div>
 
 <!-- 2. TWO-TOWER MODEL ARCHITECTURE -->
@@ -4967,6 +5005,32 @@ window.addEventListener('load', () => {
 
   renderQuiz();
 })();
+</script>
+
+<script src="static/learning-tools.js"></script>
+<script>
+new PredictBox('predict-mf', 'mfK');
+
+const challengeMF = new ChallengeBox('challenge-mf', [
+  { test: function() {
+      var el = document.getElementById('mfMetrics');
+      if (!el) return false;
+      var match = el.textContent.match(/RMSE:\s*([\d.]+)/);
+      return match && parseFloat(match[1]) < 1.0;
+    }, celebration: 'RMSE under 1.0! With enough latent factors, the model captures the main preference patterns in the rating matrix.' },
+  { test: function() {
+      var k = parseInt(document.getElementById('mfK').value);
+      return k >= 8 && k <= 14;
+    }, celebration: 'You found the diminishing returns zone! Beyond k=8-12, each extra dimension captures less and less signal. In production systems (Netflix, Spotify), this is exactly how you pick k — plot RMSE vs k and find the elbow.' },
+  { test: function() {
+      var el = document.getElementById('mfMetrics');
+      if (!el) return false;
+      var match = el.textContent.match(/RMSE:\s*([\d.]+)/);
+      return match && parseFloat(match[1]) < 0.3;
+    }, celebration: 'Incredibly low RMSE! At this point you\'re essentially memorizing the training ratings. In production you\'d use a held-out validation set to prevent this overfitting.' }
+]);
+
+setInterval(function() { challengeMF.check(); }, 500);
 </script>
 
 </body>

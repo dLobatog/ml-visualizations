@@ -135,6 +135,7 @@ pre[class*="language-"]::selection, code[class*="language-"]::selection { backgr
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-okaidia.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+<link rel="stylesheet" href="static/learning-tools.css">
 </head>
 <body>
 <button id="quizToggle" onclick="toggleQuiz()">&#x1F9E0; Quiz Mode</button>
@@ -168,6 +169,18 @@ pre[class*="language-"]::selection, code[class*="language-"]::selection { backgr
     <div class="legend-item"><div class="legend-dot" style="background:rgba(255,107,107,0.15)"></div>Region A</div>
     <div class="legend-item"><div class="legend-dot" style="background:rgba(78,205,196,0.15)"></div>Region B</div>
   </div>
+  <div class="predict-box" id="predict-dt">
+  <div class="predict-label">Predict</div>
+  <div class="predict-question">You're about to increase tree depth from 1 to 6. What happens to the decision boundary?</div>
+  <div class="predict-options">
+    <button class="predict-btn" data-choice="simple">Stays as a single straight line</button>
+    <button class="predict-btn" data-choice="complex" data-correct>Becomes a complex staircase of axis-aligned cuts</button>
+    <button class="predict-btn" data-choice="curved">Becomes a smooth curve</button>
+    <button class="predict-btn" data-choice="circle">Forms circles around each cluster</button>
+  </div>
+  <div class="predict-locked-msg">Prediction locked. Now drag the max depth slider to 6 and watch the decision regions.</div>
+  <div class="predict-result" data-correct-text="Exactly! Each split is axis-aligned (horizontal or vertical), so deeper trees create staircase-like boundaries. They can approximate any shape, but only with rectangular cuts. This is fundamentally different from neural networks which learn smooth, curved boundaries. It's also why trees are great for tabular data with natural thresholds." data-wrong-text="Actually, the boundary becomes a complex staircase pattern. Decision trees only make axis-aligned splits (horizontal or vertical lines), so no matter how deep the tree, the boundary is always made of rectangular regions — never smooth curves. This is a key limitation vs. neural networks, but also a strength: each split is interpretable as 'feature X > threshold'."></div>
+</div>
   <div class="insight-box">
     <strong>Key Insight:</strong> A decision tree recursively splits feature space into axis-aligned rectangles, choosing splits that maximize information gain (or minimize Gini impurity).
     <div class="formula">$$\text{Gini}(S) = 1 - \sum_{k=1}^{K} p_k^2$$</div>
@@ -229,6 +242,31 @@ print(f"Test acc:  {tree.score(X_test, y_test):.3f}")</code></pre>
       </div>
     </div>
   </div>
+  <div class="challenge-box" id="challenge-dt">
+  <div class="challenge-label">Challenge</div>
+  <ul class="challenge-list">
+    <li class="challenge-item" data-idx="0">
+      <span class="challenge-check"></span>
+      <span class="challenge-difficulty easy">Easy</span>
+      <span>Create a depth-1 tree (a "decision stump") and see how it splits</span>
+    </li>
+    <li class="challenge-item" data-idx="1">
+      <span class="challenge-check"></span>
+      <span class="challenge-difficulty medium">Medium</span>
+      <span>Find the minimum depth that separates both classes well</span>
+    </li>
+    <li class="challenge-item" data-idx="2">
+      <span class="challenge-check"></span>
+      <span class="challenge-difficulty hard">Hard</span>
+      <span>Overfit on purpose — crank depth to max and spot individual data points getting their own regions</span>
+    </li>
+  </ul>
+  <div class="challenge-progress">
+    <div class="challenge-progress-bar"><div class="challenge-progress-fill"></div></div>
+    <span class="challenge-progress-text">0/3</span>
+  </div>
+  <div class="challenge-celebration"></div>
+</div>
 </div>
 
 <!-- 2. RESIDUAL FITTING / BOOSTING ITERATIONS -->
@@ -3220,6 +3258,27 @@ window.toggleQuiz = function() {
 
 buildQuiz();
 })();
+</script>
+<script src="static/learning-tools.js"></script>
+<script>
+new PredictBox('predict-dt', 'dtDepth');
+
+const challengeDT = new ChallengeBox('challenge-dt', [
+  { test: function() {
+      var depth = parseInt(document.getElementById('dtDepth').value);
+      return depth === 1;
+    }, celebration: 'A decision stump! With just one split, the tree divides the entire space with a single line. In boosting (XGBoost, LightGBM), hundreds of these stumps are combined — each one is weak, but together they\'re powerful.' },
+  { test: function() {
+      var depth = parseInt(document.getElementById('dtDepth').value);
+      return depth >= 3 && depth <= 4;
+    }, celebration: 'Depth 3-4 is often the sweet spot! Enough cuts to capture the class boundary without overfitting. In XGBoost, max_depth=6 is the default for exactly this reason.' },
+  { test: function() {
+      var depth = parseInt(document.getElementById('dtDepth').value);
+      return depth >= 6;
+    }, celebration: 'See those tiny rectangular regions around individual points? That\'s overfitting — the tree memorized the training data instead of learning the pattern. This is why boosting uses shallow trees with a learning rate < 1.' }
+]);
+
+setInterval(function() { challengeDT.check(); }, 500);
 </script>
 </body>
 </html>

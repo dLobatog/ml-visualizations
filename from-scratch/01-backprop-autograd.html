@@ -138,6 +138,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-okaidia.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+<link rel="stylesheet" href="../static/learning-tools.css">
 </head>
 <body>
 <button id="quizToggle" onclick="toggleQuiz()">&#x1F9E0; Quiz Mode</button>
@@ -630,6 +631,18 @@ for i, layer in enumerate(layers):
       </div>
     </div>
   </div>
+  <div class="predict-box" id="predict-loss">
+    <div class="predict-label">Predict</div>
+    <div class="predict-question">Three balls start at the same point but with different learning rates (0.01, adjustable, 0.5). Which one reaches the minimum first?</div>
+    <div class="predict-options">
+      <button class="predict-btn" data-choice="smallest">The smallest lr (0.01) — slow and steady</button>
+      <button class="predict-btn" data-choice="medium" data-correct>The middle one — it depends on the landscape</button>
+      <button class="predict-btn" data-choice="largest">The largest lr (0.5) — bigger steps = faster</button>
+      <button class="predict-btn" data-choice="all-same">They all arrive together</button>
+    </div>
+    <div class="predict-locked-msg">Prediction locked. Hit Auto-play and watch the three trajectories diverge.</div>
+    <div class="predict-result" data-correct-text="It depends! Too small (0.01) creeps slowly. Too large (0.5) may overshoot and oscillate. The sweet spot depends on the loss surface curvature. This is why learning rate schedules exist — start large, then decay. Adaptive optimizers like Adam effectively tune this per-parameter." data-wrong-text="Actually, it depends on the landscape. The largest lr (0.5) takes big steps but may overshoot the minimum and bounce around. The smallest (0.01) is stable but painfully slow. The middle one often wins because it balances speed with stability. This is why learning rate is called the most important hyperparameter."></div>
+  </div>
   <div class="viz-canvas">
     <canvas id="lossCanvas" width="900" height="460"></canvas>
   </div>
@@ -680,6 +693,31 @@ for step in range(5):
       <li><strong>Mistake:</strong> Forgetting to wrap manual parameter updates in <code>torch.no_grad()</code>. Without it, the update operation is tracked by autograd, wasting memory and corrupting the computation graph. <strong>Fix:</strong> Always use <code>with torch.no_grad():</code> for manual updates, or use <code>torch.optim</code> which handles this automatically.</li>
       <li><strong>Mistake:</strong> Assuming the loss landscape is convex (has a single global minimum). Neural network loss surfaces are highly non-convex with many local minima and saddle points. <strong>Fix:</strong> Use momentum or Adam to escape saddle points. Accept that different runs may find different (but similarly good) minima.</li>
     </ul>
+  </div>
+  <div class="challenge-box" id="challenge-loss">
+    <div class="challenge-label">Challenge</div>
+    <ul class="challenge-list">
+      <li class="challenge-item" data-idx="0">
+        <span class="challenge-check"></span>
+        <span class="challenge-difficulty easy">Easy</span>
+        <span>Run the simulation for 20+ steps</span>
+      </li>
+      <li class="challenge-item" data-idx="1">
+        <span class="challenge-check"></span>
+        <span class="challenge-difficulty medium">Medium</span>
+        <span>Find a learning rate where the middle ball reaches the minimum before the others</span>
+      </li>
+      <li class="challenge-item" data-idx="2">
+        <span class="challenge-check"></span>
+        <span class="challenge-difficulty hard">Hard</span>
+        <span>Make the high-lr ball (green) oscillate without converging for 30+ steps</span>
+      </li>
+    </ul>
+    <div class="challenge-progress">
+      <div class="challenge-progress-bar"><div class="challenge-progress-fill"></div></div>
+      <span class="challenge-progress-text">0/3</span>
+    </div>
+    <div class="challenge-celebration"></div>
   </div>
   <div class="narrative-note">
     &#x1F4CE; This connects to <a href="03-mlps-optimization.html" style="color: #64ffda;">Ch 3: Optimization</a> where we compare how different optimizers (SGD, Adam, AdaGrad) navigate this exact type of loss landscape with varying curvatures and saddle points.
@@ -2733,6 +2771,30 @@ window.addEventListener('DOMContentLoaded', function() {
   buildQuiz();
 });
 
+</script>
+<script src="../static/learning-tools.js"></script>
+<script>
+new PredictBox('predict-loss', 'lossLR');
+
+const challengeLoss = new ChallengeBox('challenge-loss', [
+  { test: function() { return typeof lossBalls !== 'undefined' && lossBalls[0] && lossBalls[0].path && lossBalls[0].path.length > 20; }, celebration: 'You can see how different learning rates create very different trajectories on the same loss surface!' },
+  { test: function() {
+      if (typeof lossBalls === 'undefined' || !lossBalls[1] || !lossBalls[1].path) return false;
+      var p = lossBalls[1].path;
+      if (p.length < 10) return false;
+      var last = p[p.length-1];
+      return typeof lossFunction === 'function' && lossFunction(last.x, last.y) < 0.5;
+    }, celebration: 'The middle ball found the minimum! Tuning the learning rate is like adjusting your stride length when hiking downhill — too big and you tumble past, too small and you never arrive.' },
+  { test: function() {
+      if (typeof lossBalls === 'undefined' || !lossBalls[2] || !lossBalls[2].path) return false;
+      var p = lossBalls[2].path;
+      if (p.length < 30) return false;
+      var last = p[p.length-1];
+      return typeof lossFunction === 'function' && lossFunction(last.x, last.y) > 1.0;
+    }, celebration: 'The green ball is stuck oscillating! With a large learning rate, each step overshoots the minimum. The ball bounces back and forth across the valley forever. This is why learning rate decay helps — start fast, then slow down as you approach the minimum.' }
+]);
+
+setInterval(function() { challengeLoss.check(); }, 500);
 </script>
 </body>
 </html>

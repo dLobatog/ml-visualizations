@@ -82,6 +82,7 @@
   }
 
 </style>
+<link rel="stylesheet" href="static/learning-tools.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '\\(', right: '\\)', display: false}]});"></script>
@@ -131,6 +132,18 @@
       <span class="value" id="neuronX2Val">0.5</span>
     </div>
   </div>
+  <div class="predict-box" id="predict-neuron">
+    <div class="predict-label">Predict</div>
+    <div class="predict-question">Set both weights to -2.0 and bias to 0. With inputs X1=1 and X2=1, what will the neuron output?</div>
+    <div class="predict-options">
+      <button class="predict-btn" data-choice="neg4">-4.0 (the raw weighted sum)</button>
+      <button class="predict-btn" data-choice="zero" data-correct>0.0 (ReLU clips negatives)</button>
+      <button class="predict-btn" data-choice="pos4">4.0 (absolute value)</button>
+      <button class="predict-btn" data-choice="undefined">Undefined / error</button>
+    </div>
+    <div class="predict-locked-msg">Prediction locked. Now set W1=-2, W2=-2, B=0, X1=1, X2=1 and check the computation box.</div>
+    <div class="predict-result" data-correct-text="Right! The weighted sum is (-2)(1) + (-2)(1) + 0 = -4, but ReLU(x) = max(0, x), so it clips to 0. This is the 'dead neuron' problem — when inputs consistently produce negative pre-activations, the neuron outputs zero and stops learning." data-wrong-text="The weighted sum is (-2)(1) + (-2)(1) + 0 = -4, but ReLU(x) = max(0, x) clips all negatives to zero. So the output is 0.0, not -4. This is why 'dead neurons' happen — if a neuron's pre-activation is always negative, it always outputs 0 and its gradients vanish."></div>
+  </div>
   <div class="insight-box">
     <strong>Key Concepts:</strong>
     <div class="key-point">
@@ -148,6 +161,31 @@
     <div class="formula">$$\text{output} = \text{ReLU}(w_1 \cdot x_1 + w_2 \cdot x_2 + b) = \max(0,\; z)$$</div>
     <div class="interview-tip">A single neuron computes a linear function followed by a non-linearity. Without the activation function, stacking neurons would still be linear.</div>
     <div class="interview-tip">💡 Real-world: Every neural network — from a spam filter to GPT-4 — is built from this basic unit. Understanding one neuron means understanding the building block of all deep learning.</div>
+  </div>
+  <div class="challenge-box" id="challenge-neuron">
+    <div class="challenge-label">Challenge</div>
+    <ul class="challenge-list">
+      <li class="challenge-item" data-idx="0">
+        <span class="challenge-check"></span>
+        <span class="challenge-difficulty easy">Easy</span>
+        <span>Make the neuron output exactly 0 with positive inputs (dead neuron!)</span>
+      </li>
+      <li class="challenge-item" data-idx="1">
+        <span class="challenge-check"></span>
+        <span class="challenge-difficulty medium">Medium</span>
+        <span>Make the neuron output greater than 5.0</span>
+      </li>
+      <li class="challenge-item" data-idx="2">
+        <span class="challenge-check"></span>
+        <span class="challenge-difficulty hard">Hard</span>
+        <span>Find weights where X1=1, X2=0 gives output > 0 but X1=0, X2=1 gives output = 0</span>
+      </li>
+    </ul>
+    <div class="challenge-progress">
+      <div class="challenge-progress-bar"><div class="challenge-progress-fill"></div></div>
+      <span class="challenge-progress-text">0/3</span>
+    </div>
+    <div class="challenge-celebration"></div>
   </div>
 </div>
 
@@ -1223,6 +1261,18 @@ print(f"SiLU:    {F.silu(x).round(decimals=2).tolist()}")
       <button class="btn" id="vgResBtn" onclick="setVGAct('residual')">Residual</button>
     </div>
   </div>
+  <div class="predict-box" id="predict-vg">
+    <div class="predict-label">Predict</div>
+    <div class="predict-question">With Sigmoid activation and 10 layers, what happens to the gradient magnitude at layer 1 (deepest)?</div>
+    <div class="predict-options">
+      <button class="predict-btn" data-choice="same">Stays roughly the same as the output layer</button>
+      <button class="predict-btn" data-choice="vanish" data-correct>Shrinks exponentially — nearly zero</button>
+      <button class="predict-btn" data-choice="explode">Grows exponentially — very large</button>
+      <button class="predict-btn" data-choice="random">Varies randomly layer to layer</button>
+    </div>
+    <div class="predict-locked-msg">Prediction locked. Set depth to 10, keep Sigmoid selected, and observe the gradient bars.</div>
+    <div class="predict-result" data-correct-text="Exactly! Sigmoid's max derivative is 0.25 (at x=0). Multiplying by <0.25 ten times: 0.25^10 = 0.000001. The gradient vanishes exponentially with depth — this is why deep sigmoid networks can't train. Switch to ReLU or Residual to see the fix!" data-wrong-text="Actually, the gradient nearly vanishes to zero. Sigmoid's derivative is at most 0.25. Multiplying that 10 times: 0.25^10 ≈ 0.000001. Each layer shrinks the gradient, so by layer 1 it's essentially zero. This is the vanishing gradient problem — the reason deep networks with sigmoid activations can't learn. Try switching to ReLU or Residual connections to see the solution!"></div>
+  </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Gradients vanish or explode because backprop multiplies derivatives through every layer via the chain rule.
     <div class="formula">$$\frac{\partial L}{\partial W_1} = \frac{\partial L}{\partial h_n} \times \frac{\partial h_n}{\partial h_{n-1}} \times \cdots \times \frac{\partial h_2}{\partial h_1} \times \frac{\partial h_1}{\partial W_1}$$</div>
@@ -1277,6 +1327,31 @@ print(f"Input grad norm: {x.grad.norm().item():.6f}")</code></pre>
         <p class="code-note">He init for ReLU, Xavier for tanh. Proper init prevents vanishing/exploding gradients at startup.</p>
       </div>
     </div>
+  </div>
+  <div class="challenge-box" id="challenge-vg">
+    <div class="challenge-label">Challenge</div>
+    <ul class="challenge-list">
+      <li class="challenge-item" data-idx="0">
+        <span class="challenge-check"></span>
+        <span class="challenge-difficulty easy">Easy</span>
+        <span>Make the gradient vanish: get layer-1 gradient below 0.01</span>
+      </li>
+      <li class="challenge-item" data-idx="1">
+        <span class="challenge-check"></span>
+        <span class="challenge-difficulty medium">Medium</span>
+        <span>Make the gradient explode: get layer-1 gradient above 100</span>
+      </li>
+      <li class="challenge-item" data-idx="2">
+        <span class="challenge-check"></span>
+        <span class="challenge-difficulty hard">Hard</span>
+        <span>Keep gradients stable across all 10 layers (max/min ratio < 5x)</span>
+      </li>
+    </ul>
+    <div class="challenge-progress">
+      <div class="challenge-progress-bar"><div class="challenge-progress-fill"></div></div>
+      <span class="challenge-progress-text">0/3</span>
+    </div>
+    <div class="challenge-celebration"></div>
   </div>
   </div>
 
@@ -4001,6 +4076,65 @@ drawScaling();
 
   buildQuiz();
 })();
+</script>
+<script src="static/learning-tools.js"></script>
+<script>
+// Predict boxes
+new PredictBox('predict-neuron', 'neuronW1');
+new PredictBox('predict-vg', 'vgDepth');
+
+// Challenge boxes - neuron
+const challengeNeuron = new ChallengeBox('challenge-neuron', [
+  { test: function() {
+      var x1 = parseFloat(document.getElementById('neuronX1').value);
+      var x2 = parseFloat(document.getElementById('neuronX2').value);
+      var w1 = parseFloat(document.getElementById('neuronW1').value);
+      var w2 = parseFloat(document.getElementById('neuronW2').value);
+      var b = parseFloat(document.getElementById('neuronB').value);
+      var z = w1*x1 + w2*x2 + b;
+      return x1 > 0 && x2 > 0 && Math.max(0, z) === 0;
+    }, celebration: 'Dead neuron found! When the weighted sum is negative, ReLU outputs 0. In real networks, this means the neuron stops contributing — and stops learning.' },
+  { test: function() {
+      var x1 = parseFloat(document.getElementById('neuronX1').value);
+      var x2 = parseFloat(document.getElementById('neuronX2').value);
+      var w1 = parseFloat(document.getElementById('neuronW1').value);
+      var w2 = parseFloat(document.getElementById('neuronW2').value);
+      var b = parseFloat(document.getElementById('neuronB').value);
+      return Math.max(0, w1*x1 + w2*x2 + b) > 5.0;
+    }, celebration: 'Strong activation! Large weights amplify signals — but in practice, weights this large can cause exploding gradients during training.' },
+  { test: function() {
+      var w1 = parseFloat(document.getElementById('neuronW1').value);
+      var w2 = parseFloat(document.getElementById('neuronW2').value);
+      var b = parseFloat(document.getElementById('neuronB').value);
+      var out1 = Math.max(0, w1*1 + w2*0 + b);
+      var out2 = Math.max(0, w1*0 + w2*1 + b);
+      return out1 > 0 && out2 === 0;
+    }, celebration: 'You built a selective neuron! It responds to X1 but not X2. This is how networks learn features — each neuron becomes sensitive to specific input patterns.' }
+]);
+
+// Challenge boxes - vanishing gradients
+const challengeVG = new ChallengeBox('challenge-vg', [
+  { test: function() {
+      var depth = parseInt(document.getElementById('vgDepth').value);
+      var scale = parseFloat(document.getElementById('vgScale').value);
+      // Approximate: sigmoid derivative max ~0.25, so gradient ~ (0.25*scale)^depth
+      var grad = Math.pow(0.25 * scale, depth);
+      if (typeof vgAct !== 'undefined' && vgAct === 'sigmoid') return grad < 0.01 && depth >= 5;
+      return false;
+    }, celebration: 'The gradient has vanished! Deep sigmoid networks multiply by ~0.25 per layer, so gradients decay exponentially. This is why pre-2012 deep learning was nearly impossible.' },
+  { test: function() {
+      var depth = parseInt(document.getElementById('vgDepth').value);
+      var scale = parseFloat(document.getElementById('vgScale').value);
+      return scale > 2.0 && depth >= 5;
+    }, celebration: 'Exploding gradients! When weight scale > 1/derivative, gradients grow exponentially. In practice this causes NaN losses and training collapse. Gradient clipping is the typical fix.' },
+  { test: function() {
+      var depth = parseInt(document.getElementById('vgDepth').value);
+      return depth >= 10 && (typeof vgAct !== 'undefined') && (vgAct === 'relu' || vgAct === 'residual');
+    }, celebration: 'Stable gradients at depth 10! ReLU (derivative = 1 for positive) and residual connections (additive skip) are the two key innovations that made deep learning practical.' }
+]);
+
+setInterval(function() { challengeNeuron.check(); }, 500);
+setInterval(function() { challengeVG.check(); }, 500);
 </script>
 </body>
 </html>

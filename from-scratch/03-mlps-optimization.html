@@ -145,6 +145,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-okaidia.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+<link rel="stylesheet" href="../static/learning-tools.css">
 </head>
 <body>
 <button id="quizToggle" onclick="toggleQuiz()">&#x1F9E0; Quiz Mode</button>
@@ -477,6 +478,18 @@ print(f"Output norm after 20 blocks: {out.norm():.2f}")</code></pre>
   <div class="param-guidance">
     <strong>Learning Rate Rules of Thumb:</strong> Start with 3e-4 for Adam, 0.01-0.1 for SGD with momentum. If loss explodes, halve the LR. If loss decreases very slowly, double it. Use a learning rate finder (sweep LR from 1e-7 to 1 over one epoch, pick the steepest descent point) for systematic tuning.
   </div>
+  <div class="predict-box" id="predict-opt">
+    <div class="predict-label">Predict</div>
+    <div class="predict-question">All four optimizers (SGD, Momentum, RMSProp, Adam) start from the same point. Which one reaches the minimum first on this loss surface?</div>
+    <div class="predict-options">
+      <button class="predict-btn" data-choice="sgd">SGD — simple and direct</button>
+      <button class="predict-btn" data-choice="momentum">Momentum — builds up speed</button>
+      <button class="predict-btn" data-choice="rmsprop">RMSProp — adapts per dimension</button>
+      <button class="predict-btn" data-choice="adam" data-correct>Adam — combines momentum + adaptation</button>
+    </div>
+    <div class="predict-locked-msg">Prediction locked. Hit Run and watch the race.</div>
+    <div class="predict-result" data-correct-text="Adam usually wins! It combines momentum (for acceleration) with RMSProp (for per-parameter adaptation). But 'usually' is key — on some surfaces, SGD with momentum actually generalizes better. This is why many large-scale training runs use SGD: it finds flatter minima that generalize better to test data." data-wrong-text="On most surfaces, Adam wins because it combines momentum (acceleration through flat regions) with RMSProp (per-parameter learning rates). However, this isn't universal — research shows SGD with momentum often finds flatter minima that generalize better. That's why you see both in practice: Adam for fast convergence, SGD for final model quality."></div>
+  </div>
   <div class="viz-canvas">
     <canvas id="optimizerCanvas" width="1200" height="520"></canvas>
   </div>
@@ -547,6 +560,31 @@ for step in range(50):
       <li style="margin-bottom:8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Using the same learning rate for Adam and SGD. Adam typically needs 10x smaller LR. <strong style="color:#4ecdc4;">Fix:</strong> Adam: 1e-4 to 3e-4. SGD+momentum: 0.01 to 0.1.</li>
       <li><strong style="color:#ff6b6b;">Mistake:</strong> Not using a learning rate schedule. A fixed LR either starts too high (diverges early) or too low (converges slowly). <strong style="color:#4ecdc4;">Fix:</strong> Use cosine annealing or linear warmup + decay for most tasks.</li>
     </ul>
+  </div>
+  <div class="challenge-box" id="challenge-opt">
+    <div class="challenge-label">Challenge</div>
+    <ul class="challenge-list">
+      <li class="challenge-item" data-idx="0">
+        <span class="challenge-check"></span>
+        <span class="challenge-difficulty easy">Easy</span>
+        <span>Run all optimizers until at least one converges</span>
+      </li>
+      <li class="challenge-item" data-idx="1">
+        <span class="challenge-check"></span>
+        <span class="challenge-difficulty medium">Medium</span>
+        <span>Find a learning rate where SGD diverges but Adam still converges</span>
+      </li>
+      <li class="challenge-item" data-idx="2">
+        <span class="challenge-check"></span>
+        <span class="challenge-difficulty hard">Hard</span>
+        <span>Find a learning rate where ALL optimizers converge in under 100 steps</span>
+      </li>
+    </ul>
+    <div class="challenge-progress">
+      <div class="challenge-progress-bar"><div class="challenge-progress-fill"></div></div>
+      <span class="challenge-progress-text">0/3</span>
+    </div>
+    <div class="challenge-celebration"></div>
   </div>
   <div class="param-guidance">
     <strong>Momentum:</strong> 0.9 is almost always right. 0.99 for very smooth landscapes (e.g., large batch training). 0.0 (no momentum) is almost never optimal.
@@ -3421,6 +3459,26 @@ window.addEventListener('DOMContentLoaded', function() {
   buildQuiz();
 });
 
+</script>
+<script src="../static/learning-tools.js"></script>
+<script>
+new PredictBox('predict-opt', 'btnOptRun');
+
+const challengeOpt = new ChallengeBox('challenge-opt', [
+  { test: function() { return typeof optStep !== 'undefined' && optStep > 30; }, celebration: 'Watch how the paths differ! SGD zigzags, Momentum overshoots then corrects, and Adam smoothly adapts. Each optimizer "sees" the loss surface differently.' },
+  { test: function() {
+      if (typeof optPaths === 'undefined' || typeof optStep === 'undefined') return false;
+      if (optStep < 20) return false;
+      var lr = parseFloat(document.getElementById('optLr').value);
+      return lr > 0.08;
+    }, celebration: 'Adam\'s adaptive learning rates save it at high lr values where SGD explodes. Adam effectively divides the learning rate by the running average of gradient magnitudes — large gradients get dampened automatically.' },
+  { test: function() {
+      if (typeof optStep === 'undefined') return false;
+      return optStep > 20 && optStep < 100;
+    }, celebration: 'Fast convergence for all! The optimal learning rate depends on the loss surface curvature. In practice, learning rate finders (like the one in fastai) sweep across values to find this sweet spot automatically.' }
+]);
+
+setInterval(function() { challengeOpt.check(); }, 500);
 </script>
 </body>
 </html>

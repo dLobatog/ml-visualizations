@@ -161,6 +161,7 @@
   }
 
 </style>
+<link rel="stylesheet" href="static/learning-tools.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '\\(', right: '\\)', display: false}]});"></script>
@@ -963,6 +964,18 @@ print(f"KL(q||p) = {kl_qp:.4f}")  # reverse: mode-seeking</code></pre>
     <button class="btn" onclick="resetGDV()">↺ Reset</button>
     <button class="btn" id="gdvPlayBtn" onclick="toggleGDV()">▶ Start</button>
   </div>
+  <div class="predict-box" id="predict-gdv-lr">
+    <div class="predict-label">Predict</div>
+    <div class="predict-question">Set the learning rate slider to its maximum. Before you do — what do you think will happen to the optimizer paths?</div>
+    <div class="predict-options">
+      <button class="predict-btn" data-choice="faster">They converge faster</button>
+      <button class="predict-btn" data-choice="diverge" data-correct>They overshoot and diverge</button>
+      <button class="predict-btn" data-choice="same">No real change</button>
+      <button class="predict-btn" data-choice="oscillate">They oscillate but still converge</button>
+    </div>
+    <div class="predict-locked-msg">Prediction locked. Now crank the learning rate slider all the way up and hit Play.</div>
+    <div class="predict-result" data-correct-text="Exactly! A learning rate that's too high causes the optimizer to overshoot the minimum — each step jumps past the valley and the loss explodes. This is why learning rate is the single most important hyperparameter to tune." data-wrong-text="Not quite. With an extremely high learning rate, the gradient step overshoots the minimum entirely. Instead of descending into the valley, the optimizer bounces further away each step — the loss diverges to infinity. This is why learning rate is the most important hyperparameter."></div>
+  </div>
   <div class="legend">
     <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>SGD</div>
     <div class="legend-item"><div class="legend-dot" style="background:#4ecdc4"></div>Momentum</div>
@@ -1040,6 +1053,31 @@ class Adam:
         <p class="code-note">Adam adapts learning rate per-parameter using gradient moments. Default choice for most deep learning.</p>
       </div>
     </div>
+  </div>
+  <div class="challenge-box" id="challenge-gdv">
+    <div class="challenge-label">Challenge</div>
+    <ul class="challenge-list">
+      <li class="challenge-item" data-idx="0">
+        <span class="challenge-check"></span>
+        <span class="challenge-difficulty easy">Easy</span>
+        <span>Get all 3 optimizers to reach the minimum (run for 50+ steps)</span>
+      </li>
+      <li class="challenge-item" data-idx="1">
+        <span class="challenge-check"></span>
+        <span class="challenge-difficulty medium">Medium</span>
+        <span>Find a learning rate where SGD gets stuck but Adam converges</span>
+      </li>
+      <li class="challenge-item" data-idx="2">
+        <span class="challenge-check"></span>
+        <span class="challenge-difficulty hard">Hard</span>
+        <span>Make all optimizers diverge (paths leave the canvas)</span>
+      </li>
+    </ul>
+    <div class="challenge-progress">
+      <div class="challenge-progress-bar"><div class="challenge-progress-fill"></div></div>
+      <span class="challenge-progress-text">0/3</span>
+    </div>
+    <div class="challenge-celebration"></div>
   </div>
 </div>
   </div>
@@ -1319,6 +1357,18 @@ for i in range(len(eigenvalues)):
     </div>
     <button class="btn" onclick="animateBV()">▶ Animate Sweep</button>
   </div>
+  <div class="predict-box" id="predict-bv">
+    <div class="predict-label">Predict</div>
+    <div class="predict-question">You're about to increase the polynomial degree from 1 to 15. What happens to the model's fit on the training data vs. new data?</div>
+    <div class="predict-options">
+      <button class="predict-btn" data-choice="both-better">Both improve — more power is always better</button>
+      <button class="predict-btn" data-choice="train-better" data-correct>Training fit improves, but test error gets worse</button>
+      <button class="predict-btn" data-choice="both-worse">Both get worse — too much complexity hurts</button>
+      <button class="predict-btn" data-choice="test-better">Test improves more than training</button>
+    </div>
+    <div class="predict-locked-msg">Prediction locked. Now drag the complexity slider to 15 and watch what happens.</div>
+    <div class="predict-result" data-correct-text="Spot on! This is the bias-variance tradeoff in action. High complexity (degree 15) means the model memorizes training noise — low bias, but high variance. The wiggly curve fits training points perfectly but generalizes terribly. The sweet spot is in the middle." data-wrong-text="Not quite. High-degree polynomials memorize the training data (low training error) but fit the noise too — they wiggle wildly between points, causing terrible generalization. This is overfitting: low bias but high variance. The sweet spot is in the middle where total error is minimized."></div>
+  </div>
   <div class="legend">
     <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>Bias²</div>
     <div class="legend-item"><div class="legend-dot" style="background:#4ecdc4"></div>Variance</div>
@@ -1389,6 +1439,31 @@ for degree in [1, 3, 10]:
         <p class="code-note">Low degree = high bias. High degree = high variance. Cross-validation finds the sweet spot.</p>
       </div>
     </div>
+  </div>
+  <div class="challenge-box" id="challenge-bv">
+    <div class="challenge-label">Challenge</div>
+    <ul class="challenge-list">
+      <li class="challenge-item" data-idx="0">
+        <span class="challenge-check"></span>
+        <span class="challenge-difficulty easy">Easy</span>
+        <span>Find the complexity level that minimizes total error (the green line)</span>
+      </li>
+      <li class="challenge-item" data-idx="1">
+        <span class="challenge-check"></span>
+        <span class="challenge-difficulty medium">Medium</span>
+        <span>Find the point where bias and variance curves cross</span>
+      </li>
+      <li class="challenge-item" data-idx="2">
+        <span class="challenge-check"></span>
+        <span class="challenge-difficulty hard">Hard</span>
+        <span>Get total error below 0.15 — is it even possible?</span>
+      </li>
+    </ul>
+    <div class="challenge-progress">
+      <div class="challenge-progress-bar"><div class="challenge-progress-fill"></div></div>
+      <span class="challenge-progress-text">0/3</span>
+    </div>
+    <div class="challenge-celebration"></div>
   </div>
 </div>
   </div>
@@ -4928,6 +5003,35 @@ window.toggleQuiz = function() {
 
 buildQuiz();
 })();
+</script>
+<script src="static/learning-tools.js"></script>
+<script>
+// Predict boxes
+new PredictBox('predict-gdv-lr', 'gdvLR');
+new PredictBox('predict-bv', 'bvComplexity');
+
+// Challenge boxes
+const challengeGDV = new ChallengeBox('challenge-gdv', [
+  { test: function() { return typeof gdvStep !== 'undefined' && gdvStep > 50; }, celebration: 'All optimizers running! Watch how momentum and Adam handle the curves differently than vanilla SGD.' },
+  { test: function() { return typeof gdvStep !== 'undefined' && gdvStep > 20 && typeof gdvPaths !== 'undefined' && gdvPaths.sgd && gdvPaths.adam && gdvPaths.sgd.length > 0 && gdvPaths.adam.length > 0 && gdvPaths.adam[gdvPaths.adam.length-1] && gdvPaths.sgd[gdvPaths.sgd.length-1] && Math.abs(gdvPaths.sgd[gdvPaths.sgd.length-1].x - gdvPaths.sgd[0].x) < 0.1 && Math.abs(gdvPaths.adam[gdvPaths.adam.length-1].x - gdvPaths.sgd[gdvPaths.adam.length-1].x) > 0.3; }, celebration: 'You found it! Adam\'s adaptive learning rate lets it escape flat regions where SGD gets stuck.' },
+  { test: function() { var lr = parseFloat(document.getElementById('gdvLR').value); return lr > 1.5 && typeof gdvStep !== 'undefined' && gdvStep > 5; }, celebration: 'Boom! When the learning rate is too high, even Adam can\'t save you. The gradients explode.' }
+]);
+
+const challengeBV = new ChallengeBox('challenge-bv', [
+  { test: function() { var c = parseInt(document.getElementById('bvComplexity').value); return c >= 3 && c <= 6; }, celebration: 'Nice! Complexity 3-6 tends to minimize total error. This is the sweet spot between underfitting and overfitting.' },
+  { test: function() { var c = parseInt(document.getElementById('bvComplexity').value); return c >= 4 && c <= 7; }, celebration: 'Found it! Around degree 4-7, bias and variance are roughly equal — the classic crossover point.' },
+  { test: function() { var c = parseInt(document.getElementById('bvComplexity').value); return c >= 2 && c <= 5; }, celebration: 'That\'s about as low as it gets! Some irreducible error always remains because of noise in the data — no model can eliminate it.' }
+]);
+
+// Hook challenges into draw functions
+var _origDrawGDV = typeof drawGDV === 'function' ? drawGDV : null;
+if (_origDrawGDV) {
+  var _gdvCheckInterval = setInterval(function() { challengeGDV.check(); }, 500);
+}
+var _origDrawBV = typeof drawBV === 'function' ? drawBV : null;
+if (_origDrawBV) {
+  var _bvCheckInterval = setInterval(function() { challengeBV.check(); }, 500);
+}
 </script>
 </body>
 </html>
