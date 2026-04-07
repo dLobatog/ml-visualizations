@@ -1492,8 +1492,12 @@ for degree in [1, 3, 10]:
     <strong>Key Insight:</strong> L1 regularization induces sparsity by constraining weights to a diamond region.
     <div class="formula">$$\text{Loss} + \color{#64ffda}{\lambda \cdot \sum |w_i|} \quad \text{(add L1 penalty)}$$</div>
     <div class="key-point">
+      <span class="label">Reading the diagram:</span>
+      <span class="desc"><b style="color:#ffd93d;">w*</b> (yellow dot) = the weights that minimize loss with <em>no</em> regularization — the best unrestricted fit. <b style="color:#ffd93d;">Yellow ellipses</b> = loss contours around w* (closer to w* = lower loss). The <b style="color:#ff6b6b;">red diamond</b> (L1) or <b style="color:#4ecdc4;">teal circle</b> (L2) = the region your weights are allowed to live in. The regularized solution is where the smallest loss contour just touches the constraint boundary.</span>
+    </div>
+    <div class="key-point">
       <span class="label">Geometric intuition:</span>
-      <span class="desc">Constraint region is diamond-shaped (axis-aligned). Loss contours are elliptical. Optimum hits corner on axes → many w=0.</span>
+      <span class="desc">L1's diamond has corners on the axes, so the contour typically touches a corner — pushing weights to exactly zero. L2's circle has no corners, so the contour touches the smooth boundary — weights shrink but rarely hit zero.</span>
     </div>
     <div class="key-point">
       <span class="label">Sparsity:</span>
@@ -4019,14 +4023,18 @@ function drawReg() {
     ctx.stroke();
   }
 
-  // w* marker
+  // w* marker — the unconstrained optimum
   ctx.fillStyle = '#ffd93d';
   ctx.beginPath();
   ctx.arc(cx + wStarX * scale, cy - wStarY * scale, 5, 0, Math.PI * 2);
   ctx.fill();
   ctx.fillStyle = '#ffd93d';
-  ctx.font = '15px Inter';
-  ctx.fillText('w*', cx + wStarX * scale, cy - wStarY * scale - 12);
+  ctx.font = '14px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText('w* (no reg.)', cx + wStarX * scale + 8, cy - wStarY * scale - 8);
+  ctx.font = '11px Inter';
+  ctx.fillStyle = '#b0a060';
+  ctx.fillText('best fit without penalty', cx + wStarX * scale + 8, cy - wStarY * scale + 8);
 
   function drawConstraint(type, color, r) {
     ctx.strokeStyle = color;
