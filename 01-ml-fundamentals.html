@@ -164,6 +164,7 @@
 </style>
 <link rel="stylesheet" href="static/learning-tools.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.plot.ly/plotly-gl3d-2.35.2.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '\\(', right: '\\)', display: false}]});"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-okaidia.min.css">
@@ -1472,20 +1473,15 @@ for degree in [1, 3, 10]:
 <!-- 12. L1 vs L2 REGULARIZATION -->
 <div class="viz-section">
   <h2>L1 vs L2 Regularization</h2>
-  <p class="subtitle">The bowl is the training error — the bottom (w*) is where the model fits training data best. The colored fence is the regularization budget — the model must stay inside. Drag the strength slider to shrink the fence and watch where the model ends up.</p>
+  <p class="subtitle">The bowl is the training error — the bottom (w*) is where the model fits training data best. The colored fence is the regularization budget — the model must stay inside. <b>Click and drag to rotate. Scroll to zoom.</b> Use the slider to shrink the fence.</p>
   <div class="viz-canvas">
-    <canvas id="regCanvas" width="900" height="520"></canvas>
+    <div id="regPlot" style="width:100%; height:520px;"></div>
   </div>
   <div class="controls">
     <div class="control-group">
       <label>Regularization Strength (λ)</label>
       <input type="range" id="regLambda" min="1" max="100" value="30" oninput="drawReg()">
       <span class="value" id="regLambdaVal">0.30</span>
-    </div>
-    <div class="control-group">
-      <label>Rotate View</label>
-      <input type="range" id="regAngle" min="0" max="360" value="35" oninput="drawReg()">
-      <span class="value" id="regAngleVal">35°</span>
     </div>
     <div class="tab-bar">
       <button class="btn active" id="regL1Btn" onclick="setRegType('l1')">L1 (Lasso)</button>
@@ -3986,335 +3982,182 @@ function setRegType(type) {
 }
 
 function drawReg() {
-  const canvas = document.getElementById('regCanvas');
-  const ctx = canvas.getContext('2d');
-  const W = canvas.width, H = canvas.height;
-  const lambda = parseInt(document.getElementById('regLambda').value) / 100;
-  const angleDeg = parseInt(document.getElementById('regAngle').value);
+  var lambda = parseInt(document.getElementById('regLambda').value) / 100;
   document.getElementById('regLambdaVal').textContent = lambda.toFixed(2);
-  document.getElementById('regAngleVal').textContent = angleDeg + '\u00b0';
-
-  ctx.clearRect(0, 0, W, H);
-
-  // --- 3D Projection Setup ---
-  const cx = W * 0.48, cy = H * 0.52;   // center of projection
-  const rotY = angleDeg * Math.PI / 180; // horizontal rotation
-  const tiltX = 0.7;                     // steeper downward tilt (~40°)
-  const sc = 58;                         // world-to-pixel scale
 
   // w* position (bottom of the bowl)
-  const wsx = 1.2, wsy = 1.0;
+  var wsx = 1.2, wsy = 1.0;
 
-  // Loss function: paraboloid centered at w* — steep enough to see!
+  // Loss function: paraboloid centered at w*
   function loss(w1, w2) {
-    const d1 = w1 - wsx, d2 = w2 - wsy;
-    return 0.45 * (d1 * d1 * 1.3 + d2 * d2 * 0.9);
+    var d1 = w1 - wsx, d2 = w2 - wsy;
+    return 0.5 * (d1 * d1 * 1.3 + d2 * d2 * 0.9);
   }
 
-  // 3D → 2D projection with rotation + tilt
-  function proj(x, y, z) {
-    const cosR = Math.cos(rotY), sinR = Math.sin(rotY);
-    const rx = x * cosR - y * sinR;
-    const ry = x * sinR + y * cosR;
-    const cosT = Math.cos(tiltX), sinT = Math.sin(tiltX);
-    const py = ry * cosT - z * sinT;
-    const pz = ry * sinT + z * cosT;
-    return { sx: cx + rx * sc, sy: cy - py * sc * 0.7 - pz * sc * 0.55, depth: pz };
+  // --- Build loss surface ---
+  var n = 50, range = 3.0;
+  var w1Vals = [], w2Vals = [], zSurf = [];
+  for (var i = 0; i <= n; i++) {
+    var w1 = -range + (2 * range * i / n);
+    w1Vals.push(w1);
+    w2Vals.push(-range + (2 * range * i / n));
   }
-
-  // --- Draw ground grid ---
-  ctx.strokeStyle = '#1a1a3a';
-  ctx.lineWidth = 0.5;
-  for (let g = -3; g <= 3; g += 0.5) {
-    ctx.beginPath();
-    var p0 = proj(g, -3, 0), p1 = proj(g, 3, 0);
-    ctx.moveTo(p0.sx, p0.sy); ctx.lineTo(p1.sx, p1.sy);
-    ctx.stroke();
-    ctx.beginPath();
-    p0 = proj(-3, g, 0); p1 = proj(3, g, 0);
-    ctx.moveTo(p0.sx, p0.sy); ctx.lineTo(p1.sx, p1.sy);
-    ctx.stroke();
-  }
-
-  // --- Draw loss surface as filled colored patches + wireframe ---
-  const step = 0.4, range = 3.0, zClamp = 5;
-
-  // Helper: color by height — deep blue (low) → bright orange (high)
-  function surfColor(z, alpha) {
-    var t = Math.min(z / 4, 1);
-    var r = Math.floor(30 + t * 220);
-    var g = Math.floor(60 + t * 130 - t * t * 80);
-    var b = Math.floor(160 - t * 140);
-    return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
-  }
-
-  // Draw filled quads (back-to-front would be ideal, but simple approach works for a bowl)
-  for (let w1 = -range; w1 < range; w1 += step) {
-    for (let w2 = -range; w2 < range; w2 += step) {
-      var z00 = Math.min(loss(w1, w2), zClamp);
-      var z10 = Math.min(loss(w1 + step, w2), zClamp);
-      var z11 = Math.min(loss(w1 + step, w2 + step), zClamp);
-      var z01 = Math.min(loss(w1, w2 + step), zClamp);
-      var avgZ = (z00 + z10 + z11 + z01) / 4;
-
-      var p00 = proj(w1, w2, z00);
-      var p10 = proj(w1 + step, w2, z10);
-      var p11 = proj(w1 + step, w2 + step, z11);
-      var p01 = proj(w1, w2 + step, z01);
-
-      // Filled quad
-      ctx.fillStyle = surfColor(avgZ, 0.35);
-      ctx.beginPath();
-      ctx.moveTo(p00.sx, p00.sy);
-      ctx.lineTo(p10.sx, p10.sy);
-      ctx.lineTo(p11.sx, p11.sy);
-      ctx.lineTo(p01.sx, p01.sy);
-      ctx.closePath();
-      ctx.fill();
-
-      // Wireframe edges
-      ctx.strokeStyle = surfColor(avgZ, 0.6);
-      ctx.lineWidth = 0.8;
-      ctx.stroke();
+  for (var i = 0; i <= n; i++) {
+    var row = [];
+    for (var j = 0; j <= n; j++) {
+      var z = loss(w1Vals[i], w2Vals[j]);
+      row.push(Math.min(z, 5));
     }
+    zSurf.push(row);
   }
 
-  // --- Draw constraint fence (vertical wall) ---
-  const budget = 2.5 * (1 - lambda * 0.8);
-  const fenceH = 3.5; // how tall the fence is
-  const fenceSteps = 80;
+  var traces = [];
 
-  function drawFence(type, color, rad) {
-    // Draw the fence as vertical lines + top/bottom outlines
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
+  // Loss surface
+  traces.push({
+    type: 'surface', x: w1Vals, y: w2Vals, z: zSurf,
+    colorscale: [[0,'#1a237e'],[0.15,'#283593'],[0.3,'#3949ab'],[0.5,'#f9a825'],[0.75,'#ff6f00'],[1,'#e65100']],
+    opacity: 0.85, showscale: false,
+    contours: { z: { show: true, usecolormap: true, highlightcolor: '#fff', project: { z: false } } },
+    name: 'Training error',
+    hovertemplate: 'w\u2081=%{x:.2f}<br>w\u2082=%{y:.2f}<br>Error=%{z:.2f}<extra>Training error</extra>'
+  });
 
-    // Bottom outline on ground
-    ctx.beginPath();
-    for (let i = 0; i <= fenceSteps; i++) {
-      var a = (i / fenceSteps) * Math.PI * 2;
+  // w* marker
+  traces.push({
+    type: 'scatter3d', x: [wsx], y: [wsy], z: [0],
+    mode: 'markers+text', text: ['w* (bottom of bowl)'], textposition: 'top center',
+    textfont: { color: '#ffd93d', size: 13, family: 'Inter' },
+    marker: { size: 8, color: '#ffd93d', symbol: 'diamond' },
+    name: 'w* = lowest error', showlegend: true,
+    hovertemplate: 'w*: best fit<br>w\u2081=%{x:.2f}, w\u2082=%{y:.2f}<extra></extra>'
+  });
+
+  // --- Build fence(s) ---
+  var budget = 2.5 * (1 - lambda * 0.8);
+  var fenceN = 100;
+
+  function buildFence(type, rad) {
+    var fx = [], fy = [], fzBot = [], fzTop = [];
+    for (var i = 0; i <= fenceN; i++) {
+      var a = (i / fenceN) * Math.PI * 2;
       var fw1, fw2;
       if (type === 'l1') {
-        // Diamond: |w1| + |w2| = rad
         var t4 = a / (Math.PI * 2) * 4;
-        var seg = Math.floor(t4);
-        var frac = t4 - seg;
+        var seg = Math.floor(t4); var frac = t4 - seg;
         if (seg === 0) { fw1 = rad * (1 - frac); fw2 = rad * frac; }
         else if (seg === 1) { fw1 = -rad * frac; fw2 = rad * (1 - frac); }
         else if (seg === 2) { fw1 = -rad * (1 - frac); fw2 = -rad * frac; }
         else { fw1 = rad * frac; fw2 = -rad * (1 - frac); }
       } else {
-        fw1 = rad * Math.cos(a);
-        fw2 = rad * Math.sin(a);
+        fw1 = rad * Math.cos(a); fw2 = rad * Math.sin(a);
       }
-      var p = proj(fw1, fw2, 0);
-      if (i === 0) ctx.moveTo(p.sx, p.sy); else ctx.lineTo(p.sx, p.sy);
+      fx.push(fw1); fy.push(fw2); fzBot.push(0); fzTop.push(4.5);
     }
-    ctx.closePath();
-    ctx.stroke();
+    return { x: fx, y: fy, zBot: fzBot, zTop: fzTop };
+  }
 
-    // Vertical fence panels (draw every few steps)
-    for (let i = 0; i < fenceSteps; i += 2) {
-      var a = (i / fenceSteps) * Math.PI * 2;
-      var fw1, fw2;
+  function addFenceTraces(type, color, rad, label) {
+    var f = buildFence(type, rad);
+    // Bottom ring
+    traces.push({ type:'scatter3d', x:f.x, y:f.y, z:f.zBot, mode:'lines',
+      line:{color:color,width:5}, name:label, showlegend:true,
+      hovertemplate: label+'<extra></extra>' });
+    // Top ring
+    traces.push({ type:'scatter3d', x:f.x, y:f.y, z:f.zTop, mode:'lines',
+      line:{color:color,width:4}, showlegend:false, hoverinfo:'skip' });
+    // Vertical posts
+    var postInterval = Math.floor(fenceN / 20);
+    for (var i = 0; i < fenceN; i += postInterval) {
+      traces.push({ type:'scatter3d', x:[f.x[i],f.x[i]], y:[f.y[i],f.y[i]], z:[0, 4.5],
+        mode:'lines', line:{color:color,width:2}, showlegend:false, hoverinfo:'skip' });
+    }
+  }
+
+  // Find regularized solution on fence
+  function findBestOnFence(type, rad) {
+    var bestW1=0, bestW2=0, bestL=Infinity;
+    for (var i = 0; i < 500; i++) {
+      var a = (i / 500) * Math.PI * 2, fw1, fw2;
       if (type === 'l1') {
         var t4 = a / (Math.PI * 2) * 4;
-        var seg = Math.floor(t4);
-        var frac = t4 - seg;
+        var seg = Math.floor(t4); var frac = t4 - seg;
         if (seg === 0) { fw1 = rad * (1 - frac); fw2 = rad * frac; }
         else if (seg === 1) { fw1 = -rad * frac; fw2 = rad * (1 - frac); }
         else if (seg === 2) { fw1 = -rad * (1 - frac); fw2 = -rad * frac; }
         else { fw1 = rad * frac; fw2 = -rad * (1 - frac); }
-      } else {
-        fw1 = rad * Math.cos(a);
-        fw2 = rad * Math.sin(a);
-      }
-      var pb = proj(fw1, fw2, 0);
-      var pt = proj(fw1, fw2, fenceH);
-      ctx.globalAlpha = 0.25;
-      ctx.beginPath();
-      ctx.moveTo(pb.sx, pb.sy); ctx.lineTo(pt.sx, pt.sy);
-      ctx.lineWidth = 1;
-      ctx.stroke();
-      ctx.globalAlpha = 1;
-    }
-
-    // Top outline
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    for (let i = 0; i <= fenceSteps; i++) {
-      var a = (i / fenceSteps) * Math.PI * 2;
-      var fw1, fw2;
-      if (type === 'l1') {
-        var t4 = a / (Math.PI * 2) * 4;
-        var seg = Math.floor(t4);
-        var frac = t4 - seg;
-        if (seg === 0) { fw1 = rad * (1 - frac); fw2 = rad * frac; }
-        else if (seg === 1) { fw1 = -rad * frac; fw2 = rad * (1 - frac); }
-        else if (seg === 2) { fw1 = -rad * (1 - frac); fw2 = -rad * frac; }
-        else { fw1 = rad * frac; fw2 = -rad * (1 - frac); }
-      } else {
-        fw1 = rad * Math.cos(a);
-        fw2 = rad * Math.sin(a);
-      }
-      var p = proj(fw1, fw2, fenceH);
-      if (i === 0) ctx.moveTo(p.sx, p.sy); else ctx.lineTo(p.sx, p.sy);
-    }
-    ctx.closePath();
-    ctx.stroke();
-
-    // Fence label
-    var lp = proj(type === 'l1' ? rad : rad * 0.7, type === 'l1' ? 0 : rad * 0.7, fenceH + 0.5);
-    ctx.fillStyle = color;
-    ctx.font = 'bold 14px Inter';
-    ctx.textAlign = 'center';
-    ctx.fillText(type === 'l1' ? 'L1 fence (diamond)' : 'L2 fence (circle)', lp.sx, lp.sy);
-  }
-
-  if (regType === 'l1' || regType === 'both') {
-    drawFence('l1', '#ff6b6b', budget);
-  }
-  if (regType === 'l2' || regType === 'both') {
-    drawFence('l2', '#4ecdc4', regType === 'both' ? budget * 0.95 : budget);
-  }
-
-  // --- Draw w* marker at the bottom of the bowl ---
-  var zStar = loss(wsx, wsy); // should be 0
-  var pStar = proj(wsx, wsy, zStar);
-  ctx.fillStyle = '#ffd93d';
-  ctx.beginPath();
-  ctx.arc(pStar.sx, pStar.sy, 7, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = '#ffd93d';
-  ctx.lineWidth = 2;
-  ctx.stroke();
-  ctx.fillStyle = '#ffd93d';
-  ctx.font = 'bold 15px Inter';
-  ctx.textAlign = 'left';
-  ctx.fillText('w*', pStar.sx + 12, pStar.sy - 2);
-  ctx.font = '12px Inter';
-  ctx.fillStyle = '#ccb840';
-  ctx.fillText('bottom of bowl', pStar.sx + 12, pStar.sy + 14);
-  ctx.fillText('(lowest training error)', pStar.sx + 12, pStar.sy + 28);
-
-  // --- Draw regularized solution (where fence meets the bowl) ---
-  function findFencePoint(type, rad) {
-    // Find the point on the fence boundary closest to w*
-    var bestW1 = 0, bestW2 = 0, bestLoss = Infinity;
-    for (let i = 0; i < 200; i++) {
-      var a = (i / 200) * Math.PI * 2;
-      var fw1, fw2;
-      if (type === 'l1') {
-        var t4 = a / (Math.PI * 2) * 4;
-        var seg = Math.floor(t4);
-        var frac = t4 - seg;
-        if (seg === 0) { fw1 = rad * (1 - frac); fw2 = rad * frac; }
-        else if (seg === 1) { fw1 = -rad * frac; fw2 = rad * (1 - frac); }
-        else if (seg === 2) { fw1 = -rad * (1 - frac); fw2 = -rad * frac; }
-        else { fw1 = rad * frac; fw2 = -rad * (1 - frac); }
-      } else {
-        fw1 = rad * Math.cos(a);
-        fw2 = rad * Math.sin(a);
-      }
+      } else { fw1 = rad * Math.cos(a); fw2 = rad * Math.sin(a); }
       var l = loss(fw1, fw2);
-      if (l < bestLoss) { bestLoss = l; bestW1 = fw1; bestW2 = fw2; }
+      if (l < bestL) { bestL = l; bestW1 = fw1; bestW2 = fw2; }
     }
-    return [bestW1, bestW2, bestLoss];
+    return [bestW1, bestW2, bestL];
   }
-
-  // Check if w* is already inside the fence
   function isInside(type, rad) {
     if (type === 'l1') return Math.abs(wsx) + Math.abs(wsy) <= rad;
     return Math.sqrt(wsx*wsx + wsy*wsy) <= rad;
   }
 
   if (regType === 'l1' || regType === 'both') {
+    addFenceTraces('l1', '#ff6b6b', budget, 'L1 fence (diamond)');
     if (!isInside('l1', budget)) {
-      var s = findFencePoint('l1', budget);
-      var ps = proj(s[0], s[1], s[2]);
-      ctx.fillStyle = '#ff6b6b';
-      ctx.beginPath();
-      ctx.arc(ps.sx, ps.sy, 7, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = '#ff4444';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      ctx.fillStyle = '#ff6b6b';
-      ctx.font = 'bold 13px Inter';
-      ctx.textAlign = 'right';
-      ctx.fillText('L1 answer', ps.sx - 12, ps.sy - 6);
-      ctx.font = '11px Inter';
-      ctx.fillText('w\u2081=' + s[0].toFixed(2) + ', w\u2082=' + s[1].toFixed(2), ps.sx - 12, ps.sy + 10);
-
-      // Draw dashed line from w* to regularized point
-      ctx.setLineDash([4, 4]);
-      ctx.strokeStyle = '#ff6b6b88';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(pStar.sx, pStar.sy);
-      ctx.lineTo(ps.sx, ps.sy);
-      ctx.stroke();
-      ctx.setLineDash([]);
+      var s = findBestOnFence('l1', budget);
+      traces.push({ type:'scatter3d', x:[s[0]], y:[s[1]], z:[s[2]],
+        mode:'markers+text', text:['L1 answer (w\u2081='+s[0].toFixed(2)+', w\u2082='+s[1].toFixed(2)+')'],
+        textposition:'top left', textfont:{color:'#ff6b6b',size:12,family:'Inter'},
+        marker:{size:7,color:'#ff6b6b',symbol:'circle'}, name:'L1 result', showlegend:false,
+        hovertemplate:'L1 result<br>w\u2081=%{x:.2f}, w\u2082=%{y:.2f}<br>Error=%{z:.2f}<extra></extra>' });
+      // Line from w* to L1 answer
+      traces.push({ type:'scatter3d', x:[wsx,s[0]], y:[wsy,s[1]], z:[0,s[2]],
+        mode:'lines', line:{color:'#ff6b6b',width:3,dash:'dash'}, showlegend:false, hoverinfo:'skip' });
     }
   }
-
   if (regType === 'l2' || regType === 'both') {
     var bR = regType === 'both' ? budget * 0.95 : budget;
+    addFenceTraces('l2', '#4ecdc4', bR, 'L2 fence (circle)');
     if (!isInside('l2', bR)) {
-      var s = findFencePoint('l2', bR);
-      var ps = proj(s[0], s[1], s[2]);
-      ctx.fillStyle = '#4ecdc4';
-      ctx.beginPath();
-      ctx.arc(ps.sx, ps.sy, 7, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = '#3ab5ad';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      ctx.fillStyle = '#4ecdc4';
-      ctx.font = 'bold 13px Inter';
-      ctx.textAlign = 'left';
-      ctx.fillText('L2 answer', ps.sx + 12, ps.sy - 6);
-      ctx.font = '11px Inter';
-      ctx.fillText('w\u2081=' + s[0].toFixed(2) + ', w\u2082=' + s[1].toFixed(2), ps.sx + 12, ps.sy + 10);
-
-      ctx.setLineDash([4, 4]);
-      ctx.strokeStyle = '#4ecdc488';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(pStar.sx, pStar.sy);
-      ctx.lineTo(ps.sx, ps.sy);
-      ctx.stroke();
-      ctx.setLineDash([]);
+      var s = findBestOnFence('l2', bR);
+      traces.push({ type:'scatter3d', x:[s[0]], y:[s[1]], z:[s[2]],
+        mode:'markers+text', text:['L2 answer (w\u2081='+s[0].toFixed(2)+', w\u2082='+s[1].toFixed(2)+')'],
+        textposition:'top right', textfont:{color:'#4ecdc4',size:12,family:'Inter'},
+        marker:{size:7,color:'#4ecdc4',symbol:'circle'}, name:'L2 result', showlegend:false,
+        hovertemplate:'L2 result<br>w\u2081=%{x:.2f}, w\u2082=%{y:.2f}<br>Error=%{z:.2f}<extra></extra>' });
+      traces.push({ type:'scatter3d', x:[wsx,s[0]], y:[wsy,s[1]], z:[0,s[2]],
+        mode:'lines', line:{color:'#4ecdc4',width:3,dash:'dash'}, showlegend:false, hoverinfo:'skip' });
     }
   }
 
-  // --- Axis labels on ground ---
-  var pW1 = proj(3.2, 0, 0);
-  ctx.fillStyle = '#888';
-  ctx.font = '14px Inter';
-  ctx.textAlign = 'center';
-  ctx.fillText('w\u2081 \u2192', pW1.sx, pW1.sy + 16);
-  var pW2 = proj(0, 3.2, 0);
-  ctx.fillText('w\u2082 \u2192', pW2.sx, pW2.sy + 16);
+  var layout = {
+    scene: {
+      xaxis: { title: { text: 'w\u2081 (weight 1)', font: { color: '#aaa', size: 13 } },
+               gridcolor: '#222244', zerolinecolor: '#444', color: '#888',
+               range: [-range, range], backgroundcolor: '#0a0a14' },
+      yaxis: { title: { text: 'w\u2082 (weight 2)', font: { color: '#aaa', size: 13 } },
+               gridcolor: '#222244', zerolinecolor: '#444', color: '#888',
+               range: [-range, range], backgroundcolor: '#0a0a14' },
+      zaxis: { title: { text: 'Training Error', font: { color: '#aaa', size: 13 } },
+               gridcolor: '#222244', zerolinecolor: '#444', color: '#888',
+               range: [0, 5], backgroundcolor: '#0a0a14' },
+      camera: { eye: { x: 1.6, y: 1.6, z: 1.0 } },
+      bgcolor: '#0a0a14',
+      aspectratio: { x: 1, y: 1, z: 0.7 }
+    },
+    paper_bgcolor: '#0d0d1a',
+    plot_bgcolor: '#0d0d1a',
+    font: { color: '#ccc', family: 'Inter, sans-serif' },
+    legend: { x: 0, y: 1, bgcolor: 'rgba(10,10,20,0.8)', bordercolor: '#333', borderwidth: 1,
+              font: { size: 12, color: '#ccc' } },
+    margin: { l: 0, r: 0, t: 10, b: 10 }
+  };
 
-  // --- Legend in corner ---
-  ctx.textAlign = 'left';
-  ctx.font = '13px Inter';
-  var ly = 22;
-  ctx.fillStyle = '#ffd93d';
-  ctx.fillText('\u25cf  w* = bottom of bowl (lowest training error)', 14, ly);
-  ctx.fillStyle = '#8899bb';
-  ly += 20;
-  ctx.fillText('\u25cf  Bowl surface = training error (higher = worse)', 14, ly);
-  if (regType === 'l1' || regType === 'both') {
-    ly += 20;
-    ctx.fillStyle = '#ff6b6b';
-    ctx.fillText('\u25cf  Red fence = L1 budget (diamond \u2014 has corners on axes)', 14, ly);
-  }
-  if (regType === 'l2' || regType === 'both') {
-    ly += 20;
-    ctx.fillStyle = '#4ecdc4';
-    ctx.fillText('\u25cf  Teal fence = L2 budget (circle \u2014 no corners)', 14, ly);
+  // Preserve camera angle if user has rotated
+  var plotEl = document.getElementById('regPlot');
+  if (plotEl && plotEl._regInitialized) {
+    var currentCamera = plotEl._fullLayout && plotEl._fullLayout.scene ? plotEl._fullLayout.scene._scene.getCamera() : null;
+    Plotly.react('regPlot', traces, layout, { responsive: true, displayModeBar: false });
+    if (currentCamera) Plotly.relayout('regPlot', { 'scene.camera': currentCamera });
+  } else {
+    Plotly.newPlot('regPlot', traces, layout, { responsive: true, displayModeBar: false });
+    plotEl._regInitialized = true;
   }
 }
 
