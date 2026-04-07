@@ -3997,18 +3997,18 @@ function drawReg() {
   ctx.clearRect(0, 0, W, H);
 
   // --- 3D Projection Setup ---
-  const cx = W * 0.48, cy = H * 0.55;   // center of projection
+  const cx = W * 0.48, cy = H * 0.52;   // center of projection
   const rotY = angleDeg * Math.PI / 180; // horizontal rotation
-  const tiltX = 0.55;                    // fixed downward tilt (~32°)
-  const sc = 62;                         // world-to-pixel scale
+  const tiltX = 0.7;                     // steeper downward tilt (~40°)
+  const sc = 58;                         // world-to-pixel scale
 
   // w* position (bottom of the bowl)
   const wsx = 1.2, wsy = 1.0;
 
-  // Loss function: paraboloid centered at w*
+  // Loss function: paraboloid centered at w* — steep enough to see!
   function loss(w1, w2) {
     const d1 = w1 - wsx, d2 = w2 - wsy;
-    return 0.18 * (d1 * d1 * 1.3 + d2 * d2 * 0.9);
+    return 0.45 * (d1 * d1 * 1.3 + d2 * d2 * 0.9);
   }
 
   // 3D → 2D projection with rotation + tilt
@@ -4019,7 +4019,7 @@ function drawReg() {
     const cosT = Math.cos(tiltX), sinT = Math.sin(tiltX);
     const py = ry * cosT - z * sinT;
     const pz = ry * sinT + z * cosT;
-    return { sx: cx + rx * sc, sy: cy - py * sc * 0.8 - pz * sc * 0.3, depth: pz };
+    return { sx: cx + rx * sc, sy: cy - py * sc * 0.7 - pz * sc * 0.55, depth: pz };
   }
 
   // --- Draw ground grid ---
@@ -4036,42 +4036,47 @@ function drawReg() {
     ctx.stroke();
   }
 
-  // --- Draw loss surface as colored wireframe ---
-  const step = 0.3, range = 3.0;
-  // Draw rows (along w2)
-  for (let w1 = -range; w1 <= range; w1 += step) {
-    ctx.beginPath();
-    for (let w2 = -range; w2 <= range; w2 += 0.15) {
-      var z = loss(w1, w2);
-      if (z > 4) z = 4; // clamp height
-      var p = proj(w1, w2, z);
-      // Color by height: blue (low) → yellow (high)
-      var t = Math.min(z / 3, 1);
-      var r = Math.floor(50 + t * 180);
-      var g = Math.floor(50 + t * 150);
-      var b = Math.floor(120 - t * 80);
-      ctx.strokeStyle = `rgba(${r},${g},${b},0.4)`;
-      if (w2 === -range) ctx.moveTo(p.sx, p.sy); else ctx.lineTo(p.sx, p.sy);
-    }
-    ctx.lineWidth = 1;
-    ctx.stroke();
+  // --- Draw loss surface as filled colored patches + wireframe ---
+  const step = 0.4, range = 3.0, zClamp = 5;
+
+  // Helper: color by height — deep blue (low) → bright orange (high)
+  function surfColor(z, alpha) {
+    var t = Math.min(z / 4, 1);
+    var r = Math.floor(30 + t * 220);
+    var g = Math.floor(60 + t * 130 - t * t * 80);
+    var b = Math.floor(160 - t * 140);
+    return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
   }
-  // Draw columns (along w1)
-  for (let w2 = -range; w2 <= range; w2 += step) {
-    ctx.beginPath();
-    for (let w1 = -range; w1 <= range; w1 += 0.15) {
-      var z = loss(w1, w2);
-      if (z > 4) z = 4;
-      var p = proj(w1, w2, z);
-      var t = Math.min(z / 3, 1);
-      var r = Math.floor(50 + t * 180);
-      var g = Math.floor(50 + t * 150);
-      var b = Math.floor(120 - t * 80);
-      ctx.strokeStyle = `rgba(${r},${g},${b},0.4)`;
-      if (w1 === -range) ctx.moveTo(p.sx, p.sy); else ctx.lineTo(p.sx, p.sy);
+
+  // Draw filled quads (back-to-front would be ideal, but simple approach works for a bowl)
+  for (let w1 = -range; w1 < range; w1 += step) {
+    for (let w2 = -range; w2 < range; w2 += step) {
+      var z00 = Math.min(loss(w1, w2), zClamp);
+      var z10 = Math.min(loss(w1 + step, w2), zClamp);
+      var z11 = Math.min(loss(w1 + step, w2 + step), zClamp);
+      var z01 = Math.min(loss(w1, w2 + step), zClamp);
+      var avgZ = (z00 + z10 + z11 + z01) / 4;
+
+      var p00 = proj(w1, w2, z00);
+      var p10 = proj(w1 + step, w2, z10);
+      var p11 = proj(w1 + step, w2 + step, z11);
+      var p01 = proj(w1, w2 + step, z01);
+
+      // Filled quad
+      ctx.fillStyle = surfColor(avgZ, 0.35);
+      ctx.beginPath();
+      ctx.moveTo(p00.sx, p00.sy);
+      ctx.lineTo(p10.sx, p10.sy);
+      ctx.lineTo(p11.sx, p11.sy);
+      ctx.lineTo(p01.sx, p01.sy);
+      ctx.closePath();
+      ctx.fill();
+
+      // Wireframe edges
+      ctx.strokeStyle = surfColor(avgZ, 0.6);
+      ctx.lineWidth = 0.8;
+      ctx.stroke();
     }
-    ctx.lineWidth = 1;
-    ctx.stroke();
   }
 
   // --- Draw constraint fence (vertical wall) ---
