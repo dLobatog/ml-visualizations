@@ -1472,15 +1472,20 @@ for degree in [1, 3, 10]:
 <!-- 12. L1 vs L2 REGULARIZATION -->
 <div class="viz-section">
   <h2>L1 vs L2 Regularization</h2>
-  <p class="subtitle">Drag "Regularization Strength" high and toggle between L1 and L2. With L1, the constraint corners force some weights to exactly zero (feature selection). With L2, weights shrink gradually but rarely hit zero. This is why L1 is used for feature selection.</p>
+  <p class="subtitle">The bowl is the training error — the bottom (w*) is where the model fits training data best. The colored fence is the regularization budget — the model must stay inside. Drag the strength slider to shrink the fence and watch where the model ends up.</p>
   <div class="viz-canvas">
-    <canvas id="regCanvas" width="800" height="400"></canvas>
+    <canvas id="regCanvas" width="900" height="520"></canvas>
   </div>
   <div class="controls">
     <div class="control-group">
       <label>Regularization Strength (λ)</label>
       <input type="range" id="regLambda" min="1" max="100" value="30" oninput="drawReg()">
       <span class="value" id="regLambdaVal">0.30</span>
+    </div>
+    <div class="control-group">
+      <label>Rotate View</label>
+      <input type="range" id="regAngle" min="0" max="360" value="35" oninput="drawReg()">
+      <span class="value" id="regAngleVal">35°</span>
     </div>
     <div class="tab-bar">
       <button class="btn active" id="regL1Btn" onclick="setRegType('l1')">L1 (Lasso)</button>
@@ -1489,23 +1494,23 @@ for degree in [1, 3, 10]:
     </div>
   </div>
   <div class="insight-box">
-    <strong>Key Insight:</strong> L1 regularization induces sparsity by constraining weights to a diamond region.
+    <strong>Key Insight:</strong> Regularization limits how large the model's weights can be, preventing overfitting.
     <div class="formula">$$\text{Loss} + \color{#64ffda}{\lambda \cdot \sum |w_i|} \quad \text{(add L1 penalty)}$$</div>
     <div class="key-point">
-      <span class="label">Reading the diagram:</span>
-      <span class="desc"><b style="color:#ffd93d;">w*</b> (yellow dot) = the weights that give the lowest training error. This is where the model <em>wants</em> to go — but those weights are often too large, causing overfitting. <b style="color:#ffd93d;">Yellow ellipses</b> = rings of equal error around w* (inner rings = lower error). The <b style="color:#ff6b6b;">red diamond</b> (L1) or <b style="color:#4ecdc4;">teal circle</b> (L2) = a "budget" for how large the weights can be. Regularization forces the model to stay inside this budget, so it picks the point inside the shape with the lowest error — where the smallest ring touches the boundary.</span>
+      <span class="label">The bowl:</span>
+      <span class="desc">The 3D surface is training error. The bottom of the bowl (<b style="color:#ffd93d;">w*</b>) is where the model fits the training data best. Without regularization, the model goes straight to the bottom — but that often means extreme weight values that memorize noise (overfitting).</span>
     </div>
     <div class="key-point">
-      <span class="label">Geometric intuition:</span>
-      <span class="desc">L1's diamond has corners on the axes, so the contour typically touches a corner — pushing weights to exactly zero. L2's circle has no corners, so the contour touches the smooth boundary — weights shrink but rarely hit zero.</span>
+      <span class="label">The fence:</span>
+      <span class="desc">Regularization builds a fence around the origin (w=0). The model must stay inside. Increasing \(\lambda\) shrinks the fence, forcing the model further from the bowl's bottom but with smaller, more reasonable weights. The "answer" is the lowest point on the bowl that's still inside the fence.</span>
     </div>
     <div class="key-point">
-      <span class="label">Sparsity:</span>
-      <span class="desc">As \(\lambda\) increases, more weights become exactly zero. Natural feature selection. Only important features remain.</span>
+      <span class="label">Why L1 is special:</span>
+      <span class="desc">L1's fence is a <b style="color:#ff6b6b;">diamond</b> with pointy corners that sit on the axes (where one weight = 0). The lowest point on the bowl inside the diamond often lands on a corner — so one weight gets forced to exactly zero. The model drops that feature entirely. That's automatic feature selection.</span>
     </div>
     <div class="key-point">
-      <span class="label">Why L1 sparsifies:</span>
-      <span class="desc">Corners of diamond region are on axes. L2 ellipse vs L1 diamond: L1 hits axes first, L2 hits sides.</span>
+      <span class="label">Why L2 is different:</span>
+      <span class="desc">L2's fence is a <b style="color:#4ecdc4;">circle</b> with no corners. The lowest point inside the circle lands on the smooth edge — both weights shrink toward zero but neither actually reaches zero. All features stay, just dampened.</span>
     </div>
     <div class="comparison">
       <div class="option">
@@ -3985,127 +3990,326 @@ function drawReg() {
   const ctx = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height;
   const lambda = parseInt(document.getElementById('regLambda').value) / 100;
+  const angleDeg = parseInt(document.getElementById('regAngle').value);
   document.getElementById('regLambdaVal').textContent = lambda.toFixed(2);
+  document.getElementById('regAngleVal').textContent = angleDeg + '\u00b0';
 
   ctx.clearRect(0, 0, W, H);
 
-  const cx = W / 2, cy = H / 2;
-  const scale = 80;
+  // --- 3D Projection Setup ---
+  const cx = W * 0.48, cy = H * 0.55;   // center of projection
+  const rotY = angleDeg * Math.PI / 180; // horizontal rotation
+  const tiltX = 0.55;                    // fixed downward tilt (~32°)
+  const sc = 62;                         // world-to-pixel scale
 
-  // Draw axes
-  ctx.strokeStyle = '#888';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(0, cy); ctx.lineTo(W, cy);
-  ctx.moveTo(cx, 0); ctx.lineTo(cx, H);
-  ctx.stroke();
+  // w* position (bottom of the bowl)
+  const wsx = 1.2, wsy = 1.0;
 
-  ctx.fillStyle = '#b0b0c0';
-  ctx.font = '15px Inter';
-  ctx.textAlign = 'center';
-  ctx.fillText('w₁', W - 20, cy - 10);
-  ctx.fillText('w₂', cx + 15, 18);
+  // Loss function: paraboloid centered at w*
+  function loss(w1, w2) {
+    const d1 = w1 - wsx, d2 = w2 - wsy;
+    return 0.18 * (d1 * d1 * 1.3 + d2 * d2 * 0.9);
+  }
 
-  // Draw loss contours (ellipses centered at w*=(1.5, 1.8))
-  const wStarX = 1.5, wStarY = 1.8;
-  ctx.strokeStyle = '#ffd93d33';
-  ctx.lineWidth = 1;
-  for (let r = 0.3; r < 4; r += 0.3) {
+  // 3D → 2D projection with rotation + tilt
+  function proj(x, y, z) {
+    const cosR = Math.cos(rotY), sinR = Math.sin(rotY);
+    const rx = x * cosR - y * sinR;
+    const ry = x * sinR + y * cosR;
+    const cosT = Math.cos(tiltX), sinT = Math.sin(tiltX);
+    const py = ry * cosT - z * sinT;
+    const pz = ry * sinT + z * cosT;
+    return { sx: cx + rx * sc, sy: cy - py * sc * 0.8 - pz * sc * 0.3, depth: pz };
+  }
+
+  // --- Draw ground grid ---
+  ctx.strokeStyle = '#1a1a3a';
+  ctx.lineWidth = 0.5;
+  for (let g = -3; g <= 3; g += 0.5) {
     ctx.beginPath();
-    for (let a = 0; a < Math.PI * 2; a += 0.05) {
-      const x = wStarX + r * Math.cos(a) * 1.3;
-      const y = wStarY + r * Math.sin(a) * 0.8;
-      const px = cx + x * scale;
-      const py = cy - y * scale;
-      if (a === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    var p0 = proj(g, -3, 0), p1 = proj(g, 3, 0);
+    ctx.moveTo(p0.sx, p0.sy); ctx.lineTo(p1.sx, p1.sy);
+    ctx.stroke();
+    ctx.beginPath();
+    p0 = proj(-3, g, 0); p1 = proj(3, g, 0);
+    ctx.moveTo(p0.sx, p0.sy); ctx.lineTo(p1.sx, p1.sy);
+    ctx.stroke();
+  }
+
+  // --- Draw loss surface as colored wireframe ---
+  const step = 0.3, range = 3.0;
+  // Draw rows (along w2)
+  for (let w1 = -range; w1 <= range; w1 += step) {
+    ctx.beginPath();
+    for (let w2 = -range; w2 <= range; w2 += 0.15) {
+      var z = loss(w1, w2);
+      if (z > 4) z = 4; // clamp height
+      var p = proj(w1, w2, z);
+      // Color by height: blue (low) → yellow (high)
+      var t = Math.min(z / 3, 1);
+      var r = Math.floor(50 + t * 180);
+      var g = Math.floor(50 + t * 150);
+      var b = Math.floor(120 - t * 80);
+      ctx.strokeStyle = `rgba(${r},${g},${b},0.4)`;
+      if (w2 === -range) ctx.moveTo(p.sx, p.sy); else ctx.lineTo(p.sx, p.sy);
+    }
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+  // Draw columns (along w1)
+  for (let w2 = -range; w2 <= range; w2 += step) {
+    ctx.beginPath();
+    for (let w1 = -range; w1 <= range; w1 += 0.15) {
+      var z = loss(w1, w2);
+      if (z > 4) z = 4;
+      var p = proj(w1, w2, z);
+      var t = Math.min(z / 3, 1);
+      var r = Math.floor(50 + t * 180);
+      var g = Math.floor(50 + t * 150);
+      var b = Math.floor(120 - t * 80);
+      ctx.strokeStyle = `rgba(${r},${g},${b},0.4)`;
+      if (w1 === -range) ctx.moveTo(p.sx, p.sy); else ctx.lineTo(p.sx, p.sy);
+    }
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // --- Draw constraint fence (vertical wall) ---
+  const budget = 2.5 * (1 - lambda * 0.8);
+  const fenceH = 3.5; // how tall the fence is
+  const fenceSteps = 80;
+
+  function drawFence(type, color, rad) {
+    // Draw the fence as vertical lines + top/bottom outlines
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+
+    // Bottom outline on ground
+    ctx.beginPath();
+    for (let i = 0; i <= fenceSteps; i++) {
+      var a = (i / fenceSteps) * Math.PI * 2;
+      var fw1, fw2;
+      if (type === 'l1') {
+        // Diamond: |w1| + |w2| = rad
+        var t4 = a / (Math.PI * 2) * 4;
+        var seg = Math.floor(t4);
+        var frac = t4 - seg;
+        if (seg === 0) { fw1 = rad * (1 - frac); fw2 = rad * frac; }
+        else if (seg === 1) { fw1 = -rad * frac; fw2 = rad * (1 - frac); }
+        else if (seg === 2) { fw1 = -rad * (1 - frac); fw2 = -rad * frac; }
+        else { fw1 = rad * frac; fw2 = -rad * (1 - frac); }
+      } else {
+        fw1 = rad * Math.cos(a);
+        fw2 = rad * Math.sin(a);
+      }
+      var p = proj(fw1, fw2, 0);
+      if (i === 0) ctx.moveTo(p.sx, p.sy); else ctx.lineTo(p.sx, p.sy);
     }
     ctx.closePath();
     ctx.stroke();
+
+    // Vertical fence panels (draw every few steps)
+    for (let i = 0; i < fenceSteps; i += 2) {
+      var a = (i / fenceSteps) * Math.PI * 2;
+      var fw1, fw2;
+      if (type === 'l1') {
+        var t4 = a / (Math.PI * 2) * 4;
+        var seg = Math.floor(t4);
+        var frac = t4 - seg;
+        if (seg === 0) { fw1 = rad * (1 - frac); fw2 = rad * frac; }
+        else if (seg === 1) { fw1 = -rad * frac; fw2 = rad * (1 - frac); }
+        else if (seg === 2) { fw1 = -rad * (1 - frac); fw2 = -rad * frac; }
+        else { fw1 = rad * frac; fw2 = -rad * (1 - frac); }
+      } else {
+        fw1 = rad * Math.cos(a);
+        fw2 = rad * Math.sin(a);
+      }
+      var pb = proj(fw1, fw2, 0);
+      var pt = proj(fw1, fw2, fenceH);
+      ctx.globalAlpha = 0.25;
+      ctx.beginPath();
+      ctx.moveTo(pb.sx, pb.sy); ctx.lineTo(pt.sx, pt.sy);
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+
+    // Top outline
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    for (let i = 0; i <= fenceSteps; i++) {
+      var a = (i / fenceSteps) * Math.PI * 2;
+      var fw1, fw2;
+      if (type === 'l1') {
+        var t4 = a / (Math.PI * 2) * 4;
+        var seg = Math.floor(t4);
+        var frac = t4 - seg;
+        if (seg === 0) { fw1 = rad * (1 - frac); fw2 = rad * frac; }
+        else if (seg === 1) { fw1 = -rad * frac; fw2 = rad * (1 - frac); }
+        else if (seg === 2) { fw1 = -rad * (1 - frac); fw2 = -rad * frac; }
+        else { fw1 = rad * frac; fw2 = -rad * (1 - frac); }
+      } else {
+        fw1 = rad * Math.cos(a);
+        fw2 = rad * Math.sin(a);
+      }
+      var p = proj(fw1, fw2, fenceH);
+      if (i === 0) ctx.moveTo(p.sx, p.sy); else ctx.lineTo(p.sx, p.sy);
+    }
+    ctx.closePath();
+    ctx.stroke();
+
+    // Fence label
+    var lp = proj(type === 'l1' ? rad : rad * 0.7, type === 'l1' ? 0 : rad * 0.7, fenceH + 0.5);
+    ctx.fillStyle = color;
+    ctx.font = 'bold 14px Inter';
+    ctx.textAlign = 'center';
+    ctx.fillText(type === 'l1' ? 'L1 fence (diamond)' : 'L2 fence (circle)', lp.sx, lp.sy);
   }
 
-  // w* marker — the unconstrained optimum
+  if (regType === 'l1' || regType === 'both') {
+    drawFence('l1', '#ff6b6b', budget);
+  }
+  if (regType === 'l2' || regType === 'both') {
+    drawFence('l2', '#4ecdc4', regType === 'both' ? budget * 0.95 : budget);
+  }
+
+  // --- Draw w* marker at the bottom of the bowl ---
+  var zStar = loss(wsx, wsy); // should be 0
+  var pStar = proj(wsx, wsy, zStar);
   ctx.fillStyle = '#ffd93d';
   ctx.beginPath();
-  ctx.arc(cx + wStarX * scale, cy - wStarY * scale, 5, 0, Math.PI * 2);
+  ctx.arc(pStar.sx, pStar.sy, 7, 0, Math.PI * 2);
   ctx.fill();
+  ctx.strokeStyle = '#ffd93d';
+  ctx.lineWidth = 2;
+  ctx.stroke();
   ctx.fillStyle = '#ffd93d';
-  ctx.font = '14px Inter';
+  ctx.font = 'bold 15px Inter';
   ctx.textAlign = 'left';
-  ctx.fillText('w* = lowest training error', cx + wStarX * scale + 8, cy - wStarY * scale - 8);
-  ctx.font = '11px Inter';
-  ctx.fillStyle = '#b0a060';
-  ctx.fillText('(where the model wants to be)', cx + wStarX * scale + 8, cy - wStarY * scale + 8);
+  ctx.fillText('w*', pStar.sx + 12, pStar.sy - 2);
+  ctx.font = '12px Inter';
+  ctx.fillStyle = '#ccb840';
+  ctx.fillText('bottom of bowl', pStar.sx + 12, pStar.sy + 14);
+  ctx.fillText('(lowest training error)', pStar.sx + 12, pStar.sy + 28);
 
-  function drawConstraint(type, color, r) {
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 2.5;
-    ctx.fillStyle = color.replace(')', ',0.08)').replace('rgb', 'rgba');
-    ctx.beginPath();
-    if (type === 'l1') {
-      ctx.moveTo(cx, cy - r * scale);
-      ctx.lineTo(cx + r * scale, cy);
-      ctx.lineTo(cx, cy + r * scale);
-      ctx.lineTo(cx - r * scale, cy);
-      ctx.closePath();
-    } else {
-      for (let a = 0; a < Math.PI * 2; a += 0.05) {
-        const x = r * Math.cos(a);
-        const y = r * Math.sin(a);
-        if (a === 0) ctx.moveTo(cx + x * scale, cy - y * scale);
-        else ctx.lineTo(cx + x * scale, cy - y * scale);
+  // --- Draw regularized solution (where fence meets the bowl) ---
+  function findFencePoint(type, rad) {
+    // Find the point on the fence boundary closest to w*
+    var bestW1 = 0, bestW2 = 0, bestLoss = Infinity;
+    for (let i = 0; i < 200; i++) {
+      var a = (i / 200) * Math.PI * 2;
+      var fw1, fw2;
+      if (type === 'l1') {
+        var t4 = a / (Math.PI * 2) * 4;
+        var seg = Math.floor(t4);
+        var frac = t4 - seg;
+        if (seg === 0) { fw1 = rad * (1 - frac); fw2 = rad * frac; }
+        else if (seg === 1) { fw1 = -rad * frac; fw2 = rad * (1 - frac); }
+        else if (seg === 2) { fw1 = -rad * (1 - frac); fw2 = -rad * frac; }
+        else { fw1 = rad * frac; fw2 = -rad * (1 - frac); }
+      } else {
+        fw1 = rad * Math.cos(a);
+        fw2 = rad * Math.sin(a);
       }
-      ctx.closePath();
+      var l = loss(fw1, fw2);
+      if (l < bestLoss) { bestLoss = l; bestW1 = fw1; bestW2 = fw2; }
     }
-    ctx.fill();
-    ctx.stroke();
+    return [bestW1, bestW2, bestLoss];
   }
 
-  const r = 2.5 * (1 - lambda * 0.8);
-
-  if (regType === 'l1' || regType === 'both') {
-    drawConstraint('l1', 'rgb(255,107,107)', r);
-  }
-  if (regType === 'l2' || regType === 'both') {
-    drawConstraint('l2', 'rgb(78,205,196)', regType === 'both' ? r * 0.95 : r);
-  }
-
-  // Compute intersection points
-  function findL1Intersection(wsx, wsy, r) {
-    if (r < 0.3) return [0, 0];
-    const angle = Math.atan2(wsy, wsx);
-    if (wsx > wsy) return [r * 0.98, r * 0.02];
-    return [r * 0.02, r * 0.98];
-  }
-
-  function findL2Intersection(wsx, wsy, r) {
-    const dist = Math.sqrt(wsx * wsx + wsy * wsy);
-    if (dist <= r) return [wsx, wsy];
-    return [wsx * r / dist, wsy * r / dist];
+  // Check if w* is already inside the fence
+  function isInside(type, rad) {
+    if (type === 'l1') return Math.abs(wsx) + Math.abs(wsy) <= rad;
+    return Math.sqrt(wsx*wsx + wsy*wsy) <= rad;
   }
 
   if (regType === 'l1' || regType === 'both') {
-    const [sx, sy] = findL1Intersection(wStarX, wStarY, r);
-    ctx.fillStyle = '#ff6b6b';
-    ctx.beginPath();
-    ctx.arc(cx + sx * scale, cy - sy * scale, 6, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#ff6b6b';
-    ctx.font = '15px Inter';
-    ctx.textAlign = 'left';
-    ctx.fillText(`L1: (${sx.toFixed(2)}, ${sy.toFixed(2)})`, cx + sx * scale + 10, cy - sy * scale + 4);
+    if (!isInside('l1', budget)) {
+      var s = findFencePoint('l1', budget);
+      var ps = proj(s[0], s[1], s[2]);
+      ctx.fillStyle = '#ff6b6b';
+      ctx.beginPath();
+      ctx.arc(ps.sx, ps.sy, 7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#ff4444';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = '#ff6b6b';
+      ctx.font = 'bold 13px Inter';
+      ctx.textAlign = 'right';
+      ctx.fillText('L1 answer', ps.sx - 12, ps.sy - 6);
+      ctx.font = '11px Inter';
+      ctx.fillText('w\u2081=' + s[0].toFixed(2) + ', w\u2082=' + s[1].toFixed(2), ps.sx - 12, ps.sy + 10);
+
+      // Draw dashed line from w* to regularized point
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = '#ff6b6b88';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(pStar.sx, pStar.sy);
+      ctx.lineTo(ps.sx, ps.sy);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
   }
 
   if (regType === 'l2' || regType === 'both') {
-    const r2 = regType === 'both' ? r * 0.95 : r;
-    const [sx, sy] = findL2Intersection(wStarX, wStarY, r2);
+    var bR = regType === 'both' ? budget * 0.95 : budget;
+    if (!isInside('l2', bR)) {
+      var s = findFencePoint('l2', bR);
+      var ps = proj(s[0], s[1], s[2]);
+      ctx.fillStyle = '#4ecdc4';
+      ctx.beginPath();
+      ctx.arc(ps.sx, ps.sy, 7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#3ab5ad';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = '#4ecdc4';
+      ctx.font = 'bold 13px Inter';
+      ctx.textAlign = 'left';
+      ctx.fillText('L2 answer', ps.sx + 12, ps.sy - 6);
+      ctx.font = '11px Inter';
+      ctx.fillText('w\u2081=' + s[0].toFixed(2) + ', w\u2082=' + s[1].toFixed(2), ps.sx + 12, ps.sy + 10);
+
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = '#4ecdc488';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(pStar.sx, pStar.sy);
+      ctx.lineTo(ps.sx, ps.sy);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+
+  // --- Axis labels on ground ---
+  var pW1 = proj(3.2, 0, 0);
+  ctx.fillStyle = '#888';
+  ctx.font = '14px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText('w\u2081 \u2192', pW1.sx, pW1.sy + 16);
+  var pW2 = proj(0, 3.2, 0);
+  ctx.fillText('w\u2082 \u2192', pW2.sx, pW2.sy + 16);
+
+  // --- Legend in corner ---
+  ctx.textAlign = 'left';
+  ctx.font = '13px Inter';
+  var ly = 22;
+  ctx.fillStyle = '#ffd93d';
+  ctx.fillText('\u25cf  w* = bottom of bowl (lowest training error)', 14, ly);
+  ctx.fillStyle = '#8899bb';
+  ly += 20;
+  ctx.fillText('\u25cf  Bowl surface = training error (higher = worse)', 14, ly);
+  if (regType === 'l1' || regType === 'both') {
+    ly += 20;
+    ctx.fillStyle = '#ff6b6b';
+    ctx.fillText('\u25cf  Red fence = L1 budget (diamond \u2014 has corners on axes)', 14, ly);
+  }
+  if (regType === 'l2' || regType === 'both') {
+    ly += 20;
     ctx.fillStyle = '#4ecdc4';
-    ctx.beginPath();
-    ctx.arc(cx + sx * scale, cy - sy * scale, 6, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#4ecdc4';
-    ctx.font = '15px Inter';
-    ctx.textAlign = 'left';
-    ctx.fillText(`L2: (${sx.toFixed(2)}, ${sy.toFixed(2)})`, cx + sx * scale + 10, cy - sy * scale - 10);
+    ctx.fillText('\u25cf  Teal fence = L2 budget (circle \u2014 no corners)', 14, ly);
   }
 }
 
