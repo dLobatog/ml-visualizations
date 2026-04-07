@@ -868,10 +868,12 @@ document.addEventListener('keydown', function(e) {
     x3d.push(xMin + (xMax - xMin) * i / n3d);
     y3d.push(yMin + (yMax - yMin) * i / n3d);
   }
+  // Plotly surface: z[i][j] is at position (x[j], y[i])
+  // So z[i][j] must equal loss(x[j], y[i])
   for (var i = 0; i <= n3d; i++) {
     var row = [];
     for (var j = 0; j <= n3d; j++) {
-      row.push(logLoss(x3d[i], y3d[j]));
+      row.push(logLoss(x3d[j], y3d[i]));
     }
     z3d.push(row);
   }
@@ -883,7 +885,7 @@ document.addEventListener('keydown', function(e) {
     opacity: 0.90, showscale: false,
     contours: { z: { show: true, usecolormap: true, project: { z: false } } },
     hovertemplate: 'x=%{x:.2f}<br>y=%{y:.2f}<br>loss=%{customdata:.4f}<extra></extra>',
-    customdata: z3d.map(function(row) { return row.map(function(v) { return Math.exp(v)-1; }); })
+    customdata: z3d.map(function(row) { return row.map(function(v) { return Math.expm1(v); }); })
   },{
     type: 'scatter3d', x: [bx], y: [by], z: [logLoss(bx,by)+0.15],
     mode: 'markers', marker: { size: 8, color: '#64ffda', symbol: 'diamond',
