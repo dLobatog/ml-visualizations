@@ -1092,24 +1092,24 @@
             const totalNegatives = n - totalPositives;
             const data = [];
 
-            for (let t = 100; t >= 0; t--) {
-                const threshold = t / 100;
-                let tp = 0, fp = 0;
+            // Sort samples by score descending — walk through once
+            samples.sort((a, b) => b.score - a.score);
 
-                for (const s of samples) {
-                    if (s.score >= threshold) {
-                        if (s.isPositive) tp++;
-                        else fp++;
-                    }
+            // Build curve by iterating through each unique threshold (every sample score)
+            let tp = 0, fp = 0;
+            data.push({ threshold: 1.01, tpr: 0, fpr: 0 }); // origin
+            for (let i = 0; i < samples.length; i++) {
+                if (samples[i].isPositive) tp++;
+                else fp++;
+                // Add point at each unique score boundary
+                if (i === samples.length - 1 || samples[i].score !== samples[i + 1].score) {
+                    const tpr = totalPositives > 0 ? tp / totalPositives : 0;
+                    const fpr = totalNegatives > 0 ? fp / totalNegatives : 0;
+                    data.push({ threshold: samples[i].score, tpr: Math.min(tpr, 1), fpr: Math.min(fpr, 1) });
                 }
-
-                const tpr = totalPositives > 0 ? tp / totalPositives : 0;
-                const fpr = totalNegatives > 0 ? fp / totalNegatives : 0;
-                data.push({ threshold, tpr: Math.min(tpr, 1), fpr: Math.min(fpr, 1) });
             }
 
-            // Sort by FPR ascending for smooth curve and correct AUC
-            data.sort((a, b) => a.fpr - b.fpr);
+            // Already sorted by score descending → FPR ascending
             return data;
         }
 
@@ -1248,23 +1248,21 @@
             }
 
             const data = [];
+            const totalPositives = samples.filter(s => s.isPositive).length;
 
-            for (let t = 100; t >= 0; t--) {
-                const threshold = t / 100;
-                let tp = 0, fp = 0, fn = 0;
+            // Sort samples by score descending — walk once for smooth curve
+            samples.sort((a, b) => b.score - a.score);
 
-                for (const s of samples) {
-                    if (s.score >= threshold) {
-                        if (s.isPositive) tp++;
-                        else fp++;
-                    } else {
-                        if (s.isPositive) fn++;
-                    }
+            let tp = 0, fp = 0;
+            for (let i = 0; i < samples.length; i++) {
+                if (samples[i].isPositive) tp++;
+                else fp++;
+                // Add point at each unique score boundary
+                if (i === samples.length - 1 || samples[i].score !== samples[i + 1].score) {
+                    const precision = tp / (tp + fp) || 0;
+                    const recall = totalPositives > 0 ? tp / totalPositives : 0;
+                    data.push({ threshold: samples[i].score, precision, recall });
                 }
-
-                const precision = tp / (tp + fp) || 0;
-                const recall = tp / (tp + fn) || 0;
-                data.push({ threshold, precision, recall });
             }
 
             // Sort by recall ascending for smooth curve

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Generative Models - ML Interview Prep</title>
     <script src="static/canvas-polish.js"></script>
+    <script src="https://cdn.plot.ly/plotly-gl3d-2.35.2.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -346,6 +347,8 @@
                             <div class="stat-value" id="vaeQualityValue">0%</div>
                         </div>
                     </div>
+                    <div id="vaePlot3d" style="width:100%; height:400px; margin-top:10px;"></div>
+                    <p style="font-size:0.82em; color:#888; text-align:center; margin-top:4px;">Latent space in 3D &mdash; drag to rotate. Higher KL weight pulls samples toward origin.</p>
                 </div>
                 <div class="controls">
                     <div class="control-group">
@@ -613,6 +616,8 @@
                             <div class="stat-value" id="ganModeValue">100%</div>
                         </div>
                     </div>
+                    <div id="ganPlot3d" style="width:100%; height:400px; margin-top:10px;"></div>
+                    <p style="font-size:0.82em; color:#888; text-align:center; margin-top:4px;">Real vs generated distributions in 3D</p>
                 </div>
                 <div class="controls">
                     <div class="control-group">
@@ -1181,6 +1186,8 @@
                             <div class="stat-value" id="flowLikelihoodValue">0.00</div>
                         </div>
                     </div>
+                    <div id="flowPlot3d" style="width:100%; height:400px; margin-top:10px;"></div>
+                    <p style="font-size:0.82em; color:#888; text-align:center; margin-top:4px;">Normalizing flow: Gaussian &rarr; complex distribution in 3D</p>
                 </div>
                 <div class="controls">
                     <div class="control-group">
@@ -1463,6 +1470,8 @@
             ctx.fillStyle = '#b0b0c0';
             ctx.font = '15px monospace';
             ctx.fillText('ELBO = E[log p(x|z)] - β·KL(q(z|x)||p(z))', 20, 288);
+
+            drawVAE3D();
         }
 
         function trainVAE() {
@@ -1849,6 +1858,8 @@
             document.getElementById('ganDiscLossValue').textContent = ganState.discLoss.toFixed(2);
             document.getElementById('ganModeValue').textContent =
                 (ganState.mode === 'normal' ? '100%' : '25%');
+
+            drawGAN3D();
         }
 
         function trainGANStep() {
@@ -2056,6 +2067,8 @@
             document.getElementById('flowLayersValue').textContent = numLayers;
             document.getElementById('flowDetValue').textContent = flowState.determinant.toFixed(2);
             document.getElementById('flowLikelihoodValue').textContent = flowState.likelihood.toFixed(2);
+
+            drawFlow3D();
         }
 
         function animateFlow() {
@@ -2072,6 +2085,309 @@
         function resetFlow() {
             flowState.animationProgress = 0;
             drawFlow();
+        }
+
+        // ============ 3D Plotly Visualizations ============
+
+        // Seeded random for stable point generation
+        function seededRandom(seed) {
+            var x = Math.sin(seed) * 10000;
+            return x - Math.floor(x);
+        }
+
+        // --- VAE 3D Latent Space ---
+        var _vae3dPoints = null;
+        function _getVAE3DPoints() {
+            if (_vae3dPoints) return _vae3dPoints;
+            _vae3dPoints = [];
+            for (var i = 0; i < 150; i++) {
+                // Box-Muller for Gaussian
+                var u1 = seededRandom(i * 3 + 1);
+                var u2 = seededRandom(i * 3 + 2);
+                var u3 = seededRandom(i * 3 + 3);
+                var u4 = seededRandom(i * 3 + 4);
+                var u5 = seededRandom(i * 3 + 5);
+                var u6 = seededRandom(i * 3 + 6);
+                var gx = Math.sqrt(-2 * Math.log(Math.max(u1, 1e-10))) * Math.cos(2 * Math.PI * u2);
+                var gy = Math.sqrt(-2 * Math.log(Math.max(u3, 1e-10))) * Math.cos(2 * Math.PI * u4);
+                var gz = Math.sqrt(-2 * Math.log(Math.max(u5, 1e-10))) * Math.cos(2 * Math.PI * u6);
+                _vae3dPoints.push([gx, gy, gz]);
+            }
+            return _vae3dPoints;
+        }
+
+        function drawVAE3D() {
+            var klWeight = vaeState.klWeight; // 0 to 1
+            var scale = 1 - klWeight * 0.7;
+            var pts = _getVAE3DPoints();
+
+            var xs = [], ys = [], zs = [], colors = [];
+            for (var i = 0; i < pts.length; i++) {
+                var px = pts[i][0] * scale;
+                var py = pts[i][1] * scale;
+                var pz = pts[i][2] * scale;
+                xs.push(px);
+                ys.push(py);
+                zs.push(pz);
+                colors.push(Math.sqrt(px * px + py * py + pz * pz));
+            }
+
+            var scatterTrace = {
+                x: xs, y: ys, z: zs,
+                mode: 'markers',
+                type: 'scatter3d',
+                marker: {
+                    size: 3.5,
+                    color: colors,
+                    colorscale: [[0, '#4080ff'], [1, '#ff4040']],
+                    opacity: 0.85
+                },
+                name: 'Latent samples'
+            };
+
+            // Wireframe sphere for prior N(0,I)
+            var sphereX = [], sphereY = [], sphereZ = [];
+            for (var phi = 0; phi <= Math.PI; phi += Math.PI / 12) {
+                for (var theta = 0; theta <= 2 * Math.PI; theta += Math.PI / 12) {
+                    sphereX.push(Math.sin(phi) * Math.cos(theta));
+                    sphereY.push(Math.sin(phi) * Math.sin(theta));
+                    sphereZ.push(Math.cos(phi));
+                }
+                sphereX.push(null); sphereY.push(null); sphereZ.push(null);
+            }
+            for (var theta = 0; theta <= 2 * Math.PI; theta += Math.PI / 12) {
+                for (var phi = 0; phi <= Math.PI; phi += Math.PI / 12) {
+                    sphereX.push(Math.sin(phi) * Math.cos(theta));
+                    sphereY.push(Math.sin(phi) * Math.sin(theta));
+                    sphereZ.push(Math.cos(phi));
+                }
+                sphereX.push(null); sphereY.push(null); sphereZ.push(null);
+            }
+
+            var sphereTrace = {
+                x: sphereX, y: sphereY, z: sphereZ,
+                mode: 'lines',
+                type: 'scatter3d',
+                line: { color: 'rgba(224,86,253,0.18)', width: 1 },
+                name: 'Prior N(0,I)',
+                hoverinfo: 'skip'
+            };
+
+            var traces = [sphereTrace, scatterTrace];
+
+            var layout = {
+                scene: {
+                    bgcolor: '#0d0d1a',
+                    xaxis: { gridcolor: '#222244', color: '#888', title: '' },
+                    yaxis: { gridcolor: '#222244', color: '#888', title: '' },
+                    zaxis: { gridcolor: '#222244', color: '#888', title: '' }
+                },
+                paper_bgcolor: '#0d0d1a',
+                margin: { l: 0, r: 0, t: 0, b: 0 },
+                showlegend: false
+            };
+
+            var plotEl = document.getElementById('vaePlot3d');
+            if (plotEl && plotEl._initialized) {
+                var cam = plotEl._fullLayout && plotEl._fullLayout.scene ? plotEl._fullLayout.scene._scene.getCamera() : null;
+                Plotly.react('vaePlot3d', traces, layout, {responsive: true, displayModeBar: false});
+                if (cam) Plotly.relayout('vaePlot3d', {'scene.camera': cam});
+            } else {
+                Plotly.newPlot('vaePlot3d', traces, layout, {responsive: true, displayModeBar: false});
+                plotEl._initialized = true;
+            }
+        }
+
+        // --- GAN 3D Distribution Scatter ---
+        var _gan3dRealClusters = null;
+        var _gan3dGenNormal = null;
+        var _gan3dGenCollapse = null;
+        function _getGAN3DData() {
+            if (_gan3dRealClusters) return;
+            var centers = [[2, 2, 1], [-2, 2, -1], [2, -2, 0], [-2, -2, 1]];
+            _gan3dRealClusters = { x: [], y: [], z: [] };
+            _gan3dGenNormal = { x: [], y: [], z: [] };
+            _gan3dGenCollapse = { x: [], y: [], z: [] };
+
+            for (var c = 0; c < centers.length; c++) {
+                for (var i = 0; i < 30; i++) {
+                    var seed = c * 100 + i;
+                    var rx = centers[c][0] + (seededRandom(seed * 7 + 1) - 0.5) * 1.2;
+                    var ry = centers[c][1] + (seededRandom(seed * 7 + 2) - 0.5) * 1.2;
+                    var rz = centers[c][2] + (seededRandom(seed * 7 + 3) - 0.5) * 1.2;
+                    _gan3dRealClusters.x.push(rx);
+                    _gan3dRealClusters.y.push(ry);
+                    _gan3dRealClusters.z.push(rz);
+
+                    // Normal mode: generated near all 4 clusters
+                    var gx = centers[c][0] + (seededRandom(seed * 11 + 4) - 0.5) * 1.6;
+                    var gy = centers[c][1] + (seededRandom(seed * 11 + 5) - 0.5) * 1.6;
+                    var gz = centers[c][2] + (seededRandom(seed * 11 + 6) - 0.5) * 1.6;
+                    _gan3dGenNormal.x.push(gx);
+                    _gan3dGenNormal.y.push(gy);
+                    _gan3dGenNormal.z.push(gz);
+
+                    // Collapse mode: all near first cluster
+                    var cx = centers[0][0] + (seededRandom(seed * 13 + 7) - 0.5) * 1.4;
+                    var cy = centers[0][1] + (seededRandom(seed * 13 + 8) - 0.5) * 1.4;
+                    var cz = centers[0][2] + (seededRandom(seed * 13 + 9) - 0.5) * 1.4;
+                    _gan3dGenCollapse.x.push(cx);
+                    _gan3dGenCollapse.y.push(cy);
+                    _gan3dGenCollapse.z.push(cz);
+                }
+            }
+        }
+
+        function drawGAN3D() {
+            _getGAN3DData();
+            var mode = ganState.mode; // 'normal' or 'collapse'
+
+            var realTrace = {
+                x: _gan3dRealClusters.x, y: _gan3dRealClusters.y, z: _gan3dRealClusters.z,
+                mode: 'markers',
+                type: 'scatter3d',
+                marker: { size: 3.5, color: '#4080ff', opacity: 0.8 },
+                name: 'Real'
+            };
+
+            var genData = mode === 'normal' ? _gan3dGenNormal : _gan3dGenCollapse;
+            var genTrace = {
+                x: genData.x, y: genData.y, z: genData.z,
+                mode: 'markers',
+                type: 'scatter3d',
+                marker: { size: 3.5, color: '#ff8c00', opacity: 0.8 },
+                name: 'Generated'
+            };
+
+            var traces = [realTrace, genTrace];
+
+            var layout = {
+                scene: {
+                    bgcolor: '#0d0d1a',
+                    xaxis: { gridcolor: '#222244', color: '#888', title: '' },
+                    yaxis: { gridcolor: '#222244', color: '#888', title: '' },
+                    zaxis: { gridcolor: '#222244', color: '#888', title: '' }
+                },
+                paper_bgcolor: '#0d0d1a',
+                margin: { l: 0, r: 0, t: 0, b: 0 },
+                showlegend: true,
+                legend: { font: { color: '#888' }, bgcolor: 'rgba(0,0,0,0)' }
+            };
+
+            var plotEl = document.getElementById('ganPlot3d');
+            if (plotEl && plotEl._initialized) {
+                var cam = plotEl._fullLayout && plotEl._fullLayout.scene ? plotEl._fullLayout.scene._scene.getCamera() : null;
+                Plotly.react('ganPlot3d', traces, layout, {responsive: true, displayModeBar: false});
+                if (cam) Plotly.relayout('ganPlot3d', {'scene.camera': cam});
+            } else {
+                Plotly.newPlot('ganPlot3d', traces, layout, {responsive: true, displayModeBar: false});
+                plotEl._initialized = true;
+            }
+        }
+
+        // --- Flow 3D Transformation ---
+        var _flow3dSource = null;
+        function _getFlow3DSource() {
+            if (_flow3dSource) return _flow3dSource;
+            _flow3dSource = [];
+            for (var i = 0; i < 100; i++) {
+                var u1 = seededRandom(i * 5 + 10);
+                var u2 = seededRandom(i * 5 + 11);
+                var u3 = seededRandom(i * 5 + 12);
+                var u4 = seededRandom(i * 5 + 13);
+                var u5 = seededRandom(i * 5 + 14);
+                var u6 = seededRandom(i * 5 + 15);
+                var gx = Math.sqrt(-2 * Math.log(Math.max(u1, 1e-10))) * Math.cos(2 * Math.PI * u2) * 0.5;
+                var gy = Math.sqrt(-2 * Math.log(Math.max(u3, 1e-10))) * Math.cos(2 * Math.PI * u4) * 0.5;
+                var gz = Math.sqrt(-2 * Math.log(Math.max(u5, 1e-10))) * Math.cos(2 * Math.PI * u6) * 0.5;
+                _flow3dSource.push([gx, gy, gz]);
+            }
+            return _flow3dSource;
+        }
+
+        function drawFlow3D() {
+            var numLayers = flowState.layers;
+            var src = _getFlow3DSource();
+
+            var srcX = [], srcY = [], srcZ = [];
+            var tX = [], tY = [], tZ = [];
+
+            for (var i = 0; i < src.length; i++) {
+                srcX.push(src[i][0]);
+                srcY.push(src[i][1]);
+                srcZ.push(src[i][2]);
+
+                var x = src[i][0], y = src[i][1], z = src[i][2];
+                for (var k = 0; k < numLayers; k++) {
+                    var nx = x + 0.5 * Math.sin(2 * y + k);
+                    var ny = y + 0.5 * Math.cos(2 * x + k);
+                    var nz = z + 0.3 * Math.sin(x * y);
+                    x = nx; y = ny; z = nz;
+                }
+                tX.push(x);
+                tY.push(y);
+                tZ.push(z);
+            }
+
+            var sourceTrace = {
+                x: srcX, y: srcY, z: srcZ,
+                mode: 'markers',
+                type: 'scatter3d',
+                marker: { size: 2.5, color: '#4080ff', opacity: 0.7 },
+                name: 'Source (Gaussian)'
+            };
+
+            var transformedTrace = {
+                x: tX, y: tY, z: tZ,
+                mode: 'markers',
+                type: 'scatter3d',
+                marker: { size: 4, color: '#40ff80', opacity: 0.85 },
+                name: 'Transformed'
+            };
+
+            var traces = [sourceTrace, transformedTrace];
+
+            // Connect corresponding points with faint lines if layers <= 2
+            if (numLayers <= 2) {
+                var lineX = [], lineY = [], lineZ = [];
+                for (var i = 0; i < src.length; i++) {
+                    lineX.push(srcX[i], tX[i], null);
+                    lineY.push(srcY[i], tY[i], null);
+                    lineZ.push(srcZ[i], tZ[i], null);
+                }
+                var lineTrace = {
+                    x: lineX, y: lineY, z: lineZ,
+                    mode: 'lines',
+                    type: 'scatter3d',
+                    line: { color: 'rgba(255,255,255,0.1)', width: 1 },
+                    name: 'Correspondence',
+                    hoverinfo: 'skip'
+                };
+                traces.push(lineTrace);
+            }
+
+            var layout = {
+                scene: {
+                    bgcolor: '#0d0d1a',
+                    xaxis: { gridcolor: '#222244', color: '#888', title: '' },
+                    yaxis: { gridcolor: '#222244', color: '#888', title: '' },
+                    zaxis: { gridcolor: '#222244', color: '#888', title: '' }
+                },
+                paper_bgcolor: '#0d0d1a',
+                margin: { l: 0, r: 0, t: 0, b: 0 },
+                showlegend: true,
+                legend: { font: { color: '#888' }, bgcolor: 'rgba(0,0,0,0)' }
+            };
+
+            var plotEl = document.getElementById('flowPlot3d');
+            if (plotEl && plotEl._initialized) {
+                var cam = plotEl._fullLayout && plotEl._fullLayout.scene ? plotEl._fullLayout.scene._scene.getCamera() : null;
+                Plotly.react('flowPlot3d', traces, layout, {responsive: true, displayModeBar: false});
+                if (cam) Plotly.relayout('flowPlot3d', {'scene.camera': cam});
+            } else {
+                Plotly.newPlot('flowPlot3d', traces, layout, {responsive: true, displayModeBar: false});
+                plotEl._initialized = true;
+            }
         }
 
         // ============ Event Listeners ============

@@ -138,6 +138,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-okaidia.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-gl3d-2.35.2.min.js"></script>
 </head>
 <body>
 <button id="quizToggle" onclick="toggleQuiz()">&#x1F9E0; Quiz Mode</button>
@@ -502,6 +503,8 @@ gat2 = GATConv(64, 7, heads=1, concat=False)  # out: 7 classes
   <div class="viz-canvas">
     <canvas id="osCanvas" width="900" height="480"></canvas>
   </div>
+  <div id="osPlot3d" style="width:100%; height:420px; margin-top:10px;"></div>
+  <p style="font-size:0.82em; color:#888; text-align:center; margin-top:4px;">Node embeddings in 3D &mdash; watch them collapse as layers increase</p>
   <div class="legend">
     <div class="legend-item"><span class="legend-dot" style="background:#54a0ff;"></span> Diverse embeddings (good)</div>
     <div class="legend-item"><span class="legend-dot" style="background:#ff6b6b;"></span> Converged embeddings (bad)</div>
@@ -2325,6 +2328,172 @@ function drawOverSmoothing() {
     ctx.textAlign = 'left';
     ctx.fillText('Fix: ' + os.fix, plotX + 10, plotY + 16);
   }
+
+  drawOverSmoothing3D();
+}
+
+// --- 3D Plotly visualization for over-smoothing ---
+var osPlot3dCamera = null;
+
+function drawOverSmoothing3D() {
+  if (!os.graph || os.embeddings.length === 0) return;
+  var g = os.graph;
+  var n = g.nodes.length;
+  var L = Math.min(os.layers, os.embeddings.length - 1);
+
+  var palette = ['#ff6b6b','#4ecdc4','#ffd93d','#54a0ff','#ff9ff3','#ff9f43','#2ecc71','#e056fd',
+                 '#ff6b6b','#4ecdc4','#ffd93d','#54a0ff'];
+
+  // --- Seeded 3D initial embeddings (consistent across redraws) ---
+  function seededRandom(seed) {
+    var x = Math.sin(seed) * 10000;
+    return x - Math.floor(x);
+  }
+  var initEmb3d = [];
+  for (var i = 0; i < n; i++) {
+    initEmb3d.push([
+      seededRandom(i * 3 + 1) * 2 - 1,
+      seededRandom(i * 3 + 2) * 2 - 1,
+      seededRandom(i * 3 + 3) * 2 - 1
+    ]);
+  }
+
+  // --- Build adjacency list ---
+  var adj = [];
+  for (var i = 0; i < n; i++) adj.push([]);
+  g.edges.forEach(function(e) {
+    adj[e[0]].push(e[1]);
+    adj[e[1]].push(e[0]);
+  });
+
+  // --- Simulate message passing in 3D ---
+  var allLayers = [];
+  var H3d = initEmb3d.map(function(r) { return r.slice(); });
+  allLayers.push(H3d.map(function(r) { return r.slice(); }));
+
+  for (var l = 0; l < 15; l++) {
+    var Hnew = [];
+    for (var i = 0; i < n; i++) {
+      // aggregate: average over self + neighbors
+      var neighbors = adj[i].concat([i]);
+      var avg = [0, 0, 0];
+      neighbors.forEach(function(j) {
+        for (var d = 0; d < 3; d++) avg[d] += H3d[j][d];
+      });
+      for (var d = 0; d < 3; d++) avg[d] /= neighbors.length;
+
+      var emb = avg;
+
+      if (os.fix === 'residual') {
+        for (var d = 0; d < 3; d++) emb[d] = 0.5 * H3d[i][d] + 0.5 * emb[d];
+      } else if (os.fix === 'skip') {
+        for (var d = 0; d < 3; d++) emb[d] = 0.5 * initEmb3d[i][d] + 0.5 * emb[d];
+      } else if (os.fix === 'jk') {
+        // Jumping Knowledge: element-wise max across all layer embeddings so far
+        var maxEmb = [emb[0], emb[1], emb[2]];
+        allLayers.forEach(function(layerH) {
+          for (var d = 0; d < 3; d++) {
+            if (layerH[i][d] > maxEmb[d]) maxEmb[d] = layerH[i][d];
+          }
+        });
+        emb = maxEmb;
+      }
+
+      Hnew.push(emb);
+    }
+    H3d = Hnew;
+    allLayers.push(H3d.map(function(r) { return r.slice(); }));
+  }
+
+  var embs3d = allLayers[L];
+
+  // --- Compute diversity ---
+  var totalDist = 0, count = 0;
+  for (var i = 0; i < n; i++) {
+    for (var j = i + 1; j < n; j++) {
+      var dist = 0;
+      for (var d = 0; d < 3; d++) dist += (embs3d[i][d] - embs3d[j][d]) * (embs3d[i][d] - embs3d[j][d]);
+      totalDist += Math.sqrt(dist);
+      count++;
+    }
+  }
+  var diversity = count > 0 ? (totalDist / count).toFixed(3) : '0.000';
+
+  // --- Build Plotly data ---
+  var xs = [], ys = [], zs = [], colors = [], texts = [];
+  for (var i = 0; i < n; i++) {
+    xs.push(embs3d[i][0]);
+    ys.push(embs3d[i][1]);
+    zs.push(embs3d[i][2]);
+    colors.push(palette[i % palette.length]);
+    texts.push('Node ' + i);
+  }
+
+  var nodeTrace = {
+    type: 'scatter3d',
+    mode: 'markers+text',
+    x: xs, y: ys, z: zs,
+    text: texts,
+    textposition: 'top center',
+    textfont: { size: 9, color: '#aaa' },
+    marker: { size: 10, color: colors, opacity: 0.95, line: { width: 1, color: '#fff' } },
+    hoverinfo: 'text',
+    name: 'Nodes'
+  };
+
+  // --- Edge lines ---
+  var edgeX = [], edgeY = [], edgeZ = [];
+  g.edges.forEach(function(e) {
+    edgeX.push(embs3d[e[0]][0], embs3d[e[1]][0], null);
+    edgeY.push(embs3d[e[0]][1], embs3d[e[1]][1], null);
+    edgeZ.push(embs3d[e[0]][2], embs3d[e[1]][2], null);
+  });
+
+  var edgeTrace = {
+    type: 'scatter3d',
+    mode: 'lines',
+    x: edgeX, y: edgeY, z: edgeZ,
+    line: { width: 2, color: 'rgba(255,255,255,0.2)' },
+    hoverinfo: 'none',
+    showlegend: false,
+    name: 'Edges'
+  };
+
+  var layout = {
+    paper_bgcolor: '#0d0d1a',
+    plot_bgcolor: '#0d0d1a',
+    scene: {
+      bgcolor: '#0d0d1a',
+      xaxis: { gridcolor: '#222244', zerolinecolor: '#222244', showbackground: false, title: '', color: '#888' },
+      yaxis: { gridcolor: '#222244', zerolinecolor: '#222244', showbackground: false, title: '', color: '#888' },
+      zaxis: { gridcolor: '#222244', zerolinecolor: '#222244', showbackground: false, title: '', color: '#888' }
+    },
+    margin: { l: 0, r: 0, t: 32, b: 0 },
+    title: {
+      text: 'Layer ' + L + ' | Diversity: ' + diversity + (os.fix !== 'none' ? ' | Fix: ' + os.fix : ''),
+      font: { size: 13, color: '#888' },
+      x: 0.5
+    },
+    showlegend: false,
+    annotations: []
+  };
+
+  // Preserve camera between updates
+  if (osPlot3dCamera) {
+    layout.scene.camera = osPlot3dCamera;
+  }
+
+  var plotDiv = document.getElementById('osPlot3d');
+  if (!plotDiv) return;
+
+  Plotly.react(plotDiv, [edgeTrace, nodeTrace], layout, { responsive: true, displayModeBar: false }).then(function() {
+    // Store camera on user interaction
+    plotDiv.on('plotly_relayout', function(eventData) {
+      if (eventData['scene.camera']) {
+        osPlot3dCamera = eventData['scene.camera'];
+      }
+    });
+  });
 }
 
 

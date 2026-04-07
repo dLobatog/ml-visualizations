@@ -379,6 +379,7 @@ pre[class*="language-"]::selection, code[class*="language-"]::selection { backgr
     .metric-box { font-size: 0.82em; }
   }
 </style>
+<script src="https://cdn.plot.ly/plotly-gl3d-2.35.2.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '\\(', right: '\\)', display: false}]});"></script>
@@ -414,6 +415,8 @@ pre[class*="language-"]::selection, code[class*="language-"]::selection { backgr
                             <div class="stat-value" id="mdpValue">0.00</div>
                         </div>
                     </div>
+                    <div id="mdpPlot3d" style="width:100%; height:420px; margin-top: 10px;"></div>
+                    <p style="font-size:0.82em; color:#888; text-align:center; margin-top:4px;">Value function as 3D landscape &mdash; drag to rotate</p>
                 </div>
                 <div class="controls">
                     <div class="control-group">
@@ -557,6 +560,8 @@ pre[class*="language-"]::selection, code[class*="language-"]::selection { backgr
                             <div class="stat-value" id="qlTableSize">0</div>
                         </div>
                     </div>
+                    <div id="qlPlot3d" style="width:100%; height:420px; margin-top: 10px;"></div>
+                    <p style="font-size:0.82em; color:#888; text-align:center; margin-top:4px;">Q-value surface &mdash; drag to rotate</p>
                 </div>
                 <div class="controls">
                     <div class="control-group">
@@ -1072,6 +1077,7 @@ pre[class*="language-"]::selection, code[class*="language-"]::selection { backgr
                     }
                 }
             }
+            drawMDP3D();
         }
 
         function resetMDP() {
@@ -1182,6 +1188,7 @@ pre[class*="language-"]::selection, code[class*="language-"]::selection { backgr
                     }
                 }
             }
+            drawQL3D();
         }
 
         function runQLearning() {
@@ -1714,6 +1721,176 @@ pre[class*="language-"]::selection, code[class*="language-"]::selection { backgr
         document.getElementById('rlhfEpochs').addEventListener('input', e => {
             document.getElementById('rlhfEpochsVal').textContent = e.target.value;
         });
+
+        // ============= 3D Value Surface Helpers =============
+        let mdp3dCamera = null;
+        let ql3dCamera = null;
+
+        function bilinearUpsample(grid, srcN, dstN) {
+            const out = [];
+            for (let jr = 0; jr < dstN; jr++) {
+                const row = [];
+                for (let ir = 0; ir < dstN; ir++) {
+                    const sx = ir / (dstN - 1) * (srcN - 1);
+                    const sy = jr / (dstN - 1) * (srcN - 1);
+                    const x0 = Math.floor(sx), y0 = Math.floor(sy);
+                    const x1 = Math.min(x0 + 1, srcN - 1), y1 = Math.min(y0 + 1, srcN - 1);
+                    const fx = sx - x0, fy = sy - y0;
+                    const v = grid[y0][x0] * (1 - fx) * (1 - fy)
+                            + grid[y0][x1] * fx * (1 - fy)
+                            + grid[y1][x0] * (1 - fx) * fy
+                            + grid[y1][x1] * fx * fy;
+                    row.push(v);
+                }
+                out.push(row);
+            }
+            return out;
+        }
+
+        function darkLayout(title, camera) {
+            return {
+                title: { text: title, font: { color: '#888', size: 13 } },
+                paper_bgcolor: '#0d0d1a',
+                plot_bgcolor: '#0d0d1a',
+                margin: { l: 10, r: 10, t: 40, b: 10 },
+                scene: {
+                    camera: camera || { eye: { x: 1.6, y: -1.6, z: 1.0 } },
+                    bgcolor: '#0d0d1a',
+                    xaxis: { title: 'X', color: '#888', gridcolor: '#222244', zerolinecolor: '#222244' },
+                    yaxis: { title: 'Y', color: '#888', gridcolor: '#222244', zerolinecolor: '#222244' },
+                    zaxis: { title: 'Value', color: '#888', gridcolor: '#222244', zerolinecolor: '#222244' }
+                }
+            };
+        }
+
+        const valueCscale = [
+            [0,   'rgb(180,30,30)'],
+            [0.35, 'rgb(80,30,30)'],
+            [0.5,  'rgb(40,40,120)'],
+            [0.65, 'rgb(30,80,60)'],
+            [1,   'rgb(30,200,80)']
+        ];
+
+        function drawMDP3D() {
+            if (typeof Plotly === 'undefined') return;
+
+            // Build 5x5 grid from mdpValues (indexed j * gridSize + i)
+            const raw = [];
+            for (let j = 0; j < gridSize; j++) {
+                const row = [];
+                for (let i = 0; i < gridSize; i++) {
+                    let val = mdpValues[j * gridSize + i];
+                    if (mdpGoal.x === i && mdpGoal.y === j) {
+                        val = parseFloat(document.getElementById('mdpGoalReward').value) || 10;
+                    }
+                    if (mdpObstacles.some(o => o.x === i && o.y === j)) {
+                        val = -10;
+                    }
+                    row.push(val);
+                }
+                raw.push(row);
+            }
+
+            const upN = 25;
+            const smooth = bilinearUpsample(raw, gridSize, upN);
+
+            // Build x/y coordinate arrays for upsampled grid
+            const xs = [], ys = [];
+            for (let k = 0; k < upN; k++) {
+                xs.push(k / (upN - 1) * (gridSize - 1));
+                ys.push(k / (upN - 1) * (gridSize - 1));
+            }
+
+            const surface = {
+                type: 'surface',
+                x: xs, y: ys, z: smooth,
+                colorscale: valueCscale,
+                showscale: false,
+                opacity: 0.92
+            };
+
+            // Agent marker
+            const agentZ = raw[mdpAgent.y] ? raw[mdpAgent.y][mdpAgent.x] : 0;
+            const marker = {
+                type: 'scatter3d',
+                mode: 'markers',
+                x: [mdpAgent.x], y: [mdpAgent.y], z: [agentZ + 0.5],
+                marker: { size: 8, color: '#4a9eff', symbol: 'diamond' },
+                name: 'Agent',
+                showlegend: false
+            };
+
+            // Preserve camera across redraws
+            const el = document.getElementById('mdpPlot3d');
+            if (el && el._fullLayout && el._fullLayout.scene && el._fullLayout.scene._scene) {
+                mdp3dCamera = el._fullLayout.scene._scene.getCamera();
+            }
+
+            const layout = darkLayout('V(s) Surface', mdp3dCamera);
+            Plotly.react('mdpPlot3d', [surface, marker], layout, { responsive: true, displayModeBar: false });
+        }
+
+        function drawQL3D() {
+            if (typeof Plotly === 'undefined') return;
+
+            // Build 5x5 grid from qlQTable max Q per state
+            const raw = [];
+            for (let j = 0; j < gridSize; j++) {
+                const row = [];
+                for (let i = 0; i < gridSize; i++) {
+                    const key = i + ',' + j;
+                    let val = 0;
+                    if (qlQTable[key]) {
+                        val = Math.max(...Object.values(qlQTable[key]));
+                    }
+                    if (mdpGoal.x === i && mdpGoal.y === j) {
+                        val = Math.max(val, 10);
+                    }
+                    if (mdpObstacles.some(o => o.x === i && o.y === j)) {
+                        val = -10;
+                    }
+                    row.push(val);
+                }
+                raw.push(row);
+            }
+
+            const upN = 25;
+            const smooth = bilinearUpsample(raw, gridSize, upN);
+
+            const xs = [], ys = [];
+            for (let k = 0; k < upN; k++) {
+                xs.push(k / (upN - 1) * (gridSize - 1));
+                ys.push(k / (upN - 1) * (gridSize - 1));
+            }
+
+            const surface = {
+                type: 'surface',
+                x: xs, y: ys, z: smooth,
+                colorscale: valueCscale,
+                showscale: false,
+                opacity: 0.92
+            };
+
+            // Agent marker
+            const agentZ = raw[qlAgent.y] ? raw[qlAgent.y][qlAgent.x] : 0;
+            const marker = {
+                type: 'scatter3d',
+                mode: 'markers',
+                x: [qlAgent.x], y: [qlAgent.y], z: [agentZ + 0.5],
+                marker: { size: 8, color: '#4a9eff', symbol: 'diamond' },
+                name: 'Agent',
+                showlegend: false
+            };
+
+            // Preserve camera across redraws
+            const el = document.getElementById('qlPlot3d');
+            if (el && el._fullLayout && el._fullLayout.scene && el._fullLayout.scene._scene) {
+                ql3dCamera = el._fullLayout.scene._scene.getCamera();
+            }
+
+            const layout = darkLayout('max Q(s,a) Surface', ql3dCamera);
+            Plotly.react('qlPlot3d', [surface, marker], layout, { responsive: true, displayModeBar: false });
+        }
 
         // ============= Initialization =============
         window.addEventListener('load', () => {
