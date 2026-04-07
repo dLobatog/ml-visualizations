@@ -2673,11 +2673,12 @@ function drawBayes() {
     ctx.fillText('Even accurate tests still leave high uncertainty', postX + 50, H/2 + 20);
   }
 
-  // Formula at bottom
+  // Formula at bottom — two lines to avoid overlapping axis label
   ctx.fillStyle = '#b0b0c0';
-  ctx.font = '15px monospace';
+  ctx.font = '13px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('P(D|+) = P(+|D) * P(D) / P(+) = ' + (sensitivity.toFixed(2)) + ' * ' + (prior.toFixed(4)) + ' / ' + (p_positive.toFixed(4)), pad.l, H - 8);
+  ctx.fillText('P(D|+) = P(+|D) \u00d7 P(D) / P(+)', pad.l, H - 38);
+  ctx.fillText('= ' + sensitivity.toFixed(2) + ' \u00d7 ' + prior.toFixed(4) + ' / ' + p_positive.toFixed(4) + ' = ' + (posterior * 100).toFixed(1) + '%', pad.l + 20, H - 20);
 
   updateBayesCoach(prior, sensitivity, specificity, posterior);
 }
@@ -3265,6 +3266,13 @@ function drawKL() {
   ctx.textAlign = 'center';
   ctx.fillText('x →', W/2, H - 8);
 
+  // Compute max density for adaptive y-scaling (prevents curves leaving canvas)
+  const sigma_p = pWidth * 0.5;
+  const sigma_q = qWidth * 0.5;
+  const maxP = 1 / (sigma_p * Math.sqrt(2 * Math.PI));
+  const maxQ = 1 / (sigma_q * Math.sqrt(2 * Math.PI));
+  const yScale = Math.max(maxP, maxQ) * 1.1; // 10% headroom
+
   // P distribution (fixed at center)
   ctx.strokeStyle = '#64ffda';
   ctx.fillStyle = '#64ffda11';
@@ -3272,10 +3280,9 @@ function drawKL() {
   ctx.beginPath();
   for (let i = 0; i <= 100; i++) {
     const x = -3 + i * 0.06;
-    const sigma_p = pWidth * 0.5;
     const p_dens = Math.exp(-Math.pow(x - 0, 2) / (2 * sigma_p * sigma_p)) / (sigma_p * Math.sqrt(2 * Math.PI));
     const px = pad.l + (x + 3) / 6 * pw;
-    const py = H - pad.b - p_dens * ph / 0.6;
+    const py = H - pad.b - p_dens * ph / yScale;
     if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
   }
   ctx.stroke();
@@ -3287,10 +3294,9 @@ function drawKL() {
   ctx.beginPath();
   for (let i = 0; i <= 100; i++) {
     const x = -3 + i * 0.06;
-    const sigma_q = qWidth * 0.5;
     const q_dens = Math.exp(-Math.pow(x - 0.8, 2) / (2 * sigma_q * sigma_q)) / (sigma_q * Math.sqrt(2 * Math.PI));
     const px = pad.l + (x + 3) / 6 * pw;
-    const py = H - pad.b - q_dens * ph / 0.6;
+    const py = H - pad.b - q_dens * ph / yScale;
     if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
   }
   ctx.stroke();
