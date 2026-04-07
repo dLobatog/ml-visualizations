@@ -179,29 +179,31 @@
     <div class="stat"><div class="stat-num pink" data-target="500" data-suffix="+">500+</div><div class="stat-label">Quiz Questions</div></div>
   </div>
 
-  <!-- Hero 3D Loss Surface -->
+  <!-- Hero: Neural Net learns house prices -->
   <div class="hero-viz">
-    <div class="hero-viz-label">Watch gradient descent navigate a 3D loss landscape in real time</div>
+    <div class="hero-viz-label">Watch a neural network learn to predict house prices in real time</div>
     <div class="hero-viz-explain" style="font-size:0.78em;color:#8892b0;max-width:780px;margin:0 auto 8px;line-height:1.5;">
-      The <strong style="color:#64ffda;">Rosenbrock function</strong>: f(x,y) = (1&minus;x)&sup2; + 10&middot;(y&minus;x&sup2;)&sup2;.
-      The valley floor (bright) has low loss — the optimizer must navigate a narrow curved valley to reach the minimum at <strong style="color:#ffd700;">(1, 1)</strong>.
-      Drag to rotate. This is just 2 parameters — real networks have millions.
+      Each dot is a house. <strong style="color:#64ffda;">X = square footage</strong>, <strong style="color:#ffd93d;">Y = distance to city center</strong>, <strong style="color:#ff6b6b;">Z = price</strong>.
+      The surface is the neural network's prediction &mdash; watch it bend and curve to fit the data.
+      Drag to rotate. Scroll to zoom.
     </div>
     <div id="hero3d" style="width:100%; height:520px; border-radius:12px; border:1px solid #2a2a4a;"></div>
     <div id="heroHud" style="font-family:monospace; font-size:13px; color:#ccc; padding:8px 12px; background:rgba(6,6,12,0.85); border-radius:0 0 12px 12px; margin-top:-4px;"></div>
     <div class="hero-viz-controls">
       <div class="hero-slider-row">
-        <label for="lr-slider" class="hero-slider-label">Learning Rate:</label>
-        <input type="range" id="lr-slider" class="hero-slider" min="1" max="200" value="30">
-        <span id="lr-value" class="hero-slider-value">0.030</span>
+        <label class="hero-slider-label">Hidden neurons:</label>
+        <input type="range" id="hero-neurons" class="hero-slider" min="2" max="48" value="12">
+        <span id="hero-neurons-val" class="hero-slider-value">12</span>
+      </div>
+      <div class="hero-slider-row">
+        <label class="hero-slider-label">Learning rate:</label>
+        <input type="range" id="hero-lr" class="hero-slider" min="1" max="100" value="30">
+        <span id="hero-lr-val" class="hero-slider-value">0.030</span>
       </div>
       <div class="hero-opt-buttons">
-        <button class="opt-btn" data-opt="sgd">SGD<span class="opt-tip"><strong>Stochastic Gradient Descent</strong><br>The simplest optimizer. Moves directly downhill at each step. Simple but slow on curved surfaces like this one.</span></button>
-        <button class="opt-btn" data-opt="momentum">Momentum<span class="opt-tip"><strong>SGD + Momentum</strong><br>Adds "velocity" &mdash; like a ball rolling downhill, it builds up speed. Moves faster through valleys and dampens oscillations.</span></button>
-        <button class="opt-btn" data-opt="rmsprop">RMSprop<span class="opt-tip"><strong>Root Mean Square Propagation</strong><br>Divides the learning rate by a running average of gradient magnitudes. Slows down in steep directions, speeds up in flat ones. Adam's predecessor.</span></button>
-        <button class="opt-btn opt-btn--active" data-opt="adam">Adam<span class="opt-tip"><strong>Adaptive Moment Estimation</strong><br>Combines Momentum + RMSprop. Adapts the learning rate per-parameter using both gradient history and magnitude. The workhorse of deep learning.</span></button>
-        <button class="opt-btn" data-opt="adamw">AdamW<span class="opt-tip"><strong>Adam + Decoupled Weight Decay</strong><br>Fixes a subtle bug in Adam's L2 regularization. The actual default for training transformers (GPT, BERT, LLaMA all use this).</span></button>
-        <button class="opt-btn" data-opt="lion">Lion<span class="opt-tip"><strong>Evolved Sign Momentum</strong> (2023)<br>Discovered by Google via program search. Uses only the sign of the gradient (not magnitude). Simpler, uses less memory than Adam, often matches its quality.</span></button>
+        <button class="opt-btn" data-model="linear">Linear</button>
+        <button class="opt-btn opt-btn--active" data-model="neural">Neural Net</button>
+        <button class="opt-btn" data-model="poly">Polynomial</button>
       </div>
     </div>
   </div>
@@ -756,229 +758,268 @@ document.addEventListener('keydown', function(e) {
 // Stats are static — no animation needed, avoids mid-count display bugs
 
 // ============================================================
-// Hero 3D Gradient Descent Visualization (Plotly only)
+// Hero: Neural network learns house prices in real time
 // ============================================================
 (function() {
   if (typeof Plotly === 'undefined') return;
 
-  // Function space
-  var xMin = -2, xMax = 2, yMin = -1, yMax = 3;
-  var fMinX = 1, fMinY = 1;
+  // --- Seeded random for reproducible data ---
+  var seed = 42;
+  function srand() { seed = (seed * 16807 + 0) % 2147483647; return (seed - 1) / 2147483646; }
 
-  // Loss: Rosenbrock f(x,y) = (1-x)^2 + 10*(y-x^2)^2
-  function loss(fx, fy) {
-    return Math.pow(1 - fx, 2) + 10 * Math.pow(fy - fx * fx, 2);
+  // --- Generate realistic house data ---
+  // sqft: 600-3500, distance: 0.5-25 km, price: $80k-$900k
+  var N = 150;
+  var dataX = [], dataY = [], dataZ = [];
+  var rawX = [], rawY = [], rawZ = []; // normalized versions for training
+  for (var i = 0; i < N; i++) {
+    var sqft = 600 + srand() * 2900;
+    var dist = 0.5 + srand() * 24.5;
+    // Price model: bigger + closer = more expensive, with nonlinearity
+    var basePrice = 50 + sqft * 0.18 - dist * 12 + 0.00004 * sqft * sqft - 0.3 * dist * dist;
+    // Interaction: large houses near city center are premium
+    basePrice += (sqft > 2000 && dist < 8) ? 120 : 0;
+    var price = Math.max(80, basePrice + (srand() - 0.5) * 80);
+    dataX.push(sqft); dataY.push(dist); dataZ.push(price);
+    // Normalize to [-1, 1] for training
+    rawX.push((sqft - 2050) / 1450);
+    rawY.push((dist - 12.75) / 12.25);
+    rawZ.push((price - 400) / 400);
   }
-  function gradient(fx, fy) {
-    var dfdx = -2 * (1 - fx) + 10 * 2 * (fy - fx * fx) * (-2 * fx);
-    var dfdy = 10 * 2 * (fy - fx * fx);
-    return [dfdx, dfdy];
-  }
-  function logLoss(fx, fy) { return Math.min(Math.log(loss(fx, fy) + 1), 5.5); }
 
-  // State
-  var optimizer = 'adam';
-  var lrSlider = document.getElementById('lr-slider');
-  var lrDisplay = document.getElementById('lr-value');
-  var trail = [];
-  var bx, by, vx, vy, mx, my, vxA, vyA, adamT;
-  var stepCount = 0, converged = false;
+  // --- Tiny neural network (from scratch, no libraries) ---
+  var nHidden = 12;
+  var modelType = 'neural';
+  // Weights
+  var W1, b1, W2, b2;
+  // Linear weights
+  var wLin;
+  // Poly weights
+  var wPoly;
+  // Adam state
+  var adamState = {};
+  var epoch = 0;
 
-  function resetBall() {
-    bx = -0.8; by = 1.2;
-    vx = 0; vy = 0; mx = 0; my = 0; vxA = 0; vyA = 0; adamT = 0;
-    stepCount = 0; converged = false;
-    trail = [{x: bx, y: by}];
-  }
-  resetBall();
-
-  var optBtns = document.querySelectorAll('.opt-btn');
-  optBtns.forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      optBtns.forEach(function(b) { b.classList.remove('opt-btn--active'); });
-      btn.classList.add('opt-btn--active');
-      optimizer = btn.getAttribute('data-opt');
-      resetBall();
-    });
-  });
-  lrSlider.addEventListener('input', function() {
-    lrDisplay.textContent = (lrSlider.value / 1000).toFixed(3);
-    resetBall();
-  });
-  lrDisplay.textContent = (lrSlider.value / 1000).toFixed(3);
-
-  function step() {
-    if (converged) return;
-    var lr = lrSlider.value / 1000;
-    var g = gradient(bx, by);
-    var gx = g[0], gy = g[1];
-    var gMag = Math.sqrt(gx*gx + gy*gy);
-    if (gMag > 8) { gx = gx/gMag*8; gy = gy/gMag*8; }
-
-    var b1=0.9, b2=0.999, eps=1e-8;
-    var effLR = lr;
-    if (optimizer === 'sgd' || optimizer === 'momentum') {
-      effLR = lr * 4 / (1 + stepCount * 0.0005);
+  function initWeights() {
+    epoch = 0;
+    adamState = { t: 0 };
+    var nh = parseInt(document.getElementById('hero-neurons').value) || 12;
+    nHidden = nh;
+    // Xavier init
+    W1 = []; b1 = [];
+    for (var j = 0; j < nh; j++) {
+      W1.push([(srand()-0.5)*1.4, (srand()-0.5)*1.4]);
+      b1.push((srand()-0.5)*0.2);
     }
-    if (optimizer === 'sgd') {
-      bx -= effLR * gx; by -= effLR * gy;
-    } else if (optimizer === 'momentum') {
-      vx = 0.9 * vx + effLR * gx; vy = 0.9 * vy + effLR * gy;
-      bx -= vx; by -= vy;
-    } else if (optimizer === 'rmsprop') {
-      vxA = b2*vxA + (1-b2)*gx*gx; vyA = b2*vyA + (1-b2)*gy*gy;
-      bx -= lr * gx / (Math.sqrt(vxA) + eps);
-      by -= lr * gy / (Math.sqrt(vyA) + eps);
-    } else if (optimizer === 'adam') {
-      adamT++;
-      mx = b1*mx + (1-b1)*gx; my = b1*my + (1-b1)*gy;
-      vxA = b2*vxA + (1-b2)*gx*gx; vyA = b2*vyA + (1-b2)*gy*gy;
-      var mxh=mx/(1-Math.pow(b1,adamT)), myh=my/(1-Math.pow(b1,adamT));
-      var vxh=vxA/(1-Math.pow(b2,adamT)), vyh=vyA/(1-Math.pow(b2,adamT));
-      bx -= lr * mxh/(Math.sqrt(vxh)+eps); by -= lr * myh/(Math.sqrt(vyh)+eps);
-    } else if (optimizer === 'adamw') {
-      adamT++;
-      var wd = 0.01;
-      mx = b1*mx + (1-b1)*gx; my = b1*my + (1-b1)*gy;
-      vxA = b2*vxA + (1-b2)*gx*gx; vyA = b2*vyA + (1-b2)*gy*gy;
-      var mxh=mx/(1-Math.pow(b1,adamT)), myh=my/(1-Math.pow(b1,adamT));
-      var vxh=vxA/(1-Math.pow(b2,adamT)), vyh=vyA/(1-Math.pow(b2,adamT));
-      bx -= lr * (mxh/(Math.sqrt(vxh)+eps) + wd * bx);
-      by -= lr * (myh/(Math.sqrt(vyh)+eps) + wd * by);
-    } else if (optimizer === 'lion') {
-      var lionB1 = 0.9, lionB2 = 0.99;
-      var cx = lionB1 * mx + (1 - lionB1) * gx;
-      var cy = lionB1 * my + (1 - lionB1) * gy;
-      bx -= lr * Math.sign(cx); by -= lr * Math.sign(cy);
-      mx = lionB2 * mx + (1 - lionB2) * gx;
-      my = lionB2 * my + (1 - lionB2) * gy;
+    W2 = []; b2 = [(srand()-0.5)*0.1];
+    for (var j = 0; j < nh; j++) W2.push((srand()-0.5)*1.4/Math.sqrt(nh));
+    // Linear: z = a*x + b*y + c
+    wLin = [(srand()-0.5)*0.1, (srand()-0.5)*0.1, (srand()-0.5)*0.1];
+    // Poly: z = a*x^2 + b*y^2 + c*xy + d*x + e*y + f
+    wPoly = [0,0,0,0,0,0];
+    for (var j = 0; j < 6; j++) wPoly[j] = (srand()-0.5)*0.05;
+  }
+  initWeights();
+
+  function relu(x) { return x > 0 ? x : 0.01 * x; } // leaky relu
+  function dreluDx(x) { return x > 0 ? 1 : 0.01; }
+
+  function predict(x, y) {
+    if (modelType === 'linear') {
+      return wLin[0]*x + wLin[1]*y + wLin[2];
     }
-    bx = Math.max(xMin+0.01, Math.min(xMax-0.01, bx));
-    by = Math.max(yMin+0.01, Math.min(yMax-0.01, by));
-    stepCount++;
-    trail.push({x: bx, y: by});
-    if (trail.length > 800) trail.shift();
-    if (loss(bx, by) < 0.001) converged = true;
+    if (modelType === 'poly') {
+      return wPoly[0]*x*x + wPoly[1]*y*y + wPoly[2]*x*y + wPoly[3]*x + wPoly[4]*y + wPoly[5];
+    }
+    // Neural net forward pass
+    var out = b2[0];
+    for (var j = 0; j < nHidden; j++) {
+      var h = W1[j][0]*x + W1[j][1]*y + b1[j];
+      out += W2[j] * relu(h);
+    }
+    return out;
   }
 
-  // Build 3D surface
-  var n3d = 70;
-  var x3d = [], y3d = [], z3d = [];
-  for (var i = 0; i <= n3d; i++) {
-    x3d.push(xMin + (xMax - xMin) * i / n3d);
-    y3d.push(yMin + (yMax - yMin) * i / n3d);
-  }
-  // Plotly surface: z[i][j] is at position (x[j], y[i])
-  // So z[i][j] must equal loss(x[j], y[i])
-  for (var i = 0; i <= n3d; i++) {
-    var row = [];
-    for (var j = 0; j <= n3d; j++) {
-      row.push(logLoss(x3d[j], y3d[i]));
+  function trainStep() {
+    var lr = (parseInt(document.getElementById('hero-lr').value) || 30) / 1000;
+    // Mini-batch SGD with momentum (batch = 32)
+    var batchSize = 32;
+    // Accumulate gradients
+    if (modelType === 'linear') {
+      var gw = [0,0,0];
+      for (var b = 0; b < batchSize; b++) {
+        var idx = Math.floor(srand() * N);
+        var pred = predict(rawX[idx], rawY[idx]);
+        var err = pred - rawZ[idx];
+        gw[0] += err * rawX[idx]; gw[1] += err * rawY[idx]; gw[2] += err;
+      }
+      for (var k = 0; k < 3; k++) wLin[k] -= lr * gw[k] / batchSize;
+    } else if (modelType === 'poly') {
+      var gw = [0,0,0,0,0,0];
+      for (var b = 0; b < batchSize; b++) {
+        var idx = Math.floor(srand() * N);
+        var x = rawX[idx], y = rawY[idx];
+        var pred = predict(x, y);
+        var err = pred - rawZ[idx];
+        gw[0] += err*x*x; gw[1] += err*y*y; gw[2] += err*x*y;
+        gw[3] += err*x; gw[4] += err*y; gw[5] += err;
+      }
+      for (var k = 0; k < 6; k++) wPoly[k] -= lr * gw[k] / batchSize;
+    } else {
+      // Neural net backprop
+      for (var b = 0; b < batchSize; b++) {
+        var idx = Math.floor(srand() * N);
+        var x = rawX[idx], y = rawY[idx], target = rawZ[idx];
+        // Forward
+        var hPre = [], hPost = [];
+        var out = b2[0];
+        for (var j = 0; j < nHidden; j++) {
+          hPre[j] = W1[j][0]*x + W1[j][1]*y + b1[j];
+          hPost[j] = relu(hPre[j]);
+          out += W2[j] * hPost[j];
+        }
+        var err = out - target;
+        // Backward
+        var dOut = err / batchSize;
+        b2[0] -= lr * dOut;
+        for (var j = 0; j < nHidden; j++) {
+          var dh = dOut * W2[j] * dreluDx(hPre[j]);
+          W2[j] -= lr * dOut * hPost[j];
+          W1[j][0] -= lr * dh * x;
+          W1[j][1] -= lr * dh * y;
+          b1[j] -= lr * dh;
+        }
+      }
     }
-    z3d.push(row);
+    epoch++;
   }
 
-  // Traces: 0=surface, 1=ball, 2=trail, 3=minimum, 4=HUD annotation
+  function computeMSE() {
+    var sum = 0;
+    for (var i = 0; i < N; i++) {
+      var err = predict(rawX[i], rawY[i]) - rawZ[i];
+      sum += err * err;
+    }
+    return sum / N;
+  }
+
+  // --- Build prediction surface grid ---
+  var gridN = 30;
+  var gridSqft = [], gridDist = [];
+  for (var i = 0; i <= gridN; i++) {
+    gridSqft.push(600 + 2900 * i / gridN);
+    gridDist.push(0.5 + 24.5 * i / gridN);
+  }
+
+  function buildSurface() {
+    var zGrid = [];
+    for (var i = 0; i <= gridN; i++) {
+      var row = [];
+      var ny = (gridDist[i] - 12.75) / 12.25;
+      for (var j = 0; j <= gridN; j++) {
+        var nx = (gridSqft[j] - 2050) / 1450;
+        var pNorm = predict(nx, ny);
+        row.push(Math.max(50, Math.min(1200, pNorm * 400 + 400)));
+      }
+      zGrid.push(row);
+    }
+    return zGrid;
+  }
+
+  // --- Initial Plotly plot ---
+  var zSurf = buildSurface();
   var traces = [{
-    type: 'surface', x: x3d, y: y3d, z: z3d,
-    colorscale: [[0,'#e8f7f0'],[0.05,'#64ffda'],[0.15,'#1a936f'],[0.3,'#1a237e'],[0.5,'#311b92'],[0.7,'#1a1a2e'],[1,'#0a0a14']],
-    opacity: 0.90, showscale: false,
+    type: 'surface', x: gridSqft, y: gridDist, z: zSurf,
+    colorscale: [[0,'#1a237e'],[0.2,'#283593'],[0.4,'#4ecdc4'],[0.6,'#64ffda'],[0.8,'#ffd93d'],[1,'#ff6b6b']],
+    opacity: 0.85, showscale: false,
     contours: { z: { show: true, usecolormap: true, project: { z: false } } },
-    hovertemplate: 'x=%{x:.2f}<br>y=%{y:.2f}<br>loss=%{customdata:.4f}<extra></extra>',
-    customdata: z3d.map(function(row) { return row.map(function(v) { return Math.expm1(v); }); })
+    hovertemplate: '%{x:.0f} sqft, %{y:.1f} km<br>Predicted: $%{z:.0f}k<extra>Model</extra>',
+    name: 'Prediction surface'
   },{
-    type: 'scatter3d', x: [bx], y: [by], z: [logLoss(bx,by)+0.15],
-    mode: 'markers', marker: { size: 8, color: '#64ffda', symbol: 'diamond',
-      line: { color: '#fff', width: 1.5 } },
-    name: 'Optimizer ball', showlegend: false,
-    hovertemplate: optimizer.toUpperCase()+'<br>x=%{x:.3f}, y=%{y:.3f}<br>Loss=%{text}<extra></extra>',
-    text: [loss(bx,by).toFixed(4)]
-  },{
-    type: 'scatter3d',
-    x: trail.map(function(p){return p.x;}),
-    y: trail.map(function(p){return p.y;}),
-    z: trail.map(function(p){return logLoss(p.x,p.y)+0.08;}),
-    mode: 'lines', line: { color: '#64ffda', width: 4 },
-    opacity: 0.6, name: 'Optimizer path', showlegend: false, hoverinfo: 'skip'
-  },{
-    type: 'scatter3d', x: [fMinX], y: [fMinY], z: [0.02],
-    mode: 'markers+text', text: ['minimum (1,1)'], textposition: 'top center',
-    textfont: { color: '#ffd93d', size: 13, family: 'Inter' },
-    marker: { size: 7, color: '#ffd93d', symbol: 'diamond' },
-    name: 'Minimum', showlegend: false,
-    hovertemplate: 'Global minimum<br>x=1, y=1<br>Loss=0<extra></extra>'
+    type: 'scatter3d', x: dataX, y: dataY, z: dataZ,
+    mode: 'markers',
+    marker: { size: 3.5, color: dataZ, colorscale: [[0,'#4ecdc4'],[0.5,'#ffd93d'],[1,'#ff6b6b']], opacity: 0.8,
+      line: { width: 0.3, color: 'rgba(255,255,255,0.3)' } },
+    hovertemplate: '%{x:.0f} sqft, %{y:.1f} km<br>Actual: $%{z:.0f}k<extra>House</extra>',
+    name: 'Houses'
   }];
 
   var layout = {
     scene: {
-      xaxis: { title: { text: 'x (weight 1)', font:{color:'#888',size:12} }, gridcolor: '#1a1a3e', zerolinecolor: '#333', color: '#666', backgroundcolor: '#0a0a0f', range: [xMin, xMax] },
-      yaxis: { title: { text: 'y (weight 2)', font:{color:'#888',size:12} }, gridcolor: '#1a1a3e', zerolinecolor: '#333', color: '#666', backgroundcolor: '#0a0a0f', range: [yMin, yMax] },
-      zaxis: { title: { text: 'log(loss)', font:{color:'#888',size:12} }, gridcolor: '#1a1a3e', zerolinecolor: '#333', color: '#666', backgroundcolor: '#0a0a0f', range: [0, 5.5] },
-      camera: { eye: { x: -1.3, y: -1.8, z: 1.2 } },
+      xaxis: { title: { text: 'Square footage', font:{color:'#64ffda',size:12} }, gridcolor:'#1a1a3e', zerolinecolor:'#333', color:'#888', backgroundcolor:'#0a0a0f' },
+      yaxis: { title: { text: 'Dist. to center (km)', font:{color:'#ffd93d',size:12} }, gridcolor:'#1a1a3e', zerolinecolor:'#333', color:'#888', backgroundcolor:'#0a0a0f' },
+      zaxis: { title: { text: 'Price ($k)', font:{color:'#ff6b6b',size:12} }, gridcolor:'#1a1a3e', zerolinecolor:'#333', color:'#888', backgroundcolor:'#0a0a0f', range:[50,1000] },
+      camera: { eye: { x: 1.5, y: -1.6, z: 0.8 } },
       bgcolor: '#0a0a0f',
-      aspectratio: { x: 1.1, y: 1, z: 0.55 },
+      aspectratio: { x: 1.1, y: 1, z: 0.65 },
       dragmode: 'orbit'
     },
     dragmode: 'orbit',
     paper_bgcolor: '#0a0a0f', plot_bgcolor: '#0a0a0f',
     font: { color: '#888', family: 'Inter, sans-serif' },
-    margin: { l: 10, r: 10, t: 30, b: 10 }
+    margin: { l: 0, r: 0, t: 10, b: 10 }
   };
 
   Plotly.newPlot('hero3d', traces, layout, {
-    responsive: true,
-    scrollZoom: true,
-    displayModeBar: true,
-    modeBarButtonsToRemove: ['toImage', 'sendDataToCloud'],
-    displaylogo: false
+    responsive: true, scrollZoom: true, displayModeBar: true,
+    modeBarButtonsToRemove: ['toImage','sendDataToCloud'], displaylogo: false
   });
 
-  // HUD element (outside Plotly so updates don't fight with orbit)
+  // --- Controls ---
   var hudEl = document.getElementById('heroHud');
+  var neuronsSlider = document.getElementById('hero-neurons');
+  var neuronsVal = document.getElementById('hero-neurons-val');
+  var lrSlider = document.getElementById('hero-lr');
+  var lrVal = document.getElementById('hero-lr-val');
 
-  // Animation loop — runs optimizer, updates ball+trail via restyle only (no relayout = no camera reset)
-  var lastSync = 0;
+  neuronsSlider.addEventListener('input', function() {
+    neuronsVal.textContent = neuronsSlider.value;
+    seed = 42; // reset data seed
+    initWeights();
+  });
+  lrSlider.addEventListener('input', function() {
+    lrVal.textContent = (lrSlider.value / 1000).toFixed(3);
+  });
+
+  var modelBtns = document.querySelectorAll('[data-model]');
+  modelBtns.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      modelBtns.forEach(function(b) { b.classList.remove('opt-btn--active'); });
+      btn.classList.add('opt-btn--active');
+      modelType = btn.getAttribute('data-model');
+      seed = 42;
+      initWeights();
+    });
+  });
+
+  // --- Animation loop ---
   var userInteracting = false;
   var plotEl = document.getElementById('hero3d');
-
-  // Detect when user is dragging to orbit — pause updates during drag
   plotEl.addEventListener('mousedown', function() { userInteracting = true; });
   plotEl.addEventListener('touchstart', function() { userInteracting = true; });
   document.addEventListener('mouseup', function() { userInteracting = false; });
   document.addEventListener('touchend', function() { userInteracting = false; });
 
+  var lastSync = 0;
   function animate() {
-    var stepsPerFrame = (optimizer === 'sgd' || optimizer === 'momentum') ? 8 : 4;
-    for (var si = 0; si < stepsPerFrame; si++) step();
+    // Train 5 mini-batches per frame
+    for (var s = 0; s < 5; s++) trainStep();
 
     var now = Date.now();
-    // Update 3D every 250ms, but SKIP if user is orbiting
-    if (now - lastSync > 250 && !userInteracting) {
+    if (now - lastSync > 300 && !userInteracting) {
       lastSync = now;
-      var trailX = [], trailY = [], trailZ = [];
-      var skip = Math.max(1, Math.floor(trail.length / 150));
-      for (var i = 0; i < trail.length; i += skip) {
-        trailX.push(trail[i].x);
-        trailY.push(trail[i].y);
-        trailZ.push(logLoss(trail[i].x, trail[i].y) + 0.08);
-      }
-      var ballZ = logLoss(bx, by) + 0.15;
-      var currentLoss = loss(bx, by);
-
-      // Only restyle traces — never relayout (which resets camera)
-      Plotly.restyle('hero3d', {
-        x: [[bx], trailX], y: [[by], trailY], z: [[ballZ], trailZ],
-        text: [[currentLoss.toFixed(4)], undefined]
-      }, [1, 2]);
+      var zNew = buildSurface();
+      Plotly.restyle('hero3d', { z: [zNew] }, [0]);
     }
 
-    // Update HUD via DOM (doesn't touch Plotly at all)
-    var currentLoss = loss(bx, by);
-    var hud = '<b style="color:#64ffda">Loss:</b> ' + currentLoss.toFixed(4) +
-      ' &nbsp; <b style="color:#ddd">Step:</b> ' + stepCount +
-      ' &nbsp; <b style="color:#aaa">' + optimizer.toUpperCase() + '</b>';
-    if (converged) hud += ' &nbsp; <b style="color:#ffd93d">CONVERGED!</b>';
-    hudEl.innerHTML = hud;
+    // HUD
+    var mse = computeMSE();
+    var realMSE = mse * 400 * 400; // un-normalize
+    var rmse = Math.sqrt(realMSE);
+    var modelName = modelType === 'neural' ? 'Neural Net (' + nHidden + ' neurons)' : modelType === 'poly' ? 'Polynomial' : 'Linear';
+    hudEl.innerHTML = '<b style="color:#64ffda">Model:</b> ' + modelName +
+      ' &nbsp; <b style="color:#ffd93d">RMSE:</b> $' + rmse.toFixed(0) + 'k' +
+      ' &nbsp; <b style="color:#888">Epoch:</b> ' + epoch;
 
     requestAnimationFrame(animate);
   }
