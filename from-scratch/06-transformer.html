@@ -5,161 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="../static/canvas-polish.js"></script>
 <title>Chapter 6: Transformer from Scratch</title>
+<link rel="stylesheet" href="../theme.css">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #0a0a0f; color: #e0e0e0; line-height: 1.6; }
-  .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; text-align: center; border-bottom: 1px solid #2a2a4a; }
-  .header h1 { font-size: 2.2em; background: linear-gradient(90deg, #01a3a4, #56d6d6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
-  .header p { color: #888; font-size: 1.1em; }
-  .header a { color: #01a3a4; text-decoration: none; font-size: 0.9em; }
-  .header a:hover { text-decoration: underline; }
-  .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
-
-  /* Minimap */
-  .minimap { position: sticky; top: 0; z-index: 100; background: #0a0a0fee; backdrop-filter: blur(10px); border-bottom: 1px solid #2a2a4a; padding: 10px 20px; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }
-  .mm-step { padding: 4px 12px; border-radius: 6px; font-size: 0.75em; font-weight: 600; cursor: pointer; transition: all 0.2s; background: #151530; color: #555; border: 1px solid #2a2a4a; white-space: nowrap; }
-  .mm-step:hover { border-color: #01a3a4; color: #01a3a4; }
-  .mm-step.active { background: rgba(1,163,164,0.2); color: #01a3a4; border-color: rgba(1,163,164,0.5); }
-  .mm-step.done { background: rgba(1,163,164,0.1); color: #01a3a4; border-color: rgba(1,163,164,0.3); }
-  .mm-arrow { color: #333; font-size: 0.8em; }
-
-  .viz-section { background: #12121f; border: 1px solid #2a2a4a; border-radius: 16px; padding: 32px; margin-bottom: 40px; }
-  .viz-section h2 { font-size: 1.5em; color: #01a3a4; margin-bottom: 8px; }
-  .viz-section .subtitle { color: #888; margin-bottom: 24px; font-size: 0.95em; }
-  .viz-canvas { background: #0d0d1a; border-radius: 12px; position: relative; overflow: hidden; }
-  canvas { display: block; margin: 0 auto; }
-  .controls { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; align-items: center; }
-  .control-group { display: flex; flex-direction: column; gap: 4px; }
-  .control-group label { font-size: 0.85em; color: #aaa; }
-  .control-group input[type="range"] { width: 160px; accent-color: #01a3a4; }
-  .control-group .value { font-size: 0.85em; color: #01a3a4; font-family: monospace; }
-  .btn { padding: 8px 16px; border: 1px solid #01a3a4; background: transparent; color: #01a3a4; border-radius: 8px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
-  .btn:hover { background: #01a3a422; }
-  .btn.active { background: #01a3a433; }
-  .tab-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
-
-  .insight-box { background: linear-gradient(135deg, #1a1a3e 0%, #151530 100%); border-left: 4px solid #01a3a4; padding: 20px 24px; margin-top: 20px; border-radius: 0 12px 12px 0; font-size: 0.92em; color: #ccc; line-height: 1.8; }
-  .insight-box strong { color: #01a3a4; font-size: 1.05em; }
-  .insight-box .formula { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 12px 18px; margin: 12px 0; font-family: 'Courier New', monospace; color: #e8e8ff; font-size: 1.05em; text-align: center; letter-spacing: 0.5px; line-height: 1.9; }
-  .insight-box .key-point { display: flex; flex-wrap: wrap; gap: 4px 8px; margin: 8px 0; padding: 4px 0; align-items: baseline; }
-  .insight-box .key-point .label { color: #01a3a4; font-weight: 600; min-width: 160px; flex-shrink: 0; }
-  .insight-box .key-point .desc { color: #ddd; }
-  .insight-box .interview-tip { background: rgba(100, 255, 100, 0.05); border: 1px solid rgba(100, 255, 100, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #b0ffb0; font-size: 0.93em; line-height: 1.6; }
-  .insight-box .interview-tip::before { content: '\1F4A1  Interview Tip: '; font-weight: 700; color: #7fff7f; }
-  .insight-box .mnemonic { background: rgba(255, 150, 255, 0.05); border: 1px solid rgba(255, 150, 255, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #ffb0ff; font-size: 0.93em; line-height: 1.6; }
-  .insight-box .mnemonic::before { content: '\1F9E0  Remember: '; font-weight: 700; color: #ff7fff; }
-  .insight-box .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
-  .insight-box .comparison .option { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 10px 14px; }
-  .insight-box .comparison .option .opt-title { color: #01a3a4; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
-  .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
-  .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
-  .code-example { margin-top: 12px; border: 1px solid #2a2a4a; border-radius: 8px; overflow: hidden; }
-  .code-toggle { width: 100%; background: #1a1a2e; color: #01a3a4; border: none; padding: 10px 16px; text-align: left; cursor: pointer; font-size: 0.9em; font-weight: 600; display: flex; align-items: center; gap: 8px; }
-  .code-toggle:hover { background: #22223a; }
-  .code-toggle-icon { display: inline-block; transition: transform 0.2s; font-size: 0.7em; }
-  .code-example.open .code-toggle-icon { transform: rotate(90deg); }
-  .code-content { display: none; padding: 14px 16px; background: #0a0a14; }
-  .code-example.open .code-content { display: block; }
-  .code-content pre { margin: 0; overflow-x: auto; white-space: pre; }
-  .code-content code { color: #e0e0e0; font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.82em; line-height: 1.6; }
-  .code-content .code-note { color: #888; font-size: 0.82em; margin-top: 8px; font-style: italic; }
-  .code-content pre[class*="language-"], .code-content code[class*="language-"] { background: #0a0a14; font-size: 0.82em; line-height: 1.6; margin: 0; padding: 0; text-shadow: none; }
-  pre[class*="language-"]::selection, code[class*="language-"]::selection { background: #333; }
-  .katex { color: #e8e8ff; font-size: 1.1em; }
-  .formula .katex { font-size: 1.2em; }
-
-  .narrative-note { background: rgba(255,217,61,0.05); border-left: 3px solid #ffd93d; padding: 14px 18px; margin: 16px 0; border-radius: 0 8px 8px 0; font-size: 0.9em; color: #ccb866; }
-  .narrative-note strong { color: #ffd93d; }
-
-  select { padding: 6px 12px; border: 1px solid #2a2a4a; background: #0d0d1a; color: #e0e0e0; border-radius: 6px; font-size: 0.9em; cursor: pointer; }
-  select:focus { outline: none; border-color: #01a3a4; }
-
-  input[type="text"] { padding: 8px 14px; border: 1px solid #2a2a4a; background: #0d0d1a; color: #e0e0e0; border-radius: 8px; font-size: 0.95em; font-family: inherit; width: 100%; }
-  input[type="text"]:focus { outline: none; border-color: #01a3a4; }
-
-#quizToggle{position:fixed;top:20px;right:20px;z-index:1000;padding:12px 20px;background:#01a3a4;color:#0a0a0f;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:1em;box-shadow:0 4px 15px rgba(0,0,0,0.3);transition:transform 0.2s}
-#quizToggle:hover{transform:scale(1.05)}
-#quizSection{background:#0a0a0f;border-top:2px solid #01a3a4;padding:40px 20px;margin-top:40px}
-.quiz-container{max-width:900px;margin:0 auto}
-.quiz-topic{margin-bottom:30px}
-.quiz-topic-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:10px;cursor:pointer;margin-bottom:12px;user-select:none}
-.quiz-topic-header h3{color:#01a3a4;margin:0;font-size:1.15em}
-.quiz-topic-header:hover{background:#1f1f3a}
-.quiz-topic-score{color:#888;font-size:0.95em}
-.quiz-topic-questions{display:none}
-.quiz-topic-questions.open{display:block}
-.quiz-question{background:#12121f;border:1px solid #2a2a4a;border-radius:12px;padding:24px;margin-bottom:16px}
-.quiz-question h4{color:#e0e0e0;margin-bottom:16px;font-size:1.05em;line-height:1.5}
-.quiz-option{display:block;width:100%;padding:12px 16px;margin:8px 0;background:#0d0d1a;border:1px solid #2a2a4a;border-radius:8px;color:#e0e0e0;cursor:pointer;text-align:left;font-size:0.95em;transition:all 0.2s;font-family:inherit}
-.quiz-option:hover:not(:disabled){border-color:#01a3a4;background:#1a1a3e}
-.quiz-option.correct{background:#1a3a2a !important;border-color:#2ecc71 !important;color:#2ecc71 !important}
-.quiz-option.wrong{background:#3a1a1a !important;border-color:#e74c3c !important;color:#e74c3c !important}
-.quiz-option.reveal{border-color:#2ecc71 !important;color:#2ecc71 !important}
-.quiz-option:disabled{cursor:default}
-.quiz-explanation{margin-top:12px;padding:14px 18px;border-radius:8px;font-size:0.93em;line-height:1.6;display:none}
-.quiz-explanation.show{display:block}
-.quiz-explanation.correct-exp{border-left:4px solid #2ecc71;background:rgba(46,204,113,0.08);color:#b0ffb0}
-.quiz-explanation.wrong-exp{border-left:4px solid #e74c3c;background:rgba(231,76,60,0.08);color:#ffb0b0}
-.quiz-score{text-align:center;font-size:1.5em;color:#01a3a4;margin-bottom:30px}
-.quiz-actions{text-align:center;margin-top:30px;margin-bottom:20px}
-.quiz-actions button{padding:10px 24px;margin:0 8px;border-radius:8px;border:1px solid #01a3a4;background:transparent;color:#01a3a4;cursor:pointer;font-size:1em}
-.quiz-actions button:hover{background:rgba(1,163,164,0.1)}
-.quiz-progress{height:4px;background:#1a1a2e;border-radius:2px;margin-bottom:20px;overflow:hidden}
-.quiz-progress-bar{height:100%;background:#01a3a4;border-radius:2px;transition:width 0.3s}
-
-.break-toggle { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border: 1px solid #e74c3c; background: transparent; color: #e74c3c; border-radius: 8px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
-.break-toggle:hover { background: rgba(231,76,60,0.15); }
-.break-toggle.broken { background: rgba(231,76,60,0.25); border-color: #ff4444; color: #ff4444; }
-
-.legend { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
-.legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.85em; color: #ccc; }
-.legend-dot { width: 12px; height: 12px; border-radius: 50%; }
-
-.token-box { display: inline-block; padding: 4px 10px; margin: 3px 2px; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 0.95em; cursor: default; transition: all 0.2s; }
-.token-box:hover { transform: translateY(-2px); }
-
-.heatmap-cell { display: inline-block; width: 22px; height: 22px; margin: 1px; border-radius: 3px; font-size: 0.6em; text-align: center; line-height: 22px; color: rgba(255,255,255,0.7); }
-
-.flow-box { background: #1a1a3e; border: 1px solid #3a3a6a; border-radius: 8px; padding: 10px 16px; margin: 6px 0; display: flex; align-items: center; gap: 12px; transition: all 0.3s; }
-.flow-box.active-step { border-color: #01a3a4; background: rgba(1,163,164,0.1); box-shadow: 0 0 12px rgba(1,163,164,0.2); }
-.flow-box .step-label { color: #01a3a4; font-weight: 600; font-size: 0.85em; min-width: 140px; }
-.flow-box .step-shape { color: #888; font-family: monospace; font-size: 0.8em; }
-.flow-arrow { text-align: center; color: #01a3a4; font-size: 1.2em; margin: 2px 0; }
-
-.prob-bar-container { display: flex; align-items: center; gap: 8px; margin: 3px 0; }
-.prob-bar-label { font-family: monospace; font-size: 0.85em; color: #ccc; min-width: 80px; text-align: right; }
-.prob-bar { height: 20px; border-radius: 4px; transition: width 0.3s; min-width: 2px; }
-.prob-bar-value { font-family: monospace; font-size: 0.8em; color: #888; min-width: 50px; }
-
-.arch-box { background: #1a1a3e; border: 2px solid #3a3a6a; border-radius: 10px; padding: 12px 18px; text-align: center; font-weight: 600; font-size: 0.9em; transition: all 0.3s; cursor: pointer; }
-.arch-box:hover { border-color: #01a3a4; transform: scale(1.02); }
-.arch-box .ch-ref { font-size: 0.7em; color: #888; font-weight: 400; display: block; margin-top: 4px; }
-
-.vocab-search { display: flex; gap: 8px; margin: 12px 0; align-items: center; }
-.vocab-search input { flex: 1; max-width: 300px; }
-.vocab-results { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; max-height: 120px; overflow-y: auto; padding: 8px; background: #0d0d1a; border-radius: 8px; }
-.vocab-item { background: #1a1a3e; border: 1px solid #2a2a4a; border-radius: 6px; padding: 4px 10px; font-family: monospace; font-size: 0.8em; color: #ccc; }
-.vocab-item .vid { color: #01a3a4; font-weight: 600; }
-
-  /* Mobile responsive */
-  canvas { max-width: 100%; height: auto; }
-  @media (max-width: 768px) {
-    .container { padding: 16px 10px; }
-    .viz-section { padding: 16px 12px; }
-    h2 { font-size: 1.2em; }
-    .subtitle { font-size: 0.85em; }
-    .controls { gap: 8px; }
-    .control-group { min-width: 120px; flex: 1 1 auto; }
-    .tab-bar { flex-wrap: wrap; gap: 4px; }
-    .tab-bar .btn { font-size: 0.75em; padding: 6px 10px; }
-    .insight-box { padding: 14px; font-size: 0.9em; }
-    .comparison { grid-template-columns: 1fr !important; }
-    .formula { font-size: 0.85em; overflow-x: auto; }
-    .code-content pre { font-size: 0.78em; }
-    .interview-tip { font-size: 0.85em; padding: 10px; }
-    .metric-box { font-size: 0.82em; }
-  }
-
+  .header h1 { background: linear-gradient(90deg, var(--gold), var(--blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .viz-section h2 { color: var(--gold); }
+  .control-group .value { color: var(--gold); }
+  .control-group input[type="range"] { accent-color: var(--gold); }
+  .btn.active { border-color: var(--gold); color: var(--gold); }
+  .btn:hover { border-color: var(--gold); color: var(--gold); }
+  .insight-box { border-left-color: rgba(var(--gold-rgb), 0.3); }
+  .insight-box strong { color: var(--gold); }
+  .insight-box .formula .highlight { color: var(--gold); }
+  .insight-box .key-point .label { color: var(--gold); }
+  .card::before { background: var(--gold); }
+  #quizToggle { background: var(--bg2); color: var(--fg-dim); border: 1px solid var(--border-hover); }
+  #quizToggle:hover { border-color: var(--gold); color: var(--gold); }
+  #quizSection { border-top-color: rgba(var(--gold-rgb), 0.2); }
 </style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -212,8 +73,8 @@
     <div style="margin-bottom:8px; color:#888; font-size:0.85em;">Tokens (colored by boundary):</div>
     <div id="tokenDisplay" style="line-height: 2.2;"></div>
     <div style="margin-top:12px; color:#888; font-size:0.85em;">Token IDs:</div>
-    <div id="tokenIds" style="font-family:monospace; color:#01a3a4; font-size:0.9em; margin-top:4px;"></div>
-    <div style="margin-top:12px; color:#888; font-size:0.85em;">Count: <span id="tokenCount" style="color:#01a3a4;">0</span> tokens from <span id="charCount" style="color:#ffd93d;">0</span> characters &mdash; compression ratio: <span id="compressionRatio" style="color:#01a3a4;">0</span>x</div>
+    <div id="tokenIds" style="font-family:monospace; color:#a08550; font-size:0.9em; margin-top:4px;"></div>
+    <div style="margin-top:12px; color:#888; font-size:0.85em;">Count: <span id="tokenCount" style="color:#a08550;">0</span> tokens from <span id="charCount" style="color:#e0c992;">0</span> characters &mdash; compression ratio: <span id="compressionRatio" style="color:#a08550;">0</span>x</div>
   </div>
   <div style="margin-top:16px;">
     <div style="color:#888; font-size:0.85em; margin-bottom:8px;">Vocabulary Explorer (search ~1000 common tokens):</div>
@@ -362,8 +223,8 @@ pe = positional_encoding(128, 512)</code></pre>
     <canvas id="blockHeatmap" width="900" height="200"></canvas>
   </div>
   <div class="legend">
-    <div class="legend-item"><span class="legend-dot" style="background:#01a3a4;"></span> Current step</div>
-    <div class="legend-item"><span class="legend-dot" style="background:#4ecdc4;"></span> Completed</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#a08550;"></span> Current step</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#6ea5c9;"></span> Completed</div>
     <div class="legend-item"><span class="legend-dot" style="background:#555;"></span> Upcoming</div>
   </div>
   <div class="insight-box">
@@ -411,7 +272,7 @@ class TransformerBlock(nn.Module):
 </div>
   </div>
   <div class="insight-box">
-    <h3 style="color:#01a3a4; margin-bottom:8px;">Pre-Norm vs Post-Norm</h3>
+    <h3 style="color:#a08550; margin-bottom:8px;">Pre-Norm vs Post-Norm</h3>
     <p><strong>Original Transformer (2017):</strong> Post-norm &mdash; LayerNorm after residual addition. Requires careful learning rate warmup to avoid training instability.</p>
     <p><strong>Modern practice (GPT-2+):</strong> Pre-norm &mdash; LayerNorm before attention/FFN. More stable training, no warmup needed. Gradients flow cleanly through the residual path (see Ch 03 on gradient flow through residual connections).</p>
     <p>This visualization uses <strong>pre-norm</strong> (the modern default).</p>
@@ -419,13 +280,13 @@ class TransformerBlock(nn.Module):
   <div class="narrative-note">
     &#128206; Ch 3 covers BatchNorm and LayerNorm in depth. Transformers use LayerNorm because it doesn't depend on batch size &mdash; each token is normalized independently across its embedding dimensions.
   </div>
-  <div class="insight-box" style="border-left-color: #ff6b6b;">
-    <h3 style="color:#ff6b6b; margin-bottom:8px;">Common Mistakes: Transformer Blocks</h3>
+  <div class="insight-box" style="border-left-color: #c96e8a;">
+    <h3 style="color:#c96e8a; margin-bottom:8px;">Common Mistakes: Transformer Blocks</h3>
     <ul style="list-style:none; padding:0;">
-      <li style="margin-bottom:8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Training with causal mask but evaluating without it (or vice versa). <strong style="color:#4ecdc4;">Fix:</strong> Always match train and eval masking. Decoder-only models need causal masks at all times.</li>
-      <li style="margin-bottom:8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Not applying the final LayerNorm before the output head. <strong style="color:#4ecdc4;">Fix:</strong> Pre-norm architectures require an extra LayerNorm after the last block, before projecting to vocab. Without it, the output logits are unnormalized.</li>
-      <li style="margin-bottom:8px;"><strong style="color:#ff6b6b;">Mistake:</strong> A 12-layer transformer without residual connections performs like a ~2 layer network. <strong style="color:#4ecdc4;">Fix:</strong> Always include residuals. Without them, gradients vanish through deep stacks and only the last few layers learn effectively.</li>
-      <li><strong style="color:#ff6b6b;">Mistake:</strong> Forgetting that attention is O(n&sup2;) &mdash; doubling context length quadruples memory usage. <strong style="color:#4ecdc4;">Fix:</strong> Use efficient attention implementations (FlashAttention) or limit context length. For very long sequences, consider sparse attention or sliding-window approaches.</li>
+      <li style="margin-bottom:8px;"><strong style="color:#c96e8a;">Mistake:</strong> Training with causal mask but evaluating without it (or vice versa). <strong style="color:#6ea5c9;">Fix:</strong> Always match train and eval masking. Decoder-only models need causal masks at all times.</li>
+      <li style="margin-bottom:8px;"><strong style="color:#c96e8a;">Mistake:</strong> Not applying the final LayerNorm before the output head. <strong style="color:#6ea5c9;">Fix:</strong> Pre-norm architectures require an extra LayerNorm after the last block, before projecting to vocab. Without it, the output logits are unnormalized.</li>
+      <li style="margin-bottom:8px;"><strong style="color:#c96e8a;">Mistake:</strong> A 12-layer transformer without residual connections performs like a ~2 layer network. <strong style="color:#6ea5c9;">Fix:</strong> Always include residuals. Without them, gradients vanish through deep stacks and only the last few layers learn effectively.</li>
+      <li><strong style="color:#c96e8a;">Mistake:</strong> Forgetting that attention is O(n&sup2;) &mdash; doubling context length quadruples memory usage. <strong style="color:#6ea5c9;">Fix:</strong> Use efficient attention implementations (FlashAttention) or limit context length. For very long sequences, consider sparse attention or sliding-window approaches.</li>
     </ul>
   </div>
   <div class="narrative-note">
@@ -471,15 +332,15 @@ class TransformerBlock(nn.Module):
     <div style="display:flex; gap:20px; flex-wrap:wrap;">
       <div style="text-align:center;">
         <div style="color:#888; font-size:0.8em; margin-bottom:4px;">Layer 1: Local patterns</div>
-        <div style="width:12px; height:12px; background:#01a3a4; border-radius:50%; display:inline-block;"></div>
+        <div style="width:12px; height:12px; background:#a08550; border-radius:50%; display:inline-block;"></div>
       </div>
       <div style="text-align:center;">
         <div style="color:#888; font-size:0.8em; margin-bottom:4px;">Layer 6: Dependencies</div>
-        <div style="width:12px; height:12px; background:#ffd93d; border-radius:50%; display:inline-block;"></div>
+        <div style="width:12px; height:12px; background:#e0c992; border-radius:50%; display:inline-block;"></div>
       </div>
       <div style="text-align:center;">
         <div style="color:#888; font-size:0.8em; margin-bottom:4px;">Layer 12: Semantics</div>
-        <div style="width:12px; height:12px; background:#ff6b6b; border-radius:50%; display:inline-block;"></div>
+        <div style="width:12px; height:12px; background:#c96e8a; border-radius:50%; display:inline-block;"></div>
       </div>
     </div>
   </div>
@@ -519,8 +380,8 @@ out = encoder(x)  # same shape, refined representations</code></pre>
   </div>
 </div>
   </div>
-  <div class="insight-box" style="border-left-color: #ff6b6b;">
-    <h3 style="color: #ff6b6b;">&#9888;&#65039; Common Mistakes</h3>
+  <div class="insight-box" style="border-left-color: #c96e8a;">
+    <h3 style="color: #c96e8a;">&#9888;&#65039; Common Mistakes</h3>
     <ul style="margin-top: 8px; padding-left: 18px; line-height: 2;">
       <li><strong>Mistake:</strong> Forgetting that attention is O(n&sup2;) &mdash; doubling context quadruples memory. <strong>Fix:</strong> Use efficient attention (FlashAttention) or limit context length.</li>
       <li><strong>Mistake:</strong> Not applying final LayerNorm before the output projection head. <strong>Fix:</strong> Always include the final norm &mdash; it stabilizes the last layer's representations before projecting to vocabulary logits.</li>
@@ -636,16 +497,16 @@ next_token = sample(logits, temperature=0.8, top_k=40)</code></pre>
   </div>
 </div>
   </div>
-  <div class="insight-box" style="border-left-color: #ff6b6b;">
-    <h3 style="color:#ff6b6b; margin-bottom:8px;">Common Mistakes: Sampling &amp; Generation</h3>
+  <div class="insight-box" style="border-left-color: #c96e8a;">
+    <h3 style="color:#c96e8a; margin-bottom:8px;">Common Mistakes: Sampling &amp; Generation</h3>
     <ul style="list-style:none; padding:0;">
-      <li style="margin-bottom:8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Using greedy decoding when diversity is needed. <strong style="color:#4ecdc4;">Fix:</strong> Use temperature + top-p sampling. Greedy is deterministic and leads to repetitive text.</li>
-      <li style="margin-bottom:8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Setting temperature=0 and expecting creative output. <strong style="color:#4ecdc4;">Fix:</strong> Temperature=0 is greedy (argmax). For creative tasks, use T=0.7-1.0 with top-p=0.9-0.95.</li>
-      <li><strong style="color:#ff6b6b;">Mistake:</strong> Not using KV-cache during inference (recomputing attention for all previous tokens at every step). <strong style="color:#4ecdc4;">Fix:</strong> Always enable KV-cache for autoregressive generation. Without it, generating n tokens costs O(n^3) instead of O(n^2). See Ch 07 for more inference optimization techniques.</li>
+      <li style="margin-bottom:8px;"><strong style="color:#c96e8a;">Mistake:</strong> Using greedy decoding when diversity is needed. <strong style="color:#6ea5c9;">Fix:</strong> Use temperature + top-p sampling. Greedy is deterministic and leads to repetitive text.</li>
+      <li style="margin-bottom:8px;"><strong style="color:#c96e8a;">Mistake:</strong> Setting temperature=0 and expecting creative output. <strong style="color:#6ea5c9;">Fix:</strong> Temperature=0 is greedy (argmax). For creative tasks, use T=0.7-1.0 with top-p=0.9-0.95.</li>
+      <li><strong style="color:#c96e8a;">Mistake:</strong> Not using KV-cache during inference (recomputing attention for all previous tokens at every step). <strong style="color:#6ea5c9;">Fix:</strong> Always enable KV-cache for autoregressive generation. Without it, generating n tokens costs O(n^3) instead of O(n^2). See Ch 07 for more inference optimization techniques.</li>
     </ul>
   </div>
   <div class="narrative-note">
-    &#128206; Temperature sampling is the same concept as in <a href="02-makemore.html" style="color:#01a3a4;">Ch 2 (Makemore)</a> &mdash; controlling randomness in next-token prediction. The only difference is what model produces the logits: a bigram table (Ch 2) vs a full transformer (here).
+    &#128206; Temperature sampling is the same concept as in <a href="02-makemore.html" style="color:#a08550;">Ch 2 (Makemore)</a> &mdash; controlling randomness in next-token prediction. The only difference is what model produces the logits: a bigram table (Ch 2) vs a full transformer (here).
   </div>
 </div>
 
@@ -669,14 +530,14 @@ next_token = sample(logits, temperature=0.8, top_k=40)</code></pre>
       <div style="flex:1; min-width:300px;">
         <div style="color:#888; font-size:0.85em; margin-bottom:8px;">Generated Sequence:</div>
         <div id="genSequence" style="font-family:monospace; font-size:1.1em; line-height:2; min-height:60px; padding:12px; background:#0a0a15; border-radius:8px;"></div>
-        <div style="color:#888; font-size:0.8em; margin-top:8px;">Step: <span id="genStep" style="color:#01a3a4;">0</span> / <span id="genTotal">20</span></div>
+        <div style="color:#888; font-size:0.8em; margin-top:8px;">Step: <span id="genStep" style="color:#a08550;">0</span> / <span id="genTotal">20</span></div>
       </div>
       <div style="flex:1; min-width:300px;">
         <div style="color:#888; font-size:0.85em; margin-bottom:8px;">KV-Cache (keys reused vs new):</div>
         <canvas id="kvCacheCanvas" width="400" height="180"></canvas>
         <div class="legend" style="margin-top:6px;">
-          <div class="legend-item"><span class="legend-dot" style="background:#01a3a4;"></span> Cached (reused)</div>
-          <div class="legend-item"><span class="legend-dot" style="background:#ffd93d;"></span> New computation</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#a08550;"></span> Cached (reused)</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#e0c992;"></span> New computation</div>
         </div>
       </div>
     </div>
@@ -720,8 +581,8 @@ def generate(model, prompt_ids, max_new=50, temperature=0.8):
   </div>
 </div>
   </div>
-  <div class="insight-box" style="border-left-color: #ff6b6b;">
-    <h3 style="color: #ff6b6b;">&#9888;&#65039; Common Mistakes</h3>
+  <div class="insight-box" style="border-left-color: #c96e8a;">
+    <h3 style="color: #c96e8a;">&#9888;&#65039; Common Mistakes</h3>
     <ul style="margin-top: 8px; padding-left: 18px; line-height: 2;">
       <li><strong>Mistake:</strong> Not using KV-cache during autoregressive inference (recomputing all tokens every step). <strong>Fix:</strong> Cache K,V from previous steps, only compute new token. This reduces per-step cost from O(n&sup2;) to O(n).</li>
       <li><strong>Mistake:</strong> Training with causal mask but evaluating without it (data leakage). <strong>Fix:</strong> Always use the same masking at train and eval &mdash; decoder-only models need causal masks at all times.</li>
@@ -749,12 +610,12 @@ def generate(model, prompt_ids, max_new=50, temperature=0.8):
     <div id="trainSequence"></div>
     <div style="margin-top:16px; color:#888; font-size:0.85em;">Cross-entropy loss per position:</div>
     <canvas id="lossBarCanvas" width="900" height="100"></canvas>
-    <div style="margin-top:8px; color:#888; font-size:0.85em;">Total loss: <span id="totalLoss" style="color:#01a3a4; font-weight:600;">0.00</span></div>
+    <div style="margin-top:8px; color:#888; font-size:0.85em;">Total loss: <span id="totalLoss" style="color:#a08550; font-weight:600;">0.00</span></div>
   </div>
   <div class="viz-canvas" style="margin-top:12px;">
     <canvas id="lossCurveCanvas" width="900" height="220"></canvas>
   </div>
-  <div style="margin-top:12px; padding:12px 16px; background:#0d0d1a; border-radius:8px;">
+  <div style="margin-top:12px; padding:12px 16px; background:#0d0d14; border-radius:8px;">
     <div style="color:#888; font-size:0.85em; margin-bottom:8px;">Generated text over training (watch it improve):</div>
     <div id="trainGenText" style="font-family:monospace; font-size:0.9em; color:#ccc; overflow-wrap:anywhere; word-break:break-word;"></div>
   </div>
@@ -796,8 +657,8 @@ optimizer.step()</code></pre>
   </div>
 </div>
   </div>
-  <div class="insight-box" style="border-left-color: #ff6b6b;">
-    <h3 style="color: #ff6b6b;">&#9888;&#65039; Common Mistakes</h3>
+  <div class="insight-box" style="border-left-color: #c96e8a;">
+    <h3 style="color: #c96e8a;">&#9888;&#65039; Common Mistakes</h3>
     <ul style="margin-top: 8px; padding-left: 18px; line-height: 2;">
       <li><strong>Mistake:</strong> Using greedy decoding when diversity is needed. <strong>Fix:</strong> Use temperature + top-p sampling. Greedy is deterministic and leads to repetitive, degenerate text.</li>
       <li><strong>Mistake:</strong> Setting temperature=0 and expecting creative output. <strong>Fix:</strong> T=0 is argmax (deterministic). Use T=0.7-1.0 for creative generation, with top-p=0.9-0.95.</li>
@@ -843,11 +704,11 @@ optimizer.step()</code></pre>
     &#128161; <strong>n_heads:</strong> d_model/64 is typical. GPT-2: 768/64 = 12 heads. Each head gets d_k = d_model/n_heads dimensions.<br>
     &#128161; <strong>FFN expansion:</strong> 4x d_model is standard (e.g., 768 &rarr; 3072). Some modern models use 8/3x for SwiGLU activation.
   </div>
-  <div style="margin-top:16px; padding:16px 20px; background:#0d0d1a; border-radius:12px;">
+  <div style="margin-top:16px; padding:16px 20px; background:#0d0d14; border-radius:12px;">
     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
       <div>
         <div style="color:#888; font-size:0.85em;">Total Parameters</div>
-        <div id="paramCount" style="color:#01a3a4; font-size:2em; font-weight:700; font-family:monospace;">6.3M</div>
+        <div id="paramCount" style="color:#a08550; font-size:2em; font-weight:700; font-family:monospace;">6.3M</div>
       </div>
       <div style="display:flex; gap:16px; flex-wrap:wrap;">
         <button class="btn" onclick="setPreset('tiny')">Your Model (6L/4H/64d)</button>
@@ -923,7 +784,7 @@ class MiniGPT(nn.Module):
 <!-- ============================================================ -->
 <div id="quizSection" style="display:none">
 <div class="quiz-container">
-  <h2 style="text-align:center;color:#01a3a4;margin-bottom:10px;font-size:1.8em;">Transformer from Scratch Quiz</h2>
+  <h2 style="text-align:center;color:#a08550;margin-bottom:10px;font-size:1.8em;">Transformer from Scratch Quiz</h2>
   <p style="text-align:center;color:#888;margin-bottom:20px;">5 questions per visualization &bull; 40 questions total &bull; Click answers to reveal explanations</p>
   <div class="quiz-progress"><div class="quiz-progress-bar" id="quizProgressBar" style="width:0%"></div></div>
   <div class="quiz-score">Score: <span id="quizScore">0</span> / <span id="quizTotal">40</span></div>
@@ -935,10 +796,11 @@ class MiniGPT(nn.Module):
 </div>
 </div>
 
-<div style="text-align:center; padding:40px; color:#555; font-size:0.85em; border-top:1px solid #1a1a2e;">
-  Chapter 6: Transformer from Scratch &bull; <a href="../index.html" style="color:#01a3a4; text-decoration:none;">From Scratch Series</a>
+<div style="text-align:center; padding:40px; color:#555; font-size:0.85em; border-top:1px solid #111118;">
+  Chapter 6: Transformer from Scratch &bull; <a href="../index.html" style="color:#a08550; text-decoration:none;">From Scratch Series</a>
 </div>
 
+<script src="../theme.js"></script>
 <script>
 // ============================================================
 // UTILITY FUNCTIONS
@@ -1025,7 +887,7 @@ var vocabList = [];
   }
 })();
 
-var tokenColors = ['#01a3a4','#e74c3c','#f39c12','#9b59b6','#2ecc71','#3498db','#e91e63','#00bcd4','#ff9800','#8bc34a','#673ab7','#009688'];
+var tokenColors = ['#a08550','#e74c3c','#f39c12','#9b59b6','#2ecc71','#3498db','#e91e63','#00bcd4','#ff9800','#8bc34a','#673ab7','#009688'];
 
 function simpleTokenize(text) {
   if (!text) return [];
@@ -1197,7 +1059,7 @@ function drawEmbeddings() {
 
   var currentY = marginTop;
   sections.forEach(function(sec, si) {
-    ctx.fillStyle = si === sections.length - 1 && embView === 'all' ? '#01a3a4' : '#aaa';
+    ctx.fillStyle = si === sections.length - 1 && embView === 'all' ? '#a08550' : '#aaa';
     ctx.font = 'bold 13px Inter, sans-serif';
     ctx.textAlign = 'left';
     ctx.fillText(sec.title, marginLeft, currentY);
@@ -1211,7 +1073,7 @@ function drawEmbeddings() {
 
     // Draw + sign between rows
     if (si < sections.length - 1 && embView === 'all') {
-      ctx.fillStyle = '#01a3a4';
+      ctx.fillStyle = '#a08550';
       ctx.font = 'bold 18px Inter, sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText(si === 0 ? '+' : '=', marginLeft + (d * cellW) / 2, currentY);
@@ -1264,7 +1126,7 @@ function buildBlockFlow() {
     html += '<span class="step-label">' + step.label + '</span>';
     html += '<span class="step-shape">' + step.shape + '</span>';
     html += '<span style="color:#666; font-size:0.8em; flex:1;">' + step.desc + '</span>';
-    if (step.ref) html += '<span style="color:#01a3a4; font-size:0.7em; background:#01a3a411; padding:2px 8px; border-radius:4px; border:1px solid #01a3a433;">' + step.ref + '</span>';
+    if (step.ref) html += '<span style="color:#a08550; font-size:0.7em; background:#a0855011; padding:2px 8px; border-radius:4px; border:1px solid #a0855033;">' + step.ref + '</span>';
     html += '</div>';
     if (i < blockSteps.length - 1) html += '<div class="flow-arrow">\u2193</div>';
   });
@@ -1298,14 +1160,14 @@ function updateBlockHighlight() {
     el.classList.remove('active-step');
     if (i === blockStepIndex) {
       el.classList.add('active-step');
-      el.style.borderColor = '#01a3a4';
+      el.style.borderColor = '#a08550';
       el.style.background = 'rgba(1,163,164,0.1)';
     } else if (i < blockStepIndex) {
       el.style.borderColor = 'rgba(78,205,196,0.4)';
       el.style.background = 'rgba(78,205,196,0.05)';
     } else {
-      el.style.borderColor = '#3a3a6a';
-      el.style.background = '#1a1a3e';
+      el.style.borderColor = '#2a2a3a';
+      el.style.background = '#13131f';
     }
   }
 }
@@ -1489,9 +1351,9 @@ function drawDepth() {
   probeY += 20;
   probes.forEach(function(p, pi) {
     var barW2 = 200;
-    ctx.fillStyle = '#1a1a3e';
+    ctx.fillStyle = '#13131f';
     ctx.fillRect(matX + 80, probeY + pi * 25, barW2, 16);
-    ctx.fillStyle = pi === 0 ? '#01a3a4' : (pi === 1 ? '#ffd93d' : '#ff6b6b');
+    ctx.fillStyle = pi === 0 ? '#a08550' : (pi === 1 ? '#e0c992' : '#c96e8a');
     ctx.fillRect(matX + 80, probeY + pi * 25, barW2 * p.acc, 16);
     ctx.fillStyle = '#ccc';
     ctx.font = '11px Inter, sans-serif';
@@ -1613,8 +1475,8 @@ function drawOutputHead() {
   ctx.textAlign = 'left';
 
   // Hidden state
-  ctx.fillStyle = '#1a1a3e';
-  ctx.strokeStyle = '#3a3a6a';
+  ctx.fillStyle = '#13131f';
+  ctx.strokeStyle = '#2a2a3a';
   ctx.lineWidth = 1;
   var boxW = 140, boxH = 30;
   var pipe = [
@@ -1625,14 +1487,14 @@ function drawOutputHead() {
     { label: 'P(token)', x: 700 }
   ];
   pipe.forEach(function(p, i) {
-    ctx.fillStyle = '#1a1a3e';
-    ctx.strokeStyle = i === pipe.length - 1 ? '#01a3a4' : '#3a3a6a';
+    ctx.fillStyle = '#13131f';
+    ctx.strokeStyle = i === pipe.length - 1 ? '#a08550' : '#2a2a3a';
     ctx.lineWidth = i === pipe.length - 1 ? 2 : 1;
     ctx.beginPath();
     ctx.roundRect(p.x, pipeY, boxW, boxH, 6);
     ctx.fill();
     ctx.stroke();
-    ctx.fillStyle = i === pipe.length - 1 ? '#01a3a4' : '#ccc';
+    ctx.fillStyle = i === pipe.length - 1 ? '#a08550' : '#ccc';
     ctx.font = '11px Inter, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(p.label, p.x + boxW / 2, pipeY + boxH / 2 + 4);
@@ -1686,7 +1548,7 @@ function drawOutputHead() {
     if (masked) {
       ctx.fillStyle = 'rgba(100,100,100,0.2)';
     } else if (k < 5) {
-      ctx.fillStyle = idx === selectedIdx ? '#01a3a4' : 'rgba(1,163,164,0.6)';
+      ctx.fillStyle = idx === selectedIdx ? '#a08550' : 'rgba(1,163,164,0.6)';
     } else {
       ctx.fillStyle = 'rgba(1,163,164,0.25)';
     }
@@ -1704,7 +1566,7 @@ function drawOutputHead() {
 
     // Prob value on top
     if (k < 5) {
-      ctx.fillStyle = '#01a3a4';
+      ctx.fillStyle = '#a08550';
       ctx.font = '9px monospace';
       ctx.textAlign = 'center';
       ctx.fillText((prob * 100).toFixed(1) + '%', x + barW2 / 2, barStartY + barMaxH - barH - 5);
@@ -1712,10 +1574,10 @@ function drawOutputHead() {
 
     // Selected indicator
     if (idx === selectedIdx) {
-      ctx.strokeStyle = '#01a3a4';
+      ctx.strokeStyle = '#a08550';
       ctx.lineWidth = 2;
       ctx.strokeRect(x - 1, barStartY + barMaxH - barH - 1, barW2 + 2, barH + 2);
-      ctx.fillStyle = '#01a3a4';
+      ctx.fillStyle = '#a08550';
       ctx.font = 'bold 11px Inter, sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('\u2191 selected', x + barW2 / 2, barStartY + barMaxH - barH - 16);
@@ -1792,7 +1654,7 @@ function renderGenSequence() {
   var html = '';
   genTokens.forEach(function(t, i) {
     var isNew = i === genTokens.length - 1 && genStep_val > 0;
-    var color = isNew ? '#01a3a4' : '#ccc';
+    var color = isNew ? '#a08550' : '#ccc';
     var bg = isNew ? 'rgba(1,163,164,0.2)' : 'transparent';
     html += '<span style="color:' + color + '; background:' + bg + '; padding:2px 6px; border-radius:4px; transition:all 0.3s;">' + t + ' </span>';
   });
@@ -1821,7 +1683,7 @@ function drawKVCache() {
   ctx.fillText('Keys', 42, startY + cellSize / 2 + 3);
   for (var i = 0; i < n; i++) {
     var isCached = i < n - 1;
-    ctx.fillStyle = isCached ? 'rgba(1,163,164,0.5)' : 'rgba(255,217,61,0.7)';
+    ctx.fillStyle = isCached ? 'rgba(1,163,164,0.5)' : 'rgba(224, 201, 146,0.7)';
     ctx.fillRect(50 + i * (cellSize + 2), startY, cellSize, cellSize);
   }
 
@@ -1833,7 +1695,7 @@ function drawKVCache() {
   ctx.fillText('Vals', 42, valY + cellSize / 2 + 3);
   for (var i = 0; i < n; i++) {
     var isCached = i < n - 1;
-    ctx.fillStyle = isCached ? 'rgba(1,163,164,0.5)' : 'rgba(255,217,61,0.7)';
+    ctx.fillStyle = isCached ? 'rgba(1,163,164,0.5)' : 'rgba(224, 201, 146,0.7)';
     ctx.fillRect(50 + i * (cellSize + 2), valY, cellSize, cellSize);
   }
 
@@ -1841,7 +1703,7 @@ function drawKVCache() {
   ctx.font = '8px monospace';
   ctx.textAlign = 'center';
   for (var i = 0; i < n; i++) {
-    ctx.fillStyle = i < n - 1 ? '#01a3a4' : '#ffd93d';
+    ctx.fillStyle = i < n - 1 ? '#a08550' : '#e0c992';
     var label = genTokens[i].length > 3 ? genTokens[i].substring(0, 3) : genTokens[i];
     ctx.fillText(label, 50 + i * (cellSize + 2) + cellSize / 2, valY + cellSize + 12);
   }
@@ -1877,7 +1739,7 @@ function drawGenAttention() {
   // Row/col labels
   for (var i = 0; i < maxShow; i++) {
     var ti = startIdx + i;
-    ctx.fillStyle = ti === n - 1 ? '#01a3a4' : '#888';
+    ctx.fillStyle = ti === n - 1 ? '#a08550' : '#888';
     ctx.font = '9px monospace';
     ctx.textAlign = 'right';
     ctx.fillText(genTokens[ti], matX - 5, matY + i * cellSize + cellSize / 2 + 3);
@@ -1969,9 +1831,9 @@ function drawTrainSequence() {
     var predicted = isCorrect ? target : genVocab[Math.floor(rng8() * genVocab.length)];
     var color = isCorrect ? '#2ecc71' : '#e74c3c';
 
-    html += '<div style="background:#0a0a15; border:1px solid #2a2a4a; border-radius:8px; padding:8px 12px; min-width:120px;">';
+    html += '<div style="background:#0a0a15; border:1px solid #2a2a3a; border-radius:8px; padding:8px 12px; min-width:120px;">';
     html += '<div style="font-size:0.75em; color:#888;">Input: "' + input + '"</div>';
-    html += '<div style="font-size:0.75em; color:#888; margin-top:2px;">Target: <span style="color:#ffd93d;">' + target + '</span></div>';
+    html += '<div style="font-size:0.75em; color:#888; margin-top:2px;">Target: <span style="color:#e0c992;">' + target + '</span></div>';
     html += '<div style="font-size:0.75em; margin-top:2px;">Pred: <span style="color:' + color + ';">' + predicted + '</span></div>';
     html += '</div>';
   }
@@ -2034,7 +1896,7 @@ function drawLossCurve() {
   var plotH = H - marginT - marginB;
 
   // Axes
-  ctx.strokeStyle = '#2a2a4a';
+  ctx.strokeStyle = '#2a2a3a';
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(marginL, marginT);
@@ -2066,7 +1928,7 @@ function drawLossCurve() {
     ctx.font = '10px monospace';
     ctx.textAlign = 'right';
     ctx.fillText(i.toFixed(0), marginL - 8, y + 3);
-    ctx.strokeStyle = '#1a1a2e';
+    ctx.strokeStyle = '#111118';
     ctx.beginPath();
     ctx.moveTo(marginL, y);
     ctx.lineTo(marginL + plotW, y);
@@ -2074,7 +1936,7 @@ function drawLossCurve() {
   }
 
   // Loss curve
-  ctx.strokeStyle = '#01a3a4';
+  ctx.strokeStyle = '#a08550';
   ctx.lineWidth = 2;
   ctx.beginPath();
   for (var i = 0; i < trainLosses.length; i++) {
@@ -2090,7 +1952,7 @@ function drawLossCurve() {
   if (trainLosses.length > 0) {
     var lastX = marginL + ((trainLosses.length - 1) / 200) * plotW;
     var lastY = marginT + plotH - (trainLosses[trainLosses.length - 1] / maxLoss) * plotH;
-    ctx.fillStyle = '#01a3a4';
+    ctx.fillStyle = '#a08550';
     ctx.beginPath();
     ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
     ctx.fill();
@@ -2156,12 +2018,12 @@ function drawArchitecture() {
 
   var components = [
     { label: 'Input Text', color: '#888', ref: '' },
-    { label: 'Tokenizer (BPE)', color: '#01a3a4', ref: 'Viz 6.1' },
-    { label: 'Token Embedding + Pos Enc', color: '#01a3a4', ref: 'Viz 6.2' },
-    { label: nLayers + 'x Transformer Blocks', color: '#ffd93d', ref: 'Viz 6.3-6.4', wide: true },
-    { label: 'Final LayerNorm', color: '#4ecdc4', ref: 'Ch 3.2' },
-    { label: 'Linear (' + dModel + ' \u2192 ' + vocabSize.toLocaleString() + ')', color: '#01a3a4', ref: 'Viz 6.5' },
-    { label: 'Softmax \u2192 Next Token', color: '#ff6b6b', ref: 'Viz 6.5' }
+    { label: 'Tokenizer (BPE)', color: '#a08550', ref: 'Viz 6.1' },
+    { label: 'Token Embedding + Pos Enc', color: '#a08550', ref: 'Viz 6.2' },
+    { label: nLayers + 'x Transformer Blocks', color: '#e0c992', ref: 'Viz 6.3-6.4', wide: true },
+    { label: 'Final LayerNorm', color: '#6ea5c9', ref: 'Ch 3.2' },
+    { label: 'Linear (' + dModel + ' \u2192 ' + vocabSize.toLocaleString() + ')', color: '#a08550', ref: 'Viz 6.5' },
+    { label: 'Softmax \u2192 Next Token', color: '#c96e8a', ref: 'Viz 6.5' }
   ];
 
   var startY = 20;
@@ -2172,7 +2034,7 @@ function drawArchitecture() {
     var x = centerX - w / 2;
 
     // Box
-    ctx.fillStyle = '#12121f';
+    ctx.fillStyle = '#111118';
     ctx.strokeStyle = comp.color;
     ctx.lineWidth = comp.wide ? 3 : 2;
     ctx.beginPath();
@@ -2198,13 +2060,13 @@ function drawArchitecture() {
 
     // Arrow
     if (i < components.length - 1) {
-      ctx.strokeStyle = '#3a3a6a';
+      ctx.strokeStyle = '#2a2a3a';
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(centerX, currentY - gap);
       ctx.lineTo(centerX, currentY);
       ctx.stroke();
-      ctx.fillStyle = '#3a3a6a';
+      ctx.fillStyle = '#2a2a3a';
       ctx.beginPath();
       ctx.moveTo(centerX, currentY);
       ctx.lineTo(centerX - 4, currentY - 6);
@@ -2231,7 +2093,7 @@ function drawArchitecture() {
   ];
 
   blockDetail.forEach(function(line, i) {
-    ctx.fillStyle = line.startsWith('+') ? '#4ecdc4' : '#aaa';
+    ctx.fillStyle = line.startsWith('+') ? '#6ea5c9' : '#aaa';
     ctx.font = '10px monospace';
     ctx.textAlign = 'left';
     ctx.fillText(line, detailX + 10, detailY + 18 + i * 16);
@@ -2245,9 +2107,9 @@ function drawArchitecture() {
   ctx.fillText('Scale Comparison', centerX, scaleY);
 
   var scales = [
-    { name: 'Your Model', layers: 6, heads: 4, d: 64, params: '~6M', color: '#01a3a4' },
-    { name: 'GPT-2', layers: 12, heads: 12, d: 768, params: '117M', color: '#ffd93d' },
-    { name: 'GPT-3', layers: 96, heads: 96, d: 12288, params: '175B', color: '#ff6b6b' }
+    { name: 'Your Model', layers: 6, heads: 4, d: 64, params: '~6M', color: '#a08550' },
+    { name: 'GPT-2', layers: 12, heads: 12, d: 768, params: '117M', color: '#e0c992' },
+    { name: 'GPT-3', layers: 96, heads: 96, d: 12288, params: '175B', color: '#c96e8a' }
   ];
 
   var scaleBarX = 100;

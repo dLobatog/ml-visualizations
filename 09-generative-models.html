@@ -6,308 +6,22 @@
     <title>Generative Models - ML Interview Prep</title>
     <script src="static/canvas-polish.js"></script>
     <script src="https://cdn.plot.ly/plotly-gl3d-2.35.2.min.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #0a0a0f;
-            color: #e0e0e0;
-            line-height: 1.6;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #e056fd 0%, #1a0033 100%);
-            padding: 40px 20px;
-            text-align: center;
-            border-bottom: 2px solid #e056fd;
-        }
-
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            text-shadow: 0 2px 10px rgba(224, 86, 253, 0.3);
-        }
-
-        .header p {
-            font-size: 1.1em;
-            opacity: 0.9;
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .section {
-            background: #12121f;
-            border: 1px solid #e056fd;
-            border-radius: 8px;
-            margin: 30px 0;
-            padding: 30px;
-            box-shadow: 0 0 20px rgba(224, 86, 253, 0.1);
-        }
-
-        .section h2 {
-            color: #e056fd;
-            font-size: 2em;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #e056fd;
-            padding-bottom: 10px;
-        }
-
-        .section-content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            align-items: start;
-        }
-
-        .visualization {
-            background: #0a0a0f;
-            border: 1px solid #2a2a3f;
-            border-radius: 6px;
-            padding: 15px;
-        }
-
-        canvas {
-            display: block;
-            margin: 0 auto;
-            background: #0a0a0f;
-            border-radius: 4px;
-            max-width: 100%;
-            height: auto;
-        }
-
-        .controls {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .control-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .control-label {
-            color: #e056fd;
-            font-weight: 600;
-            font-size: 0.95em;
-        }
-
-        .control-value {
-            color: #b0b0c0;
-            font-size: 0.9em;
-        }
-
-        input[type="range"] {
-            width: 100%;
-            height: 6px;
-            border-radius: 3px;
-            background: #2a2a3f;
-            outline: none;
-            -webkit-appearance: none;
-        }
-
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            background: #e056fd;
-            cursor: pointer;
-            box-shadow: 0 0 10px rgba(224, 86, 253, 0.5);
-        }
-
-        input[type="range"]::-moz-range-thumb {
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            background: #e056fd;
-            cursor: pointer;
-            border: none;
-            box-shadow: 0 0 10px rgba(224, 86, 253, 0.5);
-        }
-
-        .button-group {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        button {
-            background: #e056fd;
-            color: #0a0a0f;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            font-size: 0.95em;
-        }
-
-        button:hover {
-            background: #ff3cd6;
-            transform: translateY(-2px);
-            box-shadow: 0 0 15px rgba(224, 86, 253, 0.5);
-        }
-
-        button.active {
-            background: #ff3cd6;
-            box-shadow: 0 0 20px rgba(224, 86, 253, 0.7);
-        }
-
-      
-        .insight-box h3 {
-            color: #e056fd;
-            margin-bottom: 10px;
-            font-size: 1.1em;
-        }
-
-        .insight-box p {
-            color: #c0c0d0;
-            font-size: 0.95em;
-            line-height: 1.6;
-        }
-
-        .insight-box ul {
-            color: #c0c0d0;
-            font-size: 0.95em;
-            margin-left: 20px;
-            margin-top: 10px;
-        }
-
-        .insight-box li {
-            margin: 8px 0;
-        }
-
-        .info-text {
-            color: #b0b0c0;
-            font-size: 0.9em;
-            margin-top: 10px;
-        }
-
-        @media (max-width: 1000px) {
-            .section-content {
-                grid-template-columns: 1fr;
-            }
-
-            .header h1 {
-                font-size: 1.8em;
-            }
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .stat-card {
-            background: #1a1a28;
-            border: 1px solid #2a2a3f;
-            padding: 12px;
-            border-radius: 4px;
-            text-align: center;
-        }
-
-        .stat-label {
-            color: #8080a0;
-            font-size: 0.85em;
-            margin-bottom: 5px;
-        }
-
-        .stat-value {
-            color: #e056fd;
-            font-size: 1.4em;
-            font-weight: 600;
-        }
-    
-  .insight-box { background: linear-gradient(135deg, #1a1a3e 0%, #151530 100%); border-left: 4px solid #e056fd; padding: 20px 24px; margin-top: 20px; border-radius: 0 12px 12px 0; font-size: 0.92em; color: #ccc; line-height: 1.8; }
-  .insight-box strong { color: #e056fd; font-size: 1.05em; }
-  .insight-box .formula { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 12px 18px; margin: 12px 0; font-family: 'Courier New', monospace; color: #e8e8ff; font-size: 1.05em; text-align: center; letter-spacing: 0.5px; line-height: 1.9; overflow-wrap: break-word; word-wrap: break-word; }
-  .insight-box .formula .highlight { color: #e056fd; font-weight: bold; }
-  .insight-box .key-point { display: flex; gap: 8px; margin: 8px 0; padding: 4px 0; min-width: 0; }
-  .insight-box .key-point .label { color: #e056fd; font-weight: 600; white-space: nowrap; min-width: 90px; }
-  .insight-box .key-point .desc { color: #ddd; overflow-wrap: break-word; word-wrap: break-word; min-width: 0; }
-  .insight-box .interview-tip { background: rgba(100, 255, 100, 0.05); border: 1px solid rgba(100, 255, 100, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #b0ffb0; font-size: 0.93em; line-height: 1.6; overflow-wrap: break-word; word-wrap: break-word; }
-  .insight-box .interview-tip::before { content: '\1F4A1  Interview Tip: '; font-weight: 700; color: #7fff7f; }
-  .insight-box .mnemonic { background: rgba(255, 150, 255, 0.05); border: 1px solid rgba(255, 150, 255, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #ffb0ff; font-size: 0.93em; line-height: 1.6; }
-  .insight-box .mnemonic::before { content: '\1F9E0  Remember: '; font-weight: 700; color: #ff7fff; }
-  .insight-box .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
-  .insight-box .comparison .option { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 10px 14px; }
-  .insight-box .comparison .option .opt-title { color: #e056fd; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
-  .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
-  .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
-  .insight-box { grid-column: 1 / -1; min-width: 0; overflow-wrap: break-word; word-wrap: break-word; }
-  .section-content > * { min-width: 0; }
-  .katex { color: #e8e8ff; font-size: 1.1em; }
-
-    /* Quiz Mode Styles */
-    #quizToggle { position: fixed; top: 20px; right: 20px; z-index: 1000; padding: 12px 20px; background: #e056fd; color: #0a0a0f; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 1em; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
-    #quizToggle:hover { transform: scale(1.05); }
-    #quizSection { background: #12121f; border-top: 2px solid #e056fd; padding: 40px 20px; margin-top: 40px; }
-    .quiz-container { max-width: 900px; margin: 0 auto; }
-    .quiz-topic { margin-bottom: 30px; }
-    .quiz-topic-header { display:flex; justify-content:space-between; align-items:center; padding:16px 20px; background:#1a1a2e; border:1px solid #2a2a4a; border-radius:10px; cursor:pointer; margin-bottom:12px; }
-    .quiz-topic-header h3 { color:#e056fd; margin:0; font-size:1.15em; }
-    .quiz-topic-score { color:#888; font-size:0.95em; }
-    .quiz-topic-body { display:none; padding: 0 4px; }
-    .quiz-topic.open .quiz-topic-body { display:block; }
-    .quiz-question { background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 12px; padding: 24px; margin-bottom: 20px; }
-    .quiz-question h3 { color: #e056fd; margin-bottom: 16px; font-size: 1.1em; }
-    .quiz-option { display: block; width: 100%; padding: 12px 16px; margin: 8px 0; background: #0d0d1a; border: 1px solid #2a2a4a; border-radius: 8px; color: #e0e0e0; cursor: pointer; text-align: left; font-size: 0.95em; transition: all 0.2s; }
-    .quiz-option:hover:not(:disabled) { border-color: #e056fd; background: #1a1a3e; }
-    .quiz-option.correct { background: #1a3a2a; border-color: #2ecc71; color: #2ecc71; }
-    .quiz-option.wrong { background: #3a1a1a; border-color: #e74c3c; color: #e74c3c; }
-    .quiz-option.reveal { border-color: #2ecc71; color: #2ecc71; }
-    .quiz-option:disabled { cursor: default; }
-    .quiz-explanation { margin-top:12px; padding:14px 18px; border-radius:8px; font-size:0.93em; line-height:1.6; border-left:4px solid #2ecc71; background:rgba(46,204,113,0.08); color:#b0ffb0; }
-    .quiz-explanation.wrong-exp { border-left-color: #e74c3c; background:rgba(231,76,60,0.08); color:#ffb0b0; }
-    .quiz-score { text-align: center; font-size: 1.5em; color: #e056fd; margin-bottom: 30px; }
-    .quiz-actions { text-align: center; margin-top: 20px; }
-    .quiz-actions button { padding: 10px 24px; margin: 0 8px; border-radius: 8px; border: 1px solid #e056fd; background: transparent; color: #e056fd; cursor: pointer; font-size: 1em; }
-
-  .code-example { margin-top: 12px; border: 1px solid #2a2a4a; border-radius: 8px; overflow: hidden; }
-  .code-toggle { width: 100%; background: #1a1a2e; color: #e056fd; border: none; padding: 10px 16px; text-align: left; cursor: pointer; font-size: 0.9em; font-weight: 600; display: flex; align-items: center; gap: 8px; }
-  .code-toggle:hover { background: #22223a; }
-  .code-toggle-icon { display: inline-block; transition: transform 0.2s; font-size: 0.7em; }
-  .code-example.open .code-toggle-icon { transform: rotate(90deg); }
-  .code-content { display: none; padding: 14px 16px; background: #0a0a14; }
-  .code-example.open .code-content { display: block; }
-  .code-content pre { margin: 0; overflow-x: auto; white-space: pre; }
-  .code-content code { color: #e0e0e0; font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.82em; line-height: 1.6; }
-  .code-content .code-note { color: #888; font-size: 0.82em; margin-top: 8px; font-style: italic; }
-  .code-content pre[class*="language-"], .code-content code[class*="language-"] { background: #0a0a14; font-size: 0.82em; line-height: 1.6; margin: 0; padding: 0; text-shadow: none; }
-  pre[class*="language-"]::selection, code[class*="language-"]::selection { background: #333; }
-  /* Mobile responsive */
-  canvas { max-width: 100%; height: auto; }
-  @media (max-width: 768px) {
-    .container { padding: 16px 10px; }
-    .viz-section { padding: 16px 12px; }
-    h2 { font-size: 1.2em; }
-    .subtitle { font-size: 0.85em; }
-    .controls { gap: 8px; }
-    .control-group { min-width: 120px; flex: 1 1 auto; }
-    .tab-bar { flex-wrap: wrap; gap: 4px; }
-    .tab-bar .btn { font-size: 0.75em; padding: 6px 10px; }
-    .insight-box { padding: 14px; font-size: 0.9em; }
-    .comparison { grid-template-columns: 1fr !important; }
-    .formula { font-size: 0.85em; overflow-x: auto; }
-    .code-content pre { font-size: 0.78em; }
-    .interview-tip { font-size: 0.85em; padding: 10px; }
-    .metric-box { font-size: 0.82em; }
-  }
+    <link rel="stylesheet" href="theme.css">
+<style>
+  .header h1 { background: linear-gradient(90deg, var(--rose), var(--gold)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .viz-section h2 { color: var(--rose); }
+  .control-group .value { color: var(--rose); }
+  .control-group input[type="range"] { accent-color: var(--rose); }
+  .btn.active { border-color: var(--rose); color: var(--rose); }
+  .btn:hover { border-color: var(--rose); color: var(--rose); }
+  .insight-box { border-left-color: rgba(var(--rose-rgb), 0.3); }
+  .insight-box strong { color: var(--rose); }
+  .insight-box .formula .highlight { color: var(--rose); }
+  .insight-box .key-point .label { color: var(--rose); }
+  .card::before { background: var(--rose); }
+  #quizToggle { background: var(--bg2); color: var(--fg-dim); border: 1px solid var(--border-hover); }
+  #quizToggle:hover { border-color: var(--rose); color: var(--rose); }
+  #quizSection { border-top-color: rgba(var(--rose-rgb), 0.2); }
 </style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -318,19 +32,20 @@
 </head>
 <body>
     <div class="header">
-        <h1>🧬 Generative Models</h1>
-        <p>VAE (Variational Autoencoder), Diffusion (DDPM - Denoising Diffusion Probabilistic Models), GAN (Generative Adversarial Network), Flow models, Latent Diffusion, VQ-VAE (Vector Quantized VAE), and Transformer architectures</p>
+        <a href="index.html">&larr; Back to Index</a>
+        <h1>Generative Models</h1>
+        <p>VAEs, diffusion, GANs, flows, and latent generative systems, organized around the core question each model answers.</p>
     </div>
 
     <div class="container">
         <!-- VAE Section -->
         <div class="section">
             <h2>1. Variational Autoencoder (VAE)</h2>
-            <p style="color: #a0a0b0; margin-bottom: 15px;">Increase the β (KL Weight) slider—watch the latent space collapse toward a smooth Gaussian (good for interpolation, but reconstructions get blurry). Decrease it—latent space becomes chaotic (sharp reconstructions, but interpolation fails). The sweet spot? That's the VAE tradeoff. Use Latent Dimension to control expressiveness.</p>
+            <p class="subtitle">A VAE learns a compressed latent space that is not just useful for reconstruction, but also smooth enough to sample from. The central tradeoff is reconstruction quality versus latent structure.</p>
             <div class="section-content">
                 <div class="visualization">
                     <div style="margin-bottom: 10px;">
-                        <strong style="color: #e056fd;">Encoder → Latent Space → Decoder</strong>
+                        <strong style="color: #c96e8a;">Encoder → Latent Space → Decoder</strong>
                     </div>
                     <canvas id="vaeCanvas" width="480" height="300"></canvas>
                     <div class="stats-grid">
@@ -388,10 +103,10 @@
                         <div class="mnemonic">β=1 baseline. High β = disentangled (each z dimension independent). Low β = good reconstruction. Can't have both.</div>
 
                         <hr class="divider">
-                        <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                        <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
                         <div class="comparison">
                           <div class="option">
-                            <div class="opt-title" style="color: #e056fd;">VAE (Standard, β=1)</div>
+                            <div class="opt-title" style="color: #c96e8a;">VAE (Standard, β=1)</div>
                             <div class="opt-desc">When you need smooth latent interpolation and reconstruction quality matters. E.g., image editing, face morphing, data augmentation. Balanced reconstruction-regularization tradeoff.</div>
                           </div>
                           <div class="option">
@@ -412,10 +127,10 @@
                         </div>
 
                         <div class="interview-tip">Tuning β: critical, often overlooked. Wrong β gives fuzzy reconstructions (low β) or collapsed latents (high β).</div>
-                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set β to 0.1 and click Train Step—reconstructions stay sharp but latent becomes spaghetti. Set β to 1.0—smoother interpolation, slight blur. Set to 2.0—clean Gaussian but fuzzy outputs. The sweet spot (usually β=0.3-0.7) balances both.</div>
+                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Set β to 0.1 and click Train Step—reconstructions stay sharp but latent becomes spaghetti. Set β to 1.0—smoother interpolation, slight blur. Set to 2.0—clean Gaussian but fuzzy outputs. The sweet spot (usually β=0.3-0.7) balances both.</div>
 
                         <div class="interview-tip">Posterior collapse: if KL → 0 after few epochs, you have collapse. Use KL warmup schedule to prevent.</div>
-                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Watch the KL Divergence stat as you train. If it drops to 0 (encoder ignored), collapse happened. Increase Latent Dimension or adjust β warmup to prevent. Collapse means z ≈ N(0,1) regardless of x—the encoder learned nothing.</div>
+                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Watch the KL Divergence stat as you train. If it drops to 0 (encoder ignored), collapse happened. Increase Latent Dimension or adjust β warmup to prevent. Collapse means z ≈ N(0,1) regardless of x—the encoder learned nothing.</div>
 
                         <hr class="divider">
 
@@ -460,7 +175,7 @@
             <div class="section-content">
                 <div class="visualization">
                     <div style="margin-bottom: 10px;">
-                        <strong style="color: #e056fd;">Forward Process (Add Noise) → Reverse Process (Denoise)</strong>
+                        <strong style="color: #c96e8a;">Forward Process (Add Noise) → Reverse Process (Denoise)</strong>
                     </div>
                     <canvas id="diffusionCanvas" width="480" height="270"></canvas>
                     <div class="stats-grid">
@@ -488,7 +203,7 @@
 
                     <div class="control-group">
                         <label class="control-label">Noise Schedule</label>
-                        <select id="diffusionSchedule" style="padding: 8px; border-radius: 4px; background: #2a2a3f; color: #e056fd; border: 1px solid #e056fd;">
+                        <select id="diffusionSchedule" style="padding: 8px; border-radius: 4px; background: #2a2a3f; color: #c96e8a; border: 1px solid #c96e8a;">
                             <option value="linear">Linear</option>
                             <option value="quadratic">Quadratic</option>
                             <option value="cosine">Cosine</option>
@@ -524,10 +239,10 @@
                         <div class="mnemonic">Closed-form diffusion: add noise → learn to reverse → sample via T denoising steps. More stable than adversarial training.</div>
 
                         <hr class="divider">
-                        <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                        <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
                         <div class="comparison">
                           <div class="option">
-                            <div class="opt-title" style="color: #e056fd;">Diffusion Models</div>
+                            <div class="opt-title" style="color: #c96e8a;">Diffusion Models</div>
                             <div class="opt-desc">When sample quality is top priority and latency is acceptable (1-10 sec). E.g., text-to-image (DALL-E 2, Stable Diffusion), high-fidelity image synthesis, inpainting, super-resolution. Best FID scores among generative models.</div>
                           </div>
                           <div class="option">
@@ -548,10 +263,10 @@
                         </div>
 
                         <div class="interview-tip">Variance schedule (linear, cosine, etc.) tunes quality. Wrong schedule = poor samples. Critical tuning knob.</div>
-                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Select Cosine schedule on the dropdown—watch Signal Ratio and Noise Ratio evolve. Cosine spends more time at high SNR (fine details). Switch to Linear—uniform noise addition. Try both with Timestep slider to see signal preservation differences.</div>
+                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Select Cosine schedule on the dropdown—watch Signal Ratio and Noise Ratio evolve. Cosine spends more time at high SNR (fine details). Switch to Linear—uniform noise addition. Try both with Timestep slider to see signal preservation differences.</div>
 
                         <div class="interview-tip">Score matching = predict noise, not mean directly. More stable training than explicit mean prediction.</div>
-                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: As you animate, the network predicts ε at each step t. That's score matching (noise prediction). It's more stable than predicting the mean μ directly. Try T=1000 (many steps, high quality, slow) vs T=50 (few steps, faster, slight quality loss).</div>
+                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: As you animate, the network predicts ε at each step t. That's score matching (noise prediction). It's more stable than predicting the mean μ directly. Try T=1000 (many steps, high quality, slow) vs T=50 (few steps, faster, slight quality loss).</div>
 
                         <hr class="divider">
 
@@ -599,7 +314,7 @@
             <div class="section-content">
                 <div class="visualization">
                     <div style="margin-bottom: 10px;">
-                        <strong style="color: #e056fd;">Loss Curves & Mode Collapse</strong>
+                        <strong style="color: #c96e8a;">Loss Curves & Mode Collapse</strong>
                     </div>
                     <canvas id="ganCanvas" width="480" height="290"></canvas>
                     <div class="stats-grid">
@@ -663,10 +378,10 @@
                         <div class="mnemonic">Generator wants D to say "real". Discriminator wants to separate. If training converges = Nash Eq = D output 1/2 everywhere (can't distinguish).</div>
 
                         <hr class="divider">
-                        <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                        <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
                         <div class="comparison">
                           <div class="option">
-                            <div class="opt-title" style="color: #e056fd;">Standard GAN</div>
+                            <div class="opt-title" style="color: #c96e8a;">Standard GAN</div>
                             <div class="opt-desc">When real-time generation is critical and quality can be moderate. E.g., live video filters, game asset generation, real-time style transfer. Sub-100ms sampling is the key advantage over diffusion.</div>
                           </div>
                           <div class="option">
@@ -687,10 +402,10 @@
                         </div>
 
                         <div class="interview-tip">Vanishing gradients: D confident (output 0 or 1) = small gradients = training stalls. Use Wasserstein loss or Lipschitz constraint (spectral norm).</div>
-                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Standard GAN (BCE loss) vanishes gradients when D confidence = 0 or 1. Wasserstein GAN (WGAN) = Earth-Mover distance, smoother gradients. Toggle on canvas: watch vanilla GAN mode coverage collapse while WGAN stays stable. Spectral normalization enforces 1-Lipschitz discriminator.</div>
+                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Standard GAN (BCE loss) vanishes gradients when D confidence = 0 or 1. Wasserstein GAN (WGAN) = Earth-Mover distance, smoother gradients. Toggle on canvas: watch vanilla GAN mode coverage collapse while WGAN stays stable. Spectral normalization enforces 1-Lipschitz discriminator.</div>
 
                         <div class="interview-tip">Training instability: G/D learning rates must be tuned together. No guarantee of Nash convergence (may cycle/diverge). Different archs need different schedules.</div>
-                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set Generator LR=0.0002, Discriminator LR=0.0004 (typical). Balance is critical: if G too fast, D can't keep up (mode collapse). If D too fast, G starves (vanishing gradients). Use spectral norm, instance norm, gradient penalties to stabilize. Monitor loss ratio.</div>
+                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Set Generator LR=0.0002, Discriminator LR=0.0004 (typical). Balance is critical: if G too fast, D can't keep up (mode collapse). If D too fast, G starves (vanishing gradients). Use spectral norm, instance norm, gradient penalties to stabilize. Monitor loss ratio.</div>
 
                         <hr class="divider">
 
@@ -777,10 +492,10 @@
                         <div class="mnemonic">w=7.5 is Stable Diffusion default. w>15 = artifacts. Trade w for diversity-vs-fidelity. Cannot invent info not in training.</div>
 
                         <hr class="divider">
-                        <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                        <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
                         <div class="comparison">
                           <div class="option">
-                            <div class="opt-title" style="color: #e056fd;">Low Guidance (w=1-5)</div>
+                            <div class="opt-title" style="color: #c96e8a;">Low Guidance (w=1-5)</div>
                             <div class="opt-desc">When diversity and creative variation matter. E.g., artistic image generation, brainstorming visual concepts, generating training data augmentations. Samples are diverse but less adherent to prompt.</div>
                           </div>
                           <div class="option">
@@ -801,10 +516,10 @@
                         </div>
 
                         <div class="interview-tip">High w (w>15) causes mode collapse, artifacts, saturated colors, over-sharpening. Guidance cannot "invent" outside training data.</div>
-                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set w=1.0 and generate—natural samples respecting condition. w=7.0—sharp, committed samples. w=20.0—oversaturated, distorted. Guidance amplifies what the model learned; it can't "imagine" beyond training data. Typical range: w=7-15 for best results.</div>
+                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Set w=1.0 and generate—natural samples respecting condition. w=7.0—sharp, committed samples. w=20.0—oversaturated, distorted. Guidance amplifies what the model learned; it can't "imagine" beyond training data. Typical range: w=7-15 for best results.</div>
 
                         <div class="interview-tip">Guidance is orthogonal to likelihood. Doesn't improve likelihood, just reweights sampling distribution toward condition.</div>
-                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Guidance reweights—doesn't improve the model itself, just changes sampling strategy toward the condition. Think: "which samples from the model match the condition best?" Higher w = stricter filtering. Monitor diversity alongside quality.</div>
+                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Guidance reweights—doesn't improve the model itself, just changes sampling strategy toward the condition. Think: "which samples from the model match the condition best?" Higher w = stricter filtering. Monitor diversity alongside quality.</div>
 
                         <hr class="divider">
 
@@ -877,10 +592,10 @@
                         <div class="mnemonic">VAE compresses semantically (learns important features). Diffusion then structures instead of pixels. Latent space smoother, more stable.</div>
 
                         <hr class="divider">
-                        <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                        <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
                         <div class="comparison">
                           <div class="option">
-                            <div class="opt-title" style="color: #e056fd;">Latent Diffusion</div>
+                            <div class="opt-title" style="color: #c96e8a;">Latent Diffusion</div>
                             <div class="opt-desc">Default choice for production image generation. 10-50x faster than pixel-space diffusion. E.g., Stable Diffusion, SDXL for text-to-image, inpainting, img2img. Use when balancing quality and compute cost.</div>
                           </div>
                           <div class="option">
@@ -901,10 +616,10 @@
                         </div>
 
                         <div class="interview-tip">Latent scaling (0.18 in Stable Diffusion) important. Posterior scaling matches diffusion model's expected statistics. Fine-tune diffusion, freeze VAE.</div>
-                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Adjust latent scale on slider—too small, noisy latents; too large, saturated colors. 0.18 is Stable Diffusion's magic number. The VAE encoder/decoder is frozen (pre-trained); only the diffusion U-Net is trained. This separation makes fine-tuning efficient.</div>
+                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Adjust latent scale on slider—too small, noisy latents; too large, saturated colors. 0.18 is Stable Diffusion's magic number. The VAE encoder/decoder is frozen (pre-trained); only the diffusion U-Net is trained. This separation makes fine-tuning efficient.</div>
 
                         <div class="interview-tip">Text encoders (CLIP, T5) condition via cross-attention. Conditioning orthogonal to latent compression benefit. Can swap independently.</div>
-                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: CLIP embeddings inject semantic control via cross-attention. Swap to T5 (better language understanding)—different semantic space, same diffusion. Test text control: change prompt semantics. The text encoder is modular—swap for better ones.</div>
+                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: CLIP embeddings inject semantic control via cross-attention. Swap to T5 (better language understanding)—different semantic space, same diffusion. Test text control: change prompt semantics. The text encoder is modular—swap for better ones.</div>
 
                         <hr class="divider">
 
@@ -992,10 +707,10 @@
                         <div class="mnemonic">Discrete tokens = H×W grid of K-way choices. Transformers better at scaling than diffusion on tokens. Used in DALL-E, Jukebox.</div>
 
                         <hr class="divider">
-                        <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                        <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
                         <div class="comparison">
                           <div class="option">
-                            <div class="opt-title" style="color: #e056fd;">VQ-VAE + Autoregressive</div>
+                            <div class="opt-title" style="color: #c96e8a;">VQ-VAE + Autoregressive</div>
                             <div class="opt-desc">When leveraging Transformer scaling laws for generation. E.g., DALL-E 1 (text-to-image via discrete tokens), Jukebox (music generation), video tokenization. Enables LLM-style generation on non-text modalities.</div>
                           </div>
                           <div class="option">
@@ -1016,10 +731,10 @@
                         </div>
 
                         <div class="interview-tip">Codebook collapse: if K too large, some embeddings unused (reduce effective quantization). Use EMA updates + per-embedding loss penalty.</div>
-                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set K=512 (reasonable). Watch utilization %—good coverage. Increase to K=2048—some codewords unused, collapse risk. Decrease to K=64—forced quantization, lower quality. K=256-512 typical for most datasets. Monitor: dead codewords = wasted capacity.</div>
+                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Set K=512 (reasonable). Watch utilization %—good coverage. Increase to K=2048—some codewords unused, collapse risk. Decrease to K=64—forced quantization, lower quality. K=256-512 typical for most datasets. Monitor: dead codewords = wasted capacity.</div>
 
                         <div class="interview-tip">Entropy bottleneck: each token carries log K bits. Too small K = poor reconstruction. Too large K = entropy unbounded.</div>
-                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: K=64 → log(64)=6 bits per code. K=256 → 8 bits. K=1024 → 10 bits. Fewer bits = compression but info loss. More bits = fidelity but less compression. Tradeoff is fundamental. Choose K to balance your latent size constraint vs quality needs.</div>
+                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: K=64 → log(64)=6 bits per code. K=256 → 8 bits. K=1024 → 10 bits. Fewer bits = compression but info loss. More bits = fidelity but less compression. Tradeoff is fundamental. Choose K to balance your latent size constraint vs quality needs.</div>
 
                         <hr class="divider">
 
@@ -1095,10 +810,10 @@
                         </div>
 
                         <hr class="divider">
-                        <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                        <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
                         <div class="comparison">
                           <div class="option">
-                            <div class="opt-title" style="color: #e056fd;">U-Net Architecture</div>
+                            <div class="opt-title" style="color: #c96e8a;">U-Net Architecture</div>
                             <div class="opt-desc">When latency and deployment efficiency matter. E.g., production image generation APIs (<512x512), mobile/edge diffusion, real-time applications. Proven architecture with fast training and inference. Best under 300M params.</div>
                           </div>
                           <div class="option">
@@ -1114,10 +829,10 @@
                         <hr class="divider">
 
                         <div class="interview-tip">U-Net skip design matters. Poor skips limit quality. DiT quadratic complexity prohibitive for 4K (use sparse/linear attention, pruning).</div>
-                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: U-Net uses skip connections from encoder to decoder (crucial for quality). Toggle architecture—notice U-Net is faster. For high resolutions, U-Net wins unless you can afford sparse/linear attention on DiT. Skip design = major quality lever.</div>
+                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: U-Net uses skip connections from encoder to decoder (crucial for quality). Toggle architecture—notice U-Net is faster. For high resolutions, U-Net wins unless you can afford sparse/linear attention on DiT. Skip design = major quality lever.</div>
 
                         <div class="interview-tip">U-Net: improvements plateau with size. DiT: continues improving (LLM-like scaling). DiT = future-proof but engineering-intensive.</div>
-                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Increase model depth in both—U-Net quality flattens beyond ~300M params. DiT keeps improving. This is why research favors DiT (long-term scaling), but production prefers U-Net (proven efficiency). Choose based on scale: small=U-Net, large=DiT.</div>
+                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Increase model depth in both—U-Net quality flattens beyond ~300M params. DiT keeps improving. This is why research favors DiT (long-term scaling), but production prefers U-Net (proven efficiency). Choose based on scale: small=U-Net, large=DiT.</div>
 
                         <div class="key-point">
                             <span class="label">Production:</span>
@@ -1169,7 +884,7 @@
             <div class="section-content">
                 <div class="visualization">
                     <div style="margin-bottom: 10px;">
-                        <strong style="color: #e056fd;">Invertible Transformations: Z → ... → X</strong>
+                        <strong style="color: #c96e8a;">Invertible Transformations: Z → ... → X</strong>
                     </div>
                     <canvas id="flowCanvas" width="480" height="260"></canvas>
                     <div class="stats-grid">
@@ -1199,7 +914,7 @@
 
                     <div class="control-group">
                         <label class="control-label">Transformation Type</label>
-                        <select id="flowType" style="padding: 8px; border-radius: 4px; background: #2a2a3f; color: #e056fd; border: 1px solid #e056fd;">
+                        <select id="flowType" style="padding: 8px; border-radius: 4px; background: #2a2a3f; color: #c96e8a; border: 1px solid #c96e8a;">
                             <option value="linear">Linear</option>
                             <option value="sigmoid">Sigmoid</option>
                             <option value="rational">Rational Quadratic</option>
@@ -1238,10 +953,10 @@
                         <div class="mnemonic">Invertibility constraint = exact likelihood but architectures restrictive. Triangular Jacobian = O(d) not O(d³) det. Bidirectional: encode x→z, modify, decode z→x.</div>
 
                         <hr class="divider">
-                        <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                        <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
                         <div class="comparison">
                           <div class="option">
-                            <div class="opt-title" style="color: #e056fd;">Flow-Based Models</div>
+                            <div class="opt-title" style="color: #c96e8a;">Flow-Based Models</div>
                             <div class="opt-desc">When exact likelihood is required (not just a lower bound). E.g., anomaly detection (threshold on log p(x)), density estimation for scientific data, lossless compression. Bidirectional mapping enables both generation and inference.</div>
                           </div>
                           <div class="option">
@@ -1262,10 +977,10 @@
                         </div>
 
                         <div class="interview-tip">Likelihood ≠ quality. Exact likelihood can be far from log-prob if overtrained. Monitor both likelihood + FID. Likelihood alone insufficient.</div>
-                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Flow models compute exact likelihood (Jacobian determinant). High likelihood doesn't guarantee good samples (overfitting to low-probability regions). Coupling layers (triangular Jacobian) = O(d) determinant. Monitor log|det(J)| on canvas. Evaluate likelihood + FID + IS together for full picture.</div>
+                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Flow models compute exact likelihood (Jacobian determinant). High likelihood doesn't guarantee good samples (overfitting to low-probability regions). Coupling layers (triangular Jacobian) = O(d) determinant. Monitor log|det(J)| on canvas. Evaluate likelihood + FID + IS together for full picture.</div>
 
                         <div class="interview-tip">Jacobian efficiency critical. Coupling layers triangular = O(d) determinant. Naive = O(d³) via LU. Use special structure.</div>
-                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Coupling layers: x' = (x_1, x_2 ⊕ t(x_1)). Jacobian is triangular (determinant = product diagonal). O(d) vs O(d³) for dense. Autoregressive flows: p(x) = ∏p(x_i|x_{<i}). Both enable efficient likelihood. Slow sampling (sequential x_i), fast training.</div>
+                        <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Coupling layers: x' = (x_1, x_2 ⊕ t(x_1)). Jacobian is triangular (determinant = product diagonal). O(d) vs O(d³) for dense. Autoregressive flows: p(x) = ∏p(x_i|x_{<i}). Both enable efficient likelihood. Slow sampling (sequential x_i), fast training.</div>
 
                         <hr class="divider">
 
@@ -1323,7 +1038,8 @@
     </div>
     </div>
 
-    <script>
+    <script src="theme.js"></script>
+<script>
         // ============ VAE Implementation ============
         let vaeState = {
             samples: [],
@@ -1354,7 +1070,7 @@
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             // Encoder section
-            ctx.fillStyle = '#e056fd';
+            ctx.fillStyle = '#c96e8a';
             ctx.font = 'bold 17px Arial';
             ctx.fillText('ENCODER', 20, 25);
 
@@ -1370,18 +1086,18 @@
             }
 
             // Encoder arrow
-            ctx.strokeStyle = '#e056fd';
+            ctx.strokeStyle = '#c96e8a';
             ctx.lineWidth = 2;
             ctx.beginPath();
             ctx.moveTo(180, 70);
             ctx.lineTo(220, 70);
             ctx.stroke();
-            ctx.fillStyle = '#e056fd';
+            ctx.fillStyle = '#c96e8a';
             ctx.font = '15px Arial';
             ctx.fillText('μ,σ', 200, 60);
 
             // Latent space
-            ctx.fillStyle = '#e056fd';
+            ctx.fillStyle = '#c96e8a';
             ctx.font = 'bold 17px Arial';
             ctx.fillText('LATENT SPACE', 230, 25);
 
@@ -1413,10 +1129,10 @@
 
             // KL divergence indicator
             const klAlpha = Math.min(vaeState.klWeight, 1);
-            ctx.fillStyle = `rgba(255, 100, 100, ${klAlpha * 0.5})`;
+            ctx.fillStyle = `rgba(201, 110, 138, ${klAlpha * 0.5})`;
             ctx.fillRect(latentCx - latentSize - 2, latentCy - latentSize - 2,
                         latentSize * 2 + 4, latentSize * 2 + 4);
-            ctx.strokeStyle = `rgba(255, 100, 100, ${klAlpha})`;
+            ctx.strokeStyle = `rgba(201, 110, 138, ${klAlpha})`;
             ctx.lineWidth = 2;
             ctx.strokeRect(latentCx - latentSize - 2, latentCy - latentSize - 2,
                           latentSize * 2 + 4, latentSize * 2 + 4);
@@ -1425,7 +1141,7 @@
             ctx.fillText('KL Regularization', latentCx - 45, latentCy + latentSize + 18);
 
             // Decoder arrow
-            ctx.strokeStyle = '#e056fd';
+            ctx.strokeStyle = '#c96e8a';
             ctx.lineWidth = 2;
             ctx.beginPath();
             ctx.moveTo(380, 70);
@@ -1433,7 +1149,7 @@
             ctx.stroke();
 
             // Decoder section
-            ctx.fillStyle = '#e056fd';
+            ctx.fillStyle = '#c96e8a';
             ctx.font = 'bold 17px Arial';
             ctx.fillText('DECODER', 420, 25);
 
@@ -1456,10 +1172,10 @@
             // Quality bar at bottom
             ctx.fillStyle = '#2a2a3f';
             ctx.fillRect(20, 240, 440, 20);
-            ctx.fillStyle = '#e056fd';
+            ctx.fillStyle = '#c96e8a';
             const qualityWidth = (vaeState.quality / 100) * 440;
             ctx.fillRect(20, 240, qualityWidth, 20);
-            ctx.strokeStyle = '#e056fd';
+            ctx.strokeStyle = '#c96e8a';
             ctx.lineWidth = 1;
             ctx.strokeRect(20, 240, 440, 20);
             ctx.fillStyle = '#0a0a0f';
@@ -1531,7 +1247,7 @@
             const signalLevel = 1 - noiseLevel;
 
             // Title
-            ctx.fillStyle = '#e056fd';
+            ctx.fillStyle = '#c96e8a';
             ctx.font = 'bold 15px Arial';
             ctx.fillText('FORWARD PROCESS (Add Noise)', 20, 22);
             ctx.fillText('REVERSE PROCESS (Denoise)', 260, 22);
@@ -1575,7 +1291,7 @@
             }
 
             // Labels and arrows
-            ctx.fillStyle = '#e056fd';
+            ctx.fillStyle = '#c96e8a';
             ctx.font = '12px Arial';
             ctx.fillText('t=0', startX, startY + gridSize * cellSize + 15);
             ctx.fillText(`t=${t}`, startX + gridSize * cellSize / 2, startY + gridSize * cellSize + 15);
@@ -1611,7 +1327,7 @@
                 }
             }
 
-            ctx.fillStyle = '#e056fd';
+            ctx.fillStyle = '#c96e8a';
             ctx.font = '12px Arial';
             ctx.fillText(`t=${t}`, revStartX, revStartY + gridSize * cellSize + 15);
             ctx.fillText('t=0 (Clean)', revStartX + gridSize * cellSize / 2, revStartY + gridSize * cellSize + 15);
@@ -1620,11 +1336,11 @@
             const scheduleY = startY + gridSize * cellSize + 30;
             ctx.fillStyle = '#1a1a28';
             ctx.fillRect(20, scheduleY, 440, 60);
-            ctx.strokeStyle = '#e056fd';
+            ctx.strokeStyle = '#c96e8a';
             ctx.lineWidth = 2;
             ctx.strokeRect(20, scheduleY, 440, 60);
 
-            ctx.fillStyle = '#e056fd';
+            ctx.fillStyle = '#c96e8a';
             ctx.font = '13px Arial';
             ctx.fillText('Noise Schedule (\u03b1)', 30, scheduleY + 16);
 
@@ -1646,7 +1362,7 @@
             // Current position on schedule
             const currentX = 30 + (t / diffusionState.maxTimesteps) * 420;
             const currentY = (scheduleY + 50) - noiseLevel * 40;
-            ctx.fillStyle = '#e056fd';
+            ctx.fillStyle = '#c96e8a';
             ctx.beginPath();
             ctx.arc(currentX, currentY, 4, 0, Math.PI * 2);
             ctx.fill();
@@ -1710,7 +1426,7 @@
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             // Title
-            ctx.fillStyle = '#e056fd';
+            ctx.fillStyle = '#c96e8a';
             ctx.font = 'bold 15px Arial';
             ctx.fillText('GAN Min-Max Game', 20, 20);
 
@@ -1789,11 +1505,11 @@
 
             ctx.fillStyle = '#1a1a28';
             ctx.fillRect(graphX, graphY, graphW, graphH);
-            ctx.strokeStyle = '#e056fd';
+            ctx.strokeStyle = '#c96e8a';
             ctx.lineWidth = 2;
             ctx.strokeRect(graphX, graphY, graphW, graphH);
 
-            ctx.fillStyle = '#e056fd';
+            ctx.fillStyle = '#c96e8a';
             ctx.font = '12px Arial';
             ctx.fillText('Loss Curves', graphX + 10, graphY - 8);
 
@@ -1921,7 +1637,7 @@
             const progress = flowState.animationProgress;
 
             // Title
-            ctx.fillStyle = '#e056fd';
+            ctx.fillStyle = '#c96e8a';
             ctx.font = 'bold 17px Arial';
             ctx.fillText('Normalizing Flow: Z -> f1 -> f2 -> ... -> X', 20, 25);
 
@@ -1956,14 +1672,14 @@
                 const layerX = sourceX + (l + 1) * layerSpacing;
 
                 // Layer arrow and label
-                ctx.strokeStyle = '#e056fd';
+                ctx.strokeStyle = '#c96e8a';
                 ctx.lineWidth = 2;
                 ctx.beginPath();
                 ctx.moveTo(layerX - 25, sourceY);
                 ctx.lineTo(layerX - 40, sourceY);
                 ctx.stroke();
 
-                ctx.fillStyle = '#e056fd';
+                ctx.fillStyle = '#c96e8a';
                 ctx.font = '13px Arial';
                 let transformName = 'f';
                 if (flowState.type === 'linear') transformName = 'Affine';
@@ -2042,11 +1758,11 @@
             // Change of variables visualization
             ctx.fillStyle = '#1a1a28';
             ctx.fillRect(20, 150, 440, 55);
-            ctx.strokeStyle = '#e056fd';
+            ctx.strokeStyle = '#c96e8a';
             ctx.lineWidth = 2;
             ctx.strokeRect(20, 150, 440, 55);
 
-            ctx.fillStyle = '#e056fd';
+            ctx.fillStyle = '#c96e8a';
             ctx.font = 'bold 12px monospace';
             ctx.fillText('log p(x) = log p(z) - \u03A3 log|det(dfi/dxi-1)|', 30, 170);
 
@@ -2177,12 +1893,12 @@
 
             var layout = {
                 scene: {
-                    bgcolor: '#0d0d1a',
+                    bgcolor: '#0d0d14',
                     xaxis: { gridcolor: '#222244', color: '#888', title: '' },
                     yaxis: { gridcolor: '#222244', color: '#888', title: '' },
                     zaxis: { gridcolor: '#222244', color: '#888', title: '' }
                 },
-                paper_bgcolor: '#0d0d1a',
+                paper_bgcolor: '#0d0d14',
                 margin: { l: 0, r: 0, t: 0, b: 0 },
                 showlegend: false
             };
@@ -2263,12 +1979,12 @@
 
             var layout = {
                 scene: {
-                    bgcolor: '#0d0d1a',
+                    bgcolor: '#0d0d14',
                     xaxis: { gridcolor: '#222244', color: '#888', title: '' },
                     yaxis: { gridcolor: '#222244', color: '#888', title: '' },
                     zaxis: { gridcolor: '#222244', color: '#888', title: '' }
                 },
-                paper_bgcolor: '#0d0d1a',
+                paper_bgcolor: '#0d0d14',
                 margin: { l: 0, r: 0, t: 0, b: 0 },
                 showlegend: true,
                 legend: { font: { color: '#888' }, bgcolor: 'rgba(0,0,0,0)' }
@@ -2368,12 +2084,12 @@
 
             var layout = {
                 scene: {
-                    bgcolor: '#0d0d1a',
+                    bgcolor: '#0d0d14',
                     xaxis: { gridcolor: '#222244', color: '#888', title: '' },
                     yaxis: { gridcolor: '#222244', color: '#888', title: '' },
                     zaxis: { gridcolor: '#222244', color: '#888', title: '' }
                 },
-                paper_bgcolor: '#0d0d1a',
+                paper_bgcolor: '#0d0d14',
                 margin: { l: 0, r: 0, t: 0, b: 0 },
                 showlegend: true,
                 legend: { font: { color: '#888' }, bgcolor: 'rgba(0,0,0,0)' }
@@ -2463,7 +2179,7 @@
             cfgCtx.fillStyle = '#0a0a0f';
             cfgCtx.fillRect(0, 0, cfgCanvas.width, cfgCanvas.height);
 
-            cfgCtx.fillStyle = '#e056fd';
+            cfgCtx.fillStyle = '#c96e8a';
             cfgCtx.font = 'bold 14px Arial';
             cfgCtx.textAlign = 'left';
             cfgCtx.fillText('Classifier-Free Guidance: w = ' + w.toFixed(1), 20, 20);
@@ -2540,7 +2256,7 @@
             // Conditional: peaked at target
             drawCurve(centerX, condSigma, '#58d68d', false);
             // Guided: more peaked at target
-            drawCurve(centerX, guidedSigma, '#e056fd', false);
+            drawCurve(centerX, guidedSigma, '#c96e8a', false);
 
             // Legend
             const legendY = baselineY + 30;
@@ -2565,12 +2281,12 @@
             cfgCtx.fillStyle = '#58d68d';
             cfgCtx.fillText('Conditional', 200, legendY + 4);
 
-            cfgCtx.strokeStyle = '#e056fd';
+            cfgCtx.strokeStyle = '#c96e8a';
             cfgCtx.beginPath();
             cfgCtx.moveTo(300, legendY);
             cfgCtx.lineTo(325, legendY);
             cfgCtx.stroke();
-            cfgCtx.fillStyle = '#e056fd';
+            cfgCtx.fillStyle = '#c96e8a';
             cfgCtx.fillText('Guided (w=' + w.toFixed(1) + ')', 330, legendY + 4);
         }
         drawCFG();
@@ -2588,19 +2304,19 @@
             latentDiffCtx.fillStyle = '#0a0a0f';
             latentDiffCtx.fillRect(0, 0, latentDiffCanvas.width, latentDiffCanvas.height);
 
-            latentDiffCtx.fillStyle = '#e056fd';
+            latentDiffCtx.fillStyle = '#c96e8a';
             latentDiffCtx.font = 'bold 15px Arial';
             latentDiffCtx.fillText('Latent Diffusion Pipeline', 20, 22);
 
             const stageW = 65;
             const stageGap = 10;
             const stages = [
-                { name: 'Image', color: '#64ffda' },
-                { name: 'VAE Enc', color: '#ffd93d' },
-                { name: 'Latent z', color: '#ff6b6b' },
-                { name: 'Denoise('+steps+')', color: '#7c4dff' },
-                { name: 'Decode', color: '#ffd93d' },
-                { name: 'Image', color: '#64ffda' }
+                { name: 'Image', color: '#c9a96e' },
+                { name: 'VAE Enc', color: '#e0c992' },
+                { name: 'Latent z', color: '#c96e8a' },
+                { name: 'Denoise('+steps+')', color: '#8a6ec9' },
+                { name: 'Decode', color: '#e0c992' },
+                { name: 'Image', color: '#c9a96e' }
             ];
 
             let y = 55;
@@ -2655,7 +2371,7 @@
             vqvaeCtx.fillStyle = '#0a0a0f';
             vqvaeCtx.fillRect(0, 0, vqvaeCanvas.width, vqvaeCanvas.height);
 
-            vqvaeCtx.fillStyle = '#e056fd';
+            vqvaeCtx.fillStyle = '#c96e8a';
             vqvaeCtx.font = 'bold 17px Arial';
             vqvaeCtx.fillText('VQ-VAE: Discrete Latent Quantization', 20, 25);
 
@@ -2668,9 +2384,9 @@
             const y = 80;
 
             const boxes = [
-                { label: 'z (cont)', color: '#64ffda' },
-                { label: 'Codebook', color: '#ff6b6b' },
-                { label: 'ẑ (disc)', color: '#7c4dff' }
+                { label: 'z (cont)', color: '#c9a96e' },
+                { label: 'Codebook', color: '#c96e8a' },
+                { label: 'ẑ (disc)', color: '#8a6ec9' }
             ];
 
             boxes.forEach(box => {
@@ -2718,7 +2434,7 @@
             architectureCtx.fillStyle = '#0a0a0f';
             architectureCtx.fillRect(0, 0, architectureCanvas.width, architectureCanvas.height);
 
-            architectureCtx.fillStyle = '#e056fd';
+            architectureCtx.fillStyle = '#c96e8a';
             architectureCtx.font = 'bold 17px Arial';
             architectureCtx.fillText(archType === 'unet' ? 'U-Net (CNN-based)' : 'DiT (Diffusion Transformer)', 20, 25);
 
@@ -2738,11 +2454,11 @@
                 encLayers.forEach((layer, i) => {
                     const bx = startX + i * xStep;
                     const by = baseY + i * stepDown;
-                    architectureCtx.fillStyle = '#64ffda33';
+                    architectureCtx.fillStyle = '#c9a96e33';
                     architectureCtx.fillRect(bx, by, boxW, boxH);
-                    architectureCtx.strokeStyle = '#64ffda';
+                    architectureCtx.strokeStyle = '#c9a96e';
                     architectureCtx.strokeRect(bx, by, boxW, boxH);
-                    architectureCtx.fillStyle = '#64ffda';
+                    architectureCtx.fillStyle = '#c9a96e';
                     architectureCtx.font = '9px Arial';
                     architectureCtx.textAlign = 'center';
                     architectureCtx.fillText(layer, bx + boxW/2, by + 14);
@@ -2755,11 +2471,11 @@
                 decLayers.forEach((layer, i) => {
                     const bx = startX + (5 + i) * xStep;
                     const by = baseY + (3 - i) * stepDown;
-                    architectureCtx.fillStyle = '#4ecdc433';
+                    architectureCtx.fillStyle = '#6ea5c933';
                     architectureCtx.fillRect(bx, by, boxW, boxH);
-                    architectureCtx.strokeStyle = '#4ecdc4';
+                    architectureCtx.strokeStyle = '#6ea5c9';
                     architectureCtx.strokeRect(bx, by, boxW, boxH);
-                    architectureCtx.fillStyle = '#4ecdc4';
+                    architectureCtx.fillStyle = '#6ea5c9';
                     architectureCtx.font = '9px Arial';
                     architectureCtx.textAlign = 'center';
                     architectureCtx.fillText(layer, bx + boxW/2, by + 14);
@@ -2769,7 +2485,7 @@
                 });
 
                 // Skip connections (horizontal dashed lines connecting encoder to decoder at same level)
-                architectureCtx.strokeStyle = '#ffd93d';
+                architectureCtx.strokeStyle = '#e0c992';
                 architectureCtx.setLineDash([3, 3]);
                 architectureCtx.lineWidth = 1.5;
                 for (let i = 0; i < 4; i++) {
@@ -2786,7 +2502,7 @@
                 architectureCtx.setLineDash([]);
 
                 // Legend
-                architectureCtx.fillStyle = '#ffd93d';
+                architectureCtx.fillStyle = '#e0c992';
                 architectureCtx.font = '9px Arial';
                 architectureCtx.textAlign = 'left';
                 architectureCtx.fillText('--- Skip connections', 350, 50);
@@ -2808,9 +2524,9 @@
                 // Draw transformer blocks
                 let y = 160;
                 for (let i = 0; i < 3; i++) {
-                    architectureCtx.fillStyle = '#7c4dff33';
+                    architectureCtx.fillStyle = '#8a6ec933';
                     architectureCtx.fillRect(30, y, 200, 30);
-                    architectureCtx.strokeStyle = '#7c4dff';
+                    architectureCtx.strokeStyle = '#8a6ec9';
                     architectureCtx.strokeRect(30, y, 200, 30);
 
                     architectureCtx.fillStyle = '#9b7aff';
@@ -2837,7 +2553,7 @@
     <!-- Quiz Section -->
     <div id="quizSection" style="display:none">
         <div class="quiz-container">
-            <h2 style="text-align:center; color:#e0e0e0; margin-bottom:10px;">Generative Models Quiz</h2>
+            <h2 style="text-align:center; color:#e8e4de; margin-bottom:10px;">Generative Models Quiz</h2>
             <div class="quiz-score" id="quizScore"></div>
             <div id="quizQuestions"></div>
             <div class="quiz-actions">

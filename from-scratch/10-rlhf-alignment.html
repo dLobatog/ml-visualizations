@@ -5,135 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="../static/canvas-polish.js"></script>
 <title>Chapter 10: RLHF &amp; Alignment from Scratch</title>
+<link rel="stylesheet" href="../theme.css">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #0a0a0f; color: #e0e0e0; line-height: 1.6; }
-  .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; text-align: center; border-bottom: 1px solid #2a2a4a; }
-  .header h1 { font-size: 2.2em; background: linear-gradient(90deg, #f368e0, #ff9ff3); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
-  .header p { color: #888; font-size: 1.1em; }
-  .header a { color: #f368e0; text-decoration: none; font-size: 0.9em; }
-  .header a:hover { text-decoration: underline; }
-  .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
-
-  /* Minimap */
-  .minimap { position: sticky; top: 0; z-index: 100; background: #0a0a0fee; backdrop-filter: blur(10px); border-bottom: 1px solid #2a2a4a; padding: 10px 20px; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }
-  .mm-step { padding: 4px 12px; border-radius: 6px; font-size: 0.75em; font-weight: 600; cursor: pointer; transition: all 0.2s; background: #151530; color: #555; border: 1px solid #2a2a4a; white-space: nowrap; }
-  .mm-step:hover { border-color: #f368e0; color: #f368e0; }
-  .mm-step.active { background: rgba(243,104,224,0.2); color: #f368e0; border-color: rgba(243,104,224,0.5); }
-  .mm-step.done { background: rgba(243,104,224,0.1); color: #f368e0; border-color: rgba(243,104,224,0.3); }
-  .mm-arrow { color: #333; font-size: 0.8em; }
-
-  .viz-section { background: #12121f; border: 1px solid #2a2a4a; border-radius: 16px; padding: 32px; margin-bottom: 40px; }
-  .viz-section h2 { font-size: 1.5em; color: #f368e0; margin-bottom: 8px; }
-  .viz-section .subtitle { color: #888; margin-bottom: 24px; font-size: 0.95em; }
-  .viz-canvas { background: #0d0d1a; border-radius: 12px; position: relative; overflow: hidden; }
-  canvas { display: block; margin: 0 auto; }
-  .controls { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; align-items: center; }
-  .control-group { display: flex; flex-direction: column; gap: 4px; }
-  .control-group label { font-size: 0.85em; color: #aaa; }
-  .control-group input[type="range"] { width: 160px; accent-color: #f368e0; }
-  .control-group .value { font-size: 0.85em; color: #f368e0; font-family: monospace; }
-  .btn { padding: 8px 16px; border: 1px solid #f368e0; background: transparent; color: #f368e0; border-radius: 8px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
-  .btn:hover { background: #f368e022; }
-  .btn.active { background: #f368e033; }
-  .tab-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
-
-  .insight-box { background: linear-gradient(135deg, #1a1a3e 0%, #151530 100%); border-left: 4px solid #f368e0; padding: 20px 24px; margin-top: 20px; border-radius: 0 12px 12px 0; font-size: 0.92em; color: #ccc; line-height: 1.8; }
-  .insight-box strong { color: #f368e0; font-size: 1.05em; }
-  .insight-box .formula { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 12px 18px; margin: 12px 0; font-family: 'Courier New', monospace; color: #e8e8ff; font-size: 1.05em; text-align: center; letter-spacing: 0.5px; line-height: 1.9; }
-  .insight-box .key-point { display: flex; flex-wrap: wrap; gap: 4px 8px; margin: 8px 0; padding: 4px 0; align-items: baseline; }
-  .insight-box .key-point .label { color: #f368e0; font-weight: 600; min-width: 160px; flex-shrink: 0; }
-  .insight-box .key-point .desc { color: #ddd; }
-  .insight-box .interview-tip { background: rgba(100, 255, 100, 0.05); border: 1px solid rgba(100, 255, 100, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #b0ffb0; font-size: 0.93em; line-height: 1.6; }
-  .insight-box .interview-tip::before { content: '\1F4A1  Interview Tip: '; font-weight: 700; color: #7fff7f; }
-  .insight-box .mnemonic { background: rgba(255, 150, 255, 0.05); border: 1px solid rgba(255, 150, 255, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #ffb0ff; font-size: 0.93em; line-height: 1.6; }
-  .insight-box .mnemonic::before { content: '\1F9E0  Remember: '; font-weight: 700; color: #ff7fff; }
-  .insight-box .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
-  .insight-box .comparison .option { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 10px 14px; }
-  .insight-box .comparison .option .opt-title { color: #f368e0; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
-  .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
-  .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
-  .code-example { margin-top: 12px; border: 1px solid #2a2a4a; border-radius: 8px; overflow: hidden; }
-  .code-toggle { width: 100%; background: #1a1a2e; color: #f368e0; border: none; padding: 10px 16px; text-align: left; cursor: pointer; font-size: 0.9em; font-weight: 600; display: flex; align-items: center; gap: 8px; }
-  .code-toggle:hover { background: #22223a; }
-  .code-toggle-icon { display: inline-block; transition: transform 0.2s; font-size: 0.7em; }
-  .code-example.open .code-toggle-icon { transform: rotate(90deg); }
-  .code-content { display: none; padding: 14px 16px; background: #0a0a14; }
-  .code-example.open .code-content { display: block; }
-  .code-content pre { margin: 0; overflow-x: auto; white-space: pre; }
-  .code-content code { color: #e0e0e0; font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.82em; line-height: 1.6; }
-  .code-content .code-note { color: #888; font-size: 0.82em; margin-top: 8px; font-style: italic; }
-  .code-content pre[class*="language-"], .code-content code[class*="language-"] { background: #0a0a14; font-size: 0.82em; line-height: 1.6; margin: 0; padding: 0; text-shadow: none; }
-  pre[class*="language-"]::selection, code[class*="language-"]::selection { background: #333; }
-  .katex { color: #e8e8ff; font-size: 1.1em; }
-  .formula .katex { font-size: 1.2em; }
-
-  .narrative-note { background: rgba(255,217,61,0.05); border-left: 3px solid #ffd93d; padding: 14px 18px; margin: 16px 0; border-radius: 0 8px 8px 0; font-size: 0.9em; color: #ccb866; }
-  .narrative-note strong { color: #ffd93d; }
-
-  select { padding: 6px 12px; border: 1px solid #2a2a4a; background: #0d0d1a; color: #e0e0e0; border-radius: 6px; font-size: 0.9em; cursor: pointer; }
-  select:focus { outline: none; border-color: #f368e0; }
-
-  input[type="text"] { padding: 8px 14px; border: 1px solid #2a2a4a; background: #0d0d1a; color: #e0e0e0; border-radius: 8px; font-size: 0.95em; font-family: inherit; width: 100%; }
-  input[type="text"]:focus { outline: none; border-color: #f368e0; }
-
-#quizToggle{position:fixed;top:20px;right:20px;z-index:1000;padding:12px 20px;background:#f368e0;color:#0a0a0f;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:1em;box-shadow:0 4px 15px rgba(0,0,0,0.3);transition:transform 0.2s}
-#quizToggle:hover{transform:scale(1.05)}
-#quizSection{background:#0a0a0f;border-top:2px solid #f368e0;padding:40px 20px;margin-top:40px}
-.quiz-container{max-width:900px;margin:0 auto}
-.quiz-topic{margin-bottom:30px}
-.quiz-topic-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:10px;cursor:pointer;margin-bottom:12px;user-select:none}
-.quiz-topic-header h3{color:#f368e0;margin:0;font-size:1.15em}
-.quiz-topic-header:hover{background:#1f1f3a}
-.quiz-topic-score{color:#888;font-size:0.95em}
-.quiz-topic-questions{display:none}
-.quiz-topic-questions.open{display:block}
-.quiz-question{background:#12121f;border:1px solid #2a2a4a;border-radius:12px;padding:24px;margin-bottom:16px}
-.quiz-question h4{color:#e0e0e0;margin-bottom:16px;font-size:1.05em;line-height:1.5}
-.quiz-option{display:block;width:100%;padding:12px 16px;margin:8px 0;background:#0d0d1a;border:1px solid #2a2a4a;border-radius:8px;color:#e0e0e0;cursor:pointer;text-align:left;font-size:0.95em;transition:all 0.2s;font-family:inherit}
-.quiz-option:hover:not(:disabled){border-color:#f368e0;background:#1a1a3e}
-.quiz-option.correct{background:#1a3a2a !important;border-color:#2ecc71 !important;color:#2ecc71 !important}
-.quiz-option.wrong{background:#3a1a1a !important;border-color:#e74c3c !important;color:#e74c3c !important}
-.quiz-option.reveal{border-color:#2ecc71 !important;color:#2ecc71 !important}
-.quiz-option:disabled{cursor:default}
-.quiz-explanation{margin-top:12px;padding:14px 18px;border-radius:8px;font-size:0.93em;line-height:1.6;display:none}
-.quiz-explanation.show{display:block}
-.quiz-explanation.correct-exp{border-left:4px solid #2ecc71;background:rgba(46,204,113,0.08);color:#b0ffb0}
-.quiz-explanation.wrong-exp{border-left:4px solid #e74c3c;background:rgba(231,76,60,0.08);color:#ffb0b0}
-.quiz-score{text-align:center;font-size:1.5em;color:#f368e0;margin-bottom:30px}
-.quiz-actions{text-align:center;margin-top:30px;margin-bottom:20px}
-.quiz-actions button{padding:10px 24px;margin:0 8px;border-radius:8px;border:1px solid #f368e0;background:transparent;color:#f368e0;cursor:pointer;font-size:1em}
-.quiz-actions button:hover{background:rgba(243,104,224,0.1)}
-.quiz-progress{height:4px;background:#1a1a2e;border-radius:2px;margin-bottom:20px;overflow:hidden}
-.quiz-progress-bar{height:100%;background:#f368e0;border-radius:2px;transition:width 0.3s}
-
-  .break-toggle { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border: 1px solid #e74c3c; background: transparent; color: #e74c3c; border-radius: 8px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
-  .break-toggle:hover { background: rgba(231,76,60,0.15); }
-  .break-toggle.broken { background: rgba(231,76,60,0.25); border-color: #ff4444; color: #ff4444; }
-
-  .legend { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
-  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.85em; color: #ccc; }
-  .legend-dot { width: 12px; height: 12px; border-radius: 50%; }
-
-  /* Mobile responsive */
-  canvas { max-width: 100%; height: auto; }
-  @media (max-width: 768px) {
-    .container { padding: 16px 10px; }
-    .viz-section { padding: 16px 12px; }
-    h2 { font-size: 1.2em; }
-    .subtitle { font-size: 0.85em; }
-    .controls { gap: 8px; }
-    .control-group { min-width: 120px; flex: 1 1 auto; }
-    .tab-bar { flex-wrap: wrap; gap: 4px; }
-    .tab-bar .btn { font-size: 0.75em; padding: 6px 10px; }
-    .insight-box { padding: 14px; font-size: 0.9em; }
-    .comparison { grid-template-columns: 1fr !important; }
-    .formula { font-size: 0.85em; overflow-x: auto; }
-    .code-content pre { font-size: 0.78em; }
-    .interview-tip { font-size: 0.85em; padding: 10px; }
-    .metric-box { font-size: 0.82em; }
-  }
-
+  .header h1 { background: linear-gradient(90deg, var(--rose), var(--gold)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .viz-section h2 { color: var(--rose); }
+  .control-group .value { color: var(--rose); }
+  .control-group input[type="range"] { accent-color: var(--rose); }
+  .btn.active { border-color: var(--rose); color: var(--rose); }
+  .btn:hover { border-color: var(--rose); color: var(--rose); }
+  .insight-box { border-left-color: rgba(var(--rose-rgb), 0.3); }
+  .insight-box strong { color: var(--rose); }
+  .insight-box .formula .highlight { color: var(--rose); }
+  .insight-box .key-point .label { color: var(--rose); }
+  .card::before { background: var(--rose); }
+  #quizToggle { background: var(--bg2); color: var(--fg-dim); border: 1px solid var(--border-hover); }
+  #quizToggle:hover { border-color: var(--rose); color: var(--rose); }
+  #quizSection { border-top-color: rgba(var(--rose-rgb), 0.2); }
 </style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -218,7 +105,7 @@
   </div>
   <div class="controls">
     <button class="btn" onclick="resetPreferences()">Reset Preferences</button>
-    <span id="prefCount" style="color:#f368e0; font-family:monospace; font-size:0.9em;">0 / 6 preferences collected</span>
+    <span id="prefCount" style="color:#c96e8a; font-family:monospace; font-size:0.9em;">0 / 6 preferences collected</span>
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Preferences are easier than scores. Humans struggle to assign absolute quality numbers but reliably say "A is better than B."
@@ -232,8 +119,8 @@
     </div>
     <hr class="divider">
     <div class="interview-tip">Real preference datasets (like Anthropic's HH-RLHF or OpenAI's WebGPT) are collected from paid annotators who follow detailed guidelines. Annotator agreement is typically 70-80%, reflecting genuine ambiguity in what "better" means.</div>
-    <div class="insight-box" style="border-left-color: #01a3a4; margin-top: 12px; padding: 12px 16px;">
-      <span style="color:#01a3a4;">&#128206; Cross-reference Ch 1 (Backprop):</span> The preference data will be used to compute gradients through a loss function (Bradley-Terry model). The autograd system from Ch 1 is what makes this training possible.
+    <div class="insight-box" style="border-left-color: #a08550; margin-top: 12px; padding: 12px 16px;">
+      <span style="color:#a08550;">&#128206; Cross-reference Ch 1 (Backprop):</span> The preference data will be used to compute gradients through a loss function (Bradley-Terry model). The autograd system from Ch 1 is what makes this training possible.
     </div>
   </div>
 </div>
@@ -270,11 +157,11 @@
     <hr class="divider">
     <div class="mnemonic">The reward model is the "judge" that learns human taste. Train it well, and it can score thousands of completions per second &mdash; far faster than asking humans.</div>
   </div>
-  <div class="insight-box" style="border-left-color: #ff6b6b;">
-    <h3 style="color: #ff6b6b;">Common Mistakes: Reward Model Training</h3>
+  <div class="insight-box" style="border-left-color: #c96e8a;">
+    <h3 style="color: #c96e8a;">Common Mistakes: Reward Model Training</h3>
     <ul style="list-style:none; padding:0;">
-      <li style="margin-bottom:8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Training the reward model on data from a different model distribution (e.g., preferences collected on GPT-3 outputs used to train a LLaMA reward model). <strong style="color:#4ecdc4;">Fix:</strong> Collect preferences on outputs from YOUR policy, not a different model. Distribution mismatch degrades reward model accuracy.</li>
-      <li style="margin-bottom:8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Using too few preference pairs (&lt;10k). <strong style="color:#4ecdc4;">Fix:</strong> Use at least 50k preference pairs. Reward model accuracy directly limits RLHF performance.</li>
+      <li style="margin-bottom:8px;"><strong style="color:#c96e8a;">Mistake:</strong> Training the reward model on data from a different model distribution (e.g., preferences collected on GPT-3 outputs used to train a LLaMA reward model). <strong style="color:#6ea5c9;">Fix:</strong> Collect preferences on outputs from YOUR policy, not a different model. Distribution mismatch degrades reward model accuracy.</li>
+      <li style="margin-bottom:8px;"><strong style="color:#c96e8a;">Mistake:</strong> Using too few preference pairs (&lt;10k). <strong style="color:#6ea5c9;">Fix:</strong> Use at least 50k preference pairs. Reward model accuracy directly limits RLHF performance.</li>
     </ul>
   </div>
   <div class="code-example">
@@ -354,11 +241,11 @@ def reward_loss(r_chosen, r_rejected):
     &#128161; <strong>Epochs per batch:</strong> 1-4 PPO epochs per batch of rollouts.<br>
     &#128161; <strong>Batch size:</strong> 512-2048 completions per PPO step. Larger = more stable but slower.
   </div>
-  <div class="insight-box" style="border-left-color: #ff6b6b;">
-    <h3 style="color: #ff6b6b;">Common Mistakes: PPO Training</h3>
+  <div class="insight-box" style="border-left-color: #c96e8a;">
+    <h3 style="color: #c96e8a;">Common Mistakes: PPO Training</h3>
     <ul style="list-style:none; padding:0;">
-      <li style="margin-bottom:8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Using a learning rate that's too high (e.g., 1e-4). <strong style="color:#4ecdc4;">Fix:</strong> Use 1e-6 to 5e-6. The model is already pretrained and SFT'd; large LR destroys learned capabilities.</li>
-      <li style="margin-bottom:8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Not freezing the reference model. <strong style="color:#4ecdc4;">Fix:</strong> The reference model (&pi;_ref) must be frozen. If it updates alongside the policy, the KL penalty becomes meaningless.</li>
+      <li style="margin-bottom:8px;"><strong style="color:#c96e8a;">Mistake:</strong> Using a learning rate that's too high (e.g., 1e-4). <strong style="color:#6ea5c9;">Fix:</strong> Use 1e-6 to 5e-6. The model is already pretrained and SFT'd; large LR destroys learned capabilities.</li>
+      <li style="margin-bottom:8px;"><strong style="color:#c96e8a;">Mistake:</strong> Not freezing the reference model. <strong style="color:#6ea5c9;">Fix:</strong> The reference model (&pi;_ref) must be frozen. If it updates alongside the policy, the KL penalty becomes meaningless.</li>
     </ul>
   </div>
   <div class="code-example">
@@ -423,8 +310,8 @@ def approx_kl(log_pi, log_pi_ref):
     <hr class="divider">
     <div class="interview-tip">DPO is increasingly popular for smaller teams because it eliminates the complex PPO training loop. However, some research suggests PPO can achieve better results at scale when tuned properly.</div>
     <div class="interview-tip">💡 Real-world: DPO (2023) simplified RLHF from a complex 4-model pipeline to a single training run. LLaMA-2-Chat, Zephyr, and many open-source aligned models use DPO because it's simpler, more stable, and cheaper to run than PPO.</div>
-    <div class="insight-box" style="border-left-color: #01a3a4; margin-top: 12px; padding: 12px 16px;">
-      <span style="color:#01a3a4;">&#128206; Cross-reference Ch 3 (MLPs &amp; Optimization):</span> The DPO loss is optimized with standard gradient descent, just like any supervised loss. The log-probability ratios are computed via forward passes through the transformer (Ch 6).
+    <div class="insight-box" style="border-left-color: #a08550; margin-top: 12px; padding: 12px 16px;">
+      <span style="color:#a08550;">&#128206; Cross-reference Ch 3 (MLPs &amp; Optimization):</span> The DPO loss is optimized with standard gradient descent, just like any supervised loss. The log-probability ratios are computed via forward passes through the transformer (Ch 6).
     </div>
   </div>
   <div class="narrative-note">
@@ -496,11 +383,11 @@ def dpo_loss(pi_logps_w, pi_logps_l, ref_logps_w, ref_logps_l, beta=0.1):
     <div class="interview-tip">Goodhart's Law is the fundamental challenge of RLHF: you're optimizing a proxy (reward model) rather than the true objective (human satisfaction). The better your optimizer (PPO), the more aggressively it exploits the proxy's flaws.</div>
     <div class="interview-tip">💡 Real-world: Early RLHF models learned to generate verbose, hedge-filled responses ('As an AI, I...') because human raters preferred longer answers. This 'sycophancy' problem — where the model games the reward — is an active research challenge at every major AI lab.</div>
   </div>
-  <div class="insight-box" style="border-left-color: #ff6b6b;">
-    <h3 style="color: #ff6b6b;">Common Mistakes: Reward Hacking</h3>
+  <div class="insight-box" style="border-left-color: #c96e8a;">
+    <h3 style="color: #c96e8a;">Common Mistakes: Reward Hacking</h3>
     <ul style="list-style:none; padding:0;">
-      <li style="margin-bottom:8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Using a single reward model without checking for gaming. <strong style="color:#4ecdc4;">Fix:</strong> Use multiple reward models (ensemble) or periodic human spot-checks. If reward goes up but outputs look worse, you're being hacked.</li>
-      <li style="margin-bottom:8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Training RLHF for too many steps based on reward score alone. <strong style="color:#4ecdc4;">Fix:</strong> Early stopping based on human evaluation, not reward score. The optimal checkpoint is often early in training.</li>
+      <li style="margin-bottom:8px;"><strong style="color:#c96e8a;">Mistake:</strong> Using a single reward model without checking for gaming. <strong style="color:#6ea5c9;">Fix:</strong> Use multiple reward models (ensemble) or periodic human spot-checks. If reward goes up but outputs look worse, you're being hacked.</li>
+      <li style="margin-bottom:8px;"><strong style="color:#c96e8a;">Mistake:</strong> Training RLHF for too many steps based on reward score alone. <strong style="color:#6ea5c9;">Fix:</strong> Early stopping based on human evaluation, not reward score. The optimal checkpoint is often early in training.</li>
     </ul>
   </div>
 </div>
@@ -522,7 +409,7 @@ def dpo_loss(pi_logps_w, pi_logps_l, ref_logps_w, ref_logps_l, beta=0.1):
     <strong>The Complete Pipeline:</strong>
     <div class="key-point">
       <span class="label">Stage 1 &mdash; Pretrain:</span>
-      <span class="desc">Train a large LM on internet text. Next-token prediction. Massive compute (thousands of GPUs, weeks). <span style="color:#01a3a4;">&#128206; Ch 6</span></span>
+      <span class="desc">Train a large LM on internet text. Next-token prediction. Massive compute (thousands of GPUs, weeks). <span style="color:#a08550;">&#128206; Ch 6</span></span>
     </div>
     <div class="key-point">
       <span class="label">Stage 2 &mdash; SFT:</span>
@@ -538,8 +425,8 @@ def dpo_loss(pi_logps_w, pi_logps_l, ref_logps_w, ref_logps_l, beta=0.1):
     </div>
     <hr class="divider">
     <div class="interview-tip">The SFT stage is often the most important! A good SFT model already follows instructions well. RLHF/DPO provides the "polish" &mdash; reducing harmful outputs, improving nuance, calibrating confidence.</div>
-    <div class="insight-box" style="border-left-color: #01a3a4; margin-top: 12px; padding: 12px 16px;">
-      <span style="color:#01a3a4;">&#128206; Cross-reference Ch 7 (Distillation):</span> After RLHF, the aligned model can be distilled into a smaller model that retains alignment properties. This is how many "chat" versions of open-source models are created.
+    <div class="insight-box" style="border-left-color: #a08550; margin-top: 12px; padding: 12px 16px;">
+      <span style="color:#a08550;">&#128206; Cross-reference Ch 7 (Distillation):</span> After RLHF, the aligned model can be distilled into a smaller model that retains alignment properties. This is how many "chat" versions of open-source models are created.
     </div>
   </div>
   <div class="narrative-note">
@@ -549,11 +436,11 @@ def dpo_loss(pi_logps_w, pi_logps_l, ref_logps_w, ref_logps_l, beta=0.1):
     &#128161; <strong>PPO:</strong> &beta;=0.01-0.1, LR 1e-6, 1-2 epochs over preference data. Monitor KL divergence.<br>
     &#128161; <strong>DPO:</strong> &beta;=0.1-0.5, LR 1e-6 to 5e-7. 1-3 epochs. Watch for overfitting on small datasets.
   </div>
-  <div class="insight-box" style="border-left-color: #ff6b6b;">
-    <h3 style="color: #ff6b6b;">Common Mistakes: Full Pipeline</h3>
+  <div class="insight-box" style="border-left-color: #c96e8a;">
+    <h3 style="color: #c96e8a;">Common Mistakes: Full Pipeline</h3>
     <ul style="list-style:none; padding:0;">
-      <li style="margin-bottom:8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Skipping the SFT stage and going directly from pretraining to RLHF. <strong style="color:#4ecdc4;">Fix:</strong> Always include SFT. Without it, the base model doesn't follow instructions, making RLHF much harder and less effective.</li>
-      <li style="margin-bottom:8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Overfitting during SFT (too many epochs on a small demonstration dataset). <strong style="color:#4ecdc4;">Fix:</strong> Use 1-3 epochs for SFT. SFT overfitting degrades downstream RLHF performance because the model memorizes demonstrations rather than learning general instruction-following.</li>
+      <li style="margin-bottom:8px;"><strong style="color:#c96e8a;">Mistake:</strong> Skipping the SFT stage and going directly from pretraining to RLHF. <strong style="color:#6ea5c9;">Fix:</strong> Always include SFT. Without it, the base model doesn't follow instructions, making RLHF much harder and less effective.</li>
+      <li style="margin-bottom:8px;"><strong style="color:#c96e8a;">Mistake:</strong> Overfitting during SFT (too many epochs on a small demonstration dataset). <strong style="color:#6ea5c9;">Fix:</strong> Use 1-3 epochs for SFT. SFT overfitting degrades downstream RLHF performance because the model memorizes demonstrations rather than learning general instruction-following.</li>
     </ul>
   </div>
 </div>
@@ -576,7 +463,7 @@ def dpo_loss(pi_logps_w, pi_logps_l, ref_logps_w, ref_logps_l, beta=0.1):
     <div class="comparison">
       <div class="option">
         <div class="opt-title">Constitutional AI (CAI)</div>
-        <div class="opt-desc">The model critiques its own outputs against a set of principles, then revises. Self-generated preferences replace (some) human annotation. <span style="color:#f368e0;">&#128206; Relies on the transformer's in-context reasoning from Ch 6.</span></div>
+        <div class="opt-desc">The model critiques its own outputs against a set of principles, then revises. Self-generated preferences replace (some) human annotation. <span style="color:#c96e8a;">&#128206; Relies on the transformer's in-context reasoning from Ch 6.</span></div>
       </div>
       <div class="option">
         <div class="opt-title">RLAIF (AI Feedback)</div>
@@ -593,8 +480,8 @@ def dpo_loss(pi_logps_w, pi_logps_l, ref_logps_w, ref_logps_l, beta=0.1):
     </div>
     <hr class="divider">
     <div class="mnemonic">RLHF = humans judge. RLAIF = AI judges. CAI = the model judges itself against rules. All aim for the same goal: align the model with human values.</div>
-    <div class="insight-box" style="border-left-color: #01a3a4; margin-top: 12px; padding: 12px 16px;">
-      <span style="color:#01a3a4;">&#128206; Cross-reference Ch 6 (Transformer):</span> Constitutional AI leverages the transformer's ability to follow instructions and reason in-context. The model must understand "critique this response for harmfulness" &mdash; which requires the deep language understanding built during pretraining.
+    <div class="insight-box" style="border-left-color: #a08550; margin-top: 12px; padding: 12px 16px;">
+      <span style="color:#a08550;">&#128206; Cross-reference Ch 6 (Transformer):</span> Constitutional AI leverages the transformer's ability to follow instructions and reason in-context. The model must understand "critique this response for harmfulness" &mdash; which requires the deep language understanding built during pretraining.
     </div>
   </div>
 </div>
@@ -606,7 +493,7 @@ def dpo_loss(pi_logps_w, pi_logps_l, ref_logps_w, ref_logps_l, beta=0.1):
 <!-- ============================================================ -->
 <div id="quizSection" style="display:none">
 <div class="quiz-container">
-  <h2 style="text-align:center;color:#f368e0;margin-bottom:10px;font-size:1.8em;">RLHF &amp; Alignment Quiz</h2>
+  <h2 style="text-align:center;color:#c96e8a;margin-bottom:10px;font-size:1.8em;">RLHF &amp; Alignment Quiz</h2>
   <p style="text-align:center;color:#888;margin-bottom:20px;">32 questions across 8 topics &bull; Click answers to reveal explanations</p>
   <div class="quiz-progress"><div class="quiz-progress-bar" id="quizProgressBar" style="width:0%"></div></div>
   <div class="quiz-score">Score: <span id="quizScore">0</span> / <span id="quizTotal">32</span></div>
@@ -618,10 +505,11 @@ def dpo_loss(pi_logps_w, pi_logps_l, ref_logps_w, ref_logps_l, beta=0.1):
 </div>
 </div>
 
-<div style="text-align:center; padding:40px; color:#555; font-size:0.85em; border-top:1px solid #1a1a2e;">
-  Chapter 10: RLHF &amp; Alignment from Scratch &bull; <a href="../index.html" style="color:#f368e0; text-decoration:none;">From Scratch Series</a>
+<div style="text-align:center; padding:40px; color:#555; font-size:0.85em; border-top:1px solid #111118;">
+  Chapter 10: RLHF &amp; Alignment from Scratch &bull; <a href="../index.html" style="color:#c96e8a; text-decoration:none;">From Scratch Series</a>
 </div>
 
+<script src="../theme.js"></script>
 <script>
 // ============================================================
 // UTILITY FUNCTIONS
@@ -704,7 +592,7 @@ function drawAlignment() {
 
   // Prompt
   var prompt = "How to pick a lock?";
-  ctx.fillStyle = '#f368e0';
+  ctx.fillStyle = '#c96e8a';
   ctx.font = 'bold 16px Inter, sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText('Prompt: "' + prompt + '"', W / 2, 35);
@@ -724,7 +612,7 @@ function drawAlignment() {
     {
       text: "Lockpicking is a skill used by locksmiths.\nYou can learn basics with a practice lock\nset from Amazon. Here are some general\nprinciples of how pin tumbler locks work...",
       label: "Educational but borderline",
-      color: '#ffd93d',
+      color: '#e0c992',
       safety: 'BORDERLINE'
     },
     {
@@ -745,7 +633,7 @@ function drawAlignment() {
 
     // Box
     roundRect(ctx, x, y, boxW, boxH, 10);
-    ctx.fillStyle = '#0d0d1a';
+    ctx.fillStyle = '#0d0d14';
     ctx.fill();
     ctx.strokeStyle = comp.color + '88';
     ctx.lineWidth = 2;
@@ -779,7 +667,7 @@ function drawAlignment() {
     var prob = 0.28 + rng1() * 0.1;
     var barW = boxW - 24;
     var barY = y + boxH - 30;
-    ctx.fillStyle = '#1a1a2e';
+    ctx.fillStyle = '#111118';
     roundRect(ctx, x + 12, barY, barW, 16, 4);
     ctx.fill();
     ctx.fillStyle = comp.color + '66';
@@ -792,7 +680,7 @@ function drawAlignment() {
   });
 
   // Bottom message
-  ctx.fillStyle = '#ff6b6b';
+  ctx.fillStyle = '#c96e8a';
   ctx.font = 'bold 14px Inter, sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText('The base model has NO preference between these!', W / 2, startY + boxH + 55);
@@ -801,10 +689,10 @@ function drawAlignment() {
   ctx.fillText('All three are equally valid "next tokens" from the pretraining objective.', W / 2, startY + boxH + 75);
 
   // Arrow from "no preference" to RLHF
-  ctx.fillStyle = '#f368e0';
+  ctx.fillStyle = '#c96e8a';
   ctx.font = 'bold 13px Inter, sans-serif';
   ctx.fillText('RLHF teaches the model to prefer the safe completion', W / 2, startY + boxH + 105);
-  drawArrow(ctx, W / 2 - 120, startY + boxH + 85, W / 2 - 120, startY + boxH + 95, '#f368e0');
+  drawArrow(ctx, W / 2 - 120, startY + boxH + 85, W / 2 - 120, startY + boxH + 95, '#c96e8a');
 }
 
 // ============================================================
@@ -858,10 +746,10 @@ function renderPreferences() {
   // Show collected preferences
   if (prefState.collected.length > 0) {
     html += '<div style="margin-bottom:16px;">';
-    html += '<div style="color:#f368e0; font-weight:600; margin-bottom:8px;">Collected Preferences:</div>';
+    html += '<div style="color:#c96e8a; font-weight:600; margin-bottom:8px;">Collected Preferences:</div>';
     html += '<div style="display:flex; flex-wrap:wrap; gap:8px;">';
     prefState.collected.forEach(function(p, i) {
-      html += '<div style="background:#1a1a3e; border:1px solid #f368e044; border-radius:8px; padding:8px 12px; font-size:0.8em;">';
+      html += '<div style="background:#13131f; border:1px solid #c96e8a44; border-radius:8px; padding:8px 12px; font-size:0.8em;">';
       html += '<span style="color:#888;">' + p.prompt.substring(0, 25) + '...</span> ';
       html += '<span style="color:#2ecc71;">Chosen: ' + p.chosenLabel + '</span>';
       html += '</div>';
@@ -872,22 +760,22 @@ function renderPreferences() {
   // Show current pair
   if (prefState.currentIdx < prefPairs.length) {
     var pair = prefPairs[prefState.currentIdx];
-    html += '<div style="color:#aaa; font-size:0.9em; margin-bottom:12px;">Pair ' + (prefState.currentIdx + 1) + ' of ' + prefPairs.length + ': Click the better completion</div>';
-    html += '<div style="background:#0d0d2a; border:1px solid #3a3a6a; border-radius:8px; padding:12px 16px; margin-bottom:12px;">';
-    html += '<span style="color:#f368e0; font-weight:600;">Prompt:</span> <span style="color:#e0e0e0;">"' + pair.prompt + '"</span>';
+    html += '<div style="color:#8a8680; font-size:0.9em; margin-bottom:12px;">Pair ' + (prefState.currentIdx + 1) + ' of ' + prefPairs.length + ': Click the better completion</div>';
+    html += '<div style="background:#0d0d14; border:1px solid #2a2a3a; border-radius:8px; padding:12px 16px; margin-bottom:12px;">';
+    html += '<span style="color:#c96e8a; font-weight:600;">Prompt:</span> <span style="color:#e8e4de;">"' + pair.prompt + '"</span>';
     html += '</div>';
 
     html += '<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">';
 
     // Completion A
-    html += '<div id="prefOptA" onclick="selectPreference(\'a\')" style="background:#12121f; border:2px solid #2a2a4a; border-radius:10px; padding:16px; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.borderColor=\'#f368e0\'" onmouseout="this.style.borderColor=\'#2a2a4a\'">';
-    html += '<div style="color:#f368e0; font-weight:600; margin-bottom:8px;">Completion A</div>';
+    html += '<div id="prefOptA" onclick="selectPreference(\'a\')" style="background:#111118; border:2px solid #2a2a3a; border-radius:10px; padding:16px; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.borderColor=\'#c96e8a\'" onmouseout="this.style.borderColor=\'#2a2a3a\'">';
+    html += '<div style="color:#c96e8a; font-weight:600; margin-bottom:8px;">Completion A</div>';
     html += '<div style="color:#ccc; font-size:0.9em; line-height:1.6; white-space:pre-wrap;">' + pair.a + '</div>';
     html += '</div>';
 
     // Completion B
-    html += '<div id="prefOptB" onclick="selectPreference(\'b\')" style="background:#12121f; border:2px solid #2a2a4a; border-radius:10px; padding:16px; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.borderColor=\'#f368e0\'" onmouseout="this.style.borderColor=\'#2a2a4a\'">';
-    html += '<div style="color:#f368e0; font-weight:600; margin-bottom:8px;">Completion B</div>';
+    html += '<div id="prefOptB" onclick="selectPreference(\'b\')" style="background:#111118; border:2px solid #2a2a3a; border-radius:10px; padding:16px; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.borderColor=\'#c96e8a\'" onmouseout="this.style.borderColor=\'#2a2a3a\'">';
+    html += '<div style="color:#c96e8a; font-weight:600; margin-bottom:8px;">Completion B</div>';
     html += '<div style="color:#ccc; font-size:0.9em; line-height:1.6; white-space:pre-wrap;">' + pair.b + '</div>';
     html += '</div>';
 
@@ -948,7 +836,7 @@ function drawRewardModel() {
   ctx.clearRect(0, 0, W, H);
 
   // Title
-  ctx.fillStyle = '#f368e0';
+  ctx.fillStyle = '#c96e8a';
   ctx.font = 'bold 14px Inter, sans-serif';
   ctx.textAlign = 'left';
   ctx.fillText('Reward Model Training' + (rmState.flipped ? ' [LABELS FLIPPED!]' : ''), 20, 25);
@@ -958,7 +846,7 @@ function drawRewardModel() {
 
   // Left side: loss curve
   var lx = 20, ly = 60, lw = 350, lh = 180;
-  ctx.strokeStyle = '#2a2a4a';
+  ctx.strokeStyle = '#2a2a3a';
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(lx, ly); ctx.lineTo(lx, ly + lh); ctx.lineTo(lx + lw, ly + lh);
@@ -987,7 +875,7 @@ function drawRewardModel() {
 
   // Loss curve
   if (rmState.losses.length > 1) {
-    ctx.strokeStyle = '#f368e0';
+    ctx.strokeStyle = '#c96e8a';
     ctx.lineWidth = 2;
     ctx.beginPath();
     for (var i = 0; i < rmState.losses.length; i++) {
@@ -1134,7 +1022,7 @@ function drawPPO() {
   ctx.clearRect(0, 0, W, H);
 
   // Title
-  ctx.fillStyle = '#f368e0';
+  ctx.fillStyle = '#c96e8a';
   ctx.font = 'bold 14px Inter, sans-serif';
   ctx.textAlign = 'left';
   var titleSuffix = ppoState.noKL ? ' [NO KL PENALTY!]' : ppoState.highKL ? ' [EXTREME KL!]' : '';
@@ -1148,7 +1036,7 @@ function drawPPO() {
 
   // Left chart: Reward
   var lx = 40, ly = 70;
-  ctx.strokeStyle = '#2a2a4a'; ctx.lineWidth = 1;
+  ctx.strokeStyle = '#2a2a3a'; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(lx, ly + chartH); ctx.lineTo(lx + chartW, ly + chartH); ctx.stroke();
   ctx.fillStyle = '#aaa'; ctx.font = 'bold 11px Inter, sans-serif'; ctx.textAlign = 'left';
   ctx.fillText('Reward Score', lx, ly - 8);
@@ -1173,7 +1061,7 @@ function drawPPO() {
 
   // Right chart: KL Divergence
   var rx = 490;
-  ctx.strokeStyle = '#2a2a4a'; ctx.lineWidth = 1;
+  ctx.strokeStyle = '#2a2a3a'; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(rx, ly); ctx.lineTo(rx, ly + chartH); ctx.lineTo(rx + chartW, ly + chartH); ctx.stroke();
   ctx.fillStyle = '#aaa'; ctx.font = 'bold 11px Inter, sans-serif'; ctx.textAlign = 'left';
   ctx.fillText('KL Divergence from Reference', rx, ly - 8);
@@ -1186,7 +1074,7 @@ function drawPPO() {
   }
 
   if (ppoState.kls.length > 1) {
-    ctx.strokeStyle = '#ff6b6b'; ctx.lineWidth = 2; ctx.beginPath();
+    ctx.strokeStyle = '#c96e8a'; ctx.lineWidth = 2; ctx.beginPath();
     for (var i = 0; i < ppoState.kls.length; i++) {
       var xx = rx + (i / 200) * chartW;
       var yy = ly + chartH - (ppoState.kls[i] / 20) * chartH;
@@ -1202,9 +1090,9 @@ function drawPPO() {
   ctx.fillText('PPO Training Loop', W / 2, by);
 
   var steps = [
-    { label: 'Policy\ngenerates', x: 120, color: '#f368e0' },
-    { label: 'Reward model\nscores', x: 310, color: '#ffd93d' },
-    { label: 'Compute\nadvantage', x: 500, color: '#4ecdc4' },
+    { label: 'Policy\ngenerates', x: 120, color: '#c96e8a' },
+    { label: 'Reward model\nscores', x: 310, color: '#e0c992' },
+    { label: 'Compute\nadvantage', x: 500, color: '#6ea5c9' },
     { label: 'PPO update\n(clipped)', x: 690, color: '#2ecc71' }
   ];
 
@@ -1213,7 +1101,7 @@ function drawPPO() {
 
   steps.forEach(function(s, i) {
     roundRect(ctx, s.x - stepW / 2, stepY, stepW, stepH, 8);
-    ctx.fillStyle = '#12121f'; ctx.fill();
+    ctx.fillStyle = '#111118'; ctx.fill();
     ctx.strokeStyle = s.color; ctx.lineWidth = 2; ctx.stroke();
     ctx.fillStyle = s.color; ctx.font = '11px Inter, sans-serif'; ctx.textAlign = 'center';
     var lines = s.label.split('\n');
@@ -1222,21 +1110,21 @@ function drawPPO() {
     });
 
     if (i < steps.length - 1) {
-      drawArrow(ctx, s.x + stepW / 2 + 4, stepY + stepH / 2, steps[i + 1].x - stepW / 2 - 4, stepY + stepH / 2, '#3a3a6a');
+      drawArrow(ctx, s.x + stepW / 2 + 4, stepY + stepH / 2, steps[i + 1].x - stepW / 2 - 4, stepY + stepH / 2, '#2a2a3a');
     }
   });
 
   // KL penalty annotation
   var klY = stepY + stepH + 25;
   roundRect(ctx, W / 2 - 100, klY, 200, 35, 8);
-  ctx.fillStyle = '#1a1a2e'; ctx.fill();
-  ctx.strokeStyle = '#ff6b6b88'; ctx.lineWidth = 1; ctx.stroke();
-  ctx.fillStyle = '#ff6b6b'; ctx.font = '11px Inter, sans-serif'; ctx.textAlign = 'center';
+  ctx.fillStyle = '#111118'; ctx.fill();
+  ctx.strokeStyle = '#c96e8a88'; ctx.lineWidth = 1; ctx.stroke();
+  ctx.fillStyle = '#c96e8a'; ctx.font = '11px Inter, sans-serif'; ctx.textAlign = 'center';
   ctx.fillText('KL Penalty: beta = ' + ppoState.beta.toFixed(2), W / 2, klY + 21);
-  drawArrow(ctx, W / 2, klY, W / 2, stepY + stepH + 2, '#ff6b6b44');
+  drawArrow(ctx, W / 2, klY, W / 2, stepY + stepH + 2, '#c96e8a44');
 
   // Loop arrow (back from last to first)
-  ctx.strokeStyle = '#3a3a6a'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+  ctx.strokeStyle = '#2a2a3a'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
   ctx.beginPath();
   ctx.moveTo(steps[3].x + stepW / 2, stepY + stepH);
   ctx.lineTo(steps[3].x + stepW / 2 + 20, stepY + stepH + 45);
@@ -1250,7 +1138,7 @@ function drawPPO() {
   // Quality indicator
   if (ppoState.qualities.length > 0) {
     var lastQ = ppoState.qualities[ppoState.qualities.length - 1];
-    var qColor = lastQ > 5 ? '#2ecc71' : lastQ > 2 ? '#ffd93d' : '#e74c3c';
+    var qColor = lastQ > 5 ? '#2ecc71' : lastQ > 2 ? '#e0c992' : '#e74c3c';
     ctx.fillStyle = qColor;
     ctx.font = 'bold 13px Inter, sans-serif';
     ctx.textAlign = 'center';
@@ -1345,7 +1233,7 @@ function drawDPO() {
   ctx.clearRect(0, 0, W, H);
 
   // Top: pipeline comparison
-  ctx.fillStyle = '#f368e0';
+  ctx.fillStyle = '#c96e8a';
   ctx.font = 'bold 14px Inter, sans-serif';
   ctx.textAlign = 'left';
   ctx.fillText('RLHF vs DPO Pipeline Comparison', 20, 25);
@@ -1356,10 +1244,10 @@ function drawDPO() {
   // RLHF pipeline (top row)
   var pipeY = 60, pipeH = 40, pipeGap = 10;
   var rlhfStages = [
-    { label: 'SFT Model', w: 110, color: '#4ecdc4' },
-    { label: 'Collect Prefs', w: 120, color: '#ffd93d' },
-    { label: 'Train RM', w: 110, color: '#ff6b6b' },
-    { label: 'PPO Loop', w: 110, color: '#f368e0' },
+    { label: 'SFT Model', w: 110, color: '#6ea5c9' },
+    { label: 'Collect Prefs', w: 120, color: '#e0c992' },
+    { label: 'Train RM', w: 110, color: '#c96e8a' },
+    { label: 'PPO Loop', w: 110, color: '#c96e8a' },
     { label: 'Aligned', w: 90, color: '#2ecc71' }
   ];
 
@@ -1369,12 +1257,12 @@ function drawDPO() {
   var px = 120;
   rlhfStages.forEach(function(s, i) {
     roundRect(ctx, px, pipeY - 12, s.w, pipeH, 6);
-    ctx.fillStyle = '#0d0d1a'; ctx.fill();
+    ctx.fillStyle = '#0d0d14'; ctx.fill();
     ctx.strokeStyle = s.color; ctx.lineWidth = 1.5; ctx.stroke();
     ctx.fillStyle = s.color; ctx.font = '10px Inter, sans-serif'; ctx.textAlign = 'center';
     ctx.fillText(s.label, px + s.w / 2, pipeY + 12);
     if (i < rlhfStages.length - 1) {
-      drawArrow(ctx, px + s.w + 2, pipeY + pipeH / 2 - 12, px + s.w + pipeGap - 2, pipeY + pipeH / 2 - 12, '#3a3a6a');
+      drawArrow(ctx, px + s.w + 2, pipeY + pipeH / 2 - 12, px + s.w + pipeGap - 2, pipeY + pipeH / 2 - 12, '#2a2a3a');
     }
     px += s.w + pipeGap;
   });
@@ -1382,9 +1270,9 @@ function drawDPO() {
   // DPO pipeline (bottom row)
   var dpoY = pipeY + 55;
   var dpoStages = [
-    { label: 'SFT Model', w: 110, color: '#4ecdc4' },
-    { label: 'Collect Prefs', w: 120, color: '#ffd93d' },
-    { label: 'DPO Loss (1 step!)', w: 200, color: '#f368e0' },
+    { label: 'SFT Model', w: 110, color: '#6ea5c9' },
+    { label: 'Collect Prefs', w: 120, color: '#e0c992' },
+    { label: 'DPO Loss (1 step!)', w: 200, color: '#c96e8a' },
     { label: 'Aligned', w: 90, color: '#2ecc71' }
   ];
 
@@ -1394,12 +1282,12 @@ function drawDPO() {
   px = 120;
   dpoStages.forEach(function(s, i) {
     roundRect(ctx, px, dpoY - 12, s.w, pipeH, 6);
-    ctx.fillStyle = '#0d0d1a'; ctx.fill();
+    ctx.fillStyle = '#0d0d14'; ctx.fill();
     ctx.strokeStyle = s.color; ctx.lineWidth = 1.5; ctx.stroke();
     ctx.fillStyle = s.color; ctx.font = '10px Inter, sans-serif'; ctx.textAlign = 'center';
     ctx.fillText(s.label, px + s.w / 2, dpoY + 12);
     if (i < dpoStages.length - 1) {
-      drawArrow(ctx, px + s.w + 2, dpoY + pipeH / 2 - 12, px + s.w + pipeGap - 2, dpoY + pipeH / 2 - 12, '#3a3a6a');
+      drawArrow(ctx, px + s.w + 2, dpoY + pipeH / 2 - 12, px + s.w + pipeGap - 2, dpoY + pipeH / 2 - 12, '#2a2a3a');
     }
     px += s.w + pipeGap;
   });
@@ -1412,7 +1300,7 @@ function drawDPO() {
 
   // Bottom: implicit reward margin chart
   var cy = 180, cw = 400, ch = 180, cx = 250;
-  ctx.strokeStyle = '#2a2a4a'; ctx.lineWidth = 1;
+  ctx.strokeStyle = '#2a2a3a'; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx, cy + ch); ctx.lineTo(cx + cw, cy + ch); ctx.stroke();
   ctx.fillStyle = '#aaa'; ctx.font = 'bold 11px Inter, sans-serif'; ctx.textAlign = 'left';
   ctx.fillText('Implicit Reward Margin (chosen - rejected)', cx, cy - 8);
@@ -1424,7 +1312,7 @@ function drawDPO() {
   }
 
   if (dpoState.margins.length > 1) {
-    ctx.strokeStyle = '#f368e0'; ctx.lineWidth = 2; ctx.beginPath();
+    ctx.strokeStyle = '#c96e8a'; ctx.lineWidth = 2; ctx.beginPath();
     for (var i = 0; i < dpoState.margins.length; i++) {
       var dpoMax = dpoState.overfit ? 300 : 100;
       var xx = cx + (i / dpoMax) * cw;
@@ -1439,7 +1327,7 @@ function drawDPO() {
   ctx.fillStyle = '#888'; ctx.font = '10px Inter, sans-serif'; ctx.textAlign = 'center';
   ctx.fillText('Training Step', cx + cw / 2, cy + ch + 15);
   if (dpoState.margins.length > 0) {
-    ctx.fillStyle = '#f368e0'; ctx.font = '12px monospace';
+    ctx.fillStyle = '#c96e8a'; ctx.font = '12px monospace';
     ctx.fillText('Current margin: ' + dpoState.margins[dpoState.margins.length - 1].toFixed(3), cx + cw / 2, cy + ch + 35);
   }
 }
@@ -1495,7 +1383,7 @@ function drawHacking() {
   var W = canvas.width, H = canvas.height;
   ctx.clearRect(0, 0, W, H);
 
-  ctx.fillStyle = '#f368e0';
+  ctx.fillStyle = '#c96e8a';
   ctx.font = 'bold 14px Inter, sans-serif';
   ctx.textAlign = 'left';
   ctx.fillText('Reward Hacking: Proxy vs Gold Reward' + (hackState.overopt ? ' [10x OVERTRAINING!]' : ''), 20, 25);
@@ -1504,7 +1392,7 @@ function drawHacking() {
 
   // Chart
   var cx = 60, cy = 70, cw = 500, ch = 220;
-  ctx.strokeStyle = '#2a2a4a'; ctx.lineWidth = 1;
+  ctx.strokeStyle = '#2a2a3a'; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx, cy + ch); ctx.lineTo(cx + cw, cy + ch); ctx.stroke();
 
   for (var i = 0; i <= 5; i++) {
@@ -1533,7 +1421,7 @@ function drawHacking() {
 
   // Gold reward line
   if (hackState.goldRewards.length > 1) {
-    ctx.strokeStyle = '#ffd93d'; ctx.lineWidth = 2; ctx.beginPath();
+    ctx.strokeStyle = '#e0c992'; ctx.lineWidth = 2; ctx.beginPath();
     for (var i = 0; i < hackState.goldRewards.length; i++) {
       var xx = cx + (i / maxSteps) * cw;
       var yy = cy + ch - (hackState.goldRewards[i] / 10) * ch;
@@ -1547,7 +1435,7 @@ function drawHacking() {
   ctx.fillStyle = '#2ecc71'; ctx.font = '12px Inter, sans-serif'; ctx.textAlign = 'left';
   ctx.fillRect(cx + cw + 30, cy + 10, 16, 3);
   ctx.fillText('Proxy Reward (RM score)', cx + cw + 52, cy + 16);
-  ctx.fillStyle = '#ffd93d';
+  ctx.fillStyle = '#e0c992';
   ctx.fillRect(cx + cw + 30, cy + 35, 16, 3);
   ctx.fillText('Gold Reward (human eval)', cx + cw + 52, cy + 41);
 
@@ -1558,14 +1446,14 @@ function drawHacking() {
 
   var failures = [
     { icon: 'V', label: 'Verbosity Hacking', desc: 'Longer = higher reward', color: '#e74c3c' },
-    { icon: 'S', label: 'Sycophancy', desc: 'Always agrees with user', color: '#ff6b6b' },
+    { icon: 'S', label: 'Sycophancy', desc: 'Always agrees with user', color: '#c96e8a' },
     { icon: 'D', label: 'Safety Washing', desc: 'Unnecessary disclaimers', color: '#ffa07a' }
   ];
 
   failures.forEach(function(f, i) {
     var yyy = fy + 20 + i * 55;
     roundRect(ctx, fx, yyy, 270, 45, 8);
-    ctx.fillStyle = '#0d0d1a'; ctx.fill();
+    ctx.fillStyle = '#0d0d14'; ctx.fill();
     ctx.strokeStyle = f.color + '66'; ctx.lineWidth = 1; ctx.stroke();
 
     // Icon circle
@@ -1588,10 +1476,10 @@ function drawHacking() {
     }
     var bx = cx + (bestIdx / maxSteps) * cw;
     var by = cy + ch - (bestVal / 10) * ch;
-    ctx.strokeStyle = '#ffd93d88'; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+    ctx.strokeStyle = '#e0c99288'; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
     ctx.beginPath(); ctx.moveTo(bx, cy); ctx.lineTo(bx, cy + ch); ctx.stroke();
     ctx.setLineDash([]);
-    ctx.fillStyle = '#ffd93d'; ctx.font = '10px Inter, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillStyle = '#e0c992'; ctx.font = '10px Inter, sans-serif'; ctx.textAlign = 'center';
     ctx.fillText('Optimal checkpoint', bx, cy - 4);
   }
 }
@@ -1658,10 +1546,10 @@ function drawPipeline() {
   ctx.clearRect(0, 0, W, H);
 
   var stages = [
-    { label: 'Pretrained LM', sub: 'Next-token prediction on internet text', params: '7B-70B params', compute: '~1000 GPU-days', color: '#4ecdc4', ref: 'Ch 6' },
-    { label: 'SFT (Supervised Fine-Tuning)', sub: 'Fine-tune on human demonstrations', params: '10k-100k examples', compute: '~10 GPU-hours', color: '#ffd93d', ref: '' },
-    { label: 'Reward Model Training', sub: 'Learn to score completions from preferences', params: '50k-200k pairs', compute: '~20 GPU-hours', color: '#ff6b6b', ref: '' },
-    { label: 'PPO / DPO Training', sub: 'Optimize policy against reward signal', params: 'beta=0.01-0.1', compute: '~50 GPU-hours', color: '#f368e0', ref: '' },
+    { label: 'Pretrained LM', sub: 'Next-token prediction on internet text', params: '7B-70B params', compute: '~1000 GPU-days', color: '#6ea5c9', ref: 'Ch 6' },
+    { label: 'SFT (Supervised Fine-Tuning)', sub: 'Fine-tune on human demonstrations', params: '10k-100k examples', compute: '~10 GPU-hours', color: '#e0c992', ref: '' },
+    { label: 'Reward Model Training', sub: 'Learn to score completions from preferences', params: '50k-200k pairs', compute: '~20 GPU-hours', color: '#c96e8a', ref: '' },
+    { label: 'PPO / DPO Training', sub: 'Optimize policy against reward signal', params: 'beta=0.01-0.1', compute: '~50 GPU-hours', color: '#c96e8a', ref: '' },
     { label: 'Aligned Model', sub: 'Helpful, harmless, honest', params: 'Same size as base', compute: 'Ready to deploy', color: '#2ecc71', ref: 'Ch 7: can distill' }
   ];
 
@@ -1676,9 +1564,9 @@ function drawPipeline() {
 
     // Box
     roundRect(ctx, startX, y, boxW, boxH, 10);
-    ctx.fillStyle = isActive ? '#1a1a3e' : '#0d0d1a';
+    ctx.fillStyle = isActive ? '#13131f' : '#0d0d14';
     ctx.fill();
-    ctx.strokeStyle = isCurrent ? s.color : (isActive ? s.color + '88' : '#2a2a4a');
+    ctx.strokeStyle = isCurrent ? s.color : (isActive ? s.color + '88' : '#2a2a3a');
     ctx.lineWidth = isCurrent ? 3 : 1.5;
     ctx.stroke();
 
@@ -1709,7 +1597,7 @@ function drawPipeline() {
 
     // Left: ref
     if (s.ref) {
-      ctx.fillStyle = '#01a3a488';
+      ctx.fillStyle = '#a0855088';
       ctx.font = '10px Inter, sans-serif';
       ctx.textAlign = 'right';
       ctx.fillText(s.ref, startX - 12, y + 30);
@@ -1718,7 +1606,7 @@ function drawPipeline() {
     // Arrow
     if (i < stages.length - 1) {
       var ay = y + boxH + 2;
-      ctx.fillStyle = isActive ? s.color + '88' : '#2a2a4a';
+      ctx.fillStyle = isActive ? s.color + '88' : '#2a2a3a';
       ctx.beginPath();
       ctx.moveTo(startX + boxW / 2, ay);
       ctx.lineTo(startX + boxW / 2 - 6, ay + gap - 4);
@@ -1762,15 +1650,15 @@ function drawCAI() {
   var W = canvas.width, H = canvas.height;
   ctx.clearRect(0, 0, W, H);
 
-  ctx.fillStyle = '#f368e0';
+  ctx.fillStyle = '#c96e8a';
   ctx.font = 'bold 14px Inter, sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText('Constitutional AI: Self-Critique Loop', W / 2, 25);
 
   var steps = [
-    { label: 'Generate', desc: 'Model produces initial response', icon: 'G', color: '#4ecdc4' },
-    { label: 'Critique', desc: 'Model critiques its own response\nagainst constitutional principles', icon: 'C', color: '#ffd93d' },
-    { label: 'Revise', desc: 'Model revises based on critique', icon: 'R', color: '#f368e0' },
+    { label: 'Generate', desc: 'Model produces initial response', icon: 'G', color: '#6ea5c9' },
+    { label: 'Critique', desc: 'Model critiques its own response\nagainst constitutional principles', icon: 'C', color: '#e0c992' },
+    { label: 'Revise', desc: 'Model revises based on critique', icon: 'R', color: '#c96e8a' },
     { label: 'Rate', desc: 'Revised = chosen, original = rejected\nUse as preference data', icon: 'P', color: '#2ecc71' }
   ];
 
@@ -1787,9 +1675,9 @@ function drawCAI() {
     // Circle node
     ctx.beginPath();
     ctx.arc(x, y, 40, 0, Math.PI * 2);
-    ctx.fillStyle = isActive ? s.color + '33' : '#0d0d1a';
+    ctx.fillStyle = isActive ? s.color + '33' : '#0d0d14';
     ctx.fill();
-    ctx.strokeStyle = isCurrent ? s.color : (isActive ? s.color + '88' : '#2a2a4a');
+    ctx.strokeStyle = isCurrent ? s.color : (isActive ? s.color + '88' : '#2a2a3a');
     ctx.lineWidth = isCurrent ? 3 : 1.5;
     ctx.stroke();
 
@@ -1831,7 +1719,7 @@ function drawCAI() {
       var dx = nx - x, dy = ny - y;
       var dist = Math.sqrt(dx * dx + dy * dy);
       var ux = dx / dist, uy = dy / dist;
-      drawArrow(ctx, x + ux * 44, y + uy * 44, nx - ux * 44, ny - uy * 44, isActive ? s.color + '88' : '#2a2a4a');
+      drawArrow(ctx, x + ux * 44, y + uy * 44, nx - ux * 44, ny - uy * 44, isActive ? s.color + '88' : '#2a2a3a');
     }
   });
 
@@ -1844,13 +1732,13 @@ function drawCAI() {
   var fy = centerY + radius * Math.sin(firstAngle);
   var ldx = fx - lx, ldy = fy - ly;
   var ldist = Math.sqrt(ldx * ldx + ldy * ldy);
-  drawArrow(ctx, lx + (ldx / ldist) * 44, ly + (ldy / ldist) * 44, fx - (ldx / ldist) * 44, fy - (ldy / ldist) * 44, caiState.step >= 3 ? '#2ecc7188' : '#2a2a4a');
+  drawArrow(ctx, lx + (ldx / ldist) * 44, ly + (ldy / ldist) * 44, fx - (ldx / ldist) * 44, fy - (ldy / ldist) * 44, caiState.step >= 3 ? '#2ecc7188' : '#2a2a3a');
 
   // Constitution principles box
   roundRect(ctx, 20, H - 80, W - 40, 65, 10);
-  ctx.fillStyle = '#0d0d1a'; ctx.fill();
-  ctx.strokeStyle = '#f368e044'; ctx.lineWidth = 1; ctx.stroke();
-  ctx.fillStyle = '#f368e0'; ctx.font = 'bold 11px Inter, sans-serif'; ctx.textAlign = 'left';
+  ctx.fillStyle = '#0d0d14'; ctx.fill();
+  ctx.strokeStyle = '#c96e8a44'; ctx.lineWidth = 1; ctx.stroke();
+  ctx.fillStyle = '#c96e8a'; ctx.font = 'bold 11px Inter, sans-serif'; ctx.textAlign = 'left';
   ctx.fillText('Constitution (Example Principles):', 35, H - 58);
   ctx.fillStyle = '#aaa'; ctx.font = '10px Inter, sans-serif';
   ctx.fillText('1. "Choose the response that is most helpful while being harmless and honest."', 35, H - 42);

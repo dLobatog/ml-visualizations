@@ -11,6 +11,16 @@
 (function() {
   'use strict';
 
+  function parseFontSize(font) {
+    var match = /(\d+(?:\.\d+)?)px/.exec(font || '');
+    return match ? parseFloat(match[1]) : null;
+  }
+
+  function replaceFontSize(font, nextSize) {
+    if (!font) return font;
+    return font.replace(/(\d+(?:\.\d+)?)px/, String(Math.max(10, Math.round(nextSize * 10) / 10)).replace(/\.0$/, '') + 'px');
+  }
+
   // 1. Patch getContext to auto-set lineCap and lineJoin
   var origGetContext = HTMLCanvasElement.prototype.getContext;
   HTMLCanvasElement.prototype.getContext = function(type, attrs) {
@@ -18,6 +28,7 @@
     if (type === '2d' && ctx && !ctx._polished) {
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
+      ctx.imageSmoothingEnabled = true;
       ctx._polished = true;
     }
     return ctx;
@@ -81,6 +92,67 @@
       origFill.call(this, pathOrRule);
     } else {
       origFill.call(this);
+    }
+  };
+
+  // 4. Patch fillText/strokeText to soften dense annotation copy.
+  // Long explanatory sentences inside canvases should read as secondary
+  // support text, not compete with the main visual structure.
+  var origFillText = CanvasRenderingContext2D.prototype.fillText;
+  CanvasRenderingContext2D.prototype.fillText = function(text, x, y, maxWidth) {
+    var savedFont = this.font;
+    var savedAlpha = this.globalAlpha;
+    var modified = false;
+
+    if (typeof text === 'string') {
+      var fontSize = parseFontSize(savedFont);
+      var isDenseAnnotation = (text.length >= 48 || (text.length >= 36 && /[:|]/.test(text))) && fontSize && fontSize <= 15;
+      var isVeryDenseAnnotation = text.length >= 82 && fontSize && fontSize <= 14;
+
+      if (isDenseAnnotation) {
+        this.globalAlpha = savedAlpha * 0.84;
+        modified = true;
+      }
+
+      if (isVeryDenseAnnotation) {
+        this.font = replaceFontSize(savedFont, fontSize * 0.92);
+        modified = true;
+      }
+    }
+
+    if (maxWidth !== undefined) {
+      origFillText.call(this, text, x, y, maxWidth);
+    } else {
+      origFillText.call(this, text, x, y);
+    }
+
+    if (modified) {
+      this.font = savedFont;
+      this.globalAlpha = savedAlpha;
+    }
+  };
+
+  var origStrokeText = CanvasRenderingContext2D.prototype.strokeText;
+  CanvasRenderingContext2D.prototype.strokeText = function(text, x, y, maxWidth) {
+    var savedFont = this.font;
+    var modified = false;
+
+    if (typeof text === 'string') {
+      var fontSize = parseFontSize(savedFont);
+      if (text.length >= 82 && fontSize && fontSize <= 14) {
+        this.font = replaceFontSize(savedFont, fontSize * 0.92);
+        modified = true;
+      }
+    }
+
+    if (maxWidth !== undefined) {
+      origStrokeText.call(this, text, x, y, maxWidth);
+    } else {
+      origStrokeText.call(this, text, x, y);
+    }
+
+    if (modified) {
+      this.font = savedFont;
     }
   };
 

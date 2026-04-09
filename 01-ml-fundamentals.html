@@ -5,162 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>1. ML Fundamentals — Interactive Visualizations</title>
 <script src="static/canvas-polish.js"></script>
+<link rel="stylesheet" href="theme.css">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #0a0a0f; color: #e0e0e0; line-height: 1.6; }
-  .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; text-align: center; border-bottom: 1px solid #2a2a4a; }
-  .header h1 { font-size: 2.2em; background: linear-gradient(90deg, #64ffda, #7c4dff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
-  .header p { color: #888; font-size: 1.1em; }
-  .header a { color: #64ffda; text-decoration: none; font-size: 0.9em; }
-  .header a:hover { text-decoration: underline; }
-  .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
-  .viz-section { background: #12121f; border: 1px solid #2a2a4a; border-radius: 16px; padding: 32px; margin-bottom: 40px; }
-  .viz-section h2 { font-size: 1.5em; color: #64ffda; margin-bottom: 8px; }
-  .viz-section .subtitle { color: #888; margin-bottom: 24px; font-size: 0.95em; }
-  .viz-canvas { background: #0d0d1a; border-radius: 12px; position: relative; overflow: hidden; }
-  canvas { display: block; margin: 0 auto; }
-  .controls { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; align-items: center; }
-  .control-group { display: flex; flex-direction: column; gap: 4px; }
-  .control-group label { font-size: 0.85em; color: #aaa; }
-  .control-group input[type="range"] { width: 200px; accent-color: #64ffda; }
-  .control-group .value { font-size: 0.85em; color: #64ffda; font-family: monospace; }
-  .legend { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
-  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.85em; color: #ccc; }
-  .legend-dot { width: 12px; height: 12px; border-radius: 50%; }
-  .btn { padding: 8px 16px; border: 1px solid #64ffda; background: transparent; color: #64ffda; border-radius: 8px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
-  .btn:hover { background: #64ffda22; }
-  .btn.active { background: #64ffda33; }
-  .tab-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
-
-  .insight-box { background: linear-gradient(135deg, #1a1a3e 0%, #151530 100%); border-left: 4px solid #64ffda; padding: 20px 24px; margin-top: 20px; border-radius: 0 12px 12px 0; font-size: 0.92em; color: #ccc; line-height: 1.8; }
-  .insight-box strong { color: #64ffda; font-size: 1.05em; }
-  .insight-box .formula { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 12px 18px; margin: 12px 0; font-family: 'Courier New', monospace; color: #e8e8ff; font-size: 1.05em; text-align: center; letter-spacing: 0.5px; line-height: 1.9; }
-  .insight-box .formula .highlight { color: #64ffda; font-weight: bold; }
-  .insight-box .key-point { display: flex; flex-wrap: wrap; gap: 4px 8px; margin: 8px 0; padding: 4px 0; align-items: baseline; }
-  .insight-box .key-point .label { color: #64ffda; font-weight: 600; min-width: 160px; flex-shrink: 0; }
-  .insight-box .key-point .desc { color: #ddd; }
-  .insight-box .interview-tip { background: rgba(100, 255, 100, 0.05); border: 1px solid rgba(100, 255, 100, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #b0ffb0; font-size: 0.93em; line-height: 1.6; }
-  .insight-box .interview-tip::before { content: '\1F4A1  Interview Tip: '; font-weight: 700; color: #7fff7f; }
-  .insight-box .mnemonic { background: rgba(255, 150, 255, 0.05); border: 1px solid rgba(255, 150, 255, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #ffb0ff; font-size: 0.93em; line-height: 1.6; }
-  .insight-box .mnemonic::before { content: '\1F9E0  Remember: '; font-weight: 700; color: #ff7fff; }
-  .insight-box .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
-  .insight-box .comparison .option { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 10px 14px; }
-  .insight-box .comparison .option .opt-title { color: #64ffda; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
-  .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
-  .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
-
-  .katex { color: #e8e8ff; font-size: 1.1em; }
-  .formula .katex { font-size: 1.2em; }
-
-#quizToggle{position:fixed;top:20px;right:20px;z-index:1000;padding:12px 20px;background:#64ffda;color:#0a0a0f;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:1em;box-shadow:0 4px 15px rgba(0,0,0,0.3);transition:transform 0.2s}
-#quizToggle:hover{transform:scale(1.05)}
-#quizSection{background:#0a0a0f;border-top:2px solid #64ffda;padding:40px 20px;margin-top:40px}
-.quiz-container{max-width:900px;margin:0 auto}
-.quiz-topic{margin-bottom:30px}
-.quiz-topic-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:10px;cursor:pointer;margin-bottom:12px;user-select:none}
-.quiz-topic-header h3{color:#64ffda;margin:0;font-size:1.15em}
-.quiz-topic-header:hover{background:#1f1f3a}
-.quiz-topic-score{color:#888;font-size:0.95em}
-.quiz-topic-questions{display:none}
-.quiz-topic-questions.open{display:block}
-.quiz-question{background:#12121f;border:1px solid #2a2a4a;border-radius:12px;padding:24px;margin-bottom:16px}
-.quiz-question h4{color:#e0e0e0;margin-bottom:16px;font-size:1.05em;line-height:1.5}
-.quiz-option{display:block;width:100%;padding:12px 16px;margin:8px 0;background:#0d0d1a;border:1px solid #2a2a4a;border-radius:8px;color:#e0e0e0;cursor:pointer;text-align:left;font-size:0.95em;transition:all 0.2s;font-family:inherit}
-.quiz-option:hover:not(:disabled){border-color:#64ffda;background:#1a1a3e}
-.quiz-option.correct{background:#1a3a2a !important;border-color:#2ecc71 !important;color:#2ecc71 !important}
-.quiz-option.wrong{background:#3a1a1a !important;border-color:#e74c3c !important;color:#e74c3c !important}
-.quiz-option.reveal{border-color:#2ecc71 !important;color:#2ecc71 !important}
-.quiz-option:disabled{cursor:default}
-.quiz-explanation{margin-top:12px;padding:14px 18px;border-radius:8px;font-size:0.93em;line-height:1.6;display:none}
-.quiz-explanation.show{display:block}
-.quiz-explanation.correct-exp{border-left:4px solid #2ecc71;background:rgba(46,204,113,0.08);color:#b0ffb0}
-.quiz-explanation.wrong-exp{border-left:4px solid #e74c3c;background:rgba(231,76,60,0.08);color:#ffb0b0}
-.quiz-score{text-align:center;font-size:1.5em;color:#64ffda;margin-bottom:30px}
-.quiz-actions{text-align:center;margin-top:30px;margin-bottom:20px}
-.quiz-actions button{padding:10px 24px;margin:0 8px;border-radius:8px;border:1px solid #64ffda;background:transparent;color:#64ffda;cursor:pointer;font-size:1em}
-.quiz-actions button:hover{background:rgba(100,255,218,0.1)}
-.quiz-progress{height:4px;background:#1a1a2e;border-radius:2px;margin-bottom:20px;overflow:hidden}
-.quiz-progress-bar{height:100%;background:#64ffda;border-radius:2px;transition:width 0.3s}
-
-  .code-example { margin-top: 12px; border: 1px solid #2a2a4a; border-radius: 8px; overflow: hidden; }
-  .code-toggle { width: 100%; background: #1a1a2e; color: #64ffda; border: none; padding: 10px 16px; text-align: left; cursor: pointer; font-size: 0.9em; font-weight: 600; display: flex; align-items: center; gap: 8px; }
-  .code-toggle:hover { background: #22223a; }
-  .code-toggle-icon { display: inline-block; transition: transform 0.2s; font-size: 0.7em; }
-  .code-example.open .code-toggle-icon { transform: rotate(90deg); }
-  .code-content { display: none; padding: 14px 16px; background: #0a0a14; }
-  .code-example.open .code-content { display: block; }
-  .code-content pre { margin: 0; overflow-x: auto; white-space: pre; }
-  .code-content code { color: #e0e0e0; font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.82em; line-height: 1.6; }
-  .code-content .code-note { color: #888; font-size: 0.82em; margin-top: 8px; font-style: italic; }
-  .code-content pre[class*="language-"], .code-content code[class*="language-"] { background: #0a0a14; font-size: 0.82em; line-height: 1.6; margin: 0; padding: 0; text-shadow: none; }
-  pre[class*="language-"]::selection, code[class*="language-"]::selection { background: #333; }
-
-  .study-guide { background: linear-gradient(135deg, rgba(100,255,218,0.08) 0%, rgba(124,77,255,0.08) 100%); border: 1px solid rgba(100,255,218,0.18); border-radius: 16px; padding: 22px 24px; margin-bottom: 28px; }
-  .study-guide h2 { font-size: 1.15em; color: #64ffda; margin-bottom: 8px; }
-  .study-guide p { color: #ccd3df; font-size: 0.95em; margin-bottom: 12px; }
-  .study-guide-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-  .study-guide-card { background: rgba(10,10,20,0.75); border: 1px solid #2a2a4a; border-radius: 12px; padding: 14px 16px; }
-  .study-guide-card strong { display: block; color: #64ffda; margin-bottom: 6px; }
-  .study-guide-card span { color: #aeb8c8; font-size: 0.9em; }
-
-  .learning-strip { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
-  .learning-pill { padding: 5px 10px; border-radius: 999px; font-size: 0.76em; font-weight: 700; letter-spacing: 0.02em; border: 1px solid #2f3e63; color: #cfd8eb; background: #151a2b; }
-  .learning-pill--core { color: #64ffda; border-color: rgba(100,255,218,0.25); background: rgba(100,255,218,0.08); }
-  .learning-pill--trap { color: #ffd93d; border-color: rgba(255,217,61,0.22); background: rgba(255,217,61,0.08); }
-  .learning-pill--practice { color: #ff9ff3; border-color: rgba(255,159,243,0.22); background: rgba(255,159,243,0.08); }
-  .goal-note { color: #d7dfeb; font-size: 0.94em; margin: -4px 0 14px; line-height: 1.65; }
-
-  .mission-box { margin-top: 18px; background: #101625; border: 1px solid #2d3d62; border-radius: 14px; padding: 18px 20px; }
-  .mission-label { display: inline-block; font-size: 0.72em; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: #64ffda; margin-bottom: 10px; }
-  .mission-box p { color: #d6deea; font-size: 0.93em; margin-bottom: 10px; }
-  .mission-list { margin: 0; padding-left: 18px; color: #c2cbdb; font-size: 0.92em; }
-  .mission-list li { margin-bottom: 6px; }
-  .mission-feedback { margin-top: 14px; padding: 12px 14px; border-radius: 10px; background: rgba(100,255,218,0.06); border: 1px solid rgba(100,255,218,0.18); color: #d8fff6; font-size: 0.92em; line-height: 1.6; }
-
-  .teaching-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 18px; }
-  .teaching-card { background: #0e1220; border: 1px solid #2a2a4a; border-radius: 14px; padding: 16px 18px; }
-  .teaching-card h3 { font-size: 0.96em; color: #64ffda; margin-bottom: 8px; }
-  .teaching-card p { color: #bcc6d6; font-size: 0.9em; line-height: 1.65; }
-
-  .inline-check { margin-top: 18px; background: #0f1322; border: 1px solid #30415f; border-radius: 14px; padding: 18px 20px; }
-  .inline-check-label { display: inline-block; font-size: 0.72em; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: #ffd93d; margin-bottom: 8px; }
-  .inline-check h3 { font-size: 1em; color: #f4f7fb; margin-bottom: 12px; }
-  .inline-check-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-  .inline-check-btn { border: 1px solid #2f3e63; background: #151c2f; color: #dbe6f8; border-radius: 10px; padding: 12px 14px; text-align: left; font-size: 0.9em; cursor: pointer; transition: all 0.2s; }
-  .inline-check-btn:hover:not(:disabled) { border-color: #64ffda; background: #1a2238; }
-  .inline-check-btn.correct { border-color: #2ecc71; background: rgba(46,204,113,0.12); color: #c8ffd9; }
-  .inline-check-btn.wrong { border-color: #ff6b6b; background: rgba(255,107,107,0.12); color: #ffd4d4; }
-  .inline-check-btn.reveal { border-color: #2ecc71; color: #9cffbf; }
-  .inline-check-feedback { display: none; margin-top: 12px; padding: 12px 14px; border-radius: 10px; border-left: 4px solid #64ffda; background: rgba(100,255,218,0.08); color: #dcf8f2; font-size: 0.92em; line-height: 1.6; }
-  .inline-check-feedback.show { display: block; }
-
-  .section-links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
-  .section-link { color: #8fdcff; text-decoration: none; font-size: 0.88em; border-bottom: 1px solid rgba(143,220,255,0.4); }
-  .section-link:hover { color: #c2efff; border-bottom-color: rgba(194,239,255,0.8); }
-
-  @media (max-width: 900px) {
-    .study-guide-grid, .teaching-grid, .inline-check-options { grid-template-columns: 1fr; }
-  }
-
-  /* Mobile responsive */
-  canvas { max-width: 100%; height: auto; }
-  @media (max-width: 768px) {
-    .container { padding: 16px 10px; }
-    .viz-section { padding: 16px 12px; }
-    h2 { font-size: 1.2em; }
-    .subtitle { font-size: 0.85em; }
-    .controls { gap: 8px; }
-    .control-group { min-width: 120px; flex: 1 1 auto; }
-    .tab-bar { flex-wrap: wrap; gap: 4px; }
-    .tab-bar .btn { font-size: 0.75em; padding: 6px 10px; }
-    .insight-box { padding: 14px; font-size: 0.9em; }
-    .comparison { grid-template-columns: 1fr !important; }
-    .formula { font-size: 0.85em; overflow-x: auto; }
-    .code-content pre { font-size: 0.78em; }
-    .interview-tip { font-size: 0.85em; padding: 10px; }
-    .metric-box { font-size: 0.82em; }
-  }
-
+  .header h1 { background: linear-gradient(90deg, var(--gold), var(--blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .viz-section h2 { color: var(--gold); }
+  .control-group .value { color: var(--gold); }
+  .control-group input[type="range"] { accent-color: var(--gold); }
+  .btn.active { border-color: var(--gold); color: var(--gold); }
+  .btn:hover { border-color: var(--gold); color: var(--gold); }
+  .insight-box { border-left-color: rgba(var(--gold-rgb), 0.3); }
+  .insight-box strong { color: var(--gold); }
+  .insight-box .formula .highlight { color: var(--gold); }
+  .insight-box .key-point .label { color: var(--gold); }
+  .card::before { background: var(--gold); }
+  #quizToggle { background: var(--bg2); color: var(--fg-dim); border: 1px solid var(--border-hover); }
+  #quizToggle:hover { border-color: var(--gold); color: var(--gold); }
+  #quizSection { border-top-color: rgba(var(--gold-rgb), 0.2); }
 </style>
 <link rel="stylesheet" href="static/learning-tools.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
@@ -204,7 +64,12 @@
 <!-- 1. BAYES THEOREM -->
 <div class="viz-section">
   <h2>Bayes Theorem: Disease Testing</h2>
-  <p class="subtitle">Goal: understand why a positive test result can still imply low absolute risk. This section is not about memorizing the formula alone; it is about seeing when the base rate dominates your intuition.</p>
+  <p class="subtitle">Goal: understand why a positive test can still mean low actual risk when the underlying event is rare.</p>
+  <div class="concept-primer">
+    <div class="concept-label">What This Is</div>
+    <p><strong>Bayes’ theorem</strong> tells you how to update a belief after seeing evidence. You start with a prior belief, then revise it using how compatible the evidence is with the hypothesis.</p>
+    <p>The classic trap is to confuse <strong>test accuracy</strong> with <strong>posterior probability</strong>. A positive test can still mean modest risk if the condition itself is rare.</p>
+  </div>
   <div class="learning-strip">
     <span class="learning-pill learning-pill--core">Core Interview Concept</span>
     <span class="learning-pill learning-pill--trap">Trap: confusing accuracy with posterior</span>
@@ -267,7 +132,7 @@
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Bayes Theorem is the foundation of probabilistic inference.
-    <div class="formula">$$P(A|B) = \frac{\color{#64ffda}{P(B|A) \cdot P(A)}}{P(B)}$$</div>
+    <div class="formula">$$P(A|B) = \frac{\color{#c9a96e}{P(B|A) \cdot P(A)}}{P(B)}$$</div>
     <div class="key-point">
       <span class="label">Posterior:</span>
       <span class="desc">\(P(A|B)\) - updated belief after observing evidence</span>
@@ -285,22 +150,22 @@
       <span class="desc">\(P(B)\) - total probability of observing data (normalizer)</span>
     </div>
     <hr class="divider">
-    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
     <div class="comparison" style="grid-template-columns: 1fr 1fr 1fr; margin-top: 10px;">
       <div class="option">
-        <div class="opt-title" style="color: #64ffda;">Medical / Anomaly Detection</div>
+        <div class="opt-title" style="color: #c9a96e;">Medical / Anomaly Detection</div>
         <div class="opt-desc">When base rates matter and false positives are costly. Bayes lets you update disease probability after a test result.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Disease screening (COVID tests), fraud detection with rare events, spam filtering with prior spam rates.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Disease screening (COVID tests), fraud detection with rare events, spam filtering with prior spam rates.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #4ecdc4;">Bayesian Inference</div>
+        <div class="opt-title" style="color: #6ea5c9;">Bayesian Inference</div>
         <div class="opt-desc">When you have prior domain knowledge and want to incorporate it with observed data. Essential when data is limited.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> A/B testing with informative priors, Bayesian neural networks for uncertainty, clinical trials with historical data.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> A/B testing with informative priors, Bayesian neural networks for uncertainty, clinical trials with historical data.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #ffd93d;">Naive Bayes Classifier</div>
+        <div class="opt-title" style="color: #e0c992;">Naive Bayes Classifier</div>
         <div class="opt-desc">Fast, simple baseline for classification. Assumes feature independence (often violated but still works well in practice).</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Text classification (spam, sentiment), document categorization, real-time predictions needing low latency.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Text classification (spam, sentiment), document categorization, real-time predictions needing low latency.</div>
       </div>
     </div>
     <hr class="divider">
@@ -310,7 +175,7 @@
       <span class="label">ML Connection:</span>
       <span class="desc">L2 regularization \(\lambda\|w\|^2\) = log Gaussian prior on weights. Regularization = MAP with Gaussian prior.</span>
     </div>
-    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set Prior=1%, Sensitivity=99%, Specificity=99%. The posterior is ~50%, not 99%! Now increase Prior to 50% — the posterior jumps to 99%. Base rate is everything. Then reduce Sensitivity to 70% with Prior=1% — posterior drops below 10%.</div>
+    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Set Prior=1%, Sensitivity=99%, Specificity=99%. The posterior is ~50%, not 99%! Now increase Prior to 50% — the posterior jumps to 99%. Base rate is everything. Then reduce Sensitivity to 70% with Prior=1% — posterior drops below 10%.</div>
     <div class="code-example">
       <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
         <span class="code-toggle-icon">&#9654;</span> Framework Example: Bayes Theorem with NumPy
@@ -339,7 +204,12 @@ print(f"P(disease|positive) = {posterior:.3f}")  # ~0.500</code></pre>
 <!-- 2. COMMON DISTRIBUTIONS -->
 <div class="viz-section">
   <h2>Probability Distributions</h2>
-  <p class="subtitle">Goal: learn to match data types to the right distribution family. In interviews, the hard part is usually not the formula; it is choosing the right model for counts, waiting times, probabilities, or continuous measurements.</p>
+  <p class="subtitle">Goal: learn to match the kind of random quantity you have to the right probability distribution.</p>
+  <div class="concept-primer">
+    <div class="concept-label">What This Is</div>
+    <p><strong>A probability distribution</strong> describes what values a random variable tends to take and how likely those values are.</p>
+    <p>The main practical question is not “can I memorize the formula?” It is “what kind of thing am I modeling?” Counts, waiting times, binary events, probabilities, and continuous measurements usually need different families.</p>
+  </div>
   <div class="learning-strip">
     <span class="learning-pill learning-pill--core">Core Modeling Choice</span>
     <span class="learning-pill learning-pill--trap">Trap: “everything is Gaussian”</span>
@@ -428,26 +298,26 @@ print(f"P(disease|positive) = {posterior:.3f}")  # ~0.500</code></pre>
       <span class="desc">Conjugate prior to Binomial. Flexible shapes via \(\alpha, \beta\). Standard for Bayesian A/B tests.</span>
     </div>
     <hr class="divider">
-    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
     <div class="comparison" style="grid-template-columns: 1fr 1fr 1fr; margin-top: 10px;">
       <div class="option">
-        <div class="opt-title" style="color: #64ffda;">Gaussian / Normal</div>
+        <div class="opt-title" style="color: #c9a96e;">Gaussian / Normal</div>
         <div class="opt-desc">Default for continuous real-valued data. Justified by CLT for aggregates and sums. Use when data is symmetric around a mean.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Height/weight modeling, measurement errors, sensor noise, regression residuals, financial returns (approximately).</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Height/weight modeling, measurement errors, sensor noise, regression residuals, financial returns (approximately).</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #4ecdc4;">Poisson / Exponential</div>
+        <div class="opt-title" style="color: #6ea5c9;">Poisson / Exponential</div>
         <div class="opt-desc">Poisson for count data (events per time). Exponential for time between events. Both tied to rate parameter lambda.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Website clicks/hour, customer arrivals, server requests, time between failures, earthquake occurrences.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Website clicks/hour, customer arrivals, server requests, time between failures, earthquake occurrences.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #ffd93d;">Beta / Bernoulli</div>
+        <div class="opt-title" style="color: #e0c992;">Beta / Bernoulli</div>
         <div class="opt-desc">Bernoulli for binary outcomes. Beta as prior for probability parameters in Bayesian inference (conjugate to Binomial).</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Click-through rates (Beta), coin flips (Bernoulli), A/B test conversion rates (Beta posterior), churn prediction (Bernoulli).</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Click-through rates (Beta), coin flips (Bernoulli), A/B test conversion rates (Beta posterior), churn prediction (Bernoulli).</div>
       </div>
     </div>
     <hr class="divider">
-    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click Gaussian and drag Parameter to 0.1, then to 0.9 — watch spread change continuously. Then switch to Poisson with \(\lambda=1\), then \(\lambda=10\). The shape becomes less skewed as the expected count grows.</div>
+    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Click Gaussian and drag Parameter to 0.1, then to 0.9 — watch spread change continuously. Then switch to Poisson with \(\lambda=1\), then \(\lambda=10\). The shape becomes less skewed as the expected count grows.</div>
     <div class="interview-tip">When to use each? Poisson for counts, Gaussian for continuous data, Beta for probability parameters, Exponential for waiting times.</div>
     <div class="mnemonic">Binary→Bernoulli, Counts→Poisson, Continuous→Gaussian, Waiting times→Exponential, Probability parameters→Beta</div>
     <div class="code-example">
@@ -479,7 +349,12 @@ print(f"Poisson:  mean={poisson.mean():.2f}")</code></pre>
 <!-- 3. MLE vs MAP -->
 <div class="viz-section">
   <h2>MLE (Maximum Likelihood Estimation) vs MAP (Maximum A Posteriori): Coin Flips</h2>
-  <p class="subtitle">Goal: see regularization as Bayesian reasoning in disguise. The important lesson is not just “MAP uses a prior,” but why that matters most when data is scarce.</p>
+  <p class="subtitle">Goal: see the difference between trusting only the observed data and combining data with prior belief.</p>
+  <div class="concept-primer">
+    <div class="concept-label">What This Is</div>
+    <p><strong>MLE</strong> asks: “Which parameter makes the observed data most likely?” It uses only the data you saw.</p>
+    <p><strong>MAP</strong> asks the same question but also includes a prior belief about plausible parameter values. That makes it especially useful when data is scarce or noisy.</p>
+  </div>
   <div class="learning-strip">
     <span class="learning-pill learning-pill--core">Core Estimation Tradeoff</span>
     <span class="learning-pill learning-pill--trap">Trap: “more principled” means “always better”</span>
@@ -501,9 +376,9 @@ print(f"Poisson:  mean={poisson.mean():.2f}")</code></pre>
     </div>
   </div>
   <div class="legend">
-    <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>Likelihood</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#4ecdc4"></div>Posterior (MAP)</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#64ffda"></div>Prior</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#c96e8a"></div>Likelihood</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#6ea5c9"></div>Posterior (MAP)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#c9a96e"></div>Prior</div>
   </div>
   <div class="mission-box">
     <div class="mission-label">Mini-Lab</div>
@@ -546,7 +421,7 @@ print(f"Poisson:  mean={poisson.mean():.2f}")</code></pre>
     <div class="key-point"><span class="label">\(\theta\):</span><span class="desc">Model parameters to optimize (weights, means, variances, etc.). \(\theta^*\) is the optimal value.</span></div>
     <div class="key-point"><span class="label">\(\arg\max_{\theta}\):</span><span class="desc">Find the parameter value \(\theta\) that maximizes the expression—returns \(\theta\) not the maximum value</span></div>
     <div class="key-point"><span class="label">\(P(\text{data}|\theta)\):</span><span class="desc">Likelihood—probability of observing the data given parameters \(\theta\). Higher = better fit.</span></div>
-    <div class="formula">$$\text{MAP: } \theta^* = \arg\max_{\theta} \left[\log P(\text{data}|\theta) + \color{#64ffda}{\log P(\theta)}\right]$$</div>
+    <div class="formula">$$\text{MAP: } \theta^* = \arg\max_{\theta} \left[\log P(\text{data}|\theta) + \color{#c9a96e}{\log P(\theta)}\right]$$</div>
     <div class="key-point"><span class="label">\(P(\text{data}|\theta)\):</span><span class="desc">Likelihood—same as MLE, fits data well</span></div>
     <div class="key-point"><span class="label">\(P(\theta)\):</span><span class="desc">Prior—encodes domain belief about which \(\theta\) values are reasonable before seeing data</span></div>
     <div class="key-point"><span class="label">Adding \(\log P(\theta)\):</span><span class="desc">Biases optimization toward high-probability \(\theta\) regions. In neural networks, this is regularization (L2 = Gaussian prior, L1 = Laplace prior)</span></div>
@@ -561,18 +436,18 @@ print(f"Poisson:  mean={poisson.mean():.2f}")</code></pre>
       </div>
     </div>
     <hr class="divider">
-    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set Flips=5, Prior Strength=50. The posterior is visibly pulled by the prior. Increase Flips to 100 — the posterior peak moves toward the data. With enough data, MAP behaves more like MLE.</div>
-    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Set Flips=5, Prior Strength=50. The posterior is visibly pulled by the prior. Increase Flips to 100 — the posterior peak moves toward the data. With enough data, MAP behaves more like MLE.</div>
+    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
     <div class="comparison" style="margin-top: 10px;">
       <div class="option">
-        <div class="opt-title" style="color: #64ffda;">MLE (Maximum Likelihood)</div>
+        <div class="opt-title" style="color: #c9a96e;">MLE (Maximum Likelihood)</div>
         <div class="opt-desc">When you have abundant data and no strong prior beliefs. MLE is simpler and converges to truth with enough data. Most deep learning uses MLE (cross-entropy loss).</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Training large neural networks, logistic regression on large datasets, any scenario with millions of samples.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Training large neural networks, logistic regression on large datasets, any scenario with millions of samples.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #4ecdc4;">MAP (Maximum A Posteriori)</div>
+        <div class="opt-title" style="color: #6ea5c9;">MAP (Maximum A Posteriori)</div>
         <div class="opt-desc">When data is limited or you have domain knowledge to encode as priors. MAP = regularized MLE. Prevents overfitting on small datasets.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Small-sample medical studies, L2-regularized models, cold-start recommendations, transfer learning with informative priors.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Small-sample medical studies, L2-regularized models, cold-start recommendations, transfer learning with informative priors.</div>
       </div>
     </div>
     <hr class="divider">
@@ -612,7 +487,12 @@ print(f"MLE: {mle:.2f}, MAP: {map_estimate:.2f}")  # 0.7 vs 0.667</code></pre>
 <!-- 4. CENTRAL LIMIT THEOREM -->
 <div class="viz-section">
   <h2>CLT (Central Limit Theorem)</h2>
-  <p class="subtitle">Goal: separate the distribution of individual observations from the distribution of sample means. That distinction is what makes CLT so useful and so often misremembered.</p>
+  <p class="subtitle">Goal: understand that CLT is about averages becoming Gaussian, not raw data points magically changing shape.</p>
+  <div class="concept-primer">
+    <div class="concept-label">What This Is</div>
+    <p><strong>The Central Limit Theorem</strong> says that if you repeatedly average independent samples, the distribution of those averages tends toward a Gaussian as sample size grows.</p>
+    <p>The subtle but crucial point is that the theorem is about the <strong>sample mean</strong>, not the original data distribution. Your raw data can stay skewed while the averages become bell-shaped.</p>
+  </div>
   <div class="learning-strip">
     <span class="learning-pill learning-pill--core">Core Statistical Intuition</span>
     <span class="learning-pill learning-pill--trap">Trap: CLT applies to raw data</span>
@@ -671,7 +551,7 @@ print(f"MLE: {mle:.2f}, MAP: {map_estimate:.2f}")  # 0.7 vs 0.667</code></pre>
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Sample means approach a Gaussian distribution as sample size increases, regardless of underlying distribution.
-    <div class="formula">$$\text{If } X_1, X_2, \ldots, X_n \sim \text{any distribution with mean } \mu, \text{ variance } \sigma^2$$$$\text{Then: } \frac{\bar{X} - \mu}{\sigma / \sqrt{n}} \to \color{#64ffda}{\mathcal{N}(0,1)}$$</div>
+    <div class="formula">$$\text{If } X_1, X_2, \ldots, X_n \sim \text{any distribution with mean } \mu, \text{ variance } \sigma^2$$$$\text{Then: } \frac{\bar{X} - \mu}{\sigma / \sqrt{n}} \to \color{#c9a96e}{\mathcal{N}(0,1)}$$</div>
     <div class="key-point">
       <span class="label">Key condition:</span>
       <span class="desc">Finite variance. Distribution shape doesn't matter—only mean and variance.</span>
@@ -685,28 +565,28 @@ print(f"MLE: {mle:.2f}, MAP: {map_estimate:.2f}")  # 0.7 vs 0.667</code></pre>
       <span class="desc">~30 samples for most distributions. More if distribution is very skewed.</span>
     </div>
     <hr class="divider">
-    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
     <div class="comparison" style="grid-template-columns: 1fr 1fr 1fr; margin-top: 10px;">
       <div class="option">
-        <div class="opt-title" style="color: #64ffda;">Confidence Intervals</div>
+        <div class="opt-title" style="color: #c9a96e;">Confidence Intervals</div>
         <div class="opt-desc">CLT justifies using normal-based confidence intervals for sample means, even when the underlying data is not Gaussian, as long as n is large enough (~30+).</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> A/B test lift estimates, average revenue per user, mean response time for a service.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> A/B test lift estimates, average revenue per user, mean response time for a service.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #4ecdc4;">Hypothesis Testing</div>
+        <div class="opt-title" style="color: #6ea5c9;">Hypothesis Testing</div>
         <div class="opt-desc">Enables t-tests and z-tests on non-normal data. The test statistic's distribution converges to normal under CLT, making p-values valid.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Comparing two group means, testing if a new model is significantly better, evaluating treatment effects.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Comparing two group means, testing if a new model is significantly better, evaluating treatment effects.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #ffd93d;">Batch Averaging in ML</div>
+        <div class="opt-title" style="color: #e0c992;">Batch Averaging in ML</div>
         <div class="opt-desc">Mini-batch gradient estimates are approximately normal by CLT. Larger batches give more stable (less noisy) gradient estimates.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Choosing batch size in SGD, understanding why batch normalization works, error analysis in ensemble methods.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Choosing batch size in SGD, understanding why batch normalization works, error analysis in ensemble methods.</div>
       </div>
     </div>
     <hr class="divider">
     <div class="interview-tip">This is why we can use normal-based tests even when data isn't normally distributed. Always remember: applies to sample MEANS, not individual observations.</div>
     <div class="mnemonic">Averages of many draws look Gaussian, even when the original distribution does not. CLT is the reason Gaussian approximations appear so often.</div>
-    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set Sample Size = 1. Animate 3 times — histogram stays jagged and skewed. Set Sample Size = 100. Animate again — the histogram becomes much smoother and narrower. More averaging means less variance in the mean.</div>
+    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Set Sample Size = 1. Animate 3 times — histogram stays jagged and skewed. Set Sample Size = 100. Animate again — the histogram becomes much smoother and narrower. More averaging means less variance in the mean.</div>
     <div class="code-example">
       <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
         <span class="code-toggle-icon">&#9654;</span> Framework Example: Central Limit Theorem Demo
@@ -734,7 +614,13 @@ print(f"Sample means: mean={np.mean(sample_means):.2f}, "
 <!-- 5. ENTROPY & CROSS-ENTROPY -->
 <div class="viz-section">
   <h2>Entropy & Cross-Entropy</h2>
-  <p class="subtitle">Goal: build the mental equation <code>cross-entropy = entropy + KL</code>. This is one of the most reusable ideas in ML, because it connects uncertainty, compression, and classification loss in one picture.</p>
+  <p class="subtitle">Goal: understand entropy as uncertainty, cross-entropy as the cost of predicting with the wrong probabilities, and KL as the extra penalty for that mismatch.</p>
+  <div class="concept-primer">
+    <div class="concept-label">What This Is</div>
+    <p><strong>Entropy</strong> answers: “How uncertain is the true outcome?” If a coin is near 50/50, entropy is high because the next result is hard to predict. If it is near 99/1, entropy is low because the outcome is mostly predictable.</p>
+    <p><strong>Cross-entropy</strong> answers: “How expensive is it to predict the truth using my model’s probabilities?” If your model <code>q</code> matches the real distribution <code>p</code>, that cost is as low as possible. If <code>q</code> is wrong, you pay extra.</p>
+    <p><strong>KL divergence</strong> is exactly that extra payment: the gap between the irreducible uncertainty in the task and the additional cost caused by a mismatched model.</p>
+  </div>
   <div class="learning-strip">
     <span class="learning-pill learning-pill--core">Core ML Loss Concept</span>
     <span class="learning-pill learning-pill--trap">Trap: cross-entropy and entropy are interchangeable</span>
@@ -756,9 +642,9 @@ print(f"Sample means: mean={np.mean(sample_means):.2f}, "
     </div>
   </div>
   <div class="legend">
-    <div class="legend-item"><div class="legend-dot" style="background:#64ffda"></div>Entropy H(p)</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>Cross-Entropy H(p,q)</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#7c4dff"></div>KL Divergence KL(p||q)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#c9a96e"></div>Entropy H(p)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#c96e8a"></div>Cross-Entropy H(p,q)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#8a6ec9"></div>KL Divergence KL(p||q)</div>
   </div>
   <div class="mission-box">
     <div class="mission-label">Mini-Lab</div>
@@ -773,15 +659,15 @@ print(f"Sample means: mean={np.mean(sample_means):.2f}, "
   <div class="teaching-grid">
     <div class="teaching-card">
       <h3>Why This Matters</h3>
-      <p>Cross-entropy is the default loss for classification and language modeling. If this section clicks, many ML training objectives start to look like the same idea in different clothes.</p>
+      <p>Cross-entropy is the default loss for classification and language modeling because training is really asking the model to match the true distribution as closely as it can.</p>
     </div>
     <div class="teaching-card">
       <h3>Common Misconception</h3>
-      <p>People often treat entropy and cross-entropy as if they were the same quantity. Entropy depends only on the true distribution; cross-entropy depends on the model too.</p>
+      <p>Entropy is about the task itself. Cross-entropy is about the task plus your model. They become equal only when the model distribution matches the truth.</p>
     </div>
     <div class="teaching-card">
       <h3>What Changes At Scale?</h3>
-      <p>In real neural networks, the true distribution is often one-hot labels or teacher probabilities, and the model distribution comes from softmax outputs. Training is a distribution-matching problem.</p>
+      <p>In real neural networks, <code>p</code> is often the label distribution and <code>q</code> is the softmax output. So minimizing cross-entropy is just distribution matching in disguise.</p>
     </div>
   </div>
   <div class="inline-check" id="entropy-inline-check">
@@ -807,33 +693,33 @@ print(f"Sample means: mean={np.mean(sample_means):.2f}, "
     <div class="key-point"><span class="label">q(x):</span><span class="desc">Model's predicted distribution — your approximation (e.g., softmax outputs)</span></div>
     <div class="key-point"><span class="label">H(p, q):</span><span class="desc">Average bits needed when encoding with wrong distribution q. Always ≥ H(p). The gap is the KL divergence.</span></div>
     <hr class="divider">
-    <div class="formula">$$D_{KL}(p \| q) = H(p, q) - H(p) = \sum p(x) \log \color{#64ffda}{\frac{p(x)}{q(x)}}$$</div>
+    <div class="formula">$$D_{KL}(p \| q) = H(p, q) - H(p) = \sum p(x) \log \color{#c9a96e}{\frac{p(x)}{q(x)}}$$</div>
     <div class="key-point"><span class="label">\(\frac{p(x)}{q(x)}\):</span><span class="desc">Likelihood ratio — how much the true distribution disagrees with the model at each point x</span></div>
     <div class="key-point"><span class="label">KL = 0:</span><span class="desc">q perfectly matches p everywhere. KL ≥ 0 always (Gibbs' inequality).</span></div>
     <div class="key-point"><span class="label">Asymmetric:</span><span class="desc">KL(p‖q) ≠ KL(q‖p) — this matters hugely for VAEs vs. expectation propagation</span></div>
     <hr class="divider">
-    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
     <div class="comparison" style="grid-template-columns: 1fr 1fr 1fr; margin-top: 10px;">
       <div class="option">
-        <div class="opt-title" style="color: #64ffda;">Cross-Entropy Loss</div>
+        <div class="opt-title" style="color: #c9a96e;">Cross-Entropy Loss</div>
         <div class="opt-desc">Standard loss for classification tasks. Measures how well predicted probabilities match true labels. Used in virtually all neural network classifiers.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Image classification (softmax + CE), sentiment analysis, language model next-token prediction, multi-label classification.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Image classification (softmax + CE), sentiment analysis, language model next-token prediction, multi-label classification.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #4ecdc4;">KL Divergence</div>
+        <div class="opt-title" style="color: #6ea5c9;">KL Divergence</div>
         <div class="opt-desc">Measures distribution mismatch. Used as a regularizer or objective when you want one distribution to approximate another.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> VAE latent space regularization, knowledge distillation (teacher-student), policy optimization in reinforcement learning (PPO/TRPO).</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> VAE latent space regularization, knowledge distillation (teacher-student), policy optimization in reinforcement learning (PPO/TRPO).</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #ffd93d;">Entropy as a Metric</div>
+        <div class="opt-title" style="color: #e0c992;">Entropy as a Metric</div>
         <div class="opt-desc">Measures uncertainty or information content. High entropy = uncertain predictions. Used for active learning and decision tree splits.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Decision tree split criterion, active learning (query most uncertain samples), measuring model calibration, data compression.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Decision tree split criterion, active learning (query most uncertain samples), measuring model calibration, data compression.</div>
       </div>
     </div>
     <hr class="divider">
     <div class="interview-tip">"What loss does classification optimize?" → Cross-entropy H(p, q) where p = one-hot true labels, q = softmax predictions. Minimizing cross-entropy = minimizing KL(p‖q) because H(p) is fixed.</div>
     <div class="mnemonic">p = truth, q = your model. H(p) = irreducible uncertainty. H(p,q) = what you pay with your model. KL = the extra tax for being wrong.</div>
-    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set p=0.5 and q=0.5. Now KL is near zero because the model matches the truth. Move q to 0.9 and watch cross-entropy rise above entropy. The gap is exactly the mismatch penalty.</div>
+    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Set p=0.5 and q=0.5. Now KL is near zero because the model matches the truth. Move q to 0.9 and watch cross-entropy rise above entropy. The gap is exactly the mismatch penalty.</div>
     <div class="code-example">
       <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
         <span class="code-toggle-icon">&#9654;</span> Framework Example: Entropy and Cross-Entropy
@@ -884,8 +770,8 @@ print(f"KL(p||q) = {cross_entropy(p, q) - entropy(p):.3f} bits")</code></pre>
     </div>
   </div>
   <div class="legend">
-    <div class="legend-item"><div class="legend-dot" style="background:#64ffda"></div>P (True)</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>Q (Approx)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#c9a96e"></div>P (True)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#c96e8a"></div>Q (Approx)</div>
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> KL divergence is asymmetric; forward and reverse KL have opposite behavior.
@@ -893,7 +779,7 @@ print(f"KL(p||q) = {cross_entropy(p, q) - entropy(p):.3f} bits")</code></pre>
       <div class="option">
         <div class="opt-title">Forward KL: KL(p||q)</div>
         <div class="opt-desc">Penalizes missing modes where p has mass. q must have modes everywhere p has mass. Mode-covering, covers all modes.
-    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set p to a narrow peak (width=5), q to same location. KL(p||q) ≈ 0 (q covers p's high-probability region). Now drag q to ignore p's peak but cover entire range. KL(p||q) spikes (mode-seeking vs mass-covering behavior).</div>
+    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Set p to a narrow peak (width=5), q to same location. KL(p||q) ≈ 0 (q covers p's high-probability region). Now drag q to ignore p's peak but cover entire range. KL(p||q) spikes (mode-seeking vs mass-covering behavior).</div>
   </div>
 </div>
       <div class="option">
@@ -910,17 +796,17 @@ print(f"KL(p||q) = {cross_entropy(p, q) - entropy(p):.3f} bits")</code></pre>
       <span class="desc">Used in variational inference, learns sharp concentrated distribution, misses modes</span>
     </div>
     <hr class="divider">
-    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
     <div class="comparison" style="margin-top: 10px;">
       <div class="option">
-        <div class="opt-title" style="color: #64ffda;">Forward KL (Mode-Covering)</div>
+        <div class="opt-title" style="color: #c9a96e;">Forward KL (Mode-Covering)</div>
         <div class="opt-desc">When you need to cover all modes of the true distribution, even at the cost of placing mass where p is low. Produces broader, more conservative approximations.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Expectation propagation, supervised learning (cross-entropy loss is forward KL), when missing a mode is dangerous (safety-critical systems).</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Expectation propagation, supervised learning (cross-entropy loss is forward KL), when missing a mode is dangerous (safety-critical systems).</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #4ecdc4;">Reverse KL (Mode-Seeking)</div>
+        <div class="opt-title" style="color: #6ea5c9;">Reverse KL (Mode-Seeking)</div>
         <div class="opt-desc">When you want a sharp, focused approximation that locks onto the strongest mode. Avoids placing mass where p is near zero.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Variational inference (ELBO optimization), VAE training, reinforcement learning policy optimization, when precision matters more than recall.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Variational inference (ELBO optimization), VAE training, reinforcement learning policy optimization, when precision matters more than recall.</div>
       </div>
     </div>
     <hr class="divider">
@@ -979,17 +865,17 @@ print(f"KL(q||p) = {kl_qp:.4f}")  # reverse: mode-seeking</code></pre>
     <div class="predict-result" data-correct-text="Exactly! A learning rate that's too high causes the optimizer to overshoot the minimum — each step jumps past the valley and the loss explodes. This is why learning rate is the single most important hyperparameter to tune." data-wrong-text="Not quite. With an extremely high learning rate, the gradient step overshoots the minimum entirely. Instead of descending into the valley, the optimizer bounces further away each step — the loss diverges to infinity. This is why learning rate is the most important hyperparameter."></div>
   </div>
   <div class="legend">
-    <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>SGD</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#4ecdc4"></div>Momentum</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#ffd93d"></div>Adam</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#c96e8a"></div>SGD</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#6ea5c9"></div>Momentum</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#e0c992"></div>Adam</div>
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Momentum accelerates convergence by accumulating velocity over time.
-    <div class="formula">$$\text{Standard SGD: } \theta \leftarrow \theta - \color{#64ffda}{\eta \cdot \nabla L(\theta)}$$</div>
+    <div class="formula">$$\text{Standard SGD: } \theta \leftarrow \theta - \color{#c9a96e}{\eta \cdot \nabla L(\theta)}$$</div>
     <div class="key-point"><span class="label">\(\theta\):</span><span class="desc">Model parameters (weights, biases). \(\leftarrow\) means "update to"</span></div>
     <div class="key-point"><span class="label">\(\eta\):</span><span class="desc">Learning rate—step size for parameter update. Typical range: 0.001 to 0.1 depending on optimizer. Too large = divergence, too small = slow convergence.</span></div>
     <div class="key-point"><span class="label">\(\nabla L(\theta)\):</span><span class="desc">Gradient of loss w.r.t. parameters. Points in direction of steepest increase. We move opposite (negative sign) to decrease loss.</span></div>
-    <div class="formula">$$\text{Momentum: } v_t = \color{#64ffda}{\beta \cdot v_{t-1}} + \nabla L(\theta), \quad \theta \leftarrow \theta - \eta \cdot v_t$$</div>
+    <div class="formula">$$\text{Momentum: } v_t = \color{#c9a96e}{\beta \cdot v_{t-1}} + \nabla L(\theta), \quad \theta \leftarrow \theta - \eta \cdot v_t$$</div>
     <div class="key-point"><span class="label">\(v_t\):</span><span class="desc">Velocity vector at iteration t. Accumulates gradients over time with decay</span></div>
     <div class="key-point"><span class="label">\(\beta\):</span><span class="desc">Momentum coefficient, typically 0.9. Controls how much history to retain. \(\beta \in (0,1)\)</span></div>
     <div class="key-point"><span class="label">\(\beta \cdot v_{t-1} + \nabla L(\theta)\):</span><span class="desc">Weighted sum: retain 90% of previous velocity (\(\beta=0.9\)), add current gradient. Smooths oscillations, accelerates consistent directions.</span></div>
@@ -1006,28 +892,28 @@ print(f"KL(q||p) = {kl_qp:.4f}")  # reverse: mode-seeking</code></pre>
       <span class="desc">\(\beta=0.9\) for standard SGD. Modern optimizers (Adam) incorporate momentum automatically.</span>
     </div>
     <hr class="divider">
-    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
     <div class="comparison" style="grid-template-columns: 1fr 1fr 1fr; margin-top: 10px;">
       <div class="option">
-        <div class="opt-title" style="color: #64ffda;">Vanilla SGD</div>
+        <div class="opt-title" style="color: #c9a96e;">Vanilla SGD</div>
         <div class="opt-desc">When you want simple, well-understood optimization with manual tuning. Often generalizes better than adaptive methods on well-tuned problems.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Training ResNets (SGD+momentum often beats Adam), convex problems, when you have compute budget for hyperparameter search.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Training ResNets (SGD+momentum often beats Adam), convex problems, when you have compute budget for hyperparameter search.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #4ecdc4;">SGD + Momentum</div>
+        <div class="opt-title" style="color: #6ea5c9;">SGD + Momentum</div>
         <div class="opt-desc">Default for computer vision. Smooths noisy gradients, accelerates through plateaus. Requires learning rate scheduling.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> ImageNet training, any CNN-based task, problems with ravine-shaped loss landscapes, when generalization is paramount.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> ImageNet training, any CNN-based task, problems with ravine-shaped loss landscapes, when generalization is paramount.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #ffd93d;">Adam / AdamW</div>
+        <div class="opt-title" style="color: #e0c992;">Adam / AdamW</div>
         <div class="opt-desc">Default for NLP and transformers. Adapts per-parameter learning rates. Less tuning needed. AdamW decouples weight decay.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Transformer training (BERT, GPT), GANs, any new project as a strong default, sparse gradient problems (embeddings).</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Transformer training (BERT, GPT), GANs, any new project as a strong default, sparse gradient problems (embeddings).</div>
       </div>
     </div>
     <hr class="divider">
     <div class="interview-tip">Momentum helps escape local minima and plateaus. It's like a ball rolling downhill—accumulates speed in good directions.</div>
     <div class="mnemonic">Momentum = velocity accumulation. Pushes in consistent directions, fights oscillation, scales poorly with noisy gradients.
-    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click "Momentum" — smoother descent but slight overshoot. Click "Adam" — curves toward the goal, no overshoot. Now click "SGD" and watch it jiggle (noisy gradient). On this 2D surface, Adam wins. Change the surface contours and re-compare.</div>
+    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Click "Momentum" — smoother descent but slight overshoot. Click "Adam" — curves toward the goal, no overshoot. Now click "SGD" and watch it jiggle (noisy gradient). On this 2D surface, Adam wins. Change the surface contours and re-compare.</div>
   
     <div class="code-example">
       <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
@@ -1102,7 +988,7 @@ class Adam:
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Learning rate controls gradient step magnitude—most critical hyperparameter.
-    <div class="formula">$$\theta \leftarrow \theta - \color{#64ffda}{\alpha \cdot \nabla L(\theta)} \quad \text{where } \alpha \text{ is learning rate}$$</div>
+    <div class="formula">$$\theta \leftarrow \theta - \color{#c9a96e}{\alpha \cdot \nabla L(\theta)} \quad \text{where } \alpha \text{ is learning rate}$$</div>
     <div class="key-point">
       <span class="label">Too small \(\alpha\):</span>
       <span class="desc">Training prohibitively slow. May get stuck in local minima. High variance from noise.</span>
@@ -1120,28 +1006,28 @@ class Adam:
       <span class="desc">Adam, RMSprop automatically adjust per-parameter learning rates. Reduces tuning burden.</span>
     </div>
     <hr class="divider">
-    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
     <div class="comparison" style="grid-template-columns: 1fr 1fr 1fr; margin-top: 10px;">
       <div class="option">
-        <div class="opt-title" style="color: #64ffda;">Fixed Learning Rate</div>
+        <div class="opt-title" style="color: #c9a96e;">Fixed Learning Rate</div>
         <div class="opt-desc">Simplest approach. Works for quick prototyping and when using adaptive optimizers (Adam) that adjust rates internally.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Initial model exploration, Adam with default lr=0.001, simple linear models, small-scale experiments.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Initial model exploration, Adam with default lr=0.001, simple linear models, small-scale experiments.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #4ecdc4;">LR Scheduling (Step / Cosine)</div>
+        <div class="opt-title" style="color: #6ea5c9;">LR Scheduling (Step / Cosine)</div>
         <div class="opt-desc">Decay learning rate over training. Start high for fast progress, reduce for fine convergence. Cosine annealing is popular for vision.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> ImageNet training (step decay at epochs 30, 60, 90), cosine annealing for CIFAR, any long training run with SGD.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> ImageNet training (step decay at epochs 30, 60, 90), cosine annealing for CIFAR, any long training run with SGD.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #ffd93d;">Warmup + Decay</div>
+        <div class="opt-title" style="color: #e0c992;">Warmup + Decay</div>
         <div class="opt-desc">Start with tiny LR, ramp up linearly, then decay. Prevents early instability in large models. Standard for transformers.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> BERT/GPT pretraining, any transformer model, large batch training, fine-tuning pretrained models with small warmup.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> BERT/GPT pretraining, any transformer model, large batch training, fine-tuning pretrained models with small warmup.</div>
       </div>
     </div>
     <hr class="divider">
     <div class="interview-tip">Plot loss vs. iterations! Smooth curve = good α. Diverging = too large. Flat then drop = too small. Oscillating = right size but noisy.</div>
     <div class="mnemonic">Learning rate is the gas pedal: too small = crawl, too large = crash. Sweet spot: smooth consistent decrease.
-    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set \(\alpha=0.001\) (crawl), \(\alpha=0.1\) (confident), \(\alpha=0.5\) (wild bounce). Find the critical \(\alpha\) where the ball barely oscillates without bouncing off. This is the intuition behind learning rate scheduling.</div>
+    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Set \(\alpha=0.001\) (crawl), \(\alpha=0.1\) (confident), \(\alpha=0.5\) (wild bounce). Find the critical \(\alpha\) where the ball barely oscillates without bouncing off. This is the intuition behind learning rate scheduling.</div>
   
     <div class="code-example">
       <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
@@ -1187,7 +1073,7 @@ print(f"LR at epoch 99: {lrs[99]:.6f}") # ~0.000001</code></pre>
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> SVD factors any matrix into orthogonal matrices and singular values.
-    <div class="formula">$$A_{(m \times n)} = \color{#64ffda}{U \cdot \Sigma \cdot V^T}$$</div>
+    <div class="formula">$$A_{(m \times n)} = \color{#c9a96e}{U \cdot \Sigma \cdot V^T}$$</div>
     <div class="key-point">
       <span class="label">U (m×m):</span>
       <span class="desc">Orthogonal matrix. Columns are principal directions of A.</span>
@@ -1205,28 +1091,28 @@ print(f"LR at epoch 99: {lrs[99]:.6f}") # ~0.000001</code></pre>
       <span class="desc">First r singular values capture ~95% of information. Truncate for dimensionality reduction, denoising.</span>
     </div>
     <hr class="divider">
-    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
     <div class="comparison" style="grid-template-columns: 1fr 1fr 1fr; margin-top: 10px;">
       <div class="option">
-        <div class="opt-title" style="color: #64ffda;">Dimensionality Reduction</div>
+        <div class="opt-title" style="color: #c9a96e;">Dimensionality Reduction</div>
         <div class="opt-desc">Truncated SVD (keeping top-k singular values) is the mathematical backbone of PCA. Use when you need to reduce feature dimensions while preserving maximum variance.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Reducing 10,000 gene features to 50 components, image compression, preprocessing before clustering.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Reducing 10,000 gene features to 50 components, image compression, preprocessing before clustering.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #4ecdc4;">Recommender Systems</div>
+        <div class="opt-title" style="color: #6ea5c9;">Recommender Systems</div>
         <div class="opt-desc">Matrix factorization via SVD decomposes user-item matrices into latent factors. The foundation of collaborative filtering methods.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Netflix prize (SVD++), product recommendations, music playlist suggestions, any sparse user-item matrix.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Netflix prize (SVD++), product recommendations, music playlist suggestions, any sparse user-item matrix.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #ffd93d;">NLP / Embeddings</div>
+        <div class="opt-title" style="color: #e0c992;">NLP / Embeddings</div>
         <div class="opt-desc">SVD on co-occurrence matrices produces word embeddings (LSA/LSI). Also used for model compression by low-rank approximation of weight matrices.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Latent Semantic Analysis for document similarity, LoRA (low-rank adaptation) for LLM fine-tuning, denoising signals.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Latent Semantic Analysis for document similarity, LoRA (low-rank adaptation) for LLM fine-tuning, denoising signals.</div>
       </div>
     </div>
     <hr class="divider">
     <div class="interview-tip">SVD is numerically stable, always exists. For tall matrices, use reduced SVD (m×n factors) for efficiency.</div>
     <div class="mnemonic">SVD = best-fit orthogonal decomposition. U and V are rotations, Σ scales. Smaller singular values = noise.
-    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set rank=1 — image is monochrome blur. Rank=5 — edges start appearing. Rank=20 — objects recognizable. Rank=100 — nearly perfect. The first k components capture 95% of information in most images. This is why k~20-50 works well in practice.</div>
+    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Set rank=1 — image is monochrome blur. Rank=5 — edges start appearing. Rank=20 — objects recognizable. Rank=100 — nearly perfect. The first k components capture 95% of information in most images. This is why k~20-50 works well in practice.</div>
   
     <div class="code-example">
       <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
@@ -1272,13 +1158,13 @@ print(f"Rank-{k} keeps {explained:.1%} of variance, error={error:.3f}")</code></
     </div>
   </div>
   <div class="legend">
-    <div class="legend-item"><div class="legend-dot" style="background:#64ffda"></div>Original</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>Eigenvector 1</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#7c4dff"></div>Eigenvector 2</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#c9a96e"></div>Original</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#c96e8a"></div>Eigenvector 1</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#8a6ec9"></div>Eigenvector 2</div>
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Eigendecomposition factorizes symmetric matrices into eigenvectors and eigenvalues.
-    <div class="formula">$$\text{For symmetric } A: \quad \color{#64ffda}{A = Q \cdot \Lambda \cdot Q^T}$$</div>
+    <div class="formula">$$\text{For symmetric } A: \quad \color{#c9a96e}{A = Q \cdot \Lambda \cdot Q^T}$$</div>
     <div class="key-point">
       <span class="label">Q (n×n):</span>
       <span class="desc">Orthogonal matrix of eigenvectors. Columns are principal axes of A.</span>
@@ -1296,28 +1182,28 @@ print(f"Rank-{k} keeps {explained:.1%} of variance, error={error:.3f}")</code></
       <span class="desc">Covariance Cov(X) is symmetric positive semidefinite. Guarantees real eigenvalues, orthogonal eigenvectors.</span>
     </div>
     <hr class="divider">
-    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
     <div class="comparison" style="grid-template-columns: 1fr 1fr 1fr; margin-top: 10px;">
       <div class="option">
-        <div class="opt-title" style="color: #64ffda;">PCA / Feature Extraction</div>
+        <div class="opt-title" style="color: #c9a96e;">PCA / Feature Extraction</div>
         <div class="opt-desc">Eigendecomposition of the covariance matrix gives principal components. Eigenvalues tell you how much variance each component explains.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Face recognition (eigenfaces), gene expression analysis, visualizing high-dimensional data in 2D/3D.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Face recognition (eigenfaces), gene expression analysis, visualizing high-dimensional data in 2D/3D.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #4ecdc4;">Spectral Methods</div>
+        <div class="opt-title" style="color: #6ea5c9;">Spectral Methods</div>
         <div class="opt-desc">Graph Laplacian eigenvalues reveal cluster structure. Spectral clustering uses eigenvectors of similarity matrices to find non-convex clusters.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Community detection in social networks, image segmentation, spectral clustering on non-linearly separable data.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Community detection in social networks, image segmentation, spectral clustering on non-linearly separable data.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #ffd93d;">Stability Analysis</div>
+        <div class="opt-title" style="color: #e0c992;">Stability Analysis</div>
         <div class="opt-desc">Eigenvalues of the Hessian matrix reveal loss landscape curvature. Large eigenvalues indicate sharp minima; small ones indicate flat directions.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Analyzing neural network loss surfaces, understanding training dynamics, condition number diagnostics for optimization.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Analyzing neural network loss surfaces, understanding training dynamics, condition number diagnostics for optimization.</div>
       </div>
     </div>
     <hr class="divider">
     <div class="interview-tip">PCA uses eigendecomposition of covariance matrix. Eigenvectors = principal components. Eigenvalues = variance explained.</div>
     <div class="mnemonic">Eigendecomposition = finding natural axes. Eigenvectors = directions, eigenvalues = how much the matrix stretches along each direction.
-    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set matrix to [[2, 0], [0, 1]] (diagonal). Red arrow (eigenvector) scales by eigenvalue but doesn't rotate. Now set matrix to [[1, 1], [1, 1]] (non-diagonal). Red arrow rotates. Eigenvectors only exist at special orientations.</div>
+    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Set matrix to [[2, 0], [0, 1]] (diagonal). Red arrow (eigenvector) scales by eigenvalue but doesn't rotate. Now set matrix to [[1, 1], [1, 1]] (non-diagonal). Red arrow rotates. Eigenvectors only exist at special orientations.</div>
   
     <div class="code-example">
       <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
@@ -1372,14 +1258,14 @@ for i in range(len(eigenvalues)):
     <div class="predict-result" data-correct-text="Spot on! This is the bias-variance tradeoff in action. High complexity (degree 15) means the model memorizes training noise — low bias, but high variance. The wiggly curve fits training points perfectly but generalizes terribly. The sweet spot is in the middle." data-wrong-text="Not quite. High-degree polynomials memorize the training data (low training error) but fit the noise too — they wiggle wildly between points, causing terrible generalization. This is overfitting: low bias but high variance. The sweet spot is in the middle where total error is minimized."></div>
   </div>
   <div class="legend">
-    <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>Bias²</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#4ecdc4"></div>Variance</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#ffd93d"></div>Total Error</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#64ffda"></div>Current</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#c96e8a"></div>Bias²</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#6ea5c9"></div>Variance</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#e0c992"></div>Total Error</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#c9a96e"></div>Current</div>
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Test error decomposes into three parts: bias, variance, and irreducible error.
-    <div class="formula">$$E[(y - \hat{f})^2] = \color{#64ffda}{\text{Bias}(\hat{f})^2} + \color{#64ffda}{\text{Var}(\hat{f})} + \sigma^2$$</div>
+    <div class="formula">$$E[(y - \hat{f})^2] = \color{#c9a96e}{\text{Bias}(\hat{f})^2} + \color{#c9a96e}{\text{Var}(\hat{f})} + \sigma^2$$</div>
     <div class="key-point">
       <span class="label">Bias:</span>
       <span class="desc">Error from wrong modeling assumptions. E.g., fitting a line to curved data. High bias = underfitting.</span>
@@ -1393,22 +1279,22 @@ for i in range(len(eigenvalues)):
       <span class="desc">Noise in labels. Can't reduce below this. Sets performance ceiling.</span>
     </div>
     <hr class="divider">
-    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
     <div class="comparison" style="grid-template-columns: 1fr 1fr 1fr; margin-top: 10px;">
       <div class="option">
-        <div class="opt-title" style="color: #64ffda;">High Bias (Underfitting)</div>
+        <div class="opt-title" style="color: #c9a96e;">High Bias (Underfitting)</div>
         <div class="opt-desc">Your model is too simple. Fix by: increasing model complexity, adding features, reducing regularization, or training longer.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Diagnosis:</b> Both train and test error are high. Learning curve shows train error plateaus above acceptable level. Adding more data won't help.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Diagnosis:</b> Both train and test error are high. Learning curve shows train error plateaus above acceptable level. Adding more data won't help.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #4ecdc4;">High Variance (Overfitting)</div>
+        <div class="opt-title" style="color: #6ea5c9;">High Variance (Overfitting)</div>
         <div class="opt-desc">Your model is too complex. Fix by: adding regularization (L1/L2/dropout), getting more data, reducing features, or early stopping.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Diagnosis:</b> Train error is low but test error is high (large gap). Adding more training data helps. Cross-validation shows high variance across folds.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Diagnosis:</b> Train error is low but test error is high (large gap). Adding more training data helps. Cross-validation shows high variance across folds.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #ffd93d;">Sweet Spot</div>
+        <div class="opt-title" style="color: #e0c992;">Sweet Spot</div>
         <div class="opt-desc">Balanced model complexity where test error is minimized. Use cross-validation to find it. Ensemble methods (bagging, boosting) can help balance bias-variance.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Strategy:</b> Start simple, increase complexity until validation error stops improving. Use learning curves to diagnose. Regularization strength is your main knob.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Strategy:</b> Start simple, increase complexity until validation error stops improving. Use learning curves to diagnose. Regularization strength is your main knob.</div>
       </div>
     </div>
     <hr class="divider">
@@ -1418,7 +1304,7 @@ for i in range(len(eigenvalues)):
     </div>
     <div class="interview-tip">How to diagnose underfitting vs overfitting? High training and test error = underfitting (high bias). Low training, high test error = overfitting (high variance).</div>
     <div class="mnemonic">Bias = systematic error. Variance = random error. Balance them: neither too rigid (high bias) nor too flexible (high variance).
-    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Complexity=1 (straight line, high bias, low variance). Complexity=5 (wiggly curve, low bias, high variance). Complexity=3 (balanced, moderate both). Test error (red) is lowest at complexity=3. This is the bias-variance tradeoff.</div>
+    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Complexity=1 (straight line, high bias, low variance). Complexity=5 (wiggly curve, low bias, high variance). Complexity=3 (balanced, moderate both). Test error (red) is lowest at complexity=3. This is the bias-variance tradeoff.</div>
   
     <div class="code-example">
       <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
@@ -1491,10 +1377,10 @@ for degree in [1, 3, 10]:
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Regularization limits how large the model's weights can be, preventing overfitting.
-    <div class="formula">$$\text{Loss} + \color{#64ffda}{\lambda \cdot \sum |w_i|} \quad \text{(add L1 penalty)}$$</div>
+    <div class="formula">$$\text{Loss} + \color{#c9a96e}{\lambda \cdot \sum |w_i|} \quad \text{(add L1 penalty)}$$</div>
     <div class="key-point">
       <span class="label">The bowl:</span>
-      <span class="desc">The 3D surface is training error. The bottom of the bowl (<b style="color:#ffd93d;">w*</b>) is where the model fits the training data best. Without regularization, the model goes straight to the bottom — but that often means extreme weight values that memorize noise (overfitting).</span>
+      <span class="desc">The 3D surface is training error. The bottom of the bowl (<b style="color:#e0c992;">w*</b>) is where the model fits the training data best. Without regularization, the model goes straight to the bottom — but that often means extreme weight values that memorize noise (overfitting).</span>
     </div>
     <div class="key-point">
       <span class="label">The fence:</span>
@@ -1502,17 +1388,17 @@ for degree in [1, 3, 10]:
     </div>
     <div class="key-point">
       <span class="label">Why L1 is special:</span>
-      <span class="desc">L1's fence is a <b style="color:#ff6b6b;">diamond</b> with pointy corners that sit on the axes (where one weight = 0). The lowest point on the bowl inside the diamond often lands on a corner — so one weight gets forced to exactly zero. The model drops that feature entirely. That's automatic feature selection.</span>
+      <span class="desc">L1's fence is a <b style="color:#c96e8a;">diamond</b> with pointy corners that sit on the axes (where one weight = 0). The lowest point on the bowl inside the diamond often lands on a corner — so one weight gets forced to exactly zero. The model drops that feature entirely. That's automatic feature selection.</span>
     </div>
     <div class="key-point">
       <span class="label">Why L2 is different:</span>
-      <span class="desc">L2's fence is a <b style="color:#4ecdc4;">circle</b> with no corners. The lowest point inside the circle lands on the smooth edge — both weights shrink toward zero but neither actually reaches zero. All features stay, just dampened.</span>
+      <span class="desc">L2's fence is a <b style="color:#6ea5c9;">circle</b> with no corners. The lowest point inside the circle lands on the smooth edge — both weights shrink toward zero but neither actually reaches zero. All features stay, just dampened.</span>
     </div>
     <div class="comparison">
       <div class="option">
         <div class="opt-title">L1 (Lasso)</div>
         <div class="opt-desc">Sparsity, feature selection, interpretability. Unstable if correlated features.
-    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Toggle L1/L2. Set Regularization=0.5. With L1, weights snap to exactly zero at the diamond corners. With L2, weights shrink but rarely hit zero. For feature selection (want zeros), use L1. For shrinkage (want smaller), use L2.</div>
+    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Toggle L1/L2. Set Regularization=0.5. With L1, weights snap to exactly zero at the diamond corners. With L2, weights shrink but rarely hit zero. For feature selection (want zeros), use L1. For shrinkage (want smaller), use L2.</div>
   </div>
 </div>
       <div class="option">
@@ -1521,22 +1407,22 @@ for degree in [1, 3, 10]:
       </div>
     </div>
     <hr class="divider">
-    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
     <div class="comparison" style="grid-template-columns: 1fr 1fr 1fr; margin-top: 10px;">
       <div class="option">
-        <div class="opt-title" style="color: #64ffda;">L1 (Lasso)</div>
+        <div class="opt-title" style="color: #c9a96e;">L1 (Lasso)</div>
         <div class="opt-desc">When you suspect many features are irrelevant and want automatic feature selection. Produces sparse models where most weights are exactly zero.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Genomics (10,000 genes, few relevant), text classification with large vocabularies, any high-dimensional sparse problem.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Genomics (10,000 genes, few relevant), text classification with large vocabularies, any high-dimensional sparse problem.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #4ecdc4;">L2 (Ridge)</div>
+        <div class="opt-title" style="color: #6ea5c9;">L2 (Ridge)</div>
         <div class="opt-desc">When all features are likely relevant but you want to prevent large weights. Handles correlated features better than L1 by distributing weight among them.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Predicting house prices (all features matter), multicollinear data, neural network weight decay, any regression with many correlated predictors.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Predicting house prices (all features matter), multicollinear data, neural network weight decay, any regression with many correlated predictors.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #ffd93d;">Elastic Net (L1 + L2)</div>
+        <div class="opt-title" style="color: #e0c992;">Elastic Net (L1 + L2)</div>
         <div class="opt-desc">Combines both: L1 for sparsity and L2 for stability with correlated features. Best of both worlds when you have groups of correlated features.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Gene selection with correlated gene groups, financial modeling with correlated factors, any scenario where pure L1 is unstable.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Gene selection with correlated gene groups, financial modeling with correlated factors, any scenario where pure L1 is unstable.</div>
       </div>
     </div>
     <hr class="divider">
@@ -1601,35 +1487,35 @@ print(f"Ridge zeros: {np.sum(np.abs(ridge.coef_) &lt; 0.01)}/20")  # ~0 zeros</c
       <span class="desc">Kernel matrix is \(O(n^2)\) in memory. Only for kernelized algorithms (SVM, kernel regression, GP). Not all algorithms support kernels.</span>
     </div>
     <hr class="divider">
-    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
     <div class="comparison" style="grid-template-columns: 1fr 1fr; margin-top: 10px;">
       <div class="option">
-        <div class="opt-title" style="color: #64ffda;">Linear Classifiers (Logistic Reg / Linear SVM)</div>
+        <div class="opt-title" style="color: #c9a96e;">Linear Classifiers (Logistic Reg / Linear SVM)</div>
         <div class="opt-desc">When data is linearly separable or high-dimensional (text, genomics). Fast to train, scales well to millions of samples. Good baseline before trying complex models.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Spam detection (bag-of-words features), sentiment analysis, medical diagnosis with many features, any problem where n_features >> n_samples.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Spam detection (bag-of-words features), sentiment analysis, medical diagnosis with many features, any problem where n_features >> n_samples.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #4ecdc4;">Kernel SVM (RBF / Polynomial)</div>
+        <div class="opt-title" style="color: #6ea5c9;">Kernel SVM (RBF / Polynomial)</div>
         <div class="opt-desc">When decision boundary is non-linear and dataset is small-to-medium (under ~50K samples). RBF kernel is a strong default. Expensive for large datasets due to O(n^2) kernel matrix.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Handwritten digit classification, protein structure prediction, small tabular datasets with complex boundaries, any problem where data is clearly not linearly separable.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Handwritten digit classification, protein structure prediction, small tabular datasets with complex boundaries, any problem where data is clearly not linearly separable.</div>
       </div>
     </div>
     <div class="comparison" style="grid-template-columns: 1fr 1fr; margin-top: 10px;">
       <div class="option">
-        <div class="opt-title" style="color: #ffd93d;">Decision Trees</div>
+        <div class="opt-title" style="color: #e0c992;">Decision Trees</div>
         <div class="opt-desc">When interpretability matters. Axis-aligned splits create blocky boundaries. Prone to overfitting alone, but powerful in ensembles (Random Forest, XGBoost).</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Credit scoring (need to explain decisions), medical triage rules, any tabular data where you need human-readable logic.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Credit scoring (need to explain decisions), medical triage rules, any tabular data where you need human-readable logic.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #ff6b6b;">Neural Networks</div>
+        <div class="opt-title" style="color: #c96e8a;">Neural Networks</div>
         <div class="opt-desc">When you have large datasets and complex patterns. Learn arbitrary decision boundaries. Overkill for small tabular data but essential for images, text, audio.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Image classification, NLP tasks, speech recognition, any problem with >100K samples and complex non-linear patterns.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Image classification, NLP tasks, speech recognition, any problem with >100K samples and complex non-linear patterns.</div>
       </div>
     </div>
     <hr class="divider">
     <div class="interview-tip">Kernel trick = avoid curse of dimensionality. RBF kernel in high-dim is powerful but computationally expensive. Always check kernel matrix size.</div>
     <div class="mnemonic">Kernel trick = compute dot products in feature space without computing features. Magic of SVMs and kernel methods.
-    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Select a non-linearly separable dataset (crescent shape). Linear fails (straight line can't wrap). Polynomial works well (curve wraps). RBF also works. Trees create blocky regions. For complex shapes, non-linear classifiers win.</div>
+    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Select a non-linearly separable dataset (crescent shape). Linear fails (straight line can't wrap). Polynomial works well (curve wraps). RBF also works. Trees create blocky regions. For complex shapes, non-linear classifiers win.</div>
   
     <div class="code-example">
       <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
@@ -1672,12 +1558,12 @@ print(f"RBF SVM accuracy: {rbf_svm.score(X, y):.2f}")  # ~1.00</code></pre>
     <button class="btn" onclick="animateCV()">▶ Animate Folds</button>
   </div>
   <div class="legend">
-    <div class="legend-item"><div class="legend-dot" style="background:#4ecdc4"></div>Training Data</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>Validation Fold</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#6ea5c9"></div>Training Data</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#c96e8a"></div>Validation Fold</div>
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> K-fold CV splits data into K disjoint folds for robust generalization estimates.
-    <div class="formula">$$\text{Repeat K times: } \color{#64ffda}{\text{Train on K-1 folds}}\text{, test on held-out fold}$$</div>
+    <div class="formula">$$\text{Repeat K times: } \color{#c9a96e}{\text{Train on K-1 folds}}\text{, test on held-out fold}$$</div>
     <div class="key-point">
       <span class="label">Process:</span>
       <span class="desc">1. Split data into K disjoint folds. 2. Train on K-1, test on 1 fold. 3. Repeat K times. 4. Average K test errors.</span>
@@ -1695,28 +1581,28 @@ print(f"RBF SVM accuracy: {rbf_svm.score(X, y):.2f}")  # ~1.00</code></pre>
       <span class="desc">For classification, maintain class distribution in each fold. Important for imbalanced datasets.</span>
     </div>
     <hr class="divider">
-    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
     <div class="comparison" style="grid-template-columns: 1fr 1fr 1fr; margin-top: 10px;">
       <div class="option">
-        <div class="opt-title" style="color: #64ffda;">K-Fold (K=5 or K=10)</div>
+        <div class="opt-title" style="color: #c9a96e;">K-Fold (K=5 or K=10)</div>
         <div class="opt-desc">Standard for model selection and hyperparameter tuning on tabular data. Good balance of computation and estimate quality. Use stratified K-fold for classification.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Comparing Random Forest vs. XGBoost, tuning regularization strength, Kaggle competitions, any model selection task.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Comparing Random Forest vs. XGBoost, tuning regularization strength, Kaggle competitions, any model selection task.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #4ecdc4;">Leave-One-Out (LOO)</div>
+        <div class="opt-title" style="color: #6ea5c9;">Leave-One-Out (LOO)</div>
         <div class="opt-desc">When data is very scarce (n &lt; 50). Each sample is a fold. Unbiased but high variance and computationally expensive (n model fits).</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Rare disease studies with 20 patients, materials science with few expensive experiments, any tiny dataset where every sample matters.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Rare disease studies with 20 patients, materials science with few expensive experiments, any tiny dataset where every sample matters.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #ffd93d;">Time-Series Split</div>
+        <div class="opt-title" style="color: #e0c992;">Time-Series Split</div>
         <div class="opt-desc">For temporal data where standard K-fold leaks future information. Use expanding or sliding window: always train on past, test on future.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Stock price prediction, demand forecasting, weather modeling, any sequential data where temporal order matters.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Stock price prediction, demand forecasting, weather modeling, any sequential data where temporal order matters.</div>
       </div>
     </div>
     <hr class="divider">
     <div class="interview-tip">Don't use K-fold for time series! Data leakage. Use expanding window or time-series split instead.</div>
     <div class="mnemonic">K-fold = multiple train/test splits averaged. Robust estimate of true generalization error. Standard in ML competitions.
-    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: K=2 (coarse). K=5 (standard). K=10 (fine-grained). Increase K and watch test error become more stable (lower variance in the estimate). K>10 adds diminishing returns. K=5 is the ML industry standard for a reason.</div>
+    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: K=2 (coarse). K=5 (standard). K=10 (fine-grained). Increase K and watch test error become more stable (lower variance in the estimate). K>10 adds diminishing returns. K=5 is the ML industry standard for a reason.</div>
   
     <div class="code-example">
       <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
@@ -1757,13 +1643,13 @@ print(f"Per-fold: {scores.round(3)}")</code></pre>
     <button class="btn" onclick="animateGBT()">▶ Animate Build</button>
   </div>
   <div class="legend">
-    <div class="legend-item"><div class="legend-dot" style="background:#0d0d1a"></div>Data</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#64ffda"></div>Current Prediction</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>True Function</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#0d0d14"></div>Data</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#c9a96e"></div>Current Prediction</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#c96e8a"></div>True Function</div>
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Boosting sequentially trains weak learners, each correcting previous mistakes.
-    <div class="formula">$$F_m = F_{m-1} + \color{#64ffda}{\eta \cdot \text{tree}_m(\text{residuals})}$$</div>
+    <div class="formula">$$F_m = F_{m-1} + \color{#c9a96e}{\eta \cdot \text{tree}_m(\text{residuals})}$$</div>
     <div class="key-point">
       <span class="label">Algorithm:</span>
       <span class="desc">1. Train weak learner on data. 2. Compute residuals (prediction errors). 3. Train next learner on residuals. 4. Add with learning rate.</span>
@@ -1780,7 +1666,7 @@ print(f"Per-fold: {scores.round(3)}")</code></pre>
       <div class="option">
         <div class="opt-title">Gradient Boosting</div>
         <div class="opt-desc">Fits residuals directly. Can use any differentiable loss. Flexible for regression/classification.
-    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Trees=1 (error is large, green line misses red truth). Trees=10 (error shrinks). Trees=100 (green line hugs red truth). But Trees=1000 (overfitting, green line jiggles). The ensemble power increases with trees, but watch for overfitting.</div>
+    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Trees=1 (error is large, green line misses red truth). Trees=10 (error shrinks). Trees=100 (green line hugs red truth). But Trees=1000 (overfitting, green line jiggles). The ensemble power increases with trees, but watch for overfitting.</div>
   </div>
 </div>
       <div class="option">
@@ -1789,22 +1675,22 @@ print(f"Per-fold: {scores.round(3)}")</code></pre>
       </div>
     </div>
     <hr class="divider">
-    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
     <div class="comparison" style="grid-template-columns: 1fr 1fr 1fr; margin-top: 10px;">
       <div class="option">
-        <div class="opt-title" style="color: #64ffda;">XGBoost / LightGBM</div>
+        <div class="opt-title" style="color: #c9a96e;">XGBoost / LightGBM</div>
         <div class="opt-desc">Default choice for structured/tabular data. State-of-the-art on most Kaggle competitions. Handles missing values, mixed feature types, and feature interactions natively.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Fraud detection, credit scoring, customer churn prediction, click-through rate prediction, any tabular ML task.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Fraud detection, credit scoring, customer churn prediction, click-through rate prediction, any tabular ML task.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #4ecdc4;">Random Forest</div>
+        <div class="opt-title" style="color: #6ea5c9;">Random Forest</div>
         <div class="opt-desc">When you want a robust baseline with less tuning. Bagging (parallel trees) instead of boosting (sequential). Less prone to overfitting, but typically lower accuracy than boosting.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Quick baseline models, feature importance analysis, when training speed matters more than last 1% accuracy, remote sensing data.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Quick baseline models, feature importance analysis, when training speed matters more than last 1% accuracy, remote sensing data.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #ffd93d;">Neural Networks Instead</div>
+        <div class="opt-title" style="color: #e0c992;">Neural Networks Instead</div>
         <div class="opt-desc">Prefer deep learning over tree ensembles when data is unstructured (images, text, audio) or when you have massive datasets (>1M samples) with complex patterns.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Image classification, NLP tasks, speech recognition, multimodal data, any problem where feature engineering is hard but data is abundant.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Image classification, NLP tasks, speech recognition, multimodal data, any problem where feature engineering is hard but data is abundant.</div>
       </div>
     </div>
     <hr class="divider">
@@ -1868,7 +1754,7 @@ print(f"GBT accuracy: {scores.mean():.3f} +/- {scores.std():.3f}")</code></pre>
       <span class="label">What p-value is NOT:</span>
       <span class="desc">NOT probability that H₀ is true. NOT probability your result is reproducible. NOT effect size or practical significance.</span>
     </div>
-    <div class="formula">$$\text{Decision rule: p-value } \color{#64ffda}{< \alpha} \text{ (typically 0.05)} \to \text{reject } H_0$$</div>
+    <div class="formula">$$\text{Decision rule: p-value } \color{#c9a96e}{< \alpha} \text{ (typically 0.05)} \to \text{reject } H_0$$</div>
     <div class="key-point">
       <span class="label">Type I error (false positive):</span>
       <span class="desc">Reject \(H_0\) when it's true. Probability = \(\alpha\). Setting \(\alpha=0.05\) means 5% false positive rate.</span>
@@ -1878,28 +1764,28 @@ print(f"GBT accuracy: {scores.mean():.3f} +/- {scores.std():.3f}")</code></pre>
       <span class="desc">Fail to reject \(H_0\) when it's false. Probability = \(\beta\). Power = \(1 - \beta\).</span>
     </div>
     <hr class="divider">
-    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
     <div class="comparison" style="grid-template-columns: 1fr 1fr 1fr; margin-top: 10px;">
       <div class="option">
-        <div class="opt-title" style="color: #64ffda;">A/B Testing</div>
+        <div class="opt-title" style="color: #c9a96e;">A/B Testing</div>
         <div class="opt-desc">Compare two variants (control vs. treatment) using a statistical test. Use t-test for continuous metrics, chi-squared for proportions. Always compute power before running the test.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Testing a new recommendation algorithm, comparing UI button colors on conversion rate, evaluating a new pricing strategy.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Testing a new recommendation algorithm, comparing UI button colors on conversion rate, evaluating a new pricing strategy.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #4ecdc4;">Model Comparison</div>
+        <div class="opt-title" style="color: #6ea5c9;">Model Comparison</div>
         <div class="opt-desc">Test whether Model A is significantly better than Model B. Use paired tests (paired t-test, Wilcoxon) on cross-validation scores to account for dataset correlation.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Is XGBoost significantly better than Random Forest? Does the new feature improve accuracy? Comparing AUC scores across K folds.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Is XGBoost significantly better than Random Forest? Does the new feature improve accuracy? Comparing AUC scores across K folds.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #ffd93d;">Multiple Testing Correction</div>
+        <div class="opt-title" style="color: #e0c992;">Multiple Testing Correction</div>
         <div class="opt-desc">When testing many hypotheses simultaneously, correct for false discovery rate (Benjamini-Hochberg) or family-wise error (Bonferroni). Critical in genomics and feature selection.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Testing 20,000 genes for significance, running multiple A/B tests simultaneously, feature selection with univariate tests.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Testing 20,000 genes for significance, running multiple A/B tests simultaneously, feature selection with univariate tests.</div>
       </div>
     </div>
     <hr class="divider">
     <div class="interview-tip">Multiple comparisons: if you test 20 hypotheses at \(\alpha=0.05\), expect ~1 false positive. Use Bonferroni correction or false discovery rate control.</div>
     <div class="mnemonic">p-value = evidence against H₀ under assumption H₀ is true. Small p = unlikely data under H₀. But doesn't mean H₀ is false!
-    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Effect Size=0.5 (moderate effect). Power ≈ 0.6 (60% chance to detect). Increase to Effect Size=2 (huge effect). Power → 1 (almost certain to detect). Increase Sample Size (same effect size) → power increases. Larger effects and bigger samples = higher power.</div>
+    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Effect Size=0.5 (moderate effect). Power ≈ 0.6 (60% chance to detect). Increase to Effect Size=2 (huge effect). Power → 1 (almost certain to detect). Increase Sample Size (same effect size) → power increases. Larger effects and bigger samples = higher power.</div>
   
     <div class="code-example">
       <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
@@ -1952,7 +1838,7 @@ print(f"Cohen's d: {cohens_d:.2f}")</code></pre>
   </div>
   <div class="insight-box">
     <strong>Interview Tips:</strong> Monte Carlo sampling is fundamental for intractable expectations.
-    <div class="formula">$$E[f(X)] = \int f(x)p(x)dx \approx \color{#64ffda}{\frac{1}{n} \cdot \sum f(x_i)} \quad \text{where } x_i \sim p(x)$$</div>
+    <div class="formula">$$E[f(X)] = \int f(x)p(x)dx \approx \color{#c9a96e}{\frac{1}{n} \cdot \sum f(x_i)} \quad \text{where } x_i \sim p(x)$$</div>
     <div class="key-point">
       <span class="label">Algorithm:</span>
       <span class="desc">1. Sample \(x_1,\ldots,x_n\) from \(p(x)\). 2. Compute average \(\hat{f} = \frac{1}{n} \cdot \sum f(x_i)\). 3. \(\hat{f} \to E[f(X)]\) as \(n \to \infty\) (Law of Large Numbers).</span>
@@ -1970,28 +1856,28 @@ print(f"Cohen's d: {cohens_d:.2f}")</code></pre>
       <span class="desc">Computing partition functions in graphical models, expectations under intractable posteriors in Bayesian inference.</span>
     </div>
     <hr class="divider">
-    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
     <div class="comparison" style="grid-template-columns: 1fr 1fr 1fr; margin-top: 10px;">
       <div class="option">
-        <div class="opt-title" style="color: #64ffda;">Bayesian Inference</div>
+        <div class="opt-title" style="color: #c9a96e;">Bayesian Inference</div>
         <div class="opt-desc">When posterior distributions are intractable analytically. MCMC (Markov Chain Monte Carlo) samples from complex posteriors. Gives full uncertainty estimates, not just point estimates.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Bayesian neural networks, hierarchical models, Gaussian processes with non-conjugate likelihoods, probabilistic programming (Stan, PyMC).</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Bayesian neural networks, hierarchical models, Gaussian processes with non-conjugate likelihoods, probabilistic programming (Stan, PyMC).</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #4ecdc4;">Simulation & Integration</div>
+        <div class="opt-title" style="color: #6ea5c9;">Simulation & Integration</div>
         <div class="opt-desc">When you need to estimate expectations or integrals that have no closed form. Embarrassingly parallel -- scales well with compute.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Estimating pi (as shown), option pricing in finance, particle physics simulations, computing normalizing constants.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Estimating pi (as shown), option pricing in finance, particle physics simulations, computing normalizing constants.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #ffd93d;">Reinforcement Learning</div>
+        <div class="opt-title" style="color: #e0c992;">Reinforcement Learning</div>
         <div class="opt-desc">Monte Carlo methods estimate value functions by averaging returns from sampled episodes. No model of the environment needed (model-free).</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Policy evaluation in game playing, Monte Carlo Tree Search (AlphaGo), estimating Q-values from rollouts, exploration strategies.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Policy evaluation in game playing, Monte Carlo Tree Search (AlphaGo), estimating Q-values from rollouts, exploration strategies.</div>
       </div>
     </div>
     <hr class="divider">
     <div class="interview-tip">Slow convergence but embarrassingly parallel. Useful when analytical integral is intractable. Always consider variance reduction.</div>
     <div class="mnemonic">Monte Carlo = approximate integral by sampling. Simple, general, slow (\(O(1/\sqrt{n})\)). Variance reduction is key.
-    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Generate 100 samples — estimate bounces around π. Generate 1000 samples (click 10 times) — estimate settles. Generate 10,000 samples — estimate ≈ 3.14159. Sampling error shrinks as \(O(1/\sqrt{n})\). Quadruple samples to halve error.</div>
+    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Generate 100 samples — estimate bounces around π. Generate 1000 samples (click 10 times) — estimate settles. Generate 10,000 samples — estimate ≈ 3.14159. Sampling error shrinks as \(O(1/\sqrt{n})\). Quadruple samples to halve error.</div>
   
     <div class="code-example">
       <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
@@ -2037,7 +1923,7 @@ for n in [100, 1000, 10000, 100000]:
   </div>
   <div class="insight-box">
     <strong>Interview Tips:</strong> Log-sum-exp trick is essential for numerical stability in machine learning.
-    <div class="formula">$$\log\left(\sum \exp(x_i)\right) = \color{#64ffda}{m + \log\left(\sum \exp(x_i - m)\right)} \quad \text{where } m = \max(x_i)$$</div>
+    <div class="formula">$$\log\left(\sum \exp(x_i)\right) = \color{#c9a96e}{m + \log\left(\sum \exp(x_i - m)\right)} \quad \text{where } m = \max(x_i)$$</div>
     <div class="key-point">
       <span class="label">The problem:</span>
       <span class="desc">Direct computation exp(x) overflows when x is large. E.g., exp(1000) exceeds float64 range.</span>
@@ -2055,28 +1941,28 @@ for n in [100, 1000, 10000, 100000]:
       <span class="desc">\(\text{logsumexp}(x) = m + \log(\sum \exp(x - m))\). PyTorch: torch.logsumexp(). NumPy: scipy.special.logsumexp().</span>
     </div>
     <hr class="divider">
-    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
     <div class="comparison" style="grid-template-columns: 1fr 1fr 1fr; margin-top: 10px;">
       <div class="option">
-        <div class="opt-title" style="color: #64ffda;">Log-Sum-Exp for Softmax</div>
+        <div class="opt-title" style="color: #c9a96e;">Log-Sum-Exp for Softmax</div>
         <div class="opt-desc">Always use when computing softmax or log-softmax. Without this trick, large logits cause overflow (exp(1000) = Inf) and small ones cause underflow (exp(-1000) = 0).</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Classification output layers, attention score computation in transformers, mixture model responsibilities, any softmax computation.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Classification output layers, attention score computation in transformers, mixture model responsibilities, any softmax computation.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #4ecdc4;">Log-Space Probability</div>
+        <div class="opt-title" style="color: #6ea5c9;">Log-Space Probability</div>
         <div class="opt-desc">Always work in log-space when multiplying many probabilities. Products of small numbers underflow to zero; sums of logs stay stable.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> HMM forward/backward algorithms, language model perplexity, Bayesian model evidence computation, sequence probability in NLP.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> HMM forward/backward algorithms, language model perplexity, Bayesian model evidence computation, sequence probability in NLP.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #ffd93d;">Gradient Clipping</div>
+        <div class="opt-title" style="color: #e0c992;">Gradient Clipping</div>
         <div class="opt-desc">Another numerical stability technique: cap gradient magnitude to prevent exploding gradients. Essential for RNNs and deep networks.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> LSTM/GRU training, transformer training, any deep network with >20 layers, reinforcement learning with unstable rewards.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> LSTM/GRU training, transformer training, any deep network with >20 layers, reinforcement learning with unstable rewards.</div>
       </div>
     </div>
     <hr class="divider">
     <div class="interview-tip">Always use log-space computation for probabilities and likelihoods. Never compute softmax as \(\exp(x)/\sum\exp(x)\) directly.</div>
     <div class="mnemonic">Log-sum-exp = prevent overflow/underflow by shifting to max. Subtract max, exponentiate safely, add max back in log space.
-    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set logits to [0, 1, 2] with Temperature=1. Both softmax versions work. Increase logits to [0, 100, 200]. Blue softmax overflows to NaN (exp(200) is huge!). Red (stable) softmax gives [~0, ~0, ~1]. Subtract max first, always.</div>
+    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Set logits to [0, 1, 2] with Temperature=1. Both softmax versions work. Increase logits to [0, 100, 200]. Blue softmax overflows to NaN (exp(200) is huge!). Red (stable) softmax gives [~0, ~0, ~1]. Subtract max first, always.</div>
     <div class="code-example">
       <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
         <span class="code-toggle-icon">&#9654;</span> Framework Example: Log-Sum-Exp Trick
@@ -2103,6 +1989,7 @@ print(f"Log-sum-exp: {np.max(logits) + np.log(np.sum(np.exp(logits - np.max(logi
 
 </div>
 
+<script src="theme.js"></script>
 <script>
 function handleInlineCheck(groupId, button, isCorrect, explanation) {
   const group = document.getElementById(groupId);
@@ -2125,6 +2012,11 @@ function handleInlineCheck(groupId, button, isCorrect, explanation) {
   }
 }
 
+function formatCoachMessage(lead, body, takeaway) {
+  const safeTakeaway = takeaway ? '<span class="coach-takeaway"><strong>Interview answer:</strong> ' + takeaway + '</span>' : '';
+  return '<span class="coach-lead">' + lead + '</span>' + body + safeTakeaway;
+}
+
 function updateBayesCoach(prior, sensitivity, specificity, posterior) {
   const coach = document.getElementById('bayesCoach');
   if (!coach) return;
@@ -2134,19 +2026,19 @@ function updateBayesCoach(prior, sensitivity, specificity, posterior) {
 
   if (prior <= 0.02 && posterior < 0.6) {
     observation = 'The prior is tiny, so even a very accurate test is fighting against class imbalance. The healthy population is large enough that false positives still matter.';
-    interviewLine = 'Interview answer: a positive test is not the same as a high posterior when the event itself is rare.';
+    interviewLine = 'a positive test is not the same as a high posterior when the event itself is rare.';
   } else if (specificity < 0.9) {
     observation = 'Specificity is low enough that false positives are now the main bottleneck. This is often what destroys trust in screening-style systems.';
-    interviewLine = 'Interview answer: once false positives rise, posterior confidence can collapse even if sensitivity stays high.';
+    interviewLine = 'once false positives rise, posterior confidence can collapse even if sensitivity stays high.';
   } else if (prior >= 0.3) {
     observation = 'Now the disease is common enough that a positive result is much more convincing. The same test is being interpreted in a very different population.';
-    interviewLine = 'Interview answer: the evidence did not change, the prior did.';
+    interviewLine = 'the evidence did not change, the prior did.';
   } else {
     observation = 'You are in the middle regime where both prior prevalence and test quality matter. Neither one alone explains the posterior.';
-    interviewLine = 'Interview answer: Bayes combines prevalence with evidence rather than trusting either in isolation.';
+    interviewLine = 'Bayes combines prevalence with evidence rather than trusting either in isolation.';
   }
 
-  coach.innerHTML = '<strong style="color:#64ffda;">Current read:</strong> posterior = ' + (posterior * 100).toFixed(1) + '%. ' + observation + ' <span style="color:#b8f5dd;">' + interviewLine + '</span>';
+  coach.innerHTML = formatCoachMessage('Current read', 'posterior = <span class="coach-key-number">' + (posterior * 100).toFixed(1) + '%</span>. ' + observation, interviewLine);
 }
 
 function updateDistCoach(type, paramVal, info) {
@@ -2177,7 +2069,7 @@ function updateDistCoach(type, paramVal, info) {
     lesson = 'A distribution over probabilities themselves. Use it when the hidden quantity lives between 0 and 1, like a click-through rate.';
   }
 
-  coach.innerHTML = '<strong style="color:#64ffda;">Current read:</strong> ' + typeLabels[type] + ' with parameter ' + paramVal.toFixed(2) + '. ' + lesson + ' <span style="color:#b8f5dd;">' + info + '</span>';
+  coach.innerHTML = formatCoachMessage('Current read', '<span class="coach-key-number">' + typeLabels[type] + '</span> with parameter <span class="coach-key-number">' + paramVal.toFixed(2) + '</span>. ' + lesson, info);
 }
 
 function updateMLECoach(n, priorStrength, heads, mleTheta, mapTheta) {
@@ -2193,7 +2085,7 @@ function updateMLECoach(n, priorStrength, heads, mleTheta, mapTheta) {
     observation = 'You are in the intermediate regime where both the data and the prior have noticeable influence.';
   }
 
-  coach.innerHTML = '<strong style="color:#64ffda;">Current read:</strong> observed ' + heads + '/' + n + ' heads. MLE = ' + mleTheta.toFixed(3) + ', MAP ≈ ' + mapTheta.toFixed(3) + '. ' + observation;
+  coach.innerHTML = formatCoachMessage('Current read', 'observed <span class="coach-key-number">' + heads + '/' + n + '</span> heads. MLE = <span class="coach-key-number">' + mleTheta.toFixed(3) + '</span>, MAP ≈ <span class="coach-key-number">' + mapTheta.toFixed(3) + '</span>. ' + observation);
 }
 
 function updateCLTCoach(n, numSamples, stdOfMeans) {
@@ -2210,7 +2102,7 @@ function updateCLTCoach(n, numSamples, stdOfMeans) {
     observation = 'The Gaussian shape is emerging, but you can still see some finite-sample roughness.';
   }
 
-  coach.innerHTML = '<strong style="color:#64ffda;">Current read:</strong> n = ' + n + ', samples = ' + numSamples + '. Empirical std of the means = ' + stdOfMeans.toFixed(3) + ', expected scale ≈ 1/sqrt(n) = ' + expectedSE.toFixed(3) + '. ' + observation;
+  coach.innerHTML = formatCoachMessage('Current read', 'n = <span class="coach-key-number">' + n + '</span>, samples = <span class="coach-key-number">' + numSamples + '</span>. Empirical std of the means = <span class="coach-key-number">' + stdOfMeans.toFixed(3) + '</span>, expected scale ≈ <span class="coach-key-number">' + expectedSE.toFixed(3) + '</span>. ' + observation);
 }
 
 function updateEntropyCoach(p, q, entropy, crossEntropy, kl) {
@@ -2226,12 +2118,16 @@ function updateEntropyCoach(p, q, entropy, crossEntropy, kl) {
     observation = 'The task has meaningful intrinsic uncertainty, and the model is paying an additional mismatch penalty on top of that.';
   }
 
-  coach.innerHTML = '<strong style="color:#64ffda;">Current read:</strong> H(p) = ' + entropy.toFixed(3) + ', H(p,q) = ' + crossEntropy.toFixed(3) + ', KL = ' + kl.toFixed(3) + '. ' + observation;
+  coach.innerHTML = formatCoachMessage('Current read', 'H(p) = <span class="coach-key-number">' + entropy.toFixed(3) + '</span>, H(p,q) = <span class="coach-key-number">' + crossEntropy.toFixed(3) + '</span>, KL = <span class="coach-key-number">' + kl.toFixed(3) + '</span>. ' + observation);
 }
 
 const pedagogySectionMeta = {
   'KL (Kullback-Leibler) Divergence: Asymmetry': {
     goal: 'Goal: understand why forward and reverse KL reward different approximations. The key lesson is not just that KL is asymmetric, but how that changes model behavior.',
+    whatItIs: [
+      'KL divergence measures how different one probability distribution is from another. It is a mismatch score, not a true distance.',
+      'The key twist is that <code>KL(p||q)</code> and <code>KL(q||p)</code> are not the same. Swapping the two distributions changes what mistakes get punished most.'
+    ],
     pills: ['Core Distribution Matching', 'Trap: KL is a true distance', 'Practice: mode-covering vs mode-seeking'],
     miniLabTitle: 'Mini-Lab',
     miniLabSteps: [
@@ -2253,6 +2149,10 @@ const pedagogySectionMeta = {
   },
   'Gradient Descent Variants': {
     goal: 'Goal: compare optimization dynamics rather than memorizing optimizer names. The right question is what each method does to noisy or curved gradients.',
+    whatItIs: [
+      'Gradient descent updates parameters by stepping downhill on the loss surface. Different variants change how that step is computed.',
+      'Vanilla SGD uses the current gradient only. Momentum carries previous velocity, and Adam rescales steps using running estimates of gradient size.'
+    ],
     pills: ['Core Optimization Intuition', 'Trap: Adam is always best', 'Practice: trajectory comparison'],
     miniLabTitle: 'Mini-Lab',
     miniLabSteps: [
@@ -2274,6 +2174,10 @@ const pedagogySectionMeta = {
   },
   'Learning Rate Effect': {
     goal: 'Goal: build the instinct for under-stepping, over-stepping, and the sweet spot in between. Learning rate is often the first thing to diagnose when training behaves badly.',
+    whatItIs: [
+      'The learning rate is the step size of optimization. It controls how far the model moves when it follows the gradient.',
+      'Too small means painfully slow progress. Too large means you overshoot good regions and can destabilize training entirely.'
+    ],
     pills: ['Core Hyperparameter', 'Trap: smaller is always safer', 'Practice: stability diagnosis'],
     miniLabTitle: 'Mini-Lab',
     miniLabSteps: [
@@ -2295,6 +2199,10 @@ const pedagogySectionMeta = {
   },
   'SVD (Singular Value Decomposition) & Rank-k Approximation': {
     goal: 'Goal: see compression as selective retention of structure. The key takeaway is that a few singular components can preserve most of the useful signal.',
+    whatItIs: [
+      'SVD breaks a matrix into orthogonal directions plus a strength for each direction. It tells you which patterns matter most.',
+      'Rank-k approximation keeps only the top k components, so you preserve the broad structure while discarding fine detail or noise.'
+    ],
     pills: ['Core Linear Algebra Tool', 'Trap: exact factorization equals useful compression', 'Practice: low-rank intuition'],
     miniLabTitle: 'Mini-Lab',
     miniLabSteps: [
@@ -2316,6 +2224,10 @@ const pedagogySectionMeta = {
   },
   'Eigenvalues & Eigenvectors': {
     goal: 'Goal: understand eigenvectors as directions that stay put under a transformation, and eigenvalues as how strongly those directions are stretched or shrunk.',
+    whatItIs: [
+      'An eigenvector is a direction that a matrix transforms without rotating away from itself. The matrix may stretch or shrink it, but the direction stays the same.',
+      'The amount of stretch or shrink is the eigenvalue. So eigenpairs tell you the natural action of a transformation.'
+    ],
     pills: ['Core Transformation Intuition', 'Trap: eigenvectors are just arbitrary axes', 'Practice: invariant directions'],
     miniLabTitle: 'Mini-Lab',
     miniLabSteps: [
@@ -2337,6 +2249,10 @@ const pedagogySectionMeta = {
   },
   'Bias-Variance Tradeoff': {
     goal: 'Goal: diagnose underfitting and overfitting as different failure modes, not as one vague “model quality” concept.',
+    whatItIs: [
+      'Bias means the model is too rigid and systematically misses the real pattern. Variance means the model is too sensitive to the sampled data and changes too much.',
+      'The tradeoff is about balancing those two errors: enough flexibility to learn the signal, but not so much that you memorize noise.'
+    ],
     pills: ['Core Generalization Tradeoff', 'Trap: lower training error means better model', 'Practice: underfit vs overfit'],
     miniLabTitle: 'Mini-Lab',
     miniLabSteps: [
@@ -2358,6 +2274,10 @@ const pedagogySectionMeta = {
   },
   'L1 vs L2 Regularization': {
     goal: 'Goal: understand that L1 and L2 do different geometric and statistical things. They are not interchangeable “shrink the weights” buttons.',
+    whatItIs: [
+      'Regularization adds a penalty to discourage overly large weights. It is one way to trade a little fit for better generalization.',
+      'L1 prefers sparse solutions and can zero weights out. L2 shrinks weights smoothly without usually making them exactly zero.'
+    ],
     pills: ['Core Regularization Choice', 'Trap: both penalties behave the same', 'Practice: sparsity vs smooth shrinkage'],
     miniLabTitle: 'Mini-Lab',
     miniLabSteps: [
@@ -2379,6 +2299,10 @@ const pedagogySectionMeta = {
   },
   'Decision Boundaries: Linear vs Non-Linear': {
     goal: 'Goal: connect model class to the shapes of decision boundaries it can express. This is capacity made visual.',
+    whatItIs: [
+      'A decision boundary is the line or surface that separates predicted classes. It shows what patterns a model family can represent.',
+      'Linear models can only draw straight separators in feature space. Non-linear models can bend and carve more complex regions.'
+    ],
     pills: ['Core Capacity Intuition', 'Trap: linear means simplistic in every sense', 'Practice: boundary shape'],
     miniLabTitle: 'Mini-Lab',
     miniLabSteps: [
@@ -2400,6 +2324,10 @@ const pedagogySectionMeta = {
   },
   'K-Fold Cross-Validation': {
     goal: 'Goal: treat validation as repeated estimation of generalization, not as one lucky or unlucky split.',
+    whatItIs: [
+      'K-fold cross-validation repeatedly rotates which slice of the data is used for validation. That gives you several estimates instead of trusting one split.',
+      'It is especially useful when data is limited, because every example gets a turn in validation and a turn in training.'
+    ],
     pills: ['Core Evaluation Habit', 'Trap: one train/test split is enough', 'Practice: stable estimation'],
     miniLabTitle: 'Mini-Lab',
     miniLabSteps: [
@@ -2421,6 +2349,10 @@ const pedagogySectionMeta = {
   },
   'Gradient Boosted Trees': {
     goal: 'Goal: understand boosting as iterative error correction. Each new tree is not starting over; it is trying to fix what the ensemble still gets wrong.',
+    whatItIs: [
+      'Boosting builds an ensemble sequentially. Each new tree is trained to correct the mistakes left by the current ensemble.',
+      'So the final model is not one big tree. It is many small trees added together, each acting like a patch on the remaining error.'
+    ],
     pills: ['Core Ensemble Intuition', 'Trap: more trees means random forest', 'Practice: residual fitting'],
     miniLabTitle: 'Mini-Lab',
     miniLabSteps: [
@@ -2442,6 +2374,10 @@ const pedagogySectionMeta = {
   },
   'Hypothesis Testing & p-Values': {
     goal: 'Goal: interpret p-values as compatibility with a null model, not as the probability that the null is true.',
+    whatItIs: [
+      'Hypothesis testing compares observed data against a null model, usually “no effect” or “no difference.”',
+      'A p-value asks: if the null were true, how surprising would data this extreme be? It is about the data under the null, not the probability that the null is true.'
+    ],
     pills: ['Core Inference Habit', 'Trap: p-value = probability null is true', 'Practice: null-model reasoning'],
     miniLabTitle: 'Mini-Lab',
     miniLabSteps: [
@@ -2463,6 +2399,10 @@ const pedagogySectionMeta = {
   },
   'Monte Carlo Estimation of π': {
     goal: 'Goal: connect Monte Carlo to noisy estimation and the slow 1/sqrt(n) convergence law. The important lesson is variance, not just the geometry of the circle.',
+    whatItIs: [
+      'Monte Carlo estimates a quantity by random sampling instead of exact calculation. It trades deterministic math for noisy approximation.',
+      'The power of the method is generality: if you can simulate samples, you can often estimate the answer. The weakness is variance.'
+    ],
     pills: ['Core Sampling Intuition', 'Trap: more samples means linearly less error', 'Practice: variance awareness'],
     miniLabTitle: 'Mini-Lab',
     miniLabSteps: [
@@ -2484,6 +2424,10 @@ const pedagogySectionMeta = {
   },
   'Numerical Stability: Log-Sum-Exp Trick': {
     goal: 'Goal: understand numerical stability as part of the algorithm, not an implementation afterthought. This is about safe computation of the same math.',
+    whatItIs: [
+      'Numerical stability is about computing the right mathematical quantity without overflow, underflow, or catastrophic rounding.',
+      'The log-sum-exp trick rewrites a dangerous expression into an equivalent but safer one by shifting values before exponentiating.'
+    ],
     pills: ['Core Numerical Stability', 'Trap: mathematically equivalent means numerically safe', 'Practice: overflow intuition'],
     miniLabTitle: 'Mini-Lab',
     miniLabSteps: [
@@ -2523,6 +2467,18 @@ function enhancePedagogySections() {
     if (subtitle) subtitle.textContent = meta.goal;
 
     const firstVisual = section.querySelector('.viz-canvas, .controls, .legend, .insight-box');
+    if (meta.whatItIs && firstVisual) {
+      const conceptPrimer = document.createElement('div');
+      conceptPrimer.className = 'concept-primer';
+      conceptPrimer.appendChild(createTextElement('div', 'concept-label', 'What This Is'));
+      meta.whatItIs.forEach(paragraph => {
+        const p = document.createElement('p');
+        p.innerHTML = paragraph;
+        conceptPrimer.appendChild(p);
+      });
+      section.insertBefore(conceptPrimer, firstVisual);
+    }
+
     const learningStrip = document.createElement('div');
     learningStrip.className = 'learning-strip';
     meta.pills.forEach((pill, pillIndex) => {
@@ -2644,9 +2600,9 @@ function drawBayes() {
 
   // Prior bar
   const priorH = prior * ph;
-  ctx.fillStyle = '#7c4dff88';
+  ctx.fillStyle = '#8a6ec988';
   ctx.fillRect(priorX - barW/2, H - pad.b - priorH, barW, priorH);
-  ctx.strokeStyle = '#7c4dff';
+  ctx.strokeStyle = '#8a6ec9';
   ctx.lineWidth = 2;
   ctx.strokeRect(priorX - barW/2, H - pad.b - priorH, barW, priorH);
 
@@ -2658,19 +2614,19 @@ function drawBayes() {
 
   // Posterior bar
   const postH = posterior * ph;
-  ctx.fillStyle = '#64ffda88';
+  ctx.fillStyle = '#c9a96e88';
   ctx.fillRect(postX - barW/2, H - pad.b - postH, barW, postH);
-  ctx.strokeStyle = '#64ffda';
+  ctx.strokeStyle = '#c9a96e';
   ctx.lineWidth = 2;
   ctx.strokeRect(postX - barW/2, H - pad.b - postH, barW, postH);
 
-  ctx.fillStyle = '#64ffda';
+  ctx.fillStyle = '#c9a96e';
   ctx.fillText((posterior * 100).toFixed(1) + '%', postX, H - pad.b + 20);
   ctx.fillText('Posterior', postX, pad.t + 15);
 
   // Surprise annotation
   if (prior < 0.05 && posterior < 0.6) {
-    ctx.fillStyle = '#ff6b6b';
+    ctx.fillStyle = '#c96e8a';
     ctx.font = 'bold 17px Inter';
     ctx.textAlign = 'left';
     ctx.fillText('SURPRISE!', postX + 50, H/2);
@@ -2709,7 +2665,7 @@ function drawDist() {
   const paramVal = parseInt(document.getElementById('distParam').value) / 100;
 
   // Fill background
-  ctx.fillStyle = '#0d0d1a';
+  ctx.fillStyle = '#0d0d14';
   ctx.fillRect(0, 0, W, H);
 
   const pad = { l: 70, r: 40, t: 40, b: 60 };
@@ -2746,13 +2702,13 @@ function drawDist() {
     info = `Bernoulli: p=${p.toFixed(2)}, E[X]=${mean.toFixed(3)}, Var=${variance.toFixed(3)}`;
 
     // Draw bars
-    ctx.fillStyle = '#64ffda88';
+    ctx.fillStyle = '#c9a96e88';
     for (let i = 0; i < 2; i++) {
       const x = pad.l + (i + 0.5) * pw / 2;
       const y = H - pad.b - data[i] * ph;
       const w = pw / 4;
       ctx.fillRect(x - w/2, y, w, data[i] * ph);
-      ctx.strokeStyle = '#64ffda';
+      ctx.strokeStyle = '#c9a96e';
       ctx.lineWidth = 1.5;
       ctx.strokeRect(x - w/2, y, w, data[i] * ph);
       ctx.fillStyle = '#b0b0c0';
@@ -2773,13 +2729,13 @@ function drawDist() {
     info = `Binomial: n=${n}, p=0.50, E[X]=${mean.toFixed(2)}, Var=${variance.toFixed(2)}`;
 
     // Draw bars
-    ctx.fillStyle = '#64ffda88';
+    ctx.fillStyle = '#c9a96e88';
     for (let k = 0; k < data.length; k++) {
       const x = pad.l + k / data.length * pw;
       const y = H - pad.b - data[k] * ph * 5;
       const w = pw / data.length * 0.8;
       ctx.fillRect(x, y, w, Math.max(1, data[k] * ph * 5));
-      ctx.strokeStyle = '#64ffda';
+      ctx.strokeStyle = '#c9a96e';
       ctx.lineWidth = 1;
       ctx.strokeRect(x, y, w, Math.max(1, data[k] * ph * 5));
     }
@@ -2796,13 +2752,13 @@ function drawDist() {
     mean = lambda;
     info = `Poisson: λ=${lambda.toFixed(2)}, E[X]=${mean.toFixed(2)}, Var=${variance.toFixed(2)}`;
 
-    ctx.fillStyle = '#64ffda88';
+    ctx.fillStyle = '#c9a96e88';
     for (let k = 0; k < data.length; k++) {
       const x = pad.l + k / 20 * pw;
       const y = H - pad.b - data[k] * ph * 3;
       const w = pw / 20 * 0.7;
       ctx.fillRect(x, y, w, Math.max(1, data[k] * ph * 3));
-      ctx.strokeStyle = '#64ffda';
+      ctx.strokeStyle = '#c9a96e';
       ctx.lineWidth = 1;
       ctx.strokeRect(x, y, w, Math.max(1, data[k] * ph * 3));
     }
@@ -2810,7 +2766,7 @@ function drawDist() {
     const mu = 0, sigma = paramVal * 2 + 0.3;
     info = `Gaussian: μ=0, σ=${sigma.toFixed(2)}, E[X]=0, Var=${(sigma*sigma).toFixed(3)}`;
 
-    ctx.strokeStyle = '#64ffda';
+    ctx.strokeStyle = '#c9a96e';
     ctx.lineWidth = 2.5;
     ctx.beginPath();
     for (let i = 0; i <= 100; i++) {
@@ -2827,7 +2783,7 @@ function drawDist() {
     variance = 1 / (lambda * lambda);
     info = `Exponential: λ=${lambda.toFixed(2)}, E[X]=${mean.toFixed(3)}, Var=${variance.toFixed(3)}`;
 
-    ctx.strokeStyle = '#64ffda';
+    ctx.strokeStyle = '#c9a96e';
     ctx.lineWidth = 2.5;
     ctx.beginPath();
     for (let i = 0; i <= 100; i++) {
@@ -2857,7 +2813,7 @@ function drawDist() {
     }
     const betaScale = Math.max(0.1, 0.85 * ph / maxDensity);
 
-    ctx.strokeStyle = '#64ffda';
+    ctx.strokeStyle = '#c9a96e';
     ctx.lineWidth = 2.5;
     ctx.beginPath();
     for (let i = 0; i <= 100; i++) {
@@ -2915,7 +2871,7 @@ function drawMLE() {
   document.getElementById('mlePriorVal').textContent = priorStrength;
 
   // Fill background
-  ctx.fillStyle = '#0d0d1a';
+  ctx.fillStyle = '#0d0d14';
   ctx.fillRect(0, 0, W, H);
 
   // Assume 70% heads in data
@@ -2972,7 +2928,7 @@ function drawMLE() {
   const scalePosterior = maxPosterior > 0 ? 0.7 * ph / maxPosterior : 1;
 
   // Prior (Beta distribution)
-  ctx.strokeStyle = '#64ffda';
+  ctx.strokeStyle = '#c9a96e';
   ctx.lineWidth = 2.5;
   ctx.beginPath();
   for (let i = 0; i <= 100; i++) {
@@ -2986,13 +2942,13 @@ function drawMLE() {
     if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
   }
   ctx.stroke();
-  ctx.fillStyle = '#64ffda';
+  ctx.fillStyle = '#c9a96e';
   ctx.font = '15px Inter';
   ctx.textAlign = 'left';
   ctx.fillText('Prior (Beta dist.)', pad.l + 12, pad.t + 20);
 
   // Likelihood
-  ctx.strokeStyle = '#ff6b6b';
+  ctx.strokeStyle = '#c96e8a';
   ctx.lineWidth = 2.5;
   ctx.beginPath();
   for (let i = 0; i <= 100; i++) {
@@ -3003,13 +2959,13 @@ function drawMLE() {
     if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
   }
   ctx.stroke();
-  ctx.fillStyle = '#ff6b6b';
+  ctx.fillStyle = '#c96e8a';
   ctx.font = '15px Inter';
   ctx.textAlign = 'left';
   ctx.fillText('Likelihood', pad.l + 12, pad.t + 40);
 
   // Posterior (MAP)
-  ctx.strokeStyle = '#4ecdc4';
+  ctx.strokeStyle = '#6ea5c9';
   ctx.lineWidth = 3;
   ctx.beginPath();
   for (let i = 0; i <= 100; i++) {
@@ -3025,14 +2981,14 @@ function drawMLE() {
     if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
   }
   ctx.stroke();
-  ctx.fillStyle = '#4ecdc4';
+  ctx.fillStyle = '#6ea5c9';
   ctx.font = '15px Inter';
   ctx.textAlign = 'left';
   ctx.fillText('Posterior (MAP) = Prior x Likelihood', pad.l + 12, pad.t + 60);
 
   // Mark MLE
   const mleX = pad.l + mleTheta * pw;
-  ctx.strokeStyle = '#ffd93d';
+  ctx.strokeStyle = '#e0c992';
   ctx.lineWidth = 2;
   ctx.setLineDash([5, 5]);
   ctx.beginPath();
@@ -3098,7 +3054,7 @@ function drawCLT() {
   }
 
   const maxBin = Math.max(...bins);
-  ctx.fillStyle = '#64ffda88';
+  ctx.fillStyle = '#c9a96e88';
   for (let i = 0; i < nbins; i++) {
     const x = pad.l + i / nbins * pw;
     const h = bins[i] / maxBin * ph;
@@ -3109,7 +3065,7 @@ function drawCLT() {
   const meanOfMeans = sampleMeans.reduce((a, b) => a + b, 0) / sampleMeans.length;
   const stdOfMeans = Math.sqrt(sampleMeans.reduce((a, m) => a + Math.pow((m - meanOfMeans), 2), 0) / sampleMeans.length);
 
-  ctx.strokeStyle = '#ff6b6b';
+  ctx.strokeStyle = '#c96e8a';
   ctx.lineWidth = 2.5;
   ctx.beginPath();
   for (let i = 0; i <= 100; i++) {
@@ -3175,7 +3131,7 @@ function drawEntropy() {
   ctx.fillText('p (probability) →', W/2, H - 8);
 
   // Entropy H(p) = -p*log(p) - (1-p)*log(1-p)
-  ctx.strokeStyle = '#64ffda';
+  ctx.strokeStyle = '#c9a96e';
   ctx.lineWidth = 2.5;
   ctx.beginPath();
   for (let i = 1; i <= 100; i++) {
@@ -3186,13 +3142,13 @@ function drawEntropy() {
     if (i === 1) ctx.moveTo(x, y); else ctx.lineTo(x, y);
   }
   ctx.stroke();
-  ctx.fillStyle = '#64ffda';
+  ctx.fillStyle = '#c9a96e';
   ctx.font = '15px Inter';
   ctx.textAlign = 'left';
   ctx.fillText('H(p)', pad.l + 10, pad.t + 15);
 
   // Cross-entropy H(p,q)
-  ctx.strokeStyle = '#ff6b6b';
+  ctx.strokeStyle = '#c96e8a';
   ctx.lineWidth = 2;
   ctx.beginPath();
   for (let i = 1; i <= 100; i++) {
@@ -3203,11 +3159,11 @@ function drawEntropy() {
     if (i === 1) ctx.moveTo(x, y); else ctx.lineTo(x, y);
   }
   ctx.stroke();
-  ctx.fillStyle = '#ff6b6b';
+  ctx.fillStyle = '#c96e8a';
   ctx.fillText('H(p,q)', pad.l + 80, pad.t + 15);
 
   // KL divergence KL(p||q)
-  ctx.strokeStyle = '#7c4dff';
+  ctx.strokeStyle = '#8a6ec9';
   ctx.lineWidth = 2;
   ctx.beginPath();
   for (let i = 1; i <= 100; i++) {
@@ -3229,7 +3185,7 @@ function drawEntropy() {
   const kl_p = ce_p - entropy_p;
 
   const markX = pad.l + p * pw;
-  ctx.fillStyle = '#64ffda44';
+  ctx.fillStyle = '#c9a96e44';
   ctx.fillRect(markX - 2, pad.t, 4, ph);
 
   ctx.fillStyle = '#b0b0c0';
@@ -3279,8 +3235,8 @@ function drawKL() {
   const yScale = Math.max(maxP, maxQ) * 1.1; // 10% headroom
 
   // P distribution (fixed at center)
-  ctx.strokeStyle = '#64ffda';
-  ctx.fillStyle = '#64ffda11';
+  ctx.strokeStyle = '#c9a96e';
+  ctx.fillStyle = '#c9a96e11';
   ctx.lineWidth = 2.5;
   ctx.beginPath();
   for (let i = 0; i <= 100; i++) {
@@ -3293,8 +3249,8 @@ function drawKL() {
   ctx.stroke();
 
   // Q distribution
-  ctx.strokeStyle = '#ff6b6b';
-  ctx.fillStyle = '#ff6b6b11';
+  ctx.strokeStyle = '#c96e8a';
+  ctx.fillStyle = '#c96e8a11';
   ctx.lineWidth = 2.5;
   ctx.beginPath();
   for (let i = 0; i <= 100; i++) {
@@ -3306,12 +3262,12 @@ function drawKL() {
   }
   ctx.stroke();
 
-  ctx.fillStyle = '#64ffda';
+  ctx.fillStyle = '#c9a96e';
   ctx.font = '15px Inter';
   ctx.textAlign = 'left';
   ctx.fillText('P (True Dist)', pad.l + 10, pad.t + 15);
 
-  ctx.fillStyle = '#ff6b6b';
+  ctx.fillStyle = '#c96e8a';
   ctx.fillText('Q (Approx Dist)', pad.l + 150, pad.t + 15);
 
   // Compute actual KL values numerically
@@ -3411,15 +3367,15 @@ function drawGDV() {
   }
 
   // Labels
-  ctx.fillStyle = '#ff6b6b';
+  ctx.fillStyle = '#c96e8a';
   ctx.font = 'bold 13px Inter';
   ctx.textAlign = 'left';
   ctx.fillText('SGD', 10, 20);
-  ctx.fillStyle = '#4ecdc4';
+  ctx.fillStyle = '#6ea5c9';
   ctx.fillText('Momentum', 10, 36);
-  ctx.fillStyle = '#ffd93d';
+  ctx.fillStyle = '#e0c992';
   ctx.fillText('Adam', 10, 52);
-  ctx.fillStyle = '#64ffda';
+  ctx.fillStyle = '#c9a96e';
   ctx.fillText('★ Minimum', 10, 68);
 
   // Draw paths
@@ -3446,12 +3402,12 @@ function drawGDV() {
     }
   }
 
-  drawPath(gdvPaths.sgd, '#ff6b6b');
-  drawPath(gdvPaths.momentum, '#4ecdc4');
-  drawPath(gdvPaths.adam, '#ffd93d');
+  drawPath(gdvPaths.sgd, '#c96e8a');
+  drawPath(gdvPaths.momentum, '#6ea5c9');
+  drawPath(gdvPaths.adam, '#e0c992');
 
   // Minimum
-  ctx.fillStyle = '#64ffda44';
+  ctx.fillStyle = '#c9a96e44';
   ctx.beginPath();
   ctx.arc(W / 2, H / 2, 8, 0, Math.PI * 2);
   ctx.fill();
@@ -3562,16 +3518,16 @@ function drawLR() {
   }
 
   // Label
-  ctx.fillStyle = '#ff6b6b';
+  ctx.fillStyle = '#c96e8a';
   ctx.font = 'bold 13px Inter';
   ctx.textAlign = 'left';
   ctx.fillText('Gradient Descent Path', 10, 20);
-  ctx.fillStyle = '#64ffda';
+  ctx.fillStyle = '#c9a96e';
   ctx.fillText('★ Minimum', 10, 36);
 
   // Draw path
   if (lrPath.length > 1) {
-    ctx.strokeStyle = '#ff6b6b';
+    ctx.strokeStyle = '#c96e8a';
     ctx.lineWidth = 2;
     ctx.beginPath();
     for (let i = 0; i < lrPath.length; i++) {
@@ -3582,14 +3538,14 @@ function drawLR() {
     ctx.stroke();
 
     const last = lrPath[lrPath.length - 1];
-    ctx.fillStyle = '#ff6b6b';
+    ctx.fillStyle = '#c96e8a';
     ctx.beginPath();
     ctx.arc((last[0] / (2 * range) + 0.5) * W, (last[1] / (2 * range) + 0.5) * H, 5, 0, Math.PI * 2);
     ctx.fill();
   }
 
   // Minimum
-  ctx.fillStyle = '#64ffda44';
+  ctx.fillStyle = '#c9a96e44';
   ctx.beginPath();
   ctx.arc(W / 2, H / 2, 8, 0, Math.PI * 2);
   ctx.fill();
@@ -3676,7 +3632,7 @@ function drawSVD() {
 
   // Draw all singular values
   const barW = pw / maxRank * 0.9;
-  ctx.fillStyle = '#4ecdc488';
+  ctx.fillStyle = '#6ea5c988';
   for (let i = 0; i < maxRank; i++) {
     const x = pad.l + (i + 0.5) * pw / maxRank;
     const h = svals[i] * ph;
@@ -3684,7 +3640,7 @@ function drawSVD() {
   }
 
   // Highlight kept components
-  ctx.fillStyle = '#64ffda';
+  ctx.fillStyle = '#c9a96e';
   for (let i = 0; i < k; i++) {
     const x = pad.l + (i + 0.5) * pw / maxRank;
     const h = svals[i] * ph;
@@ -3746,7 +3702,7 @@ function drawEigen() {
   // v1 = [1/sqrt(2), 1/sqrt(2)], v2 = [1/sqrt(2), -1/sqrt(2)]
 
   // Draw original vectors
-  ctx.strokeStyle = '#64ffda88';
+  ctx.strokeStyle = '#c9a96e88';
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(cx, cy);
@@ -3761,21 +3717,21 @@ function drawEigen() {
   // Eigenvector 1: (1/sqrt(2), 1/sqrt(2)) scaled by lambda1
   const ev1x = lambda1 / Math.sqrt(2) * scale;
   const ev1y = lambda1 / Math.sqrt(2) * scale;
-  ctx.strokeStyle = '#ff6b6b';
+  ctx.strokeStyle = '#c96e8a';
   ctx.lineWidth = 2.5;
   ctx.beginPath();
   ctx.moveTo(cx, cy);
   ctx.lineTo(cx + ev1x, cy + ev1y);
   ctx.stroke();
 
-  ctx.fillStyle = '#ff6b6b';
+  ctx.fillStyle = '#c96e8a';
   ctx.font = '15px Inter';
   ctx.fillText(`λ₁=${lambda1.toFixed(2)}`, cx + ev1x + 5, cy + ev1y - 5);
 
   // Eigenvector 2: (1/sqrt(2), -1/sqrt(2)) scaled by lambda2
   const ev2x = lambda2 / Math.sqrt(2) * scale;
   const ev2y = -lambda2 / Math.sqrt(2) * scale;
-  ctx.strokeStyle = '#7c4dff';
+  ctx.strokeStyle = '#8a6ec9';
   ctx.lineWidth = 2.5;
   ctx.beginPath();
   ctx.moveTo(cx, cy);
@@ -3786,7 +3742,7 @@ function drawEigen() {
   ctx.fillText(`λ₂=${lambda2.toFixed(2)}`, cx + ev2x + 5, cy + ev2y + 15);
 
   // Legend
-  ctx.fillStyle = '#64ffda';
+  ctx.fillStyle = '#c9a96e';
   ctx.font = '15px Inter';
   ctx.fillText('Original Basis', cx - scale - 50, cy - scale - 50);
   ctx.fillText('A = [[' + a00.toFixed(1) + ', ' + a01.toFixed(1) + '], [' + a01.toFixed(1) + ', ' + a00.toFixed(1) + ']]', 10, 20);
@@ -3800,7 +3756,7 @@ function drawBV() {
   const complexity = parseInt(document.getElementById('bvComplexity').value);
   document.getElementById('bvComplexityVal').textContent = complexity;
 
-  ctx.fillStyle = '#0d0d1a';
+  ctx.fillStyle = '#0d0d14';
   ctx.fillRect(0, 0, W, H);
 
   const pad = { l: 70, r: 40, t: 40, b: 60 };
@@ -3863,7 +3819,7 @@ function drawBV() {
   }
 
   // Fill area under total
-  ctx.fillStyle = '#ffd93d11';
+  ctx.fillStyle = '#e0c99211';
   ctx.beginPath();
   totalData.forEach((p, i) => {
     const x = pad.l + (p.x - 1) / 14 * pw;
@@ -3874,9 +3830,9 @@ function drawBV() {
   ctx.lineTo(pad.l, H - pad.b);
   ctx.fill();
 
-  drawCurve(biasData, '#ff6b6b');
-  drawCurve(varData, '#4ecdc4');
-  drawCurve(totalData, '#ffd93d', 3);
+  drawCurve(biasData, '#c96e8a');
+  drawCurve(varData, '#6ea5c9');
+  drawCurve(totalData, '#e0c992', 3);
 
   // Current complexity marker
   const cx = pad.l + (complexity - 1) / 14 * pw;
@@ -3886,7 +3842,7 @@ function drawBV() {
   const cy = H - pad.b - totalc / 1.0 * ph;
 
   // Vertical line
-  ctx.strokeStyle = '#64ffda44';
+  ctx.strokeStyle = '#c9a96e44';
   ctx.lineWidth = 1;
   ctx.setLineDash([5, 5]);
   ctx.beginPath();
@@ -3896,22 +3852,22 @@ function drawBV() {
   ctx.setLineDash([]);
 
   // Dot on total error
-  ctx.fillStyle = '#64ffda';
+  ctx.fillStyle = '#c9a96e';
   ctx.beginPath();
   ctx.arc(cx, cy, 7, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = '#0d0d1a';
+  ctx.fillStyle = '#0d0d14';
   ctx.beginPath();
   ctx.arc(cx, cy, 3, 0, Math.PI * 2);
   ctx.fill();
 
   // Labels for underfitting/overfitting
   ctx.font = '15px Inter, sans-serif';
-  ctx.fillStyle = '#ff6b6b88';
+  ctx.fillStyle = '#c96e8a88';
   ctx.textAlign = 'left';
   ctx.fillText('Underfitting →', pad.l + 12, pad.t + 22);
   ctx.textAlign = 'right';
-  ctx.fillStyle = '#4ecdc488';
+  ctx.fillStyle = '#6ea5c988';
   ctx.fillText('← Overfitting', W - pad.r - 12, pad.t + 22);
 
   // Find actual minimum of total error curve
@@ -3929,20 +3885,20 @@ function drawBV() {
   const optY = H - pad.b - minError * ph;
 
   // Highlight zone around optimum
-  ctx.fillStyle = '#64ffda22';
+  ctx.fillStyle = '#c9a96e22';
   ctx.fillRect(optPx - 25, pad.t, 50, ph);
 
   // Marker circle at actual minimum
-  ctx.fillStyle = '#ffd93d';
+  ctx.fillStyle = '#e0c992';
   ctx.beginPath();
   ctx.arc(optPx, optY, 6, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = '#0d0d1a';
+  ctx.fillStyle = '#0d0d14';
   ctx.beginPath();
   ctx.arc(optPx, optY, 2, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.fillStyle = '#64ffda';
+  ctx.fillStyle = '#c9a96e';
   ctx.font = '15px Inter, sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText('Sweet Spot', optPx, pad.t + 28);
@@ -4028,8 +3984,8 @@ function drawReg() {
   traces.push({
     type: 'scatter3d', x: [wsx], y: [wsy], z: [0],
     mode: 'markers+text', text: ['w* (bottom of bowl)'], textposition: 'top center',
-    textfont: { color: '#ffd93d', size: 13, family: 'Inter' },
-    marker: { size: 8, color: '#ffd93d', symbol: 'diamond' },
+    textfont: { color: '#e0c992', size: 13, family: 'Inter' },
+    marker: { size: 8, color: '#e0c992', symbol: 'diamond' },
     name: 'w* = lowest error', showlegend: true,
     hovertemplate: 'w*: best fit<br>w\u2081=%{x:.2f}, w\u2082=%{y:.2f}<extra></extra>'
   });
@@ -4099,31 +4055,31 @@ function drawReg() {
   }
 
   if (regType === 'l1' || regType === 'both') {
-    addFenceTraces('l1', '#ff6b6b', budget, 'L1 fence (diamond)');
+    addFenceTraces('l1', '#c96e8a', budget, 'L1 fence (diamond)');
     if (!isInside('l1', budget)) {
       var s = findBestOnFence('l1', budget);
       traces.push({ type:'scatter3d', x:[s[0]], y:[s[1]], z:[s[2]],
         mode:'markers+text', text:['L1 answer (w\u2081='+s[0].toFixed(2)+', w\u2082='+s[1].toFixed(2)+')'],
-        textposition:'top left', textfont:{color:'#ff6b6b',size:12,family:'Inter'},
-        marker:{size:7,color:'#ff6b6b',symbol:'circle'}, name:'L1 result', showlegend:false,
+        textposition:'top left', textfont:{color:'#c96e8a',size:12,family:'Inter'},
+        marker:{size:7,color:'#c96e8a',symbol:'circle'}, name:'L1 result', showlegend:false,
         hovertemplate:'L1 result<br>w\u2081=%{x:.2f}, w\u2082=%{y:.2f}<br>Error=%{z:.2f}<extra></extra>' });
       // Line from w* to L1 answer
       traces.push({ type:'scatter3d', x:[wsx,s[0]], y:[wsy,s[1]], z:[0,s[2]],
-        mode:'lines', line:{color:'#ff6b6b',width:3,dash:'dash'}, showlegend:false, hoverinfo:'skip' });
+        mode:'lines', line:{color:'#c96e8a',width:3,dash:'dash'}, showlegend:false, hoverinfo:'skip' });
     }
   }
   if (regType === 'l2' || regType === 'both') {
     var bR = regType === 'both' ? budget * 0.95 : budget;
-    addFenceTraces('l2', '#4ecdc4', bR, 'L2 fence (circle)');
+    addFenceTraces('l2', '#6ea5c9', bR, 'L2 fence (circle)');
     if (!isInside('l2', bR)) {
       var s = findBestOnFence('l2', bR);
       traces.push({ type:'scatter3d', x:[s[0]], y:[s[1]], z:[s[2]],
         mode:'markers+text', text:['L2 answer (w\u2081='+s[0].toFixed(2)+', w\u2082='+s[1].toFixed(2)+')'],
-        textposition:'top right', textfont:{color:'#4ecdc4',size:12,family:'Inter'},
-        marker:{size:7,color:'#4ecdc4',symbol:'circle'}, name:'L2 result', showlegend:false,
+        textposition:'top right', textfont:{color:'#6ea5c9',size:12,family:'Inter'},
+        marker:{size:7,color:'#6ea5c9',symbol:'circle'}, name:'L2 result', showlegend:false,
         hovertemplate:'L2 result<br>w\u2081=%{x:.2f}, w\u2082=%{y:.2f}<br>Error=%{z:.2f}<extra></extra>' });
       traces.push({ type:'scatter3d', x:[wsx,s[0]], y:[wsy,s[1]], z:[0,s[2]],
-        mode:'lines', line:{color:'#4ecdc4',width:3,dash:'dash'}, showlegend:false, hoverinfo:'skip' });
+        mode:'lines', line:{color:'#6ea5c9',width:3,dash:'dash'}, showlegend:false, hoverinfo:'skip' });
     }
   }
 
@@ -4131,19 +4087,19 @@ function drawReg() {
     scene: {
       xaxis: { title: { text: 'w\u2081 (weight 1)', font: { color: '#aaa', size: 13 } },
                gridcolor: '#222244', zerolinecolor: '#444', color: '#888',
-               range: [-range, range], backgroundcolor: '#0a0a14' },
+               range: [-range, range], backgroundcolor: '#0a0a0f' },
       yaxis: { title: { text: 'w\u2082 (weight 2)', font: { color: '#aaa', size: 13 } },
                gridcolor: '#222244', zerolinecolor: '#444', color: '#888',
-               range: [-range, range], backgroundcolor: '#0a0a14' },
+               range: [-range, range], backgroundcolor: '#0a0a0f' },
       zaxis: { title: { text: 'Training Error', font: { color: '#aaa', size: 13 } },
                gridcolor: '#222244', zerolinecolor: '#444', color: '#888',
-               range: [0, 5], backgroundcolor: '#0a0a14' },
+               range: [0, 5], backgroundcolor: '#0a0a0f' },
       camera: { eye: { x: 1.6, y: 1.6, z: 1.0 } },
-      bgcolor: '#0a0a14',
+      bgcolor: '#0a0a0f',
       aspectratio: { x: 1, y: 1, z: 0.7 }
     },
-    paper_bgcolor: '#0d0d1a',
-    plot_bgcolor: '#0d0d1a',
+    paper_bgcolor: '#0d0d14',
+    plot_bgcolor: '#0d0d14',
     font: { color: '#ccc', family: 'Inter, sans-serif' },
     legend: { x: 0, y: 1, bgcolor: 'rgba(10,10,20,0.8)', bordercolor: '#333', borderwidth: 1,
               font: { size: 12, color: '#ccc' } },
@@ -4191,21 +4147,21 @@ function drawDB() {
       const x = px / W * 3 - 1.5;
       const y = py / H * 3 - 1.5;
       const pred = predictBoundary(x, y, dbType);
-      ctx.fillStyle = pred > 0.5 ? '#ff6b6b33' : '#4ecdc433';
+      ctx.fillStyle = pred > 0.5 ? '#c96e8a33' : '#6ea5c933';
       ctx.fillRect(px, py, resolution, resolution);
     }
   }
 
   // Draw data points
   for (let point of data) {
-    ctx.fillStyle = point.label > 0.5 ? '#ff6b6b' : '#4ecdc4';
+    ctx.fillStyle = point.label > 0.5 ? '#c96e8a' : '#6ea5c9';
     ctx.beginPath();
     ctx.arc(point.x * W/3 + W/2, point.y * H/3 + H/2, 4, 0, Math.PI * 2);
     ctx.fill();
   }
 
   // Draw decision boundary line/curves
-  ctx.strokeStyle = '#64ffda';
+  ctx.strokeStyle = '#c9a96e';
   ctx.lineWidth = 2;
   ctx.beginPath();
   let first = true;
@@ -4287,11 +4243,11 @@ function drawCV() {
       const isActive = fold === cvHighlight;
 
       if (isVal) {
-        ctx.fillStyle = isActive ? '#ff6b6b' : '#ff6b6b88';
-        ctx.strokeStyle = '#ff6b6b';
+        ctx.fillStyle = isActive ? '#c96e8a' : '#c96e8a88';
+        ctx.strokeStyle = '#c96e8a';
       } else {
-        ctx.fillStyle = isActive ? '#4ecdc4' : '#4ecdc488';
-        ctx.strokeStyle = '#4ecdc4';
+        ctx.fillStyle = isActive ? '#6ea5c9' : '#6ea5c988';
+        ctx.strokeStyle = '#6ea5c9';
       }
 
       ctx.lineWidth = isActive ? 2 : 1;
@@ -4310,7 +4266,7 @@ function drawCV() {
 
     if (fold === cvHighlight) {
       const acc = (85 + Math.random() * 10).toFixed(1);
-      ctx.fillStyle = '#64ffda';
+      ctx.fillStyle = '#c9a96e';
       ctx.font = '15px monospace';
       ctx.textAlign = 'left';
       ctx.fillText(`acc: ${acc}%`, W - pad.r + 5, y + rowH / 2 + 4);
@@ -4372,7 +4328,7 @@ function drawGBT() {
   ctx.restore();
 
   // True function: sin wave
-  ctx.strokeStyle = '#ff6b6b';
+  ctx.strokeStyle = '#c96e8a';
   ctx.lineWidth = 2;
   ctx.beginPath();
   for (let i = 0; i <= 100; i++) {
@@ -4384,12 +4340,12 @@ function drawGBT() {
   }
   ctx.stroke();
 
-  ctx.fillStyle = '#ff6b6b';
+  ctx.fillStyle = '#c96e8a';
   ctx.font = '15px Inter';
   ctx.fillText('True', pad.l + 10, pad.t + 15);
 
   // Ensemble prediction (step function, improves with more trees)
-  ctx.strokeStyle = '#64ffda';
+  ctx.strokeStyle = '#c9a96e';
   ctx.lineWidth = 2.5;
   ctx.beginPath();
   for (let i = 0; i <= 100; i++) {
@@ -4406,7 +4362,7 @@ function drawGBT() {
   }
   ctx.stroke();
 
-  ctx.fillStyle = '#64ffda';
+  ctx.fillStyle = '#c9a96e';
   ctx.fillText('Prediction', pad.l + 80, pad.t + 15);
 
   ctx.fillStyle = '#b0b0c0';
@@ -4453,7 +4409,7 @@ function drawHT() {
   const canvas = document.getElementById('htCanvas');
   const ctx = canvas.getContext('2d');
   const w = canvas.width, h = canvas.height;
-  ctx.fillStyle = '#0d0d1a';
+  ctx.fillStyle = '#0d0d14';
   ctx.fillRect(0, 0, w, h);
 
   const effect = parseFloat(document.getElementById('htEffect').value);
@@ -4484,7 +4440,7 @@ function drawHT() {
 
   // Null distribution (H0: mu=0)
   ctx.beginPath();
-  ctx.strokeStyle = '#64ffda';
+  ctx.strokeStyle = '#c9a96e';
   ctx.lineWidth = 2;
   for (let px = 0; px <= pw; px++) {
     const val = xMin + px / pw * (xMax - xMin);
@@ -4495,7 +4451,7 @@ function drawHT() {
 
   // Alternative distribution (H1: mu=effect)
   ctx.beginPath();
-  ctx.strokeStyle = '#ff6b6b';
+  ctx.strokeStyle = '#c96e8a';
   ctx.lineWidth = 2;
   for (let px = 0; px <= pw; px++) {
     const val = xMin + px / pw * (xMax - xMin);
@@ -4505,7 +4461,7 @@ function drawHT() {
   ctx.stroke();
 
   // Critical region (Type I error)
-  ctx.fillStyle = '#64ffda22';
+  ctx.fillStyle = '#c9a96e22';
   ctx.beginPath();
   ctx.moveTo(toX(criticalValue), toY(0));
   for (let px = Math.max(0, Math.floor((criticalValue - xMin) / (xMax - xMin) * pw)); px <= pw; px++) {
@@ -4516,7 +4472,7 @@ function drawHT() {
   ctx.fill();
 
   // Power region (1 - Type II)
-  ctx.fillStyle = '#ff6b6b22';
+  ctx.fillStyle = '#c96e8a22';
   ctx.beginPath();
   ctx.moveTo(toX(criticalValue), toY(0));
   for (let px = Math.max(0, Math.floor((criticalValue - xMin) / (xMax - xMin) * pw)); px <= pw; px++) {
@@ -4528,7 +4484,7 @@ function drawHT() {
 
   // Critical line
   ctx.setLineDash([5, 5]);
-  ctx.strokeStyle = '#ffd93d';
+  ctx.strokeStyle = '#e0c992';
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(toX(criticalValue), pad.t);
@@ -4538,18 +4494,18 @@ function drawHT() {
 
   // Labels
   ctx.font = 'bold 17px Arial';
-  ctx.fillStyle = '#64ffda';
+  ctx.fillStyle = '#c9a96e';
   ctx.fillText('H\u2080: \u03BC = 0', toX(0) - 30, pad.t - 10);
-  ctx.fillStyle = '#ff6b6b';
+  ctx.fillStyle = '#c96e8a';
   ctx.fillText('H\u2081: \u03BC = ' + effect.toFixed(1), toX(effect) - 30, pad.t - 10);
-  ctx.fillStyle = '#ffd93d';
+  ctx.fillStyle = '#e0c992';
   ctx.font = '15px Arial';
   ctx.fillText('Critical value', toX(criticalValue) + 5, pad.t + 15);
 
   // Power estimate
   const zPower = (effect - criticalValue) / se;
   const power = 0.5 * (1 + erf(zPower / Math.sqrt(2)));
-  ctx.fillStyle = '#e0e0e0';
+  ctx.fillStyle = '#e8e4de';
   ctx.font = 'bold 17px Arial';
   ctx.fillText('Power: ' + (power * 100).toFixed(1) + '%', w - 150, pad.t + 20);
   ctx.fillText('\u03B2 (Type II): ' + ((1 - power) * 100).toFixed(1) + '%', w - 150, pad.t + 40);
@@ -4583,7 +4539,7 @@ function drawMC() {
   const canvas = document.getElementById('mcCanvas');
   const ctx = canvas.getContext('2d');
   const w = canvas.width, h = canvas.height;
-  ctx.fillStyle = '#0d0d1a';
+  ctx.fillStyle = '#0d0d14';
   ctx.fillRect(0, 0, w, h);
 
   const squareSize = Math.min(h - 60, w / 2 - 40);
@@ -4594,14 +4550,14 @@ function drawMC() {
   ctx.strokeRect(sx, sy, squareSize, squareSize);
   ctx.beginPath();
   ctx.arc(sx + squareSize / 2, sy + squareSize / 2, squareSize / 2, 0, Math.PI * 2);
-  ctx.strokeStyle = '#64ffda55';
+  ctx.strokeStyle = '#c9a96e55';
   ctx.lineWidth = 2;
   ctx.stroke();
   ctx.lineWidth = 1;
 
   // Draw points
   for (const p of mcPoints) {
-    ctx.fillStyle = p.inside ? '#64ffda88' : '#ff6b6b88';
+    ctx.fillStyle = p.inside ? '#c9a96e88' : '#c96e8a88';
     ctx.fillRect(sx + p.x * squareSize, sy + p.y * squareSize, 2, 2);
   }
 
@@ -4612,21 +4568,21 @@ function drawMC() {
 
   // True pi line
   ctx.setLineDash([5, 5]);
-  ctx.strokeStyle = '#ffd93d';
+  ctx.strokeStyle = '#e0c992';
   const piY = cy + ch - (Math.PI / 4) * ch;
   ctx.beginPath();
   ctx.moveTo(cx, piY);
   ctx.lineTo(cx + cw, piY);
   ctx.stroke();
   ctx.setLineDash([]);
-  ctx.fillStyle = '#ffd93d';
+  ctx.fillStyle = '#e0c992';
   ctx.font = '15px Arial';
   ctx.fillText('\u03C0/4 = 0.785...', cx + cw - 80, piY - 5);
 
   // Draw convergence
   if (mcPoints.length > 1) {
     ctx.beginPath();
-    ctx.strokeStyle = '#64ffda';
+    ctx.strokeStyle = '#c9a96e';
     let runIn = 0;
     for (let i = 0; i < mcPoints.length; i++) {
       if (mcPoints[i].inside) runIn++;
@@ -4670,7 +4626,7 @@ function drawNS() {
   const canvas = document.getElementById('nsCanvas');
   const ctx = canvas.getContext('2d');
   const w = canvas.width, h = canvas.height;
-  ctx.fillStyle = '#0d0d1a';
+  ctx.fillStyle = '#0d0d14';
   ctx.fillRect(0, 0, w, h);
 
   const temp = parseFloat(document.getElementById('nsTemp').value);
@@ -4698,7 +4654,7 @@ function drawNS() {
   const halfW = (w - pad.l - pad.r) / 2 - 20;
 
   // Left: Naive
-  ctx.fillStyle = naiveOverflow ? '#ff6b6b' : '#64ffda';
+  ctx.fillStyle = naiveOverflow ? '#c96e8a' : '#c9a96e';
   ctx.font = 'bold 16px Arial';
   ctx.textAlign = 'left';
   ctx.fillText('Naive Softmax' + (naiveOverflow ? ' (OVERFLOW!)' : ''), pad.l, pad.t - 10);
@@ -4708,22 +4664,22 @@ function drawNS() {
     const x = pad.l + i * (barW + 8);
     const prob = naiveOverflow ? (i === 4 ? 1 : 0) : naiveProbs[i]; // Show what overflow looks like
     const barH = prob * (h - pad.t - pad.b - 40);
-    ctx.fillStyle = naiveOverflow ? '#ff6b6b55' : '#64ffda55';
+    ctx.fillStyle = naiveOverflow ? '#c96e8a55' : '#c9a96e55';
     ctx.fillRect(x, h - pad.b - barH, barW, barH);
-    ctx.strokeStyle = naiveOverflow ? '#ff6b6b' : '#64ffda';
+    ctx.strokeStyle = naiveOverflow ? '#c96e8a' : '#c9a96e';
     ctx.lineWidth = 2;
     ctx.strokeRect(x, h - pad.b - barH, barW, barH);
     ctx.fillStyle = '#b0b0c0';
     ctx.font = '15px Arial';
     ctx.textAlign = 'center';
     ctx.fillText(labels[i], x + barW/2, h - pad.b + 18);
-    ctx.fillStyle = naiveOverflow ? '#ff6b6b' : '#64ffda';
+    ctx.fillStyle = naiveOverflow ? '#c96e8a' : '#c9a96e';
     ctx.font = '15px monospace';
     ctx.fillText(naiveOverflow ? (isFinite(naiveExps[i]) ? naiveProbs[i].toFixed(3) : 'NaN/Inf') : naiveProbs[i].toFixed(3), x + barW/2, h - pad.b - barH - 8);
   }
 
   if (naiveOverflow) {
-    ctx.fillStyle = '#ff6b6b';
+    ctx.fillStyle = '#c96e8a';
     ctx.font = 'bold 17px Arial';
     ctx.textAlign = 'left';
     ctx.fillText('exp(' + (0.8 * mag / temp).toFixed(0) + ') = Infinity!', pad.l, pad.t + 25);
@@ -4731,7 +4687,7 @@ function drawNS() {
 
   // Right: Stable
   const offsetX = pad.l + halfW + 40;
-  ctx.fillStyle = '#64ffda';
+  ctx.fillStyle = '#c9a96e';
   ctx.font = 'bold 16px Arial';
   ctx.textAlign = 'left';
   ctx.fillText('Stable Softmax', offsetX, pad.t - 10);
@@ -4742,9 +4698,9 @@ function drawNS() {
   for (let i = 0; i < logits.length; i++) {
     const x = offsetX + i * (barW + 8);
     const barH = stableProbs[i] * (h - pad.t - pad.b - 40);
-    ctx.fillStyle = '#7c4dff55';
+    ctx.fillStyle = '#8a6ec955';
     ctx.fillRect(x, h - pad.b - barH, barW, barH);
-    ctx.strokeStyle = '#7c4dff';
+    ctx.strokeStyle = '#8a6ec9';
     ctx.lineWidth = 2;
     ctx.strokeRect(x, h - pad.b - barH, barW, barH);
     ctx.fillStyle = '#b0b0c0';
@@ -4778,7 +4734,7 @@ drawNS();
 
 <div id="quizSection" style="display:none">
 <div class="quiz-container">
-  <h2 style="text-align:center;color:#64ffda;margin-bottom:10px;font-size:1.8em;">ML Fundamentals Quiz</h2>
+  <h2 style="text-align:center;color:#c9a96e;margin-bottom:10px;font-size:1.8em;">ML Fundamentals Quiz</h2>
   <p style="text-align:center;color:#888;margin-bottom:20px;">5 questions per topic &bull; Click answers to reveal explanations</p>
   <div class="quiz-progress"><div class="quiz-progress-bar" id="quizProgressBar" style="width:0%"></div></div>
   <div class="quiz-score">Score: <span id="quizScore">0</span> / <span id="quizTotal">90</span></div>

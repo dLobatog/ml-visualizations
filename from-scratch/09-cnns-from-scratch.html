@@ -5,141 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="../static/canvas-polish.js"></script>
 <title>Chapter 9: CNNs from Scratch</title>
+<link rel="stylesheet" href="../theme.css">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #0a0a0f; color: #e0e0e0; line-height: 1.6; }
-  .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; text-align: center; border-bottom: 1px solid #2a2a4a; }
-  .header h1 { font-size: 2.2em; background: linear-gradient(90deg, #ff9f43, #ffd93d); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
-  .header p { color: #888; font-size: 1.1em; }
-  .header a { color: #ff9f43; text-decoration: none; font-size: 0.9em; }
-  .header a:hover { text-decoration: underline; }
-  .prereqs { color: #666; font-size: 0.85em; margin-top: 8px; }
-  .prereqs a { color: #ff9f43; text-decoration: none; }
-  .prereqs a:hover { text-decoration: underline; }
-  .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
-
-  /* Minimap */
-  .minimap { position: sticky; top: 0; z-index: 100; background: #0a0a0fee; backdrop-filter: blur(10px); border-bottom: 1px solid #2a2a4a; padding: 10px 20px; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }
-  .mm-step { padding: 4px 12px; border-radius: 6px; font-size: 0.75em; font-weight: 600; cursor: pointer; transition: all 0.2s; background: #151530; color: #555; border: 1px solid #2a2a4a; white-space: nowrap; }
-  .mm-step:hover { border-color: #ff9f43; color: #ff9f43; }
-  .mm-step.active { background: rgba(255,159,67,0.2); color: #ff9f43; border-color: rgba(255,159,67,0.5); }
-  .mm-step.done { background: rgba(255,159,67,0.1); color: #ff9f43; border-color: rgba(255,159,67,0.3); }
-  .mm-arrow { color: #333; font-size: 0.8em; }
-
-  .viz-section { background: #12121f; border: 1px solid #2a2a4a; border-radius: 16px; padding: 32px; margin-bottom: 40px; }
-  .viz-section h2 { font-size: 1.5em; color: #ff9f43; margin-bottom: 8px; }
-  .viz-section .subtitle { color: #888; margin-bottom: 24px; font-size: 0.95em; }
-  .viz-canvas { background: #0d0d1a; border-radius: 12px; position: relative; overflow: hidden; }
-  canvas { display: block; margin: 0 auto; }
-  .controls { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; align-items: center; }
-  .control-group { display: flex; flex-direction: column; gap: 4px; }
-  .control-group label { font-size: 0.85em; color: #aaa; }
-  .control-group input[type="range"] { width: 160px; accent-color: #ff9f43; }
-  .control-group .value { font-size: 0.85em; color: #ff9f43; font-family: monospace; }
-  .btn { padding: 8px 16px; border: 1px solid #ff9f43; background: transparent; color: #ff9f43; border-radius: 8px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
-  .btn:hover { background: #ff9f4322; }
-  .btn.active { background: #ff9f4333; }
-  .tab-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
-
-  .insight-box { background: linear-gradient(135deg, #1a1a3e 0%, #151530 100%); border-left: 4px solid #ff9f43; padding: 20px 24px; margin-top: 20px; border-radius: 0 12px 12px 0; font-size: 0.92em; color: #ccc; line-height: 1.8; }
-  .insight-box strong { color: #ff9f43; font-size: 1.05em; }
-  .insight-box .formula { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 12px 18px; margin: 12px 0; font-family: 'Courier New', monospace; color: #e8e8ff; font-size: 1.05em; text-align: center; letter-spacing: 0.5px; line-height: 1.9; }
-  .insight-box .key-point { display: flex; flex-wrap: wrap; gap: 4px 8px; margin: 8px 0; padding: 4px 0; align-items: baseline; }
-  .insight-box .key-point .label { color: #ff9f43; font-weight: 600; min-width: 160px; flex-shrink: 0; }
-  .insight-box .key-point .desc { color: #ddd; }
-  .insight-box .interview-tip { background: rgba(100, 255, 100, 0.05); border: 1px solid rgba(100, 255, 100, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #b0ffb0; font-size: 0.93em; line-height: 1.6; }
-  .insight-box .interview-tip::before { content: '\1F4A1  Interview Tip: '; font-weight: 700; color: #7fff7f; }
-  .insight-box .mnemonic { background: rgba(255, 150, 255, 0.05); border: 1px solid rgba(255, 150, 255, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #ffb0ff; font-size: 0.93em; line-height: 1.6; }
-  .insight-box .mnemonic::before { content: '\1F9E0  Remember: '; font-weight: 700; color: #ff7fff; }
-  .insight-box .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
-  .insight-box .comparison .option { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 10px 14px; }
-  .insight-box .comparison .option .opt-title { color: #ff9f43; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
-  .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
-  .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
-  .code-example { margin-top: 12px; border: 1px solid #2a2a4a; border-radius: 8px; overflow: hidden; }
-  .code-toggle { width: 100%; background: #1a1a2e; color: #ff9f43; border: none; padding: 10px 16px; text-align: left; cursor: pointer; font-size: 0.9em; font-weight: 600; display: flex; align-items: center; gap: 8px; }
-  .code-toggle:hover { background: #22223a; }
-  .code-toggle-icon { display: inline-block; transition: transform 0.2s; font-size: 0.7em; }
-  .code-example.open .code-toggle-icon { transform: rotate(90deg); }
-  .code-content { display: none; padding: 14px 16px; background: #0a0a14; }
-  .code-example.open .code-content { display: block; }
-  .code-content pre { margin: 0; overflow-x: auto; white-space: pre; }
-  .code-content code { color: #e0e0e0; font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.82em; line-height: 1.6; }
-  .code-content .code-note { color: #888; font-size: 0.82em; margin-top: 8px; font-style: italic; }
-  .code-content pre[class*="language-"], .code-content code[class*="language-"] { background: #0a0a14; font-size: 0.82em; line-height: 1.6; margin: 0; padding: 0; text-shadow: none; }
-  pre[class*="language-"]::selection, code[class*="language-"]::selection { background: #333; }
-
-  .katex { color: #e8e8ff; font-size: 1.1em; }
-  .formula .katex { font-size: 1.2em; }
-
-  .narrative-note { background: rgba(255,217,61,0.05); border-left: 3px solid #ffd93d; padding: 14px 18px; margin: 16px 0; border-radius: 0 8px 8px 0; font-size: 0.9em; color: #ccb866; }
-  .narrative-note strong { color: #ffd93d; }
-
-  select { padding: 6px 12px; border: 1px solid #2a2a4a; background: #0d0d1a; color: #e0e0e0; border-radius: 6px; font-size: 0.9em; cursor: pointer; }
-  select:focus { outline: none; border-color: #ff9f43; }
-
-#quizToggle{position:fixed;top:20px;right:20px;z-index:1000;padding:12px 20px;background:#ff9f43;color:#0a0a0f;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:1em;box-shadow:0 4px 15px rgba(0,0,0,0.3);transition:transform 0.2s}
-#quizToggle:hover{transform:scale(1.05)}
-#quizSection{background:#0a0a0f;border-top:2px solid #ff9f43;padding:40px 20px;margin-top:40px}
-.quiz-container{max-width:900px;margin:0 auto}
-.quiz-topic{margin-bottom:30px}
-.quiz-topic-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:10px;cursor:pointer;margin-bottom:12px;user-select:none}
-.quiz-topic-header h3{color:#ff9f43;margin:0;font-size:1.15em}
-.quiz-topic-header:hover{background:#1f1f3a}
-.quiz-topic-score{color:#888;font-size:0.95em}
-.quiz-topic-questions{display:none}
-.quiz-topic-questions.open{display:block}
-.quiz-question{background:#12121f;border:1px solid #2a2a4a;border-radius:12px;padding:24px;margin-bottom:16px}
-.quiz-question h4{color:#e0e0e0;margin-bottom:16px;font-size:1.05em;line-height:1.5}
-.quiz-option{display:block;width:100%;padding:12px 16px;margin:8px 0;background:#0d0d1a;border:1px solid #2a2a4a;border-radius:8px;color:#e0e0e0;cursor:pointer;text-align:left;font-size:0.95em;transition:all 0.2s;font-family:inherit}
-.quiz-option:hover:not(:disabled){border-color:#ff9f43;background:#1a1a3e}
-.quiz-option.correct{background:#1a3a2a !important;border-color:#2ecc71 !important;color:#2ecc71 !important}
-.quiz-option.wrong{background:#3a1a1a !important;border-color:#e74c3c !important;color:#e74c3c !important}
-.quiz-option.reveal{border-color:#2ecc71 !important;color:#2ecc71 !important}
-.quiz-option:disabled{cursor:default}
-.quiz-explanation{margin-top:12px;padding:14px 18px;border-radius:8px;font-size:0.93em;line-height:1.6;display:none}
-.quiz-explanation.show{display:block}
-.quiz-explanation.correct-exp{border-left:4px solid #2ecc71;background:rgba(46,204,113,0.08);color:#b0ffb0}
-.quiz-explanation.wrong-exp{border-left:4px solid #e74c3c;background:rgba(231,76,60,0.08);color:#ffb0b0}
-.quiz-score{text-align:center;font-size:1.5em;color:#ff9f43;margin-bottom:30px}
-.quiz-actions{text-align:center;margin-top:30px;margin-bottom:20px}
-.quiz-actions button{padding:10px 24px;margin:0 8px;border-radius:8px;border:1px solid #ff9f43;background:transparent;color:#ff9f43;cursor:pointer;font-size:1em}
-.quiz-actions button:hover{background:rgba(255,159,67,0.1)}
-.quiz-progress{height:4px;background:#1a1a2e;border-radius:2px;margin-bottom:20px;overflow:hidden}
-.quiz-progress-bar{height:100%;background:#ff9f43;border-radius:2px;transition:width 0.3s}
-
-.break-toggle { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border: 1px solid #e74c3c; background: transparent; color: #e74c3c; border-radius: 8px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
-.break-toggle:hover { background: rgba(231,76,60,0.15); }
-.break-toggle.broken { background: rgba(231,76,60,0.25); border-color: #ff4444; color: #ff4444; }
-
-.legend { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
-.legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.85em; color: #ccc; }
-.legend-dot { width: 12px; height: 12px; border-radius: 50%; }
-
-.hyper-box { background: linear-gradient(135deg, #1a2a1a 0%, #151f15 100%); border-left: 4px solid #2ecc71; padding: 20px 24px; margin-top: 20px; border-radius: 0 12px 12px 0; font-size: 0.92em; color: #ccc; line-height: 1.8; }
-.hyper-box strong { color: #2ecc71; font-size: 1.05em; }
-.hyper-box ul { margin: 8px 0 0 20px; }
-.hyper-box li { margin-bottom: 4px; }
-
-  /* Mobile responsive */
-  canvas { max-width: 100%; height: auto; }
-  @media (max-width: 768px) {
-    .container { padding: 16px 10px; }
-    .viz-section { padding: 16px 12px; }
-    h2 { font-size: 1.2em; }
-    .subtitle { font-size: 0.85em; }
-    .controls { gap: 8px; }
-    .control-group { min-width: 120px; flex: 1 1 auto; }
-    .tab-bar { flex-wrap: wrap; gap: 4px; }
-    .tab-bar .btn { font-size: 0.75em; padding: 6px 10px; }
-    .insight-box { padding: 14px; font-size: 0.9em; }
-    .comparison { grid-template-columns: 1fr !important; }
-    .formula { font-size: 0.85em; overflow-x: auto; }
-    .code-content pre { font-size: 0.78em; }
-    .interview-tip { font-size: 0.85em; padding: 10px; }
-    .metric-box { font-size: 0.82em; }
-  }
-
+  .header h1 { background: linear-gradient(90deg, var(--gold), var(--blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .viz-section h2 { color: var(--gold); }
+  .control-group .value { color: var(--gold); }
+  .control-group input[type="range"] { accent-color: var(--gold); }
+  .btn.active { border-color: var(--gold); color: var(--gold); }
+  .btn:hover { border-color: var(--gold); color: var(--gold); }
+  .insight-box { border-left-color: rgba(var(--gold-rgb), 0.3); }
+  .insight-box strong { color: var(--gold); }
+  .insight-box .formula .highlight { color: var(--gold); }
+  .insight-box .key-point .label { color: var(--gold); }
+  .card::before { background: var(--gold); }
+  #quizToggle { background: var(--bg2); color: var(--fg-dim); border: 1px solid var(--border-hover); }
+  #quizToggle:hover { border-color: var(--gold); color: var(--gold); }
+  #quizSection { border-top-color: rgba(var(--gold-rgb), 0.2); }
 </style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -194,8 +75,8 @@
     <canvas id="mlpFailCanvas" width="900" height="400"></canvas>
   </div>
   <div class="legend">
-    <div class="legend-item"><span class="legend-dot" style="background:#ff9f43;"></span> Active pixel</div>
-    <div class="legend-item"><span class="legend-dot" style="background:#2a2a4a;"></span> Inactive pixel</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#d4b47b;"></span> Active pixel</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#2a2a3a;"></span> Inactive pixel</div>
     <div class="legend-item"><span class="legend-dot" style="background:#e74c3c;"></span> Changed input positions</div>
   </div>
   <div class="insight-box">
@@ -214,7 +95,7 @@
     <div class="mnemonic">MLPs see a flat list of numbers. CNNs see a grid of neighbors. That is the entire difference.</div>
     <div class="interview-tip">💡 Real-world: In 2012, AlexNet (a CNN) cut ImageNet error from 26% to 16%, shocking the AI field. Within 2 years, every phone camera, self-driving car prototype, and medical imaging system adopted CNNs. It's the architecture that started the deep learning revolution.</div>
   </div>
-  <div class="insight-box" style="border-left-color: #ff9f43;">
+  <div class="insight-box" style="border-left-color: #d4b47b;">
     <h3>&#x26A0;&#xFE0F; Common Mistakes</h3>
     <ul>
       <li><strong>Mistake:</strong> Thinking MLPs "cannot" learn image tasks. They can, but need exponentially more data and parameters to learn spatial patterns that CNNs get for free. <strong>Fix:</strong> Understand that CNNs encode an inductive bias (locality + translation invariance) that MLPs lack.</li>
@@ -248,15 +129,15 @@
   </div>
   <div class="controls" id="kernelControls">
     <div style="display:grid;grid-template-columns:repeat(3,50px);gap:4px;">
-      <input type="number" id="k00" value="-1" style="width:50px;background:#0d0d1a;color:#e0e0e0;border:1px solid #2a2a4a;border-radius:4px;text-align:center;padding:4px;" onchange="updateKernelFromInputs()">
-      <input type="number" id="k01" value="-1" style="width:50px;background:#0d0d1a;color:#e0e0e0;border:1px solid #2a2a4a;border-radius:4px;text-align:center;padding:4px;" onchange="updateKernelFromInputs()">
-      <input type="number" id="k02" value="-1" style="width:50px;background:#0d0d1a;color:#e0e0e0;border:1px solid #2a2a4a;border-radius:4px;text-align:center;padding:4px;" onchange="updateKernelFromInputs()">
-      <input type="number" id="k10" value="0" style="width:50px;background:#0d0d1a;color:#e0e0e0;border:1px solid #2a2a4a;border-radius:4px;text-align:center;padding:4px;" onchange="updateKernelFromInputs()">
-      <input type="number" id="k11" value="0" style="width:50px;background:#0d0d1a;color:#e0e0e0;border:1px solid #2a2a4a;border-radius:4px;text-align:center;padding:4px;" onchange="updateKernelFromInputs()">
-      <input type="number" id="k12" value="0" style="width:50px;background:#0d0d1a;color:#e0e0e0;border:1px solid #2a2a4a;border-radius:4px;text-align:center;padding:4px;" onchange="updateKernelFromInputs()">
-      <input type="number" id="k20" value="1" style="width:50px;background:#0d0d1a;color:#e0e0e0;border:1px solid #2a2a4a;border-radius:4px;text-align:center;padding:4px;" onchange="updateKernelFromInputs()">
-      <input type="number" id="k21" value="1" style="width:50px;background:#0d0d1a;color:#e0e0e0;border:1px solid #2a2a4a;border-radius:4px;text-align:center;padding:4px;" onchange="updateKernelFromInputs()">
-      <input type="number" id="k22" value="1" style="width:50px;background:#0d0d1a;color:#e0e0e0;border:1px solid #2a2a4a;border-radius:4px;text-align:center;padding:4px;" onchange="updateKernelFromInputs()">
+      <input type="number" id="k00" value="-1" style="width:50px;background:#0d0d14;color:#e8e4de;border:1px solid #2a2a3a;border-radius:4px;text-align:center;padding:4px;" onchange="updateKernelFromInputs()">
+      <input type="number" id="k01" value="-1" style="width:50px;background:#0d0d14;color:#e8e4de;border:1px solid #2a2a3a;border-radius:4px;text-align:center;padding:4px;" onchange="updateKernelFromInputs()">
+      <input type="number" id="k02" value="-1" style="width:50px;background:#0d0d14;color:#e8e4de;border:1px solid #2a2a3a;border-radius:4px;text-align:center;padding:4px;" onchange="updateKernelFromInputs()">
+      <input type="number" id="k10" value="0" style="width:50px;background:#0d0d14;color:#e8e4de;border:1px solid #2a2a3a;border-radius:4px;text-align:center;padding:4px;" onchange="updateKernelFromInputs()">
+      <input type="number" id="k11" value="0" style="width:50px;background:#0d0d14;color:#e8e4de;border:1px solid #2a2a3a;border-radius:4px;text-align:center;padding:4px;" onchange="updateKernelFromInputs()">
+      <input type="number" id="k12" value="0" style="width:50px;background:#0d0d14;color:#e8e4de;border:1px solid #2a2a3a;border-radius:4px;text-align:center;padding:4px;" onchange="updateKernelFromInputs()">
+      <input type="number" id="k20" value="1" style="width:50px;background:#0d0d14;color:#e8e4de;border:1px solid #2a2a3a;border-radius:4px;text-align:center;padding:4px;" onchange="updateKernelFromInputs()">
+      <input type="number" id="k21" value="1" style="width:50px;background:#0d0d14;color:#e8e4de;border:1px solid #2a2a3a;border-radius:4px;text-align:center;padding:4px;" onchange="updateKernelFromInputs()">
+      <input type="number" id="k22" value="1" style="width:50px;background:#0d0d14;color:#e8e4de;border:1px solid #2a2a3a;border-radius:4px;text-align:center;padding:4px;" onchange="updateKernelFromInputs()">
     </div>
     <span style="color:#888;font-size:0.85em;">Edit kernel values above or use preset buttons</span>
   </div>
@@ -300,7 +181,7 @@ print(out.shape)           # 7 - 3 + 1 = 5</code></pre>
     </div>
   </div>
   <div class="narrative-note">
-    &#x1F4CE; The chain rule from <a href="01-backprop-autograd.html" style="color: #64ffda;">Ch 1: Backprop</a> applies here too. Each output pixel is a function of 9 inputs and 9 weights, so backprop computes 9 local gradients per position. We will see this in Section 9.7.
+    &#x1F4CE; The chain rule from <a href="01-backprop-autograd.html" style="color: #c9a96e;">Ch 1: Backprop</a> applies here too. Each output pixel is a function of 9 inputs and 9 weights, so backprop computes 9 local gradients per position. We will see this in Section 9.7.
   </div>
 </div>
 
@@ -342,7 +223,7 @@ print(out.shape)           # 7 - 3 + 1 = 5</code></pre>
     <hr class="divider">
     <div class="mnemonic">Stride=2 halves the spatial dimensions. This is a common way to downsample instead of pooling.</div>
   </div>
-  <div class="insight-box" style="border-left-color: #ff9f43;">
+  <div class="insight-box" style="border-left-color: #d4b47b;">
     <h3>&#x26A0;&#xFE0F; Common Mistakes</h3>
     <ul>
       <li><strong>Mistake:</strong> Forgetting that stride=2 halves spatial dimensions. <strong>Fix:</strong> Always use the formula. For "same" padding with stride=1, use p = (k-1)/2.</li>
@@ -392,7 +273,7 @@ print(out.shape)           # 7 - 3 + 1 = 5</code></pre>
     <div class="interview-tip">When asked about parameter counts: a Conv2d(64, 128, 3) has 128 * (64 * 3 * 3 + 1) = 73,856 parameters. This is independent of the spatial size of the input.</div>
   </div>
   <div class="narrative-note">
-    &#x1F4CE; The weight-sharing concept connects to <a href="03-mlps-optimization.html" style="color: #64ffda;">Ch 3: MLPs</a> &mdash; in an MLP, every input-output pair has its own weight. In a CNN, the same kernel weights are reused at every spatial position, which is a much stronger inductive bias.
+    &#x1F4CE; The weight-sharing concept connects to <a href="03-mlps-optimization.html" style="color: #c9a96e;">Ch 3: MLPs</a> &mdash; in an MLP, every input-output pair has its own weight. In a CNN, the same kernel weights are reused at every spatial position, which is a much stronger inductive bias.
   </div>
 </div>
 
@@ -426,7 +307,7 @@ print(out.shape)           # 7 - 3 + 1 = 5</code></pre>
     <hr class="divider">
     <div class="mnemonic">Max pool = "was this feature detected anywhere in this region?" Average pool = "how much of this feature is in this region?"</div>
   </div>
-  <div class="insight-box" style="border-left-color: #ff9f43;">
+  <div class="insight-box" style="border-left-color: #d4b47b;">
     <h3>&#x26A0;&#xFE0F; Common Mistakes</h3>
     <ul>
       <li><strong>Mistake:</strong> Stacking many conv layers without any downsampling (no pooling, no stride&gt;1). Feature maps stay enormous, computation explodes, and the receptive field grows too slowly. <strong>Fix:</strong> Downsample every few layers using stride=2 conv or 2&times;2 max pool.</li>
@@ -474,7 +355,7 @@ print(out.shape)           # 7 - 3 + 1 = 5</code></pre>
     <hr class="divider">
     <div class="interview-tip">When asked about CNN architecture design, describe the pyramid: spatial dimensions shrink (pool/stride), channel dimensions grow (more filters). Early layers detect edges, deeper layers detect complex patterns.</div>
   </div>
-  <div class="insight-box" style="border-left-color: #ff9f43;">
+  <div class="insight-box" style="border-left-color: #d4b47b;">
     <h3>&#x26A0;&#xFE0F; Common Mistakes</h3>
     <ul>
       <li><strong>Mistake:</strong> Making the first FC layer too large by flattening big feature maps. A 7&times;7&times;512 feature map flattened = 25,088 inputs. If FC has 4096 outputs, that is 100M+ parameters in one layer. <strong>Fix:</strong> Use Global Average Pooling (GAP) to collapse spatial dims: 7&times;7&times;512 &rarr; 512. Then FC: 512&times;num_classes.</li>
@@ -482,7 +363,7 @@ print(out.shape)           # 7 - 3 + 1 = 5</code></pre>
     </ul>
   </div>
   <div class="narrative-note">
-    &#x1F4CE; The ReLU activations here are the same ones from <a href="01-backprop-autograd.html" style="color: #64ffda;">Ch 1: Backprop</a> (Section 1.4). The "dying ReLU" problem applies in CNNs too &mdash; if a filter's output is always negative, its gradient is always zero.
+    &#x1F4CE; The ReLU activations here are the same ones from <a href="01-backprop-autograd.html" style="color: #c9a96e;">Ch 1: Backprop</a> (Section 1.4). The "dying ReLU" problem applies in CNNs too &mdash; if a filter's output is always negative, its gradient is always zero.
   </div>
 </div>
 
@@ -502,8 +383,8 @@ print(out.shape)           # 7 - 3 + 1 = 5</code></pre>
     <canvas id="bpConvCanvas" width="900" height="500"></canvas>
   </div>
   <div class="legend">
-    <div class="legend-item"><span class="legend-dot" style="background:#4ecdc4;"></span> Forward values</div>
-    <div class="legend-item"><span class="legend-dot" style="background:#ff9f43;"></span> Backward gradients</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#6ea5c9;"></span> Forward values</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#d4b47b;"></span> Backward gradients</div>
     <div class="legend-item"><span class="legend-dot" style="background:#e74c3c;"></span> Flipped kernel</div>
   </div>
   <div class="insight-box">
@@ -542,7 +423,7 @@ print(conv.weight.grad.shape) # (1, 1, 3, 3)</code></pre>
     </div>
   </div>
   <div class="narrative-note">
-    &#x1F4CE; This is the chain rule from <a href="01-backprop-autograd.html" style="color: #64ffda;">Ch 1: Backprop</a> applied to the convolution operation. The "upstream gradient &times; local gradient" rule is identical &mdash; the local gradient just happens to be the kernel (or flipped kernel).
+    &#x1F4CE; This is the chain rule from <a href="01-backprop-autograd.html" style="color: #c9a96e;">Ch 1: Backprop</a> applied to the convolution operation. The "upstream gradient &times; local gradient" rule is identical &mdash; the local gradient just happens to be the kernel (or flipped kernel).
   </div>
 </div>
 
@@ -597,9 +478,9 @@ print(conv.weight.grad.shape) # (1, 1, 3, 3)</code></pre>
     </ul>
   </div>
   <div class="narrative-note">
-    &#x1F4CE; Skip connections in ResNet are the same concept as residual connections in <a href="06-transformer.html" style="color: #64ffda;">Ch 6: Transformers</a>. The idea of learning \(F(x) = H(x) - x\) instead of \(H(x)\) directly appears throughout modern deep learning. Also see <a href="04-attention-sequences.html" style="color: #64ffda;">Ch 4: Attention</a> for how self-attention layers replaced convolutions in vision transformers.
+    &#x1F4CE; Skip connections in ResNet are the same concept as residual connections in <a href="06-transformer.html" style="color: #c9a96e;">Ch 6: Transformers</a>. The idea of learning \(F(x) = H(x) - x\) instead of \(H(x)\) directly appears throughout modern deep learning. Also see <a href="04-attention-sequences.html" style="color: #c9a96e;">Ch 4: Attention</a> for how self-attention layers replaced convolutions in vision transformers.
   </div>
-  <div class="insight-box" style="border-left-color: #ff9f43;">
+  <div class="insight-box" style="border-left-color: #d4b47b;">
     <h3>&#x26A0;&#xFE0F; Common Mistakes</h3>
     <ul>
       <li><strong>Mistake:</strong> Designing very deep networks without skip connections, then wondering why training loss plateaus. <strong>Fix:</strong> Always use residual connections for networks deeper than ~10 layers. The gradient signal needs a direct path to early layers.</li>
@@ -614,7 +495,7 @@ print(conv.weight.grad.shape) # (1, 1, 3, 3)</code></pre>
 <!-- ============================================================ -->
 <div id="quizSection" style="display:none">
 <div class="quiz-container">
-  <h2 style="text-align:center;color:#ff9f43;margin-bottom:10px;font-size:1.8em;">CNNs from Scratch Quiz</h2>
+  <h2 style="text-align:center;color:#d4b47b;margin-bottom:10px;font-size:1.8em;">CNNs from Scratch Quiz</h2>
   <p style="text-align:center;color:#888;margin-bottom:20px;">30 questions across 8 topics &bull; Click answers to reveal explanations</p>
   <div class="quiz-progress"><div class="quiz-progress-bar" id="quizProgressBar" style="width:0%"></div></div>
   <div class="quiz-score">Score: <span id="quizScore">0</span> / <span id="quizTotal">30</span></div>
@@ -626,10 +507,11 @@ print(conv.weight.grad.shape) # (1, 1, 3, 3)</code></pre>
 </div>
 </div>
 
-<div style="text-align:center; padding:40px; color:#555; font-size:0.85em; border-top:1px solid #1a1a2e;">
-  Chapter 9: CNNs from Scratch &bull; <a href="../index.html" style="color:#ff9f43; text-decoration:none;">From Scratch Series</a>
+<div style="text-align:center; padding:40px; color:#555; font-size:0.85em; border-top:1px solid #111118;">
+  Chapter 9: CNNs from Scratch &bull; <a href="../index.html" style="color:#d4b47b; text-decoration:none;">From Scratch Series</a>
 </div>
 
+<script src="../theme.js"></script>
 <script>
 // ============================================================
 // UTILITY FUNCTIONS
@@ -755,13 +637,13 @@ function drawMLPFail() {
 
   // Draw original grid
   ctx.font = '14px Inter, sans-serif';
-  ctx.fillStyle = '#ff9f43';
+  ctx.fillStyle = '#d4b47b';
   ctx.fillText('Original 7x7', startX1, startY - 10);
   for (let r = 0; r < 7; r++) {
     for (let cl = 0; cl < 7; cl++) {
       const x = startX1 + cl * cellSize;
       const y = startY + r * cellSize;
-      ctx.fillStyle = orig[r][cl] ? '#ff9f43' : '#1a1a2e';
+      ctx.fillStyle = orig[r][cl] ? '#d4b47b' : '#111118';
       ctx.fillRect(x, y, cellSize - 2, cellSize - 2);
       ctx.fillStyle = orig[r][cl] ? '#0a0a0f' : '#444';
       ctx.font = '11px monospace';
@@ -774,13 +656,13 @@ function drawMLPFail() {
   const startX2 = startX1 + gridW + 60;
   ctx.font = '14px Inter, sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillStyle = '#ff9f43';
+  ctx.fillStyle = '#d4b47b';
   ctx.fillText('Shifted +' + shiftAmount + 'px', startX2, startY - 10);
   for (let r = 0; r < 7; r++) {
     for (let cl = 0; cl < 7; cl++) {
       const x = startX2 + cl * cellSize;
       const y = startY + r * cellSize;
-      ctx.fillStyle = shifted[r][cl] ? '#ff9f43' : '#1a1a2e';
+      ctx.fillStyle = shifted[r][cl] ? '#d4b47b' : '#111118';
       ctx.fillRect(x, y, cellSize - 2, cellSize - 2);
       if (shifted[r][cl] !== orig[r][cl]) {
         ctx.strokeStyle = '#e74c3c';
@@ -826,12 +708,12 @@ function drawMLPFail() {
   let diffCount = 0;
   for (let i = 0; i < 49; i++) {
     const y = vecY + 4 + i * vecCellH;
-    ctx.fillStyle = displayOrig[i] ? '#ff9f43' : '#1a1a2e';
+    ctx.fillStyle = displayOrig[i] ? '#d4b47b' : '#111118';
     ctx.fillRect(vecX, y, vecW, vecCellH - 1);
 
     const isDiff = displayOrig[i] !== displayShifted[i];
     if (isDiff) diffCount++;
-    ctx.fillStyle = displayShifted[i] ? '#ff9f43' : '#1a1a2e';
+    ctx.fillStyle = displayShifted[i] ? '#d4b47b' : '#111118';
     ctx.fillRect(vecX + vecW + 30, y, vecW, vecCellH - 1);
     if (isDiff) {
       ctx.strokeStyle = '#e74c3c';
@@ -969,7 +851,7 @@ function drawConv() {
   // Title
   ctx.font = 'bold 14px Inter, sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillStyle = '#ff9f43';
+  ctx.fillStyle = '#d4b47b';
   ctx.fillText('Input 7x7', inpX, inpY - 15);
 
   // Draw input grid
@@ -978,10 +860,10 @@ function drawConv() {
       const x = inpX + cl * cellSize;
       const y = inpY + r * cellSize;
       const highlight = r >= convPos.r && r < convPos.r + 3 && cl >= convPos.c && cl < convPos.c + 3;
-      ctx.fillStyle = highlight ? (inp[r][cl] ? '#ff9f43' : '#2a3a4a') : (inp[r][cl] ? '#886633' : '#1a1a2e');
+      ctx.fillStyle = highlight ? (inp[r][cl] ? '#d4b47b' : '#2a3a4a') : (inp[r][cl] ? '#886633' : '#111118');
       ctx.fillRect(x, y, cellSize - 2, cellSize - 2);
       if (highlight) {
-        ctx.strokeStyle = '#ff9f43';
+        ctx.strokeStyle = '#d4b47b';
         ctx.lineWidth = 2;
         ctx.strokeRect(x, y, cellSize - 2, cellSize - 2);
       }
@@ -998,7 +880,7 @@ function drawConv() {
   const kCell = 46;
   ctx.font = 'bold 14px Inter, sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillStyle = '#ff9f43';
+  ctx.fillStyle = '#d4b47b';
   ctx.fillText('Kernel 3x3', kernX, kernY - 15);
 
   for (let r = 0; r < 3; r++) {
@@ -1006,9 +888,9 @@ function drawConv() {
       const x = kernX + cl * kCell;
       const y = kernY + r * kCell;
       const v = convKernel[r][cl];
-      ctx.fillStyle = v > 0 ? 'rgba(46,204,113,0.3)' : v < 0 ? 'rgba(231,76,60,0.3)' : '#1a1a2e';
+      ctx.fillStyle = v > 0 ? 'rgba(46,204,113,0.3)' : v < 0 ? 'rgba(231,76,60,0.3)' : '#111118';
       ctx.fillRect(x, y, kCell - 2, kCell - 2);
-      ctx.strokeStyle = '#ff9f43';
+      ctx.strokeStyle = '#d4b47b';
       ctx.lineWidth = 1;
       ctx.strokeRect(x, y, kCell - 2, kCell - 2);
       ctx.fillStyle = '#eee';
@@ -1046,12 +928,12 @@ function drawConv() {
   if (termsStr.length > 50) {
     ctx.fillText(terms.slice(0, 5).join(' + ') + ' +', multX, multY + 10);
     ctx.fillText(terms.slice(5).join(' + '), multX, multY + 26);
-    ctx.fillStyle = '#ff9f43';
+    ctx.fillStyle = '#d4b47b';
     ctx.font = 'bold 14px monospace';
     ctx.fillText('= ' + sum, multX, multY + 50);
   } else {
     ctx.fillText(termsStr, multX, multY + 10);
-    ctx.fillStyle = '#ff9f43';
+    ctx.fillStyle = '#d4b47b';
     ctx.font = 'bold 14px monospace';
     ctx.fillText('= ' + sum, multX, multY + 34);
   }
@@ -1062,7 +944,7 @@ function drawConv() {
   const outCell = 46;
   ctx.font = 'bold 14px Inter, sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillStyle = '#ff9f43';
+  ctx.fillStyle = '#d4b47b';
   ctx.fillText('Output 5x5', outX, outY - 15);
 
   for (let r = 0; r < 5; r++) {
@@ -1073,9 +955,9 @@ function drawConv() {
       const current = r === convPos.r && cl === convPos.c;
 
       if (current) {
-        ctx.fillStyle = '#ff9f4366';
+        ctx.fillStyle = '#d4b47b66';
         ctx.fillRect(x, y, outCell - 2, outCell - 2);
-        ctx.strokeStyle = '#ff9f43';
+        ctx.strokeStyle = '#d4b47b';
         ctx.lineWidth = 2;
         ctx.strokeRect(x, y, outCell - 2, outCell - 2);
       } else if (computed) {
@@ -1084,11 +966,11 @@ function drawConv() {
         ctx.fillStyle = val >= 0 ? `rgba(46,204,113,${intensity * 0.6})` : `rgba(231,76,60,${intensity * 0.6})`;
         ctx.fillRect(x, y, outCell - 2, outCell - 2);
       } else {
-        ctx.fillStyle = '#1a1a2e';
+        ctx.fillStyle = '#111118';
         ctx.fillRect(x, y, outCell - 2, outCell - 2);
       }
 
-      ctx.strokeStyle = '#2a2a4a';
+      ctx.strokeStyle = '#2a2a3a';
       ctx.lineWidth = 1;
       ctx.strokeRect(x, y, outCell - 2, outCell - 2);
 
@@ -1173,7 +1055,7 @@ function drawPadStride() {
   // Title
   ctx.font = 'bold 14px Inter, sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillStyle = '#ff9f43';
+  ctx.fillStyle = '#d4b47b';
   ctx.fillText('Input ' + inSize + 'x' + inSize + ' (padded: ' + paddedSize + 'x' + paddedSize + ')', inpX, inpY - 15);
 
   // Build padded input
@@ -1208,12 +1090,12 @@ function drawPadStride() {
         ctx.strokeRect(x, y, cellSize - 1, cellSize - 1);
         ctx.setLineDash([]);
       } else {
-        ctx.fillStyle = inKern ? (padded[r][cl] ? '#ff9f43' : '#2a3a4a') : (padded[r][cl] ? '#886633' : '#1a1a2e');
+        ctx.fillStyle = inKern ? (padded[r][cl] ? '#d4b47b' : '#2a3a4a') : (padded[r][cl] ? '#886633' : '#111118');
         ctx.fillRect(x, y, cellSize - 1, cellSize - 1);
       }
 
       if (inKern) {
-        ctx.strokeStyle = '#ff9f43';
+        ctx.strokeStyle = '#d4b47b';
         ctx.lineWidth = 2;
         ctx.strokeRect(x, y, cellSize - 1, cellSize - 1);
         ctx.lineWidth = 1;
@@ -1233,7 +1115,7 @@ function drawPadStride() {
   const outCellSize = Math.min(cellSize, 32);
   ctx.font = 'bold 14px Inter, sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillStyle = '#ff9f43';
+  ctx.fillStyle = '#d4b47b';
   ctx.fillText('Output ' + outSize + 'x' + outSize, outX, inpY - 15);
 
   // Compute output
@@ -1252,15 +1134,15 @@ function drawPadStride() {
       const computed = r < psPos.r || (r === psPos.r && cl <= psPos.c);
 
       if (current) {
-        ctx.fillStyle = '#ff9f4366';
+        ctx.fillStyle = '#d4b47b66';
       } else if (computed) {
         const intensity = Math.min(Math.abs(sum) / 3, 1);
         ctx.fillStyle = sum >= 0 ? `rgba(46,204,113,${intensity * 0.5})` : `rgba(231,76,60,${intensity * 0.5})`;
       } else {
-        ctx.fillStyle = '#1a1a2e';
+        ctx.fillStyle = '#111118';
       }
       ctx.fillRect(x, y, outCellSize - 1, outCellSize - 1);
-      ctx.strokeStyle = current ? '#ff9f43' : '#2a2a4a';
+      ctx.strokeStyle = current ? '#d4b47b' : '#2a2a3a';
       ctx.lineWidth = current ? 2 : 1;
       ctx.strokeRect(x, y, outCellSize - 1, outCellSize - 1);
 
@@ -1351,7 +1233,7 @@ function drawChannels() {
   const startY = 50;
 
   ctx.font = 'bold 14px Inter, sans-serif';
-  ctx.fillStyle = '#ff9f43';
+  ctx.fillStyle = '#d4b47b';
   ctx.textAlign = 'left';
   ctx.fillText('Input: 5x5x3 (RGB)', startX, startY - 15);
 
@@ -1400,7 +1282,7 @@ function drawChannels() {
   const maxPerRow = Math.min(nFilters, 4);
 
   ctx.font = 'bold 14px Inter, sans-serif';
-  ctx.fillStyle = '#ff9f43';
+  ctx.fillStyle = '#d4b47b';
   ctx.textAlign = 'left';
   ctx.fillText('Output: ' + outSize + 'x' + outSize + 'x' + nFilters + ' (' + nFilters + ' filters)', outStartX, startY - 15);
 
@@ -1432,7 +1314,7 @@ function drawChannels() {
         const intensity = Math.min(Math.abs(sum) / 5, 1);
         ctx.fillStyle = sum >= 0 ? `rgba(255,159,67,${0.1 + intensity * 0.7})` : `rgba(100,100,255,${0.1 + intensity * 0.7})`;
         ctx.fillRect(x, y, outCellSize - 1, outCellSize - 1);
-        ctx.strokeStyle = '#3a3a5a';
+        ctx.strokeStyle = '#2a2a3a';
         ctx.lineWidth = 1;
         ctx.strokeRect(x, y, outCellSize - 1, outCellSize - 1);
 
@@ -1550,12 +1432,12 @@ function drawPool() {
   // Draw input grid
   ctx.font = 'bold 14px Inter, sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillStyle = '#ff9f43';
+  ctx.fillStyle = '#d4b47b';
   ctx.fillText('Input 6x6', inpX, inpY - 15);
 
   // Color the 2x2 blocks
   const blockColors = [
-    ['rgba(255,107,107,0.15)', 'rgba(78,205,196,0.15)', 'rgba(255,217,61,0.15)'],
+    ['rgba(201, 110, 138,0.15)', 'rgba(78,205,196,0.15)', 'rgba(224, 201, 146,0.15)'],
     ['rgba(155,89,182,0.15)', 'rgba(46,204,113,0.15)', 'rgba(52,152,219,0.15)'],
     ['rgba(230,126,34,0.15)', 'rgba(149,165,166,0.15)', 'rgba(241,196,15,0.15)']
   ];
@@ -1570,7 +1452,7 @@ function drawPool() {
 
       // Highlight max values
       if (poolMode === 'max' && maxPositions[br][bc] && maxPositions[br][bc].r === r && maxPositions[br][bc].c === cl) {
-        ctx.strokeStyle = '#ff9f43';
+        ctx.strokeStyle = '#d4b47b';
         ctx.lineWidth = 3;
         ctx.strokeRect(x + 1, y + 1, cellSize - 3, cellSize - 3);
       }
@@ -1583,7 +1465,7 @@ function drawPool() {
   }
 
   // Draw grid lines for 2x2 blocks
-  ctx.strokeStyle = '#ff9f43';
+  ctx.strokeStyle = '#d4b47b';
   ctx.lineWidth = 2;
   for (let i = 0; i <= 3; i++) {
     ctx.beginPath();
@@ -1613,7 +1495,7 @@ function drawPool() {
 
   ctx.font = '12px Inter, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillStyle = '#ff9f43';
+  ctx.fillStyle = '#d4b47b';
   ctx.fillText(poolMode === 'max' ? 'Max Pool' : 'Avg Pool', arrowX + 25, arrowY - 12);
   ctx.fillText('2x2, stride 2', arrowX + 25, arrowY + 20);
 
@@ -1640,7 +1522,7 @@ function drawPool() {
 
   ctx.font = 'bold 14px Inter, sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillStyle = '#ff9f43';
+  ctx.fillStyle = '#d4b47b';
   ctx.fillText('Output 3x3', outX, outY - 15);
 
   for (let r = 0; r < outSize; r++) {
@@ -1649,7 +1531,7 @@ function drawPool() {
       const y = outY + r * outCellSize;
       ctx.fillStyle = blockColors[r][cl];
       ctx.fillRect(x, y, outCellSize - 1, outCellSize - 1);
-      ctx.strokeStyle = '#3a3a5a';
+      ctx.strokeStyle = '#2a2a3a';
       ctx.lineWidth = 1;
       ctx.strokeRect(x, y, outCellSize - 1, outCellSize - 1);
 
@@ -1837,7 +1719,7 @@ function drawFullCNN() {
     const lines = stage.name.split('\n');
     ctx.font = 'bold 12px Inter, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillStyle = '#ff9f43';
+    ctx.fillStyle = '#d4b47b';
     lines.forEach((line, i) => {
       ctx.fillText(line, cx, 25 + i * 16);
     });
@@ -1893,9 +1775,9 @@ function drawFullCNN() {
       for (let i = 0; i < 3; i++) {
         const barW = result.probs[i] * 80;
         const y = 80 + i * 40;
-        ctx.fillStyle = '#1a1a2e';
+        ctx.fillStyle = '#111118';
         ctx.fillRect(cx - 45, y, 80, 24);
-        ctx.fillStyle = i === 1 ? '#2ecc71' : '#ff9f4388';
+        ctx.fillStyle = i === 1 ? '#2ecc71' : '#d4b47b88';
         ctx.fillRect(cx - 45, y, barW, 24);
         ctx.fillStyle = '#eee';
         ctx.font = '11px Inter, sans-serif';
@@ -1906,7 +1788,7 @@ function drawFullCNN() {
 
     // Arrow to next
     if (s < totalStages - 1) {
-      ctx.strokeStyle = fullCNNState === 'done' ? '#ff9f43' : '#333';
+      ctx.strokeStyle = fullCNNState === 'done' ? '#d4b47b' : '#333';
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(cx + stageW / 2 - 12, H / 2);
@@ -2091,7 +1973,7 @@ function drawBPConv() {
   // Draw forward: Input
   ctx.font = 'bold 13px Inter, sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillStyle = '#4ecdc4';
+  ctx.fillStyle = '#6ea5c9';
   ctx.fillText('Input 4x4', section1X, section1Y - 10);
 
   for (let r = 0; r < 4; r++) {
@@ -2108,13 +1990,13 @@ function drawBPConv() {
         ctx.fillRect(x, y, cellSize - 2, cellSize - 2);
       }
 
-      ctx.fillStyle = '#4ecdc4';
+      ctx.fillStyle = '#6ea5c9';
       ctx.font = '12px monospace';
       ctx.textAlign = 'center';
       ctx.fillText(input[r][cl].toString(), x + cellSize / 2 - 1, y + 16);
 
       if (showDInput) {
-        ctx.fillStyle = '#ff9f43';
+        ctx.fillStyle = '#d4b47b';
         ctx.font = '10px monospace';
         ctx.fillText('g:' + dInput[r][cl], x + cellSize / 2 - 1, y + cellSize - 8);
       }
@@ -2125,7 +2007,7 @@ function drawBPConv() {
   const kernelX = section1X + 4 * cellSize + 30;
   ctx.font = 'bold 13px Inter, sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillStyle = '#4ecdc4';
+  ctx.fillStyle = '#6ea5c9';
   ctx.fillText('Kernel 3x3', kernelX, section1Y - 10);
 
   for (let r = 0; r < 3; r++) {
@@ -2134,13 +2016,13 @@ function drawBPConv() {
       const y = section1Y + r * cellSize;
       ctx.fillStyle = '#1a2a2a';
       ctx.fillRect(x, y, cellSize - 2, cellSize - 2);
-      ctx.fillStyle = '#4ecdc4';
+      ctx.fillStyle = '#6ea5c9';
       ctx.font = '12px monospace';
       ctx.textAlign = 'center';
       ctx.fillText(kernelActual[r][cl].toString(), x + cellSize / 2 - 1, y + 16);
 
       if (showDKernel) {
-        ctx.fillStyle = '#ff9f43';
+        ctx.fillStyle = '#d4b47b';
         ctx.font = '10px monospace';
         ctx.fillText('g:' + dKernel[r][cl], x + cellSize / 2 - 1, y + cellSize - 8);
       }
@@ -2151,7 +2033,7 @@ function drawBPConv() {
   const outX = kernelX + 3 * cellSize + 30;
   ctx.font = 'bold 13px Inter, sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillStyle = '#4ecdc4';
+  ctx.fillStyle = '#6ea5c9';
   ctx.fillText('Output 2x2', outX, section1Y - 10);
 
   for (let r = 0; r < 2; r++) {
@@ -2160,13 +2042,13 @@ function drawBPConv() {
       const y = section1Y + r * cellSize;
       ctx.fillStyle = '#1a2a3a';
       ctx.fillRect(x, y, cellSize - 2, cellSize - 2);
-      ctx.fillStyle = '#4ecdc4';
+      ctx.fillStyle = '#6ea5c9';
       ctx.font = '12px monospace';
       ctx.textAlign = 'center';
       ctx.fillText(output[r][cl].toString(), x + cellSize / 2 - 1, y + 16);
 
       if (showUpstream) {
-        ctx.fillStyle = '#ff9f43';
+        ctx.fillStyle = '#d4b47b';
         ctx.font = '10px monospace';
         ctx.fillText('dL=' + upstreamGrad[r][cl], x + cellSize / 2 - 1, y + cellSize - 8);
       }
@@ -2254,10 +2136,10 @@ function drawArch() {
       author: 'Yann LeCun',
       layers: [
         { name: 'Input', size: '32x32x1', w: 32, color: '#888' },
-        { name: 'Conv 5x5', size: '28x28x6', w: 28, color: '#ff9f43' },
-        { name: 'Pool 2x2', size: '14x14x6', w: 14, color: '#4ecdc4' },
-        { name: 'Conv 5x5', size: '10x10x16', w: 10, color: '#ff9f43' },
-        { name: 'Pool 2x2', size: '5x5x16', w: 5, color: '#4ecdc4' },
+        { name: 'Conv 5x5', size: '28x28x6', w: 28, color: '#d4b47b' },
+        { name: 'Pool 2x2', size: '14x14x6', w: 14, color: '#6ea5c9' },
+        { name: 'Conv 5x5', size: '10x10x16', w: 10, color: '#d4b47b' },
+        { name: 'Pool 2x2', size: '5x5x16', w: 5, color: '#6ea5c9' },
         { name: 'FC 120', size: '120', w: 3, color: '#e74c3c' },
         { name: 'FC 84', size: '84', w: 2, color: '#e74c3c' },
         { name: 'FC 10', size: '10', w: 1, color: '#e74c3c' }
@@ -2271,12 +2153,12 @@ function drawArch() {
       author: 'Krizhevsky et al.',
       layers: [
         { name: 'Input', size: '227x227x3', w: 50, color: '#888' },
-        { name: 'Conv 11x11/4', size: '55x55x96', w: 40, color: '#ff9f43' },
-        { name: 'Pool 3x3/2', size: '27x27x96', w: 30, color: '#4ecdc4' },
-        { name: 'Conv 5x5', size: '27x27x256', w: 30, color: '#ff9f43' },
-        { name: 'Pool 3x3/2', size: '13x13x256', w: 20, color: '#4ecdc4' },
-        { name: 'Conv 3x3 x3', size: '13x13x256', w: 20, color: '#ff9f43' },
-        { name: 'Pool', size: '6x6x256', w: 12, color: '#4ecdc4' },
+        { name: 'Conv 11x11/4', size: '55x55x96', w: 40, color: '#d4b47b' },
+        { name: 'Pool 3x3/2', size: '27x27x96', w: 30, color: '#6ea5c9' },
+        { name: 'Conv 5x5', size: '27x27x256', w: 30, color: '#d4b47b' },
+        { name: 'Pool 3x3/2', size: '13x13x256', w: 20, color: '#6ea5c9' },
+        { name: 'Conv 3x3 x3', size: '13x13x256', w: 20, color: '#d4b47b' },
+        { name: 'Pool', size: '6x6x256', w: 12, color: '#6ea5c9' },
         { name: 'FC 4096', size: '4096', w: 6, color: '#e74c3c' },
         { name: 'FC 1000', size: '1000', w: 3, color: '#e74c3c' }
       ],
@@ -2289,16 +2171,16 @@ function drawArch() {
       author: 'Simonyan & Zisserman',
       layers: [
         { name: 'Input', size: '224x224x3', w: 50, color: '#888' },
-        { name: '3x3 Conv x2', size: '224x224x64', w: 45, color: '#ff9f43' },
-        { name: 'Pool', size: '112x112x64', w: 35, color: '#4ecdc4' },
-        { name: '3x3 Conv x2', size: '112x112x128', w: 35, color: '#ff9f43' },
-        { name: 'Pool', size: '56x56x128', w: 25, color: '#4ecdc4' },
-        { name: '3x3 Conv x3', size: '56x56x256', w: 25, color: '#ff9f43' },
-        { name: 'Pool', size: '28x28x256', w: 18, color: '#4ecdc4' },
-        { name: '3x3 Conv x3', size: '28x28x512', w: 18, color: '#ff9f43' },
-        { name: 'Pool', size: '14x14x512', w: 12, color: '#4ecdc4' },
-        { name: '3x3 Conv x3', size: '14x14x512', w: 12, color: '#ff9f43' },
-        { name: 'Pool', size: '7x7x512', w: 8, color: '#4ecdc4' },
+        { name: '3x3 Conv x2', size: '224x224x64', w: 45, color: '#d4b47b' },
+        { name: 'Pool', size: '112x112x64', w: 35, color: '#6ea5c9' },
+        { name: '3x3 Conv x2', size: '112x112x128', w: 35, color: '#d4b47b' },
+        { name: 'Pool', size: '56x56x128', w: 25, color: '#6ea5c9' },
+        { name: '3x3 Conv x3', size: '56x56x256', w: 25, color: '#d4b47b' },
+        { name: 'Pool', size: '28x28x256', w: 18, color: '#6ea5c9' },
+        { name: '3x3 Conv x3', size: '28x28x512', w: 18, color: '#d4b47b' },
+        { name: 'Pool', size: '14x14x512', w: 12, color: '#6ea5c9' },
+        { name: '3x3 Conv x3', size: '14x14x512', w: 12, color: '#d4b47b' },
+        { name: 'Pool', size: '7x7x512', w: 8, color: '#6ea5c9' },
         { name: 'FC 4096x2', size: '4096', w: 5, color: '#e74c3c' },
         { name: 'FC 1000', size: '1000', w: 3, color: '#e74c3c' }
       ],
@@ -2311,8 +2193,8 @@ function drawArch() {
       author: 'He et al.',
       layers: [
         { name: 'Input', size: '224x224x3', w: 50, color: '#888' },
-        { name: '7x7/2 Conv', size: '112x112x64', w: 40, color: '#ff9f43' },
-        { name: 'Pool 3x3/2', size: '56x56x64', w: 30, color: '#4ecdc4' },
+        { name: '7x7/2 Conv', size: '112x112x64', w: 40, color: '#d4b47b' },
+        { name: 'Pool 3x3/2', size: '56x56x64', w: 30, color: '#6ea5c9' },
         { name: 'ResBlock x3', size: '56x56x256', w: 30, color: '#2ecc71' },
         { name: 'ResBlock x4', size: '28x28x512', w: 22, color: '#2ecc71' },
         { name: 'ResBlock x6', size: '14x14x1024', w: 16, color: '#2ecc71' },
@@ -2333,7 +2215,7 @@ function drawArch() {
   // Title
   ctx.font = 'bold 18px Inter, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillStyle = '#ff9f43';
+  ctx.fillStyle = '#d4b47b';
   ctx.fillText(arch.name, W / 2, 30);
 
   ctx.font = '12px Inter, sans-serif';
@@ -2403,7 +2285,7 @@ function drawArch() {
   // Innovation note
   ctx.font = '13px Inter, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillStyle = '#ffd93d';
+  ctx.fillStyle = '#e0c992';
   ctx.fillText('Key Innovation: ' + arch.innovation, W / 2, H - 20);
 }
 

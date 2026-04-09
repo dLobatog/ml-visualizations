@@ -5,89 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>4. Recommendation Systems — Interactive Visualizations</title>
 <script src="static/canvas-polish.js"></script>
+<link rel="stylesheet" href="theme.css">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #0a0a0f; color: #e0e0e0; line-height: 1.6; }
-  .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; text-align: center; border-bottom: 1px solid #2a2a4a; }
-  .header h1 { font-size: 2.2em; background: linear-gradient(90deg, #ff9ff3, #ff6b9d); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
-  .header p { color: #888; font-size: 1.1em; }
-  .container { max-width: 1400px; margin: 0 auto; padding: 40px 20px; }
-  .viz-section { background: #12121f; border: 1px solid #2a2a4a; border-radius: 16px; padding: 32px; margin-bottom: 40px; }
-  .viz-section h2 { font-size: 1.5em; color: #ff9ff3; margin-bottom: 8px; }
-  .viz-section .subtitle { color: #888; margin-bottom: 24px; font-size: 0.95em; }
-  .viz-canvas { background: #0d0d1a; border-radius: 12px; position: relative; overflow: hidden; }
-  canvas { display: block; margin: 0 auto; }
-  .controls { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; align-items: center; }
-  .control-group { display: flex; flex-direction: column; gap: 4px; }
-  .control-group label { font-size: 0.85em; color: #aaa; }
-  .control-group input[type="range"] { width: 200px; accent-color: #ff9ff3; }
-  .control-group .value { font-size: 0.85em; color: #ff9ff3; font-family: monospace; }
-  .legend { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
-  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.85em; color: #ccc; }
-  .legend-dot { width: 12px; height: 12px; border-radius: 50%; }
-  .btn { padding: 8px 16px; border: 1px solid #ff9ff3; background: transparent; color: #ff9ff3; border-radius: 8px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
-  .btn:hover { background: #ff9ff344; }
-  .btn.active { background: #ff9ff366; }
-  .tab-bar { display: flex; gap: 8px; margin-bottom: 16px; }
-  .comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
-  .comparison-item { background: #1a1a2a; border: 1px solid #2a2a4a; border-radius: 8px; padding: 16px; }
-  .comparison-item h4 { color: #ff9ff3; margin-bottom: 8px; font-size: 1em; }
-  .comparison-item p { font-size: 0.85em; color: #aaa; line-height: 1.5; }
-  .metric-box { background: #1a1a2a; border: 1px solid #2a2a4a; border-radius: 8px; padding: 12px; margin-top: 12px; font-family: monospace; font-size: 0.85em; }
-
-  .insight-box { background: linear-gradient(135deg, #1a1a3e 0%, #151530 100%); border-left: 4px solid #ff9ff3; padding: 20px 24px; margin-top: 20px; border-radius: 0 12px 12px 0; font-size: 0.92em; color: #ccc; line-height: 1.8; }
-  .insight-box strong { color: #ff9ff3; font-size: 1.05em; }
-  .insight-box .formula { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 12px 18px; margin: 12px 0; font-family: 'Courier New', monospace; color: #e8e8ff; font-size: 1.05em; text-align: center; letter-spacing: 0.5px; line-height: 1.9; }
-  .insight-box .formula .highlight { color: #ff9ff3; font-weight: bold; }
-  .insight-box .key-point { display: flex; flex-wrap: wrap; gap: 4px 8px; margin: 8px 0; padding: 4px 0; align-items: baseline; }
-  .insight-box .key-point .label { color: #ff9ff3; font-weight: 600; min-width: 160px; flex-shrink: 0; }
-  .insight-box .key-point .desc { color: #ddd; }
-  .insight-box .interview-tip { background: rgba(100, 255, 100, 0.05); border: 1px solid rgba(100, 255, 100, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #b0ffb0; font-size: 0.93em; line-height: 1.6; }
-  .insight-box .interview-tip::before { content: '\1F4A1  Interview Tip: '; font-weight: 700; color: #7fff7f; }
-  .insight-box .mnemonic { background: rgba(255, 150, 255, 0.05); border: 1px solid rgba(255, 150, 255, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #ffb0ff; font-size: 0.93em; line-height: 1.6; }
-  .insight-box .mnemonic::before { content: '\1F9E0  Remember: '; font-weight: 700; color: #ff7fff; }
-  .insight-box .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
-  .insight-box .comparison .option { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 10px 14px; }
-  .insight-box .comparison .option .opt-title { color: #ff9ff3; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
-  .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
-  .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
-
-  .katex { color: #e8e8ff; font-size: 1.1em; }
-  .formula .katex { font-size: 1.2em; }
-
-
-  .code-example { margin-top: 12px; border: 1px solid #2a2a4a; border-radius: 8px; overflow: hidden; }
-  .code-toggle { width: 100%; background: #1a1a2e; color: #ff9ff3; border: none; padding: 10px 16px; text-align: left; cursor: pointer; font-size: 0.9em; font-weight: 600; display: flex; align-items: center; gap: 8px; }
-  .code-toggle:hover { background: #22223a; }
-  .code-toggle-icon { display: inline-block; transition: transform 0.2s; font-size: 0.7em; }
-  .code-example.open .code-toggle-icon { transform: rotate(90deg); }
-  .code-content { display: none; padding: 14px 16px; background: #0a0a14; }
-  .code-example.open .code-content { display: block; }
-  .code-content pre { margin: 0; overflow-x: auto; white-space: pre; }
-  .code-content code { color: #e0e0e0; font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.82em; line-height: 1.6; }
-  .code-content .code-note { color: #888; font-size: 0.82em; margin-top: 8px; font-style: italic; }
-  .code-content pre[class*="language-"], .code-content code[class*="language-"] { background: #0a0a14; font-size: 0.82em; line-height: 1.6; margin: 0; padding: 0; text-shadow: none; }
-  pre[class*="language-"]::selection, code[class*="language-"]::selection { background: #333; }
-
-  /* Mobile responsive */
-  canvas { max-width: 100%; height: auto; }
-  @media (max-width: 768px) {
-    .container { padding: 16px 10px; }
-    .viz-section { padding: 16px 12px; }
-    h2 { font-size: 1.2em; }
-    .subtitle { font-size: 0.85em; }
-    .controls { gap: 8px; }
-    .control-group { min-width: 120px; flex: 1 1 auto; }
-    .tab-bar { flex-wrap: wrap; gap: 4px; }
-    .tab-bar .btn { font-size: 0.75em; padding: 6px 10px; }
-    .insight-box { padding: 14px; font-size: 0.9em; }
-    .comparison { grid-template-columns: 1fr !important; }
-    .formula { font-size: 0.85em; overflow-x: auto; }
-    .code-content pre { font-size: 0.78em; }
-    .interview-tip { font-size: 0.85em; padding: 10px; }
-    .metric-box { font-size: 0.82em; }
-  }
-
+  .header h1 { background: linear-gradient(90deg, var(--rose), var(--blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .viz-section h2 { color: var(--rose); }
+  .control-group .value { color: var(--rose); }
+  .control-group input[type="range"] { accent-color: var(--rose); }
+  .btn.active { border-color: var(--rose); color: var(--rose); }
+  .btn:hover { border-color: var(--rose); color: var(--rose); }
+  .insight-box { border-left-color: rgba(var(--rose-rgb), 0.3); }
+  .insight-box strong { color: var(--rose); }
+  .insight-box .formula .highlight { color: var(--rose); }
+  .insight-box .key-point .label { color: var(--rose); }
+  .card::before { background: var(--rose); }
+  #quizToggle { background: var(--bg2); color: var(--fg-dim); border: 1px solid var(--border-hover); }
+  #quizToggle:hover { border-color: var(--rose); color: var(--rose); }
+  #quizSection { border-top-color: rgba(var(--rose-rgb), 0.2); }
 </style>
 <link rel="stylesheet" href="static/learning-tools.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
@@ -109,7 +42,7 @@
 <!-- 1. COLLABORATIVE FILTERING MATRIX FACTORIZATION -->
 <div class="viz-section">
   <h2>Collaborative Filtering: Matrix Factorization</h2>
-  <p class="subtitle">Slide k (latent dimensions) from 1 to 50. Watch the reconstruction of the rating matrix improve—at k=1, barely captures patterns; at k=50, reconstructs almost perfectly. Notice the rmse metric: higher k = better reconstruction. But too high k risks overfitting. Find the sweet spot around k=10–20.</p>
+  <p class="subtitle">Matrix factorization learns a shared embedding space where users and items are vectors. A predicted rating is basically how well those two vectors align.</p>
   <div class="viz-canvas">
     <canvas id="mfCanvas" width="1200" height="500"></canvas>
   </div>
@@ -136,7 +69,7 @@
   <div class="metric-box" id="mfMetrics">Reconstruction Error: --</div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Singular Value Decomposition decomposes user-item matrix R into low-rank factors U, Σ, V, enabling scalable collaborative filtering despite sparse data.
-    <div class="formula">$$R \approx U \cdot \Sigma \cdot V^T, \text{ where } \|R - \color{#ff9ff3}{U_k \cdot \Sigma_k \cdot V_k^T}\|^2 \text{ is minimized for rank-k approximation}$$</div>
+    <div class="formula">$$R \approx U \cdot \Sigma \cdot V^T, \text{ where } \|R - \color{#d9a0b8}{U_k \cdot \Sigma_k \cdot V_k^T}\|^2 \text{ is minimized for rank-k approximation}$$</div>
     <div class="key-point"><span class="label">\(R\):</span><span class="desc">User-item interaction matrix (m users × n items), sparse with mostly missing entries (0.01-1% observed)</span></div>
     <div class="key-point"><span class="label">\(U\):</span><span class="desc">User embedding matrix (m × k), each row is a user's latent preference vector in k-dimensional space</span></div>
     <div class="key-point"><span class="label">\(\Sigma\):</span><span class="desc">Singular values diagonal matrix (k × k), ordered by magnitude; higher values indicate more important latent factors</span></div>
@@ -147,19 +80,19 @@
     <div class="key-point"><span class="label">Algorithms:</span><span class="desc">SGD or Alternating Least Squares (ALS) instead of explicit eigendecomposition</span></div>
     <div class="key-point"><span class="label">Production detail:</span><span class="desc">L2 regularization \(\lambda\|U\|^2 + \lambda\|V\|^2\) prevents overfitting; normalize random initialization</span></div>
     <hr class="divider">
-    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
     <div class="comparison">
       <div class="option">
-        <div class="opt-title" style="color: #ff9ff3;">SVD / Matrix Factorization</div>
+        <div class="opt-title" style="color: #d9a0b8;">SVD / Matrix Factorization</div>
         <div class="opt-desc">Best when you have a large, sparse user-item interaction matrix with explicit ratings. Classic use: Netflix movie ratings, Amazon product ratings. Works well when item catalog is stable and you need interpretable latent factors (e.g., genre, mood).</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #f368e0;">Implicit Feedback ALS</div>
+        <div class="opt-title" style="color: #c96e8a;">Implicit Feedback ALS</div>
         <div class="opt-desc">Use when you only have implicit signals (clicks, views, purchases) without explicit ratings. Classic use: Spotify play counts, YouTube watch history. ALS scales better on distributed systems (Spark MLlib) for billion-scale interactions.</div>
       </div>
     </div>
     <hr class="divider">
-<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Slide k from 1 to 50. At k=1, reconstruction is poor (RMSE high). At k=10–15, quality plateaus—diminishing returns. At k=50, you're overfitting (perfect train but bad test). The sweet spot is k=10–20. Also watch rank: smaller k = simpler model = generalizes better. This is the bias-variance tradeoff in dimensionality reduction.</div>
+<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Slide k from 1 to 50. At k=1, reconstruction is poor (RMSE high). At k=10–15, quality plateaus—diminishing returns. At k=50, you're overfitting (perfect train but bad test). The sweet spot is k=10–20. Also watch rank: smaller k = simpler model = generalizes better. This is the bias-variance tradeoff in dimensionality reduction.</div>
     <div class="interview-tip">Why does sparse data require different algorithms? Explicit SVD solvers (eigendecomposition) cannot handle missing values; SGD/ALS gracefully skip unobserved entries by computing only on observed pairs.</div>
     <div class="interview-tip">How do you choose k? Via cross-validation: lower k is faster at serving (fewer parameters) but less accurate; higher k improves NDCG but increases latency—typical production range is k=64-512.</div>
     <div class="mnemonic">Think of SVD as embedding users and items in a shared k-dimensional space; similar users have similar embedding vectors, so their preferences are correlated.</div>
@@ -215,7 +148,7 @@ class MF(nn.Module):
 <!-- 2. TWO-TOWER MODEL ARCHITECTURE -->
 <div class="viz-section">
   <h2>Two-Tower (TT) Embedding Model</h2>
-  <p class="subtitle">Watch how user and item embeddings are projected into latent space. Click 'Find Neighbors' to see ANN (approximate nearest neighbors) search in action—it finds similar items by dot product similarity, much faster than checking every item. Toggle 'Exact vs ANN Search' to see the speed difference on large catalogs.</p>
+  <p class="subtitle">A two-tower model embeds the user and item separately so retrieval becomes nearest-neighbor search in embedding space. It is built for fast candidate generation, not final ranking.</p>
   <div class="viz-canvas">
     <canvas id="towerCanvas" width="900" height="550"></canvas>
   </div>
@@ -241,19 +174,19 @@ class MF(nn.Module):
     <div class="key-point"><span class="label">Serving advantage:</span><span class="desc">Pre-compute all item embeddings offline, index in HNSW/LSH/IVF for sub-millisecond retrieval over millions of items</span></div>
     <div class="key-point"><span class="label">Limitation:</span><span class="desc">Cannot capture fine-grained user-item interactions (specific feature combinations); requires ranking model for precision</span></div>
     <hr class="divider">
-    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
     <div class="comparison">
       <div class="option">
-        <div class="opt-title" style="color: #ff9ff3;">Two-Tower for Candidate Generation</div>
+        <div class="opt-title" style="color: #d9a0b8;">Two-Tower for Candidate Generation</div>
         <div class="opt-desc">Use as Stage 1 retrieval when catalog is massive (millions of items). Classic use: YouTube video candidate generation, Pinterest pin retrieval, LinkedIn job recommendations. Pre-compute item embeddings offline and serve via ANN index (FAISS/ScaNN).</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #f368e0;">Single-Tower / Cross-Attention for Ranking</div>
+        <div class="opt-title" style="color: #c96e8a;">Single-Tower / Cross-Attention for Ranking</div>
         <div class="opt-desc">Use when you need fine-grained feature interactions between user and item (Stage 2 ranking). Classic use: Netflix final ranking of 100 candidates, Amazon product detail page "similar items". Slower but more precise than two-tower.</div>
       </div>
     </div>
     <hr class="divider">
-<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Toggle "Exact vs Approximate Search". Exact computes dot product for all items (slow, accurate). Approximate uses HNSW indexing (fast, slight accuracy loss). Watch latency: exact scales with catalog size (100K items = 100ms), approximate stays 1–5ms. Then increase Embedding Dimension to 256. Exact gets slower, approximate barely changes. This is why two-tower dominates.</div>
+<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Toggle "Exact vs Approximate Search". Exact computes dot product for all items (slow, accurate). Approximate uses HNSW indexing (fast, slight accuracy loss). Watch latency: exact scales with catalog size (100K items = 100ms), approximate stays 1–5ms. Then increase Embedding Dimension to 256. Exact gets slower, approximate barely changes. This is why two-tower dominates.</div>
     <div class="interview-tip">Why pre-compute item embeddings? User tower requires online inference (live user context), but item embeddings are static—pre-computing and indexing eliminates real-time item inference cost.</div>
     <div class="interview-tip">Why dot product over cosine? Cosine similarity requires L2 normalization at serving time; dot product is faster in FAISS/Annoy libraries and achieves similar ranking when embeddings are approximately normalized.</div>
     <div class="mnemonic">Two-tower is like two separate coordinate systems: users and items map independently into shared embedding space, then you find nearest neighbors via simple dot product.</div>
@@ -285,7 +218,7 @@ class TwoTower(nn.Module):
 <!-- 3. EMBEDDING SPACE VISUALIZATION -->
 <div class="viz-section">
   <h2>Item Embedding Space (2D Projection)</h2>
-  <p class="subtitle">Click different items and watch the KNN neighbors appear—items cluster by latent factors (genre, style, rating). Now toggle the color scheme to show true categories. You'll see latent factors partially align with human categories but discover new patterns too. Drag the KNN k slider to change neighbor count.</p>
+  <p class="subtitle">An embedding space puts similar items near each other because the model learned they satisfy similar users. The axes usually do not map cleanly to human labels, but neighborhoods still encode taste.</p>
   <div class="viz-canvas">
     <canvas id="embeddingCanvas" width="900" height="500"></canvas>
   </div>
@@ -309,19 +242,19 @@ class TwoTower(nn.Module):
     <div class="key-point"><span class="label">Production monitoring:</span><span class="desc">Recall@k metric (fraction of true positives in top-k nearest neighbors) tracks embedding quality over time</span></div>
     <div class="key-point"><span class="label">Drift concern:</span><span class="desc">As item catalog grows or user preferences evolve, embeddings degrade; periodic retraining required</span></div>
     <hr class="divider">
-    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
     <div class="comparison">
       <div class="option">
-        <div class="opt-title" style="color: #ff9ff3;">t-SNE for Local Structure</div>
+        <div class="opt-title" style="color: #d9a0b8;">t-SNE for Local Structure</div>
         <div class="opt-desc">Use when debugging embedding quality and verifying local clusters. Classic use: checking if Netflix genre clusters are coherent, verifying Spotify song embeddings group by mood/tempo. Best for small-to-medium datasets (under 100K items).</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #f368e0;">UMAP for Global Structure</div>
+        <div class="opt-title" style="color: #c96e8a;">UMAP for Global Structure</div>
         <div class="opt-desc">Use when you need to see global relationships between clusters (e.g., how Action and Thriller relate). Classic use: Amazon product taxonomy validation, YouTube content moderation (detecting toxic clusters). Faster than t-SNE on large datasets.</div>
       </div>
     </div>
     <hr class="divider">
-<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Toggle between "t-SNE" and "UMAP" visualizations. Both reduce 100D embeddings to 2D for visualization but use different algorithms. t-SNE preserves local clusters better. UMAP preserves global structure better. Click different items and watch KNN neighbors appear. Notice items cluster by content (genre, rating), even though model never explicitly optimized for that.</div>
+<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Toggle between "t-SNE" and "UMAP" visualizations. Both reduce 100D embeddings to 2D for visualization but use different algorithms. t-SNE preserves local clusters better. UMAP preserves global structure better. Click different items and watch KNN neighbors appear. Notice items cluster by content (genre, rating), even though model never explicitly optimized for that.</div>
     <div class="interview-tip">How do you onboard new items without retraining? Use content-based initialization: compute embeddings from item metadata/category features, then fine-tune with user interaction signals.</div>
     <div class="interview-tip">What prevents embedding collapse (all items mapping to same region)? Proper loss functions (triplet, in-batch negatives) keep diverse negative samples far; batch normalization also helps stabilize scale.</div>
     <div class="mnemonic">Think of embeddings as a map of item space: similar items are neighbors on the map; ANN search finds nearby neighbors quickly instead of searching all items.</div>
@@ -350,7 +283,7 @@ plt.scatter(coords[:, 0], coords[:, 1], c=item_categories, s=5, alpha=0.6)</code
 <!-- 4. COLD START PROBLEM -->
 <div class="viz-section">
   <h2>Cold Start Problem: Content vs Collaborative</h2>
-  <p class="subtitle">Click the tabs: 'Collaborative Filtering' (needs user history), 'Content-Based' (uses item features only), 'Hybrid'. For a new user, collaborative fails (no history), but content-based works. Watch the Hybrid approach combine both strengths. Slide the weighting slider to see how mixing them improves cold-start performance.</p>
+  <p class="subtitle">Cold start means collaborative filtering has no behavior data yet. Content features help because they let the system make a first guess before interactions arrive.</p>
   <div class="viz-canvas">
     <canvas id="coldStartCanvas" width="900" height="450"></canvas>
   </div>
@@ -396,19 +329,19 @@ plt.scatter(coords[:, 0], coords[:, 1], c=item_categories, s=5, alpha=0.6)</code
     <div class="key-point"><span class="label">Layer 3: Bandit algorithms:</span><span class="desc">Thompson sampling or UCB to balance exploration (diverse items to learn preferences) vs exploitation (good recommendations)</span></div>
     <div class="key-point"><span class="label">Layer 4: Fallback:</span><span class="desc">Popularity or recency ranking when all else fails; simple but safe</span></div>
     <hr class="divider">
-    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
     <div class="comparison">
       <div class="option">
-        <div class="opt-title" style="color: #ff9ff3;">Content-Based (Cold Start)</div>
+        <div class="opt-title" style="color: #d9a0b8;">Content-Based (Cold Start)</div>
         <div class="opt-desc">Use when new users/items have zero interaction history. Classic use: new user signs up on Spotify (recommend based on genre preferences from onboarding), new product listed on Amazon (recommend based on category/description). Essential for marketplace platforms with high item churn.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #f368e0;">Hybrid + Bandit Exploration</div>
+        <div class="opt-title" style="color: #c96e8a;">Hybrid + Bandit Exploration</div>
         <div class="opt-desc">Use when you need to rapidly learn user preferences while maintaining quality. Classic use: TikTok's "For You" page for new users (explore diverse content, exploit early signals), Netflix new subscriber onboarding. Thompson sampling balances exploration vs exploitation.</div>
       </div>
     </div>
     <hr class="divider">
-<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Slide "New User Data Points" to 0 (new user, no history). Watch Collaborative Filtering fail (score = unknown). Content-Based works (uses item features). Click "Hybrid" and watch it blend: content-based provides cold-start, collaborative kicks in once user has history. Slide the mixing weight: all-content is safe but boring; all-collab explores more. 70/30 split usually best.</div>
+<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Slide "New User Data Points" to 0 (new user, no history). Watch Collaborative Filtering fail (score = unknown). Content-Based works (uses item features). Click "Hybrid" and watch it blend: content-based provides cold-start, collaborative kicks in once user has history. Slide the mixing weight: all-content is safe but boring; all-collab explores more. 70/30 split usually best.</div>
     <div class="interview-tip">Practical trick: When user embedding is unavailable, find nearest neighbor in content-feature space (demographics), copy their embedding until interactions accumulate—leverages collaborative signal from similar users.</div>
     <div class="interview-tip">How do you evaluate cold-start? Separately: measure NDCG on users/items with age < 7 days (cold metrics) vs age > 30 days (warm metrics). A/B test changes on cold users only to isolate impact.</div>
     <div class="mnemonic">Cold-start is a funnel: content-based (broad, weak) → exploration bandit (learning) → exploitation (leveraging learned preferences) → mature warm-start recommendations.</div>
@@ -440,7 +373,7 @@ class HybridRecommender(nn.Module):
 <!-- 5. DEEP RECOMMENDATION MODELS: Wide & Deep -->
 <div class="viz-section">
   <h2>Deep Recommendation Models: Wide & Deep Architecture</h2>
-  <p class="subtitle">Drag features (age, genre, click_history) into the model. Watch some flow through the 'Wide' path (memorization—direct lookups) and others through the 'Deep' path (neural learning). The Wide path handles frequent user-item patterns; Deep learns embeddings. Toggle which features go where to see impact on prediction.</p>
+  <p class="subtitle">Wide &amp; Deep combines memorization and generalization in one model. The wide side learns strong known crosses; the deep side learns reusable embeddings and nonlinear patterns.</p>
   <div class="viz-canvas">
     <canvas id="wideDeepCanvas" width="1000" height="600"></canvas>
   </div>
@@ -474,19 +407,19 @@ class HybridRecommender(nn.Module):
     <div class="key-point"><span class="label">Regularization:</span><span class="desc">L2 on wide weights (prevent overfit to specific user-item pairs); dropout on deep layers (prevent co-adaptation)</span></div>
     <div class="key-point"><span class="label">Shared embeddings:</span><span class="desc">Both paths share embedding tables; deep path learns better representations, improving wide path</span></div>
     <hr class="divider">
-    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
     <div class="comparison">
       <div class="option">
-        <div class="opt-title" style="color: #ff9ff3;">Wide & Deep</div>
+        <div class="opt-title" style="color: #d9a0b8;">Wide & Deep</div>
         <div class="opt-desc">Use when you have known important feature crosses and want both memorization and generalization. Classic use: Google Play app recommendations (memorize "user installed game X, show game Y" + generalize from app category embeddings). Best when domain experts can identify key feature crosses.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #f368e0;">Deep-Only Models</div>
+        <div class="opt-title" style="color: #c96e8a;">Deep-Only Models</div>
         <div class="opt-desc">Use when feature engineering is too expensive or catalog changes rapidly. Classic use: YouTube video recommendations (massive feature space, too many crosses to enumerate). Simpler architecture, easier to maintain, but may miss specific memorization patterns.</div>
       </div>
     </div>
     <hr class="divider">
-<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Drag features into model. Put "user_id" and "item_id" in Wide path (memorization—remember exact user-item pairs). Put "user_age" and "item_category" in Deep path (learn embeddings). Watch prediction change. Remove features from Wide, add to Deep—prediction becomes more generalized but misses specific user patterns. 60/40 split (by param count) usually works well.</div>
+<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Drag features into model. Put "user_id" and "item_id" in Wide path (memorization—remember exact user-item pairs). Put "user_age" and "item_category" in Deep path (learn embeddings). Watch prediction change. Remove features from Wide, add to Deep—prediction becomes more generalized but misses specific user patterns. 60/40 split (by param count) usually works well.</div>
     <div class="interview-tip">How do you choose wide-path features? High-dimensional, expensive to hand-engineer. Start with top-k frequent feature crosses (identified via statistical tests), then iteratively add new crosses based on model analysis.</div>
     <div class="interview-tip">Compare to baselines: Deep-only struggles with memorization (e.g., specific promo combos); Wide-only cannot generalize. Wide&Deep achieves both—validate via A/B test: Deep-only vs Wide-only vs Wide&Deep.</div>
     <div class="mnemonic">Think of it as: Wide handles special cases (memorize important user-item patterns), Deep handles the general case (learn reusable patterns from raw features).</div>
@@ -517,7 +450,7 @@ class WideAndDeep(nn.Module):
 <!-- 6. DCN (Deep & Cross Network) -->
 <div class="viz-section">
   <h2>DCN (Deep & Cross Network): Automatic Feature Crossing</h2>
-  <p class="subtitle">Click 'Expand Cross Layers' to see how each layer computes feature crosses (feature × feature interactions). Watch the cross pattern at layer 1 (pairwise features) vs layer 3 (higher-order). Drag 'Num Cross Layers' to balance expressiveness vs compute. More layers = higher-order interactions but slower training.</p>
+  <p class="subtitle">Cross layers explicitly build feature interactions without hand-writing every cross. That makes DCN useful when pairwise and higher-order combinations drive recommendation quality.</p>
   <div class="viz-canvas">
     <canvas id="dcnCanvas" width="1000" height="550"></canvas>
   </div>
@@ -532,7 +465,7 @@ class WideAndDeep(nn.Module):
   <div class="metric-box" id="dcnMetrics">Cross Layers: -- | Deep Layers: 4</div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Deep & Cross Network (DCN) automates feature crossing without exponential explosion: each cross layer generates polynomial order 2^l interactions with only O(d) parameters per layer.
-    <div class="formula">$$x_{l+1} = x_0 \odot \color{#ff9ff3}{(w_l^T x_l + b_l)} + x_l, \text{ where } \odot \text{ is element-wise multiplication and } x_0 \text{ is original input}$$</div>
+    <div class="formula">$$x_{l+1} = x_0 \odot \color{#d9a0b8}{(w_l^T x_l + b_l)} + x_l, \text{ where } \odot \text{ is element-wise multiplication and } x_0 \text{ is original input}$$</div>
     <div class="key-point"><span class="label">\(x_{l+1}\):</span><span class="desc">Output of l-th cross layer; contains polynomial feature interactions up to order \(2^l\)</span></div>
     <div class="key-point"><span class="label">\(x_0\):</span><span class="desc">Original input feature vector to first cross layer; preserved and used in residual connection throughout network</span></div>
     <div class="key-point"><span class="label">\(x_l\):</span><span class="desc">Input to l-th cross layer; output of previous cross layer (or \(x_0\) if l=1)</span></div>
@@ -546,19 +479,19 @@ class WideAndDeep(nn.Module):
     <div class="key-point"><span class="label">Architecture:</span><span class="desc">Cross network (automatic feature crosses) + Deep network (embeddings + MLPs) in parallel; concatenate outputs for final classification layer</span></div>
     <div class="key-point"><span class="label">Serving cost:</span><span class="desc">Minimal latency overhead (simple dot products and element-wise ops); ideal for production constraints</span></div>
     <hr class="divider">
-    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
     <div class="comparison">
       <div class="option">
-        <div class="opt-title" style="color: #ff9ff3;">DCN (Deep & Cross Network)</div>
+        <div class="opt-title" style="color: #d9a0b8;">DCN (Deep & Cross Network)</div>
         <div class="opt-desc">Use when you want automatic feature crossing without manual engineering. Classic use: Google Ads CTR prediction (hundreds of sparse features, too many crosses to hand-craft), Amazon product ranking with rich categorical features. Replaces Wide & Deep's manual wide path with learned crosses.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #f368e0;">Manual Feature Crosses (Wide & Deep)</div>
+        <div class="opt-title" style="color: #c96e8a;">Manual Feature Crosses (Wide & Deep)</div>
         <div class="opt-desc">Use when you have strong domain knowledge about which feature interactions matter. Classic use: e-commerce where "brand x price_range" is a known strong signal. More interpretable but requires ongoing feature engineering as catalog evolves.</div>
       </div>
     </div>
     <hr class="divider">
-<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Increase "Cross Layers" from 1 to 5. Watch Cross Network learn feature interactions. Layer 1 learns pairwise crosses (age × gender). Layer 2 learns order-3 crosses. Layer 4+ very high-order. Increase too much and you overfit. Slide "DCN Strength" to see regularization effect. The cross network is remarkably sample-efficient—beats traditional feature engineering with 10x fewer parameters.</div>
+<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Increase "Cross Layers" from 1 to 5. Watch Cross Network learn feature interactions. Layer 1 learns pairwise crosses (age × gender). Layer 2 learns order-3 crosses. Layer 4+ very high-order. Increase too much and you overfit. Slide "DCN Strength" to see regularization effect. The cross network is remarkably sample-efficient—beats traditional feature engineering with 10x fewer parameters.</div>
     <div class="interview-tip">Why more efficient than hand-crafted crosses? Exponential feature explosion: to get 4th-order interactions manually, you need \(O(d^4)\) features. DCN achieves it with \(O(4d)\) parameters via automatic layer-wise composition.</div>
     <div class="interview-tip">Interpretability trade-off? Unlike Wide & Deep (you can inspect wide weights to see which crosses matter), DCN cross layers are learned implicitly—harder to debug but more automated.</div>
     <div class="mnemonic">Think of cross layers as a learnable feature interaction funnel: each layer multiplies original input by learned gates to extract higher-order patterns progressively.</div>
@@ -599,7 +532,7 @@ class DCN(nn.Module):
 <!-- 7. DIN (Deep Interest Network) -->
 <div class="viz-section">
   <h2>DIN: Deep Interest Network (Attention Mechanism)</h2>
-  <p class="subtitle">Click 'Show User History' to see a user's past items. Now select a query item and watch the attention weights appear—recent items and similar items get higher weight. Toggle 'Temporal Weight' to see how recency affects attention. Items from 1 week ago might weight 10x more than items from 1 year ago.</p>
+  <p class="subtitle">DIN uses attention over a user’s history so the model can focus on the past actions most relevant to the current candidate. A shopping history should not matter equally for every query.</p>
   <div class="viz-canvas">
     <canvas id="dinCanvas" width="1000" height="500"></canvas>
   </div>
@@ -628,19 +561,19 @@ class DCN(nn.Module):
     <div class="key-point"><span class="label">Computational cost:</span><span class="desc">O(sequence_length) per candidate; can be prohibitive if sequences are long (100+ items)</span></div>
     <div class="key-point"><span class="label">Extensions:</span><span class="desc">Multi-head attention (k separate relevance functions); Transformers (parallel all-pairs attention); attention-over-attention (hierarchical)</span></div>
     <hr class="divider">
-    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
     <div class="comparison">
       <div class="option">
-        <div class="opt-title" style="color: #ff9ff3;">DIN (Attention-Based)</div>
+        <div class="opt-title" style="color: #d9a0b8;">DIN (Attention-Based)</div>
         <div class="opt-desc">Use when users have diverse, multi-interest behavior histories and you need candidate-aware user representations. Classic use: Alibaba product recommendations (user browses electronics AND clothing -- attention activates relevant history per candidate), Amazon "customers who viewed this also viewed".</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #f368e0;">Average Pooling (No Attention)</div>
+        <div class="opt-title" style="color: #c96e8a;">Average Pooling (No Attention)</div>
         <div class="opt-desc">Use when user histories are short (under 10 items) or interests are homogeneous. Classic use: niche e-commerce (single-category store), early-stage startups with limited history data. Simpler, faster, and sufficient when attention overhead is not justified.</div>
       </div>
     </div>
     <hr class="divider">
-<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click "Show User History" to see past items. Select a query item. Watch attention weights light up—which past items influence this prediction? Toggle "Temporal Weighting". With temporal weighting ON, recent items dominate (1 week ago = 10x weight of 1 month ago). Toggle OFF, uniform weighting. Notice predictions change: temporal is more accurate for short-term trends.</div>
+<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Click "Show User History" to see past items. Select a query item. Watch attention weights light up—which past items influence this prediction? Toggle "Temporal Weighting". With temporal weighting ON, recent items dominate (1 week ago = 10x weight of 1 month ago). Toggle OFF, uniform weighting. Notice predictions change: temporal is more accurate for short-term trends.</div>
     <div class="interview-tip">Why better than average? Example: User watched [Romance, Romance, Romance, Action]. Average gives little weight to Action preference. Attention on Action candidate upweights the Action history item.</div>
     <div class="interview-tip">Recency bias emerges naturally: if items are ordered temporally, softmax attention over recent items (higher scores) gives more weight to recent history without explicit time decay.</div>
     <div class="mnemonic">Attention = Adaptive history summarization: different candidates pull different "summaries" from the same user history based on relevance.</div>
@@ -673,7 +606,7 @@ class DINAttention(nn.Module):
 <!-- 8. FULL RECOMMENDATION PIPELINE -->
 <div class="viz-section">
   <h2>Full Recommendation Pipeline: 3-Stage Funnel</h2>
-  <p class="subtitle">Click 'Trace Request' to follow an item through all three stages. Stage 1 (Candidate Generation): finds 1000 best items from millions—super fast (100ms), uses simple models. Stage 2 (Ranking): complex model scores those 1000—slower (200ms) but worth it. Stage 3 (Re-ranking): adds diversity/freshness. See total latency at each stage.</p>
+  <p class="subtitle">Modern recommenders split work into stages because you cannot score millions of items with the most expensive model on every request. Retrieval narrows the set, ranking scores it carefully, and reranking applies business and UX constraints.</p>
   <div class="viz-canvas">
     <canvas id="pipelineCanvas" width="1100" height="500"></canvas>
   </div>
@@ -703,19 +636,19 @@ class DINAttention(nn.Module):
     <div class="key-point"><span class="label">Fundamental trade-off:</span><span class="desc">More stages enable accuracy improvements but consume latency; fewer stages are faster but may discard relevant items too early</span></div>
     <div class="key-point"><span class="label">Variations:</span><span class="desc">Batch pre-compute scores offline; use LambdaMART to optimize ranking metrics directly; different models for head vs tail items</span></div>
     <hr class="divider">
-    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
     <div class="comparison">
       <div class="option">
-        <div class="opt-title" style="color: #ff9ff3;">Multi-Stage Pipeline</div>
+        <div class="opt-title" style="color: #d9a0b8;">Multi-Stage Pipeline</div>
         <div class="opt-desc">Use for any production system with large catalog (100K+ items) and strict latency SLA (under 500ms). Classic use: YouTube (100M videos, 3-stage funnel), Netflix homepage (10K titles, 2-stage), Spotify Discover Weekly (70M tracks). Essential when single-model scoring of full catalog is infeasible.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #f368e0;">Single-Stage Ranking</div>
+        <div class="opt-title" style="color: #c96e8a;">Single-Stage Ranking</div>
         <div class="opt-desc">Use when catalog is small (under 10K items) and latency budget is generous. Classic use: small e-commerce stores, curated content feeds, enterprise internal search. Simpler to debug and maintain; no recall loss from candidate generation filtering.</div>
       </div>
     </div>
     <hr class="divider">
-<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click "Trace Request" through funnel. Stage 1 (Candidate Gen): 100ms latency, simple model (LogisticRegression), finds top-1000 from millions. Stage 2 (Ranking): 200ms, complex model (DeepCTR), ranks top-1000. Stage 3 (Reranking): 50ms, adds diversity/freshness. Total: 350ms. Watch: decrease Stage 1 budget to 50ms (misses good items), overall quality drops. Each stage's latency budget matters critically.</div>
+<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Click "Trace Request" through funnel. Stage 1 (Candidate Gen): 100ms latency, simple model (LogisticRegression), finds top-1000 from millions. Stage 2 (Ranking): 200ms, complex model (DeepCTR), ranks top-1000. Stage 3 (Reranking): 50ms, adds diversity/freshness. Total: 350ms. Watch: decrease Stage 1 budget to 50ms (misses good items), overall quality drops. Each stage's latency budget matters critically.</div>
     <div class="interview-tip">Validate candidate generation recall: If top-100 candidates always miss relevant items (measured offline), increase recall@k during Stage 1—trade some latency for accuracy.</div>
     <div class="interview-tip">Parallelize if bottlenecked: Stage 1 (ANN search) and business logic (re-ranking) are parallelizable; Stage 2 (sequential scoring) is harder to parallelize.</div>
     <div class="mnemonic">Think of it as a filtering funnel: broad candidate net (high recall) → precise ranking (high precision) → final polish (business logic).</div>
@@ -746,7 +679,7 @@ final = rerank(top200, diversity_weight=0.3, boost_new=True)</code></pre>
 <!-- 9. SEQUENTIAL RECOMMENDATIONS: SASRec -->
 <div class="viz-section">
   <h2>Sequential Recommendations: SASRec (Self-Attentive Sequential Recommendation)</h2>
-  <p class="subtitle">Click 'Play Sequence' to step through a user's actions. Watch self-attention weights highlight which past actions most influence the next prediction. Notice: recent items weight heavily, but the model also learns to weight semantically related items from anywhere in history. Toggle 'Attention Mask' to show attention pattern as a heatmap.</p>
+  <p class="subtitle">Sequential recommenders treat order as signal: what you did recently changes what should come next. Self-attention lets the model decide which past actions matter most for the next prediction.</p>
   <div class="viz-canvas">
     <canvas id="sasrecCanvas" width="1000" height="550"></canvas>
   </div>
@@ -761,7 +694,7 @@ final = rerank(top200, diversity_weight=0.3, boost_new=True)</code></pre>
   <div class="metric-box" id="sasrecMetrics">Predicted Next Item: -- | Confidence: --</div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Transformers via self-attention capture long-range item dependencies without sequential bottleneck; each item attends to all prior items in sequence.
-    <div class="formula">$$\text{Attention}(Q,K,V) = \text{softmax}\!\left(\frac{QK^T}{\color{#ff9ff3}{\sqrt{d}}}\right)V$$</div>
+    <div class="formula">$$\text{Attention}(Q,K,V) = \text{softmax}\!\left(\frac{QK^T}{\color{#d9a0b8}{\sqrt{d}}}\right)V$$</div>
     <div class="key-point"><span class="label">\(Q\) (Query):</span><span class="desc">Query matrix (sequence_length × d); projections of input embeddings; represents "what to attend to"</span></div>
     <div class="key-point"><span class="label">\(K\) (Key):</span><span class="desc">Key matrix (sequence_length × d); projections of input embeddings; represents "what can be attended"</span></div>
     <div class="key-point"><span class="label">\(V\) (Value):</span><span class="desc">Value matrix (sequence_length × d); projections of input embeddings; represents "information to aggregate"</span></div>
@@ -775,19 +708,19 @@ final = rerank(top200, diversity_weight=0.3, boost_new=True)</code></pre>
     <div class="key-point"><span class="label">Learned patterns:</span><span class="desc">Item transitions (shoe → sock → laces); recency bias (softmax places higher weight on recent items) emerges naturally</span></div>
     <div class="key-point"><span class="label">Engineering details:</span><span class="desc">Position embeddings (absolute or relative) encode temporal order; layer-normalization stabilizes; multi-head attention learns k separate relevance functions</span></div>
     <hr class="divider">
-    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
     <div class="comparison">
       <div class="option">
-        <div class="opt-title" style="color: #ff9ff3;">SASRec / Transformer-Based Sequential</div>
+        <div class="opt-title" style="color: #d9a0b8;">SASRec / Transformer-Based Sequential</div>
         <div class="opt-desc">Use when temporal order of user actions matters and histories are long (50+ items). Classic use: Spotify playlist continuation (next song depends on sequence context), Amazon "frequently bought together" sequences, TikTok next-video prediction. Captures long-range dependencies that RNNs miss.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #f368e0;">GRU4Rec / RNN-Based Sequential</div>
+        <div class="opt-title" style="color: #c96e8a;">GRU4Rec / RNN-Based Sequential</div>
         <div class="opt-desc">Use when sequences are short (under 20 items) and training resources are limited. Classic use: session-based recommendations on e-commerce (anonymous users with short browsing sessions), news article recommendations. Lighter weight, faster training, sufficient for short sequences.</div>
       </div>
     </div>
     <hr class="divider">
-<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click "Play Sequence" and step through user actions. Watch self-attention heatmap highlight which past actions most influence the next prediction. Toggle "Attention Mask": with mask, can't look at future actions (causal). Without mask, can (violates time order). Increase sequence length to 50 items. Transformers scale gracefully; RNNs would forget early items. This is why Transformers dominate sequence modeling.</div>
+<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Click "Play Sequence" and step through user actions. Watch self-attention heatmap highlight which past actions most influence the next prediction. Toggle "Attention Mask": with mask, can't look at future actions (causal). Without mask, can (violates time order). Increase sequence length to 50 items. Transformers scale gracefully; RNNs would forget early items. This is why Transformers dominate sequence modeling.</div>
     <div class="interview-tip">Variable-length sequences: Pad to max length with special tokens, use attention mask to ignore padding. Alternatively, truncate to recent k items (e.g., last 50 items).</div>
     <div class="interview-tip">Recency bias: Emerges naturally from attention weights (recent items higher QK scores); no explicit time decay needed. Validate via attention weight visualization.</div>
     <div class="mnemonic">Self-attention = parallel RNN: each position "reads" previous positions simultaneously via learned attention weights, avoiding sequential computation.</div>
@@ -820,7 +753,7 @@ class SASRec(nn.Module):
 <!-- 10. MULTI-TASK LEARNING: MMOE -->
 <div class="viz-section">
   <h2>Multi-Task Learning: MMOE (Multi-gate Mixture of Experts)</h2>
-  <p class="subtitle">Click each task tab: CTR (click-through), CVR (conversion), Watch-Time. Each has its own gating network selecting from shared experts. Watch the expert usage bar—different tasks use different experts. Task 1 might prefer Expert 2, Task 2 prefers Expert 1. Drag the 'Shared Experts' slider to see how sharing improves sample efficiency.</p>
+  <p class="subtitle">MMOE shares experts across tasks but lets each task choose a different mixture of them. That is useful when CTR, CVR, and watch time overlap partly but not completely.</p>
   <div class="viz-canvas">
     <canvas id="mmoeCanvas" width="1050" height="580"></canvas>
   </div>
@@ -835,7 +768,7 @@ class SASRec(nn.Module):
   <div class="metric-box" id="mmoeMetrics">Task Weights: CTR -- | CVR -- | Watch Time --</div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Multi-Task Learning optimizes correlated objectives (CTR, CVR, watch-time) jointly; Multi-gate Mixture of Experts (MMOE) allows task-specific expert selection via gating.
-    <div class="formula">$$\text{Task}_k\text{ output} = \text{gate}_k \otimes \sum_i \color{#ff9ff3}{\text{expert}_i}, \text{ where gate}_k = \text{softmax}(W_k \cdot \text{features})$$</div>
+    <div class="formula">$$\text{Task}_k\text{ output} = \text{gate}_k \otimes \sum_i \color{#d9a0b8}{\text{expert}_i}, \text{ where gate}_k = \text{softmax}(W_k \cdot \text{features})$$</div>
     <div class="key-point"><span class="label">\(\text{Task}_k\) output:</span><span class="desc">Final prediction for task k (CTR, CVR, watch-time, etc.); vector of shape (batch_size, output_dim)</span></div>
     <div class="key-point"><span class="label">\(\text{gate}_k\):</span><span class="desc">Gating vector for task k (m-dimensional); softmax weights over m experts; emphasizes task-relevant expert representations</span></div>
     <div class="key-point"><span class="label">\(\sum_i \text{expert}_i\):</span><span class="desc">Sum of all expert outputs; each expert i is a small MLP producing (batch_size, output_dim) representation</span></div>
@@ -851,19 +784,19 @@ class SASRec(nn.Module):
     <div class="key-point"><span class="label">Joint loss:</span><span class="desc">\(L = \alpha \cdot L_{\text{ctr}} + \beta \cdot L_{\text{cvr}} + \gamma \cdot L_{\text{watch}}\), where \(\alpha, \beta, \gamma\) reflect business priorities (tune on validation set)</span></div>
     <div class="key-point"><span class="label">Production gotchas:</span><span class="desc">Task calibration (different loss scales → gradient dominance); label delay (CVR takes days, CTR immediate); negative transfer (tasks conflict)</span></div>
     <hr class="divider">
-    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
     <div class="comparison">
       <div class="option">
-        <div class="opt-title" style="color: #ff9ff3;">MMOE Multi-Task</div>
+        <div class="opt-title" style="color: #d9a0b8;">MMOE Multi-Task</div>
         <div class="opt-desc">Use when optimizing multiple correlated but distinct objectives simultaneously. Classic use: YouTube ranking (optimize CTR + watch time + satisfaction jointly), Uber Eats (optimize order rate + delivery time + restaurant quality). Shared experts improve data efficiency when tasks share underlying patterns.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #f368e0;">Separate Single-Task Models</div>
+        <div class="opt-title" style="color: #c96e8a;">Separate Single-Task Models</div>
         <div class="opt-desc">Use when tasks are weakly correlated or conflicting (negative transfer risk). Classic use: when CTR optimization hurts long-term retention, or when ad revenue goals conflict with user satisfaction. Easier to debug, tune, and deploy independently per objective.</div>
       </div>
     </div>
     <hr class="divider">
-<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click task tabs (CTR, CVR, Watch-Time). Each has its own gating network that selects from shared experts. Watch "Expert Utilization" bars: does CTR prefer certain experts? Click "Shared = 0%" (no sharing, 3 separate models). Now "Shared = 100%" (one shared expert). Shared usually gives 5–10% improvement despite sharing—tasks are correlated. Slide "Task Weighting" to balance importance.</div>
+<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Click task tabs (CTR, CVR, Watch-Time). Each has its own gating network that selects from shared experts. Watch "Expert Utilization" bars: does CTR prefer certain experts? Click "Shared = 0%" (no sharing, 3 separate models). Now "Shared = 100%" (one shared expert). Shared usually gives 5–10% improvement despite sharing—tasks are correlated. Slide "Task Weighting" to balance importance.</div>
     <div class="interview-tip">Handle label imbalance: CVR is ~1% (rarer than CTR ~10%). Use weighted sampling or loss weighting to balance task gradients; monitor which task dominates training.</div>
     <div class="interview-tip">Validate improvements: Compare multi-task vs CTR-only baseline. Measure both task accuracy (does each task improve?) and correlation (do tasks help each other?).</div>
     <div class="mnemonic">MoE gating = skill specialization: CTR gate prefers experts good at short-term clicks; CVR gate prefers experts predicting long-term conversions.</div>
@@ -901,7 +834,7 @@ class MMOE(nn.Module):
 <!-- 11. LEARNING TO RANK: Pointwise vs Pairwise vs Listwise -->
 <div class="viz-section">
   <h2>Learning to Rank (LTR): Loss Function Comparison</h2>
-  <p class="subtitle">Click the three tabs to see each loss function. Pointwise (simplest): predict score for each doc independently. Pairwise: learns ranking ('doc A > doc B'), more complex. Listwise (most complex): optimizes entire ranking order. Compare loss curves—listwise is harder to optimize but produces better rankings when it converges.</p>
+  <p class="subtitle">Learning to rank is about optimizing order, not just independent scores. Pointwise treats items separately, pairwise learns preferences, and listwise optimizes the whole ranked list.</p>
   <div class="viz-canvas">
     <canvas id="ltrCanvas" width="1100" height="500"></canvas>
   </div>
@@ -932,19 +865,19 @@ class MMOE(nn.Module):
     <div class="key-point"><span class="label">LambdaMART:</span><span class="desc">Computes pairwise gradients but weights by NDCG improvement (lambda gradient weighting); efficient listwise optimization</span></div>
     <div class="key-point"><span class="label">Accuracy vs Computation:</span><span class="desc">Pointwise (fast) << Pairwise (medium) << Listwise (slow but best); production typically uses LambdaMART via XGBoost/LightGBM</span></div>
     <hr class="divider">
-    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
     <div class="comparison">
       <div class="option">
-        <div class="opt-title" style="color: #ff9ff3;">Pairwise / LambdaMART</div>
+        <div class="opt-title" style="color: #d9a0b8;">Pairwise / LambdaMART</div>
         <div class="opt-desc">Use for production ranking where NDCG optimization matters and you have graded relevance labels. Classic use: Google Search ranking, Bing web search, Airbnb search ranking. LambdaMART (via XGBoost/LightGBM) is the industry standard -- fast training, handles missing features, excellent NDCG.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #f368e0;">Pointwise (Classification/Regression)</div>
+        <div class="opt-title" style="color: #c96e8a;">Pointwise (Classification/Regression)</div>
         <div class="opt-desc">Use as a simple baseline or when you only have binary labels (relevant/not). Classic use: email spam ranking, simple content feeds with thumbs up/down. Fast to train and debug, but ignores position bias and ranking structure -- upgrade to pairwise when quality matters.</div>
       </div>
     </div>
     <hr class="divider">
-<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Toggle "Pointwise", "Pairwise", "Listwise" loss functions. Pointwise (simplest): treats each doc independently, ignores ranking. Pairwise: learns 'doc A > doc B'. Listwise: directly optimizes NDCG (ranking metric). Compare convergence: Pointwise converges fast but gives mediocre ranking. Listwise is harder to optimize but produces best final ranking. Click "Show Metrics" to see NDCG, MRR, MAP differences.</div>
+<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Toggle "Pointwise", "Pairwise", "Listwise" loss functions. Pointwise (simplest): treats each doc independently, ignores ranking. Pairwise: learns 'doc A > doc B'. Listwise: directly optimizes NDCG (ranking metric). Compare convergence: Pointwise converges fast but gives mediocre ranking. Listwise is harder to optimize but produces best final ranking. Click "Show Metrics" to see NDCG, MRR, MAP differences.</div>
     <div class="interview-tip">Why does pointwise fail on ranked outputs? Position bias: top-ranked docs receive more clicks regardless of relevance. Evaluation metric mismatch: classification loss doesn't align with NDCG/MRR metrics.</div>
     <div class="interview-tip">Variable-length lists: Pad with negative labels (rank 0) to uniform length. LambdaMART handles missing labels gracefully (skips pairs with missing labels).</div>
     <div class="mnemonic">Pointwise = per-item scores ignoring context; Pairwise = respecting relative order; Listwise = optimizing the entire ranked order for metric.</div>
@@ -974,7 +907,7 @@ loss = listwise_softmax_loss(scores, relevance_labels)</code></pre>
 <!-- 12. ADS & MONETIZATION: Auction & Attribution -->
 <div class="viz-section">
   <h2>Ads & Monetization: Auction & Attribution Models</h2>
-  <p class="subtitle">Adjust the Bid, CTR, Quality Score sliders and watch the final Rank = bid × CTR × quality change. High bid alone doesn't guarantee rank—quality matters. Then toggle 'Attribution' to see two approaches: Last-Click (simple, biased) vs Multi-Touch (fair). Multi-touch gives credit to all touchpoints in the conversion path.</p>
+  <p class="subtitle">Ad ranking balances bid value with predicted user response and quality. Attribution asks which touchpoints deserve credit for a conversion, which changes how you learn from the data.</p>
   <div class="viz-canvas">
     <canvas id="adsCanvas" width="1050" height="550"></canvas>
   </div>
@@ -985,7 +918,7 @@ loss = listwise_softmax_loss(scores, relevance_labels)</code></pre>
   <div class="metric-box" id="adsMetrics">Mode: Attribution | Total Revenue: --</div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Auction equation balances advertiser bid, user relevance (pCTR), and platform incentives; strategy-proof design prevents bid manipulation.
-    <div class="formula">$$\text{Rank} \propto \text{bid} \times \color{#ff9ff3}{\text{pCTR}} \times \text{quality\_score}$$</div>
+    <div class="formula">$$\text{Rank} \propto \text{bid} \times \color{#d9a0b8}{\text{pCTR}} \times \text{quality\_score}$$</div>
     <div class="key-point"><span class="label">Rank:</span><span class="desc">Final ranking position of ad in auction; higher score = better position (higher visibility and CTR)</span></div>
     <div class="key-point"><span class="label">\(\propto\) (proportional to):</span><span class="desc">Ranking function not strictly equals due to other factors (position, context); function is monotonic in product</span></div>
     <div class="key-point"><span class="label">bid:</span><span class="desc">Advertiser's monetary bid per click ($/click); advertiser's valuation of user engagement; set by bidder</span></div>
@@ -995,19 +928,19 @@ loss = listwise_softmax_loss(scores, relevance_labels)</code></pre>
     <div class="key-point"><span class="label">Attribution:</span><span class="desc">Last-click (simple, biased); linear (fair); time-decay (recent ads more credit); Shapley value (game-theory fair, expensive)</span></div>
     <div class="key-point"><span class="label">Production risks:</span><span class="desc">Feedback loops (ads affect exposure → clicks → retraining); position bias (top ads get more clicks); brand safety (toxic adjacencies); budget constraints</span></div>
     <hr class="divider">
-    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
     <div class="comparison">
       <div class="option">
-        <div class="opt-title" style="color: #ff9ff3;">Second-Price Auction + pCTR Ranking</div>
+        <div class="opt-title" style="color: #d9a0b8;">Second-Price Auction + pCTR Ranking</div>
         <div class="opt-desc">Use for standard display/search ad serving where truthful bidding is desired. Classic use: Google Ads search results, Facebook News Feed ads, Amazon Sponsored Products. Bid x pCTR x quality ensures relevant ads rank higher regardless of bid amount alone.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #f368e0;">Multi-Touch Attribution (Shapley)</div>
+        <div class="opt-title" style="color: #c96e8a;">Multi-Touch Attribution (Shapley)</div>
         <div class="opt-desc">Use when advertisers need fair credit allocation across touchpoints in a conversion funnel. Classic use: measuring impact of YouTube pre-roll ads vs Google Search ads vs display retargeting in a purchase journey. Essential for budget allocation across channels.</div>
       </div>
     </div>
     <hr class="divider">
-<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Adjust Bid, pCTR, Quality Score sliders. Watch Rank = Bid × pCTR × Quality change. High bid doesn't guarantee rank if quality is low. Then toggle "Attribution": Last-Click gives all credit to final touchpoint (impression before conversion). Multi-Touch spreads credit across all impressions. Watch how budget allocation changes. Multi-Touch is fairer, reveals which channels truly drive conversions.</div>
+<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Adjust Bid, pCTR, Quality Score sliders. Watch Rank = Bid × pCTR × Quality change. High bid doesn't guarantee rank if quality is low. Then toggle "Attribution": Last-Click gives all credit to final touchpoint (impression before conversion). Multi-Touch spreads credit across all impressions. Watch how budget allocation changes. Multi-Touch is fairer, reveals which channels truly drive conversions.</div>
     <div class="interview-tip">Budget constraints: Advertisers cap daily spend; challenge is allocating limited budget across ads. Use online optimization (bid adjustment) to respect budgets while maximizing CTR.</div>
     <div class="interview-tip">Multi-touch attribution: Why harder? Multiple touchpoints in user journey; isolating which ad caused conversion is confounded by user intent. Shapley value fair but computationally expensive.</div>
     <div class="mnemonic">Think of auction equation as: (Advertiser value) × (User relevance) × (Platform quality); all three terms must be non-zero for ads to rank well.</div>
@@ -1040,7 +973,7 @@ class CTRModel(nn.Module):
 <!-- 13. DENSE RETRIEVAL & SEARCH: Bi-encoder vs Cross-encoder -->
 <div class="viz-section">
   <h2>Dense Retrieval: Bi-encoder vs Cross-encoder vs ColBERT</h2>
-  <p class="subtitle">Click 'Bi-Encoder': embeds query and doc independently, scores by dot product—fast. Click 'Cross-Encoder': scores query+doc jointly—slow but more accurate. Click 'ColBERT': embeds independently but scores via late interaction (token-level matching)—best of both. See the accuracy vs speed tradeoff: Bi-Encoder fast, Cross-Encoder accurate, ColBERT balanced.</p>
+  <p class="subtitle">These retrieval models trade accuracy for latency in different ways. Bi-encoders are fast enough for large-scale retrieval, cross-encoders are best for reranking, and ColBERT sits in between.</p>
   <div class="viz-canvas">
     <canvas id="denseCanvas" width="1100" height="520"></canvas>
   </div>
@@ -1070,19 +1003,19 @@ class CTRModel(nn.Module):
     <div class="key-point"><span class="label">Production hybrid:</span><span class="desc">BM25 (cheap retrieval) → bi-encoder re-rank (efficient) → cross-encoder/ColBERT refine top-k (accurate); multi-signal fusion</span></div>
     <div class="key-point"><span class="label">Cold-start new docs:</span><span class="desc">Compute embeddings from content (metadata, title, body); no user interaction history required; fine-tune as signals accumulate</span></div>
     <hr class="divider">
-    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
     <div class="comparison">
       <div class="option">
-        <div class="opt-title" style="color: #ff9ff3;">Bi-Encoder + ANN Index</div>
+        <div class="opt-title" style="color: #d9a0b8;">Bi-Encoder + ANN Index</div>
         <div class="opt-desc">Use for first-stage retrieval over massive corpora (millions of documents). Classic use: Google Search candidate retrieval, Spotify podcast search, LinkedIn people search. Pre-compute document embeddings in FAISS/ScaNN for sub-millisecond retrieval at scale.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #f368e0;">Cross-Encoder / ColBERT Re-ranking</div>
+        <div class="opt-title" style="color: #c96e8a;">Cross-Encoder / ColBERT Re-ranking</div>
         <div class="opt-desc">Use for re-ranking top-k candidates (50-200) where precision matters more than speed. Classic use: Google Search final ranking of top-100 results, Bing passage ranking, legal document search (accuracy critical). ColBERT offers the best speed-accuracy tradeoff for mid-size candidate sets.</div>
       </div>
     </div>
     <hr class="divider">
-<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Toggle "Bi-Encoder" (fast), "Cross-Encoder" (accurate), "ColBERT" (hybrid). Bi-Encoder: encodes query and doc separately, scores by dot product. Latency: 1ms per doc (fast). Cross-Encoder: encodes query+doc jointly, slow (100ms per doc) but 10% more accurate. ColBERT: token-level late interaction—fast (10ms), nearly cross-encoder quality. For candidate gen, use Bi-Encoder. For reranking top-100, use Cross-Encoder. ColBERT is sweet spot.</div>
+<div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Toggle "Bi-Encoder" (fast), "Cross-Encoder" (accurate), "ColBERT" (hybrid). Bi-Encoder: encodes query and doc separately, scores by dot product. Latency: 1ms per doc (fast). Cross-Encoder: encodes query+doc jointly, slow (100ms per doc) but 10% more accurate. ColBERT: token-level late interaction—fast (10ms), nearly cross-encoder quality. For candidate gen, use Bi-Encoder. For reranking top-100, use Cross-Encoder. ColBERT is sweet spot.</div>
     <div class="interview-tip">Why does ColBERT avoid early-interaction bottleneck? Standard dense matching locks in interaction decision at embedding time; ColBERT defers to serving (per-token flexibility).</div>
     <div class="interview-tip">Measure retrieval quality: recall@k (fraction of relevant docs in top-k), MRR (mean reciprocal rank of first relevant doc), NDCG. Validate on holdout relevance judgments.</div>
     <div class="mnemonic">Bi-encoder = fast approximate search; Cross-encoder = slow precise scoring; ColBERT = fast token-level flexibility for accurate re-ranking.</div>
@@ -1115,7 +1048,7 @@ sim = torch.cosine_similarity(q_emb, d_emb)  # ~0.85</code></pre>
 <!-- 14. GENERATIVE RECOMMENDERS: Next-Token Prediction for Recs -->
 <div class="viz-section">
   <h2>Generative Recommenders: Next-Token Prediction for Recs</h2>
-  <p class="subtitle">Traditional rec systems use a 3-stage pipeline (retrieve&#8594;rank&#8594;rerank). Generative recommenders replace this with a single LLM that generates the next item directly &#8212; just like GPT generates the next word. Click through the steps to see how items become tokens and how the model generates recommendations.</p>
+  <p class="subtitle">Generative recommenders turn recommendation into sequence modeling: given the user context, generate the next item token. The appeal is one model instead of a multi-stage stack, but latency and controllability become harder.</p>
   <div class="viz-canvas">
     <canvas id="genrecCanvas" width="1100" height="600"></canvas>
   </div>
@@ -1142,11 +1075,11 @@ sim = torch.cosine_similarity(q_emb, d_emb)  # ~0.85</code></pre>
     <hr class="divider">
     <div class="comparison">
       <div class="option">
-        <div class="opt-title" style="color: #ff9ff3;">Traditional Pipeline</div>
+        <div class="opt-title" style="color: #d9a0b8;">Traditional Pipeline</div>
         <div class="opt-desc">3 separate models (retrieval, ranking, reranking), each optimized separately. Embedding tables scale with catalog (10M items = huge table). Slow to iterate, cold-start problem.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #7fff7f;">Generative Recommender</div>
+        <div class="opt-title" style="color: #c9a96e;">Generative Recommender</div>
         <div class="opt-desc">Single LLM generates item tokens directly. No embedding tables. Content-based Semantic IDs solve cold start. Scaling laws enable predictable improvement.</div>
       </div>
     </div>
@@ -1187,7 +1120,7 @@ recommended_items = sid_to_item[candidates]</code></pre>
 <!-- 15. GENERATIVE RETRIEVAL: Search Without an Index -->
 <div class="viz-section">
   <h2>Generative Retrieval: Search Without an Index</h2>
-  <p class="subtitle">The same Semantic ID / next-token-prediction paradigm from Generative Recommenders extends to document search. Instead of building a separate vector index (FAISS), a single Transformer memorizes the entire corpus and retrieves documents by generating their IDs directly from a query. Click through steps to see how indexing becomes training and retrieval becomes generation.</p>
+  <p class="subtitle">Generative retrieval treats document IDs like tokens and asks the model to generate the right one directly from a query. It replaces an explicit index with model memory, which is elegant but difficult to update and scale.</p>
   <div class="viz-canvas">
     <canvas id="genSearchCanvas" width="1100" height="550"></canvas>
   </div>
@@ -1214,11 +1147,11 @@ recommended_items = sid_to_item[candidates]</code></pre>
     <hr class="divider">
     <div class="comparison">
       <div class="option">
-        <div class="opt-title" style="color: #ff9ff3;">Traditional Search</div>
+        <div class="opt-title" style="color: #d9a0b8;">Traditional Search</div>
         <div class="opt-desc">Separate embedding model + ANN index (FAISS/ScaNN) + re-ranker. Scales to billions of documents. Requires maintaining and updating external index infrastructure.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #7fff7f;">Generative Retrieval</div>
+        <div class="opt-title" style="color: #c9a96e;">Generative Retrieval</div>
         <div class="opt-desc">Single model, no external index. Generates document IDs directly. Excels at cold-start and end-to-end optimization. Scalability still being proven beyond millions.</div>
       </div>
     </div>
@@ -1253,6 +1186,7 @@ results = [sid_to_doc[did] for did in doc_ids]</code></pre>
 
 </div>
 
+<script src="theme.js"></script>
 <script>
 // ============ MATRIX FACTORIZATION ============
 let mfData = {};
@@ -1273,14 +1207,14 @@ function drawMatrixFactorization() {
   const k = parseInt(document.getElementById('mfK').value);
   document.getElementById('mfKVal').textContent = k;
   if (!mfData.R) initMatrixFactorization();
-  ctx.fillStyle = '#0d0d1a';
+  ctx.fillStyle = '#0d0d14';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   const m = mfData.R.length;
   const n = mfData.R[0].length;
   const cellSize = 30;
   const uVtCellSize = 46;
   const spacing = 100;
-  ctx.fillStyle = '#ff9ff3';
+  ctx.fillStyle = '#d9a0b8';
   ctx.font = 'bold 17px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('User x Item Rating Matrix (R)', spacing + (cellSize * n) / 2, 30);
@@ -1291,7 +1225,7 @@ function drawMatrixFactorization() {
       const val = mfData.R[i][j];
       ctx.fillStyle = val === 0 ? '#2a2a3a' : '#1a4a6a';
       ctx.fillRect(x, y, cellSize - 2, cellSize - 2);
-      ctx.fillStyle = val === 0 ? '#999' : '#ff9ff3';
+      ctx.fillStyle = val === 0 ? '#999' : '#d9a0b8';
       ctx.font = '15px monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -1299,13 +1233,13 @@ function drawMatrixFactorization() {
     }
   }
   const arrowX = spacing + (cellSize * n) + 50;
-  ctx.strokeStyle = '#ff9ff3';
+  ctx.strokeStyle = '#d9a0b8';
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(arrowX, 100);
   ctx.lineTo(arrowX + 30, 100);
   ctx.stroke();
-  ctx.fillStyle = '#ff9ff3';
+  ctx.fillStyle = '#d9a0b8';
   ctx.beginPath();
   ctx.moveTo(arrowX + 30, 100);
   ctx.lineTo(arrowX + 25, 95);
@@ -1313,7 +1247,7 @@ function drawMatrixFactorization() {
   ctx.closePath();
   ctx.fill();
   const uX = arrowX + 60;
-  ctx.fillStyle = '#ff9ff3';
+  ctx.fillStyle = '#d9a0b8';
   ctx.font = 'bold 15px monospace';
   ctx.textAlign = 'center';
   ctx.fillText(`U (${m}x${k})`, uX + (uVtCellSize * k) / 2 - 5, 30);
@@ -1332,7 +1266,7 @@ function drawMatrixFactorization() {
     }
   }
   const vX = uX + (uVtCellSize * k) + 40;
-  ctx.fillStyle = '#ff9ff3';
+  ctx.fillStyle = '#d9a0b8';
   ctx.font = 'bold 15px monospace';
   ctx.textAlign = 'center';
   ctx.fillText(`Vt (${k}x${n})`, vX + (uVtCellSize * Math.min(n, 8)) / 2 - 5, 30);
@@ -1409,11 +1343,11 @@ function drawTowerModel() {
   const userId = parseInt(document.getElementById('towerUserId').value);
   document.getElementById('towerUserIdVal').textContent = 'User ' + userId;
   if (!towerData.users) initTowerModel();
-  ctx.fillStyle = '#0d0d1a';
+  ctx.fillStyle = '#0d0d14';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // Title
-  ctx.fillStyle = '#ff9ff3';
+  ctx.fillStyle = '#d9a0b8';
   ctx.font = 'bold 17px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('Two-Tower (TT) Embedding Model', canvas.width / 2, 28);
@@ -1462,7 +1396,7 @@ function drawTowerModel() {
   scores.forEach((rec, i) => {
     const y = 115 + i * 48;
     const bar_w = Math.max(0, (rec.score + 2) * 50);
-    ctx.fillStyle = '#2a2a4a';
+    ctx.fillStyle = '#2a2a3a';
     ctx.fillRect(615, y, 230, 35);
     ctx.fillStyle = '#f0b27a';
     ctx.fillRect(615, y, Math.min(bar_w, 230), 35);
@@ -1498,7 +1432,7 @@ function drawTower(ctx, x, y, label, features, embedding, color) {
     ctx.textBaseline = 'middle';
     ctx.fillText(features[i], x + 115, fy + 14);
   }
-  ctx.strokeStyle = '#ff9ff3';
+  ctx.strokeStyle = '#d9a0b8';
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(x + 115, y + 240);
@@ -1506,7 +1440,7 @@ function drawTower(ctx, x, y, label, features, embedding, color) {
   ctx.stroke();
   ctx.fillStyle = '#1a2a3a';
   ctx.fillRect(x + 30, y + 260, 170, 30);
-  ctx.fillStyle = '#ff9ff3';
+  ctx.fillStyle = '#d9a0b8';
   ctx.font = '15px monospace';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -1540,7 +1474,7 @@ function drawEmbeddingSpace() {
   const canvas = document.getElementById('embeddingCanvas');
   const ctx = canvas.getContext('2d');
   if (!embeddingData.items) initEmbeddings();
-  ctx.fillStyle = '#0d0d1a';
+  ctx.fillStyle = '#0d0d14';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.strokeStyle = '#555';
   ctx.lineWidth = 1;
@@ -1584,7 +1518,7 @@ function drawEmbeddingSpace() {
       .sort((a, b) => a.dist - b.dist)
       .slice(0, 3);
     neighbors.forEach((neighbor, idx) => {
-      ctx.strokeStyle = '#ff9ff3';
+      ctx.strokeStyle = '#d9a0b8';
       ctx.lineWidth = 2 - idx * 0.5;
       ctx.setLineDash([5, 5]);
       ctx.beginPath();
@@ -1632,12 +1566,12 @@ function drawColdStart() {
   const ctx = canvas.getContext('2d');
   const dataPoints = parseInt(document.getElementById('csDataPoints').value);
   document.getElementById('csDataPointsVal').textContent = dataPoints;
-  ctx.fillStyle = '#0d0d1a';
+  ctx.fillStyle = '#0d0d14';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   const mode = coldStartData.mode || 'collab';
   const boxW = 350, boxH = 350;
   const lX = 50, rX = 500;
-  ctx.fillStyle = '#ff9ff3';
+  ctx.fillStyle = '#d9a0b8';
   ctx.font = 'bold 17px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('New User Problem', canvas.width / 2, 25);
@@ -1656,7 +1590,7 @@ function drawColdStart() {
       const hasData = i === 0 && j < dataPoints;
       ctx.fillStyle = hasData ? '#1a4a6a' : '#2a1a1a';
       ctx.fillRect(x, y, cellSize - 2, cellSize - 2);
-      ctx.fillStyle = hasData ? '#ff9ff3' : '#999';
+      ctx.fillStyle = hasData ? '#d9a0b8' : '#999';
       ctx.font = '13px monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -1675,7 +1609,7 @@ function drawColdStart() {
     collab: 'Collaborative Filtering',
     hybrid: 'Hybrid Approach'
   };
-  ctx.fillStyle = '#ff9ff3';
+  ctx.fillStyle = '#d9a0b8';
   ctx.font = 'bold 15px monospace';
   ctx.textAlign = 'center';
   ctx.fillText(methods[mode], rX + boxW / 2, 70);
@@ -1762,11 +1696,11 @@ function drawWideDeep() {
   const ctx = canvas.getContext('2d');
   const numFeatures = parseInt(document.getElementById('wdFeatures').value);
   document.getElementById('wdFeaturesVal').textContent = numFeatures;
-  ctx.fillStyle = '#0d0d1a';
+  ctx.fillStyle = '#0d0d14';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // Title
-  ctx.fillStyle = '#ff9ff3';
+  ctx.fillStyle = '#d9a0b8';
   ctx.font = 'bold 17px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('Wide & Deep Architecture', canvas.width / 2, 28);
@@ -1791,7 +1725,7 @@ function drawWideDeep() {
 
   // Arrows from features down to both paths
   const splitY = 155;
-  ctx.strokeStyle = '#ff9ff366';
+  ctx.strokeStyle = '#d9a0b866';
   ctx.lineWidth = 1;
   // Left arrow to Wide
   ctx.beginPath();
@@ -1894,12 +1828,12 @@ function drawWideDeep() {
   ctx.stroke();
 
   // Joint output box
-  ctx.fillStyle = '#2a2a4a';
+  ctx.fillStyle = '#2a2a3a';
   ctx.fillRect(200, bottomY, 600, 55);
-  ctx.strokeStyle = '#ff9ff3';
+  ctx.strokeStyle = '#d9a0b8';
   ctx.lineWidth = 2;
   ctx.strokeRect(200, bottomY, 600, 55);
-  ctx.fillStyle = '#ff9ff3';
+  ctx.fillStyle = '#d9a0b8';
   ctx.font = 'bold 15px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('Combined Output: sigmoid(a*wide + (1-a)*deep)', canvas.width / 2, bottomY + 22);
@@ -1923,11 +1857,11 @@ function drawDCN() {
   const ctx = canvas.getContext('2d');
   const depth = parseInt(document.getElementById('dcnDepth').value);
   document.getElementById('dcnDepthVal').textContent = depth;
-  ctx.fillStyle = '#0d0d1a';
+  ctx.fillStyle = '#0d0d14';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // Title with acronym spelled out
-  ctx.fillStyle = '#ff9ff3';
+  ctx.fillStyle = '#d9a0b8';
   ctx.font = 'bold 17px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('Deep & Cross Network (DCN)', canvas.width / 2, 28);
@@ -1948,7 +1882,7 @@ function drawDCN() {
   ctx.fillText('x0 (feature vector)', inputX + 150, inputY + 20);
 
   // Arrows from input to both paths
-  ctx.strokeStyle = '#ff9ff366';
+  ctx.strokeStyle = '#d9a0b866';
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(inputX + 75, inputY + 40);
@@ -2029,12 +1963,12 @@ function drawDCN() {
 
   // Concatenate & Output
   const bottomY = startY + depth * layerHeight + 15;
-  ctx.fillStyle = '#2a2a4a';
+  ctx.fillStyle = '#2a2a3a';
   ctx.fillRect(100, bottomY, 800, 55);
-  ctx.strokeStyle = '#ff9ff3';
+  ctx.strokeStyle = '#d9a0b8';
   ctx.lineWidth = 2;
   ctx.strokeRect(100, bottomY, 800, 55);
-  ctx.fillStyle = '#ff9ff3';
+  ctx.fillStyle = '#d9a0b8';
   ctx.font = 'bold 15px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('Concatenate: [cross_out, deep_out] -> MLP -> prediction', canvas.width / 2, bottomY + 18);
@@ -2064,9 +1998,9 @@ function drawDIN() {
   const ctx = canvas.getContext('2d');
   const seqLen = parseInt(document.getElementById('dinLength').value);
   document.getElementById('dinLengthVal').textContent = seqLen;
-  ctx.fillStyle = '#0d0d1a';
+  ctx.fillStyle = '#0d0d14';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = '#ff9ff3';
+  ctx.fillStyle = '#d9a0b8';
   ctx.font = 'bold 17px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('DIN: Deep Interest Network with Attention', canvas.width / 2, 28);
@@ -2119,21 +2053,21 @@ function drawDIN() {
     const barH = score * 50;
     ctx.fillStyle = '#1a3a5a';
     ctx.fillRect(x, y + 50 - barH, 58, barH);
-    ctx.strokeStyle = '#ff9ff3';
+    ctx.strokeStyle = '#d9a0b8';
     ctx.lineWidth = 1;
     ctx.strokeRect(x, y, 58, 50);
-    ctx.fillStyle = '#ff9ff3';
+    ctx.fillStyle = '#d9a0b8';
     ctx.font = '13px monospace';
     ctx.textAlign = 'center';
     ctx.fillText(score.toFixed(2), x + 29, y + 62);
   }
   const finalY = 360;
-  ctx.fillStyle = '#2a2a4a';
+  ctx.fillStyle = '#2a2a3a';
   ctx.fillRect(60, finalY, 880, 90);
-  ctx.strokeStyle = '#ff9ff3';
+  ctx.strokeStyle = '#d9a0b8';
   ctx.lineWidth = 1;
   ctx.strokeRect(60, finalY, 880, 90);
-  ctx.fillStyle = '#ff9ff3';
+  ctx.fillStyle = '#d9a0b8';
   ctx.font = 'bold 15px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('Interest: I = sum( a_i * embed(item_i) )', 500, finalY + 20);
@@ -2150,9 +2084,9 @@ function drawPipeline() {
   const ctx = canvas.getContext('2d');
   const poolSize = parseInt(document.getElementById('pipelinePool').value);
   document.getElementById('pipelinePoolVal').textContent = poolSize + 'M';
-  ctx.fillStyle = '#0d0d1a';
+  ctx.fillStyle = '#0d0d14';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = '#ff9ff3';
+  ctx.fillStyle = '#d9a0b8';
   ctx.font = 'bold 17px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('3-Stage Recommendation Pipeline (Funnel)', canvas.width / 2, 28);
@@ -2187,7 +2121,7 @@ function drawPipeline() {
     ctx.beginPath();
     ctx.arc(x + 30, y + 25, 15, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = '#0d0d1a';
+    ctx.fillStyle = '#0d0d14';
     ctx.font = 'bold 17px monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -2222,13 +2156,13 @@ function drawPipeline() {
 
     // Arrow between stages
     if (idx < 2) {
-      ctx.strokeStyle = '#ff9ff3';
+      ctx.strokeStyle = '#d9a0b8';
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(canvas.width / 2, y + stageH);
       ctx.lineTo(canvas.width / 2, y + stageH + gap);
       ctx.stroke();
-      ctx.fillStyle = '#ff9ff3';
+      ctx.fillStyle = '#d9a0b8';
       ctx.beginPath();
       ctx.moveTo(canvas.width / 2, y + stageH + gap);
       ctx.lineTo(canvas.width / 2 - 5, y + stageH + gap - 8);
@@ -2240,9 +2174,9 @@ function drawPipeline() {
 
   // Total latency bar at bottom
   const bottomY = funnelTop + 3 * (stageH + gap) + 5;
-  ctx.fillStyle = '#2a2a4a';
+  ctx.fillStyle = '#2a2a3a';
   ctx.fillRect(150, bottomY, 800, 40);
-  ctx.fillStyle = '#ff9ff3';
+  ctx.fillStyle = '#d9a0b8';
   ctx.font = 'bold 15px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('Total P99 Latency: ~500ms | Trade: accuracy vs latency at each stage', 550, bottomY + 23);
@@ -2256,11 +2190,11 @@ function drawSASRec() {
   const ctx = canvas.getContext('2d');
   const seqLen = parseInt(document.getElementById('sasrecSeqLen').value);
   document.getElementById('sasrecSeqLenVal').textContent = seqLen;
-  ctx.fillStyle = '#0d0d1a';
+  ctx.fillStyle = '#0d0d14';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // Title with full name
-  ctx.fillStyle = '#ff9ff3';
+  ctx.fillStyle = '#d9a0b8';
   ctx.font = 'bold 17px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('SASRec: Self-Attentive Sequential Recommendation', canvas.width / 2, 25);
@@ -2331,11 +2265,11 @@ function drawSASRec() {
       const attnScore = Math.exp(-(t - s) * 0.3);
       ctx.fillStyle = `rgba(255, 159, 243, ${attnScore})`;
       ctx.fillRect(x, y, cellW - 2, cellH - 2);
-      ctx.strokeStyle = '#2a2a4a';
+      ctx.strokeStyle = '#2a2a3a';
       ctx.lineWidth = 1;
       ctx.strokeRect(x, y, cellW - 2, cellH - 2);
       // Show score in cell
-      ctx.fillStyle = attnScore > 0.5 ? '#0d0d1a' : '#b0b0c0';
+      ctx.fillStyle = attnScore > 0.5 ? '#0d0d14' : '#b0b0c0';
       ctx.font = '13px monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -2371,12 +2305,12 @@ function drawSASRec() {
 
   // Architecture summary at bottom
   const botY = 470;
-  ctx.fillStyle = '#2a2a4a';
+  ctx.fillStyle = '#2a2a3a';
   ctx.fillRect(50, botY, 900, 55);
-  ctx.strokeStyle = '#ff9ff3';
+  ctx.strokeStyle = '#d9a0b8';
   ctx.lineWidth = 1;
   ctx.strokeRect(50, botY, 900, 55);
-  ctx.fillStyle = '#ff9ff3';
+  ctx.fillStyle = '#d9a0b8';
   ctx.font = 'bold 15px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('Attention(Q,K,V) = softmax(QK^T / sqrt(d)) * V', 500, botY + 18);
@@ -2393,11 +2327,11 @@ function drawMMOE() {
   const ctx = canvas.getContext('2d');
   const numExperts = parseInt(document.getElementById('mmoeExperts').value);
   document.getElementById('mmoeExpertsVal').textContent = numExperts;
-  ctx.fillStyle = '#0d0d1a';
+  ctx.fillStyle = '#0d0d14';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // Title with full name
-  ctx.fillStyle = '#ff9ff3';
+  ctx.fillStyle = '#d9a0b8';
   ctx.font = 'bold 17px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('Multi-gate Mixture of Experts (MMOE)', canvas.width / 2, 25);
@@ -2496,7 +2430,7 @@ function drawMMOE() {
     ctx.fillText(task, x + taskW/2, tasksY + 22);
 
     // Gate
-    ctx.fillStyle = '#2a2a4a';
+    ctx.fillStyle = '#2a2a3a';
     ctx.fillRect(x + 15, tasksY + 38, taskW - 30, 40);
     ctx.strokeStyle = taskColors[idx] + '88';
     ctx.lineWidth = 1;
@@ -2511,7 +2445,7 @@ function drawMMOE() {
     ctx.fillText('selects experts', x + taskW/2, tasksY + 68);
 
     // Tower output
-    ctx.fillStyle = '#2a2a4a';
+    ctx.fillStyle = '#2a2a3a';
     ctx.fillRect(x + 15, tasksY + 90, taskW - 30, 40);
     ctx.strokeStyle = taskColors[idx] + '88';
     ctx.strokeRect(x + 15, tasksY + 90, taskW - 30, 40);
@@ -2553,12 +2487,12 @@ function drawMMOE() {
 
   // Loss function at bottom
   const bottomY = tasksY + taskH + 20;
-  ctx.fillStyle = '#2a2a4a';
+  ctx.fillStyle = '#2a2a3a';
   ctx.fillRect(80, bottomY, 890, 40);
-  ctx.strokeStyle = '#ff9ff3';
+  ctx.strokeStyle = '#d9a0b8';
   ctx.lineWidth = 1;
   ctx.strokeRect(80, bottomY, 890, 40);
-  ctx.fillStyle = '#ff9ff3';
+  ctx.fillStyle = '#d9a0b8';
   ctx.font = '15px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('Joint Loss = a*L_ctr + b*L_cvr + c*L_watch | Shared experts improve all tasks', 525, bottomY + 23);
@@ -2573,11 +2507,11 @@ function drawLTR() {
   const ctx = canvas.getContext('2d');
   const numDocs = parseInt(document.getElementById('ltrDocs').value);
   document.getElementById('ltrDocsVal').textContent = numDocs;
-  ctx.fillStyle = '#0d0d1a';
+  ctx.fillStyle = '#0d0d14';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // Title with full name
-  ctx.fillStyle = '#ff9ff3';
+  ctx.fillStyle = '#d9a0b8';
   ctx.font = 'bold 17px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('Learning to Rank (LTR): Loss Functions', canvas.width / 2, 28);
@@ -2737,12 +2671,12 @@ function drawLTR() {
 
   // Bottom comparison bar
   const bottomY = 410;
-  ctx.fillStyle = '#2a2a4a';
+  ctx.fillStyle = '#2a2a3a';
   ctx.fillRect(80, bottomY, 950, 65);
-  ctx.strokeStyle = '#ff9ff3';
+  ctx.strokeStyle = '#d9a0b8';
   ctx.lineWidth = 1;
   ctx.strokeRect(80, bottomY, 950, 65);
-  ctx.fillStyle = '#ff9ff3';
+  ctx.fillStyle = '#d9a0b8';
   ctx.font = 'bold 15px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('LambdaMART: pairwise gradients weighted by NDCG improvement', 555, bottomY + 20);
@@ -2770,9 +2704,9 @@ function drawAds() {
   const canvas = document.getElementById('adsCanvas');
   const ctx = canvas.getContext('2d');
   const mode = adsData.mode || 'attribution';
-  ctx.fillStyle = '#0d0d1a';
+  ctx.fillStyle = '#0d0d14';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = '#ff9ff3';
+  ctx.fillStyle = '#d9a0b8';
   ctx.font = 'bold 17px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('Ads & Monetization', canvas.width / 2, 28);
@@ -2848,13 +2782,13 @@ function drawAds() {
       ctx.textBaseline = 'middle';
       ctx.fillText(touch.name, x + 95, journeyY + 25);
       if (idx < journey.length - 1) {
-        ctx.strokeStyle = '#ff9ff3';
+        ctx.strokeStyle = '#d9a0b8';
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.moveTo(x + 190, journeyY + 25);
         ctx.lineTo(x + 230, journeyY + 25);
         ctx.stroke();
-        ctx.fillStyle = '#ff9ff3';
+        ctx.fillStyle = '#d9a0b8';
         ctx.beginPath();
         ctx.moveTo(x + 230, journeyY + 25);
         ctx.lineTo(x + 222, journeyY + 20);
@@ -2926,9 +2860,9 @@ function drawDenseRetrieval() {
   const candidates = parseInt(document.getElementById('denseCandidates').value);
   const candStr = candidates >= 1000 ? (candidates / 1000).toFixed(1) + 'k' : candidates.toString();
   document.getElementById('denseCandidatesVal').textContent = candStr + ' docs';
-  ctx.fillStyle = '#0d0d1a';
+  ctx.fillStyle = '#0d0d14';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = '#ff9ff3';
+  ctx.fillStyle = '#d9a0b8';
   ctx.font = 'bold 17px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('Dense Retrieval: Three Approaches', canvas.width / 2, 28);
@@ -3017,9 +2951,9 @@ function drawDenseRetrieval() {
     }
   });
   const bottomY = 470;
-  ctx.fillStyle = '#2a2a4a';
+  ctx.fillStyle = '#2a2a3a';
   ctx.fillRect(80, bottomY, 950, 35);
-  ctx.fillStyle = '#ff9ff3';
+  ctx.fillStyle = '#d9a0b8';
   ctx.font = '15px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('Hybrid: BM25 (lexical) + Dense (semantic) fusion for best results', 555, bottomY + 20);
@@ -3063,10 +2997,10 @@ function drawTraditionalPipeline() {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height;
-  ctx.fillStyle = '#0d0d1a';
+  ctx.fillStyle = '#0d0d14';
   ctx.fillRect(0, 0, W, H);
 
-  ctx.fillStyle = '#ff9ff3';
+  ctx.fillStyle = '#d9a0b8';
   ctx.font = 'bold 18px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('Traditional Recommendation Pipeline', W / 2, 35);
@@ -3083,7 +3017,7 @@ function drawTraditionalPipeline() {
   stages.forEach((s, i) => {
     // Box
     ctx.fillStyle = s.color;
-    ctx.strokeStyle = '#ff9ff3';
+    ctx.strokeStyle = '#d9a0b8';
     ctx.lineWidth = 2;
     ctx.fillRect(s.x, stageY, stageW, stageH);
     ctx.strokeRect(s.x, stageY, stageW, stageH);
@@ -3093,7 +3027,7 @@ function drawTraditionalPipeline() {
     ctx.font = 'bold 15px monospace';
     ctx.textAlign = 'center';
     ctx.fillText(s.label, s.x + stageW / 2, stageY + 40);
-    ctx.fillStyle = '#ffd93d';
+    ctx.fillStyle = '#e0c992';
     ctx.font = '14px monospace';
     ctx.fillText(s.count, s.x + stageW / 2, stageY + 65);
 
@@ -3101,7 +3035,7 @@ function drawTraditionalPipeline() {
     if (i < stages.length - 1) {
       const ax = s.x + stageW;
       const bx = stages[i + 1].x;
-      ctx.strokeStyle = '#ff9ff3';
+      ctx.strokeStyle = '#d9a0b8';
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(ax, stageY + stageH / 2);
@@ -3113,7 +3047,7 @@ function drawTraditionalPipeline() {
       ctx.lineTo(bx - 10, stageY + stageH / 2 - 6);
       ctx.lineTo(bx - 10, stageY + stageH / 2 + 6);
       ctx.closePath();
-      ctx.fillStyle = '#ff9ff3';
+      ctx.fillStyle = '#d9a0b8';
       ctx.fill();
     }
   });
@@ -3129,7 +3063,7 @@ function drawTraditionalPipeline() {
   details.forEach((lines, i) => {
     const s = stages[i];
     lines.forEach((line, li) => {
-      ctx.fillStyle = li === 2 ? '#ff6b6b' : '#88ccff';
+      ctx.fillStyle = li === 2 ? '#c96e8a' : '#88ccff';
       ctx.textAlign = 'center';
       ctx.fillText(line, s.x + stageW / 2, stageY + stageH + 25 + li * 18);
     });
@@ -3137,7 +3071,7 @@ function drawTraditionalPipeline() {
 
   // Problems section
   const probY = 340;
-  ctx.fillStyle = '#ff6b6b';
+  ctx.fillStyle = '#c96e8a';
   ctx.font = 'bold 16px monospace';
   ctx.textAlign = 'left';
   ctx.fillText('Problems with Traditional Pipeline:', 60, probY);
@@ -3188,7 +3122,7 @@ function drawGenerativeStep(step) {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height;
-  ctx.fillStyle = '#0d0d1a';
+  ctx.fillStyle = '#0d0d14';
   ctx.fillRect(0, 0, W, H);
 
   // Step indicator
@@ -3199,7 +3133,7 @@ function drawGenerativeStep(step) {
     'Step 3: Next-Token Generation (Beam Search)',
     'Step 4: Result - Single Model Replaces Pipeline'
   ];
-  ctx.fillStyle = '#ff9ff3';
+  ctx.fillStyle = '#d9a0b8';
   ctx.font = 'bold 18px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('Generative Recommender (PLUM / OneRec)', W / 2, 30);
@@ -3207,9 +3141,9 @@ function drawGenerativeStep(step) {
   // Step tabs
   for (let i = 0; i < 5; i++) {
     const tx = 50 + i * 210;
-    ctx.fillStyle = i === step ? '#ff9ff3' : '#333';
+    ctx.fillStyle = i === step ? '#d9a0b8' : '#333';
     ctx.fillRect(tx, 45, 200, 28);
-    ctx.fillStyle = i === step ? '#0d0d1a' : '#888';
+    ctx.fillStyle = i === step ? '#0d0d14' : '#888';
     ctx.font = i === step ? 'bold 12px monospace' : '12px monospace';
     ctx.textAlign = 'center';
     ctx.fillText(stepLabels[i].substring(0, 28), tx + 100, 64);
@@ -3268,17 +3202,17 @@ function drawGenStep0(ctx, W, H) {
   }
 
   // Question
-  ctx.fillStyle = '#ffd93d';
+  ctx.fillStyle = '#e0c992';
   ctx.font = 'bold 16px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('How do we turn these items into tokens an LLM can generate?', W / 2, 380);
+  ctx.fillText('How do items become tokens?', W / 2, 380);
   ctx.fillStyle = '#88ccff';
   ctx.font = '14px monospace';
-  ctx.fillText('Key idea: compress each item into a short sequence of discrete tokens', W / 2, 410);
-  ctx.fillText('using Residual Quantized Variational Autoencoder (RQ-VAE)', W / 2, 432);
+  ctx.fillText('Key idea: map each item to a short discrete code.', W / 2, 410);
+  ctx.fillText('One common route: RQ-VAE tokenization.', W / 2, 432);
 
   // Arrow down
-  ctx.strokeStyle = '#ff9ff3';
+  ctx.strokeStyle = '#d9a0b8';
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(W / 2, 450);
@@ -3291,7 +3225,7 @@ function drawGenStep0(ctx, W, H) {
   ctx.lineTo(W / 2 + 8, 488);
   ctx.stroke();
 
-  ctx.fillStyle = '#7fff7f';
+  ctx.fillStyle = '#c9a96e';
   ctx.font = 'bold 14px monospace';
   ctx.fillText('Click "Next Step" to see Item Tokenization', W / 2, 530);
 }
@@ -3323,7 +3257,7 @@ function drawGenStep1(ctx, W, H) {
     ctx.fillText(item.name, 105, y + 75);
 
     // Arrow to encoder
-    ctx.strokeStyle = '#ff9ff3';
+    ctx.strokeStyle = '#d9a0b8';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(155, y + 28);
@@ -3342,7 +3276,7 @@ function drawGenStep1(ctx, W, H) {
     ctx.fillText('Encoder', 285, y + 40);
 
     // Arrow to codebooks
-    ctx.strokeStyle = '#ff9ff3';
+    ctx.strokeStyle = '#d9a0b8';
     ctx.beginPath();
     ctx.moveTo(350, y + 28);
     ctx.lineTo(420, y + 28);
@@ -3362,7 +3296,7 @@ function drawGenStep1(ctx, W, H) {
       ctx.textAlign = 'center';
       ctx.fillText(cbLabels[l], cx + 42, y + 18);
       ctx.fillText('Codebook', cx + 42, y + 32);
-      ctx.fillStyle = '#ffd93d';
+      ctx.fillStyle = '#e0c992';
       ctx.font = 'bold 14px monospace';
       ctx.fillText('tok_' + item.tokens[l], cx + 42, y + 49);
 
@@ -3377,7 +3311,7 @@ function drawGenStep1(ctx, W, H) {
     }
 
     // Arrow to result
-    ctx.strokeStyle = '#ff9ff3';
+    ctx.strokeStyle = '#d9a0b8';
     ctx.beginPath();
     ctx.moveTo(720, y + 28);
     ctx.lineTo(770, y + 28);
@@ -3386,23 +3320,23 @@ function drawGenStep1(ctx, W, H) {
     // Semantic ID result
     ctx.fillStyle = '#1a4a2a';
     ctx.fillRect(775, y, 270, 55);
-    ctx.strokeStyle = '#7fff7f';
+    ctx.strokeStyle = '#c9a96e';
     ctx.strokeRect(775, y, 270, 55);
-    ctx.fillStyle = '#7fff7f';
+    ctx.fillStyle = '#c9a96e';
     ctx.font = 'bold 13px monospace';
     ctx.textAlign = 'center';
     ctx.fillText('SID: [' + item.tokens.join(', ') + ']', 910, y + 35);
   });
 
   // Key insight at bottom
-  ctx.fillStyle = '#ffd93d';
+  ctx.fillStyle = '#e0c992';
   ctx.font = 'bold 14px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('Notice: "Action Movie" and "Action Sequel" share prefix [42, 817, ...]', W / 2, 530);
+  ctx.fillText('Shared prefix: similar items start the same way.', W / 2, 530);
   ctx.fillStyle = '#88ccff';
   ctx.font = '13px monospace';
-  ctx.fillText('Similar items get similar token prefixes - like words sharing etymological roots!', W / 2, 555);
-  ctx.fillText('Hierarchy: genre (Level 1) -> subgenre (Level 2) -> specific item (Level 3)', W / 2, 577);
+  ctx.fillText('Think genre -> subgenre -> item.', W / 2, 555);
+  ctx.fillText('Token hierarchy behaves like a compact taxonomy.', W / 2, 577);
 }
 
 function drawGenStep2(ctx, W, H) {
@@ -3453,13 +3387,13 @@ function drawGenStep2(ctx, W, H) {
   });
 
   // Arrow down
-  ctx.strokeStyle = '#ff9ff3';
+  ctx.strokeStyle = '#d9a0b8';
   ctx.lineWidth = 3;
   ctx.beginPath();
   ctx.moveTo(W / 2, 240);
   ctx.lineTo(W / 2, 285);
   ctx.stroke();
-  ctx.fillStyle = '#ff9ff3';
+  ctx.fillStyle = '#d9a0b8';
   ctx.beginPath();
   ctx.moveTo(W / 2, 290);
   ctx.lineTo(W / 2 - 8, 278);
@@ -3467,17 +3401,17 @@ function drawGenStep2(ctx, W, H) {
   ctx.closePath();
   ctx.fill();
 
-  ctx.fillStyle = '#ffd93d';
+  ctx.fillStyle = '#e0c992';
   ctx.font = 'bold 13px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('Convert to Semantic ID token sequence:', W / 2, 310);
 
   // Token sequence visualization
   const tokenSeq = ['[CTX]', '42', '817', '3', '|', '42', '817', '91', '|', '77', '301', '15', '|', '108', '512', '44', '|', '[NEXT]'];
-  const tokenColors = ['#ff9ff3', '#e74c3c', '#e74c3c', '#e74c3c', '#555',
+  const tokenColors = ['#d9a0b8', '#e74c3c', '#e74c3c', '#e74c3c', '#555',
                         '#c0392b', '#c0392b', '#c0392b', '#555',
                         '#f39c12', '#f39c12', '#f39c12', '#555',
-                        '#3498db', '#3498db', '#3498db', '#555', '#7fff7f'];
+                        '#3498db', '#3498db', '#3498db', '#555', '#c9a96e'];
   const tokW = 52, tokH = 36, tokGap = 6;
   const seqStartX = (W - tokenSeq.length * (tokW + tokGap)) / 2;
   const seqY = 330;
@@ -3504,24 +3438,24 @@ function drawGenStep2(ctx, W, H) {
   ctx.fillText('item 2 SID', seqStartX + 6.5 * (tokW + tokGap), seqY + 52);
   ctx.fillText('item 3 SID', seqStartX + 10.5 * (tokW + tokGap), seqY + 52);
   ctx.fillText('item 4 SID', seqStartX + 14.5 * (tokW + tokGap), seqY + 52);
-  ctx.fillStyle = '#7fff7f';
+  ctx.fillStyle = '#c9a96e';
   ctx.fillText('predict!', seqStartX + 17 * (tokW + tokGap) + tokW / 2, seqY + 52);
 
   // Analogy
-  ctx.fillStyle = '#ffd93d';
+  ctx.fillStyle = '#e0c992';
   ctx.font = 'bold 14px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('Just like language modeling:', W / 2, 430);
+  ctx.fillText('Language-model view:', W / 2, 430);
 
   ctx.fillStyle = '#88ccff';
   ctx.font = '13px monospace';
-  ctx.fillText('NLP:  "The cat sat on the ___"  -> predict next word', W / 2, 460);
-  ctx.fillStyle = '#7fff7f';
-  ctx.fillText('Rec:  [action][action][comedy][tech] ___  -> predict next item tokens', W / 2, 485);
+  ctx.fillText('NLP: "The cat sat on the ___" -> next word', W / 2, 460);
+  ctx.fillStyle = '#c9a96e';
+  ctx.fillText('Rec: [action][action][comedy][tech] ___ -> next item tokens', W / 2, 485);
 
-  ctx.fillStyle = '#ff9ff3';
+  ctx.fillStyle = '#d9a0b8';
   ctx.font = '12px monospace';
-  ctx.fillText('The LLM learns item "grammar" - which items naturally follow which patterns', W / 2, 525);
+  ctx.fillText('The model learns item grammar: what tends to come next.', W / 2, 525);
 }
 
 function drawGenStep3(ctx, W, H) {
@@ -3551,7 +3485,7 @@ function drawGenStep3(ctx, W, H) {
   ctx.fillText('(autoregressive decoder)', W / 2, 196);
 
   // Arrow down
-  ctx.strokeStyle = '#ff9ff3';
+  ctx.strokeStyle = '#d9a0b8';
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(W / 2, 215);
@@ -3559,7 +3493,7 @@ function drawGenStep3(ctx, W, H) {
   ctx.stroke();
 
   // Beam search tree
-  ctx.fillStyle = '#ffd93d';
+  ctx.fillStyle = '#e0c992';
   ctx.font = 'bold 14px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('Beam Search (100 beams) - Generating 3 SID tokens:', W / 2, 265);
@@ -3588,15 +3522,15 @@ function drawGenStep3(ctx, W, H) {
     // Probability bar
     ctx.fillStyle = '#1a3a2a';
     ctx.fillRect(node.x - 55, levelY[0], 110, 50);
-    ctx.fillStyle = '#7fff7f';
+    ctx.fillStyle = '#c9a96e';
     ctx.fillRect(node.x - 55, levelY[0], 110 * node.prob / 0.4, 8);
-    ctx.strokeStyle = '#7fff7f';
+    ctx.strokeStyle = '#c9a96e';
     ctx.strokeRect(node.x - 55, levelY[0], 110, 50);
-    ctx.fillStyle = '#ffd93d';
+    ctx.fillStyle = '#e0c992';
     ctx.font = 'bold 13px monospace';
     ctx.textAlign = 'center';
     ctx.fillText(node.tok, node.x, levelY[0] + 30);
-    ctx.fillStyle = '#7fff7f';
+    ctx.fillStyle = '#c9a96e';
     ctx.font = '11px monospace';
     ctx.fillText('p=' + node.prob.toFixed(2), node.x, levelY[0] + 46);
   });
@@ -3624,7 +3558,7 @@ function drawGenStep3(ctx, W, H) {
     ctx.fillRect(node.x - 50, levelY[1], 100 * node.prob / 0.5, 8);
     ctx.strokeStyle = '#88ccff';
     ctx.strokeRect(node.x - 50, levelY[1], 100, 50);
-    ctx.fillStyle = '#ffd93d';
+    ctx.fillStyle = '#e0c992';
     ctx.font = 'bold 12px monospace';
     ctx.textAlign = 'center';
     ctx.fillText(node.tok, node.x, levelY[1] + 30);
@@ -3652,24 +3586,24 @@ function drawGenStep3(ctx, W, H) {
     const isTop = i === 0;
     ctx.fillStyle = isTop ? '#2a3a1a' : '#1a2a2a';
     ctx.fillRect(node.x - 55, levelY[2], 110, 60);
-    ctx.fillStyle = isTop ? '#7fff7f' : '#ff9ff3';
+    ctx.fillStyle = isTop ? '#c9a96e' : '#d9a0b8';
     ctx.fillRect(node.x - 55, levelY[2], 110 * node.prob / 0.6, 8);
-    ctx.strokeStyle = isTop ? '#7fff7f' : '#ff9ff3';
+    ctx.strokeStyle = isTop ? '#c9a96e' : '#d9a0b8';
     ctx.lineWidth = isTop ? 3 : 1;
     ctx.strokeRect(node.x - 55, levelY[2], 110, 60);
-    ctx.fillStyle = '#ffd93d';
+    ctx.fillStyle = '#e0c992';
     ctx.font = 'bold 12px monospace';
     ctx.textAlign = 'center';
     ctx.fillText(node.tok, node.x, levelY[2] + 28);
-    ctx.fillStyle = '#7fff7f';
+    ctx.fillStyle = '#c9a96e';
     ctx.font = '10px monospace';
     ctx.fillText(node.fullSid, node.x, levelY[2] + 43);
-    ctx.fillStyle = '#ff9ff3';
+    ctx.fillStyle = '#d9a0b8';
     ctx.fillText(node.item, node.x, levelY[2] + 56);
   });
 
   // Result annotation
-  ctx.fillStyle = '#7fff7f';
+  ctx.fillStyle = '#c9a96e';
   ctx.font = 'bold 14px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('Top recommendation: "Action Drama" SID=[42, 817, 7]', W / 2 + 200, levelY[2] + 40);
@@ -3694,10 +3628,10 @@ function drawGenStep4(ctx, W, H) {
   // Traditional side
   ctx.fillStyle = '#1a1a2a';
   ctx.fillRect(leftX, topY, colW, colH);
-  ctx.strokeStyle = '#ff6b6b';
+  ctx.strokeStyle = '#c96e8a';
   ctx.lineWidth = 2;
   ctx.strokeRect(leftX, topY, colW, colH);
-  ctx.fillStyle = '#ff6b6b';
+  ctx.fillStyle = '#c96e8a';
   ctx.font = 'bold 15px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('Traditional Pipeline', leftX + colW / 2, topY + 25);
@@ -3723,7 +3657,7 @@ function drawGenStep4(ctx, W, H) {
   });
 
   // Cross out (X marks)
-  ctx.strokeStyle = '#ff6b6b44';
+  ctx.strokeStyle = '#c96e8a44';
   ctx.lineWidth = 3;
   ctx.beginPath();
   ctx.moveTo(leftX + 10, topY + 40);
@@ -3735,22 +3669,22 @@ function drawGenStep4(ctx, W, H) {
   // Generative side
   ctx.fillStyle = '#1a2a1a';
   ctx.fillRect(rightX, topY, colW, colH);
-  ctx.strokeStyle = '#7fff7f';
+  ctx.strokeStyle = '#c9a96e';
   ctx.lineWidth = 2;
   ctx.strokeRect(rightX, topY, colW, colH);
-  ctx.fillStyle = '#7fff7f';
+  ctx.fillStyle = '#c9a96e';
   ctx.font = 'bold 15px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('Generative (PLUM / OneRec)', rightX + colW / 2, topY + 25);
 
   const genLines = [
-    { label: 'Models:', value: '1 unified LLM', color: '#7fff7f' },
-    { label: 'Embedding table:', value: 'NONE (Semantic ID tokens)', color: '#7fff7f' },
-    { label: 'Param allocation:', value: '90% neural, 10% token embeddings', color: '#7fff7f' },
-    { label: 'Cold start:', value: 'Content -> SID instantly', color: '#7fff7f' },
-    { label: 'Latency:', value: '~200ms (single forward pass)', color: '#7fff7f' },
-    { label: 'Vocab coverage:', value: '13x (PLUM YouTube result)', color: '#7fff7f' },
-    { label: 'Scaling:', value: 'Power-law: more compute = better', color: '#7fff7f' }
+    { label: 'Models:', value: '1 unified LLM', color: '#c9a96e' },
+    { label: 'Embedding table:', value: 'NONE (Semantic ID tokens)', color: '#c9a96e' },
+    { label: 'Param allocation:', value: '90% neural, 10% token embeddings', color: '#c9a96e' },
+    { label: 'Cold start:', value: 'Content -> SID instantly', color: '#c9a96e' },
+    { label: 'Latency:', value: '~200ms (single forward pass)', color: '#c9a96e' },
+    { label: 'Vocab coverage:', value: '13x (PLUM YouTube result)', color: '#c9a96e' },
+    { label: 'Scaling:', value: 'Power-law: more compute = better', color: '#c9a96e' }
   ];
 
   genLines.forEach((line, i) => {
@@ -3764,7 +3698,7 @@ function drawGenStep4(ctx, W, H) {
   });
 
   // Check mark
-  ctx.fillStyle = '#7fff7f';
+  ctx.fillStyle = '#c9a96e';
   ctx.font = 'bold 60px monospace';
   ctx.textAlign = 'center';
   ctx.globalAlpha = 0.15;
@@ -3773,7 +3707,7 @@ function drawGenStep4(ctx, W, H) {
 
   // Production results
   const resY = topY + colH + 30;
-  ctx.fillStyle = '#ffd93d';
+  ctx.fillStyle = '#e0c992';
   ctx.font = 'bold 15px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('Production Results', W / 2, resY);
@@ -3788,7 +3722,7 @@ function drawGenStep4(ctx, W, H) {
   ctx.textAlign = 'center';
   ctx.fillText('PLUM (YouTube / Google)', leftX + colW / 2, resY + 35);
   ctx.font = '12px monospace';
-  ctx.fillStyle = '#7fff7f';
+  ctx.fillStyle = '#c9a96e';
   ctx.fillText('+4.96% CTR on Shorts | 13x vocab coverage', leftX + colW / 2, resY + 55);
   ctx.fillStyle = '#ddd';
   ctx.fillText('First embedding-table-free model in YouTube prod', leftX + colW / 2, resY + 73);
@@ -3803,16 +3737,16 @@ function drawGenStep4(ctx, W, H) {
   ctx.textAlign = 'center';
   ctx.fillText('OneRec (Kuaishou)', rightX + colW / 2, resY + 35);
   ctx.font = '12px monospace';
-  ctx.fillStyle = '#7fff7f';
+  ctx.fillStyle = '#c9a96e';
   ctx.fillText('+0.54% engagement | 90% cost reduction', rightX + colW / 2, resY + 55);
   ctx.fillStyle = '#ddd';
   ctx.fillText('Serves 100s of millions daily | 10x FLOPs gain', rightX + colW / 2, resY + 73);
 
   // Bottom summary
-  ctx.fillStyle = '#ff9ff3';
+  ctx.fillStyle = '#d9a0b8';
   ctx.font = 'bold 14px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('The "ChatGPT moment" for RecSys: generate recommendations, don\'t just search for them', W / 2, resY + 120);
+  ctx.fillText('Generative RecSys: produce candidates, not just retrieve them.', W / 2, resY + 120);
 
   document.getElementById('genrecMetrics').textContent = 'PLUM: +4.96% CTR, 13x coverage | OneRec: +0.54% engagement, 90% cost reduction, 10x FLOPs';
 }
@@ -3849,10 +3783,10 @@ function drawTraditionalSearch() {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height;
-  ctx.fillStyle = '#0d0d1a';
+  ctx.fillStyle = '#0d0d14';
   ctx.fillRect(0, 0, W, H);
 
-  ctx.fillStyle = '#ff9ff3';
+  ctx.fillStyle = '#d9a0b8';
   ctx.font = 'bold 18px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('Traditional Search Pipeline', W / 2, 35);
@@ -3870,7 +3804,7 @@ function drawTraditionalSearch() {
   const stageH = 90, stageY = 65;
   stages.forEach((s, i) => {
     ctx.fillStyle = s.color;
-    ctx.strokeStyle = '#ff9ff3';
+    ctx.strokeStyle = '#d9a0b8';
     ctx.lineWidth = 2;
     ctx.fillRect(s.x, stageY, s.w, stageH);
     ctx.strokeRect(s.x, stageY, s.w, stageH);
@@ -3879,7 +3813,7 @@ function drawTraditionalSearch() {
     ctx.font = 'bold 14px monospace';
     ctx.textAlign = 'center';
     ctx.fillText(s.label, s.x + s.w / 2, stageY + 35);
-    ctx.fillStyle = '#ffd93d';
+    ctx.fillStyle = '#e0c992';
     ctx.font = '12px monospace';
     ctx.fillText(s.sub, s.x + s.w / 2, stageY + 55);
 
@@ -3887,7 +3821,7 @@ function drawTraditionalSearch() {
     if (i < stages.length - 1) {
       const ax = s.x + s.w;
       const bx = stages[i + 1].x;
-      ctx.strokeStyle = '#ff9ff3';
+      ctx.strokeStyle = '#d9a0b8';
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(ax, stageY + stageH / 2);
@@ -3898,7 +3832,7 @@ function drawTraditionalSearch() {
       ctx.lineTo(bx - 8, stageY + stageH / 2 - 5);
       ctx.lineTo(bx - 8, stageY + stageH / 2 + 5);
       ctx.closePath();
-      ctx.fillStyle = '#ff9ff3';
+      ctx.fillStyle = '#d9a0b8';
       ctx.fill();
     }
   });
@@ -3914,7 +3848,7 @@ function drawTraditionalSearch() {
   ];
   ctx.font = '11px monospace';
   latencies.forEach(l => {
-    ctx.fillStyle = '#ffd93d';
+    ctx.fillStyle = '#e0c992';
     ctx.textAlign = 'center';
     ctx.fillText(l.label, l.x, l.y);
   });
@@ -3927,11 +3861,11 @@ function drawTraditionalSearch() {
   const idxY = 210;
   ctx.fillStyle = '#1a1a2a';
   ctx.fillRect(60, idxY, W - 120, 120);
-  ctx.strokeStyle = '#ff6b6b';
+  ctx.strokeStyle = '#c96e8a';
   ctx.lineWidth = 2;
   ctx.strokeRect(60, idxY, W - 120, 120);
 
-  ctx.fillStyle = '#ff6b6b';
+  ctx.fillStyle = '#c96e8a';
   ctx.font = 'bold 14px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('External Infrastructure Required', W / 2, idxY + 22);
@@ -3967,7 +3901,7 @@ function drawTraditionalSearch() {
 
   // Problems section
   const probY = 350;
-  ctx.fillStyle = '#ff6b6b';
+  ctx.fillStyle = '#c96e8a';
   ctx.font = 'bold 15px monospace';
   ctx.textAlign = 'left';
   ctx.fillText('Challenges with Traditional Search:', 60, probY);
@@ -4010,7 +3944,7 @@ function drawGenSearchStep(step) {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height;
-  ctx.fillStyle = '#0d0d1a';
+  ctx.fillStyle = '#0d0d14';
   ctx.fillRect(0, 0, W, H);
 
   // Step indicator
@@ -4021,7 +3955,7 @@ function drawGenSearchStep(step) {
     'Step 3: Query -> Generate DocID',
     'Step 4: Comparison'
   ];
-  ctx.fillStyle = '#ff9ff3';
+  ctx.fillStyle = '#d9a0b8';
   ctx.font = 'bold 18px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('Generative Retrieval (DSI / GENRE)', W / 2, 30);
@@ -4029,9 +3963,9 @@ function drawGenSearchStep(step) {
   // Step tabs
   for (let i = 0; i < 5; i++) {
     const tx = 50 + i * 210;
-    ctx.fillStyle = i === step ? '#ff9ff3' : '#333';
+    ctx.fillStyle = i === step ? '#d9a0b8' : '#333';
     ctx.fillRect(tx, 45, 200, 28);
-    ctx.fillStyle = i === step ? '#0d0d1a' : '#888';
+    ctx.fillStyle = i === step ? '#0d0d14' : '#888';
     ctx.font = i === step ? 'bold 12px monospace' : '12px monospace';
     ctx.textAlign = 'center';
     ctx.fillText(stepLabels[i], tx + 100, 64);
@@ -4093,7 +4027,7 @@ function drawGSStep0(ctx, W, H) {
 
   // Traditional approach arrow
   const arrY = 310;
-  ctx.strokeStyle = '#ff6b6b';
+  ctx.strokeStyle = '#c96e8a';
   ctx.lineWidth = 2;
   ctx.setLineDash([6, 4]);
   ctx.beginPath();
@@ -4105,11 +4039,11 @@ function drawGSStep0(ctx, W, H) {
   // Traditional approach box
   ctx.fillStyle = '#1a1a2a';
   ctx.fillRect(150, arrY + 35, W - 300, 100);
-  ctx.strokeStyle = '#ff6b6b';
+  ctx.strokeStyle = '#c96e8a';
   ctx.lineWidth = 2;
   ctx.strokeRect(150, arrY + 35, W - 300, 100);
 
-  ctx.fillStyle = '#ff6b6b';
+  ctx.fillStyle = '#c96e8a';
   ctx.font = 'bold 14px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('Traditional Approach: Build & Maintain External Index', W / 2, arrY + 58);
@@ -4121,7 +4055,7 @@ function drawGSStep0(ctx, W, H) {
   ctx.fillText('3. Re-index when corpus changes (expensive!)', W / 2, arrY + 118);
 
   // Question
-  ctx.fillStyle = '#ffd93d';
+  ctx.fillStyle = '#e0c992';
   ctx.font = 'bold 16px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('What if the model could just MEMORIZE where every document is?', W / 2, 475);
@@ -4129,7 +4063,7 @@ function drawGSStep0(ctx, W, H) {
   ctx.font = '14px monospace';
   ctx.fillText('Key idea: replace the external index with model parameters', W / 2, 500);
 
-  ctx.fillStyle = '#7fff7f';
+  ctx.fillStyle = '#c9a96e';
   ctx.font = 'bold 14px monospace';
   ctx.fillText('Click "Next Step" to see Document Tokenization', W / 2, 535);
 }
@@ -4163,12 +4097,12 @@ function drawGSStep1(ctx, W, H) {
     ctx.font = '10px monospace';
     ctx.textAlign = 'center';
     ctx.fillText(doc.name, 100, y + 30);
-    ctx.fillStyle = '#ffd93d';
+    ctx.fillStyle = '#e0c992';
     ctx.font = '9px monospace';
     ctx.fillText('(' + doc.category + ')', 100, y + 44);
 
     // Arrow to encoder
-    ctx.strokeStyle = '#ff9ff3';
+    ctx.strokeStyle = '#d9a0b8';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(165, y + 25);
@@ -4189,7 +4123,7 @@ function drawGSStep1(ctx, W, H) {
     ctx.fillText('clustering/RQ-VAE)', 290, y + 46);
 
     // Arrow to codebooks
-    ctx.strokeStyle = '#ff9ff3';
+    ctx.strokeStyle = '#d9a0b8';
     ctx.beginPath();
     ctx.moveTo(360, y + 25);
     ctx.lineTo(410, y + 25);
@@ -4208,7 +4142,7 @@ function drawGSStep1(ctx, W, H) {
       ctx.font = '9px monospace';
       ctx.textAlign = 'center';
       ctx.fillText(cbLabels[l], cx + 39, y + 16);
-      ctx.fillStyle = '#ffd93d';
+      ctx.fillStyle = '#e0c992';
       ctx.font = 'bold 13px monospace';
       ctx.fillText('tok_' + doc.tokens[l], cx + 39, y + 38);
 
@@ -4222,7 +4156,7 @@ function drawGSStep1(ctx, W, H) {
     }
 
     // Arrow to result
-    ctx.strokeStyle = '#ff9ff3';
+    ctx.strokeStyle = '#d9a0b8';
     ctx.beginPath();
     ctx.moveTo(685, y + 25);
     ctx.lineTo(720, y + 25);
@@ -4231,9 +4165,9 @@ function drawGSStep1(ctx, W, H) {
     // Semantic ID result
     ctx.fillStyle = '#1a4a2a';
     ctx.fillRect(725, y - 2, 330, 54);
-    ctx.strokeStyle = '#7fff7f';
+    ctx.strokeStyle = '#c9a96e';
     ctx.strokeRect(725, y - 2, 330, 54);
-    ctx.fillStyle = '#7fff7f';
+    ctx.fillStyle = '#c9a96e';
     ctx.font = 'bold 13px monospace';
     ctx.textAlign = 'center';
     ctx.fillText('SID: [' + doc.tokens.join(', ') + ']', 890, y + 20);
@@ -4243,14 +4177,14 @@ function drawGSStep1(ctx, W, H) {
   });
 
   // Highlight shared prefixes
-  ctx.fillStyle = '#ffd93d';
+  ctx.fillStyle = '#e0c992';
   ctx.font = 'bold 14px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('Notice: NYC Pizza Guide and NYC Pasta Review share prefix [12, 45, ...]', W / 2, 490);
   ctx.fillStyle = '#88ccff';
   ctx.font = '13px monospace';
   ctx.fillText('Similar documents share Semantic ID prefixes (like similar URLs share domain paths)', W / 2, 515);
-  ctx.fillStyle = '#7fff7f';
+  ctx.fillStyle = '#c9a96e';
   ctx.font = 'bold 12px monospace';
   ctx.fillText('Same technique as item tokenization in Generative Recommenders!', W / 2, 540);
 }
@@ -4270,16 +4204,16 @@ function drawGSStep2(ctx, W, H) {
   // Traditional side
   ctx.fillStyle = '#1a1a2a';
   ctx.fillRect(leftX, topY, colW, 200);
-  ctx.strokeStyle = '#ff6b6b';
+  ctx.strokeStyle = '#c96e8a';
   ctx.lineWidth = 2;
   ctx.strokeRect(leftX, topY, colW, 200);
-  ctx.fillStyle = '#ff6b6b';
+  ctx.fillStyle = '#c96e8a';
   ctx.font = 'bold 14px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('Traditional: Build External Index', leftX + colW / 2, topY + 22);
 
   // FAISS index illustration
-  ctx.fillStyle = '#2a2a4a';
+  ctx.fillStyle = '#2a2a3a';
   ctx.fillRect(leftX + 30, topY + 40, colW - 60, 80);
   ctx.strokeStyle = '#666';
   ctx.strokeRect(leftX + 30, topY + 40, colW - 60, 80);
@@ -4292,7 +4226,7 @@ function drawGSStep2(ctx, W, H) {
 
   // Dots in the index
   for (let d = 0; d < 40; d++) {
-    ctx.fillStyle = '#4a4a6a';
+    ctx.fillStyle = '#4a4a5a';
     ctx.beginPath();
     ctx.arc(leftX + 50 + (d % 20) * 22, topY + 112 + Math.floor(d / 20) * 12, 3, 0, Math.PI * 2);
     ctx.fill();
@@ -4308,10 +4242,10 @@ function drawGSStep2(ctx, W, H) {
   // Generative side
   ctx.fillStyle = '#1a2a1a';
   ctx.fillRect(rightX, topY, colW, 200);
-  ctx.strokeStyle = '#7fff7f';
+  ctx.strokeStyle = '#c9a96e';
   ctx.lineWidth = 2;
   ctx.strokeRect(rightX, topY, colW, 200);
-  ctx.fillStyle = '#7fff7f';
+  ctx.fillStyle = '#c9a96e';
   ctx.font = 'bold 14px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('DSI: Train Model to Memorize', rightX + colW / 2, topY + 22);
@@ -4327,11 +4261,11 @@ function drawGSStep2(ctx, W, H) {
   ctx.fillText('Transformer', rightX + colW / 2, topY + 60);
   ctx.font = '12px monospace';
   ctx.fillText('doc_text -> Semantic ID', rightX + colW / 2, topY + 78);
-  ctx.fillStyle = '#ffd93d';
+  ctx.fillStyle = '#e0c992';
   ctx.fillText('All knowledge in parameters!', rightX + colW / 2, topY + 96);
 
   // Training arrows flowing in
-  ctx.strokeStyle = '#7fff7f';
+  ctx.strokeStyle = '#c9a96e';
   ctx.lineWidth = 1;
   for (let d = 0; d < 5; d++) {
     const ax = rightX + 60 + d * 80;
@@ -4339,7 +4273,7 @@ function drawGSStep2(ctx, W, H) {
     ctx.moveTo(ax, topY + 126);
     ctx.lineTo(ax, topY + 140);
     ctx.stroke();
-    ctx.fillStyle = '#7fff7f';
+    ctx.fillStyle = '#c9a96e';
     ctx.beginPath();
     ctx.moveTo(ax, topY + 140);
     ctx.lineTo(ax - 4, topY + 134);
@@ -4348,7 +4282,7 @@ function drawGSStep2(ctx, W, H) {
     ctx.fill();
   }
 
-  ctx.fillStyle = '#7fff7f';
+  ctx.fillStyle = '#c9a96e';
   ctx.font = '11px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('No external index needed!', rightX + colW / 2, topY + 158);
@@ -4357,7 +4291,7 @@ function drawGSStep2(ctx, W, H) {
 
   // Training example below
   const exY = 345;
-  ctx.fillStyle = '#ffd93d';
+  ctx.fillStyle = '#e0c992';
   ctx.font = 'bold 14px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('Training Examples (DSI Indexing Phase):', W / 2, exY);
@@ -4379,9 +4313,9 @@ function drawGSStep2(ctx, W, H) {
     ctx.font = '12px monospace';
     ctx.textAlign = 'left';
     ctx.fillText('Input: ' + ex.input, 75, ey + 16);
-    ctx.fillStyle = '#7fff7f';
+    ctx.fillStyle = '#c9a96e';
     ctx.fillText('Target: ' + ex.output, 75, ey + 34);
-    ctx.fillStyle = '#ff9ff3';
+    ctx.fillStyle = '#d9a0b8';
     ctx.textAlign = 'right';
     ctx.fillText(ex.doc, W - 75, ey + 25);
   });
@@ -4405,13 +4339,13 @@ function drawGSStep3(ctx, W, H) {
   ctx.fillRect(60, 120, W - 120, 40);
   ctx.strokeStyle = '#88ccff';
   ctx.strokeRect(60, 120, W - 120, 40);
-  ctx.fillStyle = '#ffd93d';
+  ctx.fillStyle = '#e0c992';
   ctx.font = 'bold 14px monospace';
   ctx.textAlign = 'left';
   ctx.fillText('Query: "best pizza restaurants in NYC"', 80, 145);
 
   // Arrow down
-  ctx.strokeStyle = '#ff9ff3';
+  ctx.strokeStyle = '#d9a0b8';
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(W / 2, 165);
@@ -4432,7 +4366,7 @@ function drawGSStep3(ctx, W, H) {
   ctx.fillText('(generates docid tokens)', W / 2, 238);
 
   // Arrow down
-  ctx.strokeStyle = '#ff9ff3';
+  ctx.strokeStyle = '#d9a0b8';
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(W / 2, 255);
@@ -4440,7 +4374,7 @@ function drawGSStep3(ctx, W, H) {
   ctx.stroke();
 
   // Beam search tree
-  ctx.fillStyle = '#ffd93d';
+  ctx.fillStyle = '#e0c992';
   ctx.font = 'bold 14px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('Beam Search (10 beams) - Generating 3-level Semantic ID:', W / 2, 298);
@@ -4467,15 +4401,15 @@ function drawGSStep3(ctx, W, H) {
   level1.forEach((node) => {
     ctx.fillStyle = '#1a3a2a';
     ctx.fillRect(node.x - 55, levelY[0], 110, 45);
-    ctx.fillStyle = '#7fff7f';
+    ctx.fillStyle = '#c9a96e';
     ctx.fillRect(node.x - 55, levelY[0], 110 * node.prob / 0.5, 7);
-    ctx.strokeStyle = '#7fff7f';
+    ctx.strokeStyle = '#c9a96e';
     ctx.strokeRect(node.x - 55, levelY[0], 110, 45);
-    ctx.fillStyle = '#ffd93d';
+    ctx.fillStyle = '#e0c992';
     ctx.font = 'bold 13px monospace';
     ctx.textAlign = 'center';
     ctx.fillText(node.tok, node.x, levelY[0] + 26);
-    ctx.fillStyle = '#7fff7f';
+    ctx.fillStyle = '#c9a96e';
     ctx.font = '11px monospace';
     ctx.fillText('p=' + node.prob.toFixed(2), node.x, levelY[0] + 41);
   });
@@ -4502,7 +4436,7 @@ function drawGSStep3(ctx, W, H) {
     ctx.fillRect(node.x - 50, levelY[1], 100 * node.prob / 0.6, 7);
     ctx.strokeStyle = '#88ccff';
     ctx.strokeRect(node.x - 50, levelY[1], 100, 42);
-    ctx.fillStyle = '#ffd93d';
+    ctx.fillStyle = '#e0c992';
     ctx.font = 'bold 12px monospace';
     ctx.textAlign = 'center';
     ctx.fillText(node.tok, node.x, levelY[1] + 25);
@@ -4530,24 +4464,24 @@ function drawGSStep3(ctx, W, H) {
     const isTop = i === 0;
     ctx.fillStyle = isTop ? '#2a3a1a' : '#1a2a2a';
     ctx.fillRect(node.x - 60, levelY[2], 120, 55);
-    ctx.fillStyle = isTop ? '#7fff7f' : '#ff9ff3';
+    ctx.fillStyle = isTop ? '#c9a96e' : '#d9a0b8';
     ctx.fillRect(node.x - 60, levelY[2], 120 * node.prob / 0.7, 7);
-    ctx.strokeStyle = isTop ? '#7fff7f' : '#ff9ff3';
+    ctx.strokeStyle = isTop ? '#c9a96e' : '#d9a0b8';
     ctx.lineWidth = isTop ? 3 : 1;
     ctx.strokeRect(node.x - 60, levelY[2], 120, 55);
-    ctx.fillStyle = '#ffd93d';
+    ctx.fillStyle = '#e0c992';
     ctx.font = 'bold 11px monospace';
     ctx.textAlign = 'center';
     ctx.fillText(node.tok, node.x, levelY[2] + 22);
-    ctx.fillStyle = '#7fff7f';
+    ctx.fillStyle = '#c9a96e';
     ctx.font = '10px monospace';
     ctx.fillText(node.fullSid, node.x, levelY[2] + 36);
-    ctx.fillStyle = '#ff9ff3';
+    ctx.fillStyle = '#d9a0b8';
     ctx.fillText(node.doc, node.x, levelY[2] + 50);
   });
 
   // Result annotation
-  ctx.fillStyle = '#7fff7f';
+  ctx.fillStyle = '#c9a96e';
   ctx.font = 'bold 14px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('Top result: "NYC Pizza Guide" SID=[12, 45, 7]', W / 2 + 220, levelY[2] + 28);
@@ -4557,10 +4491,10 @@ function drawGSStep3(ctx, W, H) {
   ctx.fillText('No index lookup! Model generated the doc ID directly.', W / 2 + 220, levelY[2] + 48);
 
   // Bottom note
-  ctx.fillStyle = '#ff9ff3';
+  ctx.fillStyle = '#d9a0b8';
   ctx.font = '12px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('GENRE variant: generates entity names character by character (e.g., "N","Y","C"," ","P","i","z","z","a"...)', W / 2, 540);
+  ctx.fillText('GENRE variant: generates names character by character.', W / 2, 540);
 }
 
 function drawGSStep4(ctx, W, H) {
@@ -4577,10 +4511,10 @@ function drawGSStep4(ctx, W, H) {
   // Traditional side
   ctx.fillStyle = '#1a1a2a';
   ctx.fillRect(leftX, topY, colW, colH);
-  ctx.strokeStyle = '#ff6b6b';
+  ctx.strokeStyle = '#c96e8a';
   ctx.lineWidth = 2;
   ctx.strokeRect(leftX, topY, colW, colH);
-  ctx.fillStyle = '#ff6b6b';
+  ctx.fillStyle = '#c96e8a';
   ctx.font = 'bold 14px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('Traditional Search', leftX + colW / 2, topY + 22);
@@ -4588,9 +4522,9 @@ function drawGSStep4(ctx, W, H) {
   const tradLines = [
     { label: 'Models:', value: '2 (bi-encoder + cross-encoder)', color: '#ff9999' },
     { label: 'External index:', value: 'FAISS/ScaNN (hundreds of GB)', color: '#ff9999' },
-    { label: 'Scalability:', value: 'Billions of documents (proven)', color: '#7fff7f' },
+    { label: 'Scalability:', value: 'Billions of documents (proven)', color: '#c9a96e' },
     { label: 'Index updates:', value: 'Must re-index (batch process)', color: '#ff9999' },
-    { label: 'Cold start:', value: 'Embed new doc, add to index', color: '#ffd93d' },
+    { label: 'Cold start:', value: 'Embed new doc, add to index', color: '#e0c992' },
     { label: 'Latency:', value: '~140ms (retrieve + rerank)', color: '#ff9999' },
     { label: 'Optimization:', value: 'Separate (retrieval != ranking)', color: '#ff9999' }
   ];
@@ -4608,22 +4542,22 @@ function drawGSStep4(ctx, W, H) {
   // Generative side
   ctx.fillStyle = '#1a2a1a';
   ctx.fillRect(rightX, topY, colW, colH);
-  ctx.strokeStyle = '#7fff7f';
+  ctx.strokeStyle = '#c9a96e';
   ctx.lineWidth = 2;
   ctx.strokeRect(rightX, topY, colW, colH);
-  ctx.fillStyle = '#7fff7f';
+  ctx.fillStyle = '#c9a96e';
   ctx.font = 'bold 14px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('Generative Retrieval (DSI/GENRE)', rightX + colW / 2, topY + 22);
 
   const genLines = [
-    { label: 'Models:', value: '1 single Transformer', color: '#7fff7f' },
-    { label: 'External index:', value: 'NONE (model IS the index)', color: '#7fff7f' },
-    { label: 'Scalability:', value: '~Millions (still scaling up)', color: '#ffd93d' },
-    { label: 'Index updates:', value: 'Fine-tune / retrain model', color: '#ffd93d' },
-    { label: 'Cold start:', value: 'Content -> SID instantly', color: '#7fff7f' },
-    { label: 'Latency:', value: '~50ms (single pass generation)', color: '#7fff7f' },
-    { label: 'Optimization:', value: 'End-to-end (unified objective)', color: '#7fff7f' }
+    { label: 'Models:', value: '1 single Transformer', color: '#c9a96e' },
+    { label: 'External index:', value: 'NONE (model IS the index)', color: '#c9a96e' },
+    { label: 'Scalability:', value: '~Millions (still scaling up)', color: '#e0c992' },
+    { label: 'Index updates:', value: 'Fine-tune / retrain model', color: '#e0c992' },
+    { label: 'Cold start:', value: 'Content -> SID instantly', color: '#c9a96e' },
+    { label: 'Latency:', value: '~50ms (single pass generation)', color: '#c9a96e' },
+    { label: 'Optimization:', value: 'End-to-end (unified objective)', color: '#c9a96e' }
   ];
 
   genLines.forEach((line, i) => {
@@ -4638,7 +4572,7 @@ function drawGSStep4(ctx, W, H) {
 
   // Trade-offs section
   const tradeY = topY + colH + 20;
-  ctx.fillStyle = '#ffd93d';
+  ctx.fillStyle = '#e0c992';
   ctx.font = 'bold 14px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('Key Trade-offs', W / 2, tradeY);
@@ -4654,7 +4588,7 @@ function drawGSStep4(ctx, W, H) {
   // Header
   ctx.fillStyle = '#333';
   ctx.fillRect(100, tblY, W - 200, 22);
-  ctx.fillStyle = '#ff9ff3';
+  ctx.fillStyle = '#d9a0b8';
   ctx.font = 'bold 11px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('Dimension', 210, tblY + 15);
@@ -4671,11 +4605,11 @@ function drawGSStep4(ctx, W, H) {
     ctx.font = '11px monospace';
     ctx.textAlign = 'center';
     ctx.fillText(t.label, 210, ry + 15);
-    ctx.fillStyle = t.winner === 'trad' ? '#7fff7f' : '#aaa';
+    ctx.fillStyle = t.winner === 'trad' ? '#c9a96e' : '#aaa';
     ctx.fillText(t.trad, 430, ry + 15);
-    ctx.fillStyle = t.winner === 'gen' ? '#7fff7f' : '#aaa';
+    ctx.fillStyle = t.winner === 'gen' ? '#c9a96e' : '#aaa';
     ctx.fillText(t.gen, 650, ry + 15);
-    ctx.fillStyle = '#ffd93d';
+    ctx.fillStyle = '#e0c992';
     ctx.fillText(t.winner === 'trad' ? 'Traditional' : 'Generative', 870, ry + 15);
   });
 
@@ -4690,10 +4624,10 @@ function drawGSStep4(ctx, W, H) {
   ctx.textAlign = 'center';
   ctx.fillText('Research & Production References', W / 2, refY + 18);
   ctx.font = '11px monospace';
-  ctx.fillStyle = '#7fff7f';
+  ctx.fillStyle = '#c9a96e';
   ctx.fillText('DSI (Google 2022) | GENRE (Meta 2021) | DSI-QG (2023) | NCI (2022)', W / 2, refY + 38);
   ctx.fillStyle = '#ddd';
-  ctx.fillText('PLUM (YouTube prod) | Spotify shared SIDs for search+recs | Convergence of search & recs', W / 2, refY + 55);
+  ctx.fillText('PLUM, Spotify shared SIDs, and search/recs convergence', W / 2, refY + 55);
 }
 
 // ============ INIT ============
@@ -4724,7 +4658,7 @@ window.addEventListener('load', () => {
   top: 20px;
   right: 20px;
   z-index: 1000;
-  background: linear-gradient(135deg, #ff9ff3, #f368e0);
+  background: linear-gradient(135deg, #d9a0b8, #c96e8a);
   color: #0a0a0f;
   border: none;
   padding: 12px 20px;
@@ -4738,13 +4672,13 @@ window.addEventListener('load', () => {
 
 <!-- Quiz Panel -->
 <div id="quizSection" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:999; background:rgba(0,0,0,0.7); overflow-y:auto;">
-  <div style="max-width:860px; margin:60px auto 40px; background:#12121f; border-radius:16px; padding:40px; border:1px solid rgba(255,159,243,0.2); box-shadow:0 8px 32px rgba(0,0,0,0.5);">
-    <h2 style="color:#ff9ff3; text-align:center; margin:0 0 6px; font-size:28px;">Recommendation Systems Quiz</h2>
+  <div style="max-width:860px; margin:60px auto 40px; background:#111118; border-radius:16px; padding:40px; border:1px solid rgba(255,159,243,0.2); box-shadow:0 8px 32px rgba(0,0,0,0.5);">
+    <h2 style="color:#d9a0b8; text-align:center; margin:0 0 6px; font-size:28px;">Recommendation Systems Quiz</h2>
     <p style="text-align:center; color:#888; font-size:14px; margin-bottom:6px;">13 topics &middot; 65 questions &middot; 2 easy / 2 medium / 1 hard per topic</p>
     <p id="quizScore" style="text-align:center; color:#ccc; font-size:16px; margin-bottom:20px;">Total Score: 0 / 65</p>
     <div id="quizQuestions"></div>
     <div style="text-align:center; margin-top:30px;">
-      <button onclick="resetQuiz()" style="background:#ff9ff3; color:#0a0a0f; border:none; padding:10px 24px; border-radius:20px; font-size:15px; font-weight:700; cursor:pointer; margin:0 8px;">Reset</button>
+      <button onclick="resetQuiz()" style="background:#d9a0b8; color:#0a0a0f; border:none; padding:10px 24px; border-radius:20px; font-size:15px; font-weight:700; cursor:pointer; margin:0 8px;">Reset</button>
       <button onclick="toggleQuiz()" style="background:#333; color:#ccc; border:1px solid #555; padding:10px 24px; border-radius:20px; font-size:15px; font-weight:700; cursor:pointer; margin:0 8px;">Hide</button>
     </div>
   </div>
@@ -4908,9 +4842,9 @@ window.addEventListener('load', () => {
     topics.forEach(function(topic, ti) {
       // Topic header
       const topicHeader = document.createElement('div');
-      topicHeader.style.cssText = 'background:linear-gradient(135deg,#1a1a3e,#151530); border-left:4px solid #ff9ff3; border-radius:0 12px 12px 0; padding:14px 20px; margin:28px 0 14px; display:flex; justify-content:space-between; align-items:center;';
+      topicHeader.style.cssText = 'background:linear-gradient(135deg,#13131f,#0f0f18); border-left:4px solid #d9a0b8; border-radius:0 12px 12px 0; padding:14px 20px; margin:28px 0 14px; display:flex; justify-content:space-between; align-items:center;';
       if (ti === 0) topicHeader.style.marginTop = '0';
-      topicHeader.innerHTML = '<span style="color:#ff9ff3; font-weight:700; font-size:16px;">' + (ti + 1) + '. ' + topic.name + '</span><span id="topicScore-' + ti + '" style="color:#888; font-size:14px; font-family:monospace;">0 / ' + topic.questions.length + '</span>';
+      topicHeader.innerHTML = '<span style="color:#d9a0b8; font-weight:700; font-size:16px;">' + (ti + 1) + '. ' + topic.name + '</span><span id="topicScore-' + ti + '" style="color:#888; font-size:14px; font-family:monospace;">0 / ' + topic.questions.length + '</span>';
       container.appendChild(topicHeader);
 
       topic.questions.forEach(function(item, qi) {
@@ -4920,12 +4854,12 @@ window.addEventListener('load', () => {
         qDiv.id = 'quiz-q-' + absIdx;
 
         const labels = ['A', 'B', 'C', 'D'];
-        let html = '<p style="color:#e0e0e0; font-weight:600; margin:0 0 12px; font-size:15px;">Q' + (absIdx + 1) + ': ' + item.q + '</p>';
+        let html = '<p style="color:#e8e4de; font-weight:600; margin:0 0 12px; font-size:15px;">Q' + (absIdx + 1) + ': ' + item.q + '</p>';
         item.options.forEach(function(opt, oi) {
           html += '<div class="quiz-option" data-qi="' + absIdx + '" data-oi="' + oi + '" style="padding:10px 14px; margin:6px 0; border-radius:8px; border:1px solid #333; color:#ccc; cursor:pointer; transition:background 0.2s, border-color 0.2s; font-size:14px;">' + labels[oi] + ') ' + opt + '</div>';
         });
         html += '<p class="quiz-feedback" id="feedback-' + absIdx + '" style="margin:8px 0 0; font-size:13px; font-weight:600; display:none;"></p>';
-        html += '<p class="quiz-explanation" id="explanation-' + absIdx + '" style="margin:6px 0 0; font-size:13px; color:#aaa; display:none; line-height:1.5;"></p>';
+        html += '<p class="quiz-explanation" id="explanation-' + absIdx + '" style="margin:6px 0 0; font-size:13px; color:#8a8680; display:none; line-height:1.5;"></p>';
         qDiv.innerHTML = html;
         container.appendChild(qDiv);
         globalIdx++;
@@ -4941,7 +4875,7 @@ window.addEventListener('load', () => {
       });
       el.addEventListener('mouseenter', function() {
         const qi = parseInt(this.getAttribute('data-qi'));
-        if (!answered[qi]) this.style.borderColor = '#ff9ff3';
+        if (!answered[qi]) this.style.borderColor = '#d9a0b8';
       });
       el.addEventListener('mouseleave', function() {
         const qi = parseInt(this.getAttribute('data-qi'));
@@ -4988,7 +4922,7 @@ window.addEventListener('load', () => {
     document.getElementById('quizScore').textContent = 'Total Score: ' + score + ' / ' + quizData.length;
     const ti = quizData[qi].topic;
     document.getElementById('topicScore-' + ti).textContent = topicScores[ti] + ' / ' + topics[ti].questions.length;
-    document.getElementById('topicScore-' + ti).style.color = topicScores[ti] === topics[ti].questions.length ? '#2ecc71' : '#ff9ff3';
+    document.getElementById('topicScore-' + ti).style.color = topicScores[ti] === topics[ti].questions.length ? '#2ecc71' : '#d9a0b8';
   }
 
   window.toggleQuiz = function() {

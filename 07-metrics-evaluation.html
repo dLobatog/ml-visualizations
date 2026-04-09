@@ -5,411 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ML Metrics & Evaluation - Interview Prep</title>
     <script src="static/canvas-polish.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #0a0a0f;
-            color: #e0e0e0;
-            padding: 20px;
-            line-height: 1.6;
-            overflow-x: hidden;
-        }
-
-        header {
-            text-align: center;
-            margin-bottom: 40px;
-            border-bottom: 2px solid #ffd93d;
-            padding-bottom: 20px;
-        }
-
-        h1 {
-            color: #ffd93d;
-            font-size: 2.5em;
-            margin-bottom: 10px;
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .section {
-            background-color: #12121f;
-            border: 1px solid #2a2a3e;
-            border-radius: 8px;
-            padding: 30px;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-        }
-
-        .section h2 {
-            color: #ffd93d;
-            font-size: 1.8em;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .section-content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            align-items: start;
-        }
-
-        .viz-area {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        canvas {
-            background-color: #0a0a0f;
-            border: 1px solid #2a2a3e;
-            border-radius: 4px;
-            cursor: crosshair;
-            max-width: 100%;
-            height: auto;
-        }
-
-        .control-panel {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .control-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        label {
-            font-weight: 600;
-            color: #ffd93d;
-            font-size: 0.95em;
-        }
-
-        input[type="range"] {
-            width: 100%;
-            height: 6px;
-            border-radius: 3px;
-            background: #2a2a3e;
-            outline: none;
-            -webkit-appearance: none;
-        }
-
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            background: #ffd93d;
-            cursor: pointer;
-            box-shadow: 0 0 5px rgba(255, 217, 61, 0.5);
-        }
-
-        input[type="range"]::-moz-range-thumb {
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            background: #ffd93d;
-            cursor: pointer;
-            border: none;
-            box-shadow: 0 0 5px rgba(255, 217, 61, 0.5);
-        }
-
-        .metrics-display {
-            background-color: #0a0a0f;
-            border: 1px solid #ffd93d;
-            border-radius: 4px;
-            padding: 15px;
-            margin-top: 10px;
-        }
-
-        .metric-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid #2a2a3e;
-        }
-
-        .metric-item:last-child {
-            border-bottom: none;
-        }
-
-        .metric-label {
-            font-weight: 600;
-            color: #ffd93d;
-        }
-
-        .metric-value {
-            color: #00ff88;
-            font-family: 'Courier New', monospace;
-            font-weight: 600;
-        }
-
-      
-        .insight-box h4 {
-            color: #ffd93d;
-            margin-bottom: 8px;
-            font-size: 0.95em;
-        }
-
-        .insight-box ul {
-            margin-left: 20px;
-            font-size: 0.9em;
-            color: #d0d0d0;
-        }
-
-        .insight-box li {
-            margin-bottom: 6px;
-        }
-
-        .comparison-box {
-            background-color: #0a0a0f;
-            border: 1px solid #2a2a3e;
-            border-radius: 4px;
-            padding: 12px;
-            margin-top: 10px;
-            font-size: 0.85em;
-        }
-
-        .classifier-type {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin: 8px 0;
-            padding: 8px 0;
-            border-bottom: 1px solid #2a2a3e;
-        }
-
-        .classifier-type:last-child {
-            border-bottom: none;
-        }
-
-        .classifier-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            flex-shrink: 0;
-        }
-
-        .classifier-name {
-            font-weight: 600;
-            color: #ffd93d;
-            min-width: 100px;
-        }
-
-        .classifier-desc {
-            color: #b0b0c0;
-        }
-
-        .dnd-list {
-            background-color: #0a0a0f;
-            border: 1px solid #2a2a3e;
-            border-radius: 4px;
-            padding: 10px;
-        }
-
-        .dnd-item {
-            background-color: #1a1a2e;
-            padding: 12px;
-            margin: 8px 0;
-            border-radius: 4px;
-            cursor: grab;
-            border-left: 3px solid #ffd93d;
-            transition: all 0.2s ease;
-            user-select: none;
-        }
-
-        .dnd-item:hover {
-            background-color: #252538;
-            transform: translateX(5px);
-        }
-
-        .dnd-item.dragging {
-            opacity: 0.5;
-            cursor: grabbing;
-        }
-
-        .relevance-label {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 3px;
-            font-size: 0.75em;
-            font-weight: 600;
-            margin-left: 8px;
-        }
-
-        .rel-highly {
-            background-color: rgba(0, 255, 136, 0.3);
-            color: #00ff88;
-        }
-
-        .rel-relevant {
-            background-color: rgba(255, 217, 61, 0.3);
-            color: #ffd93d;
-        }
-
-        .rel-not {
-            background-color: rgba(255, 100, 100, 0.3);
-            color: #ff6464;
-        }
-
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            margin-top: 15px;
-        }
-
-        .metric-card {
-            background-color: #0a0a0f;
-            border: 1px solid #2a2a3e;
-            border-radius: 4px;
-            padding: 12px;
-        }
-
-        .metric-card-label {
-            color: #b0b0c0;
-            font-size: 0.8em;
-            font-weight: 600;
-        }
-
-        .metric-card-value {
-            color: #00ff88;
-            font-size: 1.3em;
-            font-weight: 700;
-            margin-top: 6px;
-            font-family: 'Courier New', monospace;
-        }
-
-        .step-by-step {
-            background-color: #0a0a0f;
-            border: 1px solid #2a2a3e;
-            border-radius: 4px;
-            padding: 15px;
-            margin-top: 15px;
-            font-size: 0.9em;
-        }
-
-        .step {
-            margin: 10px 0;
-            padding: 8px 0;
-            border-bottom: 1px solid #2a2a3e;
-        }
-
-        .step:last-child {
-            border-bottom: none;
-        }
-
-        .step-num {
-            color: #ffd93d;
-            font-weight: 700;
-            margin-right: 8px;
-        }
-
-        @media (max-width: 1024px) {
-            .section-content {
-                grid-template-columns: 1fr;
-            }
-        }
-    
-  .insight-box { background: linear-gradient(135deg, #1a1a3e 0%, #151530 100%); border-left: 4px solid #ffd93d; padding: 20px 24px; margin-top: 20px; border-radius: 0 12px 12px 0; font-size: 0.92em; color: #ccc; line-height: 1.8; }
-  .insight-box strong { color: #ffd93d; font-size: 1.05em; }
-  .insight-box .formula { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 12px 18px; margin: 12px 0; font-family: 'Courier New', monospace; color: #e8e8ff; font-size: 1.05em; text-align: center; letter-spacing: 0.5px; line-height: 1.9; }
-  .insight-box .formula .highlight { color: #ffd93d; font-weight: bold; }
-  .insight-box .key-point { display: flex; flex-wrap: wrap; gap: 4px 8px; margin: 8px 0; padding: 4px 0; align-items: baseline; }
-  .insight-box .key-point .label { color: #ffd93d; font-weight: 600; min-width: 160px; flex-shrink: 0; }
-  .insight-box .key-point .desc { color: #ddd; }
-  .insight-box .interview-tip { background: rgba(100, 255, 100, 0.05); border: 1px solid rgba(100, 255, 100, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #b0ffb0; font-size: 0.93em; line-height: 1.6; }
-  .insight-box .interview-tip::before { content: '\1F4A1  Interview Tip: '; font-weight: 700; color: #7fff7f; }
-  .insight-box .mnemonic { background: rgba(255, 150, 255, 0.05); border: 1px solid rgba(255, 150, 255, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #ffb0ff; font-size: 0.93em; line-height: 1.6; }
-  .insight-box .mnemonic::before { content: '\1F9E0  Remember: '; font-weight: 700; color: #ff7fff; }
-  .insight-box .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
-  .insight-box .comparison .option { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 10px 14px; }
-  .insight-box .comparison .option .opt-title { color: #ffd93d; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
-  .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
-  .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
-  .insight-box { grid-column: 1 / -1; }
-
-  .katex { color: #e8e8ff; font-size: 1.1em; }
-
-#quizToggle{position:fixed;top:20px;right:20px;z-index:1000;padding:12px 20px;background:#ffd93d;color:#0a0a0f;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:1em;box-shadow:0 4px 15px rgba(0,0,0,0.3);transition:transform 0.2s}
-#quizToggle:hover{transform:scale(1.05)}
-#quizSection{background:#0a0a0f;border-top:2px solid #ffd93d;padding:40px 20px;margin-top:40px}
-.quiz-container{max-width:900px;margin:0 auto}
-.quiz-topic{margin-bottom:30px}
-.quiz-topic-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:10px;cursor:pointer;margin-bottom:12px}
-.quiz-topic-header h3{color:#ffd93d;margin:0;font-size:1.15em}
-.quiz-topic-score{color:#888;font-size:0.95em}
-.quiz-topic-questions{display:none}
-.quiz-topic-questions.open{display:block}
-.quiz-question{background:#12121f;border:1px solid #2a2a4a;border-radius:12px;padding:24px;margin-bottom:16px}
-.quiz-question h4{color:#e0e0e0;margin-bottom:16px;font-size:1.05em;line-height:1.5}
-.quiz-option{display:block;width:100%;padding:12px 16px;margin:8px 0;background:#0d0d1a;border:1px solid #2a2a4a;border-radius:8px;color:#e0e0e0;cursor:pointer;text-align:left;font-size:0.95em;transition:all 0.2s;font-family:inherit}
-.quiz-option:hover:not(:disabled){border-color:#ffd93d;background:#1a1a3e}
-.quiz-option.correct{background:#1a3a2a!important;border-color:#2ecc71!important;color:#2ecc71!important}
-.quiz-option.wrong{background:#3a1a1a!important;border-color:#e74c3c!important;color:#e74c3c!important}
-.quiz-option.reveal{border-color:#2ecc71!important;color:#2ecc71!important}
-.quiz-option:disabled{cursor:default}
-.quiz-explanation{margin-top:12px;padding:14px 18px;border-radius:8px;font-size:0.93em;line-height:1.6;display:none}
-.quiz-explanation.show{display:block}
-.quiz-explanation.correct-exp{border-left:4px solid #2ecc71;background:rgba(46,204,113,0.08);color:#b0ffb0}
-.quiz-explanation.wrong-exp{border-left:4px solid #e74c3c;background:rgba(231,76,60,0.08);color:#ffb0b0}
-.quiz-score{text-align:center;font-size:1.5em;color:#ffd93d;margin-bottom:30px}
-.quiz-actions{text-align:center;margin-top:30px;margin-bottom:20px}
-.quiz-actions button{padding:10px 24px;margin:0 8px;border-radius:8px;border:1px solid #ffd93d;background:transparent;color:#ffd93d;cursor:pointer;font-size:1em}
-.quiz-progress{height:4px;background:#1a1a2e;border-radius:2px;margin-bottom:20px;overflow:hidden}
-.quiz-progress-bar{height:100%;background:#ffd93d;border-radius:2px;transition:width 0.3s}
-  .code-example { margin-top: 12px; border: 1px solid #2a2a4a; border-radius: 8px; overflow: hidden; }
-  .code-toggle { width: 100%; background: #1a1a2e; color: #ffd93d; border: none; padding: 10px 16px; text-align: left; cursor: pointer; font-size: 0.9em; font-weight: 600; display: flex; align-items: center; gap: 8px; }
-  .code-toggle:hover { background: #22223a; }
-  .code-toggle-icon { display: inline-block; transition: transform 0.2s; font-size: 0.7em; }
-  .code-example.open .code-toggle-icon { transform: rotate(90deg); }
-  .code-content { display: none; padding: 14px 16px; background: #0a0a14; }
-  .code-example.open .code-content { display: block; }
-  .code-content pre { margin: 0; overflow-x: auto; white-space: pre; }
-  .code-content code { color: #e0e0e0; font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.82em; line-height: 1.6; }
-  .code-content .code-note { color: #888; font-size: 0.82em; margin-top: 8px; font-style: italic; }
-  .code-content pre[class*="language-"], .code-content code[class*="language-"] { background: #0a0a14; font-size: 0.82em; line-height: 1.6; margin: 0; padding: 0; text-shadow: none; }
-  pre[class*="language-"]::selection, code[class*="language-"]::selection { background: #333; }
-  /* Mobile responsive */
-  canvas { max-width: 100%; height: auto; }
-  @media (max-width: 768px) {
-    body { padding: 14px 10px; }
-    .container { padding: 0; }
-    .section { padding: 20px 14px; }
-    .section h2 { font-size: 1.3em; line-height: 1.35; flex-wrap: wrap; }
-    .section-content { gap: 18px; }
-    .section-content > * { min-width: 0; }
-    .viz-area, .control-panel { width: 100%; min-width: 0; }
-    .metric-item { gap: 12px; align-items: flex-start; }
-    .metric-value { text-align: right; overflow-wrap: anywhere; }
-    #quizToggle { top: 12px; right: 12px; padding: 10px 14px; font-size: 0.85em; max-width: calc(100vw - 24px); }
-    h2 { font-size: 1.2em; }
-    .subtitle { font-size: 0.85em; }
-    .controls { gap: 8px; }
-    .control-group { min-width: 120px; flex: 1 1 auto; }
-    .tab-bar { flex-wrap: wrap; gap: 4px; }
-    .tab-bar .btn { font-size: 0.75em; padding: 6px 10px; }
-    .insight-box { padding: 14px; font-size: 0.9em; }
-    .insight-box .key-point .label { min-width: 0; }
-    .comparison { grid-template-columns: 1fr !important; }
-    .formula, .katex-display { font-size: 0.85em; overflow-x: auto; overflow-y: hidden; }
-    .code-content pre { font-size: 0.78em; }
-    .interview-tip { font-size: 0.85em; padding: 10px; }
-    .metric-box { font-size: 0.82em; }
-  }
+    <link rel="stylesheet" href="theme.css">
+<style>
+  .header h1 { background: linear-gradient(90deg, var(--gold), var(--blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .viz-section h2 { color: var(--gold); }
+  .control-group .value { color: var(--gold); }
+  .control-group input[type="range"] { accent-color: var(--gold); }
+  .btn.active { border-color: var(--gold); color: var(--gold); }
+  .btn:hover { border-color: var(--gold); color: var(--gold); }
+  .insight-box { border-left-color: rgba(var(--gold-rgb), 0.3); }
+  .insight-box strong { color: var(--gold); }
+  .insight-box .formula .highlight { color: var(--gold); }
+  .insight-box .key-point .label { color: var(--gold); }
+  .card::before { background: var(--gold); }
+  #quizToggle { background: var(--bg2); color: var(--fg-dim); border: 1px solid var(--border-hover); }
+  #quizToggle:hover { border-color: var(--gold); color: var(--gold); }
+  #quizSection { border-top-color: rgba(var(--gold-rgb), 0.2); }
 </style>
 <link rel="stylesheet" href="static/learning-tools.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
@@ -468,14 +79,14 @@
                         </div>
                     </div>
                     <div class="comparison-box">
-                        <strong style="color: #ffd93d;">Classifier Comparisons:</strong>
+                        <strong style="color: #e0c992;">Classifier Comparisons:</strong>
                         <div class="classifier-type">
                             <div class="classifier-dot" style="background-color: #00ff88;"></div>
                             <span class="classifier-name">Your Model</span>
                             <span class="classifier-desc">AUC = 0.92</span>
                         </div>
                         <div class="classifier-type">
-                            <div class="classifier-dot" style="background-color: #ffd93d;"></div>
+                            <div class="classifier-dot" style="background-color: #e0c992;"></div>
                             <span class="classifier-name">Random</span>
                             <span class="classifier-desc">AUC = 0.50</span>
                         </div>
@@ -508,17 +119,17 @@
 
                     <div class="interview-tip">Why report AUC instead of picking one threshold? Different applications have different false positive vs. false negative costs. AUC lets stakeholders choose their operating point.</div>
 
-                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set threshold to 0.1—TPR soars near 1.0, FPR near 1.0. Drag to 0.9—TPR drops to 0.1, FPR to 0.01. Watch the red dot trace the curve. At 0.5, is it above or below diagonal? Drag to find where AUC=0.75 line would intersect.</div>
+                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Set threshold to 0.1—TPR soars near 1.0, FPR near 1.0. Drag to 0.9—TPR drops to 0.1, FPR to 0.01. Watch the red dot trace the curve. At 0.5, is it above or below diagonal? Drag to find where AUC=0.75 line would intersect.</div>
 
                     <hr class="divider">
-                    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
                     <div class="comparison">
                         <div class="option">
-                            <div class="opt-title" style="color: #ffd93d;">ROC-AUC</div>
+                            <div class="opt-title" style="color: #e0c992;">ROC-AUC</div>
                             <div class="opt-desc">Balanced classes or when you care equally about positives and negatives. E.g., email spam vs ham (roughly balanced), medical screening where both FP and FN matter. Good for model comparison across thresholds.</div>
                         </div>
                         <div class="option">
-                            <div class="opt-title" style="color: #ff6b6b;">PR-AUC Instead</div>
+                            <div class="opt-title" style="color: #c96e8a;">PR-AUC Instead</div>
                             <div class="opt-desc">Imbalanced data (fraud 0.1%, rare disease 1%). ROC-AUC inflated by large TN count. PR-AUC focuses on minority class only. Always prefer PR-AUC when positive class is rare.</div>
                         </div>
                         <div class="option">
@@ -614,7 +225,7 @@
                         </div>
                     </div>
                     <div class="comparison-box">
-                        <strong style="color: #ffd93d;">F1-Optimal Point:</strong>
+                        <strong style="color: #e0c992;">F1-Optimal Point:</strong>
                         <p style="margin-top: 8px; color: #d0d0d0;">Threshold where F1 is maximized - often the best single point for imbalanced problems</p>
                     </div>
                 </div>
@@ -643,17 +254,17 @@
 
                     <div class="interview-tip">Can a model have high precision but low recall? Yes! Predict positive only on high-confidence examples. E.g., fraud detection at 95% precision but 5% recall (catches few frauds).</div>
 
-                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set confidence threshold to 0.1 and watch recall spike (catch all positives) but precision tank. Drag to 0.9 and precision rises but recall crashes. Find the 'sweet spot' at 0.5. Does this curve show class imbalance?</div>
+                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Set confidence threshold to 0.1 and watch recall spike (catch all positives) but precision tank. Drag to 0.9 and precision rises but recall crashes. Find the 'sweet spot' at 0.5. Does this curve show class imbalance?</div>
 
                     <hr class="divider">
-                    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
                     <div class="comparison">
                         <div class="option">
-                            <div class="opt-title" style="color: #ffd93d;">Optimize Precision</div>
+                            <div class="opt-title" style="color: #e0c992;">Optimize Precision</div>
                             <div class="opt-desc">When false positives are expensive. Spam filtering (users hate misclassified legit email), content moderation (wrongly removing posts), ad targeting (wasted ad spend on wrong users). Raise threshold to 0.8+.</div>
                         </div>
                         <div class="option">
-                            <div class="opt-title" style="color: #ff6b6b;">Optimize Recall</div>
+                            <div class="opt-title" style="color: #c96e8a;">Optimize Recall</div>
                             <div class="opt-desc">When false negatives are dangerous. Cancer screening (missing a tumor), fraud detection (letting fraud through), security alerts (missing an intrusion). Lower threshold to 0.2-0.3.</div>
                         </div>
                         <div class="option">
@@ -754,17 +365,17 @@
 
                     <div class="interview-tip">When do false positives cost more than false negatives? When alerting users with false positives is expensive/annoying (spam), or triggers costly human review.</div>
 
-                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Toggle threshold from 0.1 to 0.9 and watch TP+TN peak at different thresholds than FP+FN. Notice when Accuracy=95% but Recall=10%—model predicts too many negatives. Find the threshold matching your business cost (FP vs FN).</div>
+                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Toggle threshold from 0.1 to 0.9 and watch TP+TN peak at different thresholds than FP+FN. Notice when Accuracy=95% but Recall=10%—model predicts too many negatives. Find the threshold matching your business cost (FP vs FN).</div>
 
                     <hr class="divider">
-                    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
                     <div class="comparison">
                         <div class="option">
-                            <div class="opt-title" style="color: #ffd93d;">Accuracy</div>
+                            <div class="opt-title" style="color: #e0c992;">Accuracy</div>
                             <div class="opt-desc">ONLY for balanced classes (50/50 split). Image classification (ImageNet), sentiment analysis with balanced datasets. Never for imbalanced problems like fraud or disease detection.</div>
                         </div>
                         <div class="option">
-                            <div class="opt-title" style="color: #ff6b6b;">Macro F1</div>
+                            <div class="opt-title" style="color: #c96e8a;">Macro F1</div>
                             <div class="opt-desc">Multiclass with imbalanced classes where all classes matter equally. E.g., multi-label document classification, intent detection with rare intents. Treats each class equally regardless of support.</div>
                         </div>
                         <div class="option">
@@ -818,7 +429,7 @@
                 <div class="control-panel">
                     <div class="control-group">
                         <label>Model Type</label>
-                        <select id="calibrationModel" style="padding: 8px; background-color: #1a1a2e; color: #ffd93d; border: 1px solid #ffd93d; border-radius: 4px; cursor: pointer;">
+                        <select id="calibrationModel" style="padding: 8px; background-color: #111118; color: #e0c992; border: 1px solid #e0c992; border-radius: 4px; cursor: pointer;">
                             <option value="well">Well-Calibrated Model</option>
                             <option value="overconfident">Overconfident Model</option>
                             <option value="underconfident">Underconfident Model</option>
@@ -876,7 +487,7 @@
 
                     <div class="interview-tip">Why does my neural network output 99% confidence on wrong predictions? DNNs optimize for accuracy, not calibration. Use dropout, weight decay, label smoothing, or post-hoc calibration.</div>
 
-                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Compare the blue diagonal (perfect) to red model curve. If red is above = overconfident (says 70%, actually 50%). Below = underconfident. Drag temperature slider left (T=0.5) and watch red bend toward diagonal—calibration improves.</div>
+                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Compare the blue diagonal (perfect) to red model curve. If red is above = overconfident (says 70%, actually 50%). Below = underconfident. Drag temperature slider left (T=0.5) and watch red bend toward diagonal—calibration improves.</div>
 
                     <div class="key-point">
                         <span class="label">Post-hoc fixes:</span>
@@ -884,14 +495,14 @@
                     </div>
 
                     <hr class="divider">
-                    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
                     <div class="comparison">
                         <div class="option">
-                            <div class="opt-title" style="color: #ffd93d;">Temperature Scaling</div>
+                            <div class="opt-title" style="color: #e0c992;">Temperature Scaling</div>
                             <div class="opt-desc">Post-hoc fix for overconfident DNNs. Single parameter, fast. Use when: model already trained, need better probabilities for downstream decisions (credit scoring, insurance pricing). Fit T on held-out calibration set.</div>
                         </div>
                         <div class="option">
-                            <div class="opt-title" style="color: #ff6b6b;">Platt Scaling</div>
+                            <div class="opt-title" style="color: #c96e8a;">Platt Scaling</div>
                             <div class="opt-desc">Fit logistic regression on model logits. Best for SVMs or models with uncalibrated scores. Use when: converting raw scores to probabilities for the first time. Needs held-out data (not train).</div>
                         </div>
                         <div class="option">
@@ -936,7 +547,7 @@
             <p class="subtitle">Adjust the Ranking Position slider to see how early mistakes (wrong items at rank 1) devastate NDCG more than late mistakes (wrong items at rank 10). Toggle between Normalized Discounted Cumulative Gain (NDCG) and Mean Average Precision (MAP) to compare position-weighted (NDCG) vs simple average (MAP) ranking quality.</p>
             <div class="section-content">
                 <div>
-                    <label style="color: #ffd93d; font-weight: 600; margin-bottom: 10px; display: block;">Drag to reorder results (affects Discounted Cumulative Gain, Normalized Discounted Cumulative Gain, Mean Average Precision)</label>
+                    <label style="color: #e0c992; font-weight: 600; margin-bottom: 10px; display: block;">Drag to reorder results (affects Discounted Cumulative Gain, Normalized Discounted Cumulative Gain, Mean Average Precision)</label>
                     <div class="dnd-list" id="rankingList">
                         <div class="dnd-item" draggable="true">Document 1<span class="relevance-label rel-highly">Highly Relevant</span></div>
                         <div class="dnd-item" draggable="true">Document 2<span class="relevance-label rel-relevant">Relevant</span></div>
@@ -1015,14 +626,14 @@
                     </div>
 
                     <hr class="divider">
-                    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
                     <div class="comparison">
                         <div class="option">
-                            <div class="opt-title" style="color: #ffd93d;">NDCG</div>
+                            <div class="opt-title" style="color: #e0c992;">NDCG</div>
                             <div class="opt-desc">Graded relevance (0/1/2/3 levels). Search engines, recommendation systems, e-commerce product ranking. Position-weighted: top-1 error costs more than top-10. Use NDCG@5 for mobile, NDCG@10 for desktop.</div>
                         </div>
                         <div class="option">
-                            <div class="opt-title" style="color: #ff6b6b;">MAP</div>
+                            <div class="opt-title" style="color: #c96e8a;">MAP</div>
                             <div class="opt-desc">Binary relevance only (relevant/not). Document retrieval, image search, FAQ matching. No position discount -- treats position 1 and 10 equally. Simpler to interpret but less realistic for user behavior.</div>
                         </div>
                         <div class="option">
@@ -1035,7 +646,7 @@
 
                     <div class="interview-tip">Position bias trap: Users rarely scroll past position 5. Clicks NOT reliable relevance signals. Models learn to exploit this. Use inverse propensity weighting.</div>
 
-                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Move wrong item to position 1 and watch NDCG crash to ~0.5 (huge log penalty). Move same item to position 5 and NDCG rises to ~0.85 (smaller penalty). Compare to MAP—it penalizes position 1 and 5 equally. At position 10, which metric cares more, NDCG or MAP?</div>
+                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Move wrong item to position 1 and watch NDCG crash to ~0.5 (huge log penalty). Move same item to position 5 and NDCG rises to ~0.85 (smaller penalty). Compare to MAP—it penalizes position 1 and 5 equally. At position 10, which metric cares more, NDCG or MAP?</div>
 
                     <div class="key-point">
                         <span class="label">Production rule:</span>
@@ -1069,7 +680,8 @@
         </div>
     </div>
 
-    <script>
+    <script src="theme.js"></script>
+<script>
         // ============== DATA & UTILITIES ==============
         function sigmoid(x) {
             return 1 / (1 + Math.exp(-x));
@@ -1143,7 +755,7 @@
             }
 
             // Axes
-            rocCtx.strokeStyle = '#e0e0e0';
+            rocCtx.strokeStyle = '#e8e4de';
             rocCtx.lineWidth = 2;
             rocCtx.beginPath();
             rocCtx.moveTo(padding, rocCanvas.height - padding);
@@ -1166,7 +778,7 @@
             rocCtx.restore();
 
             // Random classifier line
-            rocCtx.strokeStyle = '#ffd93d';
+            rocCtx.strokeStyle = '#e0c992';
             rocCtx.lineWidth = 2;
             rocCtx.beginPath();
             rocCtx.moveTo(padding, rocCanvas.height - padding);
@@ -1209,7 +821,7 @@
             const px = padding + point.fpr * w;
             const py = rocCanvas.height - padding - point.tpr * h;
 
-            rocCtx.fillStyle = '#ffd93d';
+            rocCtx.fillStyle = '#e0c992';
             rocCtx.beginPath();
             rocCtx.arc(px, py, 8, 0, 2 * Math.PI);
             rocCtx.fill();
@@ -1295,7 +907,7 @@
             }
 
             // Axes
-            prCtx.strokeStyle = '#e0e0e0';
+            prCtx.strokeStyle = '#e8e4de';
             prCtx.lineWidth = 2;
             prCtx.beginPath();
             prCtx.moveTo(padding, prCanvas.height - padding);
@@ -1320,7 +932,7 @@
 
             // Random baseline (horizontal at baseline precision)
             const baselinePrecision = 0.2;
-            prCtx.strokeStyle = '#ffd93d';
+            prCtx.strokeStyle = '#e0c992';
             prCtx.lineWidth = 2;
             prCtx.beginPath();
             prCtx.moveTo(padding, prCanvas.height - padding - baselinePrecision * h);
@@ -1355,7 +967,7 @@
             const px = padding + point.recall * w;
             const py = prCanvas.height - padding - point.precision * h;
 
-            prCtx.fillStyle = '#ffd93d';
+            prCtx.fillStyle = '#e0c992';
             prCtx.beginPath();
             prCtx.arc(px, py, 8, 0, 2 * Math.PI);
             prCtx.fill();
@@ -1402,7 +1014,7 @@
             const padding = 20;
 
             // Draw title
-            cmCtx.fillStyle = '#ffd93d';
+            cmCtx.fillStyle = '#e0c992';
             cmCtx.font = 'bold 17px sans-serif';
             cmCtx.textAlign = 'center';
             cmCtx.fillText('Confusion Matrix', cmCanvas.width / 2, 30);
@@ -1485,7 +1097,7 @@
             }
 
             // Axes
-            calCtx.strokeStyle = '#e0e0e0';
+            calCtx.strokeStyle = '#e8e4de';
             calCtx.lineWidth = 2;
             calCtx.beginPath();
             calCtx.moveTo(padding, calCanvas.height - padding);
@@ -1509,7 +1121,7 @@
             calCtx.restore();
 
             // Perfect calibration line
-            calCtx.strokeStyle = '#ffd93d';
+            calCtx.strokeStyle = '#e0c992';
             calCtx.lineWidth = 2;
             calCtx.setLineDash([5, 5]);
             calCtx.beginPath();
@@ -1658,7 +1270,7 @@
 
 <div id="quizSection" style="display:none">
   <div class="quiz-container">
-    <h2 style="text-align:center; color:#ffd93d; margin-bottom:10px;">Metrics & Evaluation Quiz</h2>
+    <h2 style="text-align:center; color:#e0c992; margin-bottom:10px;">Metrics & Evaluation Quiz</h2>
     <div class="quiz-progress"><div class="quiz-progress-bar" id="quizProgressBar" style="width:0%"></div></div>
     <div class="quiz-score">Score: <span id="quizScore">0</span> / <span id="quizTotal">25</span></div>
     <div id="quizQuestions"></div>

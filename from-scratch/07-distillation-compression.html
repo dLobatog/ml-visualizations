@@ -5,132 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="../static/canvas-polish.js"></script>
 <title>Chapter 7: Knowledge Distillation & Model Compression from Scratch</title>
+<link rel="stylesheet" href="../theme.css">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #0a0a0f; color: #e0e0e0; line-height: 1.6; }
-  .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; text-align: center; border-bottom: 1px solid #2a2a4a; }
-  .header h1 { font-size: 2.2em; background: linear-gradient(90deg, #e056fd, #c44dff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
-  .header p { color: #888; font-size: 1.1em; }
-  .header a { color: #e056fd; text-decoration: none; font-size: 0.9em; }
-  .header a:hover { text-decoration: underline; }
-  .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
-
-  /* Minimap */
-  .minimap { position: sticky; top: 0; z-index: 100; background: #0a0a0fee; backdrop-filter: blur(10px); border-bottom: 1px solid #2a2a4a; padding: 10px 20px; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }
-  .mm-step { padding: 4px 12px; border-radius: 6px; font-size: 0.75em; font-weight: 600; cursor: pointer; transition: all 0.2s; background: #151530; color: #555; border: 1px solid #2a2a4a; white-space: nowrap; }
-  .mm-step:hover { border-color: #e056fd; color: #e056fd; }
-  .mm-step.active { background: rgba(224,86,253,0.2); color: #e056fd; border-color: rgba(224,86,253,0.5); }
-  .mm-step.done { background: rgba(224,86,253,0.1); color: #e056fd; border-color: rgba(224,86,253,0.3); }
-  .mm-arrow { color: #333; font-size: 0.8em; }
-
-  .viz-section { background: #12121f; border: 1px solid #2a2a4a; border-radius: 16px; padding: 32px; margin-bottom: 40px; }
-  .viz-section h2 { font-size: 1.5em; color: #e056fd; margin-bottom: 8px; }
-  .viz-section .subtitle { color: #888; margin-bottom: 24px; font-size: 0.95em; }
-  .viz-canvas { background: #0d0d1a; border-radius: 12px; position: relative; overflow: hidden; }
-  canvas { display: block; margin: 0 auto; }
-  .controls { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; align-items: center; }
-  .control-group { display: flex; flex-direction: column; gap: 4px; }
-  .control-group label { font-size: 0.85em; color: #aaa; }
-  .control-group input[type="range"] { width: 160px; accent-color: #e056fd; }
-  .control-group .value { font-size: 0.85em; color: #e056fd; font-family: monospace; }
-  .btn { padding: 8px 16px; border: 1px solid #e056fd; background: transparent; color: #e056fd; border-radius: 8px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
-  .btn:hover { background: #e056fd22; }
-  .btn.active { background: #e056fd33; }
-  .tab-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
-
-  .insight-box { background: linear-gradient(135deg, #1a1a3e 0%, #151530 100%); border-left: 4px solid #e056fd; padding: 20px 24px; margin-top: 20px; border-radius: 0 12px 12px 0; font-size: 0.92em; color: #ccc; line-height: 1.8; }
-  .insight-box strong { color: #e056fd; font-size: 1.05em; }
-  .insight-box .formula { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 12px 18px; margin: 12px 0; font-family: 'Courier New', monospace; color: #e8e8ff; font-size: 1.05em; text-align: center; letter-spacing: 0.5px; line-height: 1.9; }
-  .insight-box .key-point { display: flex; flex-wrap: wrap; gap: 4px 8px; margin: 8px 0; padding: 4px 0; align-items: baseline; }
-  .insight-box .key-point .label { color: #e056fd; font-weight: 600; min-width: 160px; flex-shrink: 0; }
-  .insight-box .key-point .desc { color: #ddd; }
-  .insight-box .interview-tip { background: rgba(100, 255, 100, 0.05); border: 1px solid rgba(100, 255, 100, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #b0ffb0; font-size: 0.93em; line-height: 1.6; }
-  .insight-box .interview-tip::before { content: '\1F4A1  Interview Tip: '; font-weight: 700; color: #7fff7f; }
-  .insight-box .mnemonic { background: rgba(255, 150, 255, 0.05); border: 1px solid rgba(255, 150, 255, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #ffb0ff; font-size: 0.93em; line-height: 1.6; }
-  .insight-box .mnemonic::before { content: '\1F9E0  Remember: '; font-weight: 700; color: #ff7fff; }
-  .insight-box .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
-  .insight-box .comparison .option { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 10px 14px; }
-  .insight-box .comparison .option .opt-title { color: #e056fd; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
-  .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
-  .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
-  .code-example { margin-top: 12px; border: 1px solid #2a2a4a; border-radius: 8px; overflow: hidden; }
-  .code-toggle { width: 100%; background: #1a1a2e; color: #e056fd; border: none; padding: 10px 16px; text-align: left; cursor: pointer; font-size: 0.9em; font-weight: 600; display: flex; align-items: center; gap: 8px; }
-  .code-toggle:hover { background: #22223a; }
-  .code-toggle-icon { display: inline-block; transition: transform 0.2s; font-size: 0.7em; }
-  .code-example.open .code-toggle-icon { transform: rotate(90deg); }
-  .code-content { display: none; padding: 14px 16px; background: #0a0a14; }
-  .code-example.open .code-content { display: block; }
-  .code-content pre { margin: 0; overflow-x: auto; white-space: pre; }
-  .code-content code { color: #e0e0e0; font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.82em; line-height: 1.6; }
-  .code-content .code-note { color: #888; font-size: 0.82em; margin-top: 8px; font-style: italic; }
-  .code-content pre[class*="language-"], .code-content code[class*="language-"] { background: #0a0a14; font-size: 0.82em; line-height: 1.6; margin: 0; padding: 0; text-shadow: none; }
-  pre[class*="language-"]::selection, code[class*="language-"]::selection { background: #333; }
-  .katex { color: #e8e8ff; font-size: 1.1em; }
-  .formula .katex { font-size: 1.2em; }
-
-  .narrative-note { background: rgba(255,217,61,0.05); border-left: 3px solid #ffd93d; padding: 14px 18px; margin: 16px 0; border-radius: 0 8px 8px 0; font-size: 0.9em; color: #ccb866; }
-  .narrative-note strong { color: #ffd93d; }
-
-  select { padding: 6px 12px; border: 1px solid #2a2a4a; background: #0d0d1a; color: #e0e0e0; border-radius: 6px; font-size: 0.9em; cursor: pointer; }
-  select:focus { outline: none; border-color: #e056fd; }
-
-#quizToggle{position:fixed;top:20px;right:20px;z-index:1000;padding:12px 20px;background:#e056fd;color:#0a0a0f;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:1em;box-shadow:0 4px 15px rgba(0,0,0,0.3);transition:transform 0.2s}
-#quizToggle:hover{transform:scale(1.05)}
-#quizSection{background:#0a0a0f;border-top:2px solid #e056fd;padding:40px 20px;margin-top:40px}
-.quiz-container{max-width:900px;margin:0 auto}
-.quiz-topic{margin-bottom:30px}
-.quiz-topic-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:10px;cursor:pointer;margin-bottom:12px;user-select:none}
-.quiz-topic-header h3{color:#e056fd;margin:0;font-size:1.15em}
-.quiz-topic-header:hover{background:#1f1f3a}
-.quiz-topic-score{color:#888;font-size:0.95em}
-.quiz-topic-questions{display:none}
-.quiz-topic-questions.open{display:block}
-.quiz-question{background:#12121f;border:1px solid #2a2a4a;border-radius:12px;padding:24px;margin-bottom:16px}
-.quiz-question h4{color:#e0e0e0;margin-bottom:16px;font-size:1.05em;line-height:1.5}
-.quiz-option{display:block;width:100%;padding:12px 16px;margin:8px 0;background:#0d0d1a;border:1px solid #2a2a4a;border-radius:8px;color:#e0e0e0;cursor:pointer;text-align:left;font-size:0.95em;transition:all 0.2s;font-family:inherit}
-.quiz-option:hover:not(:disabled){border-color:#e056fd;background:#1a1a3e}
-.quiz-option.correct{background:#1a3a2a !important;border-color:#2ecc71 !important;color:#2ecc71 !important}
-.quiz-option.wrong{background:#3a1a1a !important;border-color:#e74c3c !important;color:#e74c3c !important}
-.quiz-option.reveal{border-color:#2ecc71 !important;color:#2ecc71 !important}
-.quiz-option:disabled{cursor:default}
-.quiz-explanation{margin-top:12px;padding:14px 18px;border-radius:8px;font-size:0.93em;line-height:1.6;display:none}
-.quiz-explanation.show{display:block}
-.quiz-explanation.correct-exp{border-left:4px solid #2ecc71;background:rgba(46,204,113,0.08);color:#b0ffb0}
-.quiz-explanation.wrong-exp{border-left:4px solid #e74c3c;background:rgba(231,76,60,0.08);color:#ffb0b0}
-.quiz-score{text-align:center;font-size:1.5em;color:#e056fd;margin-bottom:30px}
-.quiz-actions{text-align:center;margin-top:30px;margin-bottom:20px}
-.quiz-actions button{padding:10px 24px;margin:0 8px;border-radius:8px;border:1px solid #e056fd;background:transparent;color:#e056fd;cursor:pointer;font-size:1em}
-.quiz-actions button:hover{background:rgba(224,86,253,0.1)}
-.quiz-progress{height:4px;background:#1a1a2e;border-radius:2px;margin-bottom:20px;overflow:hidden}
-.quiz-progress-bar{height:100%;background:#e056fd;border-radius:2px;transition:width 0.3s}
-
-.legend { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
-.legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.85em; color: #ccc; }
-.legend-dot { width: 12px; height: 12px; border-radius: 50%; }
-
-.break-toggle { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border: 1px solid #e74c3c; background: transparent; color: #e74c3c; border-radius: 8px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
-.break-toggle:hover { background: rgba(231,76,60,0.15); }
-.break-toggle.broken { background: rgba(231,76,60,0.25); border-color: #ff4444; color: #ff4444; }
-
-  /* Mobile responsive */
-  canvas { max-width: 100%; height: auto; }
-  @media (max-width: 768px) {
-    .container { padding: 16px 10px; }
-    .viz-section { padding: 16px 12px; }
-    h2 { font-size: 1.2em; }
-    .subtitle { font-size: 0.85em; }
-    .controls { gap: 8px; }
-    .control-group { min-width: 120px; flex: 1 1 auto; }
-    .tab-bar { flex-wrap: wrap; gap: 4px; }
-    .tab-bar .btn { font-size: 0.75em; padding: 6px 10px; }
-    .insight-box { padding: 14px; font-size: 0.9em; }
-    .comparison { grid-template-columns: 1fr !important; }
-    .formula { font-size: 0.85em; overflow-x: auto; }
-    .code-content pre { font-size: 0.78em; }
-    .interview-tip { font-size: 0.85em; padding: 10px; }
-    .metric-box { font-size: 0.82em; }
-  }
-
+  .header h1 { background: linear-gradient(90deg, var(--rose), var(--gold)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .viz-section h2 { color: var(--rose); }
+  .control-group .value { color: var(--rose); }
+  .control-group input[type="range"] { accent-color: var(--rose); }
+  .btn.active { border-color: var(--rose); color: var(--rose); }
+  .btn:hover { border-color: var(--rose); color: var(--rose); }
+  .insight-box { border-left-color: rgba(var(--rose-rgb), 0.3); }
+  .insight-box strong { color: var(--rose); }
+  .insight-box .formula .highlight { color: var(--rose); }
+  .insight-box .key-point .label { color: var(--rose); }
+  .card::before { background: var(--rose); }
+  #quizToggle { background: var(--bg2); color: var(--fg-dim); border: 1px solid var(--border-hover); }
+  #quizToggle:hover { border-color: var(--rose); color: var(--rose); }
+  #quizSection { border-top-color: rgba(var(--rose-rgb), 0.2); }
 </style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -190,7 +80,7 @@
   </div>
   <div class="legend">
     <div class="legend-item"><span class="legend-dot" style="background:#666;"></span> Hard label (one-hot)</div>
-    <div class="legend-item"><span class="legend-dot" style="background:#e056fd;"></span> Teacher soft prediction</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#c96e8a;"></span> Teacher soft prediction</div>
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Hard labels say "this is a cat, period." Soft targets say "it's a cat, but it looks a bit like a tiger and a dog." Those inter-class relationships are the dark knowledge.
@@ -230,8 +120,8 @@ print('Soft:', soft_targets.round(decimals=3))
   </div>
 </div>
   </div>
-  <div class="insight-box" style="border-left-color: #ff6b6b;">
-    <strong style="color: #ff6b6b;">&#9888;&#65039; Common Mistakes</strong>
+  <div class="insight-box" style="border-left-color: #c96e8a;">
+    <strong style="color: #c96e8a;">&#9888;&#65039; Common Mistakes</strong>
     <ul style="margin-top: 8px; padding-left: 18px; line-height: 2;">
       <li><strong>Mistake:</strong> Setting alpha=1.0 (only hard labels, no distillation signal). <strong>Fix:</strong> Use alpha=0.1-0.5 to give substantial weight to the teacher's soft targets.</li>
       <li><strong>Mistake:</strong> Distilling from a teacher that is too large relative to the student (e.g., 1000x parameter gap). <strong>Fix:</strong> Use an intermediate-sized teacher or progressive distillation through a chain of models.</li>
@@ -262,7 +152,7 @@ print('Soft:', soft_targets.round(decimals=3))
   <div class="legend">
     <div class="legend-item"><span class="legend-dot" style="background:#4a9eff;"></span> P (teacher)</div>
     <div class="legend-item"><span class="legend-dot" style="background:#ff4a6a;"></span> Q (student)</div>
-    <div class="legend-item"><span class="legend-dot" style="background:#ffd93d;"></span> Per-term contribution</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#e0c992;"></span> Per-term contribution</div>
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> KL divergence measures the information lost when Q approximates P. It heavily penalizes Q for assigning low probability where P assigns high probability.
@@ -329,8 +219,8 @@ print(f'KL divergence: {kl.item():.4f}')</code></pre>
   </div>
   <div class="legend">
     <div class="legend-item"><span class="legend-dot" style="background:#555;"></span> Raw logits</div>
-    <div class="legend-item"><span class="legend-dot" style="background:#e056fd;"></span> softmax(logits / T)</div>
-    <div class="legend-item"><span class="legend-dot" style="background:#4ecdc4;"></span> Gradient magnitude per class</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#c96e8a;"></span> softmax(logits / T)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#6ea5c9;"></span> Gradient magnitude per class</div>
   </div>
   <div class="narrative-note">
     <strong>Callback to Ch 4:</strong> Temperature also appeared in the attention mechanism (Viz 4.4). Same principle -- it controls how "peaked" or "spread" the probability distribution is. In attention, low T means sharply focusing on one token; here, low T means one class dominates.
@@ -375,8 +265,8 @@ loss = distill_loss(student_out, teacher_out, T=4.0)</code></pre>
   <div class="narrative-note">
     &#128206; <strong>Temperature in practice:</strong> The same T value must be used for both teacher and student during training. At inference time, the student uses T=1 (normal softmax). Think of high-T training as "the teacher whispers its uncertainties to the student."
   </div>
-  <div class="insight-box" style="border-left-color: #ff6b6b;">
-    <strong style="color: #ff6b6b;">&#9888;&#65039; Common Mistakes</strong>
+  <div class="insight-box" style="border-left-color: #c96e8a;">
+    <strong style="color: #c96e8a;">&#9888;&#65039; Common Mistakes</strong>
     <ul style="margin-top: 8px; padding-left: 18px; line-height: 2;">
       <li><strong>Mistake:</strong> Using different temperatures for teacher and student (distributions are not comparable). <strong>Fix:</strong> Always use the same T for both teacher softmax and student softmax during training.</li>
       <li><strong>Mistake:</strong> Forgetting the T&sup2; scaling factor in KL loss (gradients are T&sup2; smaller with high temperature). <strong>Fix:</strong> Always multiply the KL term by T*T.</li>
@@ -415,9 +305,9 @@ loss = distill_loss(student_out, teacher_out, T=4.0)</code></pre>
   </div>
   <div class="legend">
     <div class="legend-item"><span class="legend-dot" style="background:#4a9eff;"></span> Teacher output</div>
-    <div class="legend-item"><span class="legend-dot" style="background:#e056fd;"></span> Student output (distilled)</div>
-    <div class="legend-item"><span class="legend-dot" style="background:#ff6b6b;"></span> CE loss (hard)</div>
-    <div class="legend-item"><span class="legend-dot" style="background:#4ecdc4;"></span> KL loss (soft)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#c96e8a;"></span> Student output (distilled)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#c96e8a;"></span> CE loss (hard)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#6ea5c9;"></span> KL loss (soft)</div>
   </div>
   <div class="narrative-note">
     <strong>Callback to Ch 6:</strong> The teacher could be the full transformer you built in Chapter 6. Now you are compressing it into something that fits on a phone.
@@ -436,11 +326,11 @@ loss = distill_loss(student_out, teacher_out, T=4.0)</code></pre>
     <hr class="divider">
     <div class="comparison">
       <div class="option">
-        <div class="opt-title" style="color: #ff6b6b;">Student from Scratch</div>
+        <div class="opt-title" style="color: #c96e8a;">Student from Scratch</div>
         <div class="opt-desc">Trained on hard labels only. Accuracy: 85%. Misses inter-class relationships.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #4ecdc4;">Distilled Student</div>
+        <div class="opt-title" style="color: #6ea5c9;">Distilled Student</div>
         <div class="opt-desc">Trained with teacher guidance. Accuracy: 94%. Learns dark knowledge about class similarities.</div>
       </div>
     </div>
@@ -499,8 +389,8 @@ for x, y in dataloader:
   </div>
   <div class="legend">
     <div class="legend-item"><span class="legend-dot" style="background:#4a9eff;"></span> Original FP32 weights</div>
-    <div class="legend-item"><span class="legend-dot" style="background:#e056fd;"></span> Quantized weights</div>
-    <div class="legend-item"><span class="legend-dot" style="background:#ff6b6b;"></span> Reconstruction error</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#c96e8a;"></span> Quantized weights</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#c96e8a;"></span> Reconstruction error</div>
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Quantization maps continuous float values to a discrete set of integers. Fewer bits means fewer possible values, creating a "staircase" approximation.
@@ -548,8 +438,8 @@ for m, name in [(model,'FP32'), (quantized_model,'INT8')]:
   </div>
 </div>
   </div>
-  <div class="insight-box" style="border-left-color: #ff6b6b;">
-    <strong style="color: #ff6b6b;">&#9888;&#65039; Common Mistakes</strong>
+  <div class="insight-box" style="border-left-color: #c96e8a;">
+    <strong style="color: #c96e8a;">&#9888;&#65039; Common Mistakes</strong>
     <ul style="margin-top: 8px; padding-left: 18px; line-height: 2;">
       <li><strong>Mistake:</strong> Quantizing without calibration data (range clipping destroys outlier weights). <strong>Fix:</strong> Use a representative calibration set to determine the weight range before quantization, or use quantization-aware training.</li>
     </ul>
@@ -586,9 +476,9 @@ for m, name in [(model,'FP32'), (quantized_model,'INT8')]:
     <canvas id="pruneCanvas" width="900" height="460"></canvas>
   </div>
   <div class="legend">
-    <div class="legend-item"><span class="legend-dot" style="background:#4ecdc4;"></span> Active weights</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#6ea5c9;"></span> Active weights</div>
     <div class="legend-item"><span class="legend-dot" style="background:#ff4a4a44;"></span> Pruned weights</div>
-    <div class="legend-item"><span class="legend-dot" style="background:#ffd93d;"></span> Pruning threshold</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#e0c992;"></span> Pruning threshold</div>
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Neural networks are heavily over-parameterized. You can remove 90% of weights with minimal accuracy loss -- the network was using a small fraction of its capacity.
@@ -606,14 +496,14 @@ for m, name in [(model,'FP32'), (quantized_model,'INT8')]:
       <span class="desc">Noticeable accuracy drop (~5-10%). But the model is 100x sparser.</span>
     </div>
     <hr class="divider">
-    <strong style="color: #ffd93d; font-size: 1.05em;">Lottery Ticket Hypothesis</strong>
+    <strong style="color: #e0c992; font-size: 1.05em;">Lottery Ticket Hypothesis</strong>
     <div class="comparison" style="margin-top: 10px;">
       <div class="option">
-        <div class="opt-title" style="color: #e056fd;">The Hypothesis</div>
+        <div class="opt-title" style="color: #c96e8a;">The Hypothesis</div>
         <div class="opt-desc">A randomly initialized dense network contains a sparse subnetwork (the "winning ticket") that, when trained in isolation from its original initialization, matches the full network's performance.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #4ecdc4;">Implication</div>
+        <div class="opt-title" style="color: #6ea5c9;">Implication</div>
         <div class="opt-desc">We don't need large networks for their capacity -- we need them to find the right sparse structure. The winning ticket was hiding inside the full network all along.</div>
       </div>
     </div>
@@ -640,8 +530,8 @@ prune.remove(linear, 'weight')</code></pre>
   </div>
 </div>
   </div>
-  <div class="insight-box" style="border-left-color: #ff6b6b;">
-    <strong style="color: #ff6b6b;">&#9888;&#65039; Common Mistakes</strong>
+  <div class="insight-box" style="border-left-color: #c96e8a;">
+    <strong style="color: #c96e8a;">&#9888;&#65039; Common Mistakes</strong>
     <ul style="margin-top: 8px; padding-left: 18px; line-height: 2;">
       <li><strong>Mistake:</strong> Pruning weights and expecting automatic speedup (sparse matrices are not faster on standard hardware). <strong>Fix:</strong> Use structured pruning (remove entire filters/heads) or deploy on hardware that supports sparse operations.</li>
       <li><strong>Mistake:</strong> Not fine-tuning after pruning. <strong>Fix:</strong> Always retrain the pruned model for a few epochs &mdash; accuracy recovers significantly.</li>
@@ -673,10 +563,10 @@ prune.remove(linear, 'weight')</code></pre>
     <canvas id="toolkitCanvas" width="900" height="480"></canvas>
   </div>
   <div class="legend">
-    <div class="legend-item"><span class="legend-dot" style="background:#e056fd;"></span> Distillation</div>
-    <div class="legend-item"><span class="legend-dot" style="background:#4ecdc4;"></span> Pruning</div>
-    <div class="legend-item"><span class="legend-dot" style="background:#ffd93d;"></span> Quantization</div>
-    <div class="legend-item"><span class="legend-dot" style="background:#ff6b6b;"></span> Pareto frontier</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#c96e8a;"></span> Distillation</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#6ea5c9;"></span> Pruning</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#e0c992;"></span> Quantization</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#c96e8a;"></span> Pareto frontier</div>
   </div>
   <div class="narrative-note">
     <strong>Chapter 7 Payoff:</strong> You now understand the full lifecycle: build a large, powerful model (Ch 6), then compress it for deployment (Ch 7). This is exactly how production LLMs are shipped -- a massive teacher model trains a family of smaller, faster student models. Distillation + pruning + quantization: from a data center GPU to your phone.
@@ -745,8 +635,8 @@ compressed = torch.quantization.quantize_dynamic(
   </div>
   <div class="legend">
     <div class="legend-item"><span class="legend-dot" style="background:#4a9eff;"></span> Original weight update &Delta;W</div>
-    <div class="legend-item"><span class="legend-dot" style="background:#e056fd;"></span> LoRA reconstruction A &times; B</div>
-    <div class="legend-item"><span class="legend-dot" style="background:#ff6b6b;"></span> Reconstruction error</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#c96e8a;"></span> LoRA reconstruction A &times; B</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#c96e8a;"></span> Reconstruction error</div>
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> LoRA exploits a key finding: fine-tuning weight updates have low intrinsic rank. A 12288&times;12288 attention weight matrix might only need rank 8-64 updates for adaptation. This means 99.9% parameter reduction with minimal quality loss.
@@ -764,8 +654,8 @@ compressed = torch.quantization.quantize_dynamic(
     <div class="mnemonic">LoRA = "freeze the base, train the delta." The delta is low-rank because fine-tuning only needs to nudge a few directions in weight space, not rewrite the entire matrix.</div>
     <div class="interview-tip">💡 Real-world: Fine-tuning GPT-3 (175B params) costs ~$500k in GPU time. LoRA fine-tunes it for ~$500 by only training 0.1% of parameters. This democratized fine-tuning — any startup can now customize a foundation model.</div>
   </div>
-  <div class="insight-box" style="border-left-color: #ff6b6b;">
-    <strong style="color: #ff6b6b;">&#9888;&#65039; Common Mistakes</strong>
+  <div class="insight-box" style="border-left-color: #c96e8a;">
+    <strong style="color: #c96e8a;">&#9888;&#65039; Common Mistakes</strong>
     <ul style="margin-top: 8px; padding-left: 18px; line-height: 2;">
       <li><strong>Mistake:</strong> Applying LoRA only to attention Q/V projections. <strong>Fix:</strong> Recent work shows applying to all linear layers (including MLP) works better.</li>
       <li><strong>Mistake:</strong> Using too high a rank "just to be safe". <strong>Fix:</strong> Start with r=8-16, increase only if quality drops. Higher rank wastes memory and can overfit.</li>
@@ -827,24 +717,24 @@ peft_model.print_trainable_parameters()
     <canvas id="peftCanvas" width="900" height="480"></canvas>
   </div>
   <div class="legend">
-    <div class="legend-item"><span class="legend-dot" style="background:#ff6b6b;"></span> Full Fine-Tuning</div>
-    <div class="legend-item"><span class="legend-dot" style="background:#e056fd;"></span> LoRA (r=16)</div>
-    <div class="legend-item"><span class="legend-dot" style="background:#4ecdc4;"></span> QLoRA (4-bit + LoRA)</div>
-    <div class="legend-item"><span class="legend-dot" style="background:#ffd93d;"></span> Prefix Tuning</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#c96e8a;"></span> Full Fine-Tuning</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#c96e8a;"></span> LoRA (r=16)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#6ea5c9;"></span> QLoRA (4-bit + LoRA)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#e0c992;"></span> Prefix Tuning</div>
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> All PEFT methods share one goal: freeze most pretrained weights and train only a tiny fraction. They differ in <em>what</em> they train.
     <div class="comparison">
       <div class="option">
-        <div class="opt-title" style="color: #e056fd;">LoRA</div>
+        <div class="opt-title" style="color: #c96e8a;">LoRA</div>
         <div class="opt-desc">Trains low-rank matrices A, B added to existing weight matrices. ~0.1-1% of params. No inference overhead (merge AB into W).</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #4ecdc4;">QLoRA</div>
+        <div class="opt-title" style="color: #6ea5c9;">QLoRA</div>
         <div class="opt-desc">LoRA + 4-bit quantized base model. Same trainable params as LoRA but 4x less memory for frozen weights. Enables 65B fine-tuning on a single 48GB GPU.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #ffd93d;">Prefix Tuning</div>
+        <div class="opt-title" style="color: #e0c992;">Prefix Tuning</div>
         <div class="opt-desc">Prepends trainable "virtual tokens" to the input of each layer. Very few params (~0.01%) but can underperform on complex tasks.</div>
       </div>
       <div class="option">
@@ -870,7 +760,7 @@ peft_model.print_trainable_parameters()
 <!-- ============================================================ -->
 <div id="quizSection" style="display:none">
 <div class="quiz-container">
-  <h2 style="text-align:center;color:#e056fd;margin-bottom:10px;font-size:1.8em;">Distillation & Compression Quiz</h2>
+  <h2 style="text-align:center;color:#c96e8a;margin-bottom:10px;font-size:1.8em;">Distillation & Compression Quiz</h2>
   <p style="text-align:center;color:#888;margin-bottom:20px;">5 questions per visualization &bull; 45 questions total &bull; Click answers to reveal explanations</p>
   <div class="quiz-progress"><div class="quiz-progress-bar" id="quizProgressBar" style="width:0%"></div></div>
   <div class="quiz-score">Score: <span id="quizScore">0</span> / <span id="quizTotal">45</span></div>
@@ -882,18 +772,19 @@ peft_model.print_trainable_parameters()
 </div>
 </div>
 
-<div style="text-align:center; padding:40px; color:#555; font-size:0.85em; border-top:1px solid #1a1a2e;">
-  Chapter 7: Knowledge Distillation & Model Compression &bull; <a href="../index.html" style="color:#e056fd; text-decoration:none;">From Scratch Series</a>
+<div style="text-align:center; padding:40px; color:#555; font-size:0.85em; border-top:1px solid #111118;">
+  Chapter 7: Knowledge Distillation & Model Compression &bull; <a href="../index.html" style="color:#c96e8a; text-decoration:none;">From Scratch Series</a>
 </div>
 
+<script src="../theme.js"></script>
 <script>
 // ============================================================
 // UTILITY FUNCTIONS
 // ============================================================
-const ACCENT = '#e056fd';
+const ACCENT = '#c96e8a';
 const ACCENT2 = '#c44dff';
-const BG = '#0d0d1a';
-const GRID = '#1a1a2e';
+const BG = '#0d0d14';
+const GRID = '#111118';
 
 function softmax(logits, T) {
   T = T || 1.0;
@@ -956,7 +847,7 @@ function getCanvasCtx(id) {
 
 function drawText(ctx, text, x, y, color, size, align, weight) {
   ctx.font = (weight || '600') + ' ' + (size || 12) + 'px Inter, -apple-system, system-ui, sans-serif';
-  ctx.fillStyle = color || '#e0e0e0';
+  ctx.fillStyle = color || '#e8e4de';
   ctx.textAlign = align || 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(text, x, y);
@@ -1055,7 +946,7 @@ function drawDarkKnowledge() {
   const chartH = h - margin.top - margin.bottom;
 
   // Title
-  drawText(ctx, ex.title, w / 2, 25, '#e0e0e0', 18, 'center', '700');
+  drawText(ctx, ex.title, w / 2, 25, '#e8e4de', 18, 'center', '700');
 
   // Left chart: Hard Labels
   const lx = margin.left;
@@ -1111,7 +1002,7 @@ function drawDarkKnowledge() {
   ctx.stroke();
 
   // Divider
-  ctx.strokeStyle = '#2a2a4a';
+  ctx.strokeStyle = '#2a2a3a';
   ctx.setLineDash([4, 4]);
   ctx.beginPath();
   ctx.moveTo(w / 2, margin.top - 20);
@@ -1221,18 +1112,18 @@ function drawKL() {
   const terms = klTerms(klP, klQ);
   const maxTerm = Math.max(0.01, ...terms.map(Math.abs));
 
-  drawText(ctx, 'Per-term KL contribution: P(x) * log(P(x)/Q(x))', w / 2, termY - 10, '#ffd93d', 12, 'center', '600');
+  drawText(ctx, 'Per-term KL contribution: P(x) * log(P(x)/Q(x))', w / 2, termY - 10, '#e0c992', 12, 'center', '600');
 
   for (let i = 0; i < n; i++) {
     const gx = margin.left + i * groupW;
     const tH = (Math.abs(terms[i]) / maxTerm) * termH * 0.8;
     const positive = terms[i] >= 0;
-    ctx.fillStyle = positive ? 'rgba(255,217,61,0.6)' : 'rgba(255,100,100,0.6)';
+    ctx.fillStyle = positive ? 'rgba(224, 201, 146,0.6)' : 'rgba(201, 110, 138,0.6)';
     const bx = gx + groupW * 0.25;
     const bw = groupW * 0.5;
     drawRoundedRect(ctx, bx, termY + termH - tH, bw, tH, 3);
     ctx.fill();
-    drawText(ctx, terms[i].toFixed(3), bx + bw / 2, termY + termH - tH - 12, '#ffd93d', 10, 'center', '600');
+    drawText(ctx, terms[i].toFixed(3), bx + bw / 2, termY + termH - tH - 12, '#e0c992', 10, 'center', '600');
     drawText(ctx, klLabels[i], bx + bw / 2, termY + termH + 14, '#888', 11, 'center', '400');
   }
 
@@ -1399,7 +1290,7 @@ function drawTemperature(T) {
     ctx.fillStyle = 'rgba(78,205,196,0.5)';
     drawRoundedRect(ctx, rx, y + barH * 0.55 + 2, gw, barH * 0.35, 2);
     ctx.fill();
-    drawText(ctx, 'grad: ' + grads[i].toFixed(4), rx + gw + 8, y + barH * 0.72, '#4ecdc4', 9, 'left', '400');
+    drawText(ctx, 'grad: ' + grads[i].toFixed(4), rx + gw + 8, y + barH * 0.72, '#6ea5c9', 9, 'left', '400');
 
     drawText(ctx, tempClasses[i], rx + halfW + 5, y + barH / 2, '#888', 10, 'left', '400');
   }
@@ -1568,7 +1459,7 @@ function drawTeacherStudent() {
     drawText(ctx, 'Layer ' + (l + 1) + ' (d=64)', sBoxX + sBoxW / 2, ly + 8, ACCENT, 8, 'center', '400');
   }
   drawText(ctx, '200K params', sBoxX + sBoxW / 2, sBoxY + sBoxH - 12, ACCENT, 10, 'center', '700');
-  drawText(ctx, '10x smaller', (tBoxX + tBoxW + sBoxX) / 2 + 10, sBoxY + sBoxH + 14, '#ffd93d', 10, 'center', '700');
+  drawText(ctx, '10x smaller', (tBoxX + tBoxW + sBoxX) / 2 + 10, sBoxY + sBoxH + 14, '#e0c992', 10, 'center', '700');
 
   // --- Center: Distribution comparison ---
   const cx = colW + 10;
@@ -1616,7 +1507,7 @@ function drawTeacherStudent() {
 
   // Loss formula
   const alpha = tsAlpha;
-  drawText(ctx, '\u03B1=' + alpha.toFixed(2) + '  T=' + T.toFixed(1), rx + rw / 2, margin.top + 8, '#ffd93d', 10, 'center', '600');
+  drawText(ctx, '\u03B1=' + alpha.toFixed(2) + '  T=' + T.toFixed(1), rx + rw / 2, margin.top + 8, '#e0c992', 10, 'center', '600');
 
   // Compute current losses
   const teacherSoftCurr = softmax(tsTeacherLogits, T);
@@ -1633,19 +1524,19 @@ function drawTeacherStudent() {
   const lossBarW = rw * 0.8;
   const maxLoss = Math.max(3, ceLoss, T * T * klLoss);
 
-  drawText(ctx, 'CE (hard):', rx + 5, lossY + 12, '#ff6b6b', 10, 'left', '600');
+  drawText(ctx, 'CE (hard):', rx + 5, lossY + 12, '#c96e8a', 10, 'left', '600');
   const ceW = Math.min(lossBarW, (ceLoss / maxLoss) * lossBarW);
-  ctx.fillStyle = 'rgba(255,107,107,0.5)';
+  ctx.fillStyle = 'rgba(201, 110, 138,0.5)';
   drawRoundedRect(ctx, rx + 70, lossY + 3, ceW, 18, 4);
   ctx.fill();
-  drawText(ctx, ceLoss.toFixed(3), rx + 70 + ceW + 5, lossY + 12, '#ff6b6b', 10, 'left', '600');
+  drawText(ctx, ceLoss.toFixed(3), rx + 70 + ceW + 5, lossY + 12, '#c96e8a', 10, 'left', '600');
 
-  drawText(ctx, 'T\u00B2*KL (soft):', rx + 5, lossY + 38, '#4ecdc4', 10, 'left', '600');
+  drawText(ctx, 'T\u00B2*KL (soft):', rx + 5, lossY + 38, '#6ea5c9', 10, 'left', '600');
   const klW = Math.min(lossBarW, (T * T * klLoss / maxLoss) * lossBarW);
   ctx.fillStyle = 'rgba(78,205,196,0.5)';
   drawRoundedRect(ctx, rx + 70, lossY + 29, klW, 18, 4);
   ctx.fill();
-  drawText(ctx, (T * T * klLoss).toFixed(3), rx + 70 + klW + 5, lossY + 38, '#4ecdc4', 10, 'left', '600');
+  drawText(ctx, (T * T * klLoss).toFixed(3), rx + 70 + klW + 5, lossY + 38, '#6ea5c9', 10, 'left', '600');
 
   // Epoch counter
   drawText(ctx, 'Epoch: ' + tsEpoch, rx + rw / 2, lossY + 65, '#aaa', 12, 'center', '700');
@@ -1657,7 +1548,7 @@ function drawTeacherStudent() {
     const plotW = rw;
 
     // Axes
-    ctx.strokeStyle = '#2a2a4a';
+    ctx.strokeStyle = '#2a2a3a';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(rx, plotY);
@@ -1744,7 +1635,7 @@ function drawQuantization() {
   const maxW = Math.max(...quantWeights);
 
   // Title
-  drawText(ctx, info.label + '  |  Size: ' + (info.sizeRatio * 100).toFixed(0) + '%  |  Speed: ' + info.speed + '  |  Accuracy: ' + info.accuracy + '%', w / 2, 22, '#e0e0e0', 13, 'center', '600');
+  drawText(ctx, info.label + '  |  Size: ' + (info.sizeRatio * 100).toFixed(0) + '%  |  Speed: ' + info.speed + '  |  Accuracy: ' + info.accuracy + '%', w / 2, 22, '#e8e4de', 13, 'center', '600');
 
   // Top: Weight histogram (original vs quantized)
   drawText(ctx, 'Weight Distribution', w / 2, margin.top - 8, '#aaa', 12, 'center', '600');
@@ -1807,7 +1698,7 @@ function drawQuantization() {
 
   // Bottom: Reconstruction error scatter
   const errY = margin.top + chartH + 40;
-  drawText(ctx, 'Reconstruction Error (original - quantized)', w / 2, errY - 8, '#ff6b6b', 12, 'center', '600');
+  drawText(ctx, 'Reconstruction Error (original - quantized)', w / 2, errY - 8, '#c96e8a', 12, 'center', '600');
 
   let mse = 0;
   const errors = [];
@@ -1834,14 +1725,14 @@ function drawQuantization() {
     const px = margin.left + ((quantWeights[i] - minW) / (maxW - minW)) * chartW;
     const py = errY + errH / 2 - (errors[i] / maxErr) * errH * 0.45;
     const errMag = Math.abs(errors[i]) / maxErr;
-    ctx.fillStyle = 'rgba(255,107,107,' + (0.2 + errMag * 0.8) + ')';
+    ctx.fillStyle = 'rgba(201, 110, 138,' + (0.2 + errMag * 0.8) + ')';
     ctx.beginPath();
     ctx.arc(px, py, 2 + errMag * 2, 0, Math.PI * 2);
     ctx.fill();
   }
 
   // MSE text
-  drawText(ctx, 'MSE = ' + mse.toFixed(6), w / 2, h - margin.bottom + 20, '#ff6b6b', 14, 'center', '700');
+  drawText(ctx, 'MSE = ' + mse.toFixed(6), w / 2, h - margin.bottom + 20, '#c96e8a', 14, 'center', '700');
   drawText(ctx, 'Model size: ' + (info.sizeRatio * 800).toFixed(0) + 'MB (from 800MB)', w / 2, h - margin.bottom + 40, '#aaa', 11, 'center', '400');
 }
 
@@ -1956,8 +1847,8 @@ function drawPruning(threshold, pruneFrac) {
   // Draw nodes
   for (let l = 0; l < nLayers; l++) {
     nodePositions[l].forEach(function(pos) {
-      ctx.fillStyle = '#1a1a3e';
-      ctx.strokeStyle = '#4ecdc4';
+      ctx.fillStyle = '#13131f';
+      ctx.strokeStyle = '#6ea5c9';
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.arc(pos.x, pos.y, 10, 0, Math.PI * 2);
@@ -1971,7 +1862,7 @@ function drawPruning(threshold, pruneFrac) {
 
   // Stats
   const pctPruned = (prunedW / totalW_ * 100).toFixed(0);
-  drawText(ctx, pctPruned + '% weights pruned', netW / 2 + margin.left, margin.top - 10, '#ffd93d', 13, 'center', '700');
+  drawText(ctx, pctPruned + '% weights pruned', netW / 2 + margin.left, margin.top - 10, '#e0c992', 13, 'center', '700');
 
   // Accuracy estimation
   const p = prunedW / totalW_;
@@ -2013,7 +1904,7 @@ function drawPruning(threshold, pruneFrac) {
   // Threshold line
   if (threshold > 0) {
     const threshX = hx + (threshold / maxBinVal) * hw;
-    ctx.strokeStyle = '#ffd93d';
+    ctx.strokeStyle = '#e0c992';
     ctx.lineWidth = 2;
     ctx.setLineDash([4, 3]);
     ctx.beginPath();
@@ -2021,7 +1912,7 @@ function drawPruning(threshold, pruneFrac) {
     ctx.lineTo(threshX, hy + hh);
     ctx.stroke();
     ctx.setLineDash([]);
-    drawText(ctx, '\u03B8=' + threshold.toFixed(3), threshX, hy - 4, '#ffd93d', 10, 'center', '600');
+    drawText(ctx, '\u03B8=' + threshold.toFixed(3), threshX, hy - 4, '#e0c992', 10, 'center', '600');
   }
 
   // Axis
@@ -2074,11 +1965,11 @@ function drawToolkit() {
   const pipeH = 80;
   const stages = [];
   stages.push({ label: 'Original', params: '2B', size: 8000, acc: 99.5, color: '#888' });
-  if (st.distill) stages.push({ label: 'Distilled', params: '200M', size: 800, acc: 97.0, color: '#e056fd' });
-  if (st.prune) stages.push({ label: 'Pruned', params: st.distill ? '100M eff.' : '1B eff.', size: st.distill ? 400 : 4000, acc: st.distill ? 96.0 : 98.0, color: '#4ecdc4' });
+  if (st.distill) stages.push({ label: 'Distilled', params: '200M', size: 800, acc: 97.0, color: '#c96e8a' });
+  if (st.prune) stages.push({ label: 'Pruned', params: st.distill ? '100M eff.' : '1B eff.', size: st.distill ? 400 : 4000, acc: st.distill ? 96.0 : 98.0, color: '#6ea5c9' });
   if (st.quant) {
     const prevSize = stages[stages.length - 1].size;
-    stages.push({ label: 'Quantized (INT4)', params: stages[stages.length - 1].params, size: Math.round(prevSize / 8), acc: stages[stages.length - 1].acc - 1.5, color: '#ffd93d' });
+    stages.push({ label: 'Quantized (INT4)', params: stages[stages.length - 1].params, size: Math.round(prevSize / 8), acc: stages[stages.length - 1].acc - 1.5, color: '#e0c992' });
   }
 
   const stageW = (w - margin.left - margin.right) / stages.length;
@@ -2104,7 +1995,7 @@ function drawToolkit() {
     ctx.stroke();
 
     drawText(ctx, s.label, cx, pipeY - 5, s.color, 11, 'center', '700');
-    drawText(ctx, s.params, cx, pipeY + pipeH / 2, '#e0e0e0', 10, 'center', '600');
+    drawText(ctx, s.params, cx, pipeY + pipeH / 2, '#e8e4de', 10, 'center', '600');
     drawText(ctx, s.size >= 1000 ? (s.size / 1000).toFixed(1) + 'GB' : s.size + 'MB', cx, pipeY + pipeH + 8, '#aaa', 10, 'center', '400');
     drawText(ctx, s.acc.toFixed(1) + '% acc', cx, pipeY + pipeH + 22, '#aaa', 9, 'center', '400');
 
@@ -2129,7 +2020,7 @@ function drawToolkit() {
   const ratio = (firstSize / lastSize).toFixed(0);
   const accDrop = (stages[0].acc - stages[stages.length - 1].acc).toFixed(1);
   if (stages.length > 1) {
-    drawText(ctx, ratio + 'x compression  |  ' + accDrop + '% accuracy drop', w / 2, pipeY + pipeH + 45, '#ffd93d', 13, 'center', '700');
+    drawText(ctx, ratio + 'x compression  |  ' + accDrop + '% accuracy drop', w / 2, pipeY + pipeH + 45, '#e0c992', 13, 'center', '700');
   }
 
   // --- Bottom: Pareto frontier plot ---
@@ -2138,7 +2029,7 @@ function drawToolkit() {
   const plotH = h - plotY - margin.bottom;
 
   // Axes
-  ctx.strokeStyle = '#2a2a4a';
+  ctx.strokeStyle = '#2a2a3a';
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(margin.left, plotY);
@@ -2151,12 +2042,12 @@ function drawToolkit() {
   // Pareto data points: various configurations
   const paretoPoints = [
     { size: 8000, acc: 99.5, label: 'Original 2B', color: '#888' },
-    { size: 800, acc: 97.0, label: 'Distilled', color: '#e056fd', tech: 'distill' },
-    { size: 4000, acc: 98.0, label: 'Pruned only', color: '#4ecdc4', tech: 'prune' },
-    { size: 1000, acc: 96.8, label: 'Quantized only', color: '#ffd93d', tech: 'quant' },
-    { size: 400, acc: 96.0, label: 'Distill+Prune', color: '#e056fd', tech: 'distill+prune' },
-    { size: 100, acc: 95.5, label: 'Distill+Quant', color: '#ffd93d', tech: 'distill+quant' },
-    { size: 50, acc: 94.5, label: 'All Three', color: '#ff6b6b', tech: 'all' }
+    { size: 800, acc: 97.0, label: 'Distilled', color: '#c96e8a', tech: 'distill' },
+    { size: 4000, acc: 98.0, label: 'Pruned only', color: '#6ea5c9', tech: 'prune' },
+    { size: 1000, acc: 96.8, label: 'Quantized only', color: '#e0c992', tech: 'quant' },
+    { size: 400, acc: 96.0, label: 'Distill+Prune', color: '#c96e8a', tech: 'distill+prune' },
+    { size: 100, acc: 95.5, label: 'Distill+Quant', color: '#e0c992', tech: 'distill+quant' },
+    { size: 50, acc: 94.5, label: 'All Three', color: '#c96e8a', tech: 'all' }
   ];
 
   // Map to plot coordinates (log scale for size)
@@ -2169,7 +2060,7 @@ function drawToolkit() {
   function toPlotY(acc) { return plotY + plotH - ((acc - minAcc) / (maxAcc - minAcc)) * plotH; }
 
   // Grid lines
-  ctx.strokeStyle = '#1a1a2e';
+  ctx.strokeStyle = '#111118';
   ctx.lineWidth = 1;
   [85, 90, 95, 100].forEach(function(acc) {
     const py = toPlotY(acc);
@@ -2204,7 +2095,7 @@ function drawToolkit() {
   const frontierPoints = paretoPoints.filter(function(pt) { return !pt.tech || isActive(pt); });
   frontierPoints.sort(function(a, b) { return a.size - b.size; });
   if (frontierPoints.length > 1) {
-    ctx.strokeStyle = 'rgba(255,107,107,0.4)';
+    ctx.strokeStyle = 'rgba(201, 110, 138,0.4)';
     ctx.lineWidth = 2;
     ctx.setLineDash([4, 4]);
     ctx.beginPath();
@@ -2451,7 +2342,7 @@ function drawLoRA() {
         ctx.fillStyle = valToColor(mat[i][j], maxV);
         drawRoundedRect(ctx, x + 1, y + 1, cellSize - 2, cellSize - 2, 3);
         ctx.fill();
-        ctx.strokeStyle = '#2a2a4a';
+        ctx.strokeStyle = '#2a2a3a';
         ctx.lineWidth = 0.5;
         drawRoundedRect(ctx, x + 1, y + 1, cellSize - 2, cellSize - 2, 3);
         ctx.stroke();
@@ -2476,7 +2367,7 @@ function drawLoRA() {
     drawMatrix(loraA, d, r, centerX, topY, maxAbsA, 'A (' + d + 'x' + r + ')');
     // Multiplication sign
     const mulX = centerX + r * cellSize + matGap / 2;
-    drawText(ctx, '\u00d7', mulX, topY + d * cellSize / 2, '#e056fd', 20, 'center', '700');
+    drawText(ctx, '\u00d7', mulX, topY + d * cellSize / 2, '#c96e8a', 20, 'center', '700');
     // B matrix
     const bX = centerX + r * cellSize + matGap;
     const maxAbsB = Math.max(...loraB.flat().map(Math.abs), 0.01);
@@ -2485,12 +2376,12 @@ function drawLoRA() {
     // Broken state
     drawText(ctx, 'r = 0', centerX + 60, topY + d * cellSize / 2, '#ff4444', 24, 'center', '700');
     drawText(ctx, 'No adaptation possible!', centerX + 60, topY + d * cellSize / 2 + 30, '#ff4444', 13, 'center', '600');
-    drawText(ctx, 'Output = base model exactly', centerX + 60, topY + d * cellSize / 2 + 50, '#ff6b6b', 11, 'center', '400');
+    drawText(ctx, 'Output = base model exactly', centerX + 60, topY + d * cellSize / 2 + 50, '#c96e8a', 11, 'center', '400');
   }
 
   // RIGHT: Reconstruction A*B
   const reconX = w - d * cellSize - 30;
-  drawText(ctx, 'Reconstruction: A\u00d7B', reconX + d * cellSize / 2, topY - 30, '#e056fd', 14, 'center', '700');
+  drawText(ctx, 'Reconstruction: A\u00d7B', reconX + d * cellSize / 2, topY - 30, '#c96e8a', 14, 'center', '700');
   drawMatrix(recon, d, d, reconX, topY, maxAbsDW, '');
 
   // Bottom stats
@@ -2523,7 +2414,7 @@ function drawLoRA() {
   const loraBarW = r > 0 ? Math.max(barMaxW * (loraParams / fullParams), 8) : 0;
   drawText(ctx, 'LoRA (r=' + r + '):', barX + barMaxW / 2, barY + barH + 18, '#888', 11, 'center', '600');
   if (r > 0) {
-    ctx.fillStyle = '#e056fd33';
+    ctx.fillStyle = '#c96e8a33';
     drawRoundedRect(ctx, barX, barY + barH + 28, loraBarW, barH, 4);
     ctx.fill();
     ctx.strokeStyle = ACCENT;
@@ -2538,7 +2429,7 @@ function drawLoRA() {
   // Error display
   const errX = 530;
   drawText(ctx, 'Reconstruction Error', errX + 150, barY - 10, '#888', 11, 'center', '600');
-  drawText(ctx, 'Frobenius norm: ' + errorNorm, errX + 150, barY + 10, '#ff6b6b', 13, 'center', '700');
+  drawText(ctx, 'Frobenius norm: ' + errorNorm, errX + 150, barY + 10, '#c96e8a', 13, 'center', '700');
   drawText(ctx, 'vs max (' + maxError + ' if r=0): ' + errorPct + '% of worst case', errX + 150, barY + 30, '#aaa', 11, 'center', '400');
 
   // Error bar
@@ -2546,11 +2437,11 @@ function drawLoRA() {
   const errBarH = 14;
   const errBarX = errX + 10;
   const errBarY = barY + 48;
-  ctx.fillStyle = '#1a1a2e';
+  ctx.fillStyle = '#111118';
   drawRoundedRect(ctx, errBarX, errBarY, errBarW, errBarH, 4);
   ctx.fill();
   const errFill = parseFloat(maxError) > 0 ? Math.min(error / parseFloat(maxError), 1) : 0;
-  ctx.fillStyle = errFill > 0.7 ? '#ff4444' : errFill > 0.3 ? '#ffd93d' : '#4ecdc4';
+  ctx.fillStyle = errFill > 0.7 ? '#ff4444' : errFill > 0.3 ? '#e0c992' : '#6ea5c9';
   drawRoundedRect(ctx, errBarX, errBarY, errBarW * errFill, errBarH, 4);
   ctx.fill();
 }
@@ -2571,7 +2462,7 @@ function drawPEFT() {
   const modelB = parseInt(document.getElementById('peftModelSize').value);
   const margin = { top: 50, bottom: 60, left: 160, right: 60 };
 
-  drawText(ctx, 'PEFT Comparison: ' + modelB + 'B Parameter Model', w / 2, 25, '#e0e0e0', 16, 'center', '700');
+  drawText(ctx, 'PEFT Comparison: ' + modelB + 'B Parameter Model', w / 2, 25, '#e8e4de', 16, 'center', '700');
 
   // Methods data
   const methods = [
@@ -2579,28 +2470,28 @@ function drawPEFT() {
       name: 'Full Fine-Tuning',
       trainableB: modelB,
       memoryGB: modelB * 2 * 4, // FP32 weights + gradients + optimizer (4x)
-      color: '#ff6b6b',
+      color: '#c96e8a',
       desc: 'All params trainable'
     },
     {
       name: 'LoRA (r=16)',
       trainableB: modelB * 0.003, // ~0.3% of params
       memoryGB: modelB * 2 + modelB * 0.003 * 4 * 2, // FP16 base + FP32 LoRA w/ optim
-      color: '#e056fd',
+      color: '#c96e8a',
       desc: '~' + (modelB * 0.003 * 1000).toFixed(0) + 'M trainable'
     },
     {
       name: 'QLoRA (4-bit + LoRA)',
       trainableB: modelB * 0.003,
       memoryGB: modelB * 0.5 + modelB * 0.003 * 4 * 2, // 4-bit base + FP32 LoRA w/ optim
-      color: '#4ecdc4',
+      color: '#6ea5c9',
       desc: '~' + (modelB * 0.003 * 1000).toFixed(0) + 'M trainable, 4-bit base'
     },
     {
       name: 'Prefix Tuning',
       trainableB: modelB * 0.0001, // ~0.01%
       memoryGB: modelB * 2 + modelB * 0.0001 * 4 * 2, // FP16 base + small trainable
-      color: '#ffd93d',
+      color: '#e0c992',
       desc: '~' + (modelB * 0.0001 * 1000).toFixed(1) + 'M trainable'
     }
   ];
@@ -2676,7 +2567,7 @@ function drawPEFT() {
   const summaryY = h - 30;
   const ratio = (maxTrainable / methods[2].trainableB).toFixed(0);
   const memRatio = (methods[0].memoryGB / methods[2].memoryGB).toFixed(1);
-  drawText(ctx, 'QLoRA: ' + ratio + 'x fewer trainable params, ' + memRatio + 'x less memory vs full fine-tuning', w / 2, summaryY, '#4ecdc4', 13, 'center', '700');
+  drawText(ctx, 'QLoRA: ' + ratio + 'x fewer trainable params, ' + memRatio + 'x less memory vs full fine-tuning', w / 2, summaryY, '#6ea5c9', 13, 'center', '700');
 }
 
 // ============================================================

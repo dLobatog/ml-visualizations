@@ -5,152 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="../static/canvas-polish.js"></script>
 <title>Chapter 2: Makemore — Character-Level Language Models</title>
+<link rel="stylesheet" href="../theme.css">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #0a0a0f; color: #e0e0e0; line-height: 1.6; }
-  .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; text-align: center; border-bottom: 1px solid #2a2a4a; }
-  .header h1 { font-size: 2.2em; background: linear-gradient(90deg, #ffd93d, #ff6b6b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
-  .header p { color: #888; font-size: 1.1em; }
-  .header a { color: #ffd93d; text-decoration: none; font-size: 0.9em; }
-  .header a:hover { text-decoration: underline; }
-  .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
-
-  /* Minimap */
-  .minimap { position: sticky; top: 0; z-index: 100; background: #0a0a0fee; backdrop-filter: blur(10px); border-bottom: 1px solid #2a2a4a; padding: 10px 20px; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }
-  .mm-step { padding: 4px 12px; border-radius: 6px; font-size: 0.75em; font-weight: 600; cursor: pointer; transition: all 0.2s; background: #151530; color: #555; border: 1px solid #2a2a4a; white-space: nowrap; }
-  .mm-step:hover { border-color: #ffd93d; color: #ffd93d; }
-  .mm-step.active { background: rgba(255,217,61,0.2); color: #ffd93d; border-color: rgba(255,217,61,0.5); }
-  .mm-step.done { background: rgba(255,217,61,0.1); color: #ffd93d; border-color: rgba(255,217,61,0.3); }
-  .mm-arrow { color: #333; font-size: 0.8em; }
-
-  .viz-section { background: #12121f; border: 1px solid #2a2a4a; border-radius: 16px; padding: 32px; margin-bottom: 40px; }
-  .viz-section h2 { font-size: 1.5em; color: #ffd93d; margin-bottom: 8px; }
-  .viz-section .subtitle { color: #888; margin-bottom: 24px; font-size: 0.95em; }
-  .viz-canvas { background: #0d0d1a; border-radius: 12px; position: relative; overflow: hidden; }
-  canvas { display: block; margin: 0 auto; }
-  .controls { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; align-items: center; }
-  .control-group { display: flex; flex-direction: column; gap: 4px; }
-  .control-group label { font-size: 0.85em; color: #aaa; }
-  .control-group input[type="range"] { width: 160px; accent-color: #ffd93d; }
-  .control-group .value { font-size: 0.85em; color: #ffd93d; font-family: monospace; }
-  .btn { padding: 8px 16px; border: 1px solid #ffd93d; background: transparent; color: #ffd93d; border-radius: 8px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
-  .btn:hover { background: #ffd93d22; }
-  .btn.active { background: #ffd93d33; }
-  .tab-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
-
-  .insight-box { background: linear-gradient(135deg, #1a1a3e 0%, #151530 100%); border-left: 4px solid #ffd93d; padding: 20px 24px; margin-top: 20px; border-radius: 0 12px 12px 0; font-size: 0.92em; color: #ccc; line-height: 1.8; }
-  .insight-box strong { color: #ffd93d; font-size: 1.05em; }
-  .insight-box .formula { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 12px 18px; margin: 12px 0; font-family: 'Courier New', monospace; color: #e8e8ff; font-size: 1.05em; text-align: center; letter-spacing: 0.5px; line-height: 1.9; }
-  .insight-box .key-point { display: flex; flex-wrap: wrap; gap: 4px 8px; margin: 8px 0; padding: 4px 0; align-items: baseline; }
-  .insight-box .key-point .label { color: #ffd93d; font-weight: 600; min-width: 160px; flex-shrink: 0; }
-  .insight-box .key-point .desc { color: #ddd; }
-  .insight-box .interview-tip { background: rgba(100, 255, 100, 0.05); border: 1px solid rgba(100, 255, 100, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #b0ffb0; font-size: 0.93em; line-height: 1.6; }
-  .insight-box .interview-tip::before { content: '\1F4A1  Interview Tip: '; font-weight: 700; color: #7fff7f; }
-  .insight-box .mnemonic { background: rgba(255, 150, 255, 0.05); border: 1px solid rgba(255, 150, 255, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #ffb0ff; font-size: 0.93em; line-height: 1.6; }
-  .insight-box .mnemonic::before { content: '\1F9E0  Remember: '; font-weight: 700; color: #ff7fff; }
-  .insight-box .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
-  .insight-box .comparison .option { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 10px 14px; }
-  .insight-box .comparison .option .opt-title { color: #ffd93d; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
-  .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
-  .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
-  .code-example { margin-top: 12px; border: 1px solid #2a2a4a; border-radius: 8px; overflow: hidden; }
-  .code-toggle { width: 100%; background: #1a1a2e; color: #ffd93d; border: none; padding: 10px 16px; text-align: left; cursor: pointer; font-size: 0.9em; font-weight: 600; display: flex; align-items: center; gap: 8px; }
-  .code-toggle:hover { background: #22223a; }
-  .code-toggle-icon { display: inline-block; transition: transform 0.2s; font-size: 0.7em; }
-  .code-example.open .code-toggle-icon { transform: rotate(90deg); }
-  .code-content { display: none; padding: 14px 16px; background: #0a0a14; }
-  .code-example.open .code-content { display: block; }
-  .code-content pre { margin: 0; overflow-x: auto; white-space: pre; }
-  .code-content code { color: #e0e0e0; font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.82em; line-height: 1.6; }
-  .code-content .code-note { color: #888; font-size: 0.82em; margin-top: 8px; font-style: italic; }
-  .code-content pre[class*="language-"], .code-content code[class*="language-"] { background: #0a0a14; font-size: 0.82em; line-height: 1.6; margin: 0; padding: 0; text-shadow: none; }
-  pre[class*="language-"]::selection, code[class*="language-"]::selection { background: #333; }
-
-  .katex { color: #e8e8ff; font-size: 1.1em; }
-  .formula .katex { font-size: 1.2em; }
-
-  .narrative-note { background: rgba(255,217,61,0.05); border-left: 3px solid #ffd93d; padding: 14px 18px; margin: 16px 0; border-radius: 0 8px 8px 0; font-size: 0.9em; color: #ccb866; }
-  .narrative-note strong { color: #ffd93d; }
-
-  select { padding: 6px 12px; border: 1px solid #2a2a4a; background: #0d0d1a; color: #e0e0e0; border-radius: 6px; font-size: 0.9em; cursor: pointer; }
-  select:focus { outline: none; border-color: #ffd93d; }
-
-#quizToggle{position:fixed;top:20px;right:20px;z-index:1000;padding:12px 20px;background:#ffd93d;color:#0a0a0f;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:1em;box-shadow:0 4px 15px rgba(0,0,0,0.3);transition:transform 0.2s}
-#quizToggle:hover{transform:scale(1.05)}
-#quizSection{background:#0a0a0f;border-top:2px solid #ffd93d;padding:40px 20px;margin-top:40px}
-.quiz-container{max-width:900px;margin:0 auto}
-.quiz-topic{margin-bottom:30px}
-.quiz-topic-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:10px;cursor:pointer;margin-bottom:12px;user-select:none}
-.quiz-topic-header h3{color:#ffd93d;margin:0;font-size:1.15em}
-.quiz-topic-header:hover{background:#1f1f3a}
-.quiz-topic-score{color:#888;font-size:0.95em}
-.quiz-topic-questions{display:none}
-.quiz-topic-questions.open{display:block}
-.quiz-question{background:#12121f;border:1px solid #2a2a4a;border-radius:12px;padding:24px;margin-bottom:16px}
-.quiz-question h4{color:#e0e0e0;margin-bottom:16px;font-size:1.05em;line-height:1.5}
-.quiz-option{display:block;width:100%;padding:12px 16px;margin:8px 0;background:#0d0d1a;border:1px solid #2a2a4a;border-radius:8px;color:#e0e0e0;cursor:pointer;text-align:left;font-size:0.95em;transition:all 0.2s;font-family:inherit}
-.quiz-option:hover:not(:disabled){border-color:#ffd93d;background:#1a1a3e}
-.quiz-option.correct{background:#1a3a2a !important;border-color:#2ecc71 !important;color:#2ecc71 !important}
-.quiz-option.wrong{background:#3a1a1a !important;border-color:#e74c3c !important;color:#e74c3c !important}
-.quiz-option.reveal{border-color:#2ecc71 !important;color:#2ecc71 !important}
-.quiz-option:disabled{cursor:default}
-.quiz-explanation{margin-top:12px;padding:14px 18px;border-radius:8px;font-size:0.93em;line-height:1.6;display:none}
-.quiz-explanation.show{display:block}
-.quiz-explanation.correct-exp{border-left:4px solid #2ecc71;background:rgba(46,204,113,0.08);color:#b0ffb0}
-.quiz-explanation.wrong-exp{border-left:4px solid #e74c3c;background:rgba(231,76,60,0.08);color:#ffb0b0}
-.quiz-score{text-align:center;font-size:1.5em;color:#ffd93d;margin-bottom:30px}
-.quiz-actions{text-align:center;margin-top:30px;margin-bottom:20px}
-.quiz-actions button{padding:10px 24px;margin:0 8px;border-radius:8px;border:1px solid #ffd93d;background:transparent;color:#ffd93d;cursor:pointer;font-size:1em}
-.quiz-actions button:hover{background:rgba(255,217,61,0.1)}
-.quiz-progress{height:4px;background:#1a1a2e;border-radius:2px;margin-bottom:20px;overflow:hidden}
-.quiz-progress-bar{height:100%;background:#ffd93d;border-radius:2px;transition:width 0.3s}
-
-.legend { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
-.legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.85em; color: #ccc; }
-.legend-dot { width: 12px; height: 12px; border-radius: 50%; }
-
-/* Tooltip */
-.tooltip { position: absolute; background: #1a1a2eee; border: 1px solid #ffd93d; border-radius: 8px; padding: 10px 14px; font-size: 0.85em; color: #e0e0e0; pointer-events: none; z-index: 50; max-width: 280px; line-height: 1.5; display: none; }
-.tooltip .tt-title { color: #ffd93d; font-weight: 600; margin-bottom: 4px; }
-
-/* Output panel */
-.output-panel { background: #0d0d1a; border: 1px solid #2a2a4a; border-radius: 10px; padding: 16px; margin-top: 16px; max-height: 200px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 0.9em; line-height: 1.8; color: #ccc; }
-.output-panel .name-tag { display: inline-block; background: #1a1a3e; border: 1px solid #3a3a6a; border-radius: 6px; padding: 2px 10px; margin: 3px; color: #ffd93d; }
-
-/* Step display */
-.step-display { background: #0d0d1a; border: 1px solid #2a2a4a; border-radius: 10px; padding: 16px; margin-top: 16px; font-family: 'Courier New', monospace; font-size: 0.9em; line-height: 2; }
-.step-char { display: inline-block; padding: 2px 8px; margin: 2px; border-radius: 4px; }
-.step-char.current { background: #ffd93d33; border: 1px solid #ffd93d; color: #ffd93d; }
-.step-char.done { background: #2a2a4a; color: #aaa; }
-.step-char.pending { color: #555; }
-
-/* Two-column layout */
-.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-/* Name list */
-.name-list { background: #0d0d1a; border: 1px solid #2a2a4a; border-radius: 10px; padding: 12px; max-height: 300px; overflow-y: auto; font-size: 0.85em; line-height: 1.8; }
-.name-list span { display: inline-block; padding: 1px 8px; margin: 2px; background: #1a1a3e; border-radius: 4px; color: #ccc; }
-
-  /* Mobile responsive */
-  canvas { max-width: 100%; height: auto; }
-  @media (max-width: 768px) {
-    .two-col { grid-template-columns: 1fr; }
-    .insight-box .comparison { grid-template-columns: 1fr; }
-    .container { padding: 16px 10px; }
-    .viz-section { padding: 16px 12px; }
-    h2 { font-size: 1.2em; }
-    .subtitle { font-size: 0.85em; }
-    .controls { gap: 8px; }
-    .control-group { min-width: 120px; flex: 1 1 auto; }
-    .tab-bar { flex-wrap: wrap; gap: 4px; }
-    .tab-bar .btn { font-size: 0.75em; padding: 6px 10px; }
-    .insight-box { padding: 14px; font-size: 0.9em; }
-    .comparison { grid-template-columns: 1fr !important; }
-    .formula { font-size: 0.85em; overflow-x: auto; }
-    .code-content pre { font-size: 0.78em; }
-    .interview-tip { font-size: 0.85em; padding: 10px; }
-    .metric-box { font-size: 0.82em; }
-  }
-
+  .header h1 { background: linear-gradient(90deg, var(--gold), var(--rose)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .viz-section h2 { color: var(--gold); }
+  .control-group .value { color: var(--gold); }
+  .control-group input[type="range"] { accent-color: var(--gold); }
+  .btn.active { border-color: var(--gold); color: var(--gold); }
+  .btn:hover { border-color: var(--gold); color: var(--gold); }
+  .insight-box { border-left-color: rgba(var(--gold-rgb), 0.3); }
+  .insight-box strong { color: var(--gold); }
+  .insight-box .formula .highlight { color: var(--gold); }
+  .insight-box .key-point .label { color: var(--gold); }
+  .card::before { background: var(--gold); }
+  #quizToggle { background: var(--bg2); color: var(--fg-dim); border: 1px solid var(--border-hover); }
+  #quizToggle:hover { border-color: var(--gold); color: var(--gold); }
+  #quizSection { border-top-color: rgba(var(--gold-rgb), 0.2); }
 </style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -197,9 +67,9 @@
   <p class="subtitle">See the raw data. A language model must learn: given what I have seen so far, what character comes next? That is the whole game.</p>
   <div class="two-col">
     <div>
-      <h3 style="color:#aaa;font-size:0.95em;margin-bottom:8px;">Training Names (50 names)</h3>
+      <h3 style="color:#8a8680;font-size:0.95em;margin-bottom:8px;">Training Names (50 names)</h3>
       <div class="name-list" id="nameList"></div>
-      <div style="margin-top:8px;font-size:0.8em;color:#666;">The special token <span style="color:#ffd93d;font-weight:600;">.</span> marks start and end of each name.</div>
+      <div style="margin-top:8px;font-size:0.8em;color:#666;">The special token <span style="color:#e0c992;font-weight:600;">.</span> marks start and end of each name.</div>
     </div>
     <div>
       <div class="viz-canvas">
@@ -243,7 +113,7 @@ print(ix)  # tensor([0, 5, 9, 9, 1])</code></pre>
       </div>
     </div>
   </div>
-  <div class="insight-box" style="border-left-color: #ff6b6b;">
+  <div class="insight-box" style="border-left-color: #c96e8a;">
     <h3>&#9888;&#65039; Common Mistakes</h3>
     <ul>
       <li><strong>Mistake:</strong> Not adding start/end tokens &mdash; the model cannot learn which characters begin or end names, so generated output never terminates naturally. <strong>Fix:</strong> Always wrap each training name with a special delimiter (e.g., <code>. + name + .</code>) so the model explicitly learns boundary patterns.</li>
@@ -314,7 +184,7 @@ P = P / P.sum(dim=1, keepdim=True)  # normalize rows</code></pre>
       </div>
     </div>
   </div>
-  <div class="insight-box" style="border-left-color: #ff6b6b;">
+  <div class="insight-box" style="border-left-color: #c96e8a;">
     <h3>&#9888;&#65039; Common Mistakes</h3>
     <ul>
       <li><strong>Mistake:</strong> Forgetting to normalize bigram counts &mdash; raw counts are not probabilities and cannot be sampled from correctly. <strong>Fix:</strong> Always divide each row by its sum so rows represent valid probability distributions (each summing to 1).</li>
@@ -322,7 +192,7 @@ P = P / P.sum(dim=1, keepdim=True)  # normalize rows</code></pre>
     </ul>
   </div>
   <div class="narrative-note">
-    &#128206; This connects to <a href="01-backprop-autograd.html" style="color: #ff6b6b;">Ch 1 (Backpropagation)</a> &mdash; when we later replace this counting approach with a neural network, backprop is how we compute gradients of the NLL loss to update the model.
+    &#128206; This connects to <a href="01-backprop-autograd.html" style="color: #c96e8a;">Ch 1 (Backpropagation)</a> &mdash; when we later replace this counting approach with a neural network, backprop is how we compute gradients of the NLL loss to update the model.
   </div>
 </div>
 
@@ -386,7 +256,7 @@ for temp in [0.5, 1.0, 2.0]:
       </div>
     </div>
   </div>
-  <div class="insight-box" style="border-left-color: #ff6b6b;">
+  <div class="insight-box" style="border-left-color: #c96e8a;">
     <h3>&#9888;&#65039; Common Mistakes</h3>
     <ul>
       <li><strong>Mistake:</strong> Forgetting to apply softmax before sampling &mdash; raw logits are not probabilities and can be negative. Sampling from them directly produces nonsensical results. <strong>Fix:</strong> Always convert logits to probabilities via softmax (or log-softmax + exp) before using <code>torch.multinomial</code>.</li>
@@ -394,7 +264,7 @@ for temp in [0.5, 1.0, 2.0]:
     </ul>
   </div>
   <div class="narrative-note">
-    &#128206; This sampling/temperature mechanism is the same one used in <a href="06-transformer.html" style="color: #ff6b6b;">Ch 6 (Transformer/GPT)</a> for text generation &mdash; the only difference is what model produces the logits.
+    &#128206; This sampling/temperature mechanism is the same one used in <a href="06-transformer.html" style="color: #c96e8a;">Ch 6 (Transformer/GPT)</a> for text generation &mdash; the only difference is what model produces the logits.
   </div>
 </div>
 
@@ -466,7 +336,7 @@ print(f"Manual NLL: {manual.item():.4f}")</code></pre>
       </div>
     </div>
   </div>
-  <div class="insight-box" style="border-left-color: #ff6b6b;">
+  <div class="insight-box" style="border-left-color: #c96e8a;">
     <h3>&#9888;&#65039; Common Mistakes</h3>
     <ul>
       <li><strong>Mistake:</strong> Not using log-space for NLL computation &mdash; multiplying many small probabilities causes numerical underflow (the product rounds to 0.0). <strong>Fix:</strong> Always work in log-space: sum log-probabilities instead of multiplying probabilities. Use <code>F.cross_entropy</code> or <code>F.log_softmax</code> which are numerically stable.</li>
@@ -475,7 +345,7 @@ print(f"Manual NLL: {manual.item():.4f}")</code></pre>
     </ul>
   </div>
   <div class="narrative-note">
-    &#128206; The NLL loss connects directly to <a href="01-backprop-autograd.html" style="color: #ff6b6b;">Ch 1 (Backpropagation)</a> &mdash; backprop computes the gradient of this loss with respect to every model parameter, which is how the neural network learns.
+    &#128206; The NLL loss connects directly to <a href="01-backprop-autograd.html" style="color: #c96e8a;">Ch 1 (Backpropagation)</a> &mdash; backprop computes the gradient of this loss with respect to every model parameter, which is how the neural network learns.
   </div>
 </div>
 
@@ -536,7 +406,7 @@ print(f"X shape: {X.shape}, Y shape: {Y.shape}")</code></pre>
       </div>
     </div>
   </div>
-  <div class="insight-box" style="border-left-color: #ff6b6b;">
+  <div class="insight-box" style="border-left-color: #c96e8a;">
     <h3>&#9888;&#65039; Common Mistakes</h3>
     <ul>
       <li><strong>Mistake:</strong> Choosing a very large n without enough data &mdash; most n-gram entries will be zero, and the model cannot make predictions for unseen contexts. <strong>Fix:</strong> Match context length to dataset size. With 50 names, even trigrams (n=2) become sparse. You need exponentially more data as n grows.</li>
@@ -572,9 +442,9 @@ print(f"X shape: {X.shape}, Y shape: {Y.shape}")</code></pre>
     <div class="tooltip" id="embTooltip"></div>
   </div>
   <div class="legend">
-    <div class="legend-item"><span class="legend-dot" style="background:#ff6b6b;"></span> Vowels</div>
-    <div class="legend-item"><span class="legend-dot" style="background:#4ecdc4;"></span> Consonants</div>
-    <div class="legend-item"><span class="legend-dot" style="background:#ffd93d;"></span> Special (.)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#c96e8a;"></span> Vowels</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#6ea5c9;"></span> Consonants</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#e0c992;"></span> Special (.)</div>
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Embeddings map discrete tokens into continuous vector space where similar tokens are nearby.
@@ -613,7 +483,7 @@ print(torch.allclose(vectors, manual))  # True</code></pre>
       </div>
     </div>
   </div>
-  <div class="insight-box" style="border-left-color: #ff6b6b;">
+  <div class="insight-box" style="border-left-color: #c96e8a;">
     <h3>&#9888;&#65039; Common Mistakes</h3>
     <ul>
       <li><strong>Mistake:</strong> Using embeddings that are too large for small datasets &mdash; with 50 training names and 16-dim embeddings, the model has far more parameters than data points, leading to severe overfitting. <strong>Fix:</strong> Start small (2&ndash;4 dims for character-level with small data) and increase only if validation loss improves.</li>
@@ -621,7 +491,7 @@ print(torch.allclose(vectors, manual))  # True</code></pre>
     </ul>
   </div>
   <div class="narrative-note">
-    &#128206; These character embeddings are a miniature version of what happens in <a href="04-attention-sequences.html" style="color: #ff6b6b;">Ch 4 (Attention)</a>, where attention operates over token embeddings to decide which context positions matter most for each prediction.
+    &#128206; These character embeddings are a miniature version of what happens in <a href="04-attention-sequences.html" style="color: #c96e8a;">Ch 4 (Attention)</a>, where attention operates over token embeddings to decide which context positions matter most for each prediction.
   </div>
 </div>
 
@@ -645,16 +515,16 @@ print(torch.allclose(vectors, manual))  # True</code></pre>
     <div class="tooltip" id="espTooltip"></div>
   </div>
   <div class="legend">
-    <div class="legend-item"><span class="legend-dot" style="background:#ff6b6b;"></span> Vowels</div>
-    <div class="legend-item"><span class="legend-dot" style="background:#4ecdc4;"></span> Common Consonants</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#c96e8a;"></span> Vowels</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#6ea5c9;"></span> Common Consonants</div>
     <div class="legend-item"><span class="legend-dot" style="background:#888;"></span> Rare Letters</div>
-    <div class="legend-item"><span class="legend-dot" style="background:#ffd93d;"></span> Special (.)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#e0c992;"></span> Special (.)</div>
   </div>
 
   <!-- Analogy tool (hidden by default) -->
   <div id="espAnalogyPanel" style="display:none;margin-top:16px;">
-    <div style="background:#0d0d1a;border:1px solid #2a2a4a;border-radius:10px;padding:16px;">
-      <h3 style="color:#ffd93d;font-size:1em;margin-bottom:12px;">Embedding Arithmetic: A &rarr; B applied to C</h3>
+    <div style="background:#0d0d14;border:1px solid #2a2a3a;border-radius:10px;padding:16px;">
+      <h3 style="color:#e0c992;font-size:1em;margin-bottom:12px;">Embedding Arithmetic: A &rarr; B applied to C</h3>
       <p style="color:#888;font-size:0.85em;margin-bottom:12px;">Pick three characters. The vector from A to B is applied to C. For characters this is illustrative &mdash; for word embeddings (word2vec), analogies like king&minus;man+woman=queen actually work.</p>
       <div class="controls" style="margin-top:0;">
         <div class="control-group">
@@ -692,7 +562,7 @@ print(torch.allclose(vectors, manual))  # True</code></pre>
     <div class="interview-tip">When someone asks &ldquo;what do embeddings learn?&rdquo; the answer is: they learn to place tokens that appear in similar contexts at nearby points. Vowels cluster because they follow and precede similar consonants. This is the distributional hypothesis at work.</div>
     <div class="mnemonic">Embedding dimension rule of thumb: d &asymp; log2(V) to sqrt(V). Characters (V=27): 2&ndash;8 dims. BPE tokens (V=50k): 512&ndash;1024. LLM subwords (V=50k&ndash;200k): 768&ndash;4096.</div>
   </div>
-  <div class="insight-box" style="border-left-color: #ff6b6b;">
+  <div class="insight-box" style="border-left-color: #c96e8a;">
     <h3>&#9888;&#65039; Common Mistakes</h3>
     <ul>
       <li><strong>Mistake:</strong> Using one-hot vectors instead of learned embeddings for large vocabularies. One-hot for vocab size V means V-dimensional sparse vectors with no similarity structure. <strong>Fix:</strong> Learned embeddings compress to d dimensions with meaningful similarity. One-hot treats &ldquo;cat&rdquo; and &ldquo;dog&rdquo; as equally different from &ldquo;cat&rdquo; and &ldquo;quantum&rdquo;.</li>
@@ -700,7 +570,7 @@ print(torch.allclose(vectors, manual))  # True</code></pre>
     </ul>
   </div>
   <div class="narrative-note">
-    &#128206; <strong>Looking ahead:</strong> In <a href="04-attention-sequences.html" style="color: #ff6b6b;">Ch 4 (Attention)</a>, the attention mechanism operates ON these embedding vectors &mdash; it decides which positions in the sequence to attend to by comparing embeddings. In <a href="06-transformer.html" style="color: #ff6b6b;">Ch 6 (Transformers)</a>, token embeddings are summed with positional embeddings before entering the transformer layers.
+    &#128206; <strong>Looking ahead:</strong> In <a href="04-attention-sequences.html" style="color: #c96e8a;">Ch 4 (Attention)</a>, the attention mechanism operates ON these embedding vectors &mdash; it decides which positions in the sequence to attend to by comparing embeddings. In <a href="06-transformer.html" style="color: #c96e8a;">Ch 6 (Transformers)</a>, token embeddings are summed with positional embeddings before entering the transformer layers.
   </div>
 </div>
 
@@ -737,7 +607,7 @@ print(torch.allclose(vectors, manual))  # True</code></pre>
     </div>
   </div>
   <div class="narrative-note">
-    <strong>Chapter 2 Payoff:</strong> You have built a language model from counting bigrams to a neural network that understands character patterns. But characters are limiting &mdash; to model real language, we need to handle <em>sequences</em> of varying length and learn <em>long-range dependencies</em>. In <a href="04-attention-sequences.html" style="color:#ff6b6b;">Ch 4</a>, attention replaces the fixed context window with a mechanism that can look at ALL positions. In <a href="06-transformer.html" style="color:#ff6b6b;">Ch 6</a>, the full transformer stacks these into a deep model that produces modern LLMs.
+    <strong>Chapter 2 Payoff:</strong> You have built a language model from counting bigrams to a neural network that understands character patterns. But characters are limiting &mdash; to model real language, we need to handle <em>sequences</em> of varying length and learn <em>long-range dependencies</em>. In <a href="04-attention-sequences.html" style="color:#c96e8a;">Ch 4</a>, attention replaces the fixed context window with a mechanism that can look at ALL positions. In <a href="06-transformer.html" style="color:#c96e8a;">Ch 6</a>, the full transformer stacks these into a deep model that produces modern LLMs.
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> The MLP language model generalizes beyond counting by learning continuous representations.
@@ -794,7 +664,7 @@ logits = model(x)  # (32, 27)</code></pre>
       </div>
     </div>
   </div>
-  <div class="insight-box" style="border-left-color: #ff6b6b;">
+  <div class="insight-box" style="border-left-color: #c96e8a;">
     <h3>&#9888;&#65039; Common Mistakes</h3>
     <ul>
       <li><strong>Mistake:</strong> Evaluating on training data and thinking the model is good &mdash; the MLP can memorize the training set. A low training NLL does not mean the model generalizes. <strong>Fix:</strong> Always split data into train/validation/test. Report validation NLL to detect overfitting.</li>
@@ -803,7 +673,7 @@ logits = model(x)  # (32, 27)</code></pre>
     </ul>
   </div>
   <div class="narrative-note">
-    &#128206; This MLP language model is the direct predecessor to the architecture in <a href="06-transformer.html" style="color: #ff6b6b;">Ch 6 (Transformer/GPT)</a>, which replaces the fixed-window MLP with self-attention over variable-length sequences.
+    &#128206; This MLP language model is the direct predecessor to the architecture in <a href="06-transformer.html" style="color: #c96e8a;">Ch 6 (Transformer/GPT)</a>, which replaces the fixed-window MLP with self-attention over variable-length sequences.
   </div>
 </div>
 
@@ -814,7 +684,7 @@ logits = model(x)  # (32, 27)</code></pre>
 <!-- ============================================================ -->
 <div id="quizSection" style="display:none">
 <div class="quiz-container">
-  <h2 style="text-align:center;color:#ffd93d;margin-bottom:10px;font-size:1.8em;">Makemore Quiz</h2>
+  <h2 style="text-align:center;color:#e0c992;margin-bottom:10px;font-size:1.8em;">Makemore Quiz</h2>
   <p style="text-align:center;color:#888;margin-bottom:20px;">5 questions per visualization &bull; 35 questions total &bull; Click answers to reveal explanations</p>
   <div class="quiz-progress"><div class="quiz-progress-bar" id="quizProgressBar" style="width:0%"></div></div>
   <div class="quiz-score">Score: <span id="quizScore">0</span> / <span id="quizTotal">35</span></div>
@@ -826,10 +696,11 @@ logits = model(x)  # (32, 27)</code></pre>
 </div>
 </div>
 
-<div style="text-align:center; padding:40px; color:#555; font-size:0.85em; border-top:1px solid #1a1a2e;">
-  Chapter 2: Makemore &mdash; Character-Level Language Models &bull; <a href="../index.html" style="color:#ffd93d; text-decoration:none;">From Scratch Series</a>
+<div style="text-align:center; padding:40px; color:#555; font-size:0.85em; border-top:1px solid #111118;">
+  Chapter 2: Makemore &mdash; Character-Level Language Models &bull; <a href="../index.html" style="color:#e0c992; text-decoration:none;">From Scratch Series</a>
 </div>
 
+<script src="../theme.js"></script>
 <script>
 // ============================================================
 // DATASET
@@ -996,12 +867,12 @@ function drawFreqChart() {
     var h = (freq[ch] / maxFreq) * chartH;
     var y = margin.top + chartH - h;
 
-    var color = ch === '.' ? '#ffd93d' : '#4ecdc4';
+    var color = ch === '.' ? '#e0c992' : '#6ea5c9';
     ctx.fillStyle = color;
     ctx.fillRect(x, y, barW, h);
 
     // Label
-    ctx.fillStyle = ch === '.' ? '#ffd93d' : '#aaa';
+    ctx.fillStyle = ch === '.' ? '#e0c992' : '#aaa';
     ctx.font = '11px monospace';
     ctx.textAlign = 'center';
     ctx.fillText(ch === '.' ? '.' : ch, x + barW / 2, margin.top + chartH + 16);
@@ -1015,7 +886,7 @@ function drawFreqChart() {
   });
 
   // Y axis
-  ctx.strokeStyle = '#2a2a4a';
+  ctx.strokeStyle = '#2a2a3a';
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(margin.left - 5, margin.top);
@@ -1029,7 +900,7 @@ function drawFreqChart() {
     ctx.font = '10px monospace';
     ctx.textAlign = 'right';
     ctx.fillText(val, margin.left - 10, yy + 4);
-    ctx.strokeStyle = '#1a1a2e';
+    ctx.strokeStyle = '#111118';
     ctx.beginPath();
     ctx.moveTo(margin.left, yy);
     ctx.lineTo(W - margin.right, yy);
@@ -1075,13 +946,13 @@ function drawBigramMatrix(highlightR, highlightC, animCounts) {
   ctx.font = '9px monospace';
   ctx.textAlign = 'center';
   for (var c = 0; c < VOCAB; c++) {
-    ctx.fillStyle = c === 0 ? '#ffd93d' : '#777';
+    ctx.fillStyle = c === 0 ? '#e0c992' : '#777';
     ctx.fillText(I2C[c], margin.left + c * cellW + cellW / 2, margin.top - 8);
   }
 
   // Row headers and cells
   for (var r = 0; r < VOCAB; r++) {
-    ctx.fillStyle = r === 0 ? '#ffd93d' : '#777';
+    ctx.fillStyle = r === 0 ? '#e0c992' : '#777';
     ctx.font = '9px monospace';
     ctx.textAlign = 'right';
     ctx.fillText(I2C[r], margin.left - 6, margin.top + r * cellH + cellH / 2 + 3);
@@ -1111,7 +982,7 @@ function drawBigramMatrix(highlightR, highlightC, animCounts) {
       ctx.fillStyle = 'rgb(' + red + ',' + green + ',' + blue + ')';
 
       if (r === highlightR && c === highlightC) {
-        ctx.fillStyle = '#ffd93d';
+        ctx.fillStyle = '#e0c992';
       }
 
       ctx.fillRect(x + 0.5, y + 0.5, cellW - 1, cellH - 1);
@@ -1136,7 +1007,7 @@ function drawBigramMatrix(highlightR, highlightC, animCounts) {
   ctx.textAlign = 'left';
   ctx.fillText('Rows = current char, Columns = next char', margin.left, 16);
   ctx.textAlign = 'right';
-  ctx.fillStyle = '#ffd93d';
+  ctx.fillStyle = '#e0c992';
   ctx.fillText(bigramMode === 'counts' ? 'Raw Counts' : 'Probabilities', W - margin.right, 16);
 }
 
@@ -1302,11 +1173,11 @@ function drawSamplingChart(probs, chosenIdx, currentChar) {
     var h = (probs[i] / maxP) * chartH;
     var y = margin.top + chartH - h;
 
-    ctx.fillStyle = i === chosenIdx ? '#ffd93d' : (i === 0 ? '#ff6b6b44' : '#4ecdc488');
+    ctx.fillStyle = i === chosenIdx ? '#e0c992' : (i === 0 ? '#c96e8a44' : '#6ea5c988');
     ctx.fillRect(x, y, barW, h);
 
     if (i === chosenIdx) {
-      ctx.fillStyle = '#ffd93d';
+      ctx.fillStyle = '#e0c992';
       ctx.font = 'bold 10px monospace';
       ctx.textAlign = 'center';
       ctx.fillText(probs[i].toFixed(3), x + barW / 2, y - 8);
@@ -1314,7 +1185,7 @@ function drawSamplingChart(probs, chosenIdx, currentChar) {
       ctx.fillText('\u25BC', x + barW / 2, y - 18);
     }
 
-    ctx.fillStyle = i === 0 ? '#ffd93d' : '#777';
+    ctx.fillStyle = i === 0 ? '#e0c992' : '#777';
     ctx.font = '10px monospace';
     ctx.textAlign = 'center';
     ctx.fillText(I2C[i], x + barW / 2, margin.top + chartH + 16);
@@ -1475,11 +1346,11 @@ function drawNLL() {
     var y = margin.top + chartH - barH;
     var active = i < step;
 
-    ctx.fillStyle = active ? (data[i].nll > 2.5 ? '#ff6b6b' : '#4ecdc4') : '#2a2a4a';
+    ctx.fillStyle = active ? (data[i].nll > 2.5 ? '#c96e8a' : '#6ea5c9') : '#2a2a3a';
     ctx.fillRect(x, y, barW, barH);
 
     // Bigram label
-    ctx.fillStyle = active ? '#ffd93d' : '#555';
+    ctx.fillStyle = active ? '#e0c992' : '#555';
     ctx.font = '11px monospace';
     ctx.textAlign = 'center';
     ctx.fillText('"' + data[i].from + data[i].to + '"', x + barW / 2, margin.top + chartH + 16);
@@ -1509,13 +1380,13 @@ function drawNLL() {
   var cumBarH = 30;
 
   // Background bar
-  drawRoundRect(ctx, margin.left, bottomTop, chartW, cumBarH, 6, '#1a1a2e', '#2a2a4a');
+  drawRoundRect(ctx, margin.left, bottomTop, chartW, cumBarH, 6, '#111118', '#2a2a3a');
 
   // Fill bar
   if (step > 0) {
     var cumVal = data[step - 1].cumNLL;
     var fillW = (cumVal / maxCum) * chartW;
-    var fillColor = cumVal / n > 2.5 ? '#ff6b6b' : '#4ecdc4';
+    var fillColor = cumVal / n > 2.5 ? '#c96e8a' : '#6ea5c9';
     drawRoundRect(ctx, margin.left, bottomTop, Math.max(fillW, 10), cumBarH, 6, fillColor, null);
 
     ctx.fillStyle = '#fff';
@@ -1638,17 +1509,17 @@ function drawNgramViz() {
     var y = margin.top + barAreaH - h;
 
     // Total size bar
-    ctx.fillStyle = n === ngramN - 1 ? '#ffd93d' : '#4ecdc488';
+    ctx.fillStyle = n === ngramN - 1 ? '#e0c992' : '#6ea5c988';
     ctx.fillRect(x, y, barW, h);
 
     // Non-zero overlay
     var logNZ = nonzero[n] > 0 ? Math.log10(nonzero[n]) : 0;
     var hNZ = (logNZ / maxLog) * barAreaH;
-    ctx.fillStyle = n === ngramN - 1 ? '#ff6b6b' : '#ff6b6b66';
+    ctx.fillStyle = n === ngramN - 1 ? '#c96e8a' : '#c96e8a66';
     ctx.fillRect(x, margin.top + barAreaH - hNZ, barW, hNZ);
 
     // Labels
-    ctx.fillStyle = n === ngramN - 1 ? '#ffd93d' : '#aaa';
+    ctx.fillStyle = n === ngramN - 1 ? '#e0c992' : '#aaa';
     ctx.font = '11px monospace';
     ctx.textAlign = 'center';
     ctx.fillText('n=' + (n + 1), x + barW / 2, margin.top + barAreaH + 16);
@@ -1695,9 +1566,9 @@ function drawNgramViz() {
 
       if (count > 0) {
         var alpha = Math.min(1, intensity * 3);
-        ctx.fillStyle = 'rgba(255,217,61,' + alpha + ')';
+        ctx.fillStyle = 'rgba(224, 201, 146,' + alpha + ')';
       } else {
-        ctx.fillStyle = '#0d0d1a';
+        ctx.fillStyle = '#0d0d14';
       }
       ctx.fillRect(x, y, cellSize - 0.5, cellSize - 0.5);
     }
@@ -1707,19 +1578,19 @@ function drawNgramViz() {
   var totalPossible = sizes[ngramN - 1];
   var observed = contexts.length;
   var sparsity = ((1 - observed / totalPossible) * 100).toFixed(1);
-  ctx.fillStyle = '#ff6b6b';
+  ctx.fillStyle = '#c96e8a';
   ctx.font = '12px Inter, sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText('Observed: ' + observed + ' / ' + totalPossible + ' (' + sparsity + '% empty)', (W / 2 + W) / 2, H - 15);
 
   // Legend
-  ctx.fillStyle = '#ffd93d';
+  ctx.fillStyle = '#e0c992';
   ctx.fillRect(margin.left, H - 18, 10, 10);
   ctx.fillStyle = '#aaa';
   ctx.font = '10px Inter, sans-serif';
   ctx.textAlign = 'left';
   ctx.fillText('Total entries', margin.left + 14, H - 9);
-  ctx.fillStyle = '#ff6b6b';
+  ctx.fillStyle = '#c96e8a';
   ctx.fillRect(margin.left + 100, H - 18, 10, 10);
   ctx.fillStyle = '#aaa';
   ctx.fillText('Observed (non-zero)', margin.left + 114, H - 9);
@@ -1908,7 +1779,7 @@ function drawEmbeddings() {
   ctx.fillText('Character Embedding Space (' + dim + 'D' + (dim > 2 ? ', PCA projection' : '') + ') — Step ' + embState.step, W / 2, 25);
 
   // Grid
-  ctx.strokeStyle = '#1a1a2e';
+  ctx.strokeStyle = '#111118';
   ctx.lineWidth = 1;
   for (var i = 0; i <= 4; i++) {
     var x = margin.left + plotW * i / 4;
@@ -1924,7 +1795,7 @@ function drawEmbeddings() {
     var py = margin.top + (points2d[i][1] - yMin) / (yMax - yMin) * plotH;
     var ch = I2C[i];
     var isVowel = vowels.indexOf(ch) >= 0;
-    var color = i === 0 ? '#ffd93d' : (isVowel ? '#ff6b6b' : '#4ecdc4');
+    var color = i === 0 ? '#e0c992' : (isVowel ? '#c96e8a' : '#6ea5c9');
 
     ctx.beginPath();
     ctx.arc(px, py, 8, 0, Math.PI * 2);
@@ -2119,7 +1990,7 @@ function drawEspCanvas() {
   ctx.fillText('Embedding Space (' + (espState.mode === 'trained' ? 'Trained' : 'Random') + ') \u2014 Hover to see neighbors', W / 2, 25);
 
   // Grid
-  ctx.strokeStyle = '#1a1a2e';
+  ctx.strokeStyle = '#111118';
   ctx.lineWidth = 1;
   for (var i = 0; i <= 4; i++) {
     var x = margin.left + plotW * i / 4;
@@ -2151,7 +2022,7 @@ function drawEspCanvas() {
       ctx.beginPath();
       ctx.moveTo(hScreen[0], hScreen[1]);
       ctx.lineTo(nScreen[0], nScreen[1]);
-      ctx.strokeStyle = '#ffd93d55';
+      ctx.strokeStyle = '#e0c99255';
       ctx.lineWidth = 2;
       ctx.stroke();
     }
@@ -2170,29 +2041,29 @@ function drawEspCanvas() {
 
     // Draw A->B vector
     ctx.beginPath(); ctx.moveTo(sA[0], sA[1]); ctx.lineTo(sB[0], sB[1]);
-    ctx.strokeStyle = '#ff6b6b'; ctx.lineWidth = 2; ctx.setLineDash([6, 4]); ctx.stroke(); ctx.setLineDash([]);
+    ctx.strokeStyle = '#c96e8a'; ctx.lineWidth = 2; ctx.setLineDash([6, 4]); ctx.stroke(); ctx.setLineDash([]);
     // Arrow head on A->B
     var angle = Math.atan2(sB[1] - sA[1], sB[0] - sA[0]);
     ctx.beginPath(); ctx.moveTo(sB[0], sB[1]);
     ctx.lineTo(sB[0] - 10 * Math.cos(angle - 0.4), sB[1] - 10 * Math.sin(angle - 0.4));
     ctx.lineTo(sB[0] - 10 * Math.cos(angle + 0.4), sB[1] - 10 * Math.sin(angle + 0.4));
-    ctx.closePath(); ctx.fillStyle = '#ff6b6b'; ctx.fill();
+    ctx.closePath(); ctx.fillStyle = '#c96e8a'; ctx.fill();
 
     // Draw C->D vector (same direction)
     ctx.beginPath(); ctx.moveTo(sC[0], sC[1]); ctx.lineTo(sD[0], sD[1]);
-    ctx.strokeStyle = '#4ecdc4'; ctx.lineWidth = 2; ctx.setLineDash([6, 4]); ctx.stroke(); ctx.setLineDash([]);
+    ctx.strokeStyle = '#6ea5c9'; ctx.lineWidth = 2; ctx.setLineDash([6, 4]); ctx.stroke(); ctx.setLineDash([]);
     // Arrow head on C->D
     var angle2 = Math.atan2(sD[1] - sC[1], sD[0] - sC[0]);
     ctx.beginPath(); ctx.moveTo(sD[0], sD[1]);
     ctx.lineTo(sD[0] - 10 * Math.cos(angle2 - 0.4), sD[1] - 10 * Math.sin(angle2 - 0.4));
     ctx.lineTo(sD[0] - 10 * Math.cos(angle2 + 0.4), sD[1] - 10 * Math.sin(angle2 + 0.4));
-    ctx.closePath(); ctx.fillStyle = '#4ecdc4'; ctx.fill();
+    ctx.closePath(); ctx.fillStyle = '#6ea5c9'; ctx.fill();
 
     // Draw result point D
     ctx.beginPath(); ctx.arc(sD[0], sD[1], 10, 0, Math.PI * 2);
-    ctx.fillStyle = '#ffd93d33'; ctx.fill();
-    ctx.strokeStyle = '#ffd93d'; ctx.lineWidth = 2; ctx.stroke();
-    ctx.fillStyle = '#ffd93d'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#e0c99233'; ctx.fill();
+    ctx.strokeStyle = '#e0c992'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#e0c992'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText('?', sD[0], sD[1]);
 
     // Find nearest real character to D
@@ -2214,10 +2085,10 @@ function drawEspCanvas() {
     var isVowel = vowels.indexOf(ch) >= 0;
     var isRare = rare.indexOf(ch) >= 0;
     var color;
-    if (i === 0) color = '#ffd93d';
-    else if (isVowel) color = '#ff6b6b';
+    if (i === 0) color = '#e0c992';
+    else if (isVowel) color = '#c96e8a';
     else if (isRare) color = '#888';
-    else color = '#4ecdc4';
+    else color = '#6ea5c9';
 
     var radius = 10;
     var isHighlighted = (i === espState.hoveredIdx || nnSet[i]);
@@ -2240,7 +2111,7 @@ function drawEspCanvas() {
 
   // Label for random mode
   if (espState.mode === 'random') {
-    ctx.fillStyle = '#ff6b6b88';
+    ctx.fillStyle = '#c96e8a88';
     ctx.font = 'bold 18px Inter, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('No learned structure \u2014 positions are random', W / 2, H - 12);
@@ -2625,7 +2496,7 @@ function drawMlpPipeline() {
 
   // Draw stage labels
   stages.forEach(function(s) {
-    ctx.fillStyle = '#ffd93d';
+    ctx.fillStyle = '#e0c992';
     ctx.font = 'bold 11px Inter, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(s.label, s.x + s.w / 2, 25);
@@ -2635,8 +2506,8 @@ function drawMlpPipeline() {
   for (var i = 0; i < cl; i++) {
     var ch = I2C[exampleCtx[i]];
     var y = stageY + 40 + i * 60;
-    drawRoundRect(ctx, stages[0].x + 20, y, 60, 40, 8, '#1a1a3e', '#ffd93d');
-    ctx.fillStyle = '#ffd93d';
+    drawRoundRect(ctx, stages[0].x + 20, y, 60, 40, 8, '#13131f', '#e0c992');
+    ctx.fillStyle = '#e0c992';
     ctx.font = 'bold 18px monospace';
     ctx.textAlign = 'center';
     ctx.fillText('"' + ch + '"', stages[0].x + 50, y + 26);
@@ -2645,37 +2516,37 @@ function drawMlpPipeline() {
   // Arrows 1->2
   for (var i = 0; i < cl; i++) {
     var y = stageY + 60 + i * 60;
-    drawArrow(ctx, stages[0].x + 85, y, stages[1].x + 5, y, '#ffd93d55', 1);
+    drawArrow(ctx, stages[0].x + 85, y, stages[1].x + 5, y, '#e0c99255', 1);
   }
 
   // Stage 2: Embeddings
   for (var i = 0; i < cl; i++) {
     var y = stageY + 40 + i * 60;
-    drawRoundRect(ctx, stages[1].x, y, stages[1].w, 40, 8, '#1a1a3e', '#4ecdc4');
+    drawRoundRect(ctx, stages[1].x, y, stages[1].w, 40, 8, '#13131f', '#6ea5c9');
     var vec = '';
     for (var d = 0; d < Math.min(ed, 3); d++) {
       vec += result.input[i * ed + d].toFixed(1);
       if (d < Math.min(ed, 3) - 1) vec += ', ';
     }
     if (ed > 3) vec += '...';
-    ctx.fillStyle = '#4ecdc4';
+    ctx.fillStyle = '#6ea5c9';
     ctx.font = '9px monospace';
     ctx.textAlign = 'center';
     ctx.fillText('[' + vec + ']', stages[1].x + stages[1].w / 2, y + 26);
   }
 
   // Arrow 2->3
-  drawArrow(ctx, stages[1].x + stages[1].w + 5, stageY + 60 + (cl - 1) * 30, stages[2].x - 5, stageY + 80, '#4ecdc455', 1);
+  drawArrow(ctx, stages[1].x + stages[1].w + 5, stageY + 60 + (cl - 1) * 30, stages[2].x - 5, stageY + 80, '#6ea5c955', 1);
 
   // Stage 3: Concatenated
-  drawRoundRect(ctx, stages[2].x, stageY + 50, stages[2].w, 60, 8, '#1a1a3e', '#ff6b6b');
-  ctx.fillStyle = '#ff6b6b';
+  drawRoundRect(ctx, stages[2].x, stageY + 50, stages[2].w, 60, 8, '#13131f', '#c96e8a');
+  ctx.fillStyle = '#c96e8a';
   ctx.font = '10px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('dim=' + (cl * ed), stages[2].x + stages[2].w / 2, stageY + 85);
 
   // Arrow 3->4
-  drawArrow(ctx, stages[2].x + stages[2].w + 5, stageY + 80, stages[3].x - 5, stageY + 80, '#ff6b6b55', 1);
+  drawArrow(ctx, stages[2].x + stages[2].w + 5, stageY + 80, stages[3].x - 5, stageY + 80, '#c96e8a55', 1);
 
   // Stage 4: Hidden layer
   var numShow = Math.min(8, hs);
@@ -2683,8 +2554,8 @@ function drawMlpPipeline() {
     var y = stageY + 30 + i * 45;
     var val = result.hidden[i];
     var active = val > 0;
-    drawRoundRect(ctx, stages[3].x + 10, y, 100, 30, 6, active ? '#1a2a1a' : '#1a1a2e', active ? '#4ecdc4' : '#2a2a4a');
-    ctx.fillStyle = active ? '#4ecdc4' : '#555';
+    drawRoundRect(ctx, stages[3].x + 10, y, 100, 30, 6, active ? '#1a2a1a' : '#111118', active ? '#6ea5c9' : '#2a2a3a');
+    ctx.fillStyle = active ? '#6ea5c9' : '#555';
     ctx.font = '9px monospace';
     ctx.textAlign = 'center';
     ctx.fillText(val.toFixed(2) + (active ? ' [ReLU]' : ' [dead]'), stages[3].x + 60, y + 20);
@@ -2697,7 +2568,7 @@ function drawMlpPipeline() {
   }
 
   // Arrow 4->5
-  drawArrow(ctx, stages[3].x + stages[3].w + 5, stageY + 80, stages[4].x - 5, stageY + 30, '#4ecdc455', 1);
+  drawArrow(ctx, stages[3].x + stages[3].w + 5, stageY + 80, stages[4].x - 5, stageY + 30, '#6ea5c955', 1);
 
   // Stage 5: Softmax output (mini bar chart)
   var maxP = 0;
@@ -2719,11 +2590,11 @@ function drawMlpPipeline() {
     var isTop = false;
     for (var t = 0; t < 3; t++) if (indexed[t].idx === i) isTop = true;
 
-    ctx.fillStyle = isTop ? '#ffd93d' : '#4ecdc488';
+    ctx.fillStyle = isTop ? '#e0c992' : '#6ea5c988';
     ctx.fillRect(x, y, barW, h);
 
     if (isTop && barW > 3) {
-      ctx.fillStyle = '#ffd93d';
+      ctx.fillStyle = '#e0c992';
       ctx.font = '7px monospace';
       ctx.textAlign = 'center';
       ctx.fillText(I2C[i], x + barW / 2, stageY + 20 + barH + 12);
@@ -2736,7 +2607,7 @@ function drawMlpPipeline() {
   ctx.textAlign = 'left';
   ctx.fillText('Top predictions:', stages[4].x, H - 40);
   for (var t = 0; t < 3; t++) {
-    ctx.fillStyle = '#ffd93d';
+    ctx.fillStyle = '#e0c992';
     ctx.fillText('"' + I2C[indexed[t].idx] + '": ' + (indexed[t].prob * 100).toFixed(1) + '%', stages[4].x + (t * 80), H - 22);
   }
 
@@ -2782,7 +2653,7 @@ function drawMlpLoss() {
   ctx.fillText('Training Loss (NLL)', W / 2, 15);
 
   // Draw loss curve
-  ctx.strokeStyle = '#ffd93d';
+  ctx.strokeStyle = '#e0c992';
   ctx.lineWidth = 1.5;
   ctx.beginPath();
   for (var i = 0; i < losses.length; i++) {
@@ -2808,7 +2679,7 @@ function drawMlpLoss() {
 
   var bigramY = margin.top + (1 - (bigramNLL - minL) / (maxL - minL)) * plotH;
   if (bigramY >= margin.top && bigramY <= margin.top + plotH) {
-    ctx.strokeStyle = '#ff6b6b55';
+    ctx.strokeStyle = '#c96e8a55';
     ctx.lineWidth = 1;
     ctx.setLineDash([4, 4]);
     ctx.beginPath();
@@ -2816,7 +2687,7 @@ function drawMlpLoss() {
     ctx.lineTo(margin.left + plotW, bigramY);
     ctx.stroke();
     ctx.setLineDash([]);
-    ctx.fillStyle = '#ff6b6b';
+    ctx.fillStyle = '#c96e8a';
     ctx.font = '9px Inter, sans-serif';
     ctx.textAlign = 'right';
     ctx.fillText('Bigram NLL: ' + bigramNLL.toFixed(2), margin.left + plotW, bigramY - 4);

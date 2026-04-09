@@ -5,382 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ML System Design - Interview Prep</title>
     <script src="static/canvas-polish.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #0a0a0f;
-            color: #e0e0e0;
-            line-height: 1.6;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        header {
-            text-align: center;
-            margin-bottom: 40px;
-            border-bottom: 2px solid #54a0ff;
-            padding-bottom: 20px;
-        }
-
-        h1 {
-            font-size: 2.5em;
-            color: #54a0ff;
-            margin-bottom: 10px;
-        }
-
-        .subtitle {
-            color: #a0a0b0;
-            font-size: 1.1em;
-        }
-
-        .section {
-            background: #12121f;
-            border-radius: 10px;
-            padding: 30px;
-            margin-bottom: 30px;
-            border-left: 4px solid #54a0ff;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-        }
-
-        .section h2 {
-            color: #54a0ff;
-            font-size: 1.8em;
-            margin-bottom: 20px;
-        }
-
-        .canvas-container {
-            margin: 20px 0;
-            background: #0f0f18;
-            border-radius: 8px;
-            padding: 15px;
-            border: 1px solid #2a2a3f;
-            overflow-x: auto;
-        }
-
-        canvas {
-            display: block;
-            margin: 0 auto;
-            background: #0f0f18;
-            border-radius: 8px;
-            max-width: 100%;
-            height: auto;
-        }
-
-        .controls {
-            margin: 20px 0;
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-
-        .control-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .control-label {
-            color: #a0a0b0;
-            font-size: 0.9em;
-            font-weight: 600;
-        }
-
-        input[type="range"] {
-            width: 200px;
-            height: 6px;
-            border-radius: 3px;
-            background: #2a2a3f;
-            outline: none;
-            -webkit-appearance: none;
-        }
-
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            background: #54a0ff;
-            cursor: pointer;
-            box-shadow: 0 0 10px rgba(84, 160, 255, 0.5);
-        }
-
-        input[type="range"]::-moz-range-thumb {
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            background: #54a0ff;
-            cursor: pointer;
-            border: none;
-            box-shadow: 0 0 10px rgba(84, 160, 255, 0.5);
-        }
-
-        .value-display {
-            color: #54a0ff;
-            font-weight: 600;
-            min-width: 80px;
-        }
-
-        .button-group {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        button {
-            background: #54a0ff;
-            color: #0a0a0f;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 0.95em;
-            transition: all 0.3s ease;
-        }
-
-        button:hover {
-            background: #6ab0ff;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(84, 160, 255, 0.3);
-        }
-
-        button.secondary {
-            background: #2a2a3f;
-            color: #54a0ff;
-        }
-
-        button.secondary:hover {
-            background: #3a3a4f;
-        }
-
-      
-        .insight-title {
-            color: #54a0ff;
-            font-weight: 700;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .insight-title::before {
-            content: "💡";
-            font-size: 1.2em;
-        }
-
-        .insight-content {
-            font-size: 0.95em;
-            line-height: 1.7;
-        }
-
-        .insight-content ul {
-            margin-left: 20px;
-            margin-top: 10px;
-        }
-
-        .insight-content li {
-            margin-bottom: 8px;
-            color: #b0b0c0;
-        }
-
-        .comparison-table {
-            width: 100%;
-            margin: 20px 0;
-            border-collapse: collapse;
-        }
-
-        .comparison-table th,
-        .comparison-table td {
-            padding: 15px;
-            text-align: left;
-            border-bottom: 1px solid #2a2a3f;
-        }
-
-        .comparison-table th {
-            background: #1a1a2e;
-            color: #54a0ff;
-            font-weight: 600;
-        }
-
-        .comparison-table tr:hover {
-            background: #15151f;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin: 20px 0;
-        }
-
-        .stat-box {
-            background: #1a1a2e;
-            padding: 20px;
-            border-radius: 8px;
-            border-left: 3px solid #54a0ff;
-        }
-
-        .stat-label {
-            color: #a0a0b0;
-            font-size: 0.85em;
-            margin-bottom: 8px;
-        }
-
-        .stat-value {
-            color: #54a0ff;
-            font-size: 1.5em;
-            font-weight: 700;
-        }
-
-        .interactive-element {
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .interactive-element:hover {
-            opacity: 0.8;
-            filter: brightness(1.1);
-        }
-
-        .toggle-button {
-            display: inline-block;
-            padding: 8px 16px;
-            background: #2a2a3f;
-            border-radius: 4px;
-            cursor: pointer;
-            color: #54a0ff;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            border: 1px solid #54a0ff;
-        }
-
-        .toggle-button.active {
-            background: #54a0ff;
-            color: #0a0a0f;
-        }
-
-        .toggle-button:hover {
-            background: #54a0ff;
-            color: #0a0a0f;
-        }
-
-        .info-text {
-            color: #a0a0b0;
-            font-size: 0.9em;
-            margin-top: 10px;
-        }
-
-        /* Mobile responsive */
-        canvas { max-width: 100%; height: auto; }
-
-        @media (max-width: 768px) {
-            h1 {
-                font-size: 1.8em;
-            }
-
-            .section {
-                padding: 20px;
-            }
-
-            .controls {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 8px;
-            }
-
-            input[type="range"] {
-                width: 100%;
-            }
-
-            .comparison-table {
-                font-size: 0.9em;
-            }
-
-            .comparison-table th,
-            .comparison-table td {
-                padding: 10px;
-            }
-
-            .container { padding: 16px 10px; }
-            .viz-section { padding: 16px 12px; }
-            h2 { font-size: 1.2em; }
-            .subtitle { font-size: 0.85em; }
-            .control-group { min-width: 120px; flex: 1 1 auto; }
-            .tab-bar { flex-wrap: wrap; gap: 4px; }
-            .tab-bar .btn { font-size: 0.75em; padding: 6px 10px; }
-            .insight-box { padding: 14px; font-size: 0.9em; }
-            .comparison { grid-template-columns: 1fr !important; }
-            .formula { font-size: 0.85em; overflow-x: auto; }
-            .code-content pre { font-size: 0.78em; }
-            .interview-tip { font-size: 0.85em; padding: 10px; }
-            .metric-box { font-size: 0.82em; }
-        }
-    
-  .insight-box { background: linear-gradient(135deg, #1a1a3e 0%, #151530 100%); border-left: 4px solid #54a0ff; padding: 20px 24px; margin-top: 20px; border-radius: 0 12px 12px 0; font-size: 0.92em; color: #ccc; line-height: 1.8; }
-  .insight-box strong { color: #54a0ff; font-size: 1.05em; }
-  .insight-box .formula { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 12px 18px; margin: 12px 0; font-family: 'Courier New', monospace; color: #e8e8ff; font-size: 1.05em; text-align: center; letter-spacing: 0.5px; line-height: 1.9; }
-  .insight-box .formula .highlight { color: #54a0ff; font-weight: bold; }
-  .insight-box .key-point { display: flex; flex-wrap: wrap; gap: 4px 8px; margin: 8px 0; padding: 4px 0; align-items: baseline; }
-  .insight-box .key-point .label { color: #54a0ff; font-weight: 600; min-width: 160px; flex-shrink: 0; }
-  .insight-box .key-point .desc { color: #ddd; }
-  .insight-box .interview-tip { background: rgba(100, 255, 100, 0.05); border: 1px solid rgba(100, 255, 100, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #b0ffb0; font-size: 0.93em; line-height: 1.6; }
-  .insight-box .interview-tip::before { content: '\1F4A1  Interview Tip: '; font-weight: 700; color: #7fff7f; }
-  .insight-box .mnemonic { background: rgba(255, 150, 255, 0.05); border: 1px solid rgba(255, 150, 255, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #ffb0ff; font-size: 0.93em; line-height: 1.6; }
-  .insight-box .mnemonic::before { content: '\1F9E0  Remember: '; font-weight: 700; color: #ff7fff; }
-  .insight-box .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
-  .insight-box .comparison .option { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 10px 14px; }
-  .insight-box .comparison .option .opt-title { color: #54a0ff; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
-  .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
-  .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
-
-  .code-example { margin-top: 12px; border: 1px solid #2a2a4a; border-radius: 8px; overflow: hidden; }
-  .code-toggle { width: 100%; background: #1a1a2e; color: #54a0ff; border: none; padding: 10px 16px; text-align: left; cursor: pointer; font-size: 0.9em; font-weight: 600; display: flex; align-items: center; gap: 8px; }
-  .code-toggle:hover { background: #22223a; }
-  .code-toggle-icon { display: inline-block; transition: transform 0.2s; font-size: 0.7em; }
-  .code-example.open .code-toggle-icon { transform: rotate(90deg); }
-  .code-content { display: none; padding: 14px 16px; background: #0a0a14; }
-  .code-example.open .code-content { display: block; }
-  .code-content pre { margin: 0; overflow-x: auto; white-space: pre; }
-  .code-content code { color: #e0e0e0; font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.82em; line-height: 1.6; }
-  .code-content .code-note { color: #888; font-size: 0.82em; margin-top: 8px; font-style: italic; }
-  .code-content pre[class*="language-"], .code-content code[class*="language-"] { background: #0a0a14; font-size: 0.82em; line-height: 1.6; margin: 0; padding: 0; text-shadow: none; }
-  pre[class*="language-"]::selection, code[class*="language-"]::selection { background: #333; }
-
-  .katex { color: #e8e8ff; font-size: 1.1em; }
-
-  #quizToggle { position: fixed; top: 20px; right: 20px; z-index: 1000; padding: 12px 20px; background: #54a0ff; color: #0a0a0f; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 1em; box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: transform 0.2s; }
-  #quizToggle:hover { transform: scale(1.05); }
-  #quizSection { background: #12121f; border-top: 2px solid #54a0ff; padding: 40px 20px; margin-top: 40px; }
-  .quiz-container { max-width: 900px; margin: 0 auto; }
-  .quiz-question { background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 12px; padding: 24px; margin-bottom: 20px; }
-  .quiz-question h3 { color: #54a0ff; margin-bottom: 16px; font-size: 1.1em; }
-  .quiz-option { display: block; width: 100%; padding: 12px 16px; margin: 8px 0; background: #0d0d1a; border: 1px solid #2a2a4a; border-radius: 8px; color: #e0e0e0; cursor: pointer; text-align: left; font-size: 0.95em; transition: all 0.2s; }
-  .quiz-option:hover { border-color: #54a0ff; background: #1a1a3e; }
-  .quiz-option.correct { background: #1a3a2a; border-color: #2ecc71; color: #2ecc71; }
-  .quiz-option.wrong { background: #3a1a1a; border-color: #e74c3c; color: #e74c3c; }
-  .quiz-option.reveal { border-color: #2ecc71; color: #2ecc71; }
-  .quiz-option:disabled { cursor: default; opacity: 0.7; }
-  .quiz-score { text-align: center; font-size: 1.5em; color: #54a0ff; margin-bottom: 30px; }
-  .quiz-actions { text-align: center; margin-top: 20px; }
-  .quiz-actions button { padding: 10px 24px; margin: 0 8px; border-radius: 8px; border: 1px solid #54a0ff; background: transparent; color: #54a0ff; cursor: pointer; font-size: 1em; }
-  .quiz-actions button:hover { background: rgba(255,255,255,0.05); }
-  .quiz-topic { margin-bottom: 30px; }
-  .quiz-topic-header { display:flex; justify-content:space-between; align-items:center; padding:16px 20px; background:#1a1a2e; border:1px solid #2a2a4a; border-radius:10px; cursor:pointer; margin-bottom:12px; }
-  .quiz-topic-header h3 { color:#54a0ff; margin:0; font-size:1.15em; }
-  .quiz-topic-score { color:#888; font-size:0.95em; }
-  .quiz-explanation { margin-top:12px; padding:14px 18px; border-radius:8px; font-size:0.93em; line-height:1.6; border-left:4px solid #2ecc71; background:rgba(46,204,113,0.08); color:#b0ffb0; }
+    <link rel="stylesheet" href="theme.css">
+<style>
+  .header h1 { background: linear-gradient(90deg, var(--blue), var(--rose)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .viz-section h2 { color: var(--blue); }
+  .control-group .value { color: var(--blue); }
+  .control-group input[type="range"] { accent-color: var(--blue); }
+  .btn.active { border-color: var(--blue); color: var(--blue); }
+  .btn:hover { border-color: var(--blue); color: var(--blue); }
+  .insight-box { border-left-color: rgba(var(--blue-rgb), 0.3); }
+  .insight-box strong { color: var(--blue); }
+  .insight-box .formula .highlight { color: var(--blue); }
+  .insight-box .key-point .label { color: var(--blue); }
+  .card::before { background: var(--blue); }
+  #quizToggle { background: var(--bg2); color: var(--fg-dim); border: 1px solid var(--border-hover); }
+  #quizToggle:hover { border-color: var(--blue); color: var(--blue); }
+  #quizSection { border-top-color: rgba(var(--blue-rgb), 0.2); }
 </style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -391,16 +31,17 @@
 </head>
 <body>
 <button id="quizToggle" onclick="document.getElementById('quizSection').style.display = document.getElementById('quizSection').style.display === 'none' ? 'block' : 'none'">&#129504; Quiz Mode</button>
+    <div class="header">
+        <a href="index.html">&larr; Back to Index</a>
+        <h1>ML System Design</h1>
+        <p>Pipelines, experiments, feature stores, serving, and monitoring under real production constraints.</p>
+    </div>
     <div class="container">
-        <header>
-            <h1>🚀 ML System Design Interview Prep</h1>
-            <p class="subtitle">Interactive Visualization of Core ML System Design Concepts</p>
-        </header>
 
         <!-- 1. ML Pipeline Architecture -->
         <div class="section">
             <h2>1. ML Pipeline Architecture</h2>
-            <p class="subtitle">Click the Offline and Online Pipeline buttons to trace data flow. Watch how each path optimizes for different constraints—offline prioritizes accuracy, online prioritizes speed.</p>
+            <p class="subtitle">An ML system is really two systems joined together: an offline path that learns from history, and an online path that serves predictions under strict latency limits.</p>
             <div class="controls">
                 <button onclick="togglePath('offline')">Offline Pipeline</button>
                 <button onclick="togglePath('online')">Online Pipeline</button>
@@ -421,10 +62,10 @@
                     <div class="key-point"><span class="label">Critical challenge:</span><span class="desc">Training/serving skew—models trained on historic data encounter distribution shifts at serving time</span></div>
                     <div class="key-point"><span class="label">Mitigation:</span><span class="desc">Feature engineering (ensure computable at serving time), validation (distributions match), monitoring (drift detection), circuit breakers (fallback)</span></div>
                     <hr class="divider">
-                    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
                     <div class="comparison">
                       <div class="option">
-                        <div class="opt-title" style="color: #54a0ff;">Offline-Heavy Pipeline</div>
+                        <div class="opt-title" style="color: #7bb5d4;">Offline-Heavy Pipeline</div>
                         <div class="opt-desc">Best when prediction freshness is not critical (e.g., daily email recommendations, weekly churn predictions). Batch process overnight, serve pre-computed results. Simpler infrastructure, lower cost.</div>
                       </div>
                       <div class="option">
@@ -432,7 +73,7 @@
                         <div class="opt-desc">Use when real-time context matters (e.g., fraud detection at checkout, search ranking with live session signals). Requires low-latency feature stores and model serving infrastructure.</div>
                       </div>
                       <div class="option">
-                        <div class="opt-title" style="color: #ff6b6b;">Hybrid Pipeline</div>
+                        <div class="opt-title" style="color: #c96e8a;">Hybrid Pipeline</div>
                         <div class="opt-desc">Most production systems: batch-compute expensive features (user embeddings, historical aggregations) offline, combine with lightweight real-time signals (current session clicks) at serving time.</div>
                       </div>
                     </div>
@@ -440,7 +81,7 @@
                     <div class="interview-tip">Data quality is foundational: bad labels (late feedback, label noise) propagate through retraining cycles, degrading all downstream models. Implement data quality checks early.</div>
                     <div class="interview-tip">Feedback loops can amplify biases: popular items get more exposure → more training data → stronger model → more exposure (rich-get-richer problem). Monitor for feedback loop amplification.</div>
                     <div class="mnemonic">Offline = preparation (take time to validate); Online = execution (must be fast); feedback loop = learning (continuously improve).</div>
-                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click "Offline Pipeline" and trace the training loop from raw logs through feature engineering. Then click "Online Pipeline" and observe the latency constraint (50-300ms) forcing lighter computation. Finally click both to see how offline accuracy and online speed coexist in production.</div>
+                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Click "Offline Pipeline" and trace the training loop from raw logs through feature engineering. Then click "Online Pipeline" and observe the latency constraint (50-300ms) forcing lighter computation. Finally click both to see how offline accuracy and online speed coexist in production.</div>
                     <div class="code-example">
                       <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
                         <span class="code-toggle-icon">▶</span> Framework Example: Data Pipeline with Pandas
@@ -517,10 +158,10 @@ features.to_parquet("features/user_features.parquet")</code></pre>
                     <div class="key-point"><span class="label">Test duration:</span><span class="desc">1-2 weeks minimum; captures daily/weekly/seasonal cycles; shorter tests inflate Type I error due to temporal variations</span></div>
                     <div class="key-point"><span class="label">Production gotchas:</span><span class="desc">Multiple comparisons (inflate false positive rate—use Bonferroni); peeking (early stopping biases estimates); network effects (users not independent)</span></div>
                     <hr class="divider">
-                    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
                     <div class="comparison">
                       <div class="option">
-                        <div class="opt-title" style="color: #54a0ff;">Classical A/B Test</div>
+                        <div class="opt-title" style="color: #7bb5d4;">Classical A/B Test</div>
                         <div class="opt-desc">Use for large-traffic products (e.g., Google search, Netflix homepage) where you can run tests for 1-2 weeks with millions of users. Best for measuring CTR lifts, conversion rate changes, or revenue impact of a new model.</div>
                       </div>
                       <div class="option">
@@ -528,7 +169,7 @@ features.to_parquet("features/user_features.parquet")</code></pre>
                         <div class="opt-desc">Use when traffic is limited or you need faster signal (e.g., startup with 10K DAU). Bandits allocate more traffic to better-performing variants dynamically. Interleaving mixes results from two rankers on the same page for sensitive ranking comparisons.</div>
                       </div>
                       <div class="option">
-                        <div class="opt-title" style="color: #ff6b6b;">Offline Evaluation Only</div>
+                        <div class="opt-title" style="color: #c96e8a;">Offline Evaluation Only</div>
                         <div class="opt-desc">Use when online experiments are too expensive or risky (e.g., medical ML, autonomous driving). Rely on holdout sets, replay-based evaluation, or counterfactual estimation. Always validate offline gains translate online before full rollout.</div>
                       </div>
                     </div>
@@ -536,7 +177,7 @@ features.to_parquet("features/user_features.parquet")</code></pre>
                     <div class="interview-tip">Practical vs statistical significance: 0.01% CTR lift may be statistically significant with millions of users but business impact negligible. Always compute MDE and business impact before running.</div>
                     <div class="interview-tip">Why not run tests until significance? That's p-hacking. You must pre-register sample size and duration; stopping early when results look good biases estimates toward false positives.</div>
                     <div class="mnemonic">\(\alpha\) = false positive risk; \(\beta\) = false negative risk; power = ability to detect truth; larger \(n\) = smaller errors.</div>
-                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set Sample Size slider to 1000, run test (p-value likely > 0.05). Then drag to 10000 and run again (likely significant). Notice the confidence interval tightens. Try predicting: at what sample size will this effect become detectable?</div>
+                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Set Sample Size slider to 1000, run test (p-value likely > 0.05). Then drag to 10000 and run again (likely significant). Notice the confidence interval tightens. Try predicting: at what sample size will this effect become detectable?</div>
                     <div class="code-example">
                       <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
                         <span class="code-toggle-icon">▶</span> Framework Example: A/B Test with scipy.stats
@@ -624,10 +265,10 @@ print(f"Significant: {p_value < 0.05}")</code></pre>
                     <div class="key-point"><span class="label">Versioning:</span><span class="desc">Critical: if feature definition changes (7 days → 14 days), offline and online must sync simultaneously to avoid skew</span></div>
                     <div class="key-point"><span class="label">Architecture decisions:</span><span class="desc">Which features compute offline (expensive joins) vs online (lightweight aggregations); late data handling; in-memory caching (Redis)</span></div>
                     <hr class="divider">
-                    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
                     <div class="comparison">
                       <div class="option">
-                        <div class="opt-title" style="color: #54a0ff;">Centralized Feature Store (Feast, Tecton)</div>
+                        <div class="opt-title" style="color: #7bb5d4;">Centralized Feature Store (Feast, Tecton)</div>
                         <div class="opt-desc">Use when multiple teams share features across models (e.g., "user_lifetime_value" used by ads, recommendations, and fraud). Prevents duplication, ensures consistency, and reduces onboarding time for new models.</div>
                       </div>
                       <div class="option">
@@ -635,7 +276,7 @@ print(f"Significant: {p_value < 0.05}")</code></pre>
                         <div class="opt-desc">Acceptable for early-stage teams with 1-2 models and small feature sets. Faster to build initially, but creates tech debt as feature logic diverges between training and serving. Migrate to feature store once you have 3+ models sharing features.</div>
                       </div>
                       <div class="option">
-                        <div class="opt-title" style="color: #ff6b6b;">Real-time Feature Computation Only</div>
+                        <div class="opt-title" style="color: #c96e8a;">Real-time Feature Computation Only</div>
                         <div class="opt-desc">Use when features are purely session-based (e.g., "items viewed in last 5 minutes") and have no historical component. No need for offline store, but still version feature logic to prevent train/serve skew.</div>
                       </div>
                     </div>
@@ -643,7 +284,7 @@ print(f"Significant: {p_value < 0.05}")</code></pre>
                     <div class="interview-tip">Train/serve skew example: Training uses "user_past_10_days" but online serves "user_past_7_days"; model trained on 10 days behavior performs poorly on 7-day patterns.</div>
                     <div class="interview-tip">Tools: Feast (open-source, K8s-native), Tecton (enterprise, seamless offline/online), Hopsworks (distributed, MLOps-focused). Choose based on latency/scale requirements.</div>
                     <div class="mnemonic">Feature store = single source of truth: one definition, two implementations (offline + online), no skew.</div>
-                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click "Batch Only" and observe the delay (historical data) but perfect logic. Then click "Streaming Only" and see real-time but risk of logic drift. Click "Both" to see how hybrid systems pre-compute batch features, then enrich with streaming. Try toggling and predicting accuracy vs latency.</div>
+                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Click "Batch Only" and observe the delay (historical data) but perfect logic. Then click "Streaming Only" and see real-time but risk of logic drift. Click "Both" to see how hybrid systems pre-compute batch features, then enrich with streaming. Try toggling and predicting accuracy vs latency.</div>
                     <div class="code-example">
                       <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
                         <span class="code-toggle-icon">▶</span> Framework Example: Feature Engineering with Pandas
@@ -745,10 +386,10 @@ features.to_parquet("feature_store/user_ctr_7d.parquet")</code></pre>
                     <div class="key-point"><span class="label">Model complexity:</span><span class="desc">Heavy models (BERT, XGBoost) exceed online budgets; light models (logistic regression) fit; Batch has no latency constraints</span></div>
                     <div class="key-point"><span class="label">Hybrid approach:</span><span class="desc">Batch expensive computations (CF candidates, long-sequence encoding); online lightweight ranking on batch results (fresh + fast)</span></div>
                     <hr class="divider">
-                    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
                     <div class="comparison">
                       <div class="option">
-                        <div class="opt-title" style="color: #54a0ff;">Online Serving</div>
+                        <div class="opt-title" style="color: #7bb5d4;">Online Serving</div>
                         <div class="opt-desc">Choose when user context changes rapidly and stale predictions hurt (e.g., real-time fraud detection at payment, search ranking with live query context, dynamic pricing). Requires always-on GPU infrastructure and sub-100ms latency SLAs.</div>
                       </div>
                       <div class="option">
@@ -756,7 +397,7 @@ features.to_parquet("feature_store/user_ctr_7d.parquet")</code></pre>
                         <div class="opt-desc">Choose when predictions can be hours old without business impact (e.g., next-day product recommendations via email, weekly churn risk scores for sales teams, nightly content moderation sweeps). Cheaper infrastructure, simpler to debug.</div>
                       </div>
                       <div class="option">
-                        <div class="opt-title" style="color: #ff6b6b;">Hybrid (Batch + Online)</div>
+                        <div class="opt-title" style="color: #c96e8a;">Hybrid (Batch + Online)</div>
                         <div class="opt-desc">Most large-scale recommendation systems: batch pre-compute candidate embeddings and top-K candidates offline, then online re-rank with fresh session signals. Example: YouTube batches video embeddings, online ranks by watch-time prediction.</div>
                       </div>
                     </div>
@@ -764,7 +405,7 @@ features.to_parquet("feature_store/user_ctr_7d.parquet")</code></pre>
                     <div class="interview-tip">Choose based on freshness requirements: hourly-changing user preferences → online; daily-changing → batch; stable preferences → batch with weekly refresh.</div>
                     <div class="interview-tip">Hybrid sweet spot: batch pre-compute embeddings (expensive, static); online compute lightweight scores (fresh, fast). Example: batch BERT embeddings, online dot-product ranking.</div>
                     <div class="mnemonic">Online = fresh but expensive; Batch = cheap but stale; Hybrid = batch for expensive, online for fresh.</div>
-                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Drag the freshness slider left to 1 day (batch) and latency stays low but predictions age. Then drag latency slider right to 500ms and freshness improves but cost skyrockets. Try finding the "sweet spot" for your use case. Which matters more: freshness or latency?</div>
+                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Drag the freshness slider left to 1 day (batch) and latency stays low but predictions age. Then drag latency slider right to 500ms and freshness improves but cost skyrockets. Try finding the "sweet spot" for your use case. Which matters more: freshness or latency?</div>
                     <div class="code-example">
                       <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
                         <span class="code-toggle-icon">▶</span> Framework Example: Model Serving with FastAPI
@@ -817,7 +458,7 @@ async def predict(features: list[float]):
                 </div>
                 <div class="stat-box">
                     <div class="stat-label">Drift Status</div>
-                    <div class="stat-value" id="driftStatusDisplay" style="color: #54a0ff;">Normal</div>
+                    <div class="stat-value" id="driftStatusDisplay" style="color: #7bb5d4;">Normal</div>
                 </div>
                 <div class="stat-box">
                     <div class="stat-label">Recommendation</div>
@@ -844,10 +485,10 @@ async def predict(features: list[float]):
                     <div class="key-point"><span class="label">Kolmogorov-Smirnov test:</span><span class="desc">Statistical hypothesis test for distribution differences; p-value indicates significance</span></div>
                     <div class="key-point"><span class="label">Response actions:</span><span class="desc">Retrain on recent data (capture new distribution); data augmentation (diversify); model adjustment (re-weight drifted regions)</span></div>
                     <hr class="divider">
-                    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
                     <div class="comparison">
                       <div class="option">
-                        <div class="opt-title" style="color: #54a0ff;">Scheduled Retraining</div>
+                        <div class="opt-title" style="color: #7bb5d4;">Scheduled Retraining</div>
                         <div class="opt-desc">Use when data distribution shifts gradually (e.g., user taste evolution, seasonal patterns). Retrain weekly or monthly on a sliding window. Simple to implement, low operational overhead. Example: e-commerce recommendation models retrained weekly.</div>
                       </div>
                       <div class="option">
@@ -855,7 +496,7 @@ async def predict(features: list[float]):
                         <div class="opt-desc">Use when sudden distribution shifts occur unpredictably (e.g., COVID-19 impact on travel models, viral trends in content). Monitor PSI/KL-divergence; auto-retrain when thresholds breached. More responsive but requires robust monitoring infrastructure.</div>
                       </div>
                       <div class="option">
-                        <div class="opt-title" style="color: #ff6b6b;">Online Learning (Continuous Update)</div>
+                        <div class="opt-title" style="color: #c96e8a;">Online Learning (Continuous Update)</div>
                         <div class="opt-desc">Use when data arrives as a stream and rapid adaptation is critical (e.g., click-through rate prediction in ads, stock price prediction). Update model weights incrementally per mini-batch. Risk of catastrophic forgetting; requires careful regularization.</div>
                       </div>
                     </div>
@@ -863,7 +504,7 @@ async def predict(features: list[float]):
                     <div class="interview-tip">Critical gotcha: drift ≠ causation. Feature drift might correlate with accuracy loss, but root cause could be missing features or label quality decay. Investigate root cause before responding.</div>
                     <div class="interview-tip">When to retrain vs accept: Seasonal variations (expected, monitor but don't panic); unexpected drifts (investigate and retrain). Set baselines for normal drift ranges.</div>
                     <div class="mnemonic">Drift detection = sentinel; if drift exceeds threshold, investigate root cause before applying fixes.</div>
-                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Drag the drift magnitude slider to 0.5 and watch accuracy tank. Observe the drift detection threshold light up red. Then click "Retrain" and watch accuracy recover as the model adapts. Set threshold high (0.30 PSI) and see delayed detection, then low (0.10) and observe faster alerts.</div>
+                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Drag the drift magnitude slider to 0.5 and watch accuracy tank. Observe the drift detection threshold light up red. Then click "Retrain" and watch accuracy recover as the model adapts. Set threshold high (0.30 PSI) and see delayed detection, then low (0.10) and observe faster alerts.</div>
                     <div class="code-example">
                       <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
                         <span class="code-toggle-icon">▶</span> Framework Example: Drift Detection with NumPy
@@ -892,7 +533,8 @@ print(f"PSI: {psi:.3f} ({'Drift!' if psi > 0.25 else 'OK'}")</code></pre>
         </div>
     </div>
 
-    <script>
+    <script src="theme.js"></script>
+<script>
         // ============= 1. ML PIPELINE ARCHITECTURE =============
         let activePath = 'offline';
         let activeStage = null;
@@ -956,7 +598,7 @@ print(f"PSI: {psi:.3f} ({'Drift!' if psi > 0.25 else 'OK'}")</code></pre>
             }
 
             // Draw main pipeline
-            ctx.strokeStyle = '#54a0ff';
+            ctx.strokeStyle = '#7bb5d4';
             ctx.lineWidth = 2;
             ctx.beginPath();
             ctx.moveTo(60, centerY);
@@ -967,7 +609,7 @@ print(f"PSI: {psi:.3f} ({'Drift!' if psi > 0.25 else 'OK'}")</code></pre>
 
             // Draw arrow
             const arrowSize = 10;
-            ctx.fillStyle = '#54a0ff';
+            ctx.fillStyle = '#7bb5d4';
             ctx.beginPath();
             ctx.moveTo(canvas.width - 20, centerY);
             ctx.lineTo(canvas.width - 20 - arrowSize, centerY - arrowSize / 2);
@@ -977,7 +619,7 @@ print(f"PSI: {psi:.3f} ({'Drift!' if psi > 0.25 else 'OK'}")</code></pre>
             // Draw stages
             pipelineStages.forEach((stage, index) => {
                 const isActive = index === activeStage;
-                ctx.fillStyle = isActive ? '#54a0ff' : '#2a2a3f';
+                ctx.fillStyle = isActive ? '#7bb5d4' : '#2a2a3f';
                 ctx.beginPath();
                 ctx.arc(stage.x, centerY, stageRadius, 0, Math.PI * 2);
                 ctx.fill();
@@ -990,7 +632,7 @@ print(f"PSI: {psi:.3f} ({'Drift!' if psi > 0.25 else 'OK'}")</code></pre>
                     ctx.stroke();
                 }
 
-                ctx.fillStyle = isActive ? '#0a0a0f' : '#54a0ff';
+                ctx.fillStyle = isActive ? '#0a0a0f' : '#7bb5d4';
                 ctx.font = 'bold 15px Arial';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
@@ -1128,7 +770,7 @@ print(f"PSI: {psi:.3f} ({'Drift!' if psi > 0.25 else 'OK'}")</code></pre>
             document.getElementById('ciDisplay').textContent = `±${(abTestResults.ciMargin * 100).toFixed(2)}%`;
             document.getElementById('pvalueDisplay').textContent = abTestResults.pValue.toFixed(4);
             document.getElementById('significantDisplay').textContent = abTestResults.significant ? 'YES' : 'NO';
-            document.getElementById('significantDisplay').style.color = abTestResults.significant ? '#54a0ff' : '#ff6b6b';
+            document.getElementById('significantDisplay').style.color = abTestResults.significant ? '#7bb5d4' : '#c96e8a';
             document.getElementById('effectSizeDisplay').textContent = abTestResults.effectSize.toFixed(3);
         }
 
@@ -1192,7 +834,7 @@ print(f"PSI: {psi:.3f} ({'Drift!' if psi > 0.25 else 'OK'}")</code></pre>
             });
 
             // Draw confidence interval for control
-            ctx.strokeStyle = '#54a0ff';
+            ctx.strokeStyle = '#7bb5d4';
             ctx.lineWidth = 3;
             const ciLeft = controlX - abTestResults.ciMargin * 500;
             const ciRight = controlX + abTestResults.ciMargin * 500;
@@ -1268,10 +910,10 @@ print(f"PSI: {psi:.3f} ({'Drift!' if psi > 0.25 else 'OK'}")</code></pre>
                 // Data sources
                 ctx.fillStyle = '#2a2a3f';
                 ctx.fillRect(x, startY, boxWidth, boxHeight);
-                ctx.strokeStyle = '#54a0ff';
+                ctx.strokeStyle = '#7bb5d4';
                 ctx.lineWidth = 2;
                 ctx.strokeRect(x, startY, boxWidth, boxHeight);
-                ctx.fillStyle = '#54a0ff';
+                ctx.fillStyle = '#7bb5d4';
                 ctx.font = 'bold 15px Arial';
                 ctx.textAlign = 'center';
                 ctx.fillText('Data', x + boxWidth / 2, startY + 25);
@@ -1279,13 +921,13 @@ print(f"PSI: {psi:.3f} ({'Drift!' if psi > 0.25 else 'OK'}")</code></pre>
 
                 // Arrow
                 x += boxWidth + spacing;
-                ctx.strokeStyle = '#54a0ff';
+                ctx.strokeStyle = '#7bb5d4';
                 ctx.lineWidth = 2;
                 ctx.beginPath();
                 ctx.moveTo(x - spacing / 2 - 10, startY + boxHeight / 2);
                 ctx.lineTo(x + 10, startY + boxHeight / 2);
                 ctx.stroke();
-                ctx.fillStyle = '#54a0ff';
+                ctx.fillStyle = '#7bb5d4';
                 ctx.beginPath();
                 ctx.moveTo(x + 10, startY + boxHeight / 2);
                 ctx.lineTo(x - 5, startY + boxHeight / 2 - 5);
@@ -1295,22 +937,22 @@ print(f"PSI: {psi:.3f} ({'Drift!' if psi > 0.25 else 'OK'}")</code></pre>
                 // Feature computation
                 ctx.fillStyle = '#2a2a3f';
                 ctx.fillRect(x, startY, boxWidth, boxHeight);
-                ctx.strokeStyle = '#54a0ff';
+                ctx.strokeStyle = '#7bb5d4';
                 ctx.lineWidth = 2;
                 ctx.strokeRect(x, startY, boxWidth, boxHeight);
-                ctx.fillStyle = '#54a0ff';
+                ctx.fillStyle = '#7bb5d4';
                 ctx.fillText('Batch', x + boxWidth / 2, startY + 25);
                 ctx.fillText('Compute', x + boxWidth / 2, startY + 45);
 
                 // Arrow
                 x += boxWidth + spacing;
-                ctx.strokeStyle = '#54a0ff';
+                ctx.strokeStyle = '#7bb5d4';
                 ctx.lineWidth = 2;
                 ctx.beginPath();
                 ctx.moveTo(x - spacing / 2 - 10, startY + boxHeight / 2);
                 ctx.lineTo(x + 10, startY + boxHeight / 2);
                 ctx.stroke();
-                ctx.fillStyle = '#54a0ff';
+                ctx.fillStyle = '#7bb5d4';
                 ctx.beginPath();
                 ctx.moveTo(x + 10, startY + boxHeight / 2);
                 ctx.lineTo(x - 5, startY + boxHeight / 2 - 5);
@@ -1320,16 +962,16 @@ print(f"PSI: {psi:.3f} ({'Drift!' if psi > 0.25 else 'OK'}")</code></pre>
                 // Offline store
                 ctx.fillStyle = '#2a2a3f';
                 ctx.fillRect(x, startY, boxWidth, boxHeight);
-                ctx.strokeStyle = '#54a0ff';
+                ctx.strokeStyle = '#7bb5d4';
                 ctx.lineWidth = 2;
                 ctx.strokeRect(x, startY, boxWidth, boxHeight);
-                ctx.fillStyle = '#54a0ff';
+                ctx.fillStyle = '#7bb5d4';
                 ctx.fillText('Offline', x + boxWidth / 2, startY + 25);
                 ctx.fillText('Store', x + boxWidth / 2, startY + 45);
 
                 // Arrow to online
                 x += boxWidth + spacing;
-                ctx.strokeStyle = '#54a0ff';
+                ctx.strokeStyle = '#7bb5d4';
                 ctx.lineWidth = 2;
                 ctx.beginPath();
                 ctx.moveTo(x - spacing / 2 - 10, startY + boxHeight / 2);
@@ -1339,10 +981,10 @@ print(f"PSI: {psi:.3f} ({'Drift!' if psi > 0.25 else 'OK'}")</code></pre>
                 // Online store
                 ctx.fillStyle = '#2a2a3f';
                 ctx.fillRect(x, startY, boxWidth, boxHeight);
-                ctx.strokeStyle = '#54a0ff';
+                ctx.strokeStyle = '#7bb5d4';
                 ctx.lineWidth = 2;
                 ctx.strokeRect(x, startY, boxWidth, boxHeight);
-                ctx.fillStyle = '#54a0ff';
+                ctx.fillStyle = '#7bb5d4';
                 ctx.fillText('Online', x + boxWidth / 2, startY + 25);
                 ctx.fillText('Store', x + boxWidth / 2, startY + 45);
 
@@ -1431,10 +1073,10 @@ print(f"PSI: {psi:.3f} ({'Drift!' if psi > 0.25 else 'OK'}")</code></pre>
             const servingY = featureType === 'both' ? startY + 350 : startY + 150;
             ctx.fillStyle = '#2a2a3f';
             ctx.fillRect(350, servingY, boxWidth, boxHeight);
-            ctx.strokeStyle = '#54a0ff';
+            ctx.strokeStyle = '#7bb5d4';
             ctx.lineWidth = 2;
             ctx.strokeRect(350, servingY, boxWidth, boxHeight);
-            ctx.fillStyle = '#54a0ff';
+            ctx.fillStyle = '#7bb5d4';
             ctx.font = 'bold 15px Arial';
             ctx.textAlign = 'center';
             ctx.fillText('Model', 350 + boxWidth / 2, servingY + 25);
@@ -1478,11 +1120,11 @@ print(f"PSI: {psi:.3f} ({'Drift!' if psi > 0.25 else 'OK'}")</code></pre>
             // Online serving
             ctx.fillStyle = '#2a2a3f';
             ctx.fillRect(startX, startY, boxWidth, boxHeight);
-            ctx.strokeStyle = '#54a0ff';
+            ctx.strokeStyle = '#7bb5d4';
             ctx.lineWidth = 2;
             ctx.strokeRect(startX, startY, boxWidth, boxHeight);
 
-            ctx.fillStyle = '#54a0ff';
+            ctx.fillStyle = '#7bb5d4';
             ctx.font = 'bold 17px Arial';
             ctx.textAlign = 'center';
             ctx.fillText('Online Serving', startX + boxWidth / 2, startY + 30);
@@ -1530,8 +1172,8 @@ print(f"PSI: {psi:.3f} ({'Drift!' if psi > 0.25 else 'OK'}")</code></pre>
             ctx.fillStyle = '#b0b0c0';
             ctx.font = 'bold 15px Arial';
             ctx.textAlign = 'left';
-            ctx.fillText('Online Examples: User recommendations, fraud detection, personalization', 100, canvas.height - 60);
-            ctx.fillText('Batch Examples: Email campaigns, offline analysis, data export', 100, canvas.height - 35);
+            ctx.fillText('Online: recs, fraud, personalization', 100, canvas.height - 60);
+            ctx.fillText('Batch: campaigns, offline scoring, exports', 100, canvas.height - 35);
         }
 
         function drawLatencyAnalysis(ctx, canvas) {
@@ -1541,7 +1183,7 @@ print(f"PSI: {psi:.3f} ({'Drift!' if psi > 0.25 else 'OK'}")</code></pre>
             const height = 250;
 
             // Draw axes
-            ctx.strokeStyle = '#54a0ff';
+            ctx.strokeStyle = '#7bb5d4';
             ctx.lineWidth = 2;
             ctx.beginPath();
             ctx.moveTo(startX, startY + height);
@@ -1587,7 +1229,7 @@ print(f"PSI: {psi:.3f} ({'Drift!' if psi > 0.25 else 'OK'}")</code></pre>
             ctx.fillStyle = '#b0b0c0';
             ctx.font = 'normal 15px Arial';
             ctx.textAlign = 'left';
-            ctx.fillText('Log scale: Batch latency is ~36,000x higher than online, but handles millions of predictions', startX, startY + height + 70);
+            ctx.fillText('Batch latency is ~36,000x higher, but batch handles huge volumes.', startX, startY + height + 70);
         }
 
         function drawThroughputAnalysis(ctx, canvas) {
@@ -1597,7 +1239,7 @@ print(f"PSI: {psi:.3f} ({'Drift!' if psi > 0.25 else 'OK'}")</code></pre>
             const height = 250;
 
             // Draw axes
-            ctx.strokeStyle = '#54a0ff';
+            ctx.strokeStyle = '#7bb5d4';
             ctx.lineWidth = 2;
             ctx.beginPath();
             ctx.moveTo(startX, startY + height);
@@ -1643,7 +1285,7 @@ print(f"PSI: {psi:.3f} ({'Drift!' if psi > 0.25 else 'OK'}")</code></pre>
             ctx.fillStyle = '#b0b0c0';
             ctx.font = 'normal 15px Arial';
             ctx.textAlign = 'left';
-            ctx.fillText('Log scale: Batch processes 1000x more predictions per job than online serves per second', startX, startY + height + 70);
+            ctx.fillText('Batch handles ~1000x more predictions per job.', startX, startY + height + 70);
         }
 
         // ============= 5. MONITORING & DATA DRIFT =============
@@ -1769,7 +1411,7 @@ print(f"PSI: {psi:.3f} ({'Drift!' if psi > 0.25 else 'OK'}")</code></pre>
 
             // Determine status
             let status = 'Normal';
-            let statusColor = '#54a0ff';
+            let statusColor = '#7bb5d4';
             let recommendation = 'Monitor';
 
             if (psi > 0.25) {
@@ -1833,7 +1475,7 @@ print(f"PSI: {psi:.3f} ({'Drift!' if psi > 0.25 else 'OK'}")</code></pre>
 
 <div id="quizSection" style="display:none">
   <div class="quiz-container">
-    <h2 style="text-align:center; color:#54a0ff; margin-bottom:10px;">ML System Design Quiz</h2>
+    <h2 style="text-align:center; color:#7bb5d4; margin-bottom:10px;">ML System Design Quiz</h2>
     <div class="quiz-score">Score: <span id="quizScore">0</span> / <span id="quizTotal">25</span></div>
     <div id="quizQuestions"></div>
     <div class="quiz-actions">

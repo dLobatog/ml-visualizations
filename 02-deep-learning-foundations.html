@@ -5,83 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>2. Deep Learning Foundations — Interactive Visualizations</title>
 <script src="static/canvas-polish.js"></script>
+<link rel="stylesheet" href="theme.css">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #0a0a0f; color: #e0e0e0; line-height: 1.6; }
-  .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; text-align: center; border-bottom: 1px solid #2a2a4a; }
-  .header h1 { font-size: 2.2em; background: linear-gradient(90deg, #ff6b6b, #ffd93d); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
-  .header p { color: #888; font-size: 1.1em; }
-  .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
-  .viz-section { background: #12121f; border: 1px solid #2a2a4a; border-radius: 16px; padding: 32px; margin-bottom: 40px; }
-  .viz-section h2 { font-size: 1.5em; color: #ff6b6b; margin-bottom: 8px; }
-  .viz-section .subtitle { color: #888; margin-bottom: 24px; font-size: 0.95em; }
-  canvas { display: block; background: #0d0d1a; border-radius: 12px; margin: 0 auto; }
-  .controls { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; align-items: center; }
-  .control-group { display: flex; flex-direction: column; gap: 4px; }
-  .control-group label { font-size: 0.85em; color: #aaa; }
-  .control-group input[type="range"] { width: 180px; accent-color: #ff6b6b; }
-  .control-group .value { font-size: 0.85em; color: #ff6b6b; font-family: monospace; }
-  .legend { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
-  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.85em; color: #ccc; }
-  .legend-dot { width: 12px; height: 12px; border-radius: 50%; }
-  .btn { padding: 8px 16px; border: 1px solid #ff6b6b; background: transparent; color: #ff6b6b; border-radius: 8px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
-  .btn:hover { background: #ff6b6b22; }
-  .btn.active { background: #ff6b6b33; }
-  .tab-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
-  .math { font-family: 'Times New Roman', serif; font-style: italic; color: #ddd; }
-
-  .insight-box { background: linear-gradient(135deg, #1a1a3e 0%, #151530 100%); border-left: 4px solid #ff6b6b; padding: 20px 24px; margin-top: 20px; border-radius: 0 12px 12px 0; font-size: 0.92em; color: #ccc; line-height: 1.8; }
-  .insight-box strong { color: #ff6b6b; font-size: 1.05em; }
-  .insight-box .formula { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 12px 18px; margin: 12px 0; font-family: 'Courier New', monospace; color: #e8e8ff; font-size: 1.05em; text-align: center; letter-spacing: 0.5px; line-height: 1.9; }
-  .insight-box .formula .highlight { color: #ff6b6b; font-weight: bold; }
-  .insight-box .key-point { display: flex; flex-wrap: wrap; gap: 4px 8px; margin: 8px 0; padding: 4px 0; align-items: baseline; }
-  .insight-box .key-point .label { color: #ff6b6b; font-weight: 600; min-width: 160px; flex-shrink: 0; }
-  .insight-box .key-point .desc { color: #ddd; }
-  .insight-box .interview-tip { background: rgba(100, 255, 100, 0.05); border: 1px solid rgba(100, 255, 100, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #b0ffb0; font-size: 0.93em; line-height: 1.6; }
-  .insight-box .interview-tip::before { content: '\1F4A1  Interview Tip: '; font-weight: 700; color: #7fff7f; }
-  .insight-box .mnemonic { background: rgba(255, 150, 255, 0.05); border: 1px solid rgba(255, 150, 255, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #ffb0ff; font-size: 0.93em; line-height: 1.6; }
-  .insight-box .mnemonic::before { content: '\1F9E0  Remember: '; font-weight: 700; color: #ff7fff; }
-  .insight-box .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
-  .insight-box .comparison .option { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 10px 14px; }
-  .insight-box .comparison .option .opt-title { color: #ff6b6b; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
-  .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
-  .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
-
-  .katex { color: #e8e8ff; font-size: 1.1em; }
-  .formula .katex { font-size: 1.2em; }
-
-  .code-example { margin-top: 12px; border: 1px solid #2a2a4a; border-radius: 8px; overflow: hidden; }
-  .code-toggle { width: 100%; background: #1a1a2e; color: #ff6b6b; border: none; padding: 10px 16px; text-align: left; cursor: pointer; font-size: 0.9em; font-weight: 600; display: flex; align-items: center; gap: 8px; }
-  .code-toggle:hover { background: #22223a; }
-  .code-toggle-icon { display: inline-block; transition: transform 0.2s; font-size: 0.7em; }
-  .code-example.open .code-toggle-icon { transform: rotate(90deg); }
-  .code-content { display: none; padding: 14px 16px; background: #0a0a14; }
-  .code-example.open .code-content { display: block; }
-  .code-content pre { margin: 0; overflow-x: auto; white-space: pre; }
-  .code-content code { color: #e0e0e0; font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.82em; line-height: 1.6; }
-  .code-content .code-note { color: #888; font-size: 0.82em; margin-top: 8px; font-style: italic; }
-  .code-content pre[class*="language-"], .code-content code[class*="language-"] { background: #0a0a14; font-size: 0.82em; line-height: 1.6; margin: 0; padding: 0; text-shadow: none; }
-  pre[class*="language-"]::selection, code[class*="language-"]::selection { background: #333; }
-
-  /* Mobile responsive */
-  canvas { max-width: 100%; height: auto; }
-  @media (max-width: 768px) {
-    .container { padding: 16px 10px; }
-    .viz-section { padding: 16px 12px; }
-    h2 { font-size: 1.2em; }
-    .subtitle { font-size: 0.85em; }
-    .controls { gap: 8px; }
-    .control-group { min-width: 120px; flex: 1 1 auto; }
-    .tab-bar { flex-wrap: wrap; gap: 4px; }
-    .tab-bar .btn { font-size: 0.75em; padding: 6px 10px; }
-    .insight-box { padding: 14px; font-size: 0.9em; }
-    .comparison { grid-template-columns: 1fr !important; }
-    .formula { font-size: 0.85em; overflow-x: auto; }
-    .code-content pre { font-size: 0.78em; }
-    .interview-tip { font-size: 0.85em; padding: 10px; }
-    .metric-box { font-size: 0.82em; }
-  }
-
+  .header h1 { background: linear-gradient(90deg, var(--rose), var(--gold)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .viz-section h2 { color: var(--rose); }
+  .control-group .value { color: var(--rose); }
+  .control-group input[type="range"] { accent-color: var(--rose); }
+  .btn.active { border-color: var(--rose); color: var(--rose); }
+  .btn:hover { border-color: var(--rose); color: var(--rose); }
+  .insight-box { border-left-color: rgba(var(--rose-rgb), 0.3); }
+  .insight-box strong { color: var(--rose); }
+  .insight-box .formula .highlight { color: var(--rose); }
+  .insight-box .key-point .label { color: var(--rose); }
+  .card::before { background: var(--rose); }
+  #quizToggle { background: var(--bg2); color: var(--fg-dim); border: 1px solid var(--border-hover); }
+  #quizToggle:hover { border-color: var(--rose); color: var(--rose); }
+  #quizSection { border-top-color: rgba(var(--rose-rgb), 0.2); }
 </style>
 <link rel="stylesheet" href="static/learning-tools.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
@@ -103,7 +42,7 @@
 <!-- 0A. WHAT IS A NEURON? -->
 <div class="viz-section">
   <h2>What Is a Neuron?</h2>
-  <p class="subtitle">A neuron is a tiny decision-maker. Each weight says how much it cares about that input. The bias shifts the threshold. ReLU says: if the sum is positive, pass it through; if negative, output zero.</p>
+  <p class="subtitle">A neuron takes a weighted sum of its inputs, adds a bias, and then applies a simple rule like ReLU. The weights decide what matters; the activation decides how that evidence turns into an output.</p>
   <canvas id="neuronCanvas" width="700" height="300"></canvas>
   <div id="neuronComputation" style="min-height:40px;margin:8px 0 12px;padding:12px 18px;border-radius:8px;background:rgba(20,20,40,0.85);border-left:3px solid #444;font-size:0.92em;color:#c8d6e5;line-height:1.8;font-family:'Courier New',monospace;"></div>
   <div class="controls">
@@ -190,6 +129,7 @@
   </div>
 </div>
 
+<script src="theme.js"></script>
 <script>
 (function() {
   const canvas = document.getElementById('neuronCanvas');
@@ -225,7 +165,7 @@
       ctx.beginPath();
       ctx.moveTo(x1p, y1p);
       ctx.lineTo(x2p, y2p);
-      ctx.strokeStyle = w >= 0 ? '#64ffda' : '#ff6b6b';
+      ctx.strokeStyle = w >= 0 ? '#c9a96e' : '#c96e8a';
       ctx.lineWidth = thick;
       ctx.globalAlpha = 0.7;
       ctx.stroke();
@@ -277,7 +217,7 @@
     grad.addColorStop(1, active ? '#0d3a2a' : '#2a0d0d');
     ctx.fillStyle = grad;
     ctx.fill();
-    ctx.strokeStyle = active ? '#64ffda' : '#ff6b6b';
+    ctx.strokeStyle = active ? '#c9a96e' : '#c96e8a';
     ctx.lineWidth = 3;
     ctx.stroke();
     ctx.font = 'bold 12px sans-serif';
@@ -292,7 +232,7 @@
     // output node
     drawNode(outX, outY, '', active ? '#1a5a3a' : '#4a1a1a');
     ctx.font = 'bold 14px monospace';
-    ctx.fillStyle = active ? '#64ffda' : '#ff6b6b';
+    ctx.fillStyle = active ? '#c9a96e' : '#c96e8a';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(output.toFixed(2), outX, outY);
@@ -304,23 +244,23 @@
 
     // status indicator
     ctx.font = 'bold 13px sans-serif';
-    ctx.fillStyle = active ? '#64ffda' : '#ff6b6b';
+    ctx.fillStyle = active ? '#c9a96e' : '#c96e8a';
     ctx.textAlign = 'center';
     ctx.fillText(active ? 'ACTIVE (passes)' : 'KILLED (blocked)', outX, outY - 38);
 
     // update computation text
     const comp = document.getElementById('neuronComputation');
     comp.innerHTML =
-      '<span style="color:#aaa;">Step 1:</span> z = w\u2081\u00b7x\u2081 + w\u2082\u00b7x\u2082 + b = ' +
-      '<span style="color:#64ffda;">' + w1.toFixed(1) + '</span>\u00b7' +
+      '<span style="color:#8a8680;">Step 1:</span> z = w\u2081\u00b7x\u2081 + w\u2082\u00b7x\u2082 + b = ' +
+      '<span style="color:#c9a96e;">' + w1.toFixed(1) + '</span>\u00b7' +
       '<span style="color:#ddd;">' + x1.toFixed(1) + '</span> + ' +
-      '<span style="color:#64ffda;">' + w2.toFixed(1) + '</span>\u00b7' +
+      '<span style="color:#c9a96e;">' + w2.toFixed(1) + '</span>\u00b7' +
       '<span style="color:#ddd;">' + x2.toFixed(1) + '</span> + ' +
-      '<span style="color:#ffd93d;">' + b.toFixed(1) + '</span> = ' +
+      '<span style="color:#e0c992;">' + b.toFixed(1) + '</span> = ' +
       '<span style="color:#fff;font-weight:bold;">' + z.toFixed(2) + '</span><br>' +
-      '<span style="color:#aaa;">Step 2:</span> output = ReLU(z) = max(0, ' + z.toFixed(2) + ') = ' +
-      '<span style="color:' + (active ? '#64ffda' : '#ff6b6b') + ';font-weight:bold;">' + output.toFixed(2) + '</span>' +
-      (active ? '' : ' <span style="color:#ff6b6b;"> \u2190 blocked!</span>');
+      '<span style="color:#8a8680;">Step 2:</span> output = ReLU(z) = max(0, ' + z.toFixed(2) + ') = ' +
+      '<span style="color:' + (active ? '#c9a96e' : '#c96e8a') + ';font-weight:bold;">' + output.toFixed(2) + '</span>' +
+      (active ? '' : ' <span style="color:#c96e8a;"> \u2190 blocked!</span>');
 
     // update slider display values
     document.getElementById('neuronW1Val').textContent = w1.toFixed(1);
@@ -338,7 +278,7 @@
 <!-- 0B. FROM NEURON TO DECISION BOUNDARY -->
 <div class="viz-section">
   <h2>From Neuron to Decision Boundary</h2>
-  <p class="subtitle">A single neuron with 2 inputs draws one straight line in 2D. Points on one side activate it; points on the other side get blocked. Drag the sliders to move the line and see why one neuron can never solve XOR.</p>
+  <p class="subtitle">With two inputs, a single neuron can only draw one straight-line boundary. That is the key limit: one neuron can separate simple patterns, but it cannot solve nonlinear problems like XOR by itself.</p>
   <canvas id="boundaryCanvas" width="700" height="350"></canvas>
   <div class="controls">
     <div class="control-group">
@@ -356,7 +296,7 @@
       <input type="range" id="bdB" min="-30" max="30" value="0" step="1" oninput="updateBoundary()">
       <span class="value" id="bdBVal">0.0</span>
     </div>
-    <button class="btn" id="bdLinearBtn" onclick="setBoundaryData('linear')" style="background:#ff6b6b33;">Linear Data</button>
+    <button class="btn" id="bdLinearBtn" onclick="setBoundaryData('linear')" style="background:#c96e8a33;">Linear Data</button>
     <button class="btn" onclick="setBoundaryData('xor')">Try XOR</button>
     <button class="btn" onclick="setBoundaryData('circle')">Try Circle</button>
   </div>
@@ -427,7 +367,7 @@
     else if (type === 'xor') dataPoints = makeXORData();
     else dataPoints = makeCircleData();
     // highlight active button
-    document.getElementById('bdLinearBtn').style.background = type === 'linear' ? '#ff6b6b33' : 'transparent';
+    document.getElementById('bdLinearBtn').style.background = type === 'linear' ? '#c96e8a33' : 'transparent';
     drawBoundary();
   };
 
@@ -454,7 +394,7 @@
       ctx.beginPath();
       ctx.moveTo(x1p, y1p);
       ctx.lineTo(x2p, y2p);
-      ctx.strokeStyle = w >= 0 ? '#64ffda' : '#ff6b6b';
+      ctx.strokeStyle = w >= 0 ? '#c9a96e' : '#c96e8a';
       ctx.lineWidth = thick;
       ctx.globalAlpha = 0.6;
       ctx.stroke();
@@ -495,13 +435,13 @@
     ctx.beginPath();
     ctx.moveTo(plotL - 10, 10);
     ctx.lineTo(plotL - 10, H - 10);
-    ctx.strokeStyle = '#2a2a4a';
+    ctx.strokeStyle = '#2a2a3a';
     ctx.lineWidth = 1;
     ctx.stroke();
 
     // --- RIGHT HALF: scatter plot ---
     // axes
-    ctx.strokeStyle = '#3a3a5a';
+    ctx.strokeStyle = '#2a2a3a';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(plotL, plotB);
@@ -563,7 +503,7 @@
 
     // decision boundary line: w1*x + w2*y + b = 0 => y = -(w1*x + b) / w2
     ctx.beginPath();
-    ctx.strokeStyle = '#ffd93d';
+    ctx.strokeStyle = '#e0c992';
     ctx.lineWidth = 2.5;
     if (Math.abs(w2) > 0.001) {
       const y1 = -(w1 * dMin + b) / w2;
@@ -579,7 +519,7 @@
 
     // boundary label
     ctx.font = 'bold 11px sans-serif';
-    ctx.fillStyle = '#ffd93d';
+    ctx.fillStyle = '#e0c992';
     ctx.textAlign = 'left';
     ctx.fillText('w\u2081x + w\u2082y + b = 0', plotL + 8, plotT + 14);
 
@@ -588,7 +528,7 @@
       const px = toCanvasX(p.x), py = toCanvasY(p.y);
       ctx.beginPath();
       ctx.arc(px, py, 7, 0, Math.PI * 2);
-      ctx.fillStyle = p.c === 1 ? '#ff6b6b' : '#4a9eff';
+      ctx.fillStyle = p.c === 1 ? '#c96e8a' : '#4a9eff';
       ctx.fill();
       ctx.strokeStyle = '#fff';
       ctx.lineWidth = 1.5;
@@ -605,7 +545,7 @@
     if (total > 0) {
       ctx.font = 'bold 12px sans-serif';
       ctx.textAlign = 'right';
-      ctx.fillStyle = correct === total ? '#64ffda' : '#ff6b6b';
+      ctx.fillStyle = correct === total ? '#c9a96e' : '#c96e8a';
       ctx.fillText('Accuracy: ' + correct + '/' + total, plotR - 6, plotT + 14);
     }
 
@@ -614,7 +554,7 @@
     ctx.textAlign = 'left';
     ctx.beginPath(); ctx.arc(plotL + 10, plotB - 14, 5, 0, Math.PI * 2); ctx.fillStyle = '#4a9eff'; ctx.fill();
     ctx.fillStyle = '#aaa'; ctx.fillText('Class 0', plotL + 20, plotB - 10);
-    ctx.beginPath(); ctx.arc(plotL + 80, plotB - 14, 5, 0, Math.PI * 2); ctx.fillStyle = '#ff6b6b'; ctx.fill();
+    ctx.beginPath(); ctx.arc(plotL + 80, plotB - 14, 5, 0, Math.PI * 2); ctx.fillStyle = '#c96e8a'; ctx.fill();
     ctx.fillStyle = '#aaa'; ctx.fillText('Class 1', plotL + 90, plotB - 10);
 
     // update slider values
@@ -632,48 +572,48 @@
 <!-- 0C. HOW DOES A NEURON LEARN? -->
 <div class="viz-section">
   <h2>How Does a Neuron Learn?</h2>
-  <p class="subtitle">In the previous section, you moved the decision boundary by hand with sliders. But how does the network move it <em>automatically</em>? It compares its prediction against a known answer (a "label"), measures the error, and nudges the weights to reduce that error. Click "Train Step" to walk through this process one micro-step at a time — no jargon, just arithmetic.</p>
+  <p class="subtitle">Learning means changing weights so wrong predictions become less wrong. Gradient descent measures how each weight affected the error and nudges the boundary in the direction that lowers the loss.</p>
 
   <!-- PART A: Single neuron learning -->
-  <h3 style="color:#ffd93d;margin-bottom:8px;font-size:1.15em;">Part A: One Weight, One Goal</h3>
+  <h3 style="color:#e0c992;margin-bottom:8px;font-size:1.15em;">Part A: One Weight, One Goal</h3>
   <canvas id="learnCanvas1" width="800" height="250"></canvas>
-  <div id="learnStep1Explain" style="min-height:48px;margin:8px 0 12px;padding:12px 18px;border-radius:8px;background:rgba(20,20,40,0.85);border-left:3px solid #ffd93d;font-size:0.88em;color:#c8d6e5;line-height:1.7;font-family:Inter,system-ui,sans-serif;">Click <strong>Train Step</strong> to see how the weight learns to match the target.</div>
+  <div id="learnStep1Explain" style="min-height:48px;margin:8px 0 12px;padding:12px 18px;border-radius:8px;background:rgba(20,20,40,0.85);border-left:3px solid #e0c992;font-size:0.88em;color:#c8d6e5;line-height:1.7;font-family:Inter,system-ui,sans-serif;">Click <strong>Train Step</strong> to see how the weight learns to match the target.</div>
   <div class="controls">
-    <button class="btn" id="learnStepBtn1" onclick="learnStep1()" style="background:rgba(255,217,61,0.15);border-color:#ffd93d;color:#ffd93d;font-weight:bold;">Train Step</button>
-    <button class="btn" onclick="resetLearn1()" style="border-color:#ffd93d;color:#ffd93d;">Reset</button>
+    <button class="btn" id="learnStepBtn1" onclick="learnStep1()" style="background:rgba(224, 201, 146,0.15);border-color:#e0c992;color:#e0c992;font-weight:bold;">Train Step</button>
+    <button class="btn" onclick="resetLearn1()" style="border-color:#e0c992;color:#e0c992;">Reset</button>
     <div class="control-group">
       <label>Learning Rate</label>
       <input type="range" id="learnLR1" min="1" max="50" value="10" step="1" oninput="document.getElementById('learnLR1Val').textContent=( this.value/100).toFixed(2)">
-      <span class="value" id="learnLR1Val" style="color:#ffd93d;">0.10</span>
+      <span class="value" id="learnLR1Val" style="color:#e0c992;">0.10</span>
     </div>
     <div class="control-group">
       <label>Target</label>
       <input type="range" id="learnTarget1" min="0" max="40" value="15" step="1" oninput="resetLearn1()">
-      <span class="value" id="learnTarget1Val" style="color:#ffd93d;">1.5</span>
+      <span class="value" id="learnTarget1Val" style="color:#e0c992;">1.5</span>
     </div>
   </div>
 
-  <div class="insight-box" style="border-left-color:#ffd93d;margin-bottom:32px;">
-    <strong style="color:#ffd93d;">That's gradient descent.</strong> We measure the error, figure out which direction to nudge the weight, and take a small step. The "gradient" is just the answer to: <em>if I change this weight a tiny bit, how much does the error change?</em>
+  <div class="insight-box" style="border-left-color:#e0c992;margin-bottom:32px;">
+    <strong style="color:#e0c992;">That's gradient descent.</strong> We measure the error, figure out which direction to nudge the weight, and take a small step. The "gradient" is just the answer to: <em>if I change this weight a tiny bit, how much does the error change?</em>
   </div>
 
   <!-- PART B: Two neurons chained -->
-  <h3 style="color:#ffd93d;margin-bottom:8px;font-size:1.15em;">Part B: Two Neurons Chained — The Birth of Backpropagation</h3>
-  <p class="subtitle">Now chain two neurons. The first one is "hidden" — it doesn't touch the output directly. How do we fix its weight?</p>
+  <h3 style="color:#e0c992;margin-bottom:8px;font-size:1.15em;">Part B: Two Neurons Chained — The Birth of Backpropagation</h3>
+  <p class="subtitle">Hidden neurons do not see the label directly, so backprop has to route the error signal through later layers. The core idea is simple: each hidden weight gets credit or blame based on how much it influenced the final loss.</p>
   <canvas id="learnCanvas2" width="800" height="280"></canvas>
-  <div id="learnStep2Explain" style="min-height:48px;margin:8px 0 12px;padding:12px 18px;border-radius:8px;background:rgba(20,20,40,0.85);border-left:3px solid #ffd93d;font-size:0.88em;color:#c8d6e5;line-height:1.7;font-family:Inter,system-ui,sans-serif;">Click <strong>Train Step</strong> to see how errors flow backward through two neurons.</div>
+  <div id="learnStep2Explain" style="min-height:48px;margin:8px 0 12px;padding:12px 18px;border-radius:8px;background:rgba(20,20,40,0.85);border-left:3px solid #e0c992;font-size:0.88em;color:#c8d6e5;line-height:1.7;font-family:Inter,system-ui,sans-serif;">Click <strong>Train Step</strong> to see how errors flow backward through two neurons.</div>
   <div class="controls">
-    <button class="btn" id="learnStepBtn2" onclick="learnStep2()" style="background:rgba(255,217,61,0.15);border-color:#ffd93d;color:#ffd93d;font-weight:bold;">Train Step</button>
-    <button class="btn" onclick="resetLearn2()" style="border-color:#ffd93d;color:#ffd93d;">Reset</button>
+    <button class="btn" id="learnStepBtn2" onclick="learnStep2()" style="background:rgba(224, 201, 146,0.15);border-color:#e0c992;color:#e0c992;font-weight:bold;">Train Step</button>
+    <button class="btn" onclick="resetLearn2()" style="border-color:#e0c992;color:#e0c992;">Reset</button>
     <div class="control-group">
       <label>Learning Rate</label>
       <input type="range" id="learnLR2" min="1" max="50" value="10" step="1" oninput="document.getElementById('learnLR2Val').textContent=(this.value/100).toFixed(2)">
-      <span class="value" id="learnLR2Val" style="color:#ffd93d;">0.10</span>
+      <span class="value" id="learnLR2Val" style="color:#e0c992;">0.10</span>
     </div>
   </div>
 
-  <div class="insight-box" style="border-left-color:#ffd93d;">
-    <strong style="color:#ffd93d;">That's backpropagation.</strong> The error flows backward through the network — each neuron receives the error from the neuron it feeds into, scaled by the connecting weight. Then it uses that to update its own weight. The "chain rule" is just multiplying these error signals along the chain.
+  <div class="insight-box" style="border-left-color:#e0c992;">
+    <strong style="color:#e0c992;">That's backpropagation.</strong> The error flows backward through the network — each neuron receives the error from the neuron it feeds into, scaled by the connecting weight. Then it uses that to update its own weight. The "chain rule" is just multiplying these error signals along the chain.
     <div class="formula" style="border-color:#554400;">$$\frac{\partial L}{\partial w_1} = \underbrace{\frac{\partial L}{\partial \text{out}}}_{\text{error at output}} \times \underbrace{\frac{\partial \text{out}}{\partial h}}_{= w_2 \text{ (the connecting weight!)}} \times \underbrace{\frac{\partial h}{\partial w_1}}_{= \text{ReLU}'(z_1) \cdot x}$$</div>
     <div class="interview-tip">Backprop is just the chain rule applied systematically. The key insight: each node only needs its <em>local</em> gradient and the upstream error signal. No node needs to "see" the whole network.</div>
     <div class="interview-tip">💡 Real-world: This weight update rule is running right now on thousands of GPUs across Google, Meta, and OpenAI. A single training run for a frontier model performs this operation quadrillions of times. The math is simple — the scale is what makes it expensive ($100M+ per run).</div>
@@ -713,7 +653,7 @@
     ctx.moveTo(xNode.x + 25, xNode.y);
     ctx.lineTo(outNode.x - 30, outNode.y);
     const thick = Math.min(Math.abs(w) * 4 + 2, 10);
-    ctx.strokeStyle = '#ffd93d';
+    ctx.strokeStyle = '#e0c992';
     ctx.lineWidth = thick;
     ctx.globalAlpha = 0.7;
     ctx.stroke();
@@ -721,7 +661,7 @@
 
     // Weight label on edge
     ctx.font = 'bold 15px monospace';
-    ctx.fillStyle = '#ffd93d';
+    ctx.fillStyle = '#e0c992';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
     ctx.fillText('w = ' + w.toFixed(3), wMid.x, wMid.y - 16);
@@ -731,7 +671,7 @@
     ctx.setLineDash([6, 4]);
     ctx.moveTo(outNode.x + 32, outNode.y);
     ctx.lineTo(tarNode.x - 32, tarNode.y);
-    ctx.strokeStyle = Math.abs(error) < 0.05 ? '#64ffda' : '#ff6b6b';
+    ctx.strokeStyle = Math.abs(error) < 0.05 ? '#c9a96e' : '#c96e8a';
     ctx.lineWidth = 2;
     ctx.stroke();
     ctx.setLineDash([]);
@@ -739,17 +679,17 @@
     // Error badge
     const errX = (outNode.x + tarNode.x) / 2;
     const errY = outNode.y - 30;
-    ctx.fillStyle = Math.abs(error) < 0.05 ? 'rgba(100,255,218,0.15)' : 'rgba(255,107,107,0.15)';
+    ctx.fillStyle = Math.abs(error) < 0.05 ? 'rgba(201, 169, 110,0.15)' : 'rgba(201, 110, 138,0.15)';
     const errText = 'error = ' + error.toFixed(3);
     const tw = ctx.measureText(errText).width;
     ctx.beginPath();
     ctx.roundRect(errX - tw / 2 - 10, errY - 12, tw + 20, 26, 6);
     ctx.fill();
-    ctx.strokeStyle = Math.abs(error) < 0.05 ? '#64ffda' : '#ff6b6b';
+    ctx.strokeStyle = Math.abs(error) < 0.05 ? '#c9a96e' : '#c96e8a';
     ctx.lineWidth = 1;
     ctx.stroke();
     ctx.font = 'bold 13px monospace';
-    ctx.fillStyle = Math.abs(error) < 0.05 ? '#64ffda' : '#ff6b6b';
+    ctx.fillStyle = Math.abs(error) < 0.05 ? '#c9a96e' : '#c96e8a';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(errText, errX, errY);
@@ -760,7 +700,7 @@
       ctx.arc(nx, ny, 28, 0, Math.PI * 2);
       const grad = ctx.createRadialGradient(nx, ny, 5, nx, ny, 28);
       grad.addColorStop(0, color);
-      grad.addColorStop(1, '#0d0d1a');
+      grad.addColorStop(1, '#0d0d14');
       ctx.fillStyle = grad;
       ctx.fill();
       ctx.strokeStyle = color;
@@ -784,7 +724,7 @@
     if (Math.abs(error) < 0.05) {
       converged = true;
       ctx.font = 'bold 18px sans-serif';
-      ctx.fillStyle = '#64ffda';
+      ctx.fillStyle = '#c9a96e';
       ctx.textAlign = 'center';
       ctx.fillText('Converged!', W / 2, 30);
     } else {
@@ -810,22 +750,22 @@
 
     stepPhase++;
     if (stepPhase === 1) {
-      explain.innerHTML = '<span style="color:#ffd93d;font-weight:bold;">Step 1 — How wrong are we?</span><br>' +
-        '<code>error = output - target = ' + output.toFixed(3) + ' - ' + target.toFixed(1) + ' = <span style="color:#ff6b6b;font-weight:bold;">' + error.toFixed(3) + '</span></code>';
-      explain.style.borderLeftColor = '#ff6b6b';
+      explain.innerHTML = '<span style="color:#e0c992;font-weight:bold;">Step 1 — How wrong are we?</span><br>' +
+        '<code>error = output - target = ' + output.toFixed(3) + ' - ' + target.toFixed(1) + ' = <span style="color:#c96e8a;font-weight:bold;">' + error.toFixed(3) + '</span></code>';
+      explain.style.borderLeftColor = '#c96e8a';
     } else if (stepPhase === 2) {
       const direction = error < 0 ? 'increase' : 'decrease';
       const reason = error < 0 ? 'we need MORE output (error is negative)' : 'we need LESS output (error is positive)';
-      explain.innerHTML = '<span style="color:#ffd93d;font-weight:bold;">Step 2 — Which direction should w change?</span><br>' +
+      explain.innerHTML = '<span style="color:#e0c992;font-weight:bold;">Step 2 — Which direction should w change?</span><br>' +
         'If we increase <code>w</code>, output increases by <code>x = ' + x.toFixed(1) + '</code> per unit of <code>w</code>.<br>' +
-        'Since ' + reason + ', we should <strong style="color:#ffd93d;">' + direction + ' w</strong>.';
-      explain.style.borderLeftColor = '#ffd93d';
+        'Since ' + reason + ', we should <strong style="color:#e0c992;">' + direction + ' w</strong>.';
+      explain.style.borderLeftColor = '#e0c992';
     } else if (stepPhase >= 3) {
       const gradient = error * x;
       const wNew = w - lr * gradient;
-      explain.innerHTML = '<span style="color:#ffd93d;font-weight:bold;">Step 3 — Update the weight</span><br>' +
-        '<code>w<sub>new</sub> = w - lr \u00d7 error \u00d7 x = ' + w.toFixed(3) + ' - ' + lr.toFixed(2) + ' \u00d7 (' + error.toFixed(3) + ') \u00d7 ' + x.toFixed(1) + ' = ' + w.toFixed(3) + ' + ' + (lr * -error * x).toFixed(4) + ' = <span style="color:#64ffda;font-weight:bold;">' + wNew.toFixed(4) + '</span></code>';
-      explain.style.borderLeftColor = '#64ffda';
+      explain.innerHTML = '<span style="color:#e0c992;font-weight:bold;">Step 3 — Update the weight</span><br>' +
+        '<code>w<sub>new</sub> = w - lr \u00d7 error \u00d7 x = ' + w.toFixed(3) + ' - ' + lr.toFixed(2) + ' \u00d7 (' + error.toFixed(3) + ') \u00d7 ' + x.toFixed(1) + ' = ' + w.toFixed(3) + ' + ' + (lr * -error * x).toFixed(4) + ' = <span style="color:#c9a96e;font-weight:bold;">' + wNew.toFixed(4) + '</span></code>';
+      explain.style.borderLeftColor = '#c9a96e';
       w = wNew;
       stepCount++;
       stepPhase = 0;
@@ -842,7 +782,7 @@
     stepCount = 0;
     const explain = document.getElementById('learnStep1Explain');
     explain.innerHTML = 'Click <strong>Train Step</strong> to see how the weight learns to match the target.';
-    explain.style.borderLeftColor = '#ffd93d';
+    explain.style.borderLeftColor = '#e0c992';
     draw();
   };
 
@@ -886,14 +826,14 @@
     ctx.beginPath();
     ctx.moveTo(xPos.x + 25, xPos.y);
     ctx.lineTo(n1Pos.x - 30, n1Pos.y);
-    ctx.strokeStyle = '#ffd93d';
+    ctx.strokeStyle = '#e0c992';
     ctx.lineWidth = Math.min(Math.abs(w1) * 4 + 2, 10);
     ctx.globalAlpha = 0.7;
     ctx.stroke();
     ctx.globalAlpha = 1.0;
     // w1 label
     ctx.font = 'bold 14px monospace';
-    ctx.fillStyle = '#ffd93d';
+    ctx.fillStyle = '#e0c992';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
     ctx.fillText('w\u2081=' + w1.toFixed(3), (xPos.x + n1Pos.x) / 2, xPos.y - 14);
@@ -902,14 +842,14 @@
     ctx.beginPath();
     ctx.moveTo(n1Pos.x + 30, n1Pos.y);
     ctx.lineTo(n2Pos.x - 30, n2Pos.y);
-    ctx.strokeStyle = '#ffd93d';
+    ctx.strokeStyle = '#e0c992';
     ctx.lineWidth = Math.min(Math.abs(w2) * 4 + 2, 10);
     ctx.globalAlpha = 0.7;
     ctx.stroke();
     ctx.globalAlpha = 1.0;
     // w2 label
     ctx.font = 'bold 14px monospace';
-    ctx.fillStyle = '#ffd93d';
+    ctx.fillStyle = '#e0c992';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
     ctx.fillText('w\u2082=' + w2.toFixed(3), (n1Pos.x + n2Pos.x) / 2, n1Pos.y - 14);
@@ -919,7 +859,7 @@
     ctx.setLineDash([6, 4]);
     ctx.moveTo(n2Pos.x + 32, n2Pos.y);
     ctx.lineTo(tarPos.x - 32, tarPos.y);
-    ctx.strokeStyle = Math.abs(error) < 0.05 ? '#64ffda' : '#ff6b6b';
+    ctx.strokeStyle = Math.abs(error) < 0.05 ? '#c9a96e' : '#c96e8a';
     ctx.lineWidth = 2;
     ctx.stroke();
     ctx.setLineDash([]);
@@ -929,15 +869,15 @@
     const errY = n2Pos.y - 36;
     const errText = 'error = ' + error.toFixed(3);
     const tw2 = ctx.measureText(errText).width;
-    ctx.fillStyle = Math.abs(error) < 0.05 ? 'rgba(100,255,218,0.15)' : 'rgba(255,107,107,0.15)';
+    ctx.fillStyle = Math.abs(error) < 0.05 ? 'rgba(201, 169, 110,0.15)' : 'rgba(201, 110, 138,0.15)';
     ctx.beginPath();
     ctx.roundRect(errX - tw2 / 2 - 10, errY - 12, tw2 + 20, 26, 6);
     ctx.fill();
-    ctx.strokeStyle = Math.abs(error) < 0.05 ? '#64ffda' : '#ff6b6b';
+    ctx.strokeStyle = Math.abs(error) < 0.05 ? '#c9a96e' : '#c96e8a';
     ctx.lineWidth = 1;
     ctx.stroke();
     ctx.font = 'bold 13px monospace';
-    ctx.fillStyle = Math.abs(error) < 0.05 ? '#64ffda' : '#ff6b6b';
+    ctx.fillStyle = Math.abs(error) < 0.05 ? '#c9a96e' : '#c96e8a';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(errText, errX, errY);
@@ -948,7 +888,7 @@
       ctx.arc(nx, ny, 28, 0, Math.PI * 2);
       const grad = ctx.createRadialGradient(nx, ny, 5, nx, ny, 28);
       grad.addColorStop(0, color);
-      grad.addColorStop(1, '#0d0d1a');
+      grad.addColorStop(1, '#0d0d14');
       ctx.fillStyle = grad;
       ctx.fill();
       ctx.strokeStyle = color;
@@ -971,7 +911,7 @@
 
     // ReLU indicator
     ctx.font = 'bold 11px monospace';
-    ctx.fillStyle = reluActive ? '#64ffda' : '#ff6b6b';
+    ctx.fillStyle = reluActive ? '#c9a96e' : '#c96e8a';
     ctx.textAlign = 'center';
     ctx.fillText(reluActive ? 'ReLU ON' : 'ReLU OFF', n1Pos.x, n1Pos.y - 40);
 
@@ -979,7 +919,7 @@
     if (Math.abs(error) < 0.05) {
       converged = true;
       ctx.font = 'bold 18px sans-serif';
-      ctx.fillStyle = '#64ffda';
+      ctx.fillStyle = '#c9a96e';
       ctx.textAlign = 'center';
       ctx.fillText('Converged!', W / 2, 24);
     } else {
@@ -1001,21 +941,21 @@
 
     stepPhase++;
     if (stepPhase === 1) {
-      explain.innerHTML = '<span style="color:#ffd93d;font-weight:bold;">Step 1 — Forward: compute the output</span><br>' +
-        '<code>h = ReLU(w\u2081 \u00d7 x) = ReLU(' + w1.toFixed(3) + ' \u00d7 ' + x.toFixed(1) + ') = ReLU(' + z1.toFixed(3) + ') = <span style="color:#64ffda;">' + h.toFixed(3) + '</span></code><br>' +
-        '<code>output = w\u2082 \u00d7 h = ' + w2.toFixed(3) + ' \u00d7 ' + h.toFixed(3) + ' = <span style="color:#64ffda;">' + output.toFixed(3) + '</span></code>';
-      explain.style.borderLeftColor = '#64ffda';
+      explain.innerHTML = '<span style="color:#e0c992;font-weight:bold;">Step 1 — Forward: compute the output</span><br>' +
+        '<code>h = ReLU(w\u2081 \u00d7 x) = ReLU(' + w1.toFixed(3) + ' \u00d7 ' + x.toFixed(1) + ') = ReLU(' + z1.toFixed(3) + ') = <span style="color:#c9a96e;">' + h.toFixed(3) + '</span></code><br>' +
+        '<code>output = w\u2082 \u00d7 h = ' + w2.toFixed(3) + ' \u00d7 ' + h.toFixed(3) + ' = <span style="color:#c9a96e;">' + output.toFixed(3) + '</span></code>';
+      explain.style.borderLeftColor = '#c9a96e';
     } else if (stepPhase === 2) {
-      explain.innerHTML = '<span style="color:#ffd93d;font-weight:bold;">Step 2 — How wrong?</span><br>' +
-        '<code>error = output - target = ' + output.toFixed(3) + ' - ' + target.toFixed(1) + ' = <span style="color:#ff6b6b;">' + error.toFixed(3) + '</span></code>';
-      explain.style.borderLeftColor = '#ff6b6b';
+      explain.innerHTML = '<span style="color:#e0c992;font-weight:bold;">Step 2 — How wrong?</span><br>' +
+        '<code>error = output - target = ' + output.toFixed(3) + ' - ' + target.toFixed(1) + ' = <span style="color:#c96e8a;">' + error.toFixed(3) + '</span></code>';
+      explain.style.borderLeftColor = '#c96e8a';
     } else if (stepPhase === 3) {
       const dw2 = error * h;
       const w2New = w2 - lr * dw2;
-      explain.innerHTML = '<span style="color:#ffd93d;font-weight:bold;">Step 3 — Fix w\u2082 (the output weight)</span><br>' +
+      explain.innerHTML = '<span style="color:#e0c992;font-weight:bold;">Step 3 — Fix w\u2082 (the output weight)</span><br>' +
         'Same as Part A: <code>dError/dw\u2082 = h = ' + h.toFixed(3) + '</code><br>' +
-        '<code>w\u2082_new = ' + w2.toFixed(3) + ' - ' + lr.toFixed(2) + ' \u00d7 (' + error.toFixed(3) + ') \u00d7 ' + h.toFixed(3) + ' = <span style="color:#64ffda;">' + w2New.toFixed(4) + '</span></code>';
-      explain.style.borderLeftColor = '#ffd93d';
+        '<code>w\u2082_new = ' + w2.toFixed(3) + ' - ' + lr.toFixed(2) + ' \u00d7 (' + error.toFixed(3) + ') \u00d7 ' + h.toFixed(3) + ' = <span style="color:#c9a96e;">' + w2New.toFixed(4) + '</span></code>';
+      explain.style.borderLeftColor = '#e0c992';
     } else if (stepPhase >= 4) {
       const reluDeriv = z1 > 0 ? 1 : 0;
       const errorForH = error * w2;
@@ -1023,13 +963,13 @@
       const dw2 = error * h;
       const w1New = w1 - lr * dw1;
       const w2New = w2 - lr * dw2;
-      explain.innerHTML = '<span style="color:#ffd93d;font-weight:bold;">Step 4 — But how do we fix w\u2081? It\'s hidden!</span><br>' +
-        'w\u2081 doesn\'t touch the output directly. But changing w\u2081 changes h, and changing h changes the output. <strong style="color:#ffd93d;">Pass the error backward through w\u2082:</strong><br>' +
-        '<code>error_for_h = error \u00d7 w\u2082 = ' + error.toFixed(3) + ' \u00d7 ' + w2.toFixed(3) + ' = <span style="color:#ff6b6b;">' + errorForH.toFixed(4) + '</span></code><br>' +
-        'Was ReLU active? z\u2081 = ' + z1.toFixed(3) + (z1 > 0 ? ' > 0, so <span style="color:#64ffda;">yes (\u00d71)</span>' : ' \u2264 0, so <span style="color:#ff6b6b;">no (\u00d70)</span>') + '<br>' +
-        '<code>dError/dw\u2081 = error_for_h \u00d7 ReLU\'(z\u2081) \u00d7 x = ' + errorForH.toFixed(4) + ' \u00d7 ' + reluDeriv + ' \u00d7 ' + x.toFixed(1) + ' = <span style="color:#ff6b6b;">' + dw1.toFixed(4) + '</span></code><br>' +
-        '<code>w\u2081_new = ' + w1.toFixed(3) + ' - ' + lr.toFixed(2) + ' \u00d7 (' + dw1.toFixed(4) + ') = <span style="color:#64ffda;">' + w1New.toFixed(4) + '</span></code>';
-      explain.style.borderLeftColor = '#ff6b6b';
+      explain.innerHTML = '<span style="color:#e0c992;font-weight:bold;">Step 4 — But how do we fix w\u2081? It\'s hidden!</span><br>' +
+        'w\u2081 doesn\'t touch the output directly. But changing w\u2081 changes h, and changing h changes the output. <strong style="color:#e0c992;">Pass the error backward through w\u2082:</strong><br>' +
+        '<code>error_for_h = error \u00d7 w\u2082 = ' + error.toFixed(3) + ' \u00d7 ' + w2.toFixed(3) + ' = <span style="color:#c96e8a;">' + errorForH.toFixed(4) + '</span></code><br>' +
+        'Was ReLU active? z\u2081 = ' + z1.toFixed(3) + (z1 > 0 ? ' > 0, so <span style="color:#c9a96e;">yes (\u00d71)</span>' : ' \u2264 0, so <span style="color:#c96e8a;">no (\u00d70)</span>') + '<br>' +
+        '<code>dError/dw\u2081 = error_for_h \u00d7 ReLU\'(z\u2081) \u00d7 x = ' + errorForH.toFixed(4) + ' \u00d7 ' + reluDeriv + ' \u00d7 ' + x.toFixed(1) + ' = <span style="color:#c96e8a;">' + dw1.toFixed(4) + '</span></code><br>' +
+        '<code>w\u2081_new = ' + w1.toFixed(3) + ' - ' + lr.toFixed(2) + ' \u00d7 (' + dw1.toFixed(4) + ') = <span style="color:#c9a96e;">' + w1New.toFixed(4) + '</span></code>';
+      explain.style.borderLeftColor = '#c96e8a';
       w1 = w1New;
       w2 = w2New;
       stepCount++;
@@ -1048,7 +988,7 @@
     stepCount = 0;
     const explain = document.getElementById('learnStep2Explain');
     explain.innerHTML = 'Click <strong>Train Step</strong> to see how errors flow backward through two neurons.';
-    explain.style.borderLeftColor = '#ffd93d';
+    explain.style.borderLeftColor = '#e0c992';
     draw();
   };
 
@@ -1059,14 +999,14 @@
 <!-- 1. NEURAL NETWORK FORWARD & BACKWARD PASS -->
 <div class="viz-section">
   <h2>Neural Network: Forward & Backward Pass</h2>
-  <p class="subtitle">Click <em>Forward</em> to push inputs through the network, then <em>Backward</em> to see gradients flow back. Hover any node to see its computation details. The network learns by adjusting weights to reduce the loss.</p>
+  <p class="subtitle">The forward pass computes a prediction; the backward pass assigns blame to each weight for the error. Backpropagation is just repeated application of the chain rule so every parameter gets a learning signal.</p>
   <div style="position:relative;">
     <canvas id="nnCanvas" width="1000" height="420"></canvas>
-    <div id="nnTooltip" style="display:none;position:absolute;background:rgba(12,12,24,0.95);border:1px solid #64ffda;border-radius:10px;padding:12px 16px;font-size:13px;line-height:1.6;color:#c8d6e5;max-width:280px;pointer-events:none;z-index:10;font-family:monospace;"></div>
+    <div id="nnTooltip" style="display:none;position:absolute;background:rgba(12,12,24,0.95);border:1px solid #c9a96e;border-radius:10px;padding:12px 16px;font-size:13px;line-height:1.6;color:#c8d6e5;max-width:280px;pointer-events:none;z-index:10;font-family:monospace;"></div>
   </div>
   <div id="nnStepExplain" style="min-height:48px;margin:8px 0 12px;padding:12px 18px;border-radius:8px;background:rgba(20,20,40,0.85);border-left:3px solid #444;font-size:0.88em;color:#c8d6e5;line-height:1.7;transition:all 0.3s;font-family:Inter,system-ui,sans-serif;">Click <strong>Next Step</strong> to walk through the forward pass, then the backward pass, one layer at a time.</div>
   <div class="controls">
-    <button class="btn" id="nnStepBtn" onclick="nnNextStep()" style="background:rgba(100,255,218,0.15);border-color:#64ffda;color:#64ffda;font-weight:bold;">Next Step</button>
+    <button class="btn" id="nnStepBtn" onclick="nnNextStep()" style="background:rgba(201, 169, 110,0.15);border-color:#c9a96e;color:#c9a96e;font-weight:bold;">Next Step</button>
     <button class="btn" onclick="resetNN()">Reset</button>
     <div class="control-group">
       <label>Input x₁</label>
@@ -1080,7 +1020,7 @@
     </div>
     <div class="control-group">
       <label>Target class</label>
-      <select id="nnTarget" onchange="resetNN()" style="background:#1a1a2e;color:#c8d6e5;border:1px solid #444;border-radius:4px;padding:4px 8px;">
+      <select id="nnTarget" onchange="resetNN()" style="background:#111118;color:#c8d6e5;border:1px solid #444;border-radius:4px;padding:4px 8px;">
         <option value="0" selected>Class 0 (y=[1,0])</option>
         <option value="1">Class 1 (y=[0,1])</option>
       </select>
@@ -1108,28 +1048,28 @@
       <span class="desc">Introduces non-linearity. Without it, network is just linear transformation. ReLU, tanh, sigmoid common choices.</span>
     </div>
     <hr class="divider">
-    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
     <div class="comparison" style="grid-template-columns: 1fr 1fr 1fr; margin-top: 10px;">
       <div class="option">
-        <div class="opt-title" style="color: #ff6b6b;">Shallow Networks (1-3 layers)</div>
+        <div class="opt-title" style="color: #c96e8a;">Shallow Networks (1-3 layers)</div>
         <div class="opt-desc">Tabular data, simple regression/classification where features are already meaningful. Faster to train, less prone to overfitting on small datasets.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Credit scoring, click-through prediction, structured data with &lt;100 features.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Credit scoring, click-through prediction, structured data with &lt;100 features.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #4ecdc4;">Deep Networks (5-50 layers)</div>
+        <div class="opt-title" style="color: #6ea5c9;">Deep Networks (5-50 layers)</div>
         <div class="opt-desc">Tasks requiring hierarchical feature learning from raw inputs. Need enough data to justify depth. Use residual connections for 20+ layers.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Image classification (ResNet), speech recognition, NLP embeddings, medical imaging.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Image classification (ResNet), speech recognition, NLP embeddings, medical imaging.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #ffd93d;">Very Deep / Foundation Models (50+ layers)</div>
+        <div class="opt-title" style="color: #e0c992;">Very Deep / Foundation Models (50+ layers)</div>
         <div class="opt-desc">Large-scale pretraining on massive datasets. Requires careful initialization, normalization, and residual connections. Billions of parameters.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> GPT/LLaMA (Transformers), Vision Transformers (ViT), diffusion models for image generation.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> GPT/LLaMA (Transformers), Vision Transformers (ViT), diffusion models for image generation.</div>
       </div>
     </div>
     <hr class="divider">
     <div class="interview-tip">Why deep networks? Deeper networks learn more abstract representations. Trade-off: harder to train, need more data.</div>
     <div class="mnemonic">Neural network = function composition. Each layer learns a transformation. Depth = abstraction hierarchy.
-    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: During forward pass, hover over an output node — activation = 0.7 (result of ReLU(0.1 * input)). During backward pass, hover over same node — gradient = 0.03 (chain rule: local gradient × upstream gradient). Change an input and watch activations and gradients update.</div>
+    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: During forward pass, hover over an output node — activation = 0.7 (result of ReLU(0.1 * input)). During backward pass, hover over same node — gradient = 0.03 (chain rule: local gradient × upstream gradient). Change an input and watch activations and gradients update.</div>
   
     <div class="code-example">
       <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
@@ -1161,7 +1101,7 @@ loss.backward()            # backward pass computes all gradients</code></pre>
 <!-- 2. ACTIVATION FUNCTIONS -->
 <div class="viz-section">
   <h2>Activation Functions Compared</h2>
-  <p class="subtitle">Toggle between Sigmoid, ReLU, and Tanh. Watch the derivative plots (bottom row) — Sigmoid has near-zero derivatives at extremes (vanishing gradients!). ReLU has constant 1 in the positive region (stable gradients). Flat regions = gradient death.</p>
+  <p class="subtitle">Activation functions control both what patterns a network can represent and how easily gradients flow during training. ReLU usually trains more easily, sigmoid and tanh squash values, and saturation is what causes vanishing gradients.</p>
   <canvas id="actCanvas" width="800" height="400"></canvas>
   <div class="controls">
     <div class="tab-bar">
@@ -1171,7 +1111,7 @@ loss.backward()            # backward pass computes all gradients</code></pre>
       <button class="btn" id="actSigmoid" onclick="toggleAct('sigmoid')">Sigmoid</button>
       <button class="btn" id="actTanh" onclick="toggleAct('tanh')">Tanh</button>
     </div>
-    <label style="font-size:0.85em; color:#aaa;"><input type="checkbox" id="actShowDeriv" checked onchange="drawAct()"> Show derivatives</label>
+    <label style="font-size:0.85em; color:#8a8680;"><input type="checkbox" id="actShowDeriv" checked onchange="drawAct()"> Show derivatives</label>
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Activation functions introduce nonlinearity — without them, stacking layers would just be matrix multiplication (a deep network would collapse to a single linear layer).
@@ -1190,33 +1130,33 @@ loss.backward()            # backward pass computes all gradients</code></pre>
       <span class="desc">ReLU outputs exactly 0 for negative inputs. If a neuron's weights shift so all inputs are negative, it never activates again — it's "dead." Leaky ReLU (small slope for negatives) prevents this.</span>
     </div>
     <hr class="divider">
-    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
     <div class="comparison" style="grid-template-columns: 1fr 1fr; margin-top: 10px;">
       <div class="option">
-        <div class="opt-title" style="color: #ff6b6b;">ReLU / Leaky ReLU</div>
+        <div class="opt-title" style="color: #c96e8a;">ReLU / Leaky ReLU</div>
         <div class="opt-desc">Default choice for hidden layers in most networks. Fast to compute, avoids vanishing gradients. Use Leaky ReLU if you encounter dead neurons.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> CNNs (ResNet, VGG), MLPs, any deep feedforward network. Leaky ReLU for GANs.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> CNNs (ResNet, VGG), MLPs, any deep feedforward network. Leaky ReLU for GANs.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #4ecdc4;">GELU / SiLU (Swish)</div>
+        <div class="opt-title" style="color: #6ea5c9;">GELU / SiLU (Swish)</div>
         <div class="opt-desc">Smooth approximations of ReLU used in modern Transformers. Slightly better performance due to non-zero gradients for negative inputs. GELU is standard in BERT/GPT.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> GELU in Transformers (BERT, GPT, ViT). SiLU/Swish in EfficientNet, LLaMA.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> GELU in Transformers (BERT, GPT, ViT). SiLU/Swish in EfficientNet, LLaMA.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #ffd93d;">Sigmoid</div>
+        <div class="opt-title" style="color: #e0c992;">Sigmoid</div>
         <div class="opt-desc">Output layer only for binary classification (outputs probability 0-1). Never use in hidden layers of deep networks (vanishing gradients). Also used in gates (LSTM, attention).</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Binary classifiers, LSTM gate activations, logistic regression output.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Binary classifiers, LSTM gate activations, logistic regression output.</div>
       </div>
       <div class="option">
         <div class="opt-title" style="color: #c4b5fd;">Tanh</div>
         <div class="opt-desc">Zero-centered output (-1 to 1). Used in RNN hidden states and when you need bounded, centered outputs. Better than sigmoid for hidden layers but still suffers from saturation.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> RNN/LSTM hidden state activations, actor outputs in reinforcement learning (bounded actions).</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> RNN/LSTM hidden state activations, actor outputs in reinforcement learning (bounded actions).</div>
       </div>
     </div>
     <hr class="divider">
     <div class="interview-tip">Use ReLU instead of sigmoid/tanh to avoid vanishing gradients. Use batch normalization to stabilize gradient flow.</div>
     <div class="mnemonic">Backpropagation = chain rule applied recursively. Efficient but suffers from vanishing/exploding gradients in deep networks.
-    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click Sigmoid. At extremes (x=-10, x=10), derivative ≈ 0 (white/flat). In the middle (x=0), derivative = 0.25 (steepest). Switch to ReLU — derivative is constant 1 for x>0 (no vanishing!). This is why ReLU enabled deep networks.</div>
+    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Click Sigmoid. At extremes (x=-10, x=10), derivative ≈ 0 (white/flat). In the middle (x=0), derivative = 0.25 (steepest). Switch to ReLU — derivative is constant 1 for x>0 (no vanishing!). This is why ReLU enabled deep networks.</div>
   
     <div class="code-example">
       <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
@@ -1243,7 +1183,7 @@ print(f"SiLU:    {F.silu(x).round(decimals=2).tolist()}")
 <!-- 3. VANISHING & EXPLODING GRADIENTS -->
 <div class="viz-section">
   <h2>Vanishing & Exploding Gradients</h2>
-  <p class="subtitle">Set "Network Depth" to 2 and observe gradient magnitudes across layers (the color bars). Increase depth to 20 with Sigmoid — watch gradients fade to white at early layers (vanishing!). Switch to ReLU — gradients stay colorful. Adjust learning rate to see explosion.</p>
+  <p class="subtitle">Deep networks multiply many gradient terms together. If those factors are mostly below 1, the signal disappears; if they are above 1, the signal explodes and training becomes unstable.</p>
   <canvas id="vgCanvas" width="800" height="350"></canvas>
   <div class="controls">
     <div class="control-group">
@@ -1282,28 +1222,28 @@ print(f"SiLU:    {F.silu(x).round(decimals=2).tolist()}")
     <div class="key-point"><span class="label">ReLU helps:</span><span class="desc">ReLU derivative = 1 for positive inputs (no shrinkage!). But "dead ReLU" problem: if input is always negative, gradient = 0 permanently.</span></div>
     <div class="key-point"><span class="label">Residual connections fix it:</span><span class="desc">y = F(x) + x. Gradient of skip connection = 1. Even if F's gradient vanishes, the gradient flows through the skip. This is why ResNets can be 100+ layers deep.</span></div>
     <hr class="divider">
-    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
     <div class="comparison" style="grid-template-columns: 1fr 1fr 1fr; margin-top: 10px;">
       <div class="option">
-        <div class="opt-title" style="color: #ff6b6b;">Gradient Clipping</div>
+        <div class="opt-title" style="color: #c96e8a;">Gradient Clipping</div>
         <div class="opt-desc">When gradients explode (loss spikes, NaN weights). Clips gradient norm to a max value. Essential for RNNs and Transformer training. Does not help vanishing gradients.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> RNN/LSTM training (clip at 1.0-5.0), LLM pretraining (clip at 1.0), any unstable training run.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> RNN/LSTM training (clip at 1.0-5.0), LLM pretraining (clip at 1.0), any unstable training run.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #4ecdc4;">Residual Connections</div>
+        <div class="opt-title" style="color: #6ea5c9;">Residual Connections</div>
         <div class="opt-desc">When building networks deeper than ~10 layers. Skip connections add identity path so gradient = 1 minimum. Enables 100+ layer networks. No downsides -- always use in deep nets.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> ResNet, Transformers (every layer), U-Net (encoder-decoder skips), DenseNet.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> ResNet, Transformers (every layer), U-Net (encoder-decoder skips), DenseNet.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #ffd93d;">Careful Initialization (He/Xavier)</div>
+        <div class="opt-title" style="color: #e0c992;">Careful Initialization (He/Xavier)</div>
         <div class="opt-desc">Always. Xavier init for tanh/sigmoid layers (preserves variance). He init for ReLU layers (accounts for half-zeroed outputs). Wrong init = dead or exploding network from step 1.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> He init for all ReLU CNNs. Xavier for Transformer linear layers. Orthogonal init for RNNs.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> He init for all ReLU CNNs. Xavier for Transformer linear layers. Orthogonal init for RNNs.</div>
       </div>
     </div>
     <hr class="divider">
     <div class="interview-tip">"Why can't we train a 50-layer sigmoid network?" → Chain rule multiplies derivatives. Sigmoid max derivative = 0.25. After 50 layers: 0.25⁵⁰ ≈ 10⁻³⁰. Gradient is effectively zero. Solution: ReLU + residual connections + careful initialization (He/Xavier).</div>
     <div class="mnemonic">Vanishing = multiplying numbers &lt; 1 repeatedly. Exploding = multiplying numbers &gt; 1 repeatedly. Residual connections = adding a highway that always carries gradient = 1.</div>
-    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set depth to 5 with Sigmoid — gradients are okay. Now drag to 25 — watch them collapse. Switch to ReLU — they stabilize. Switch to Residual — rock solid even at depth 30.</div>
+    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Set depth to 5 with Sigmoid — gradients are okay. Now drag to 25 — watch them collapse. Switch to ReLU — they stabilize. Switch to Residual — rock solid even at depth 30.</div>
   
     <div class="code-example">
       <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
@@ -1359,7 +1299,7 @@ print(f"Input grad norm: {x.grad.norm().item():.6f}")</code></pre>
 <!-- 4. CNN CONVOLUTION OPERATION -->
 <div class="viz-section">
   <h2>Convolution Operation Step by Step</h2>
-  <p class="subtitle">Click "Next Step" to watch the kernel slide one position at a time. See the element-wise multiplication and summation at each position. The output is built position-by-position. This is why 3×3 kernels are efficient (only 9 parameters per filter).</p>
+  <p class="subtitle">A convolution is a small reusable filter that scans across an image and looks for the same local pattern everywhere. Weight sharing is why CNNs need far fewer parameters than fully connected layers on images.</p>
   <canvas id="cnnCanvas" width="800" height="650"></canvas>
   <div class="controls">
     <button class="btn" id="cnnPlayBtn" onclick="toggleCNN()">▶ Animate</button>
@@ -1401,33 +1341,33 @@ print(f"Input grad norm: {x.grad.norm().item():.6f}")</code></pre>
       <span class="desc">No dropout! Use all activations. Scaling: multiply by (1-p) during training, OR divide by (1-p) at test (depends on implementation).</span>
     </div>
     <hr class="divider">
-    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
     <div class="comparison" style="grid-template-columns: 1fr 1fr; margin-top: 10px;">
       <div class="option">
-        <div class="opt-title" style="color: #ff6b6b;">Small Kernels (3x3)</div>
+        <div class="opt-title" style="color: #c96e8a;">Small Kernels (3x3)</div>
         <div class="opt-desc">Default choice for modern CNNs. Two stacked 3x3 convs have the same receptive field as one 5x5 but with fewer parameters (18 vs 25) and more non-linearity. VGGNet proved this.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> ResNet, VGG, U-Net, most modern vision architectures. Use 1x1 convs for channel mixing (Inception).</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> ResNet, VGG, U-Net, most modern vision architectures. Use 1x1 convs for channel mixing (Inception).</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #4ecdc4;">Large Kernels / Dilated Convolutions</div>
+        <div class="opt-title" style="color: #6ea5c9;">Large Kernels / Dilated Convolutions</div>
         <div class="opt-desc">When you need large receptive fields without deep stacking. Dilated convolutions increase field without adding parameters. Large kernels (7x7) used in first layer to capture low-level features.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> ResNet first layer (7x7), WaveNet (dilated), semantic segmentation (DeepLab), ConvNeXt (7x7 depthwise).</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> ResNet first layer (7x7), WaveNet (dilated), semantic segmentation (DeepLab), ConvNeXt (7x7 depthwise).</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #ffd93d;">Depthwise Separable Convolutions</div>
+        <div class="opt-title" style="color: #e0c992;">Depthwise Separable Convolutions</div>
         <div class="opt-desc">Mobile/edge deployment where compute is limited. Splits into depthwise (spatial) + pointwise (channel mixing). ~8-9x fewer FLOPs than standard convolutions with minimal accuracy loss.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> MobileNet, EfficientNet, on-device inference, real-time video processing.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> MobileNet, EfficientNet, on-device inference, real-time video processing.</div>
       </div>
       <div class="option">
         <div class="opt-title" style="color: #c4b5fd;">Stride 2 Conv vs Pooling</div>
         <div class="opt-desc">Use stride-2 convolutions for learned downsampling (modern default). Max pooling for translation invariance. Average pooling for global feature aggregation before classifier head.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Stride 2 in ResNet downsampling. Global average pooling before final FC layer. Max pool in older architectures (AlexNet).</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Stride 2 in ResNet downsampling. Global average pooling before final FC layer. Max pool in older architectures (AlexNet).</div>
       </div>
     </div>
     <hr class="divider">
     <div class="interview-tip">Dropout is a simple, powerful regularizer. Less important with batch norm, but still useful together. Monitor train vs test error.</div>
     <div class="mnemonic">Dropout = train multiple nets simultaneously, average at test time. Prevents co-adaptation. Ensemble effect = better generalization.
-    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Click "Next Step" 5 times — kernel slides from left to right. After each step, output value = (sum of element-wise products). Try "Prev Step" to backtrack. This simple sliding dot product is the entire CNN operation — applied millions of times.</div>
+    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Click "Next Step" 5 times — kernel slides from left to right. After each step, output value = (sum of element-wise products). Try "Prev Step" to backtrack. This simple sliding dot product is the entire CNN operation — applied millions of times.</div>
   
     <div class="code-example">
       <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
@@ -1459,7 +1399,7 @@ print(model(x).shape)           # torch.Size([8, 10])</code></pre>
 <!-- 5. BATCH NORM vs LAYER NORM -->
 <div class="viz-section">
   <h2>Normalization: Batch vs Layer vs RMS</h2>
-  <p class="subtitle">Toggle between Batch Norm, Layer Norm, and RMSNorm. For each, the colored region shows which activations get normalized together. Batch Norm normalizes across batch (column), Layer Norm across features (row). Notice: Batch Norm behavior depends on batch size!</p>
+  <p class="subtitle">Normalization keeps activations in a stable range, but each method normalizes over a different set of values. BatchNorm depends on the batch, while LayerNorm and RMSNorm work within a single example.</p>
   <canvas id="normCanvas" width="800" height="350"></canvas>
   <div class="controls">
     <div class="tab-bar">
@@ -1490,27 +1430,27 @@ print(model(x).shape)           # torch.Size([8, 10])</code></pre>
       <span class="desc">CNNs with large batches → BatchNorm. Transformers/sequences → LayerNorm or RMSNorm. Small batches or detection → GroupNorm. When in doubt, LayerNorm is the safest default.</span>
     </div>
     <hr class="divider">
-    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
     <div class="comparison" style="grid-template-columns: 1fr 1fr; margin-top: 10px;">
       <div class="option">
-        <div class="opt-title" style="color: #ff6b6b;">Batch Normalization</div>
+        <div class="opt-title" style="color: #c96e8a;">Batch Normalization</div>
         <div class="opt-desc">CNNs and fixed-batch training. Normalizes across the batch dimension. Requires sufficiently large batches (32+). Behaves differently at train vs test time (uses running stats at test). Do not use with small batches or variable-length sequences.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> ResNet, EfficientNet, any CNN with batch size >= 32. Standard in computer vision pipelines.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> ResNet, EfficientNet, any CNN with batch size >= 32. Standard in computer vision pipelines.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #4ecdc4;">Layer Normalization</div>
+        <div class="opt-title" style="color: #6ea5c9;">Layer Normalization</div>
         <div class="opt-desc">Transformers and sequence models. Normalizes across features for each sample independently. Batch-size independent -- works with batch=1. Same behavior at train and test time.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> All Transformer models (GPT, BERT, ViT), RNNs, online/streaming inference, any variable-length input.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> All Transformer models (GPT, BERT, ViT), RNNs, online/streaming inference, any variable-length input.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #ffd93d;">RMSNorm</div>
+        <div class="opt-title" style="color: #e0c992;">RMSNorm</div>
         <div class="opt-desc">Modern LLMs. Like LayerNorm but skips mean-centering -- only normalizes by root-mean-square. ~10-15% faster with comparable quality. Simpler gradient computation.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> LLaMA, Gemma, Mistral, PaLM. Preferred in large-scale language model pretraining.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> LLaMA, Gemma, Mistral, PaLM. Preferred in large-scale language model pretraining.</div>
       </div>
       <div class="option">
         <div class="opt-title" style="color: #c4b5fd;">Group Normalization</div>
         <div class="opt-desc">When batch size must be small (1-8) but you still want normalization. Divides channels into groups and normalizes within each group. Batch-size independent like LayerNorm.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Object detection (small batches due to large images), video models, 3D medical imaging, distributed training with small local batches.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Object detection (small batches due to large images), video models, 3D medical imaging, distributed training with small local batches.</div>
       </div>
     </div>
     <div class="key-point">
@@ -1521,7 +1461,7 @@ print(model(x).shape)           # torch.Size([8, 10])</code></pre>
     <div class="interview-tip">CNNs are the backbone of computer vision. Receptive field grows with depth. Understand how filter size and stride affect output dimensions.</div>
     <div class="interview-tip">💡 Real-world: RMSNorm (a simplified LayerNorm) is used in LLaMA, Mistral, and most modern transformers. It's 10-15% faster than LayerNorm with no quality loss — at the scale of training a 70B model, that saves weeks of GPU time.</div>
     <div class="mnemonic">CNN = local pattern matching with weight sharing. Captures spatial hierarchies. Deep = large receptive fields = global context.
-    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Select Batch Norm. Colored region highlights entire column (normalize across batch). Batch size = 32 activations, all scaled together. Switch to Layer Norm — colored region is entire row (normalize across features for each sample independently). RMSNorm normalizes only by variance, not mean.</div>
+    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Select Batch Norm. Colored region highlights entire column (normalize across batch). Batch size = 32 activations, all scaled together. Switch to Layer Norm — colored region is entire row (normalize across features for each sample independently). RMSNorm normalizes only by variance, not mean.</div>
   
     <div class="code-example">
       <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
@@ -1555,7 +1495,7 @@ rms = nn.RMSNorm(features)</code></pre>
 <!-- 6. RNN/LSTM/GRU -->
 <div class="viz-section">
   <h2>RNN/LSTM/GRU: Recurrence & Gating</h2>
-  <p class="subtitle">Toggle between Vanilla RNN, LSTM, and GRU. For Vanilla RNN, trace the hidden state flow and see it accumulate (or vanish) through timesteps. For LSTM, watch the cell state bypass (straight arrow) — this is the "memory" that avoids vanishing gradients. Gates control what flows.</p>
+  <p class="subtitle">Recurrent models read a sequence one step at a time and carry state forward. LSTMs and GRUs add gates so the model can keep useful information and forget the rest instead of overwriting its memory every step.</p>
   <canvas id="rnnCanvas" width="900" height="390"></canvas>
   <div class="controls">
     <div class="tab-bar">
@@ -1603,29 +1543,29 @@ rms = nn.RMSNorm(features)</code></pre>
       <span class="desc">The cell state C_t acts as a gradient highway — it's a straight path where gradients can flow unchanged across many timesteps. Without it, gradients vanish after ~10 steps (same problem as deep networks with sigmoid).</span>
     </div>
     <hr class="divider">
-    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use Each Architecture</strong>
+    <strong style="color: #e0c992; font-size: 1.05em;">When to Use Each Architecture</strong>
     <div class="comparison" style="grid-template-columns: 1fr 1fr 1fr; margin-top: 10px;">
       <div class="option">
-        <div class="opt-title" style="color: #ff6b6b;">Vanilla RNN</div>
+        <div class="opt-title" style="color: #c96e8a;">Vanilla RNN</div>
         <div class="opt-desc">Short sequences where long-range memory isn't critical. Rarely used in practice today due to vanishing gradients.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Simple character-level language models, short time-series with &lt;10 steps, toy sequence tasks for learning.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Simple character-level language models, short time-series with &lt;10 steps, toy sequence tasks for learning.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #4ecdc4;">LSTM</div>
+        <div class="opt-title" style="color: #6ea5c9;">LSTM</div>
         <div class="opt-desc">Long sequences requiring memory over hundreds of steps. The go-to RNN before Transformers. Cell state acts as a "conveyor belt" for long-range information.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Machine translation (seq2seq), speech recognition, music generation, handwriting synthesis, time-series forecasting (stock prices, weather).</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Machine translation (seq2seq), speech recognition, music generation, handwriting synthesis, time-series forecasting (stock prices, weather).</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #ffd93d;">GRU</div>
+        <div class="opt-title" style="color: #e0c992;">GRU</div>
         <div class="opt-desc">Similar tasks to LSTM but when you want faster training and fewer parameters. 2 gates instead of 3 = ~25% fewer weights. Often matches LSTM quality.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Real-time speech synthesis, chatbot response generation, sensor data on edge devices, any LSTM task where compute budget is tight.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Real-time speech synthesis, chatbot response generation, sensor data on edge devices, any LSTM task where compute budget is tight.</div>
       </div>
     </div>
     <hr class="divider">
-    <strong style="color: #ffd93d; font-size: 1.05em;">RNNs vs. Transformers: When Does Each Win?</strong>
+    <strong style="color: #e0c992; font-size: 1.05em;">RNNs vs. Transformers: When Does Each Win?</strong>
     <div class="comparison" style="margin-top: 10px;">
       <div class="option">
-        <div class="opt-title" style="color: #ff6b6b;">Use RNNs (LSTM/GRU) When...</div>
+        <div class="opt-title" style="color: #c96e8a;">Use RNNs (LSTM/GRU) When...</div>
         <div class="opt-desc">
           &bull; Streaming/online inference — processing one token at a time with O(1) memory per step<br>
           &bull; Very long sequences where quadratic attention is too expensive (e.g., continuous sensor data, audio waveforms)<br>
@@ -1634,7 +1574,7 @@ rms = nn.RMSNorm(features)</code></pre>
         </div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #64ffda;">Use Transformers When...</div>
+        <div class="opt-title" style="color: #c9a96e;">Use Transformers When...</div>
         <div class="opt-desc">
           &bull; You need to capture dependencies across the full sequence simultaneously (not just left-to-right)<br>
           &bull; Parallelizable training matters — Transformers train on all positions at once, RNNs are sequential<br>
@@ -1645,7 +1585,7 @@ rms = nn.RMSNorm(features)</code></pre>
     </div>
     <div class="interview-tip">In interviews, know that LSTMs were the gold standard before 2017 (Attention Is All You Need). Today Transformers dominate NLP, but RNNs still appear in streaming, on-device, and time-series settings. State Space Models (Mamba, S4) are a modern alternative that combine RNN-like O(1) inference with Transformer-like parallelism during training.</div>
     <div class="mnemonic">Vanilla RNN = broken for long sequences. LSTM = gold standard RNN (3 gates + cell state). GRU = cheaper LSTM (2 gates, no cell state). Transformer = parallel + global attention but O(n²). Pick based on sequence length, latency needs, and compute budget.</div>
-    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set sequence length to 10, step through all timesteps in Vanilla RNN — watch the gradient bars collapse to near-zero. Switch to LSTM — same 10 steps but gradients stay healthy. That's the entire reason LSTMs exist.</div>
+    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Set sequence length to 10, step through all timesteps in Vanilla RNN — watch the gradient bars collapse to near-zero. Switch to LSTM — same 10 steps but gradients stay healthy. That's the entire reason LSTMs exist.</div>
   
     <div class="code-example">
       <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
@@ -1675,7 +1615,7 @@ output, h_n = gru(x)  # no c_n returned</code></pre>
 <!-- 7. FLASH ATTENTION -->
 <div class="viz-section">
   <h2>Flash Attention: Tiled IO-Aware Computation</h2>
-  <p class="subtitle">Watch the "Standard Attention" animation — it materializes the full N×N attention matrix (memory bottleneck!). Toggle to "Flash Attention" — computation is tiled into blocks (no full matrix in memory). Despite the same result, tiling reduces slow memory access (HBM) dramatically.</p>
+  <p class="subtitle">Flash Attention computes the same attention output while avoiding the full N×N matrix in memory. The win is not different math; it is fewer expensive memory reads and writes.</p>
   <canvas id="flashCanvas" width="900" height="400"></canvas>
   <div class="controls">
     <div class="tab-bar">
@@ -1715,33 +1655,33 @@ output, h_n = gru(x)  # no c_n returned</code></pre>
       <span class="desc">Recomputes attention from blocks during backward pass instead of storing it. Trades extra compute for reduced memory.</span>
     </div>
     <hr class="divider">
-    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
     <div class="comparison" style="grid-template-columns: 1fr 1fr; margin-top: 10px;">
       <div class="option">
-        <div class="opt-title" style="color: #ff6b6b;">Flash Attention</div>
+        <div class="opt-title" style="color: #c96e8a;">Flash Attention</div>
         <div class="opt-desc">Default choice for any Transformer training or inference. Always use when available -- it is exact (not approximate) and strictly faster. Especially critical for long sequences (4K+ tokens) where standard attention runs out of memory.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> LLM pretraining (GPT-4, LLaMA), long-context models (100K+ tokens), ViT training, any model using self-attention on modern GPUs (A100, H100).</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> LLM pretraining (GPT-4, LLaMA), long-context models (100K+ tokens), ViT training, any model using self-attention on modern GPUs (A100, H100).</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #4ecdc4;">Standard Attention</div>
+        <div class="opt-title" style="color: #6ea5c9;">Standard Attention</div>
         <div class="opt-desc">Only when Flash Attention is unavailable (unsupported hardware, custom attention patterns like sparse/cross-attention with complex masking). Also useful for debugging since the full attention matrix is materialized and inspectable.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Prototyping/debugging attention patterns, older GPUs without Flash support, non-standard attention masks, attention visualization/interpretability research.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Prototyping/debugging attention patterns, older GPUs without Flash support, non-standard attention masks, attention visualization/interpretability research.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #ffd93d;">Multi-Query / Grouped-Query Attention</div>
+        <div class="opt-title" style="color: #e0c992;">Multi-Query / Grouped-Query Attention</div>
         <div class="opt-desc">Inference optimization. MQA shares one K,V head across all query heads. GQA uses a few K,V groups (between MQA and MHA). Reduces KV-cache memory at inference with minimal quality loss.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> GQA in LLaMA 2/3, Mistral. MQA in PaLM, Falcon. Critical for serving LLMs at scale with long contexts.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> GQA in LLaMA 2/3, Mistral. MQA in PaLM, Falcon. Critical for serving LLMs at scale with long contexts.</div>
       </div>
       <div class="option">
         <div class="opt-title" style="color: #c4b5fd;">Sparse / Linear Attention</div>
         <div class="opt-desc">Extremely long sequences (10K-1M+ tokens) where even Flash Attention's O(N^2) compute is too expensive. Trades some quality for sub-quadratic complexity. Active research area.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Longformer (local + global), BigBird (sparse), Mamba/S4 (state-space, linear), genomics (100K+ base pairs), full-document retrieval.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Longformer (local + global), BigBird (sparse), Mamba/S4 (state-space, linear), genomics (100K+ base pairs), full-document retrieval.</div>
       </div>
     </div>
     <hr class="divider">
     <div class="interview-tip">Flash Attention is IO-aware: it optimizes data movement between fast SRAM and slow HBM, not the number of FLOPs. Same math, fewer memory transfers.</div>
     <div class="mnemonic">Flash = tiling + online softmax + recomputation. Never stores full N x N matrix. Exact, not approximate.</div>
-    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">Try this: Sequence length = 100. Standard Attention materializes 100x100 matrix (10K values in slow memory). Flash Attention: tiles into 4x4 blocks (only 25 values in fast memory at a time). Result is identical, but memory bandwidth drops 4-10x. This is why Flash Attention made long sequences practical.</div>
+    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">Try this: Sequence length = 100. Standard Attention materializes 100x100 matrix (10K values in slow memory). Flash Attention: tiles into 4x4 blocks (only 25 values in fast memory at a time). Result is identical, but memory bandwidth drops 4-10x. This is why Flash Attention made long sequences practical.</div>
     <div class="interview-tip">💡 Real-world: Flash Attention (Dao, 2022) made it practical to train models with 100K+ context windows. Without it, the O(N²) memory cost of attention would require prohibitively expensive hardware. It's now the default in PyTorch and every major training framework.</div>
 
     <div class="code-example">
@@ -1775,7 +1715,7 @@ out_flash = F.scaled_dot_product_attention(Q, K, V)</code></pre>
 <!-- 8. SCALING LAWS -->
 <div class="viz-section">
   <h2>Scaling Laws: Loss vs Compute/Data/Parameters</h2>
-  <p class="subtitle">Drag "Compute Budget" slider — the optimal point follows Chinchilla scaling (allocate equal compute to parameters and data tokens). If you allocate too much to parameters (left), loss plateaus (data bottleneck). If too much to data (right), loss plateaus too (parameter bottleneck). The diagonal is optimal.</p>
+  <p class="subtitle">Scaling laws say loss improves predictably as you add parameters, data, and compute, but only if the balance is right. Chinchilla's message is that oversized models trained on too little data waste compute.</p>
   <canvas id="scalingCanvas" width="900" height="400"></canvas>
   <div class="controls">
     <div class="control-group">
@@ -1816,33 +1756,33 @@ out_flash = F.scaled_dot_product_attention(Q, K, V)</code></pre>
       <span class="desc">Scaling laws enable predicting large model performance from small runs. Guides billion-dollar training decisions before committing full compute.</span>
     </div>
     <hr class="divider">
-    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
     <div class="comparison" style="grid-template-columns: 1fr 1fr; margin-top: 10px;">
       <div class="option">
-        <div class="opt-title" style="color: #ff6b6b;">Chinchilla Scaling (Balanced)</div>
+        <div class="opt-title" style="color: #c96e8a;">Chinchilla Scaling (Balanced)</div>
         <div class="opt-desc">When training cost is your main constraint and you want the lowest loss per FLOP. Allocate compute equally to model size and data tokens. Train smaller models on more data. Best for one-time training runs.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Chinchilla (70B, 1.4T tokens), LLaMA 1 (65B, 1.4T tokens). Research labs optimizing training efficiency.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Chinchilla (70B, 1.4T tokens), LLaMA 1 (65B, 1.4T tokens). Research labs optimizing training efficiency.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #4ecdc4;">Over-Training (Inference-Optimized)</div>
+        <div class="opt-title" style="color: #6ea5c9;">Over-Training (Inference-Optimized)</div>
         <div class="opt-desc">When inference cost matters more than training cost. Train a smaller model on far more data than Chinchilla-optimal. Higher training cost per FLOP, but cheaper to serve. Dominant strategy for production LLMs.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> LLaMA 2 (70B, 2T tokens), LLaMA 3 (8B, 15T tokens -- 200x overtrained). Phi-3 (3.8B, 3.3T tokens). Any model deployed at scale.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> LLaMA 2 (70B, 2T tokens), LLaMA 3 (8B, 15T tokens -- 200x overtrained). Phi-3 (3.8B, 3.3T tokens). Any model deployed at scale.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #ffd93d;">Scaling Law Extrapolation</div>
+        <div class="opt-title" style="color: #e0c992;">Scaling Law Extrapolation</div>
         <div class="opt-desc">Before committing to a large training run, train small models (1M-1B params) at various compute budgets and fit power laws. Predict large model performance without training it. Saves millions in compute.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> OpenAI scaling papers, Chinchilla study, any team planning a 10B+ parameter training run. Used to set hyperparameters and estimate final loss.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> OpenAI scaling papers, Chinchilla study, any team planning a 10B+ parameter training run. Used to set hyperparameters and estimate final loss.</div>
       </div>
       <div class="option">
         <div class="opt-title" style="color: #c4b5fd;">Compute-Optimal Architecture Search</div>
         <div class="opt-desc">Use scaling laws to compare architectures at small scale before scaling up. If architecture A has better scaling exponent than B, it will dominate at large scale even if worse at small scale.</div>
-        <div class="opt-desc" style="margin-top: 6px; color: #aaa;"><b>Examples:</b> Comparing MoE vs dense models, choosing attention variants, depth vs width trade-offs, deciding between Transformer and SSM architectures.</div>
+        <div class="opt-desc" style="margin-top: 6px; color: #8a8680;"><b>Examples:</b> Comparing MoE vs dense models, choosing attention variants, depth vs width trade-offs, deciding between Transformer and SSM architectures.</div>
       </div>
     </div>
     <hr class="divider">
     <div class="interview-tip">Chinchilla showed most large models were undertrained (too many params, too little data). Optimal: ~20 tokens per parameter. Scaling laws let you predict loss before training.</div>
     <div class="mnemonic">Scaling = power laws. More params + more data = lower loss, but diminishing returns. Chinchilla = balance params and data equally.</div>
-    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">Try this: Move compute budget left (favor parameters, 80/20 split) -- loss plateaus (data bottleneck). Move right (80/20 data favoring) -- loss plateaus (parameter bottleneck). The diagonal (50/50 split) is optimal. Chinchilla discovered this: equal compute to parameters and data.</div>
+    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">Try this: Move compute budget left (favor parameters, 80/20 split) -- loss plateaus (data bottleneck). Move right (80/20 data favoring) -- loss plateaus (parameter bottleneck). The diagonal (50/50 split) is optimal. Chinchilla discovered this: equal compute to parameters and data.</div>
     <div class="interview-tip">💡 Real-world: Scaling laws let labs predict performance BEFORE spending $100M on a training run. OpenAI used them to plan GPT-4: train small models, fit the power law, extrapolate to the target size. It's the closest thing to a crystal ball in ML.</div>
     <div class="code-example">
       <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
@@ -1956,11 +1896,11 @@ function drawNN() {
 
         if (isFwdActive) {
           ctx.strokeStyle = weight > 0
-            ? `rgba(100,255,218,${Math.min(0.7, absW)})`
+            ? `rgba(201, 169, 110,${Math.min(0.7, absW)})`
             : `rgba(255,150,150,${Math.min(0.7, absW)})`;
           ctx.lineWidth = 1 + absW * 3;
         } else if (isBwdActive) {
-          ctx.strokeStyle = `rgba(255,107,107,${Math.min(0.7, absW)})`;
+          ctx.strokeStyle = `rgba(201, 110, 138,${Math.min(0.7, absW)})`;
           ctx.lineWidth = 1 + absW * 3;
         } else {
           ctx.strokeStyle = 'rgba(80,80,120,0.25)';
@@ -1995,7 +1935,7 @@ function drawNN() {
     const n = layer.nodes.length;
 
     // Layer label
-    ctx.fillStyle = '#ff6b6b';
+    ctx.fillStyle = '#c96e8a';
     ctx.font = 'bold 14px Inter, system-ui, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(layer.label, layerX[l], 28);
@@ -2010,13 +1950,13 @@ function drawNN() {
       // Node circle
       const grad = ctx.createRadialGradient(layerX[l], y, 0, layerX[l], y, nodeR);
       if (isActiveFwd) {
-        grad.addColorStop(0, 'rgba(100,255,218,0.3)');
-        grad.addColorStop(1, 'rgba(100,255,218,0.05)');
-        ctx.strokeStyle = '#64ffda';
+        grad.addColorStop(0, 'rgba(201, 169, 110,0.3)');
+        grad.addColorStop(1, 'rgba(201, 169, 110,0.05)');
+        ctx.strokeStyle = '#c9a96e';
       } else if (isActiveBwd) {
-        grad.addColorStop(0, 'rgba(255,107,107,0.3)');
-        grad.addColorStop(1, 'rgba(255,107,107,0.05)');
-        ctx.strokeStyle = '#ff6b6b';
+        grad.addColorStop(0, 'rgba(201, 110, 138,0.3)');
+        grad.addColorStop(1, 'rgba(201, 110, 138,0.05)');
+        ctx.strokeStyle = '#c96e8a';
       } else {
         grad.addColorStop(0, 'rgba(50,50,80,0.3)');
         grad.addColorStop(1, 'rgba(50,50,80,0.05)');
@@ -2049,7 +1989,7 @@ function drawNN() {
         ctx.beginPath();
         ctx.roundRect(layerX[l] - tw/2 - 6, y + nodeR + 4, tw + 12, 20, 6);
         ctx.fill();
-        ctx.strokeStyle = 'rgba(255,107,107,0.4)';
+        ctx.strokeStyle = 'rgba(201, 110, 138,0.4)';
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.roundRect(layerX[l] - tw/2 - 6, y + nodeR + 4, tw + 12, 20, 6);
@@ -2078,7 +2018,7 @@ function drawNN() {
     ctx.fillStyle = '#aaa';
     ctx.fillText(`Logits: [${vals.z2[0].toFixed(2)}, ${vals.z2[1].toFixed(2)}]`, panelX + 10, panelY + 52);
     ctx.fillText(`Softmax: [${vals.a2[0].toFixed(3)}, ${vals.a2[1].toFixed(3)}]`, panelX + 10, panelY + 68);
-    ctx.fillStyle = '#ffd93d';
+    ctx.fillStyle = '#e0c992';
     ctx.font = 'bold 12px monospace';
     ctx.fillText(`Loss = ${vals.loss.toFixed(4)}`, panelX + 10, panelY + 85);
   }
@@ -2086,7 +2026,7 @@ function drawNN() {
   // ---- Phase indicator (top left) ----
   if (phase !== 'idle') {
     const phaseLabel = phase === 'forward' ? 'Forward Pass →' : '← Backward Pass';
-    const phaseColor = phase === 'forward' ? '#64ffda' : '#ff6b6b';
+    const phaseColor = phase === 'forward' ? '#c9a96e' : '#c96e8a';
     ctx.fillStyle = 'rgba(10,10,20,0.85)';
     ctx.fillRect(8, 10, 160, 30);
     ctx.fillStyle = phaseColor;
@@ -2097,7 +2037,7 @@ function drawNN() {
 
   // ---- Directional arrows showing data flow ----
   if (phase !== 'idle') {
-    const arrowColor = phase === 'forward' ? '#64ffda' : '#ff6b6b';
+    const arrowColor = phase === 'forward' ? '#c9a96e' : '#c96e8a';
     ctx.strokeStyle = arrowColor;
     ctx.fillStyle = arrowColor;
     ctx.lineWidth = 2;
@@ -2132,16 +2072,16 @@ function buildStepExplain(step) {
   var w1 = nnWeights.w1, b1 = nnWeights.b1, w2 = nnWeights.w2, b2 = nnWeights.b2;
   var f = function(x) { return x.toFixed(2); };
   var f3 = function(x) { return x.toFixed(3); };
-  var c = '<span style="color:#64ffda">';  // cyan
-  var r = '<span style="color:#ff6b6b">';  // red
-  var y = '<span style="color:#ffd93d">';  // yellow
-  var g = '<span style="color:#8892b0">';  // grey
+  var c = '<span style="color:#c9a96e">';  // cyan
+  var r = '<span style="color:#c96e8a">';  // red
+  var y = '<span style="color:#e0c992">';  // yellow
+  var g = '<span style="color:#8a8680">';  // grey
   var e = '</span>';
-  var code = function(s) { return '<code style="background:rgba(100,255,218,0.08);padding:1px 5px;border-radius:3px;">' + s + '</code>'; };
-  var rcode = function(s) { return '<code style="background:rgba(255,107,107,0.08);padding:1px 5px;border-radius:3px;">' + s + '</code>'; };
+  var code = function(s) { return '<code style="background:rgba(201, 169, 110,0.08);padding:1px 5px;border-radius:3px;">' + s + '</code>'; };
+  var rcode = function(s) { return '<code style="background:rgba(201, 110, 138,0.08);padding:1px 5px;border-radius:3px;">' + s + '</code>'; };
 
   if (step === 0) {
-    return 'Click <strong style="color:#64ffda">Next Step</strong> to walk through the forward and backward pass, one layer at a time. Every number is computed live — nothing is hand-waved.';
+    return 'Click <strong style="color:#c9a96e">Next Step</strong> to walk through the forward and backward pass, one layer at a time. Every number is computed live — nothing is hand-waved.';
   }
   if (step === 1) {
     return c + 'Forward 1/3 — Inputs' + e + '<br>' +
@@ -2154,7 +2094,7 @@ function buildStepExplain(step) {
       var alive = v.z1[i] > 0;
       lines += '<br>' + g + 'h' + (i+1) + ':' + e + ' z = ' +
         code(f(w1[i][0]) + '×' + f(v.x[0]) + ' + ' + f(w1[i][1]) + '×' + f(v.x[1]) + ' + ' + f(b1[i]) + ' = ' + f(v.z1[i])) +
-        ' → ReLU(' + f(v.z1[i]) + ') = ' + (alive ? '<strong>' + f(v.a1[i]) + '</strong>' : '<strong style="color:#ff6b6b">0.00</strong> ' + g + '(killed — negative input!)' + e);
+        ' → ReLU(' + f(v.z1[i]) + ') = ' + (alive ? '<strong>' + f(v.a1[i]) + '</strong>' : '<strong style="color:#c96e8a">0.00</strong> ' + g + '(killed — negative input!)' + e);
     }
     return c + 'Forward 2/3 — Hidden Layer' + e + '<br>' +
       'Each neuron multiplies inputs by its weights, adds a bias, then passes through ' + code('ReLU(z) = max(0, z)') + ':' + lines;
@@ -2205,9 +2145,9 @@ function updateStepExplain() {
   if (nnGlobalStep <= 0) {
     el.style.borderLeftColor = '#444';
   } else if (nnGlobalStep <= 3) {
-    el.style.borderLeftColor = '#64ffda';
+    el.style.borderLeftColor = '#c9a96e';
   } else {
-    el.style.borderLeftColor = '#ff6b6b';
+    el.style.borderLeftColor = '#c96e8a';
   }
   el.innerHTML = buildStepExplain(nnGlobalStep);
   // Update button label
@@ -2218,15 +2158,15 @@ function updateStepExplain() {
       btn.style.opacity = '0.5';
     } else if (nnGlobalStep >= 3) {
       btn.textContent = 'Next Step (Backward)';
-      btn.style.background = 'rgba(255,107,107,0.15)';
-      btn.style.borderColor = '#ff6b6b';
-      btn.style.color = '#ff6b6b';
+      btn.style.background = 'rgba(201, 110, 138,0.15)';
+      btn.style.borderColor = '#c96e8a';
+      btn.style.color = '#c96e8a';
       btn.style.opacity = '1';
     } else {
       btn.textContent = 'Next Step';
-      btn.style.background = 'rgba(100,255,218,0.15)';
-      btn.style.borderColor = '#64ffda';
-      btn.style.color = '#64ffda';
+      btn.style.background = 'rgba(201, 169, 110,0.15)';
+      btn.style.borderColor = '#c9a96e';
+      btn.style.color = '#c9a96e';
       btn.style.opacity = '1';
     }
   }
@@ -2263,20 +2203,20 @@ function syncStateFromGlobal() {
       let html = '';
       const l = hit.layer, i = hit.index;
       if (l === 0) {
-        html = `<strong style="color:#64ffda">${['x₁','x₂'][i]}</strong><br>Input value: <strong>${vals.x[i].toFixed(2)}</strong>`;
+        html = `<strong style="color:#c9a96e">${['x₁','x₂'][i]}</strong><br>Input value: <strong>${vals.x[i].toFixed(2)}</strong>`;
       } else if (l === 1) {
         const w = nnWeights.w1[i];
         const b = nnWeights.b1[i];
         const z = vals.z1[i];
         const a = vals.a1[i];
-        html = `<strong style="color:#64ffda">h${i+1}</strong> — Hidden neuron<br><br>`;
+        html = `<strong style="color:#c9a96e">h${i+1}</strong> — Hidden neuron<br><br>`;
         html += `<strong>Forward:</strong><br>`;
         html += `z = ${w[0].toFixed(2)}·x₁ + ${w[1].toFixed(2)}·x₂ + ${b.toFixed(2)}<br>`;
         html += `&nbsp; = ${w[0].toFixed(2)}·${vals.x[0].toFixed(1)} + ${w[1].toFixed(2)}·${vals.x[1].toFixed(1)} + ${b.toFixed(2)}<br>`;
         html += `&nbsp; = <strong>${z.toFixed(3)}</strong><br>`;
         html += `a = ReLU(${z.toFixed(3)}) = <strong>${a.toFixed(3)}</strong>`;
         if (nnState.phase === 'backward') {
-          html += `<br><br><strong style="color:#ff6b6b">Backward:</strong><br>`;
+          html += `<br><br><strong style="color:#c96e8a">Backward:</strong><br>`;
           html += `dL/dh = ${vals.da1[i].toFixed(4)}<br>`;
           html += `dL/dz = dL/dh · ReLU'(z)<br>`;
           html += `&nbsp;&nbsp;&nbsp;&nbsp; = ${vals.da1[i].toFixed(4)} · ${z > 0 ? '1' : '0'} = <strong>${vals.dz1[i].toFixed(4)}</strong>`;
@@ -2284,12 +2224,12 @@ function syncStateFromGlobal() {
       } else if (l === 2) {
         const z = vals.z2[i];
         const a = vals.a2[i];
-        html = `<strong style="color:#64ffda">ŷ${i+1}</strong> — Output neuron<br><br>`;
+        html = `<strong style="color:#c9a96e">ŷ${i+1}</strong> — Output neuron<br><br>`;
         html += `<strong>Forward:</strong><br>`;
         html += `z = Σ(wⱼ·hⱼ) + b = <strong>${z.toFixed(3)}</strong><br>`;
         html += `ŷ = softmax(z) = <strong>${a.toFixed(4)}</strong>`;
         if (nnState.phase === 'backward') {
-          html += `<br><br><strong style="color:#ff6b6b">Backward:</strong><br>`;
+          html += `<br><br><strong style="color:#c96e8a">Backward:</strong><br>`;
           html += `dL/dz = ŷ - y = ${vals.da2[i].toFixed(4)}`;
         }
       }
@@ -2342,14 +2282,14 @@ function toggleAct(name) {
 }
 
 const actFuncs = {
-  relu: { fn: x => Math.max(0, x), deriv: x => x > 0 ? 1 : 0, color: '#64ffda', dcolor: '#64ffda88' },
+  relu: { fn: x => Math.max(0, x), deriv: x => x > 0 ? 1 : 0, color: '#c9a96e', dcolor: '#c9a96e88' },
   gelu: { fn: x => 0.5*x*(1+Math.tanh(Math.sqrt(2/Math.PI)*(x+0.044715*x*x*x))), deriv: x => {
     const c = Math.sqrt(2/Math.PI); const t = Math.tanh(c*(x+0.044715*x*x*x));
     return 0.5*(1+t) + 0.5*x*(1-t*t)*c*(1+3*0.044715*x*x);
-  }, color: '#ff6b6b', dcolor: '#ff6b6b88' },
-  silu: { fn: x => x/(1+Math.exp(-x)), deriv: x => { const s=1/(1+Math.exp(-x)); return s+x*s*(1-s); }, color: '#ffd93d', dcolor: '#ffd93d88' },
-  sigmoid: { fn: x => 1/(1+Math.exp(-x)), deriv: x => { const s=1/(1+Math.exp(-x)); return s*(1-s); }, color: '#7c4dff', dcolor: '#7c4dff88' },
-  tanh: { fn: x => Math.tanh(x), deriv: x => 1-Math.tanh(x)**2, color: '#4ecdc4', dcolor: '#4ecdc488' }
+  }, color: '#c96e8a', dcolor: '#c96e8a88' },
+  silu: { fn: x => x/(1+Math.exp(-x)), deriv: x => { const s=1/(1+Math.exp(-x)); return s+x*s*(1-s); }, color: '#e0c992', dcolor: '#e0c99288' },
+  sigmoid: { fn: x => 1/(1+Math.exp(-x)), deriv: x => { const s=1/(1+Math.exp(-x)); return s*(1-s); }, color: '#8a6ec9', dcolor: '#8a6ec988' },
+  tanh: { fn: x => Math.tanh(x), deriv: x => 1-Math.tanh(x)**2, color: '#6ea5c9', dcolor: '#6ea5c988' }
 };
 
 function drawAct() {
@@ -2486,9 +2426,9 @@ function drawVG() {
     const normalizedH = Math.max(5, ((logGrad - logMin) / (logMax - logMin + 1)) * ph * 0.8);
 
     let color;
-    if (gradients[i] > 1) color = '#ff6b6b';
-    else if (gradients[i] > 0.01) color = '#64ffda';
-    else color = '#7c4dff';
+    if (gradients[i] > 1) color = '#c96e8a';
+    else if (gradients[i] > 0.01) color = '#c9a96e';
+    else color = '#8a6ec9';
 
     ctx.fillStyle = color + '88';
     ctx.fillRect(x, H - pad.b - normalizedH, barW, normalizedH);
@@ -2525,9 +2465,9 @@ function drawVG() {
 
   const ratio = gradients[0] / gradients[depth - 1];
   let status, statusColor;
-  if (ratio < 0.01) { status = 'VANISHING -- gradients die'; statusColor = '#7c4dff'; }
-  else if (ratio > 100) { status = 'EXPLODING -- gradients blow up'; statusColor = '#ff6b6b'; }
-  else { status = 'HEALTHY -- gradients flow well'; statusColor = '#64ffda'; }
+  if (ratio < 0.01) { status = 'VANISHING -- gradients die'; statusColor = '#8a6ec9'; }
+  else if (ratio > 100) { status = 'EXPLODING -- gradients blow up'; statusColor = '#c96e8a'; }
+  else { status = 'HEALTHY -- gradients flow well'; statusColor = '#c9a96e'; }
 
   ctx.fillStyle = statusColor;
   ctx.font = '17px Inter';
@@ -2578,7 +2518,7 @@ function drawCNN() {
   const gap = 50;
 
   const inputX = 30, inputY = 55;
-  ctx.fillStyle = '#64ffda';
+  ctx.fillStyle = '#c9a96e';
   ctx.font = '15px Inter';
   ctx.textAlign = 'left';
   ctx.fillText(`Input (${inSize}x${inSize})`, inputX, inputY - 12);
@@ -2590,11 +2530,11 @@ function drawCNN() {
       const isPad = i < padding || i >= inSize + padding || j < padding || j >= inSize + padding;
       const isInKernel = i >= kernRow && i < kernRow + kSize && j >= kernCol && j < kernCol + kSize;
 
-      ctx.fillStyle = isPad ? '#1a1a2e' : isInKernel ? '#ff6b6b33' : '#1a1a3e';
+      ctx.fillStyle = isPad ? '#111118' : isInKernel ? '#c96e8a33' : '#13131f';
       ctx.fillRect(x, y, cellSize - 1, cellSize - 1);
 
       if (isInKernel) {
-        ctx.strokeStyle = '#ff6b6b';
+        ctx.strokeStyle = '#c96e8a';
         ctx.lineWidth = 2;
         if (i === kernRow && j === kernCol) {
           ctx.strokeRect(inputX + kernCol * cellSize - 1, inputY + kernRow * cellSize - 1, kSize * cellSize + 1, kSize * cellSize + 1);
@@ -2610,7 +2550,7 @@ function drawCNN() {
   }
 
   const kernX = inputX + padInSize * cellSize + gap;
-  ctx.fillStyle = '#ffd93d';
+  ctx.fillStyle = '#e0c992';
   ctx.font = '15px Inter';
   ctx.textAlign = 'left';
   ctx.fillText(`Kernel (${kSize}x${kSize})`, kernX, inputY - 12);
@@ -2621,7 +2561,7 @@ function drawCNN() {
       const y = inputY + i * cellSize;
       ctx.fillStyle = '#2a2a1e';
       ctx.fillRect(x, y, cellSize - 1, cellSize - 1);
-      ctx.fillStyle = '#ffd93d';
+      ctx.fillStyle = '#e0c992';
       ctx.font = '15px monospace';
       ctx.textAlign = 'center';
       ctx.fillText(cnnKernel[i][j], x + cellSize / 2, y + cellSize / 2 + 4);
@@ -2639,13 +2579,13 @@ function drawCNN() {
       sum += inVal * kVal;
     }
   }
-  ctx.fillStyle = '#64ffda';
+  ctx.fillStyle = '#c9a96e';
   ctx.font = '15px monospace';
   ctx.fillText(`Sum(input * kernel) = ${sum}`, kernX, compY);
 
   const outX = kernX;
   const outY = compY + 30;
-  ctx.fillStyle = '#4ecdc4';
+  ctx.fillStyle = '#6ea5c9';
   ctx.font = '15px Inter';
   ctx.textAlign = 'left';
   ctx.fillText(`Output (${outSize}x${outSize})  [stride=${stride}, pad=${padding}]`, outX, outY - 12);
@@ -2657,7 +2597,7 @@ function drawCNN() {
       const isCurrent = i === posRow && j === posCol;
       const isPast = i * outSize + j <= pos;
 
-      ctx.fillStyle = isCurrent ? '#4ecdc4' : isPast ? '#1a3a3a' : '#1a1a2e';
+      ctx.fillStyle = isCurrent ? '#6ea5c9' : isPast ? '#1a3a3a' : '#111118';
       ctx.fillRect(x, y, cellSize - 1, cellSize - 1);
 
       if (isPast) {
@@ -2670,7 +2610,7 @@ function drawCNN() {
             val += inVal * cnnKernel[ki][kj];
           }
         }
-        ctx.fillStyle = isCurrent ? '#000' : '#4ecdc4';
+        ctx.fillStyle = isCurrent ? '#000' : '#6ea5c9';
         ctx.font = '15px monospace';
         ctx.textAlign = 'center';
         ctx.fillText(val, x + cellSize / 2, y + cellSize / 2 + 4);
@@ -2751,7 +2691,7 @@ function drawNorm() {
     rms: 'RMSNorm — like LayerNorm but without mean subtraction',
     gn: 'Group Normalization — normalize within channel groups per sample'
   };
-  ctx.fillStyle = '#ff6b6b';
+  ctx.fillStyle = '#c96e8a';
   ctx.font = '17px Inter';
   ctx.textAlign = 'center';
   ctx.fillText(titles[normType], W / 2, 30);
@@ -2823,12 +2763,12 @@ function drawNorm() {
   };
 
   const panelX = startX + S * cellW + 40;
-  ctx.fillStyle = '#1a1a3e';
+  ctx.fillStyle = '#13131f';
   ctx.fillRect(panelX, startY, W - panelX - pad.r, 200);
-  ctx.strokeStyle = '#2a2a4a';
+  ctx.strokeStyle = '#2a2a3a';
   ctx.strokeRect(panelX, startY, W - panelX - pad.r, 200);
 
-  ctx.fillStyle = '#ffd93d';
+  ctx.fillStyle = '#e0c992';
   ctx.font = '17px Inter';
   ctx.textAlign = 'left';
   ctx.fillText(normType.toUpperCase(), panelX + 12, startY + 24);
@@ -2998,7 +2938,7 @@ function drawRNN() {
     lstm: 'LSTM (Long Short-Term Memory)',
     gru: 'GRU (Gated Recurrent Unit)'
   };
-  ctx.fillStyle = '#ff6b6b';
+  ctx.fillStyle = '#c96e8a';
   ctx.font = 'bold 16px Inter';
   ctx.textAlign = 'center';
   ctx.fillText(fullNames[rnnType], W / 2, 22);
@@ -3021,16 +2961,16 @@ function drawRNN() {
     // Cell box
     const alpha = isActive ? 1.0 : 0.35;
     ctx.globalAlpha = alpha;
-    ctx.fillStyle = isCurrent ? '#ff6b6b18' : '#1a1a3e';
+    ctx.fillStyle = isCurrent ? '#c96e8a18' : '#13131f';
     ctx.beginPath();
     ctx.roundRect(x, cellTop, cellW, cellH, 8);
     ctx.fill();
-    ctx.strokeStyle = isCurrent ? '#ff6b6b' : '#2a2a4a';
+    ctx.strokeStyle = isCurrent ? '#c96e8a' : '#2a2a3a';
     ctx.lineWidth = isCurrent ? 2.5 : 1;
     ctx.stroke();
 
     // t= label
-    ctx.fillStyle = isCurrent ? '#ffd93d' : '#888';
+    ctx.fillStyle = isCurrent ? '#e0c992' : '#888';
     ctx.font = 'bold 13px Inter';
     ctx.textAlign = 'center';
     ctx.fillText(`t=${t}`, x + cellW / 2, cellTop + 16);
@@ -3039,7 +2979,7 @@ function drawRNN() {
 
     if (rnnType === 'rnn') {
       // Show computed z and h values
-      ctx.fillStyle = '#64ffda';
+      ctx.fillStyle = '#c9a96e';
       ctx.font = '11px monospace';
       ctx.fillText(`x=${ts.x.toFixed(2)}`, cx, cellTop + 34);
       ctx.fillStyle = '#b0b0c0';
@@ -3051,15 +2991,15 @@ function drawRNN() {
       const barH = 14;
       const barX = x + 10;
       const barY = cellTop + 56;
-      ctx.fillStyle = '#1a1a2e';
+      ctx.fillStyle = '#111118';
       ctx.fillRect(barX, barY, barW, barH);
-      ctx.strokeStyle = '#3a3a5a';
+      ctx.strokeStyle = '#2a2a3a';
       ctx.lineWidth = 1;
       ctx.strokeRect(barX, barY, barW, barH);
       // Fill proportional to |h| with color based on sign
       const hNorm = Math.abs(ts.h);
       const fillW = hNorm * barW;
-      ctx.fillStyle = ts.h >= 0 ? '#64ffda' : '#ff6b6b';
+      ctx.fillStyle = ts.h >= 0 ? '#c9a96e' : '#c96e8a';
       if (ts.h >= 0) {
         ctx.fillRect(barX + barW / 2, barY + 1, fillW / 2, barH - 2);
       } else {
@@ -3077,22 +3017,22 @@ function drawRNN() {
       ctx.fillText(`h=${ts.h.toFixed(3)}`, cx, cellTop + 88);
 
       // Gradient magnitude indicator
-      const gColor = ts.gradMag > 0.01 ? '#ffd93d' : '#ff6b6b';
+      const gColor = ts.gradMag > 0.01 ? '#e0c992' : '#c96e8a';
       ctx.fillStyle = gColor;
       ctx.font = '9px monospace';
       const gText = ts.gradMag < 0.0001 ? '∇≈0' : `∇=${ts.gradMag.toExponential(1)}`;
       ctx.fillText(gText, cx, cellTop + 102);
 
     } else if (rnnType === 'lstm') {
-      ctx.fillStyle = '#64ffda';
+      ctx.fillStyle = '#c9a96e';
       ctx.font = '10px monospace';
       ctx.fillText(`x=${ts.x.toFixed(2)}`, cx, cellTop + 32);
 
       // Gate activation bars
       const gates = [
-        { label: 'f', val: ts.ft, color: '#ff6b6b' },
-        { label: 'i', val: ts.it, color: '#4ecdc4' },
-        { label: 'o', val: ts.ot, color: '#ffd93d' }
+        { label: 'f', val: ts.ft, color: '#c96e8a' },
+        { label: 'i', val: ts.it, color: '#6ea5c9' },
+        { label: 'o', val: ts.ot, color: '#e0c992' }
       ];
       const barW = cellW - 16;
       const barH = 10;
@@ -3100,7 +3040,7 @@ function drawRNN() {
         const by = cellTop + 40 + gi * 16;
         const bx = x + 8;
         // Bar background
-        ctx.fillStyle = '#1a1a2e';
+        ctx.fillStyle = '#111118';
         ctx.fillRect(bx, by, barW, barH);
         // Fill
         ctx.fillStyle = g.color + '99';
@@ -3126,27 +3066,27 @@ function drawRNN() {
       ctx.fillText(`h=${ts.h.toFixed(3)}`, cx, cellTop + 115);
 
       // Gradient
-      const gColor = ts.gradMag > 0.1 ? '#64ffda' : '#ffd93d';
+      const gColor = ts.gradMag > 0.1 ? '#c9a96e' : '#e0c992';
       ctx.fillStyle = gColor;
       ctx.font = '9px monospace';
       ctx.fillText(`∇=${ts.gradMag.toFixed(3)}`, cx, cellTop + 130);
 
     } else {
       // GRU
-      ctx.fillStyle = '#64ffda';
+      ctx.fillStyle = '#c9a96e';
       ctx.font = '10px monospace';
       ctx.fillText(`x=${ts.x.toFixed(2)}`, cx, cellTop + 32);
 
       const gates = [
-        { label: 'r', val: ts.rt, color: '#ff6b6b' },
-        { label: 'z', val: ts.zt, color: '#4ecdc4' }
+        { label: 'r', val: ts.rt, color: '#c96e8a' },
+        { label: 'z', val: ts.zt, color: '#6ea5c9' }
       ];
       const barW = cellW - 16;
       const barH = 12;
       gates.forEach((g, gi) => {
         const by = cellTop + 40 + gi * 18;
         const bx = x + 8;
-        ctx.fillStyle = '#1a1a2e';
+        ctx.fillStyle = '#111118';
         ctx.fillRect(bx, by, barW, barH);
         ctx.fillStyle = g.color + '99';
         ctx.fillRect(bx, by, barW * g.val, barH);
@@ -3161,7 +3101,7 @@ function drawRNN() {
       });
 
       // Candidate
-      ctx.fillStyle = '#ffd93d';
+      ctx.fillStyle = '#e0c992';
       ctx.font = '10px monospace';
       ctx.fillText(`h~=${ts.hHat.toFixed(3)}`, cx, cellTop + 90);
       // Hidden
@@ -3169,7 +3109,7 @@ function drawRNN() {
       ctx.font = 'bold 11px monospace';
       ctx.fillText(`h=${ts.h.toFixed(3)}`, cx, cellTop + 107);
       // Gradient
-      const gColor = ts.gradMag > 0.1 ? '#64ffda' : '#ffd93d';
+      const gColor = ts.gradMag > 0.1 ? '#c9a96e' : '#e0c992';
       ctx.fillStyle = gColor;
       ctx.font = '9px monospace';
       ctx.fillText(`∇=${ts.gradMag.toFixed(3)}`, cx, cellTop + 122);
@@ -3178,14 +3118,14 @@ function drawRNN() {
 
     // Input arrow from below
     ctx.globalAlpha = isActive ? 1.0 : 0.35;
-    ctx.strokeStyle = '#64ffda';
+    ctx.strokeStyle = '#c9a96e';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(cx, cellTop + cellH);
     ctx.lineTo(cx, cellTop + cellH + 14);
     ctx.stroke();
     // Arrow head
-    ctx.fillStyle = '#64ffda';
+    ctx.fillStyle = '#c9a96e';
     ctx.beginPath();
     ctx.moveTo(cx, cellTop + cellH);
     ctx.lineTo(cx - 4, cellTop + cellH + 6);
@@ -3205,14 +3145,14 @@ function drawRNN() {
       const ay = cellTop + cellH / 2;
 
       // Arrow line
-      ctx.strokeStyle = isCurrent ? '#64ffda' : '#555';
+      ctx.strokeStyle = isCurrent ? '#c9a96e' : '#555';
       ctx.lineWidth = isCurrent ? 2.5 : 1.5;
       ctx.beginPath();
       ctx.moveTo(ax1, ay);
       ctx.lineTo(ax2, ay);
       ctx.stroke();
       // Arrow head
-      ctx.fillStyle = isCurrent ? '#64ffda' : '#555';
+      ctx.fillStyle = isCurrent ? '#c9a96e' : '#555';
       ctx.beginPath();
       ctx.moveTo(ax2, ay);
       ctx.lineTo(ax2 - 5, ay - 4);
@@ -3222,7 +3162,7 @@ function drawRNN() {
 
       // h value on arrow if active
       if (isCurrent) {
-        ctx.fillStyle = '#64ffda';
+        ctx.fillStyle = '#c9a96e';
         ctx.font = '9px monospace';
         ctx.fillText(ts.h.toFixed(2), (ax1 + ax2) / 2, ay - 7);
       }
@@ -3267,13 +3207,13 @@ function drawRNN() {
   const chartW = chartRight - chartLeft;
 
   // Title
-  ctx.fillStyle = '#ffd93d';
+  ctx.fillStyle = '#e0c992';
   ctx.font = 'bold 13px Inter';
   ctx.textAlign = 'center';
   ctx.fillText('Gradient Magnitude Through Time (backpropagation)', W / 2, chartTop - 4);
 
   // Chart background
-  ctx.fillStyle = '#0d0d1a';
+  ctx.fillStyle = '#0d0d14';
   ctx.beginPath();
   ctx.roundRect(chartLeft - 5, chartTop, chartW + 10, chartH + 5, 6);
   ctx.fill();
@@ -3311,9 +3251,9 @@ function drawRNN() {
 
     // Color: green if healthy, yellow if declining, red if vanishing
     let barColor;
-    if (ts.gradMag > 0.3) barColor = '#64ffda';
-    else if (ts.gradMag > 0.05) barColor = '#ffd93d';
-    else barColor = '#ff6b6b';
+    if (ts.gradMag > 0.3) barColor = '#c9a96e';
+    else if (ts.gradMag > 0.05) barColor = '#e0c992';
+    else barColor = '#c96e8a';
 
     // Bar
     ctx.fillStyle = barColor;
@@ -3341,14 +3281,14 @@ function drawRNN() {
   ctx.font = 'bold 12px Inter';
   ctx.textAlign = 'center';
   if (rnnType === 'rnn') {
-    ctx.fillStyle = '#ff6b6b';
+    ctx.fillStyle = '#c96e8a';
     if (lastGrad < 0.01) {
       ctx.fillText('⚠ Gradient vanished — early timesteps get no learning signal!', W / 2, chartTop + chartH + 28);
     } else {
       ctx.fillText('Gradient shrinking... keep stepping to see it vanish', W / 2, chartTop + chartH + 28);
     }
   } else {
-    ctx.fillStyle = '#64ffda';
+    ctx.fillStyle = '#c9a96e';
     const mechanism = rnnType === 'lstm' ? 'Cell state highway preserves gradients (additive, not multiplicative)' : 'Update gate interpolation preserves gradients';
     ctx.fillText('✓ ' + mechanism, W / 2, chartTop + chartH + 28);
   }
@@ -3360,19 +3300,19 @@ function drawRNN() {
   if (rnnType === 'rnn') {
     ctx.fillStyle = '#b0b0c0';
     ctx.fillText('h(t) = tanh(Wh·h(t-1) + Wx·x(t) + b)    |    ∂h(t)/∂h(t-1) = (1-tanh²)·Wh ≤ 0.25', W / 2, eqY);
-    ctx.fillStyle = '#ff6b6b';
+    ctx.fillStyle = '#c96e8a';
     ctx.font = '11px Inter';
-    ctx.fillText(`After ${seqLen} steps: 0.25^${seqLen} = ${Math.pow(0.25, seqLen).toExponential(1)} — gradient is essentially zero`, W / 2, eqY + 18);
+    ctx.fillText(`After ${seqLen} steps, the gradient is effectively zero (${Math.pow(0.25, seqLen).toExponential(1)}).`, W / 2, eqY + 18);
   } else if (rnnType === 'lstm') {
     ctx.fillStyle = '#b0b0c0';
     ctx.fillText('C(t) = f(t)·C(t-1) + i(t)·tanh(Wc·[h,x])    |    ∂C(t)/∂C(t-1) = f(t) ≈ 0.5-1.0', W / 2, eqY);
-    ctx.fillStyle = '#64ffda';
+    ctx.fillStyle = '#c9a96e';
     ctx.font = '11px Inter';
     ctx.fillText('Forget gate f(t) close to 1 → gradients flow through cell state unattenuated', W / 2, eqY + 18);
   } else {
     ctx.fillStyle = '#b0b0c0';
     ctx.fillText('h(t) = (1-z)·h(t-1) + z·h~(t)    |    ∂h(t)/∂h(t-1) = (1-z(t)) ≈ 0.3-0.7', W / 2, eqY);
-    ctx.fillStyle = '#64ffda';
+    ctx.fillStyle = '#c9a96e';
     ctx.font = '11px Inter';
     ctx.fillText('Update gate z(t) controls interpolation — gradients flow through (1-z) path', W / 2, eqY + 18);
   }
@@ -3402,7 +3342,7 @@ function drawFlash() {
   const pad = { l: 40, r: 40, t: 50, b: 100 };
   const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
 
-  ctx.fillStyle = '#ff6b6b';
+  ctx.fillStyle = '#c96e8a';
   ctx.font = '17px Inter';
   ctx.textAlign = 'center';
   const title = attentionType === 'standard' ? 'Standard Attention: Materialize QK^T' : 'Flash Attention: Tiled Computation';
@@ -3420,12 +3360,12 @@ function drawFlash() {
     let y = pad.t + 50;
 
     const components = [
-      { name: 'Q (N×d)', size: N * d, color: '#64ffda' },
-      { name: 'K (N×d)', size: N * d, color: '#ffd93d' },
-      { name: 'V (N×d)', size: N * d, color: '#ff6b6b' },
-      { name: 'S = QK^T (N×N)', size: N * N, color: '#7c4dff' },
-      { name: 'P = softmax(S) (N×N)', size: N * N, color: '#4ecdc4' },
-      { name: 'O = PV (N×d)', size: N * d, color: '#64ffda' }
+      { name: 'Q (N×d)', size: N * d, color: '#c9a96e' },
+      { name: 'K (N×d)', size: N * d, color: '#e0c992' },
+      { name: 'V (N×d)', size: N * d, color: '#c96e8a' },
+      { name: 'S = QK^T (N×N)', size: N * N, color: '#8a6ec9' },
+      { name: 'P = softmax(S) (N×N)', size: N * N, color: '#6ea5c9' },
+      { name: 'O = PV (N×d)', size: N * d, color: '#c9a96e' }
     ];
 
     components.forEach(comp => {
@@ -3446,11 +3386,11 @@ function drawFlash() {
       y += 30;
     });
 
-    ctx.fillStyle = '#ffd93d';
+    ctx.fillStyle = '#e0c992';
     ctx.font = '13px Inter';
     ctx.fillText(`Total: ~${(totalMem / (1024*1024)).toFixed(1)}MB (for N=${N}, d=${d})`, pad.l, y + 30);
 
-    ctx.fillStyle = '#ff6b6b';
+    ctx.fillStyle = '#c96e8a';
     ctx.font = '13px Inter';
     ctx.fillText('BOTTLENECK: N×N attention matrix requires O(N²) HBM memory!', pad.l, y + 60);
 
@@ -3473,13 +3413,13 @@ function drawFlash() {
     for (let i = 0; i < numBlocks; i++) {
       const blockN = Math.min(blockSize, N - i * blockSize);
 
-      ctx.fillStyle = '#1a1a3e';
+      ctx.fillStyle = '#13131f';
       ctx.fillRect(x, pad.t + 70, tileW, tileH);
-      ctx.strokeStyle = '#64ffda';
+      ctx.strokeStyle = '#c9a96e';
       ctx.lineWidth = 2;
       ctx.strokeRect(x, pad.t + 70, tileW, tileH);
 
-      ctx.fillStyle = '#64ffda';
+      ctx.fillStyle = '#c9a96e';
       ctx.font = '10px monospace';
       ctx.textAlign = 'center';
       ctx.fillText(`Q_${i}`, x + tileW / 2, pad.t + 85);
@@ -3489,7 +3429,7 @@ function drawFlash() {
       x += tileW + 5;
     }
 
-    ctx.fillStyle = '#64ffda';
+    ctx.fillStyle = '#c9a96e';
     ctx.font = '13px Inter';
     ctx.textAlign = 'left';
     ctx.fillText(`Memory: O(N) instead of O(N²). Same FLOPs, ~4-10x faster due to reduced IO.`, pad.l, pad.t + 160);
@@ -3538,7 +3478,7 @@ function drawScaling() {
   const pad = { l: 80, r: 200, t: 60, b: 60 };
   const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
 
-  ctx.fillStyle = '#ff6b6b';
+  ctx.fillStyle = '#c96e8a';
   ctx.font = '15px Inter';
   ctx.textAlign = 'center';
   ctx.fillText('Chinchilla Scaling Laws: Loss vs Model Size', W / 2 - 60, 28);
@@ -3571,7 +3511,7 @@ function drawScaling() {
   const alpha = 0.34, beta = 0.28;
 
   // Draw multiple data-budget curves (different token budgets)
-  const curveColors = ['#4ecdc4', '#64ffda', '#ffd93d', '#ff6b6b', '#c0a0ff'];
+  const curveColors = ['#6ea5c9', '#c9a96e', '#e0c992', '#c96e8a', '#c0a0ff'];
   const curveLabels = ['10B tokens', '50B tokens', '200B tokens', '1T tokens', '5T tokens'];
   const tokenBudgets = [10, 50, 200, 1000, 5000];
 
@@ -3647,19 +3587,19 @@ function drawScaling() {
   // Glow effect
   ctx.beginPath();
   ctx.arc(optSx, optSy, 14, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(255,107,107,0.2)';
+  ctx.fillStyle = 'rgba(201, 110, 138,0.2)';
   ctx.fill();
   ctx.beginPath();
   ctx.arc(optSx, optSy, 9, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(255,107,107,0.4)';
+  ctx.fillStyle = 'rgba(201, 110, 138,0.4)';
   ctx.fill();
   ctx.beginPath();
   ctx.arc(optSx, optSy, 5, 0, Math.PI * 2);
-  ctx.fillStyle = '#ff6b6b';
+  ctx.fillStyle = '#c96e8a';
   ctx.fill();
 
   // Label for optimal point
-  ctx.fillStyle = '#ffd93d';
+  ctx.fillStyle = '#e0c992';
   ctx.font = 'bold 12px Inter';
   ctx.textAlign = 'left';
   ctx.fillText('Chinchilla', optSx + 12, optSy - 8);
@@ -3730,37 +3670,37 @@ drawScaling();
 <!-- Quiz Mode Toggle Button -->
 <button id="quizToggleBtn" onclick="toggleQuiz()" style="
   position: fixed; top: 20px; right: 20px; z-index: 1000;
-  padding: 12px 20px; border: 2px solid #ff6b6b; background: #12121f;
-  color: #ff6b6b; border-radius: 12px; cursor: pointer; font-size: 1em;
+  padding: 12px 20px; border: 2px solid #c96e8a; background: #111118;
+  color: #c96e8a; border-radius: 12px; cursor: pointer; font-size: 1em;
   font-weight: 600; transition: all 0.3s; box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-" onmouseover="this.style.background='#ff6b6b22'" onmouseout="this.style.background='#12121f'">&#129504; Quiz Mode</button>
+" onmouseover="this.style.background='#c96e8a22'" onmouseout="this.style.background='#111118'">&#129504; Quiz Mode</button>
 
 <!-- Quiz Section -->
 <style>
 .quiz-topic { margin-bottom: 30px; }
-.quiz-topic-header { display:flex; justify-content:space-between; align-items:center; padding:16px 20px; background:#1a1a2e; border:1px solid #2a2a4a; border-radius:10px; cursor:pointer; margin-bottom:12px; transition:background 0.2s; }
+.quiz-topic-header { display:flex; justify-content:space-between; align-items:center; padding:16px 20px; background:#111118; border:1px solid #2a2a3a; border-radius:10px; cursor:pointer; margin-bottom:12px; transition:background 0.2s; }
 .quiz-topic-header:hover { background:#1f1f38; }
-.quiz-topic-header h3 { color:#ff6b6b; margin:0; font-size:1.15em; }
+.quiz-topic-header h3 { color:#c96e8a; margin:0; font-size:1.15em; }
 .quiz-topic-score { color:#888; font-size:0.95em; }
-.quiz-topic-chevron { color:#ff6b6b; font-size:1.2em; transition:transform 0.3s; }
+.quiz-topic-chevron { color:#c96e8a; font-size:1.2em; transition:transform 0.3s; }
 .quiz-topic-chevron.open { transform:rotate(180deg); }
 .quiz-topic-body { display:none; }
 .quiz-topic-body.open { display:block; }
-.quiz-explanation { margin-top:12px; padding:14px 18px; border-radius:8px; font-size:0.93em; line-height:1.6; border-left:4px solid #2ecc71; background:rgba(46,204,113,0.08); color:#b0ffb0; }
+.quiz-explanation { margin-top:12px; padding:14px 18px; border-radius:8px; font-size:0.93em; line-height:1.6; border-left:4px solid #2ecc71; background:rgba(46,204,113,0.08); color:#e0c992; }
 .quiz-explanation.wrong { border-left-color:#e74c3c; background:rgba(231,76,60,0.08); color:#ffb0b0; }
 </style>
 
 <div id="quizSection" style="display:none">
   <div style="max-width:1200px; margin:0 auto; padding:40px 20px 60px;">
-    <div style="background:#12121f; border:1px solid #2a2a4a; border-radius:16px; padding:32px;">
-      <h2 style="font-size:1.5em; color:#ff6b6b; margin-bottom:8px; text-align:center;">Deep Learning Foundations Quiz</h2>
+    <div style="background:#111118; border:1px solid #2a2a3a; border-radius:16px; padding:32px;">
+      <h2 style="font-size:1.5em; color:#c96e8a; margin-bottom:8px; text-align:center;">Deep Learning Foundations Quiz</h2>
       <p style="color:#888; text-align:center; margin-bottom:24px;">8 topics, 40 questions. Click a topic to expand. Test your understanding!</p>
-      <p id="quizScore" style="color:#ff6b6b; font-size:1.2em; font-weight:700; text-align:center; margin-bottom:24px;">Score: 0 / 40</p>
+      <p id="quizScore" style="color:#c96e8a; font-size:1.2em; font-weight:700; text-align:center; margin-bottom:24px;">Score: 0 / 40</p>
 
       <div id="quizQuestions"></div>
 
       <div style="display:flex; gap:16px; justify-content:center; margin-top:32px;">
-        <button onclick="resetQuiz()" style="padding:10px 24px; border:2px solid #ff6b6b; background:transparent; color:#ff6b6b; border-radius:10px; cursor:pointer; font-size:1em; font-weight:600; transition:all 0.2s;" onmouseover="this.style.background='#ff6b6b22'" onmouseout="this.style.background='transparent'">Reset Quiz</button>
+        <button onclick="resetQuiz()" style="padding:10px 24px; border:2px solid #c96e8a; background:transparent; color:#c96e8a; border-radius:10px; cursor:pointer; font-size:1em; font-weight:600; transition:all 0.2s;" onmouseover="this.style.background='#c96e8a22'" onmouseout="this.style.background='transparent'">Reset Quiz</button>
         <button onclick="toggleQuiz()" style="padding:10px 24px; border:2px solid #888; background:transparent; color:#888; border-radius:10px; cursor:pointer; font-size:1em; font-weight:600; transition:all 0.2s;" onmouseover="this.style.background='#ffffff11'" onmouseout="this.style.background='transparent'">Hide Quiz</button>
       </div>
     </div>
@@ -3986,15 +3926,15 @@ drawScaling();
       topic.questions.forEach(function(item, qi) {
         const globalIdx = ti + "-" + qi;
         const qDiv = document.createElement("div");
-        qDiv.style.cssText = "background:#0d0d1a; border:1px solid #2a2a4a; border-radius:12px; padding:20px; margin-bottom:16px;";
+        qDiv.style.cssText = "background:#0d0d14; border:1px solid #2a2a3a; border-radius:12px; padding:20px; margin-bottom:16px;";
         qDiv.id = "quiz-q-" + globalIdx;
 
-        let html = '<p style="color:#e0e0e0; font-weight:600; margin-bottom:12px;">Q' + (qi + 1) + ': ' + item.q + '</p>';
+        let html = '<p style="color:#e8e4de; font-weight:600; margin-bottom:12px;">Q' + (qi + 1) + ': ' + item.q + '</p>';
         item.options.forEach(function(opt, oi) {
           html += '<div class="quiz-opt" data-ti="' + ti + '" data-qi="' + qi + '" data-oi="' + oi + '" style="'
-            + 'padding:10px 16px; margin-bottom:8px; border:1px solid #2a2a4a; border-radius:8px;'
+            + 'padding:10px 16px; margin-bottom:8px; border:1px solid #2a2a3a; border-radius:8px;'
             + 'cursor:pointer; color:#ccc; transition:all 0.2s; font-size:0.95em;'
-            + '" onmouseover="if(!this.dataset.locked)this.style.background=\'#1a1a3e\'"'
+            + '" onmouseover="if(!this.dataset.locked)this.style.background=\'#13131f\'"'
             + ' onmouseout="if(!this.dataset.locked)this.style.background=\'transparent\'"'
             + '>' + opt + '</div>';
         });

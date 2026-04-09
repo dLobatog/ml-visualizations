@@ -5,354 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Training at Scale - ML Interview Prep</title>
     <script src="static/canvas-polish.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            background: #0a0a0f;
-            color: #e0e0e0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            padding: 20px;
-            line-height: 1.6;
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        h1 {
-            text-align: center;
-            margin-bottom: 10px;
-            color: #01a3a4;
-            font-size: 2.5em;
-            text-shadow: 0 0 10px rgba(1, 163, 164, 0.3);
-        }
-
-        .subtitle {
-            text-align: center;
-            color: #888;
-            margin-bottom: 30px;
-            font-size: 1.1em;
-        }
-
-        .section {
-            background: #12121f;
-            border: 1px solid #1e1e2e;
-            border-radius: 8px;
-            padding: 25px;
-            margin-bottom: 25px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-        }
-
-        .section-title {
-            color: #01a3a4;
-            font-size: 1.8em;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .section-title::before {
-            content: '';
-            display: inline-block;
-            width: 4px;
-            height: 30px;
-            background: #01a3a4;
-            border-radius: 2px;
-        }
-
-        .content-wrapper {
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
-        }
-
-        .visualization {
-            flex: 1;
-            min-width: 400px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: #0f0f17;
-            border-radius: 6px;
-            padding: 15px;
-        }
-
-        .controls {
-            flex: 0 0 250px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .control-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .control-label {
-            color: #01a3a4;
-            font-size: 0.95em;
-            font-weight: 600;
-        }
-
-        input[type="range"] {
-            width: 100%;
-            height: 6px;
-            border-radius: 3px;
-            background: #1e1e2e;
-            outline: none;
-            -webkit-appearance: none;
-        }
-
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: #01a3a4;
-            cursor: pointer;
-            box-shadow: 0 0 5px rgba(1, 163, 164, 0.5);
-        }
-
-        input[type="range"]::-moz-range-thumb {
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: #01a3a4;
-            cursor: pointer;
-            border: none;
-            box-shadow: 0 0 5px rgba(1, 163, 164, 0.5);
-        }
-
-        .slider-value {
-            text-align: center;
-            color: #01a3a4;
-            font-weight: 600;
-            font-size: 0.9em;
-        }
-
-        canvas {
-            display: block;
-            border-radius: 4px;
-            max-width: 100%;
-            height: auto;
-        }
-
-      
-      
-        .insight-title {
-            color: #01a3a4;
-            font-weight: 700;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .insight-title::before {
-            content: '💡';
-            font-size: 1.2em;
-        }
-
-        .metric-display {
-            background: #1e1e2e;
-            padding: 12px;
-            border-radius: 4px;
-            margin-top: 8px;
-            font-size: 0.9em;
-            color: #01a3a4;
-        }
-
-        .metric-row {
-            display: flex;
-            justify-content: space-between;
-            margin: 6px 0;
-        }
-
-        .metric-label {
-            color: #888;
-        }
-
-        button {
-            background: #01a3a4;
-            color: #0a0a0f;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 0.95em;
-            transition: all 0.2s;
-        }
-
-        button:hover {
-            background: #02c7c9;
-            box-shadow: 0 0 10px rgba(1, 163, 164, 0.4);
-        }
-
-        button.active {
-            background: #01a3a4;
-            box-shadow: 0 0 10px rgba(1, 163, 164, 0.6);
-        }
-
-        .button-group {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .text-input {
-            background: #1e1e2e;
-            color: #e0e0e0;
-            border: 1px solid #2e2e3e;
-            padding: 8px 12px;
-            border-radius: 4px;
-            font-size: 0.9em;
-        }
-
-        .text-input:focus {
-            outline: none;
-            border-color: #01a3a4;
-            box-shadow: 0 0 5px rgba(1, 163, 164, 0.3);
-        }
-
-        @media (max-width: 1024px) {
-            .content-wrapper {
-                flex-direction: column;
-            }
-
-            .visualization {
-                min-width: 100%;
-            }
-
-            .controls {
-                flex: 1;
-            }
-        }
-
-        .legend {
-            background: #1a1a2e;
-            padding: 12px;
-            border-radius: 4px;
-            margin-top: 10px;
-            font-size: 0.9em;
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin: 6px 0;
-        }
-
-        .legend-color {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border-radius: 2px;
-        }
-
-        .tooltip {
-            position: absolute;
-            background: #1a1a2e;
-            color: #01a3a4;
-            padding: 8px 12px;
-            border-radius: 4px;
-            font-size: 0.85em;
-            pointer-events: none;
-            border: 1px solid #01a3a4;
-            display: none;
-            z-index: 1000;
-        }
-
-        .description {
-            color: #aaa;
-            font-size: 0.95em;
-            margin-top: 10px;
-            line-height: 1.5;
-        }
-    
-  .insight-box { background: linear-gradient(135deg, #1a1a3e 0%, #151530 100%); border-left: 4px solid #01a3a4; padding: 20px 24px; margin-top: 20px; border-radius: 0 12px 12px 0; font-size: 0.92em; color: #ccc; line-height: 1.8; }
-  .insight-box strong { color: #01a3a4; font-size: 1.05em; }
-  .insight-box .formula { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 12px 18px; margin: 12px 0; font-family: 'Courier New', monospace; color: #e8e8ff; font-size: 1.05em; text-align: center; letter-spacing: 0.5px; line-height: 1.9; }
-  .insight-box .formula .highlight { color: #01a3a4; font-weight: bold; }
-  .insight-box .key-point { display: flex; flex-wrap: wrap; gap: 4px 8px; margin: 8px 0; padding: 4px 0; align-items: baseline; }
-  .insight-box .key-point .label { color: #01a3a4; font-weight: 600; min-width: 160px; flex-shrink: 0; }
-  .insight-box .key-point .desc { color: #ddd; }
-  .insight-box .interview-tip { background: rgba(100, 255, 100, 0.05); border: 1px solid rgba(100, 255, 100, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #b0ffb0; font-size: 0.93em; line-height: 1.6; }
-  .insight-box .interview-tip::before { content: '\1F4A1  Interview Tip: '; font-weight: 700; color: #7fff7f; }
-  .insight-box .mnemonic { background: rgba(255, 150, 255, 0.05); border: 1px solid rgba(255, 150, 255, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #ffb0ff; font-size: 0.93em; line-height: 1.6; }
-  .insight-box .mnemonic::before { content: '\1F9E0  Remember: '; font-weight: 700; color: #ff7fff; }
-  .insight-box .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
-  .insight-box .comparison .option { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 10px 14px; }
-  .insight-box .comparison .option .opt-title { color: #01a3a4; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
-  .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
-  .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
-
-  .code-example { margin-top: 12px; border: 1px solid #2a2a4a; border-radius: 8px; overflow: hidden; }
-  .code-toggle { width: 100%; background: #1a1a2e; color: #01a3a4; border: none; padding: 10px 16px; text-align: left; cursor: pointer; font-size: 0.9em; font-weight: 600; display: flex; align-items: center; gap: 8px; }
-  .code-toggle:hover { background: #22223a; }
-  .code-toggle-icon { display: inline-block; transition: transform 0.2s; font-size: 0.7em; }
-  .code-example.open .code-toggle-icon { transform: rotate(90deg); }
-  .code-content { display: none; padding: 14px 16px; background: #0a0a14; }
-  .code-example.open .code-content { display: block; }
-  .code-content pre { margin: 0; overflow-x: auto; white-space: pre; }
-  .code-content code { color: #e0e0e0; font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.82em; line-height: 1.6; }
-  .code-content .code-note { color: #888; font-size: 0.82em; margin-top: 8px; font-style: italic; }
-  .code-content pre[class*="language-"], .code-content code[class*="language-"] { background: #0a0a14; font-size: 0.82em; line-height: 1.6; margin: 0; padding: 0; text-shadow: none; }
-  pre[class*="language-"]::selection, code[class*="language-"]::selection { background: #333; }
-
-  .katex { color: #e8e8ff; font-size: 1.1em; }
-
-  #quizToggle { position: fixed; top: 20px; right: 20px; z-index: 1000; padding: 12px 20px; background: #01a3a4; color: #0a0a0f; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 1em; box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: transform 0.2s; }
-  #quizToggle:hover { transform: scale(1.05); }
-  #quizSection { background: #12121f; border-top: 2px solid #01a3a4; padding: 40px 20px; margin-top: 40px; }
-  .quiz-container { max-width: 900px; margin: 0 auto; }
-  .quiz-question { background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 12px; padding: 24px; margin-bottom: 20px; }
-  .quiz-question h3 { color: #01a3a4; margin-bottom: 16px; font-size: 1.1em; }
-  .quiz-option { display: block; width: 100%; padding: 12px 16px; margin: 8px 0; background: #0d0d1a; border: 1px solid #2a2a4a; border-radius: 8px; color: #e0e0e0; cursor: pointer; text-align: left; font-size: 0.95em; transition: all 0.2s; }
-  .quiz-option:hover { border-color: #01a3a4; background: #1a1a3e; }
-  .quiz-option.correct { background: #1a3a2a; border-color: #2ecc71; color: #2ecc71; }
-  .quiz-option.wrong { background: #3a1a1a; border-color: #e74c3c; color: #e74c3c; }
-  .quiz-option.reveal { border-color: #2ecc71; color: #2ecc71; }
-  .quiz-option:disabled { cursor: default; opacity: 0.7; }
-  .quiz-score { text-align: center; font-size: 1.5em; color: #01a3a4; margin-bottom: 30px; }
-  .quiz-actions { text-align: center; margin-top: 20px; }
-  .quiz-actions button { padding: 10px 24px; margin: 0 8px; border-radius: 8px; border: 1px solid #01a3a4; background: transparent; color: #01a3a4; cursor: pointer; font-size: 1em; }
-  .quiz-actions button:hover { background: rgba(255,255,255,0.05); }
-  .quiz-topic { margin-bottom: 30px; }
-  .quiz-topic-header { display:flex; justify-content:space-between; align-items:center; padding:16px 20px; background:#1a1a2e; border:1px solid #2a2a4a; border-radius:10px; cursor:pointer; margin-bottom:12px; }
-  .quiz-topic-header h3 { color:#01a3a4; margin:0; font-size:1.15em; }
-  .quiz-topic-score { color:#888; font-size:0.95em; }
-  .quiz-explanation { margin-top:12px; padding:14px 18px; border-radius:8px; font-size:0.93em; line-height:1.6; border-left:4px solid #2ecc71; background:rgba(46,204,113,0.08); color:#b0ffb0; }
-
-  /* Mobile responsive */
-  canvas { max-width: 100%; height: auto; }
-  @media (max-width: 768px) {
-    .container { padding: 16px 10px; }
-    .viz-section { padding: 16px 12px; }
-    h2 { font-size: 1.2em; }
-    .subtitle { font-size: 0.85em; }
-    .controls { gap: 8px; }
-    .control-group { min-width: 120px; flex: 1 1 auto; }
-    .tab-bar { flex-wrap: wrap; gap: 4px; }
-    .tab-bar .btn { font-size: 0.75em; padding: 6px 10px; }
-    .insight-box { padding: 14px; font-size: 0.9em; }
-    .comparison { grid-template-columns: 1fr !important; }
-    .formula { font-size: 0.85em; overflow-x: auto; }
-    .code-content pre { font-size: 0.78em; }
-    .interview-tip { font-size: 0.85em; padding: 10px; }
-    .metric-box { font-size: 0.82em; }
-  }
+    <link rel="stylesheet" href="theme.css">
+<style>
+  .header h1 { background: linear-gradient(90deg, var(--gold), var(--rose)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .viz-section h2 { color: var(--gold); }
+  .control-group .value { color: var(--gold); }
+  .control-group input[type="range"] { accent-color: var(--gold); }
+  .btn.active { border-color: var(--gold); color: var(--gold); }
+  .btn:hover { border-color: var(--gold); color: var(--gold); }
+  .insight-box { border-left-color: rgba(var(--gold-rgb), 0.3); }
+  .insight-box strong { color: var(--gold); }
+  .insight-box .formula .highlight { color: var(--gold); }
+  .insight-box .key-point .label { color: var(--gold); }
+  .card::before { background: var(--gold); }
+  #quizToggle { background: var(--bg2); color: var(--fg-dim); border: 1px solid var(--border-hover); }
+  #quizToggle:hover { border-color: var(--gold); color: var(--gold); }
+  #quizSection { border-top-color: rgba(var(--gold-rgb), 0.2); }
 </style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -438,10 +106,10 @@
                 <div class="key-point"><span class="label">When to use model parallelism:</span><span class="desc">Only when model exceeds single GPU memory; trade compute-per-device for communication cost (rarely worth it)</span></div>
                 <div class="key-point"><span class="label">Scaling efficiency:</span><span class="desc">N-GPU training should be ~N times faster; if slower, communication or I/O bottlenecked (not compute-bound)</span></div>
                 <hr class="divider">
-                <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
                 <div class="comparison">
                   <div class="option">
-                    <div class="opt-title" style="color: #01a3a4;">Data Parallelism</div>
+                    <div class="opt-title" style="color: #a08550;">Data Parallelism</div>
                     <div class="opt-desc">Default choice when the model fits in a single GPU memory (e.g., ResNet-50 at 100MB, BERT-base at 400MB). Scale to 8-64 GPUs with near-linear speedup. Used by most production training jobs at Google, Meta, etc.</div>
                   </div>
                   <div class="option">
@@ -456,7 +124,7 @@
                 <hr class="divider">
                 <div class="interview-tip">Communication vs computation ratio: If model has X FLOPs and communication transfers Y bytes, ratio = Y/X. High ratio = communication-bound; low ratio = compute-bound.</div>
                 <div class="interview-tip">Reduce synchronization: Gradient accumulation (accumulate over k batches before sync), communication-computation overlap (compute while communicating), reduce precision (FP16 transfers 2x less data).</div>
-                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set k=64 and toggle data parallelism ON with 4 GPUs. Observe all-reduce overhead. Increase k to 512 and notice per-GPU gradient communication cost. Then try model parallelism with k=2048 and watch different GPUs become communication bottlenecks.</div>
+                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Set k=64 and toggle data parallelism ON with 4 GPUs. Observe all-reduce overhead. Increase k to 512 and notice per-GPU gradient communication cost. Then try model parallelism with k=2048 and watch different GPUs become communication bottlenecks.</div>
                 <div class="mnemonic">Data parallelism = many workers, one model copy each; Model parallelism = one worker per model shard (harder to coordinate).</div>
                 <div class="code-example">
                   <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
@@ -548,10 +216,10 @@ for batch in dataloader:
                 <div class="key-point"><span class="label">LR finder:</span><span class="desc">Train for epoch, exponentially increase LR (\(10^{-5}\) to \(10\)), plot loss vs LR, choose LR in steep descent region (not minimum)</span></div>
                 <div class="key-point"><span class="label">Sharp vs flat minima:</span><span class="desc">Sharp (high curvature) = overfits, generalizes poorly; flat (low curvature) = robust. Schedules help escape sharp minima.</span></div>
                 <hr class="divider">
-                <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
                 <div class="comparison">
                   <div class="option">
-                    <div class="opt-title" style="color: #01a3a4;">Cosine Annealing</div>
+                    <div class="opt-title" style="color: #a08550;">Cosine Annealing</div>
                     <div class="opt-desc">Default for most Transformer and vision training (BERT, GPT, ViT). Smooth decay avoids sudden LR drops that destabilize training. Use with warmup for LLM pre-training runs of 100K+ steps.</div>
                   </div>
                   <div class="option">
@@ -566,7 +234,7 @@ for batch in dataloader:
                 <hr class="divider">
                 <div class="interview-tip">Warmup necessity: Large-batch training destabilizes early iterations (gradient norms vary wildly); warmup smooths initial gradient flow. Without it, loss explodes.</div>
                 <div class="interview-tip">Validate schedule: Plot training loss curve. Does earlier decay help (lower final loss) or hurt (slower convergence)? Validate on final validation metric.</div>
-                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Start with LR=0.001 and watch smooth training. Increase to 0.01 and see oscillations. Jump to 0.1 and watch divergence. Then select "Cosine" schedule and watch LR decay smoothly—better convergence than constant. Try "Exponential" with different decay rates.</div>
+                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Start with LR=0.001 and watch smooth training. Increase to 0.01 and see oscillations. Jump to 0.1 and watch divergence. Then select "Cosine" schedule and watch LR decay smoothly—better convergence than constant. Try "Exponential" with different decay rates.</div>
                 <div class="mnemonic">Warmup = preparation (stabilize); cosine = smooth descent (avoid shocks); flat minima = robustness (generalize well).</div>
                 <div class="code-example">
                   <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
@@ -662,10 +330,10 @@ for step, batch in enumerate(dataloader):
                 <div class="key-point"><span class="label">Gradient underflow:</span><span class="desc">FP16 gradients \(< 6 \times 10^{-5}\) become zero \(\rightarrow\) no gradient update \(\rightarrow\) training stalled. Loss scaling prevents by enlarging gradients.</span></div>
                 <div class="key-point"><span class="label">Production preference:</span><span class="desc">TPUs use BF16 natively (hardware-efficient); GPUs A100+ prefer BF16 (better stability than FP16); older GPUs default to FP16</span></div>
                 <hr class="divider">
-                <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
                 <div class="comparison">
                   <div class="option">
-                    <div class="opt-title" style="color: #01a3a4;">BF16 Mixed Precision</div>
+                    <div class="opt-title" style="color: #a08550;">BF16 Mixed Precision</div>
                     <div class="opt-desc">Preferred on A100/H100 GPUs and TPUs. Same dynamic range as FP32 so no loss scaling needed. Use for LLM pre-training (GPT, Llama), large vision models (ViT-L), and any training where gradient underflow has been problematic with FP16.</div>
                   </div>
                   <div class="option">
@@ -680,7 +348,7 @@ for step, batch in enumerate(dataloader):
                 <hr class="divider">
                 <div class="interview-tip">Debug numerical instabilities: Monitor loss and gradient norms across iterations. Exploding norms → reduce LR or increase loss scaling. NaN/Inf → investigate data or loss function.</div>
                 <div class="interview-tip">When to use BF16 vs FP16: BF16 has range advantage (prefer unless hardware accelerates FP16). If gradient norms are very small (< 1e-4), loss scaling must be more aggressive.</div>
-                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Train with FP32 and watch memory usage and speed. Switch to FP16 and see 2x speedup, half memory. Try BF16 (faster overflow protection) and compare stability. Set loss scaling to 1.0 with FP16 and watch gradients underflow; increase scaling to 1024 and recover.</div>
+                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Train with FP32 and watch memory usage and speed. Switch to FP16 and see 2x speedup, half memory. Try BF16 (faster overflow protection) and compare stability. Set loss scaling to 1.0 with FP16 and watch gradients underflow; increase scaling to 1024 and recover.</div>
                 <div class="mnemonic">FP16 = fast but fragile (underflow risk); BF16 = fast and robust (range-safe); loss scaling = safety net (prevent underflow).</div>
                 <div class="code-example">
                   <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
@@ -768,10 +436,10 @@ for batch in dataloader:
                 <div class="key-point"><span class="label">Critical implementation:</span><span class="desc">Do NOT zero between accumulation steps (loses accumulated gradients); with autocast, scale/unscale correctly; gradient clipping after full accumulation</span></div>
                 <div class="key-point"><span class="label">Batch normalization:</span><span class="desc">Computed per micro-batch (not full batch); causes biased estimates; synchronized batch norm across accumulation complex (usually ignored)</span></div>
                 <hr class="divider">
-                <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
                 <div class="comparison">
                   <div class="option">
-                    <div class="opt-title" style="color: #01a3a4;">Gradient Accumulation (Single GPU)</div>
+                    <div class="opt-title" style="color: #a08550;">Gradient Accumulation (Single GPU)</div>
                     <div class="opt-desc">Use when you need large effective batch size but only have 1 GPU (e.g., fine-tuning BERT-large on a single A100, want batch 256 but only 64 fits in memory). Set accumulation steps = 4. Training is 4x slower but equivalent to batch 256.</div>
                   </div>
                   <div class="option">
@@ -786,7 +454,7 @@ for batch in dataloader:
                 <hr class="divider">
                 <div class="interview-tip">Batch size for stable training: Typical rule is 32-256 for vision, 64-512 for NLP. If loss noisy, increase batch size; if gradient updates too conservative, decrease.</div>
                 <div class="interview-tip">Choose accumulation steps: If effective batch B needed but GPU memory only holds B/N, use N accumulation steps. Example: want batch 512, GPU holds 128 → N=4 steps.</div>
-                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Set batch size=16, accumulation=1 (total 16). Then keep batch=8, accumulation=2 (same total, less memory). Compare training curves—should match. Increase accumulation to 8 with batch=2 and observe when accumulated gradient becomes stale.</div>
+                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Set batch size=16, accumulation=1 (total 16). Then keep batch=8, accumulation=2 (same total, less memory). Compare training curves—should match. Increase accumulation to 8 with batch=2 and observe when accumulated gradient becomes stale.</div>
                 <div class="mnemonic">Gradient accumulation = financial analogy: collect payments (gradients) over time, apply one large transaction (optimizer step) periodically.</div>
                 <div class="code-example">
                   <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
@@ -880,10 +548,10 @@ for i, batch in enumerate(dataloader):
                 <div class="key-point"><span class="label">CPU offloading:</span><span class="desc">Store partitions in pinned CPU RAM, asynchronously transfer to GPU; further GPU memory reduction; requires high PCIe bandwidth</span></div>
                 <div class="key-point"><span class="label">Trade-off tiers:</span><span class="desc">Stage 1-2: cost-effective (10-20% overhead); Stage 3: necessary for extreme scale but requires high-bandwidth interconnects (NVLink, RoCE)</span></div>
                 <hr class="divider">
-                <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
                 <div class="comparison">
                   <div class="option">
-                    <div class="opt-title" style="color: #01a3a4;">ZeRO Stage 1-2</div>
+                    <div class="opt-title" style="color: #a08550;">ZeRO Stage 1-2</div>
                     <div class="opt-desc">Default for models that almost fit in GPU memory (e.g., 7B model on 8x A100-40GB). Low communication overhead (10-20%). Stage 1 alone often sufficient for fine-tuning; Stage 2 adds gradient partitioning for pre-training larger models.</div>
                   </div>
                   <div class="option">
@@ -898,7 +566,7 @@ for i, batch in enumerate(dataloader):
                 <hr class="divider">
                 <div class="interview-tip">Communication overhead analysis: If bandwidth is B GB/s and gather 1TB parameters, overhead = 1TB / B seconds per iteration. Example: 100 GB/s × 1TB = 10s overhead—significant.</div>
                 <div class="interview-tip">When to offload to CPU: GPU memory < 10GB available; trade GPU-CPU PCIe bandwidth for GPU VRAM. Typical: CPU offloading worthwhile only if PCIe bandwidth > 50 GB/s.</div>
-                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Stage 0 (no sharding) baseline—see full optimizer/gradient/param memory. Stage 1: optimizer state splits (25% memory). Stage 2: gradients split (50% total). Stage 3: parameters split (75% total, all-gather on backward). Watch memory drop and communication increase.</div>
+                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Stage 0 (no sharding) baseline—see full optimizer/gradient/param memory. Stage 1: optimizer state splits (25% memory). Stage 2: gradients split (50% total). Stage 3: parameters split (75% total, all-gather on backward). Watch memory drop and communication increase.</div>
                 <div class="mnemonic">ZeRO = sharing is caring: partition parameters/gradients across GPUs, gather only what's needed, reduce per-GPU memory drastically.</div>
                 <div class="code-example">
                   <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
@@ -939,9 +607,9 @@ for batch in dataloader:
                     <div class="control-group">
                         <div class="control-label">Strategy</div>
                         <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                            <button class="strategy-btn checkpoint-btn active" data-checkpoint="none" style="padding:6px 12px;background:#01a3a433;border:1px solid #01a3a4;color:#01a3a4;border-radius:4px;cursor:pointer;">None</button>
-                            <button class="strategy-btn checkpoint-btn" data-checkpoint="selective" style="padding:6px 12px;background:#1e1e2e;border:1px solid #333;color:#aaa;border-radius:4px;cursor:pointer;">Selective</button>
-                            <button class="strategy-btn checkpoint-btn" data-checkpoint="full" style="padding:6px 12px;background:#1e1e2e;border:1px solid #333;color:#aaa;border-radius:4px;cursor:pointer;">Full Recompute</button>
+                            <button class="strategy-btn checkpoint-btn active" data-checkpoint="none" style="padding:6px 12px;background:#a0855033;border:1px solid #a08550;color:#a08550;border-radius:4px;cursor:pointer;">None</button>
+                            <button class="strategy-btn checkpoint-btn" data-checkpoint="selective" style="padding:6px 12px;background:#1e1e2e;border:1px solid #333;color:#8a8680;border-radius:4px;cursor:pointer;">Selective</button>
+                            <button class="strategy-btn checkpoint-btn" data-checkpoint="full" style="padding:6px 12px;background:#1e1e2e;border:1px solid #333;color:#8a8680;border-radius:4px;cursor:pointer;">Full Recompute</button>
                         </div>
                     </div>
                     <div class="control-group">
@@ -980,10 +648,10 @@ for batch in dataloader:
                 <div class="key-point"><span class="label">When worthwhile:</span><span class="desc">Deep networks (\(L > 100\), e.g., ResNet-200, GPT-3); memory-constrained hardware; compute cheaper than memory bandwidth</span></div>
                 <div class="key-point"><span class="label">Production use:</span><span class="desc">Checkpointing + ZeRO-3 enables training 100B+ parameter models on 8-16 GPUs with 20-30% slowdown (acceptable)</span></div>
                 <hr class="divider">
-                <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
                 <div class="comparison">
                   <div class="option">
-                    <div class="opt-title" style="color: #01a3a4;">Selective Checkpointing (sqrt(L))</div>
+                    <div class="opt-title" style="color: #a08550;">Selective Checkpointing (sqrt(L))</div>
                     <div class="opt-desc">Best trade-off for most deep networks. Checkpoint every sqrt(L) layers (e.g., every 7th layer in a 48-layer Transformer). Reduces activation memory by 7x with only 20-30% compute overhead. Standard for GPT/Llama pre-training.</div>
                   </div>
                   <div class="option">
@@ -998,7 +666,7 @@ for batch in dataloader:
                 <hr class="divider">
                 <div class="interview-tip">Debug checkpointing: Verify gradients match between checkpointed and non-checkpointed via numerical differentiation (finite differences); catches recomputation errors.</div>
                 <div class="interview-tip">Choose k (checkpoint frequency): Start k=√L; if still OOM, increase k (less checkpoints, more recompute). If mostly memory-bound, decrease k (more checkpoints, less recompute).</div>
-                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Batch=32 without checkpointing—set as baseline memory. Enable checkpointing and memory drops 50%. Now increase batch to 64 with checkpointing (same peak memory as original batch 32). Observe speed slowdown (recomputation overhead) vs memory savings.</div>
+                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Batch=32 without checkpointing—set as baseline memory. Enable checkpointing and memory drops 50%. Now increase batch to 64 with checkpointing (same peak memory as original batch 32). Observe speed slowdown (recomputation overhead) vs memory savings.</div>
                 <div class="mnemonic">Checkpointing = bookmarks: mark certain pages (layers), skip middle pages during reading (backward), flip back to marked pages to reread (recompute).</div>
                 <div class="code-example">
                   <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
@@ -1038,9 +706,9 @@ class CheckpointedTransformer(torch.nn.Module):
                     <div class="control-group">
                         <div class="control-label">Scenario</div>
                         <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                            <button class="strategy-btn monitor-btn active" data-scenario="healthy" style="padding:6px 12px;background:#01a3a433;border:1px solid #01a3a4;color:#01a3a4;border-radius:4px;cursor:pointer;">Healthy</button>
-                            <button class="strategy-btn monitor-btn" data-scenario="exploding" style="padding:6px 12px;background:#1e1e2e;border:1px solid #333;color:#aaa;border-radius:4px;cursor:pointer;">Exploding</button>
-                            <button class="strategy-btn monitor-btn" data-scenario="plateau" style="padding:6px 12px;background:#1e1e2e;border:1px solid #333;color:#aaa;border-radius:4px;cursor:pointer;">Plateau</button>
+                            <button class="strategy-btn monitor-btn active" data-scenario="healthy" style="padding:6px 12px;background:#a0855033;border:1px solid #a08550;color:#a08550;border-radius:4px;cursor:pointer;">Healthy</button>
+                            <button class="strategy-btn monitor-btn" data-scenario="exploding" style="padding:6px 12px;background:#1e1e2e;border:1px solid #333;color:#8a8680;border-radius:4px;cursor:pointer;">Exploding</button>
+                            <button class="strategy-btn monitor-btn" data-scenario="plateau" style="padding:6px 12px;background:#1e1e2e;border:1px solid #333;color:#8a8680;border-radius:4px;cursor:pointer;">Plateau</button>
                         </div>
                     </div>
                     <div class="control-group">
@@ -1049,7 +717,7 @@ class CheckpointedTransformer(torch.nn.Module):
                         <div class="slider-value" id="monitoringStepsValue">5000 steps</div>
                     </div>
                     <div class="metric-display">
-                        <div class="metric-row"><span class="metric-label">Status:</span><span id="monitoringStatus" style="color:#64ffda;">Healthy</span></div>
+                        <div class="metric-row"><span class="metric-label">Status:</span><span id="monitoringStatus" style="color:#c9a96e;">Healthy</span></div>
                         <div class="metric-row"><span class="metric-label">Grad Norm:</span><span id="monitoringGradNorm">1.2</span></div>
                         <div class="metric-row"><span class="metric-label">Action:</span><span id="monitoringAction">None needed</span></div>
                     </div>
@@ -1070,10 +738,10 @@ class CheckpointedTransformer(torch.nn.Module):
                 <div class="key-point"><span class="label">Response actions:</span><span class="desc">Exploding gradients → clip (max_norm=1.0) or reduce LR; NaN/Inf → halt (unrecoverable), investigate mixed precision; Plateau → increase LR or verify data</span></div>
                 <div class="key-point"><span class="label">LLM-specific:</span><span class="desc">Monitor perplexity (exp(-log-likelihood)); check loss spikes correlate with data changes (new language); track token accuracy</span></div>
                 <hr class="divider">
-                <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
                 <div class="comparison">
                   <div class="option">
-                    <div class="opt-title" style="color: #01a3a4;">Gradient Clipping (max_norm)</div>
+                    <div class="opt-title" style="color: #a08550;">Gradient Clipping (max_norm)</div>
                     <div class="opt-desc">Always enable for Transformer training (GPT, BERT, ViT). Set max_norm=1.0 as default. Prevents catastrophic gradient explosions from bad data batches or learning rate spikes. Low overhead, high safety value.</div>
                   </div>
                   <div class="option">
@@ -1088,7 +756,7 @@ class CheckpointedTransformer(torch.nn.Module):
                 <hr class="divider">
                 <div class="interview-tip">Leading indicators of failure: Gradient norms explode 1-2 iterations before NaN loss; catch early via norm thresholds (alert if >100).</div>
                 <div class="interview-tip">Monitoring architecture: Central logging (W&B, TensorBoard, MLflow) with alerting thresholds; saves best validation model (not last); enables post-hoc analysis.</div>
-                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Run training, watch loss decrease smoothly. Click "Inject Gradient Explosion"—loss spikes, training breaks. Increase gradient clip norm from 1.0 to 10.0 and training recovers. Toggle "Async Update" ON and observe loss divergence despite gradient clipping.</div>
+                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Run training, watch loss decrease smoothly. Click "Inject Gradient Explosion"—loss spikes, training breaks. Increase gradient clip norm from 1.0 to 10.0 and training recovers. Toggle "Async Update" ON and observe loss divergence despite gradient clipping.</div>
                 <div class="mnemonic">Monitor = early warning system: gradient norms → health check; loss curve → performance; throughput → efficiency.</div>
                 <div class="code-example">
                   <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
@@ -1131,17 +799,17 @@ for step, batch in enumerate(dataloader):
                     <div class="control-group">
                         <div class="control-label">View</div>
                         <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                            <button class="strategy-btn hardware-btn active" data-view="hierarchy" style="padding:6px 12px;background:#01a3a433;border:1px solid #01a3a4;color:#01a3a4;border-radius:4px;cursor:pointer;">Memory</button>
-                            <button class="strategy-btn hardware-btn" data-view="roofline" style="padding:6px 12px;background:#1e1e2e;border:1px solid #333;color:#aaa;border-radius:4px;cursor:pointer;">Roofline</button>
-                            <button class="strategy-btn hardware-btn" data-view="intensity" style="padding:6px 12px;background:#1e1e2e;border:1px solid #333;color:#aaa;border-radius:4px;cursor:pointer;">Intensity</button>
+                            <button class="strategy-btn hardware-btn active" data-view="hierarchy" style="padding:6px 12px;background:#a0855033;border:1px solid #a08550;color:#a08550;border-radius:4px;cursor:pointer;">Memory</button>
+                            <button class="strategy-btn hardware-btn" data-view="roofline" style="padding:6px 12px;background:#1e1e2e;border:1px solid #333;color:#8a8680;border-radius:4px;cursor:pointer;">Roofline</button>
+                            <button class="strategy-btn hardware-btn" data-view="intensity" style="padding:6px 12px;background:#1e1e2e;border:1px solid #333;color:#8a8680;border-radius:4px;cursor:pointer;">Intensity</button>
                         </div>
                     </div>
                     <div class="control-group">
                         <div class="control-label">GPU Type</div>
                         <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                            <button class="strategy-btn gpu-type-btn active" data-gpu="h100" style="padding:6px 12px;background:#01a3a433;border:1px solid #01a3a4;color:#01a3a4;border-radius:4px;cursor:pointer;">H100</button>
-                            <button class="strategy-btn gpu-type-btn" data-gpu="a100" style="padding:6px 12px;background:#1e1e2e;border:1px solid #333;color:#aaa;border-radius:4px;cursor:pointer;">A100</button>
-                            <button class="strategy-btn gpu-type-btn" data-gpu="l40s" style="padding:6px 12px;background:#1e1e2e;border:1px solid #333;color:#aaa;border-radius:4px;cursor:pointer;">L40S</button>
+                            <button class="strategy-btn gpu-type-btn active" data-gpu="h100" style="padding:6px 12px;background:#a0855033;border:1px solid #a08550;color:#a08550;border-radius:4px;cursor:pointer;">H100</button>
+                            <button class="strategy-btn gpu-type-btn" data-gpu="a100" style="padding:6px 12px;background:#1e1e2e;border:1px solid #333;color:#8a8680;border-radius:4px;cursor:pointer;">A100</button>
+                            <button class="strategy-btn gpu-type-btn" data-gpu="l40s" style="padding:6px 12px;background:#1e1e2e;border:1px solid #333;color:#8a8680;border-radius:4px;cursor:pointer;">L40S</button>
                         </div>
                     </div>
                     <div class="metric-display">
@@ -1175,10 +843,10 @@ for step, batch in enumerate(dataloader):
                 <div class="key-point"><span class="label">Flash Attention:</span><span class="desc">Standard attention memory-bound (softmax \(O(n^2)\) HBM passes); Flash computes in SRAM (tiling, recomputing) \(\rightarrow O(n)\) passes \(\rightarrow\) compute-bound</span></div>
                 <div class="key-point"><span class="label">Kernel fusion:</span><span class="desc">Combine operations to avoid intermediate HBM writes/reads; 2-10× speedup vs naive implementation</span></div>
                 <hr class="divider">
-                <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+                <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
                 <div class="comparison">
                   <div class="option">
-                    <div class="opt-title" style="color: #01a3a4;">Flash Attention / Kernel Fusion</div>
+                    <div class="opt-title" style="color: #a08550;">Flash Attention / Kernel Fusion</div>
                     <div class="opt-desc">Use for any Transformer model with long sequences (>512 tokens). Flash Attention reduces attention from O(n^2) HBM access to O(n) via SRAM tiling. 2-4x speedup on GPT, Llama, and diffusion model training. Enable via xformers or PyTorch 2.0 SDPA.</div>
                   </div>
                   <div class="option">
@@ -1193,7 +861,7 @@ for step, batch in enumerate(dataloader):
                 <hr class="divider">
                 <div class="interview-tip">Calculate AI for your model: Count FLOPs (matrix multiplications, convolutions) and memory transfers (gradient updates, batch norm). High AI = compute-bound (optimize compute); low AI = memory-bound (optimize memory access).</div>
                 <div class="interview-tip">Quantization effect: Lower precision reduces memory traffic (good for memory-bound ops) but reduces compute (hurts compute-bound ops). Analyze AI before and after quantization.</div>
-                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #b0d0ff;">👉 Try this: Low arithmetic intensity (left side of graph)—model is memory-bound (roofline ceiling set by memory BW). High AI (right side)—compute-bound (ceiling by FLOPS). Drag slider to the "ridge" where memory and compute balance. Toggle GPU and watch roofline angle steepen (higher memory BW on newer GPUs).</div>
+                    <div class="interview-tip" style="background: rgba(100, 200, 255, 0.05); border-color: rgba(100, 200, 255, 0.2); color: #c9b8a0;">👉 Try this: Low arithmetic intensity (left side of graph)—model is memory-bound (roofline ceiling set by memory BW). High AI (right side)—compute-bound (ceiling by FLOPS). Drag slider to the "ridge" where memory and compute balance. Toggle GPU and watch roofline angle steepen (higher memory BW on newer GPUs).</div>
                 <div class="mnemonic">Roofline = ceiling for performance: either compute or memory bandwidth caps you; find which and optimize that bottleneck.</div>
                 <div class="code-example">
                   <button class="code-toggle" onclick="this.parentElement.classList.toggle('open')">
@@ -1227,7 +895,8 @@ for batch in dataloader:
 
     </div>
 
-    <script>
+    <script src="theme.js"></script>
+<script>
         // ============ Data Parallelism vs Model Parallelism ============
         const parallelismCanvas = document.getElementById('parallelismCanvas');
         const parallelismCtx = parallelismCanvas.getContext('2d');
@@ -1265,7 +934,7 @@ for batch in dataloader:
             parallelismCtx.fillRect(0, 0, parallelismCanvas.width, parallelismCanvas.height);
 
             parallelismCtx.font = 'bold 17px Arial';
-            parallelismCtx.fillStyle = '#01a3a4';
+            parallelismCtx.fillStyle = '#a08550';
 
             if (currentStrategy === 'data') {
                 drawDataParallel();
@@ -1283,8 +952,8 @@ for batch in dataloader:
             const startY = 80;
             const spacing = 10;
 
-            parallelismCtx.fillStyle = '#1a1a2e';
-            parallelismCtx.strokeStyle = '#01a3a4';
+            parallelismCtx.fillStyle = '#111118';
+            parallelismCtx.strokeStyle = '#a08550';
             parallelismCtx.lineWidth = 2;
 
             for (let i = 0; i < gpuCountVal; i++) {
@@ -1318,7 +987,7 @@ for batch in dataloader:
 
             // AllReduce arrow
             if (gpuCountVal > 1) {
-                parallelismCtx.strokeStyle = '#01a3a4';
+                parallelismCtx.strokeStyle = '#a08550';
                 parallelismCtx.lineWidth = 2;
                 parallelismCtx.setLineDash([5, 5]);
                 parallelismCtx.beginPath();
@@ -1334,7 +1003,7 @@ for batch in dataloader:
             }
 
             // Title
-            parallelismCtx.fillStyle = '#01a3a4';
+            parallelismCtx.fillStyle = '#a08550';
             parallelismCtx.font = 'bold 17px Arial';
             parallelismCtx.textAlign = 'left';
             parallelismCtx.fillText('Data Parallel Strategy', 40, 30);
@@ -1356,8 +1025,8 @@ for batch in dataloader:
             const spacing = 10;
             const layersPerGpu = 4;
 
-            parallelismCtx.fillStyle = '#1a1a2e';
-            parallelismCtx.strokeStyle = '#01a3a4';
+            parallelismCtx.fillStyle = '#111118';
+            parallelismCtx.strokeStyle = '#a08550';
             parallelismCtx.lineWidth = 2;
 
             for (let i = 0; i < gpuCountVal; i++) {
@@ -1403,7 +1072,7 @@ for batch in dataloader:
             }
 
             // Title
-            parallelismCtx.fillStyle = '#01a3a4';
+            parallelismCtx.fillStyle = '#a08550';
             parallelismCtx.font = 'bold 17px Arial';
             parallelismCtx.textAlign = 'left';
             parallelismCtx.fillText('Model Parallel Strategy', 40, 290);
@@ -1425,12 +1094,12 @@ for batch in dataloader:
             const startY = 50;
             const spacing = 10;
 
-            parallelismCtx.fillStyle = '#1a1a2e';
-            parallelismCtx.strokeStyle = '#01a3a4';
+            parallelismCtx.fillStyle = '#111118';
+            parallelismCtx.strokeStyle = '#a08550';
             parallelismCtx.lineWidth = 2;
 
             // Time axis
-            parallelismCtx.strokeStyle = '#01a3a4';
+            parallelismCtx.strokeStyle = '#a08550';
             parallelismCtx.lineWidth = 1;
             parallelismCtx.beginPath();
             parallelismCtx.moveTo(40, 280);
@@ -1448,8 +1117,8 @@ for batch in dataloader:
                 const y = startY;
 
                 // GPU box
-                parallelismCtx.fillStyle = '#1a1a2e';
-                parallelismCtx.strokeStyle = '#01a3a4';
+                parallelismCtx.fillStyle = '#111118';
+                parallelismCtx.strokeStyle = '#a08550';
                 parallelismCtx.lineWidth = 2;
                 parallelismCtx.fillRect(x, y, gpuWidth, gpuHeight);
                 parallelismCtx.strokeRect(x, y, gpuWidth, gpuHeight);
@@ -1473,7 +1142,7 @@ for batch in dataloader:
             }
 
             // Title and legend
-            parallelismCtx.fillStyle = '#01a3a4';
+            parallelismCtx.fillStyle = '#a08550';
             parallelismCtx.font = 'bold 17px Arial';
             parallelismCtx.textAlign = 'left';
             parallelismCtx.fillText('Pipeline Parallel (Multiple Batches in Flight)', 40, 320);
@@ -1568,7 +1237,7 @@ for batch in dataloader:
             lrScheduleCtx.stroke();
 
             // Grid
-            lrScheduleCtx.strokeStyle = '#1a1a2e';
+            lrScheduleCtx.strokeStyle = '#111118';
             lrScheduleCtx.lineWidth = 0.5;
             for (let i = 0; i <= 10; i++) {
                 const x = padding + (width / 10) * i;
@@ -1600,13 +1269,13 @@ for batch in dataloader:
             lrScheduleCtx.fillStyle = 'rgba(1, 163, 164, 0.15)';
             lrScheduleCtx.fill();
             // Draw line
-            lrScheduleCtx.strokeStyle = '#01a3a4';
+            lrScheduleCtx.strokeStyle = '#a08550';
             lrScheduleCtx.lineWidth = 3;
             lrScheduleCtx.beginPath();
             points.forEach((p, i) => { if (i === 0) lrScheduleCtx.moveTo(p.x, p.y); else lrScheduleCtx.lineTo(p.x, p.y); });
             lrScheduleCtx.stroke();
             // Max LR label
-            lrScheduleCtx.fillStyle = '#01a3a4';
+            lrScheduleCtx.fillStyle = '#a08550';
             lrScheduleCtx.font = '12px monospace';
             lrScheduleCtx.textAlign = 'left';
             lrScheduleCtx.fillText(maxLrVal.toFixed(4), padding + 5, points[0].y - 8);
@@ -1625,7 +1294,7 @@ for batch in dataloader:
             lrScheduleCtx.restore();
 
             // Title
-            lrScheduleCtx.fillStyle = '#01a3a4';
+            lrScheduleCtx.fillStyle = '#a08550';
             lrScheduleCtx.font = 'bold 17px Arial';
             lrScheduleCtx.textAlign = 'left';
             lrScheduleCtx.fillText(selectedSchedule.charAt(0).toUpperCase() + selectedSchedule.slice(1) + ' Schedule', padding, 30);
@@ -1659,7 +1328,7 @@ for batch in dataloader:
             precisionCtx.fillRect(0, 0, precisionCanvas.width, precisionCanvas.height);
 
             // Title
-            precisionCtx.fillStyle = '#01a3a4';
+            precisionCtx.fillStyle = '#a08550';
             precisionCtx.font = 'bold 17px Arial';
             precisionCtx.textAlign = 'left';
             precisionCtx.fillText('Floating Point Format: ' + selectedPrecision.toUpperCase(), 40, 30);
@@ -1676,7 +1345,7 @@ for batch in dataloader:
             let y = 80;
 
             // Draw bit boxes
-            const colors = { sign: '#ff6b6b', exponent: '#4ecdc4', mantissa: '#45b7d1' };
+            const colors = { sign: '#c96e8a', exponent: '#6ea5c9', mantissa: '#45b7d1' };
             const bitPositions = [
                 { name: 'Sign', count: layout.sign, color: colors.sign },
                 { name: 'Exponent', count: layout.exponent, color: colors.exponent },
@@ -1688,11 +1357,11 @@ for batch in dataloader:
                 const boxWidth = Math.max(50, (bit.count / layout.bits) * 300);
                 precisionCtx.fillStyle = bit.color;
                 precisionCtx.fillRect(currentX, y, boxWidth, 40);
-                precisionCtx.strokeStyle = '#01a3a4';
+                precisionCtx.strokeStyle = '#a08550';
                 precisionCtx.lineWidth = 2;
                 precisionCtx.strokeRect(currentX, y, boxWidth, 40);
 
-                precisionCtx.fillStyle = '#e0e0e0';
+                precisionCtx.fillStyle = '#e8e4de';
                 precisionCtx.font = 'bold 15px Arial';
                 precisionCtx.textAlign = 'center';
                 precisionCtx.fillText(bit.name, currentX + boxWidth/2, y + 15);
@@ -1711,7 +1380,7 @@ for batch in dataloader:
             };
 
             y += 80;
-            precisionCtx.fillStyle = '#01a3a4';
+            precisionCtx.fillStyle = '#a08550';
             precisionCtx.font = 'bold 15px Arial';
             precisionCtx.textAlign = 'left';
 
@@ -1722,12 +1391,12 @@ for batch in dataloader:
                 precisionCtx.fillText(statLabels[i], 40, y + i * 30);
                 precisionCtx.fillStyle = '#b0b0c0';
                 precisionCtx.fillText(stats[selectedPrecision][key], 150, y + i * 30);
-                precisionCtx.fillStyle = '#01a3a4';
+                precisionCtx.fillStyle = '#a08550';
             });
 
             // Loss scaling visualization
             y += 160;
-            precisionCtx.fillStyle = '#01a3a4';
+            precisionCtx.fillStyle = '#a08550';
             precisionCtx.font = 'bold 15px Arial';
             precisionCtx.textAlign = 'left';
             precisionCtx.fillText('Loss Scaling (FP16 only)', 40, y);
@@ -1749,7 +1418,7 @@ for batch in dataloader:
             precisionCtx.textAlign = 'center';
             precisionCtx.fillText('\u00d7' + lossScaleVal, 200, y + 22);
 
-            precisionCtx.fillStyle = '#4ecdc4';
+            precisionCtx.fillStyle = '#6ea5c9';
             precisionCtx.fillRect(280, y, 120, 40);
             precisionCtx.fillStyle = '#0a0a0f';
             precisionCtx.font = 'bold 15px Arial';
@@ -1803,7 +1472,7 @@ for batch in dataloader:
             const startY = 60;
 
             // Timeline
-            gradAccumCtx.fillStyle = '#01a3a4';
+            gradAccumCtx.fillStyle = '#a08550';
             gradAccumCtx.font = 'bold 17px Arial';
             gradAccumCtx.textAlign = 'left';
             gradAccumCtx.fillText('Gradient Accumulation Timeline', startX, 30);
@@ -1816,7 +1485,7 @@ for batch in dataloader:
                 // Forward pass
                 gradAccumCtx.fillStyle = '#2e5f5f';
                 gradAccumCtx.fillRect(x, y, stepWidth - 5, 50);
-                gradAccumCtx.strokeStyle = '#01a3a4';
+                gradAccumCtx.strokeStyle = '#a08550';
                 gradAccumCtx.lineWidth = 2;
                 gradAccumCtx.strokeRect(x, y, stepWidth - 5, 50);
 
@@ -1830,7 +1499,7 @@ for batch in dataloader:
                 // Backward pass
                 gradAccumCtx.fillStyle = '#3a6b6b';
                 gradAccumCtx.fillRect(x, y + 60, stepWidth - 5, 50);
-                gradAccumCtx.strokeStyle = '#01a3a4';
+                gradAccumCtx.strokeStyle = '#a08550';
                 gradAccumCtx.lineWidth = 2;
                 gradAccumCtx.strokeRect(x, y + 60, stepWidth - 5, 50);
 
@@ -1849,9 +1518,9 @@ for batch in dataloader:
 
             // Optimizer step at the end
             const optX = Math.min(startX + accumStepsVal * stepWidth + 10, gradAccumCanvas.width - 100);
-            gradAccumCtx.fillStyle = '#4ecdc4';
+            gradAccumCtx.fillStyle = '#6ea5c9';
             gradAccumCtx.fillRect(optX, startY, 80, 110);
-            gradAccumCtx.strokeStyle = '#01a3a4';
+            gradAccumCtx.strokeStyle = '#a08550';
             gradAccumCtx.lineWidth = 2;
             gradAccumCtx.strokeRect(optX, startY, 80, 110);
 
@@ -1865,7 +1534,7 @@ for batch in dataloader:
             gradAccumCtx.fillText('1/N, update)', optX + 40, startY + 80);
 
             // Arrow from accumulation to optimizer
-            gradAccumCtx.strokeStyle = '#01a3a4';
+            gradAccumCtx.strokeStyle = '#a08550';
             gradAccumCtx.lineWidth = 2;
             gradAccumCtx.setLineDash([5, 5]);
             gradAccumCtx.beginPath();
@@ -1876,7 +1545,7 @@ for batch in dataloader:
 
             // Memory comparison
             const memY = 250;
-            gradAccumCtx.fillStyle = '#01a3a4';
+            gradAccumCtx.fillStyle = '#a08550';
             gradAccumCtx.font = 'bold 15px Arial';
             gradAccumCtx.textAlign = 'left';
             gradAccumCtx.fillText('Memory & Compute Trade-off', startX, memY);
@@ -1939,7 +1608,7 @@ for batch in dataloader:
             zeroCtx.fillRect(0, 0, zeroCanvas.width, zeroCanvas.height);
 
             // Title
-            zeroCtx.fillStyle = '#01a3a4';
+            zeroCtx.fillStyle = '#a08550';
             zeroCtx.font = 'bold 16px Arial';
             zeroCtx.textAlign = 'left';
             zeroCtx.fillText('ZeRO Stage ' + selectedZero + ' - Memory Layout', 40, 30);
@@ -1961,25 +1630,25 @@ for batch in dataloader:
                 memoryLayout = [
                     { name: 'Parameters', bytes: paramBytes, color: '#2e5f5f' },
                     { name: 'Gradients', bytes: gradBytes, color: '#3a6b6b' },
-                    { name: 'Optimizer', bytes: optimBytes, color: '#4ecdc4' }
+                    { name: 'Optimizer', bytes: optimBytes, color: '#6ea5c9' }
                 ];
             } else if (selectedZero === '1') {
                 memoryLayout = [
                     { name: 'Parameters', bytes: paramBytes, color: '#2e5f5f' },
                     { name: 'Gradients', bytes: gradBytes, color: '#3a6b6b' },
-                    { name: 'Optimizer (÷GPUs)', bytes: optimBytes / numGpusVal, color: '#4ecdc4' }
+                    { name: 'Optimizer (÷GPUs)', bytes: optimBytes / numGpusVal, color: '#6ea5c9' }
                 ];
             } else if (selectedZero === '2') {
                 memoryLayout = [
                     { name: 'Parameters', bytes: paramBytes, color: '#2e5f5f' },
                     { name: 'Gradients (÷GPUs)', bytes: gradBytes / numGpusVal, color: '#3a6b6b' },
-                    { name: 'Optimizer (÷GPUs)', bytes: optimBytes / numGpusVal, color: '#4ecdc4' }
+                    { name: 'Optimizer (÷GPUs)', bytes: optimBytes / numGpusVal, color: '#6ea5c9' }
                 ];
             } else {
                 memoryLayout = [
                     { name: 'Parameters (÷GPUs)', bytes: paramBytes / numGpusVal, color: '#2e5f5f' },
                     { name: 'Gradients (÷GPUs)', bytes: gradBytes / numGpusVal, color: '#3a6b6b' },
-                    { name: 'Optimizer (÷GPUs)', bytes: optimBytes / numGpusVal, color: '#4ecdc4' }
+                    { name: 'Optimizer (÷GPUs)', bytes: optimBytes / numGpusVal, color: '#6ea5c9' }
                 ];
             }
 
@@ -1997,12 +1666,12 @@ for batch in dataloader:
                     const height = (item.bytes / 16) * 150;
                     zeroCtx.fillStyle = item.color;
                     zeroCtx.fillRect(x + 2, y, barWidth - 4, height);
-                    zeroCtx.strokeStyle = '#01a3a4';
+                    zeroCtx.strokeStyle = '#a08550';
                     zeroCtx.lineWidth = 1;
                     zeroCtx.strokeRect(x + 2, y, barWidth - 4, height);
 
                     if (g === 0 && height > 15) {
-                        zeroCtx.fillStyle = '#01a3a4';
+                        zeroCtx.fillStyle = '#a08550';
                         zeroCtx.font = '8px Arial';
                         zeroCtx.textAlign = 'center';
                         zeroCtx.fillText(item.bytes.toFixed(1) + 'B', x + barWidth/2, y + height/2);
@@ -2031,7 +1700,7 @@ for batch in dataloader:
 
             // Legend
             let legendY = startY + totalMemory + 40;
-            zeroCtx.fillStyle = '#01a3a4';
+            zeroCtx.fillStyle = '#a08550';
             zeroCtx.font = 'bold 12px Arial';
             zeroCtx.textAlign = 'left';
 
@@ -2039,7 +1708,7 @@ for batch in dataloader:
                 zeroCtx.fillStyle = item.color;
                 zeroCtx.fillRect(40, legendY + i * 25, 15, 15);
 
-                zeroCtx.fillStyle = '#01a3a4';
+                zeroCtx.fillStyle = '#a08550';
                 zeroCtx.font = '11px Arial';
                 zeroCtx.fillText(item.name + ': ' + item.bytes.toFixed(1) + ' bytes/param', 65, legendY + i * 25 + 12);
             });
@@ -2085,7 +1754,7 @@ for batch in dataloader:
             checkpointCtx.fillStyle = '#0f0f17';
             checkpointCtx.fillRect(0, 0, checkpointCanvas.width, checkpointCanvas.height);
 
-            checkpointCtx.fillStyle = '#01a3a4';
+            checkpointCtx.fillStyle = '#a08550';
             checkpointCtx.font = 'bold 14px Arial';
             checkpointCtx.fillText(checkpointType === 'none' ? 'Standard: Store All Activations' : 
                                   checkpointType === 'selective' ? 'Selective: Store Every k-th Layer' :
@@ -2105,9 +1774,9 @@ for batch in dataloader:
                 else if (checkpointType === 'selective') shouldStore = (i % 2 === 0);
                 else shouldStore = false;
 
-                checkpointCtx.fillStyle = shouldStore ? '#4ecdc433' : '#2e5f5f33';
+                checkpointCtx.fillStyle = shouldStore ? '#6ea5c933' : '#2e5f5f33';
                 checkpointCtx.fillRect(startX, y, layerW, layerH);
-                checkpointCtx.strokeStyle = shouldStore ? '#4ecdc4' : '#888';
+                checkpointCtx.strokeStyle = shouldStore ? '#6ea5c9' : '#888';
                 checkpointCtx.strokeRect(startX, y, layerW, layerH);
 
                 checkpointCtx.fillStyle = '#999';
@@ -2130,7 +1799,7 @@ for batch in dataloader:
             document.getElementById('checkpointCompute').textContent = Math.round(computeOverhead) + '%';
             document.getElementById('checkpointTime').textContent = computeOverhead === 0 ? 'No overhead' : '+' + Math.round(computeOverhead) + '% slower';
 
-            checkpointCtx.fillStyle = '#ffd93d';
+            checkpointCtx.fillStyle = '#e0c992';
             checkpointCtx.font = 'bold 12px Arial';
             checkpointCtx.fillText('Memory Savings (Activation Storage)', startX, startY + 200);
             checkpointCtx.font = '11px Arial';
@@ -2196,7 +1865,7 @@ for batch in dataloader:
             }
 
             // Draw loss curve
-            monitoringCtx.strokeStyle = '#01a3a4';
+            monitoringCtx.strokeStyle = '#a08550';
             monitoringCtx.lineWidth = 2;
             monitoringCtx.beginPath();
             for (let s = 0; s < steps; s++) {
@@ -2212,17 +1881,17 @@ for batch in dataloader:
             let status, statusColor, gradNorm, action;
             if (monitoringScenario === 'healthy') {
                 status = 'Healthy Training';
-                statusColor = '#64ffda';
+                statusColor = '#c9a96e';
                 gradNorm = '0.5-2.0';
                 action = 'Continue';
             } else if (monitoringScenario === 'overfitting') {
                 status = 'Overfitting Detected';
-                statusColor = '#ffd93d';
+                statusColor = '#e0c992';
                 gradNorm = '1.0-5.0';
                 action = 'Add regularization';
             } else if (monitoringScenario === 'diverging') {
                 status = 'Loss Diverging!';
-                statusColor = '#ff6b6b';
+                statusColor = '#c96e8a';
                 gradNorm = '> 10';
                 action = 'Reduce LR, clip grads';
             } else {
@@ -2279,7 +1948,7 @@ for batch in dataloader:
 
             const spec = specs[gpuType];
 
-            hardwareCtx.fillStyle = '#01a3a4';
+            hardwareCtx.fillStyle = '#a08550';
             hardwareCtx.font = 'bold 14px Arial';
             hardwareCtx.fillText(gpuType.toUpperCase() + ' - ' + hardwareView.toUpperCase(), 40, 30);
 
@@ -2294,32 +1963,32 @@ for batch in dataloader:
                 levels.forEach(level => {
                     hardwareCtx.fillStyle = '#2e5f5f';
                     hardwareCtx.fillRect(40, level.y, 500, 40);
-                    hardwareCtx.strokeStyle = '#01a3a4';
+                    hardwareCtx.strokeStyle = '#a08550';
                     hardwareCtx.lineWidth = 2;
                     hardwareCtx.strokeRect(40, level.y, 500, 40);
 
-                    hardwareCtx.fillStyle = '#01a3a4';
+                    hardwareCtx.fillStyle = '#a08550';
                     hardwareCtx.fillText(level.name + ' | Size: ' + level.size + ' | BW: ' + level.bandwidth, 50, level.y + 25);
                 });
 
-                hardwareCtx.fillStyle = '#ff6b6b';
+                hardwareCtx.fillStyle = '#c96e8a';
                 hardwareCtx.font = 'bold 11px Arial';
-                hardwareCtx.fillText('Bottleneck: Data movement from HBM is typically the limiting factor!', 40, 270);
+                hardwareCtx.fillText('Bottleneck: moving data from HBM.', 40, 270);
             } else if (hardwareView === 'roofline') {
                 hardwareCtx.fillStyle = '#b0b0c0';
                 hardwareCtx.font = '11px monospace';
-                hardwareCtx.fillText('Performance limited by: min(Peak Compute, AI × Bandwidth)', 40, 60);
+                hardwareCtx.fillText('Perf limit = min(peak compute, AI x bandwidth)', 40, 60);
                 hardwareCtx.fillText('AI = FLOPs / Bytes moved', 40, 85);
                 hardwareCtx.fillText('', 40, 110);
 
-                hardwareCtx.fillStyle = '#01a3a4';
+                hardwareCtx.fillStyle = '#a08550';
                 hardwareCtx.fillText('Peak Compute: ' + spec.compute, 50, 140);
                 hardwareCtx.fillText('HBM Bandwidth: ' + spec.bandwidth, 50, 165);
                 hardwareCtx.fillText('Roof (AI=1): ' + spec.bandwidth.split(' ')[0] + ' TFLOPS', 50, 190);
                 hardwareCtx.fillText('Roof (AI=10): ' + (parseFloat(spec.bandwidth) * 10) + ' TFLOPS', 50, 215);
                 hardwareCtx.fillText('Roof (AI=100): Peak Compute (' + spec.compute + ')', 50, 240);
             } else {
-                hardwareCtx.fillStyle = '#ffd93d';
+                hardwareCtx.fillStyle = '#e0c992';
                 hardwareCtx.font = '12px Arial';
                 hardwareCtx.fillText('Arithmetic Intensity = FLOPs per Byte', 40, 60);
 
@@ -2333,9 +2002,9 @@ for batch in dataloader:
 
                 let y = 90;
                 ops.forEach(op => {
-                    hardwareCtx.fillStyle = op.type === 'compute-bound' ? '#64ffda88' : '#ff6b6b88';
+                    hardwareCtx.fillStyle = op.type === 'compute-bound' ? '#c9a96e88' : '#c96e8a88';
                     hardwareCtx.fillRect(40, y, 500, 25);
-                    hardwareCtx.strokeStyle = op.type === 'compute-bound' ? '#64ffda' : '#ff6b6b';
+                    hardwareCtx.strokeStyle = op.type === 'compute-bound' ? '#c9a96e' : '#c96e8a';
                     hardwareCtx.strokeRect(40, y, 500, 25);
 
                     hardwareCtx.fillStyle = '#ccc';
@@ -2357,7 +2026,7 @@ for batch in dataloader:
 
 <div id="quizSection" style="display:none">
   <div class="quiz-container">
-    <h2 style="text-align:center; color:#01a3a4; margin-bottom:10px;">Training at Scale Quiz</h2>
+    <h2 style="text-align:center; color:#a08550; margin-bottom:10px;">Training at Scale Quiz</h2>
     <div class="quiz-score">Score: <span id="quizScore">0</span> / <span id="quizTotal">40</span></div>
     <div id="quizQuestions"></div>
     <div class="quiz-actions">

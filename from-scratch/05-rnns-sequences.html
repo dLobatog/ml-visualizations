@@ -5,133 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="../static/canvas-polish.js"></script>
 <title>Chapter 5: RNNs & Sequence Processing from Scratch</title>
+<link rel="stylesheet" href="../theme.css">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #0a0a0f; color: #e0e0e0; line-height: 1.6; }
-  .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; text-align: center; border-bottom: 1px solid #2a2a4a; }
-  .header h1 { font-size: 2.2em; background: linear-gradient(90deg, #f39c12, #e67e22); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
-  .header p { color: #888; font-size: 1.1em; }
-  .header a { color: #f39c12; text-decoration: none; font-size: 0.9em; }
-  .header a:hover { text-decoration: underline; }
-  .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
-
-  /* Minimap */
-  .minimap { position: sticky; top: 0; z-index: 100; background: #0a0a0fee; backdrop-filter: blur(10px); border-bottom: 1px solid #2a2a4a; padding: 10px 20px; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }
-  .mm-step { padding: 4px 12px; border-radius: 6px; font-size: 0.75em; font-weight: 600; cursor: pointer; transition: all 0.2s; background: #151530; color: #555; border: 1px solid #2a2a4a; white-space: nowrap; }
-  .mm-step:hover { border-color: #f39c12; color: #f39c12; }
-  .mm-step.active { background: rgba(243,156,18,0.2); color: #f39c12; border-color: rgba(243,156,18,0.5); }
-  .mm-step.done { background: rgba(243,156,18,0.1); color: #f39c12; border-color: rgba(243,156,18,0.3); }
-  .mm-arrow { color: #333; font-size: 0.8em; }
-
-  .viz-section { background: #12121f; border: 1px solid #2a2a4a; border-radius: 16px; padding: 32px; margin-bottom: 40px; }
-  .viz-section h2 { font-size: 1.5em; color: #f39c12; margin-bottom: 8px; }
-  .viz-section .subtitle { color: #888; margin-bottom: 24px; font-size: 0.95em; }
-  .viz-canvas { background: #0d0d1a; border-radius: 12px; position: relative; overflow: hidden; }
-  canvas { display: block; margin: 0 auto; }
-  .controls { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; align-items: center; }
-  .control-group { display: flex; flex-direction: column; gap: 4px; }
-  .control-group label { font-size: 0.85em; color: #aaa; }
-  .control-group input[type="range"] { width: 160px; accent-color: #f39c12; }
-  .control-group .value { font-size: 0.85em; color: #f39c12; font-family: monospace; }
-  .btn { padding: 8px 16px; border: 1px solid #f39c12; background: transparent; color: #f39c12; border-radius: 8px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
-  .btn:hover { background: #f39c1222; }
-  .btn.active { background: #f39c1233; }
-  .tab-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
-
-  .insight-box { background: linear-gradient(135deg, #1a1a3e 0%, #151530 100%); border-left: 4px solid #f39c12; padding: 20px 24px; margin-top: 20px; border-radius: 0 12px 12px 0; font-size: 0.92em; color: #ccc; line-height: 1.8; }
-  .insight-box strong { color: #f39c12; font-size: 1.05em; }
-  .insight-box .formula { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 12px 18px; margin: 12px 0; font-family: 'Courier New', monospace; color: #e8e8ff; font-size: 1.05em; text-align: center; letter-spacing: 0.5px; line-height: 1.9; }
-  .insight-box .key-point { display: flex; flex-wrap: wrap; gap: 4px 8px; margin: 8px 0; padding: 4px 0; align-items: baseline; }
-  .insight-box .key-point .label { color: #f39c12; font-weight: 600; min-width: 160px; flex-shrink: 0; }
-  .insight-box .key-point .desc { color: #ddd; }
-  .insight-box .interview-tip { background: rgba(100, 255, 100, 0.05); border: 1px solid rgba(100, 255, 100, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #b0ffb0; font-size: 0.93em; line-height: 1.6; }
-  .insight-box .interview-tip::before { content: '\1F4A1  Interview Tip: '; font-weight: 700; color: #7fff7f; }
-  .insight-box .mnemonic { background: rgba(255, 150, 255, 0.05); border: 1px solid rgba(255, 150, 255, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #ffb0ff; font-size: 0.93em; line-height: 1.6; }
-  .insight-box .mnemonic::before { content: '\1F9E0  Remember: '; font-weight: 700; color: #ff7fff; }
-  .insight-box .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
-  .insight-box .comparison .option { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 10px 14px; }
-  .insight-box .comparison .option .opt-title { color: #f39c12; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
-  .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
-  .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
-  .code-example { margin-top: 12px; border: 1px solid #2a2a4a; border-radius: 8px; overflow: hidden; }
-  .code-toggle { width: 100%; background: #1a1a2e; color: #f39c12; border: none; padding: 10px 16px; text-align: left; cursor: pointer; font-size: 0.9em; font-weight: 600; display: flex; align-items: center; gap: 8px; }
-  .code-toggle:hover { background: #22223a; }
-  .code-toggle-icon { display: inline-block; transition: transform 0.2s; font-size: 0.7em; }
-  .code-example.open .code-toggle-icon { transform: rotate(90deg); }
-  .code-content { display: none; padding: 14px 16px; background: #0a0a14; }
-  .code-example.open .code-content { display: block; }
-  .code-content pre { margin: 0; overflow-x: auto; white-space: pre; }
-  .code-content code { color: #e0e0e0; font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.82em; line-height: 1.6; }
-  .code-content .code-note { color: #888; font-size: 0.82em; margin-top: 8px; font-style: italic; }
-  .code-content pre[class*="language-"], .code-content code[class*="language-"] { background: #0a0a14; font-size: 0.82em; line-height: 1.6; margin: 0; padding: 0; text-shadow: none; }
-  pre[class*="language-"]::selection, code[class*="language-"]::selection { background: #333; }
-
-  .katex { color: #e8e8ff; font-size: 1.1em; }
-  .formula .katex { font-size: 1.2em; }
-
-  .narrative-note { background: rgba(255,217,61,0.05); border-left: 3px solid #ffd93d; padding: 14px 18px; margin: 16px 0; border-radius: 0 8px 8px 0; font-size: 0.9em; color: #ccb866; }
-  .narrative-note strong { color: #ffd93d; }
-
-  select { padding: 6px 12px; border: 1px solid #2a2a4a; background: #0d0d1a; color: #e0e0e0; border-radius: 6px; font-size: 0.9em; cursor: pointer; }
-  select:focus { outline: none; border-color: #f39c12; }
-
-#quizToggle{position:fixed;top:20px;right:20px;z-index:1000;padding:12px 20px;background:#f39c12;color:#0a0a0f;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:1em;box-shadow:0 4px 15px rgba(0,0,0,0.3);transition:transform 0.2s}
-#quizToggle:hover{transform:scale(1.05)}
-#quizSection{background:#0a0a0f;border-top:2px solid #f39c12;padding:40px 20px;margin-top:40px}
-.quiz-container{max-width:900px;margin:0 auto}
-.quiz-topic{margin-bottom:30px}
-.quiz-topic-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:10px;cursor:pointer;margin-bottom:12px;user-select:none}
-.quiz-topic-header h3{color:#f39c12;margin:0;font-size:1.15em}
-.quiz-topic-header:hover{background:#1f1f3a}
-.quiz-topic-score{color:#888;font-size:0.95em}
-.quiz-topic-questions{display:none}
-.quiz-topic-questions.open{display:block}
-.quiz-question{background:#12121f;border:1px solid #2a2a4a;border-radius:12px;padding:24px;margin-bottom:16px}
-.quiz-question h4{color:#e0e0e0;margin-bottom:16px;font-size:1.05em;line-height:1.5}
-.quiz-option{display:block;width:100%;padding:12px 16px;margin:8px 0;background:#0d0d1a;border:1px solid #2a2a4a;border-radius:8px;color:#e0e0e0;cursor:pointer;text-align:left;font-size:0.95em;transition:all 0.2s;font-family:inherit}
-.quiz-option:hover:not(:disabled){border-color:#f39c12;background:#1a1a3e}
-.quiz-option.correct{background:#1a3a2a !important;border-color:#2ecc71 !important;color:#2ecc71 !important}
-.quiz-option.wrong{background:#3a1a1a !important;border-color:#e74c3c !important;color:#e74c3c !important}
-.quiz-option.reveal{border-color:#2ecc71 !important;color:#2ecc71 !important}
-.quiz-option:disabled{cursor:default}
-.quiz-explanation{margin-top:12px;padding:14px 18px;border-radius:8px;font-size:0.93em;line-height:1.6;display:none}
-.quiz-explanation.show{display:block}
-.quiz-explanation.correct-exp{border-left:4px solid #2ecc71;background:rgba(46,204,113,0.08);color:#b0ffb0}
-.quiz-explanation.wrong-exp{border-left:4px solid #e74c3c;background:rgba(231,76,60,0.08);color:#ffb0b0}
-.quiz-score{text-align:center;font-size:1.5em;color:#f39c12;margin-bottom:30px}
-.quiz-actions{text-align:center;margin-top:30px;margin-bottom:20px}
-.quiz-actions button{padding:10px 24px;margin:0 8px;border-radius:8px;border:1px solid #f39c12;background:transparent;color:#f39c12;cursor:pointer;font-size:1em}
-.quiz-actions button:hover{background:rgba(243,156,18,0.1)}
-.quiz-progress{height:4px;background:#1a1a2e;border-radius:2px;margin-bottom:20px;overflow:hidden}
-.quiz-progress-bar{height:100%;background:#f39c12;border-radius:2px;transition:width 0.3s}
-
-.break-toggle { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border: 1px solid #e74c3c; background: transparent; color: #e74c3c; border-radius: 8px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
-.break-toggle:hover { background: rgba(231,76,60,0.15); }
-.break-toggle.broken { background: rgba(231,76,60,0.25); border-color: #ff4444; color: #ff4444; }
-
-.legend { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
-.legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.85em; color: #ccc; }
-.legend-dot { width: 12px; height: 12px; border-radius: 50%; }
-
-  /* Mobile responsive */
-  canvas { max-width: 100%; height: auto; }
-  @media (max-width: 768px) {
-    .container { padding: 16px 10px; }
-    .viz-section { padding: 16px 12px; }
-    h2 { font-size: 1.2em; }
-    .subtitle { font-size: 0.85em; }
-    .controls { gap: 8px; }
-    .control-group { min-width: 120px; flex: 1 1 auto; }
-    .tab-bar { flex-wrap: wrap; gap: 4px; }
-    .tab-bar .btn { font-size: 0.75em; padding: 6px 10px; }
-    .insight-box { padding: 14px; font-size: 0.9em; }
-    .comparison { grid-template-columns: 1fr !important; }
-    .formula { font-size: 0.85em; overflow-x: auto; }
-    .code-content pre { font-size: 0.78em; }
-    .interview-tip { font-size: 0.85em; padding: 10px; }
-    .metric-box { font-size: 0.82em; }
-  }
-
+  .header h1 { background: linear-gradient(90deg, var(--blue), var(--gold)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .viz-section h2 { color: var(--blue); }
+  .control-group .value { color: var(--blue); }
+  .control-group input[type="range"] { accent-color: var(--blue); }
+  .btn.active { border-color: var(--blue); color: var(--blue); }
+  .btn:hover { border-color: var(--blue); color: var(--blue); }
+  .insight-box { border-left-color: rgba(var(--blue-rgb), 0.3); }
+  .insight-box strong { color: var(--blue); }
+  .insight-box .formula .highlight { color: var(--blue); }
+  .insight-box .key-point .label { color: var(--blue); }
+  .card::before { background: var(--blue); }
+  #quizToggle { background: var(--bg2); color: var(--fg-dim); border: 1px solid var(--border-hover); }
+  #quizToggle:hover { border-color: var(--blue); color: var(--blue); }
+  #quizSection { border-top-color: rgba(var(--blue-rgb), 0.2); }
 </style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -229,11 +118,11 @@ print(f"Final hidden state: {h.shape}")  # (1, 64)</code></pre>
       </div>
     </div>
   </div>
-  <div class="insight-box" style="border-left-color: #ff6b6b;">
-    <h3 style="color:#ff6b6b; margin-bottom: 10px;">&#x26A0;&#xFE0F; Common Mistakes</h3>
+  <div class="insight-box" style="border-left-color: #c96e8a;">
+    <h3 style="color:#c96e8a; margin-bottom: 10px;">&#x26A0;&#xFE0F; Common Mistakes</h3>
     <ul style="list-style: none; padding: 0;">
-      <li style="margin-bottom: 8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Forgetting to initialize hidden state to zeros before each new sequence. <strong style="color:#2ecc71;">Fix:</strong> Always call <code>h = torch.zeros(batch, hidden_size)</code> at the start of each sequence. Leftover hidden states from previous sequences leak information and cause erratic training.</li>
-      <li style="margin-bottom: 8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Using vanilla RNN for long sequences (length > 30). <strong style="color:#2ecc71;">Fix:</strong> Use LSTM or GRU instead. Vanilla RNNs cannot maintain gradients over long distances due to vanishing/exploding gradients (see Section 5.3 below).</li>
+      <li style="margin-bottom: 8px;"><strong style="color:#c96e8a;">Mistake:</strong> Forgetting to initialize hidden state to zeros before each new sequence. <strong style="color:#2ecc71;">Fix:</strong> Always call <code>h = torch.zeros(batch, hidden_size)</code> at the start of each sequence. Leftover hidden states from previous sequences leak information and cause erratic training.</li>
+      <li style="margin-bottom: 8px;"><strong style="color:#c96e8a;">Mistake:</strong> Using vanilla RNN for long sequences (length > 30). <strong style="color:#2ecc71;">Fix:</strong> Use LSTM or GRU instead. Vanilla RNNs cannot maintain gradients over long distances due to vanishing/exploding gradients (see Section 5.3 below).</li>
     </ul>
   </div>
 </div>
@@ -268,11 +157,11 @@ print(f"Final hidden state: {h.shape}")  # (1, 64)</code></pre>
     <hr class="divider">
     <div class="mnemonic">Think of the hidden state as a game of telephone: the message (early tokens) gets more distorted with each retelling (timestep). LSTMs add a "written note" (cell state) that preserves the original message.</div>
   </div>
-  <div class="insight-box" style="border-left-color: #ff6b6b;">
-    <h3 style="color:#ff6b6b; margin-bottom: 10px;">&#x26A0;&#xFE0F; Common Mistakes</h3>
+  <div class="insight-box" style="border-left-color: #c96e8a;">
+    <h3 style="color:#c96e8a; margin-bottom: 10px;">&#x26A0;&#xFE0F; Common Mistakes</h3>
     <ul style="list-style: none; padding: 0;">
-      <li style="margin-bottom: 8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Confusing bidirectional hidden size &mdash; the output of a bidirectional RNN is <code>2 * hidden_size</code>, not <code>hidden_size</code>. <strong style="color:#2ecc71;">Fix:</strong> When feeding bidirectional output to a linear layer, use <code>nn.Linear(2 * hidden_size, ...)</code>. This is one of the most common shape-mismatch bugs.</li>
-      <li style="margin-bottom: 8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Not packing variable-length sequences before feeding to the RNN. <strong style="color:#2ecc71;">Fix:</strong> Use <code>pack_padded_sequence</code> and <code>pad_packed_sequence</code>. Without packing, the RNN wastes compute processing padding tokens and the hidden state gets corrupted by padding values.</li>
+      <li style="margin-bottom: 8px;"><strong style="color:#c96e8a;">Mistake:</strong> Confusing bidirectional hidden size &mdash; the output of a bidirectional RNN is <code>2 * hidden_size</code>, not <code>hidden_size</code>. <strong style="color:#2ecc71;">Fix:</strong> When feeding bidirectional output to a linear layer, use <code>nn.Linear(2 * hidden_size, ...)</code>. This is one of the most common shape-mismatch bugs.</li>
+      <li style="margin-bottom: 8px;"><strong style="color:#c96e8a;">Mistake:</strong> Not packing variable-length sequences before feeding to the RNN. <strong style="color:#2ecc71;">Fix:</strong> Use <code>pack_padded_sequence</code> and <code>pad_packed_sequence</code>. Without packing, the RNN wastes compute processing padding tokens and the hidden state gets corrupted by padding values.</li>
     </ul>
   </div>
 </div>
@@ -347,11 +236,11 @@ for batch in dataloader:
       </div>
     </div>
   </div>
-  <div class="insight-box" style="border-left-color: #ff6b6b;">
-    <h3 style="color:#ff6b6b; margin-bottom: 10px;">&#x26A0;&#xFE0F; Common Mistakes</h3>
+  <div class="insight-box" style="border-left-color: #c96e8a;">
+    <h3 style="color:#c96e8a; margin-bottom: 10px;">&#x26A0;&#xFE0F; Common Mistakes</h3>
     <ul style="list-style: none; padding: 0;">
-      <li style="margin-bottom: 8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Not using gradient clipping with RNNs (exploding gradients crash training with NaN losses). <strong style="color:#2ecc71;">Fix:</strong> Always add <code>clip_grad_norm_(model.parameters(), max_norm=1.0)</code> after <code>loss.backward()</code>. Start with clip value 1.0; increase to 5.0 if training is too slow.</li>
-      <li style="margin-bottom: 8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Not detaching hidden state between sequences during truncated BPTT. The computation graph grows unbounded, consuming all GPU memory. <strong style="color:#2ecc71;">Fix:</strong> Call <code>h = h.detach()</code> at the boundary of each truncated segment. This cuts the gradient chain while keeping the hidden state values.</li>
+      <li style="margin-bottom: 8px;"><strong style="color:#c96e8a;">Mistake:</strong> Not using gradient clipping with RNNs (exploding gradients crash training with NaN losses). <strong style="color:#2ecc71;">Fix:</strong> Always add <code>clip_grad_norm_(model.parameters(), max_norm=1.0)</code> after <code>loss.backward()</code>. Start with clip value 1.0; increase to 5.0 if training is too slow.</li>
+      <li style="margin-bottom: 8px;"><strong style="color:#c96e8a;">Mistake:</strong> Not detaching hidden state between sequences during truncated BPTT. The computation graph grows unbounded, consuming all GPU memory. <strong style="color:#2ecc71;">Fix:</strong> Call <code>h = h.detach()</code> at the boundary of each truncated segment. This cuts the gradient chain while keeping the hidden state values.</li>
     </ul>
   </div>
   <div class="narrative-note">
@@ -430,11 +319,11 @@ print(f"Final hidden: {h_n.shape}")  # (2, 16, 128)</code></pre>
       </div>
     </div>
   </div>
-  <div class="insight-box" style="border-left-color: #ff6b6b;">
-    <h3 style="color:#ff6b6b; margin-bottom: 10px;">&#x26A0;&#xFE0F; Common Mistakes</h3>
+  <div class="insight-box" style="border-left-color: #c96e8a;">
+    <h3 style="color:#c96e8a; margin-bottom: 10px;">&#x26A0;&#xFE0F; Common Mistakes</h3>
     <ul style="list-style: none; padding: 0;">
-      <li style="margin-bottom: 8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Not initializing the forget gate bias to a positive value (~1.0). With default zero bias, the forget gate starts near 0.5, meaning the LSTM forgets half the cell state at every step from the start. <strong style="color:#2ecc71;">Fix:</strong> Manually set the forget gate bias to 1.0 after initialization: <code>for name, p in lstm.named_parameters(): if 'bias' in name: p.data[hidden_size:2*hidden_size].fill_(1.0)</code></li>
-      <li style="margin-bottom: 8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Stacking 3+ LSTM layers without residual connections. Deep LSTMs still suffer from depth-wise vanishing gradients even though they handle temporal gradients well. <strong style="color:#2ecc71;">Fix:</strong> For 3+ layers, add residual connections between layers or use 1-2 layers (sufficient for most tasks).</li>
+      <li style="margin-bottom: 8px;"><strong style="color:#c96e8a;">Mistake:</strong> Not initializing the forget gate bias to a positive value (~1.0). With default zero bias, the forget gate starts near 0.5, meaning the LSTM forgets half the cell state at every step from the start. <strong style="color:#2ecc71;">Fix:</strong> Manually set the forget gate bias to 1.0 after initialization: <code>for name, p in lstm.named_parameters(): if 'bias' in name: p.data[hidden_size:2*hidden_size].fill_(1.0)</code></li>
+      <li style="margin-bottom: 8px;"><strong style="color:#c96e8a;">Mistake:</strong> Stacking 3+ LSTM layers without residual connections. Deep LSTMs still suffer from depth-wise vanishing gradients even though they handle temporal gradients well. <strong style="color:#2ecc71;">Fix:</strong> For 3+ layers, add residual connections between layers or use 1-2 layers (sufficient for most tasks).</li>
     </ul>
   </div>
   <div class="narrative-note">
@@ -502,10 +391,10 @@ lstm_out, (lstm_h, lstm_c) = lstm(x)  # returns (output, (h_n, c_n))</code></pre
       </div>
     </div>
   </div>
-  <div class="insight-box" style="border-left-color: #ff6b6b;">
-    <h3 style="color:#ff6b6b; margin-bottom: 10px;">&#x26A0;&#xFE0F; Common Mistakes</h3>
+  <div class="insight-box" style="border-left-color: #c96e8a;">
+    <h3 style="color:#c96e8a; margin-bottom: 10px;">&#x26A0;&#xFE0F; Common Mistakes</h3>
     <ul style="list-style: none; padding: 0;">
-      <li style="margin-bottom: 8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Assuming GRU and LSTM are interchangeable in all cases. GRU can struggle with very long sequences (200+) where LSTM's separate cell state provides better gradient flow. <strong style="color:#2ecc71;">Fix:</strong> Benchmark both on your task. If GRU works well at length 20 but fails at length 200, try LSTM or add attention on top.</li>
+      <li style="margin-bottom: 8px;"><strong style="color:#c96e8a;">Mistake:</strong> Assuming GRU and LSTM are interchangeable in all cases. GRU can struggle with very long sequences (200+) where LSTM's separate cell state provides better gradient flow. <strong style="color:#2ecc71;">Fix:</strong> Benchmark both on your task. If GRU works well at length 20 but fails at length 200, try LSTM or add attention on top.</li>
     </ul>
   </div>
 </div>
@@ -576,11 +465,11 @@ classifier = nn.Linear(256, 10)  # 256 = 2 * hidden_size!</code></pre>
       </div>
     </div>
   </div>
-  <div class="insight-box" style="border-left-color: #ff6b6b;">
-    <h3 style="color:#ff6b6b; margin-bottom: 10px;">&#x26A0;&#xFE0F; Common Mistakes</h3>
+  <div class="insight-box" style="border-left-color: #c96e8a;">
+    <h3 style="color:#c96e8a; margin-bottom: 10px;">&#x26A0;&#xFE0F; Common Mistakes</h3>
     <ul style="list-style: none; padding: 0;">
-      <li style="margin-bottom: 8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Confusing bidirectional hidden size &mdash; using <code>nn.Linear(hidden_size, ...)</code> after a bidirectional RNN instead of <code>nn.Linear(2 * hidden_size, ...)</code>. <strong style="color:#2ecc71;">Fix:</strong> Always check: if <code>bidirectional=True</code>, output features = <code>2 * hidden_size</code>.</li>
-      <li style="margin-bottom: 8px;"><strong style="color:#ff6b6b;">Mistake:</strong> Using bidirectional RNNs for autoregressive generation (text generation, speech synthesis). <strong style="color:#2ecc71;">Fix:</strong> Use unidirectional for generation. Bidirectional is only valid when the full input sequence is available (e.g., classification, NER, encoding for seq2seq).</li>
+      <li style="margin-bottom: 8px;"><strong style="color:#c96e8a;">Mistake:</strong> Confusing bidirectional hidden size &mdash; using <code>nn.Linear(hidden_size, ...)</code> after a bidirectional RNN instead of <code>nn.Linear(2 * hidden_size, ...)</code>. <strong style="color:#2ecc71;">Fix:</strong> Always check: if <code>bidirectional=True</code>, output features = <code>2 * hidden_size</code>.</li>
+      <li style="margin-bottom: 8px;"><strong style="color:#c96e8a;">Mistake:</strong> Using bidirectional RNNs for autoregressive generation (text generation, speech synthesis). <strong style="color:#2ecc71;">Fix:</strong> Use unidirectional for generation. Bidirectional is only valid when the full input sequence is available (e.g., classification, NER, encoding for seq2seq).</li>
     </ul>
   </div>
 </div>
@@ -602,18 +491,19 @@ classifier = nn.Linear(256, 10)  # 256 = 2 * hidden_size!</code></pre>
   </div>
 </div>
 
+<script src="../theme.js"></script>
 <script>
 // ============================================================
 // GLOBAL STATE & UTILITIES
 // ============================================================
 const ACCENT = '#f39c12';
 const ACCENT2 = '#e67e22';
-const ACCENT3 = '#ffd93d';
-const ACCENT4 = '#ff6b6b';
-const BG = '#0d0d1a';
-const FG = '#e0e0e0';
+const ACCENT3 = '#e0c992';
+const ACCENT4 = '#c96e8a';
+const BG = '#0d0d14';
+const FG = '#e8e4de';
 const DIM = '#555';
-const GRID = '#1a1a2e';
+const GRID = '#111118';
 
 function scrollToViz(id) {
   document.getElementById(id).scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1028,7 +918,7 @@ function drawLSTM() {
   // Output gate
   var og = 0.7;
   var ogColor = 'rgba(84,160,255,' + (0.3 + 0.7 * og) + ')';
-  drawRoundedRect(ctx, cx + 20, gateStartY + gateH + gateGap, gateW, gateH, 6, ogColor, '#54a0ff');
+  drawRoundedRect(ctx, cx + 20, gateStartY + gateH + gateGap, gateW, gateH, 6, ogColor, '#7bb5d4');
   ctx.fillStyle = '#fff';
   ctx.font = 'bold 11px Inter, sans-serif';
   ctx.fillText('Output', cx + 20 + gateW / 2, gateStartY + gateH + gateGap + 15);
@@ -1037,14 +927,14 @@ function drawLSTM() {
 
   // Cell state "highway"
   var csY = gateStartY + 2 * (gateH + gateGap) + 20;
-  ctx.strokeStyle = '#ffd93d';
+  ctx.strokeStyle = '#e0c992';
   ctx.lineWidth = 3;
   ctx.setLineDash([]);
   ctx.beginPath();
   ctx.moveTo(cx - 40, csY);
   ctx.lineTo(cx + cellW + 40, csY);
   ctx.stroke();
-  ctx.fillStyle = '#ffd93d';
+  ctx.fillStyle = '#e0c992';
   ctx.font = 'bold 12px Inter, sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText('Cell State c_t (gradient highway)', cx + cellW / 2, csY - 12);
@@ -1177,8 +1067,8 @@ function drawGRUGates(ctx, c, updateBias) {
   var barX = cx + cellW / 2 - barW / 2;
   var barY = eqY + 45;
   // Old portion
-  ctx.fillStyle = '#54a0ff';
-  drawRoundedRect(ctx, barX, barY, barW * (1 - updateBias), barH, 4, '#54a0ff', null);
+  ctx.fillStyle = '#7bb5d4';
+  drawRoundedRect(ctx, barX, barY, barW * (1 - updateBias), barH, 4, '#7bb5d4', null);
   // New portion
   ctx.fillStyle = '#2ecc71';
   drawRoundedRect(ctx, barX + barW * (1 - updateBias), barY, barW * updateBias, barH, 4, '#2ecc71', null);
@@ -1341,9 +1231,9 @@ function drawStacked() {
     ctx.textAlign = 'center';
     ctx.fillText('Forward', c.width / 2 - 80, legY);
     drawArrow(ctx, c.width / 2 - 50, legY - 4, c.width / 2 - 20, legY - 4, ACCENT, 1.5);
-    ctx.fillStyle = '#54a0ff';
+    ctx.fillStyle = '#7bb5d4';
     ctx.fillText('Backward', c.width / 2 + 40, legY);
-    drawArrow(ctx, c.width / 2 + 80, legY - 4, c.width / 2 + 110, legY - 4, '#54a0ff', 1.5);
+    drawArrow(ctx, c.width / 2 + 80, legY - 4, c.width / 2 + 110, legY - 4, '#7bb5d4', 1.5);
   }
 }
 

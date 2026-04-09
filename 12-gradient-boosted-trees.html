@@ -5,130 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>12. Gradient Boosted Decision Trees — Interactive Visualizations</title>
 <script src="static/canvas-polish.js"></script>
+<link rel="stylesheet" href="theme.css">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #0a0a0f; color: #e0e0e0; line-height: 1.6; overflow-x: hidden; }
-  .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; text-align: center; border-bottom: 1px solid #2a2a4a; }
-  .header h1 { font-size: 2.2em; background: linear-gradient(90deg, #10ac84, #1dd1a1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
-  .header p { color: #888; font-size: 1.1em; }
-  .header a { color: #10ac84; text-decoration: none; font-size: 0.9em; }
-  .header a:hover { text-decoration: underline; }
-  .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
-  .viz-section { background: #12121f; border: 1px solid #2a2a4a; border-radius: 16px; padding: 32px; margin-bottom: 40px; }
-  .viz-section h2 { font-size: 1.5em; color: #10ac84; margin-bottom: 8px; }
-  .viz-section .subtitle { color: #888; margin-bottom: 24px; font-size: 0.95em; }
-  .viz-canvas { background: #0d0d1a; border-radius: 12px; position: relative; overflow: hidden; }
-  canvas { display: block; margin: 0 auto; }
-  .controls { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; align-items: center; }
-  .control-group { display: flex; flex-direction: column; gap: 4px; }
-  .control-group label { font-size: 0.85em; color: #aaa; }
-  .control-group input[type="range"] { width: 200px; accent-color: #10ac84; }
-  .control-group .value { font-size: 0.85em; color: #10ac84; font-family: monospace; }
-  .legend { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
-  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.85em; color: #ccc; }
-  .legend-dot { width: 12px; height: 12px; border-radius: 50%; }
-  .btn { padding: 8px 16px; border: 1px solid #10ac84; background: transparent; color: #10ac84; border-radius: 8px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
-  .btn:hover { background: #10ac8422; }
-  .btn.active { background: #10ac8433; }
-  .tab-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
-
-  .insight-box { background: linear-gradient(135deg, #1a1a3e 0%, #151530 100%); border-left: 4px solid #10ac84; padding: 20px 24px; margin-top: 20px; border-radius: 0 12px 12px 0; font-size: 0.92em; color: #ccc; line-height: 1.8; }
-  .insight-box strong { color: #10ac84; font-size: 1.05em; }
-  .insight-box .formula { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 12px 18px; margin: 12px 0; font-family: 'Courier New', monospace; color: #e8e8ff; font-size: 1.05em; text-align: center; letter-spacing: 0.5px; line-height: 1.9; }
-  .insight-box .formula .highlight { color: #10ac84; font-weight: bold; }
-  .insight-box .key-point { display: flex; flex-wrap: wrap; gap: 4px 8px; margin: 8px 0; padding: 4px 0; align-items: baseline; }
-  .insight-box .key-point .label { color: #10ac84; font-weight: 600; min-width: 160px; flex-shrink: 0; }
-  .insight-box .key-point .desc { color: #ddd; }
-  .insight-box .interview-tip { background: rgba(100, 255, 100, 0.05); border: 1px solid rgba(100, 255, 100, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #b0ffb0; font-size: 0.93em; line-height: 1.6; }
-  .insight-box .interview-tip::before { content: '\1F4A1  Interview Tip: '; font-weight: 700; color: #7fff7f; }
-  .insight-box .mnemonic { background: rgba(255, 150, 255, 0.05); border: 1px solid rgba(255, 150, 255, 0.2); border-radius: 8px; padding: 10px 14px; margin: 12px 0; color: #ffb0ff; font-size: 0.93em; line-height: 1.6; }
-  .insight-box .mnemonic::before { content: '\1F9E0  Remember: '; font-weight: 700; color: #ff7fff; }
-  .insight-box .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
-  .insight-box .comparison .option { background: #0d0d2a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 10px 14px; }
-  .insight-box .comparison .option .opt-title { color: #10ac84; font-weight: 600; margin-bottom: 4px; font-size: 0.95em; }
-  .insight-box .comparison .option .opt-desc { color: #bbb; font-size: 0.9em; }
-  .insight-box .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
-
-  .when-to-use { margin-top: 18px; padding-top: 14px; border-top: 1px solid #2a2a4a; }
-  .when-to-use h4 { color: #10ac84; margin-bottom: 10px; font-size: 1.05em; }
-  .when-to-use h5 { color: #ccc; margin-bottom: 6px; font-size: 0.95em; }
-  .use-grid { display: grid; gap: 16px; }
-  .use-grid-2 { grid-template-columns: 1fr 1fr; }
-  .use-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
-  .use-col { background: rgba(16,172,132, 0.04); border: 1px solid rgba(16,172,132, 0.15); border-radius: 10px; padding: 14px; }
-  .use-col ul { list-style: none; padding: 0; }
-  .use-col li { padding: 3px 0; font-size: 0.88em; color: #bbb; }
-  .use-col li::before { content: '\2192  '; color: #10ac84; }
-
-  .katex { color: #e8e8ff; font-size: 1.1em; }
-  .formula .katex { font-size: 1.2em; }
-
-#quizToggle{position:fixed;top:20px;right:20px;z-index:1000;padding:12px 20px;background:#10ac84;color:#0a0a0f;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:1em;box-shadow:0 4px 15px rgba(0,0,0,0.3);transition:transform 0.2s}
-#quizToggle:hover{transform:scale(1.05)}
-#quizSection{background:#0a0a0f;border-top:2px solid #10ac84;padding:40px 20px;margin-top:40px}
-.quiz-container{max-width:900px;margin:0 auto}
-.quiz-topic{margin-bottom:30px}
-.quiz-topic-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:10px;cursor:pointer;margin-bottom:12px;user-select:none}
-.quiz-topic-header h3{color:#10ac84;margin:0;font-size:1.15em}
-.quiz-topic-header:hover{background:#1f1f3a}
-.quiz-topic-score{color:#888;font-size:0.95em}
-.quiz-topic-questions{display:none}
-.quiz-topic-questions.open{display:block}
-.quiz-question{background:#12121f;border:1px solid #2a2a4a;border-radius:12px;padding:24px;margin-bottom:16px}
-.quiz-question h4{color:#e0e0e0;margin-bottom:16px;font-size:1.05em;line-height:1.5}
-.quiz-option{display:block;width:100%;padding:12px 16px;margin:8px 0;background:#0d0d1a;border:1px solid #2a2a4a;border-radius:8px;color:#e0e0e0;cursor:pointer;text-align:left;font-size:0.95em;transition:all 0.2s;font-family:inherit}
-.quiz-option:hover:not(:disabled){border-color:#10ac84;background:#1a1a3e}
-.quiz-option.correct{background:#1a3a2a !important;border-color:#2ecc71 !important;color:#2ecc71 !important}
-.quiz-option.wrong{background:#3a1a1a !important;border-color:#e74c3c !important;color:#e74c3c !important}
-.quiz-option.reveal{border-color:#2ecc71 !important;color:#2ecc71 !important}
-.quiz-option:disabled{cursor:default}
-.quiz-explanation{margin-top:12px;padding:14px 18px;border-radius:8px;font-size:0.93em;line-height:1.6;display:none}
-.quiz-explanation.show{display:block}
-.quiz-explanation.correct-exp{border-left:4px solid #2ecc71;background:rgba(46,204,113,0.08);color:#b0ffb0}
-.quiz-explanation.wrong-exp{border-left:4px solid #e74c3c;background:rgba(231,76,60,0.08);color:#ffb0b0}
-.quiz-score{text-align:center;font-size:1.5em;color:#10ac84;margin-bottom:30px}
-.quiz-actions{text-align:center;margin-top:30px;margin-bottom:20px}
-.quiz-actions button{padding:10px 24px;margin:0 8px;border-radius:8px;border:1px solid #10ac84;background:transparent;color:#10ac84;cursor:pointer;font-size:1em}
-.quiz-actions button:hover{background:rgba(16,172,132,0.1)}
-.quiz-progress{height:4px;background:#1a1a2e;border-radius:2px;margin-bottom:20px;overflow:hidden}
-.quiz-progress-bar{height:100%;background:#10ac84;border-radius:2px;transition:width 0.3s}
-
-.code-example { margin-top: 12px; border: 1px solid #2a2a4a; border-radius: 8px; overflow: hidden; }
-.code-toggle { width: 100%; background: #1a1a2e; color: #10ac84; border: none; padding: 10px 16px; text-align: left; cursor: pointer; font-size: 0.9em; font-weight: 600; display: flex; align-items: center; gap: 8px; }
-.code-toggle:hover { background: #22223a; }
-.code-toggle-icon { display: inline-block; transition: transform 0.2s; font-size: 0.7em; }
-.code-example.open .code-toggle-icon { transform: rotate(90deg); }
-.code-content { display: none; padding: 14px 16px; background: #0a0a14; }
-.code-example.open .code-content { display: block; }
-.code-content pre { margin: 0; overflow-x: auto; white-space: pre; }
-.code-content code { color: #e0e0e0; font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.82em; line-height: 1.6; }
-.code-content .code-note { color: #888; font-size: 0.82em; margin-top: 8px; font-style: italic; }
-.code-content pre[class*="language-"], .code-content code[class*="language-"] { background: #0a0a14; font-size: 0.82em; line-height: 1.6; margin: 0; padding: 0; text-shadow: none; }
-pre[class*="language-"]::selection, code[class*="language-"]::selection { background: #333; }
-
-  /* Mobile responsive */
-  canvas { max-width: 100%; height: auto; }
-  @media (max-width: 768px) {
-    #quizToggle { top: 12px; right: 12px; padding: 10px 14px; font-size: 0.85em; max-width: calc(100vw - 24px); }
-    .container { padding: 16px 10px; }
-    .viz-section { padding: 20px 14px; }
-    h2 { font-size: 1.2em; }
-    .subtitle { font-size: 0.85em; }
-    .controls { gap: 8px; }
-    .controls > * { min-width: 0; }
-    .control-group { min-width: 0; flex: 1 1 auto; }
-    .tab-bar { flex-wrap: wrap; gap: 4px; }
-    .tab-bar .btn { font-size: 0.75em; padding: 6px 10px; }
-    .insight-box { padding: 14px; font-size: 0.9em; }
-    .insight-box .key-point .label { min-width: 0; }
-    .comparison { grid-template-columns: 1fr !important; }
-    .use-grid, .use-grid-2, .use-grid-3 { grid-template-columns: 1fr; }
-    .viz-canvas, .when-to-use, .use-col { max-width: 100%; }
-    .formula, .katex-display { font-size: 0.85em; overflow-x: auto; overflow-y: hidden; }
-    .code-content pre { font-size: 0.78em; }
-    .interview-tip { font-size: 0.85em; padding: 10px; }
-    .metric-box { font-size: 0.82em; }
-  }
+  .header h1 { background: linear-gradient(90deg, var(--gold), var(--blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .viz-section h2 { color: var(--gold); }
+  .control-group .value { color: var(--gold); }
+  .control-group input[type="range"] { accent-color: var(--gold); }
+  .btn.active { border-color: var(--gold); color: var(--gold); }
+  .btn:hover { border-color: var(--gold); color: var(--gold); }
+  .insight-box { border-left-color: rgba(var(--gold-rgb), 0.3); }
+  .insight-box strong { color: var(--gold); }
+  .insight-box .formula .highlight { color: var(--gold); }
+  .insight-box .key-point .label { color: var(--gold); }
+  .card::before { background: var(--gold); }
+  #quizToggle { background: var(--bg2); color: var(--fg-dim); border: 1px solid var(--border-hover); }
+  #quizToggle:hover { border-color: var(--gold); color: var(--gold); }
+  #quizSection { border-top-color: rgba(var(--gold-rgb), 0.2); }
 </style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -165,9 +57,9 @@ pre[class*="language-"]::selection, code[class*="language-"]::selection { backgr
     <button class="btn" onclick="regenerateDTData()">New Data</button>
   </div>
   <div class="legend">
-    <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>Class A</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#4ecdc4"></div>Class B</div>
-    <div class="legend-item"><div class="legend-dot" style="background:rgba(255,107,107,0.15)"></div>Region A</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#c96e8a"></div>Class A</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#6ea5c9"></div>Class B</div>
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(201, 110, 138,0.15)"></div>Region A</div>
     <div class="legend-item"><div class="legend-dot" style="background:rgba(78,205,196,0.15)"></div>Region B</div>
   </div>
   <div class="predict-box" id="predict-dt">
@@ -292,30 +184,30 @@ print(f"Test acc:  {tree.score(X_test, y_test):.3f}")</code></pre>
     <button class="btn" onclick="resetResidual()">Reset</button>
   </div>
   <div class="legend">
-    <div class="legend-item"><div class="legend-dot" style="background:#ffd93d"></div>Target Function</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#10ac84"></div>Ensemble Prediction</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>Residuals</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#4ecdc4"></div>New Tree Fit</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#e0c992"></div>Target Function</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#8ab87a"></div>Ensemble Prediction</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#c96e8a"></div>Residuals</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#6ea5c9"></div>New Tree Fit</div>
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Gradient Boosting builds an additive model by sequentially fitting trees to the negative gradient (residuals for squared loss).
-    <div class="formula">$$F_m(x) = F_{m-1}(x) + \color{#10ac84}{\eta} \cdot h_m(x)$$</div>
+    <div class="formula">$$F_m(x) = F_{m-1}(x) + \color{#8ab87a}{\eta} \cdot h_m(x)$$</div>
     <div class="key-point"><span class="label">\(F_m(x)\):</span><span class="desc">Ensemble prediction after m rounds</span></div>
     <div class="key-point"><span class="label">\(\eta\):</span><span class="desc">Learning rate (shrinkage) - scales each tree's contribution. Smaller = more trees needed but better generalization.</span></div>
     <div class="key-point"><span class="label">\(h_m(x)\):</span><span class="desc">The m-th tree, fit to pseudo-residuals \(r_i = -\frac{\partial L}{\partial F(x_i)}\)</span></div>
     <hr class="divider">
-    <strong style="color: #ffd93d; font-size: 1.05em;">When to Use</strong>
+    <strong style="color: #e0c992; font-size: 1.05em;">When to Use</strong>
     <div class="comparison" style="grid-template-columns: 1fr 1fr 1fr; margin-top: 10px;">
       <div class="option">
-        <div class="opt-title" style="color: #10ac84;">Tabular Data</div>
+        <div class="opt-title" style="color: #8ab87a;">Tabular Data</div>
         <div class="opt-desc">GBDT is the king of tabular data. Kaggle competitions on structured data are dominated by XGBoost/LightGBM.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #4ecdc4;">Ranking / CTR</div>
+        <div class="opt-title" style="color: #6ea5c9;">Ranking / CTR</div>
         <div class="opt-desc">LambdaMART (GBDT-based) powers search ranking at major tech companies. Also used for click-through rate prediction.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #ffd93d;">Interpretability Needed</div>
+        <div class="opt-title" style="color: #e0c992;">Interpretability Needed</div>
         <div class="opt-desc">Feature importance, SHAP values, partial dependence plots make GBDT more interpretable than deep learning.</div>
       </div>
     </div>
@@ -398,9 +290,9 @@ print(f"Staged residuals (first 5 rounds): {[f'{s:.2f}' for s in list(gbr.train_
     </div>
   </div>
   <div class="legend">
-    <div class="legend-item"><div class="legend-dot" style="background:#10ac84"></div>Train Loss</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>Validation Loss</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#ffd93d"></div>Optimal Point</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#8ab87a"></div>Train Loss</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#c96e8a"></div>Validation Loss</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#e0c992"></div>Optimal Point</div>
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Learning rate and number of trees are inversely related. Lower learning rate needs more trees to reach the same training loss, but the generalization gap is smaller.
@@ -482,9 +374,9 @@ print(f"Accuracy: {model.score(X_test, y_test):.3f}")</code></pre>
     </div>
   </div>
   <div class="legend">
-    <div class="legend-item"><div class="legend-dot" style="background:#10ac84"></div>Train Loss</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>Validation Loss</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#ffd93d"></div>Optimal</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#8ab87a"></div>Train Loss</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#c96e8a"></div>Validation Loss</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#e0c992"></div>Optimal</div>
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> GBDT regularization operates at multiple levels: individual tree complexity, data sampling, and feature sampling.
@@ -567,16 +459,16 @@ print(f"Accuracy: {model.score(X_test, y_test):.3f}")</code></pre>
       <button class="btn active" id="featTabGain" onclick="setFeatTab('gain')">Split Gain</button>
       <button class="btn" id="featTabPerm" onclick="setFeatTab('permutation')">Permutation</button>
     </div>
-    <button class="btn" id="featToggle0" onclick="toggleFeature(0)" style="background:#10ac8433">Feature 1</button>
-    <button class="btn" id="featToggle1" onclick="toggleFeature(1)" style="background:#10ac8433">Feature 2</button>
-    <button class="btn" id="featToggle2" onclick="toggleFeature(2)" style="background:#10ac8433">Feature 3</button>
-    <button class="btn" id="featToggle3" onclick="toggleFeature(3)" style="background:#10ac8433">Feature 4</button>
-    <button class="btn" id="featToggle4" onclick="toggleFeature(4)" style="background:#10ac8433">Feature 5</button>
-    <button class="btn" id="featToggle5" onclick="toggleFeature(5)" style="background:#10ac8433">Feature 6</button>
+    <button class="btn" id="featToggle0" onclick="toggleFeature(0)" style="background:#8ab87a33">Feature 1</button>
+    <button class="btn" id="featToggle1" onclick="toggleFeature(1)" style="background:#8ab87a33">Feature 2</button>
+    <button class="btn" id="featToggle2" onclick="toggleFeature(2)" style="background:#8ab87a33">Feature 3</button>
+    <button class="btn" id="featToggle3" onclick="toggleFeature(3)" style="background:#8ab87a33">Feature 4</button>
+    <button class="btn" id="featToggle4" onclick="toggleFeature(4)" style="background:#8ab87a33">Feature 5</button>
+    <button class="btn" id="featToggle5" onclick="toggleFeature(5)" style="background:#8ab87a33">Feature 6</button>
   </div>
   <div class="legend">
-    <div class="legend-item"><div class="legend-dot" style="background:#10ac84"></div>Importance Score</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>Model Error</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#8ab87a"></div>Importance Score</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#c96e8a"></div>Model Error</div>
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Different importance measures can disagree. Split-based importance favors high-cardinality features; permutation importance reflects true predictive power.
@@ -663,23 +555,23 @@ print("Top feature:", shap_values.__abs__().mean(axis=0).argmax())</code></pre>
     <button class="btn" onclick="animateFramework()">Animate</button>
   </div>
   <div class="legend">
-    <div class="legend-item"><div class="legend-dot" style="background:#10ac84"></div>Current Split</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#4ecdc4"></div>Existing Nodes</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#ffd93d"></div>Leaf Nodes</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#8ab87a"></div>Current Split</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#6ea5c9"></div>Existing Nodes</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#e0c992"></div>Leaf Nodes</div>
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> The three frameworks differ in tree growth strategy, categorical handling, and optimization approach.
     <div class="comparison" style="grid-template-columns: 1fr 1fr 1fr; margin-top: 10px;">
       <div class="option">
-        <div class="opt-title" style="color: #10ac84;">XGBoost</div>
+        <div class="opt-title" style="color: #8ab87a;">XGBoost</div>
         <div class="opt-desc">Level-wise growth. Explicit regularization (\(\gamma, \lambda\)). Exact + histogram split finding. Sparsity-aware (handles missing values). Industry standard since 2014.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #4ecdc4;">LightGBM</div>
+        <div class="opt-title" style="color: #6ea5c9;">LightGBM</div>
         <div class="opt-desc">Leaf-wise growth (best-first). GOSS + EFB for speed. Histogram-based only. Faster training on large data. Native categorical support.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #ffd93d;">CatBoost</div>
+        <div class="opt-title" style="color: #e0c992;">CatBoost</div>
         <div class="opt-desc">Ordered boosting (reduces target leakage). Symmetric trees. Best categorical handling via target encoding with ordering. Slowest training but often best out-of-box.</div>
       </div>
     </div>
@@ -768,10 +660,10 @@ for name, model in models.items():
     </div>
   </div>
   <div class="legend">
-    <div class="legend-item"><div class="legend-dot" style="background:#4ecdc4"></div>Data Points</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#10ac84"></div>Histogram Bins</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#ffd93d"></div>Best Split (Exact)</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>Best Split (Histogram)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#6ea5c9"></div>Data Points</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#8ab87a"></div>Histogram Bins</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#e0c992"></div>Best Split (Exact)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#c96e8a"></div>Best Split (Histogram)</div>
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Histogram-based splitting reduces split-finding from O(n) to O(bins), a massive speedup for large datasets with minimal accuracy loss.
@@ -854,23 +746,23 @@ print(f"R2 score: {model.score(X_test, y_test):.3f}")</code></pre>
     <button class="btn" onclick="regenerateCompareData()">New Data</button>
   </div>
   <div class="legend">
-    <div class="legend-item"><div class="legend-dot" style="background:#10ac84"></div>GBDT</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#4ecdc4"></div>Random Forest</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#7c4dff"></div>Neural Network</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#8ab87a"></div>GBDT</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#6ea5c9"></div>Random Forest</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#8a6ec9"></div>Neural Network</div>
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> GBDT and Random Forest both use trees but differ fundamentally: RF uses bagging (parallel, independent trees), GBDT uses boosting (sequential, corrective trees).
     <div class="comparison" style="grid-template-columns: 1fr 1fr 1fr; margin-top: 10px;">
       <div class="option">
-        <div class="opt-title" style="color: #10ac84;">GBDT</div>
+        <div class="opt-title" style="color: #8ab87a;">GBDT</div>
         <div class="opt-desc">Sequential, additive. Each tree corrects errors. Low bias, controls variance via shrinkage. Best for tabular data. Sensitive to noisy labels.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #4ecdc4;">Random Forest</div>
+        <div class="opt-title" style="color: #6ea5c9;">Random Forest</div>
         <div class="opt-desc">Parallel, averaging. Independent deep trees. Naturally low variance via bagging. More robust to noise. Easier to tune. No overfitting with more trees.</div>
       </div>
       <div class="option">
-        <div class="opt-title" style="color: #7c4dff;">Neural Network</div>
+        <div class="opt-title" style="color: #8a6ec9;">Neural Network</div>
         <div class="opt-desc">Learns smooth, non-axis-aligned boundaries. Best for images, text, sequences. Needs more data. Harder to interpret. GPU-friendly.</div>
       </div>
     </div>
@@ -956,9 +848,9 @@ for name, model in models.items():
     </div>
   </div>
   <div class="legend">
-    <div class="legend-item"><div class="legend-dot" style="background:#10ac84"></div>Present Values</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>Missing Values</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#ffd93d"></div>Default Direction</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#8ab87a"></div>Present Values</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#c96e8a"></div>Missing Values</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#e0c992"></div>Default Direction</div>
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> XGBoost learns the optimal direction for missing values at each split; CatBoost uses ordered target statistics for categoricals.
@@ -1058,9 +950,9 @@ print(f"Feature importance: {dict(zip(['color','size','value'], model.feature_im
     <button class="btn" onclick="animateEarlyStop()">Animate Training</button>
   </div>
   <div class="legend">
-    <div class="legend-item"><div class="legend-dot" style="background:#10ac84"></div>Train Loss</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>Validation Loss</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#ffd93d"></div>Early Stopping Point</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#8ab87a"></div>Train Loss</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#c96e8a"></div>Validation Loss</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#e0c992"></div>Early Stopping Point</div>
   </div>
   <div class="insight-box">
     <strong>Key Insight:</strong> Early stopping is the most important regularization technique for GBDT. It automatically finds the optimal number of trees.
@@ -1128,7 +1020,7 @@ print(f"Test accuracy:     {model.score(X_val, y_val):.3f}")</code></pre>
 <!-- QUIZ SECTION -->
 <div id="quizSection" style="display:none">
 <div class="quiz-container">
-  <h2 style="text-align:center;color:#10ac84;margin-bottom:10px;font-size:1.8em;">Gradient Boosted Trees Quiz</h2>
+  <h2 style="text-align:center;color:#8ab87a;margin-bottom:10px;font-size:1.8em;">Gradient Boosted Trees Quiz</h2>
   <p style="text-align:center;color:#888;margin-bottom:20px;">5 questions per topic &bull; Click answers to reveal explanations</p>
   <div class="quiz-progress"><div class="quiz-progress-bar" id="quizProgressBar" style="width:0%"></div></div>
   <div class="quiz-score">Score: <span id="quizScore">0</span> / <span id="quizTotal">50</span></div>
@@ -1140,6 +1032,7 @@ print(f"Test accuracy:     {model.score(X_val, y_val):.3f}")</code></pre>
 </div>
 </div>
 
+<script src="theme.js"></script>
 <script>
 (function(){
 
@@ -1270,7 +1163,7 @@ function drawTreeStructure(ctx, node, x, y, dx, depth, maxDrawDepth) {
     // Draw a summary dot
     ctx.beginPath();
     ctx.arc(x, y, 4, 0, Math.PI*2);
-    ctx.fillStyle = node.leaf ? (node.cls === 1 ? '#4ecdc4' : '#ff6b6b') : '#10ac84';
+    ctx.fillStyle = node.leaf ? (node.cls === 1 ? '#6ea5c9' : '#c96e8a') : '#8ab87a';
     ctx.fill();
     if (!node.leaf) {
       ctx.fillStyle = '#666';
@@ -1283,9 +1176,9 @@ function drawTreeStructure(ctx, node, x, y, dx, depth, maxDrawDepth) {
   if (node.leaf) {
     ctx.beginPath();
     ctx.arc(x, y, radius, 0, Math.PI*2);
-    ctx.fillStyle = node.cls === 1 ? 'rgba(78,205,196,0.3)' : 'rgba(255,107,107,0.3)';
+    ctx.fillStyle = node.cls === 1 ? 'rgba(78,205,196,0.3)' : 'rgba(201, 110, 138,0.3)';
     ctx.fill();
-    ctx.strokeStyle = node.cls === 1 ? '#4ecdc4' : '#ff6b6b';
+    ctx.strokeStyle = node.cls === 1 ? '#6ea5c9' : '#c96e8a';
     ctx.lineWidth = 1.5;
     ctx.stroke();
     ctx.fillStyle = '#fff';
@@ -1311,12 +1204,12 @@ function drawTreeStructure(ctx, node, x, y, dx, depth, maxDrawDepth) {
   // draw node
   ctx.beginPath();
   ctx.arc(x, y, radius, 0, Math.PI*2);
-  ctx.fillStyle = '#1a1a3e';
+  ctx.fillStyle = '#13131f';
   ctx.fill();
-  ctx.strokeStyle = '#10ac84';
+  ctx.strokeStyle = '#8ab87a';
   ctx.lineWidth = 1.5;
   ctx.stroke();
-  ctx.fillStyle = '#10ac84';
+  ctx.fillStyle = '#8ab87a';
   ctx.font = fontSize + 'px monospace';
   ctx.textAlign = 'center';
   ctx.fillText((node.feat === 0 ? 'x' : 'y'), x, y - Math.round(fontSize * 0.2));
@@ -1332,7 +1225,7 @@ window.drawDTSplit = function() {
   var maxDepth = parseInt(document.getElementById('dtDepth').value);
   document.getElementById('dtDepthVal').textContent = maxDepth;
   ctx.clearRect(0, 0, w, h);
-  ctx.fillStyle = '#0d0d1a';
+  ctx.fillStyle = '#0d0d14';
   ctx.fillRect(0, 0, w, h);
 
   var plotW = w * 0.55, plotH = h - 60, plotX = 30, plotY = 30;
@@ -1348,9 +1241,9 @@ window.drawDTSplit = function() {
     var ry = plotY + (1 - lf.ymax) * plotH;
     var rw = (lf.xmax - lf.xmin) * plotW;
     var rh = (lf.ymax - lf.ymin) * plotH;
-    ctx.fillStyle = lf.cls === 1 ? 'rgba(78,205,196,0.12)' : 'rgba(255,107,107,0.12)';
+    ctx.fillStyle = lf.cls === 1 ? 'rgba(78,205,196,0.12)' : 'rgba(201, 110, 138,0.12)';
     ctx.fillRect(rx, ry, rw, rh);
-    ctx.strokeStyle = '#2a2a4a';
+    ctx.strokeStyle = '#2a2a3a';
     ctx.lineWidth = 1;
     ctx.strokeRect(rx, ry, rw, rh);
   }
@@ -1376,7 +1269,7 @@ window.drawDTSplit = function() {
     var py = plotY + (1 - p.y) * plotH;
     ctx.beginPath();
     ctx.arc(px, py, 4, 0, Math.PI*2);
-    ctx.fillStyle = p.cls === 1 ? '#4ecdc4' : '#ff6b6b';
+    ctx.fillStyle = p.cls === 1 ? '#6ea5c9' : '#c96e8a';
     ctx.fill();
     ctx.strokeStyle = 'rgba(255,255,255,0.3)';
     ctx.lineWidth = 0.5;
@@ -1387,7 +1280,7 @@ window.drawDTSplit = function() {
   function drawSplits(node) {
     if (node.leaf) return;
     var lw = Math.max(1, 3 - node.depth);
-    ctx.strokeStyle = '#10ac84';
+    ctx.strokeStyle = '#8ab87a';
     ctx.lineWidth = lw;
     ctx.setLineDash([4, 3]);
     if (node.feat === 0) {
@@ -1521,7 +1414,7 @@ window.drawResidual = function() {
   document.getElementById('residLRVal').textContent = lr.toFixed(2);
 
   ctx.clearRect(0, 0, w, h);
-  ctx.fillStyle = '#0d0d1a';
+  ctx.fillStyle = '#0d0d14';
   ctx.fillRect(0, 0, w, h);
 
   var plotX = 60, plotY = 30, plotW = w * 0.6 - 80, plotH = h - 80;
@@ -1585,7 +1478,7 @@ window.drawResidual = function() {
     var py = plotY + plotH - residTargetData[i].y * plotH;
     if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
   }
-  ctx.strokeStyle = '#ffd93d';
+  ctx.strokeStyle = '#e0c992';
   ctx.lineWidth = 2;
   ctx.stroke();
 
@@ -1596,7 +1489,7 @@ window.drawResidual = function() {
     var py = plotY + plotH - predictions[i] * plotH;
     if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
   }
-  ctx.strokeStyle = '#10ac84';
+  ctx.strokeStyle = '#8ab87a';
   ctx.lineWidth = 2.5;
   ctx.stroke();
 
@@ -1612,7 +1505,7 @@ window.drawResidual = function() {
     ctx.beginPath();
     ctx.moveTo(px, py1);
     ctx.lineTo(px, py2);
-    ctx.strokeStyle = 'rgba(255,107,107,0.5)';
+    ctx.strokeStyle = 'rgba(201, 110, 138,0.5)';
     ctx.lineWidth = 1;
     ctx.stroke();
   }
@@ -1637,7 +1530,7 @@ window.drawResidual = function() {
       py = Math.max(plotY, Math.min(plotY + lossH, py));
       if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
     }
-    ctx.strokeStyle = '#10ac84';
+    ctx.strokeStyle = '#8ab87a';
     ctx.lineWidth = 2;
     ctx.stroke();
 
@@ -1649,18 +1542,18 @@ window.drawResidual = function() {
       py = Math.max(plotY, Math.min(plotY + lossH, py));
       if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
     }
-    ctx.strokeStyle = '#ff6b6b';
+    ctx.strokeStyle = '#c96e8a';
     ctx.lineWidth = 2;
     ctx.setLineDash([4, 3]);
     ctx.stroke();
     ctx.setLineDash([]);
 
     // Current values
-    ctx.fillStyle = '#10ac84';
+    ctx.fillStyle = '#8ab87a';
     ctx.font = '11px monospace';
     ctx.textAlign = 'left';
     ctx.fillText('Train: ' + trainLosses[trainLosses.length-1].toFixed(4), lossX + 10, plotY + lossH - 10);
-    ctx.fillStyle = '#ff6b6b';
+    ctx.fillStyle = '#c96e8a';
     ctx.fillText('Val: ' + valLosses[valLosses.length-1].toFixed(4), lossX + 10, plotY + lossH - 25);
   }
 };
@@ -1676,7 +1569,7 @@ window.drawLRTrees = function() {
   document.getElementById('nTreesParamVal').textContent = nTrees;
 
   ctx.clearRect(0, 0, w, h);
-  ctx.fillStyle = '#0d0d1a';
+  ctx.fillStyle = '#0d0d14';
   ctx.fillRect(0, 0, w, h);
 
   var plotX = 70, plotY = 40, plotW = w - 120, plotH = h - 100;
@@ -1741,7 +1634,7 @@ window.drawLRTrees = function() {
     py = Math.max(plotY, Math.min(plotY + plotH, py));
     if (t === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
   }
-  ctx.strokeStyle = '#10ac84';
+  ctx.strokeStyle = '#8ab87a';
   ctx.lineWidth = 2.5;
   ctx.stroke();
 
@@ -1753,7 +1646,7 @@ window.drawLRTrees = function() {
     py = Math.max(plotY, Math.min(plotY + plotH, py));
     if (t === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
   }
-  ctx.strokeStyle = '#ff6b6b';
+  ctx.strokeStyle = '#c96e8a';
   ctx.lineWidth = 2.5;
   ctx.stroke();
 
@@ -1763,7 +1656,7 @@ window.drawLRTrees = function() {
   optY = Math.max(plotY, Math.min(plotY + plotH, optY));
   ctx.beginPath();
   ctx.arc(optX, optY, 6, 0, Math.PI*2);
-  ctx.fillStyle = '#ffd93d';
+  ctx.fillStyle = '#e0c992';
   ctx.fill();
   ctx.strokeStyle = '#fff';
   ctx.lineWidth = 2;
@@ -1773,22 +1666,22 @@ window.drawLRTrees = function() {
   ctx.beginPath();
   ctx.moveTo(optX, plotY);
   ctx.lineTo(optX, plotY + plotH);
-  ctx.strokeStyle = 'rgba(255,217,61,0.3)';
+  ctx.strokeStyle = 'rgba(224, 201, 146,0.3)';
   ctx.lineWidth = 1;
   ctx.setLineDash([4, 4]);
   ctx.stroke();
   ctx.setLineDash([]);
 
   // Labels
-  ctx.fillStyle = '#ffd93d';
+  ctx.fillStyle = '#e0c992';
   ctx.font = '11px monospace';
   ctx.textAlign = 'left';
   ctx.fillText('Optimal: tree ' + (optimalRound + 1) + ', val_loss=' + optimalVal.toFixed(4), optX + 10, optY - 10);
 
   // Current final values
-  ctx.fillStyle = '#10ac84';
+  ctx.fillStyle = '#8ab87a';
   ctx.fillText('Final train_loss: ' + trainLoss[nTrees-1].toFixed(4), plotX + 10, plotY + 20);
-  ctx.fillStyle = '#ff6b6b';
+  ctx.fillStyle = '#c96e8a';
   ctx.fillText('Final val_loss: ' + valLoss[nTrees-1].toFixed(4), plotX + 10, plotY + 35);
 };
 
@@ -1819,7 +1712,7 @@ window.drawRegularization = function() {
   document.getElementById('regSliderVal').textContent = val + (regTab === 'subsample' || regTab === 'colsample' ? '%' : '');
 
   ctx.clearRect(0, 0, w, h);
-  ctx.fillStyle = '#0d0d1a';
+  ctx.fillStyle = '#0d0d14';
   ctx.fillRect(0, 0, w, h);
 
   var plotX = 70, plotY = 40, plotW = w - 120, plotH = h - 100;
@@ -1875,7 +1768,7 @@ window.drawRegularization = function() {
     py = Math.max(plotY, Math.min(plotY + plotH, py));
     if (t === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
   }
-  ctx.strokeStyle = '#10ac84';
+  ctx.strokeStyle = '#8ab87a';
   ctx.lineWidth = 2.5;
   ctx.stroke();
 
@@ -1887,7 +1780,7 @@ window.drawRegularization = function() {
     py = Math.max(plotY, Math.min(plotY + plotH, py));
     if (t === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
   }
-  ctx.strokeStyle = '#ff6b6b';
+  ctx.strokeStyle = '#c96e8a';
   ctx.lineWidth = 2.5;
   ctx.stroke();
 
@@ -1896,17 +1789,17 @@ window.drawRegularization = function() {
   var oy = plotY + plotH - (optVal / maxLoss) * plotH;
   oy = Math.max(plotY, Math.min(plotY + plotH, oy));
   ctx.beginPath(); ctx.arc(ox, oy, 6, 0, Math.PI * 2);
-  ctx.fillStyle = '#ffd93d'; ctx.fill();
+  ctx.fillStyle = '#e0c992'; ctx.fill();
   ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
 
-  ctx.fillStyle = '#ffd93d';
+  ctx.fillStyle = '#e0c992';
   ctx.font = '11px monospace';
   ctx.textAlign = 'left';
   ctx.fillText('Best val_loss=' + optVal.toFixed(4) + ' at round ' + (optRound+1), ox + 10, oy - 8);
 
   // Generalization gap annotation
   var gap = valLoss[nRounds-1] - trainLoss[nRounds-1];
-  ctx.fillStyle = '#ff6b6b';
+  ctx.fillStyle = '#c96e8a';
   ctx.fillText('Generalization gap: ' + gap.toFixed(4), plotX + 10, plotY + 20);
 };
 
@@ -1928,7 +1821,7 @@ window.setFeatTab = function(tab) {
 window.toggleFeature = function(idx) {
   featActive[idx] = !featActive[idx];
   var btn = document.getElementById('featToggle' + idx);
-  btn.style.background = featActive[idx] ? '#10ac8433' : 'transparent';
+  btn.style.background = featActive[idx] ? '#8ab87a33' : 'transparent';
   drawFeatImp();
 };
 
@@ -1937,7 +1830,7 @@ window.drawFeatImp = function() {
   var ctx = featSetup.ctx, w = featSetup.w, h = featSetup.h;
 
   ctx.clearRect(0, 0, w, h);
-  ctx.fillStyle = '#0d0d1a';
+  ctx.fillStyle = '#0d0d14';
   ctx.fillRect(0, 0, w, h);
 
   var importances = featTab === 'gain' ? featGainImportance : featPermImportance;
@@ -1968,7 +1861,7 @@ window.drawFeatImp = function() {
     ctx.textAlign = 'right';
     ctx.fillText(featNames[i], plotX - 10, by + barH / 2 + 5);
 
-    ctx.fillStyle = featActive[i] ? '#10ac84' : '#555';
+    ctx.fillStyle = featActive[i] ? '#8ab87a' : '#555';
     ctx.font = '11px monospace';
     ctx.textAlign = 'left';
     ctx.fillText(importances[i].toFixed(3), plotX + bw + 8, by + barH / 2 + 5);
@@ -1992,16 +1885,16 @@ window.drawFeatImp = function() {
   var baseMSE = 0.08;
   var mse = baseMSE + (1 - activeImpSum) * 0.3;
 
-  ctx.fillStyle = '#1a1a3e';
+  ctx.fillStyle = '#13131f';
   ctx.fillRect(perfX, perfY + 10, perfW, 60);
-  ctx.strokeStyle = '#2a2a4a';
+  ctx.strokeStyle = '#2a2a3a';
   ctx.strokeRect(perfX, perfY + 10, perfW, 60);
 
-  ctx.fillStyle = '#10ac84';
+  ctx.fillStyle = '#8ab87a';
   ctx.font = '13px monospace';
   ctx.textAlign = 'left';
   ctx.fillText('Accuracy: ' + (acc * 100).toFixed(1) + '%', perfX + 15, perfY + 35);
-  ctx.fillStyle = '#ff6b6b';
+  ctx.fillStyle = '#c96e8a';
   ctx.fillText('MSE: ' + mse.toFixed(4), perfX + 15, perfY + 55);
 
   ctx.fillStyle = '#888';
@@ -2061,7 +1954,7 @@ window.drawFramework = function() {
   document.getElementById('fwStepVal').textContent = step;
 
   ctx.clearRect(0, 0, w, h);
-  ctx.fillStyle = '#0d0d1a';
+  ctx.fillStyle = '#0d0d14';
   ctx.fillRect(0, 0, w, h);
 
   var titleMap = { xgboost: 'XGBoost: Level-wise Growth', lightgbm: 'LightGBM: Leaf-wise Growth', catboost: 'CatBoost: Ordered / Symmetric Trees' };
@@ -2145,8 +2038,8 @@ function drawLevelWise(ctx, cx, startY, step, w, h) {
     for (var j = 0; j < allNodes.length; j++) {
       if (allNodes[j].parentX === allNodes[i].x && allNodes[j].parentY === allNodes[i].y) { isLeaf = false; break; }
     }
-    var fill = isLatest ? '#10ac84' : (isLeaf ? '#2a2a4a' : '#1a1a3e');
-    var stroke = isLatest ? '#1dd1a1' : (isLeaf ? '#ffd93d' : '#4ecdc4');
+    var fill = isLatest ? '#8ab87a' : (isLeaf ? '#2a2a3a' : '#13131f');
+    var stroke = isLatest ? '#1dd1a1' : (isLeaf ? '#e0c992' : '#6ea5c9');
     drawNode(ctx, allNodes[i].x, allNodes[i].y, 16, fill, stroke, 'n' + i);
   }
 
@@ -2194,8 +2087,8 @@ function drawLeafWise(ctx, cx, startY, step, w, h) {
   for (var i = 0; i < nodes.length; i++) {
     var isLeaf = !nodes[i].split;
     var isLatest = (i === nodes.length - 1 || i === nodes.length - 2) && step > 0;
-    var fill = isLatest ? '#10ac84' : (isLeaf ? '#2a2a4a' : '#1a1a3e');
-    var stroke = isLatest ? '#1dd1a1' : (isLeaf ? '#ffd93d' : '#4ecdc4');
+    var fill = isLatest ? '#8ab87a' : (isLeaf ? '#2a2a3a' : '#13131f');
+    var stroke = isLatest ? '#1dd1a1' : (isLeaf ? '#e0c992' : '#6ea5c9');
     drawNode(ctx, nodes[i].x, nodes[i].y, 16, fill, stroke, nodes[i].gain.toFixed(1));
   }
 
@@ -2239,8 +2132,8 @@ function drawOrderedBoosting(ctx, cx, startY, step, w, h) {
 
   // Draw nodes
   for (var i = 0; i < allNodes.length; i++) {
-    var fill = allNodes[i].isLeaf ? '#2a2a4a' : '#1a1a3e';
-    var stroke = allNodes[i].isLeaf ? '#ffd93d' : '#4ecdc4';
+    var fill = allNodes[i].isLeaf ? '#2a2a3a' : '#13131f';
+    var stroke = allNodes[i].isLeaf ? '#e0c992' : '#6ea5c9';
     drawNode(ctx, allNodes[i].x, allNodes[i].y, 16, fill, stroke, 'd' + allNodes[i].depth);
   }
 
@@ -2261,7 +2154,7 @@ function drawOrderedBoosting(ctx, cx, startY, step, w, h) {
     var usedFor = i < step;
     ctx.fillStyle = usedFor ? 'rgba(16,172,132,0.4)' : 'rgba(42,42,74,0.4)';
     ctx.fillRect(sx - sampleW/2 + 2, sy, sampleW - 4, 25);
-    ctx.strokeStyle = usedFor ? '#10ac84' : '#2a2a4a';
+    ctx.strokeStyle = usedFor ? '#8ab87a' : '#2a2a3a';
     ctx.lineWidth = 1;
     ctx.strokeRect(sx - sampleW/2 + 2, sy, sampleW - 4, 25);
     ctx.fillStyle = '#aaa';
@@ -2288,7 +2181,7 @@ window.drawHistogram = function() {
   document.getElementById('histNVal').textContent = nData;
 
   ctx.clearRect(0, 0, w, h);
-  ctx.fillStyle = '#0d0d1a';
+  ctx.fillStyle = '#0d0d14';
   ctx.fillRect(0, 0, w, h);
 
   // Generate data
@@ -2319,7 +2212,7 @@ window.drawHistogram = function() {
     py = Math.max(plotY, Math.min(plotY + plotH, py));
     ctx.beginPath();
     ctx.arc(px, py, 2.5, 0, Math.PI*2);
-    ctx.fillStyle = data[i].cls === 1 ? 'rgba(78,205,196,0.6)' : 'rgba(255,107,107,0.6)';
+    ctx.fillStyle = data[i].cls === 1 ? 'rgba(78,205,196,0.6)' : 'rgba(201, 110, 138,0.6)';
     ctx.fill();
   }
 
@@ -2331,19 +2224,19 @@ window.drawHistogram = function() {
   // Draw exact split
   var exactX = plotX + exactBest.thresh * plotW;
   ctx.beginPath(); ctx.moveTo(exactX, plotY); ctx.lineTo(exactX, plotY + plotH);
-  ctx.strokeStyle = '#ffd93d'; ctx.lineWidth = 2; ctx.setLineDash([6, 3]); ctx.stroke(); ctx.setLineDash([]);
+  ctx.strokeStyle = '#e0c992'; ctx.lineWidth = 2; ctx.setLineDash([6, 3]); ctx.stroke(); ctx.setLineDash([]);
 
   // Draw histogram split
   var histSplitX = plotX + histBest.thresh * plotW;
   ctx.beginPath(); ctx.moveTo(histSplitX, plotY); ctx.lineTo(histSplitX, plotY + plotH);
-  ctx.strokeStyle = '#ff6b6b'; ctx.lineWidth = 2; ctx.setLineDash([3, 3]); ctx.stroke(); ctx.setLineDash([]);
+  ctx.strokeStyle = '#c96e8a'; ctx.lineWidth = 2; ctx.setLineDash([3, 3]); ctx.stroke(); ctx.setLineDash([]);
 
   // Labels
-  ctx.fillStyle = '#ffd93d';
+  ctx.fillStyle = '#e0c992';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
   ctx.fillText('Exact: ' + exactBest.thresh.toFixed(4) + ' (gain=' + exactBest.gain.toFixed(4) + ')', exactX + 5, plotY + 15);
-  ctx.fillStyle = '#ff6b6b';
+  ctx.fillStyle = '#c96e8a';
   ctx.fillText('Hist: ' + histBest.thresh.toFixed(4) + ' (gain=' + histBest.gain.toFixed(4) + ')', histSplitX + 5, plotY + 30);
 
   // Bottom: histogram visualization
@@ -2372,7 +2265,7 @@ window.drawHistogram = function() {
     var bh0 = (binCls0[i] / maxBin) * plotH * 0.9;
     var bh1 = (binCls1[i] / maxBin) * plotH * 0.9;
 
-    ctx.fillStyle = 'rgba(255,107,107,0.4)';
+    ctx.fillStyle = 'rgba(201, 110, 138,0.4)';
     ctx.fillRect(bx + 1, histPlotY + plotH - bh0 - bh1, binW - 2, bh0);
     ctx.fillStyle = 'rgba(78,205,196,0.4)';
     ctx.fillRect(bx + 1, histPlotY + plotH - bh1, binW - 2, bh1);
@@ -2383,7 +2276,7 @@ window.drawHistogram = function() {
   }
 
   // Speed comparison
-  ctx.fillStyle = '#10ac84';
+  ctx.fillStyle = '#8ab87a';
   ctx.font = '11px monospace';
   ctx.textAlign = 'left';
   var exactOps = nData * Math.ceil(Math.log2(nData));
@@ -2551,13 +2444,13 @@ window.drawComparison = function() {
   if (cmpData.length === 0) generateCompareData();
 
   ctx.clearRect(0, 0, w, h);
-  ctx.fillStyle = '#0d0d1a';
+  ctx.fillStyle = '#0d0d14';
   ctx.fillRect(0, 0, w, h);
 
   var panelW = (w - 40) / 3;
   var panelH = h - 70;
   var titles = ['GBDT', 'Random Forest', 'Neural Network'];
-  var colors = ['#10ac84', '#4ecdc4', '#7c4dff'];
+  var colors = ['#8ab87a', '#6ea5c9', '#8a6ec9'];
   var methods = ['gbdt', 'rf', 'nn'];
 
   for (var p = 0; p < 3; p++) {
@@ -2585,7 +2478,7 @@ window.drawComparison = function() {
         else if (p === 1) pred = simpleRFPredict(fx, fy, cmpData);
         else pred = simpleNNPredict(fx, fy, cmpData, complexity);
 
-        ctx.fillStyle = pred === 1 ? 'rgba(78,205,196,0.1)' : 'rgba(255,107,107,0.1)';
+        ctx.fillStyle = pred === 1 ? 'rgba(78,205,196,0.1)' : 'rgba(201, 110, 138,0.1)';
         ctx.fillRect(px0 + gx * cellW, py0 + gy * cellH, cellW, cellH);
       }
     }
@@ -2606,12 +2499,12 @@ window.drawComparison = function() {
       var dpy = py0 + ((cmpData[i].y + 1) / 2) * panelH;
       ctx.beginPath();
       ctx.arc(dpx, dpy, 3, 0, Math.PI*2);
-      ctx.fillStyle = cmpData[i].cls === 1 ? '#4ecdc4' : '#ff6b6b';
+      ctx.fillStyle = cmpData[i].cls === 1 ? '#6ea5c9' : '#c96e8a';
       ctx.fill();
     }
 
     // Border
-    ctx.strokeStyle = '#2a2a4a';
+    ctx.strokeStyle = '#2a2a3a';
     ctx.lineWidth = 1;
     ctx.strokeRect(px0, py0, panelW, panelH);
 
@@ -2641,7 +2534,7 @@ window.drawCatMiss = function() {
   document.getElementById('cmMissRateVal').textContent = missRate + '%';
 
   ctx.clearRect(0, 0, w, h);
-  ctx.fillStyle = '#0d0d1a';
+  ctx.fillStyle = '#0d0d14';
   ctx.fillRect(0, 0, w, h);
 
   if (cmTab === 'categorical') {
@@ -2663,7 +2556,7 @@ function drawCategoricalEncoding(ctx, w, h) {
   // Three columns: One-Hot, Label/Ordinal, Target Encoding
   var colW = (w - 60) / 3;
   var methods = ['One-Hot Encoding', 'Native Categorical (LightGBM)', 'Target Encoding (CatBoost)'];
-  var methodColors = ['#ff6b6b', '#4ecdc4', '#ffd93d'];
+  var methodColors = ['#c96e8a', '#6ea5c9', '#e0c992'];
 
   for (var m = 0; m < 3; m++) {
     var cx = 20 + m * (colW + 10);
@@ -2674,7 +2567,7 @@ function drawCategoricalEncoding(ctx, w, h) {
     ctx.textAlign = 'center';
     ctx.fillText(methods[m], cx + colW/2, cy);
 
-    ctx.strokeStyle = '#2a2a4a';
+    ctx.strokeStyle = '#2a2a3a';
     ctx.lineWidth = 1;
     ctx.strokeRect(cx, cy + 10, colW, h - 100);
 
@@ -2694,7 +2587,7 @@ function drawCategoricalEncoding(ctx, w, h) {
         }
         ctx.fillText(row, cx + 10, tableY + 30 + i * 18);
       }
-      ctx.fillStyle = '#ff6b6b';
+      ctx.fillStyle = '#c96e8a';
       ctx.font = '10px Inter, sans-serif';
       ctx.fillText('4 categories -> 4 columns', cx + 10, tableY + 120);
       ctx.fillText('Sparse, high-dimensional', cx + 10, tableY + 140);
@@ -2708,7 +2601,7 @@ function drawCategoricalEncoding(ctx, w, h) {
           var cellY = matY + i * 25;
           ctx.fillStyle = (i === j) ? 'rgba(16,172,132,0.4)' : 'rgba(42,42,74,0.3)';
           ctx.fillRect(cellX, cellY, 35, 20);
-          ctx.strokeStyle = '#3a3a6a';
+          ctx.strokeStyle = '#2a2a3a';
           ctx.strokeRect(cellX, cellY, 35, 20);
           ctx.fillStyle = '#ddd';
           ctx.font = '11px monospace';
@@ -2728,23 +2621,23 @@ function drawCategoricalEncoding(ctx, w, h) {
       // Draw tree node
       var nodeX = cx + colW/2;
       var nodeY = tableY + 60;
-      drawNode(ctx, nodeX, nodeY, 22, '#1a1a3e', '#4ecdc4', 'Color');
+      drawNode(ctx, nodeX, nodeY, 22, '#13131f', '#6ea5c9', 'Color');
 
       ctx.beginPath(); ctx.moveTo(nodeX - 15, nodeY + 22); ctx.lineTo(nodeX - 50, nodeY + 70);
-      ctx.strokeStyle = '#4ecdc4'; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.strokeStyle = '#6ea5c9'; ctx.lineWidth = 1.5; ctx.stroke();
       ctx.beginPath(); ctx.moveTo(nodeX + 15, nodeY + 22); ctx.lineTo(nodeX + 50, nodeY + 70);
       ctx.stroke();
 
-      ctx.fillStyle = '#4ecdc4';
+      ctx.fillStyle = '#6ea5c9';
       ctx.font = '10px monospace';
       ctx.textAlign = 'center';
       ctx.fillText('{R,G}', nodeX - 50, nodeY + 85);
       ctx.fillText('{B,Y}', nodeX + 50, nodeY + 85);
 
-      drawNode(ctx, nodeX - 50, nodeY + 100, 16, 'rgba(255,107,107,0.3)', '#ff6b6b', '0.7');
-      drawNode(ctx, nodeX + 50, nodeY + 100, 16, 'rgba(78,205,196,0.3)', '#4ecdc4', '0.2');
+      drawNode(ctx, nodeX - 50, nodeY + 100, 16, 'rgba(201, 110, 138,0.3)', '#c96e8a', '0.7');
+      drawNode(ctx, nodeX + 50, nodeY + 100, 16, 'rgba(78,205,196,0.3)', '#6ea5c9', '0.2');
 
-      ctx.fillStyle = '#4ecdc4';
+      ctx.fillStyle = '#6ea5c9';
       ctx.font = '10px Inter, sans-serif';
       ctx.textAlign = 'left';
       ctx.fillText('Finds optimal subsets', cx + 10, nodeY + 150);
@@ -2762,7 +2655,7 @@ function drawCategoricalEncoding(ctx, w, h) {
         ctx.fillText(categories[i].padEnd(7, ' ') + '| ' + targets[i].toFixed(3), cx + 10, tableY + 30 + i * 18);
       }
 
-      ctx.fillStyle = '#ffd93d';
+      ctx.fillStyle = '#e0c992';
       ctx.font = '10px Inter, sans-serif';
       ctx.textAlign = 'left';
       ctx.fillText('Replace with mean target', cx + 10, tableY + 120);
@@ -2777,7 +2670,7 @@ function drawCategoricalEncoding(ctx, w, h) {
       ctx.fillText('Sample 3: uses 1,2', cx + 10, orderY + 36);
       ctx.fillText('Sample k: uses 1..k-1', cx + 10, orderY + 54);
 
-      ctx.fillStyle = '#ffd93d';
+      ctx.fillStyle = '#e0c992';
       ctx.font = '10px Inter, sans-serif';
       ctx.fillText('CatBoost ordered encoding', cx + 10, orderY + 90);
       ctx.fillText('Prevents target leakage', cx + 10, orderY + 110);
@@ -2805,32 +2698,32 @@ function drawMissingValues(ctx, w, h, missRate) {
   }
 
   // Tree visualization
-  drawNode(ctx, treeX, treeY, 25, '#1a1a3e', '#10ac84', 'x<0.5?');
+  drawNode(ctx, treeX, treeY, 25, '#13131f', '#8ab87a', 'x<0.5?');
 
   // Left and right branches
   ctx.beginPath(); ctx.moveTo(treeX - 20, treeY + 25); ctx.lineTo(treeX - 150, treeY + 100);
-  ctx.strokeStyle = '#4ecdc4'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.strokeStyle = '#6ea5c9'; ctx.lineWidth = 2; ctx.stroke();
   ctx.beginPath(); ctx.moveTo(treeX + 20, treeY + 25); ctx.lineTo(treeX + 150, treeY + 100);
-  ctx.strokeStyle = '#ff6b6b'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.strokeStyle = '#c96e8a'; ctx.lineWidth = 2; ctx.stroke();
 
   // Default direction for missing (learned)
   var defaultRight = missRate > 25;
   var missDirX = defaultRight ? treeX + 150 : treeX - 150;
   ctx.beginPath(); ctx.moveTo(treeX, treeY + 25); ctx.lineTo(missDirX, treeY + 100);
-  ctx.strokeStyle = '#ffd93d'; ctx.lineWidth = 2; ctx.setLineDash([5, 4]); ctx.stroke(); ctx.setLineDash([]);
+  ctx.strokeStyle = '#e0c992'; ctx.lineWidth = 2; ctx.setLineDash([5, 4]); ctx.stroke(); ctx.setLineDash([]);
 
   // Labels
-  ctx.fillStyle = '#4ecdc4';
+  ctx.fillStyle = '#6ea5c9';
   ctx.font = '12px Inter, sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText('Yes (x < 0.5)', treeX - 150, treeY + 60);
-  ctx.fillStyle = '#ff6b6b';
+  ctx.fillStyle = '#c96e8a';
   ctx.fillText('No (x >= 0.5)', treeX + 150, treeY + 60);
-  ctx.fillStyle = '#ffd93d';
+  ctx.fillStyle = '#e0c992';
   ctx.fillText('Missing -> ' + (defaultRight ? 'Right' : 'Left'), treeX + (defaultRight ? 60 : -60), treeY + 85);
 
-  drawNode(ctx, treeX - 150, treeY + 120, 20, 'rgba(78,205,196,0.3)', '#4ecdc4', 'Leaf');
-  drawNode(ctx, treeX + 150, treeY + 120, 20, 'rgba(255,107,107,0.3)', '#ff6b6b', 'Leaf');
+  drawNode(ctx, treeX - 150, treeY + 120, 20, 'rgba(78,205,196,0.3)', '#6ea5c9', 'Leaf');
+  drawNode(ctx, treeX + 150, treeY + 120, 20, 'rgba(201, 110, 138,0.3)', '#c96e8a', 'Leaf');
 
   // Data table
   var tableX = 40, tableY = treeY + 170;
@@ -2848,17 +2741,17 @@ function drawMissingValues(ctx, w, h, missRate) {
       dir = defaultRight ? 'Right (default)' : 'Left (default) ';
       missCount++;
       pred = defaultRight ? '1' : '0';
-      ctx.fillStyle = '#ffd93d';
+      ctx.fillStyle = '#e0c992';
     } else if (s.x < 0.5) {
       dir = 'Left            ';
       leftCount++;
       pred = '0';
-      ctx.fillStyle = '#4ecdc4';
+      ctx.fillStyle = '#6ea5c9';
     } else {
       dir = 'Right           ';
       rightCount++;
       pred = '1';
-      ctx.fillStyle = '#ff6b6b';
+      ctx.fillStyle = '#c96e8a';
     }
     var xStr = s.missing ? '   NaN    ' : ('   ' + s.x.toFixed(3) + '   ');
     var row = ('  ' + (i+1)).slice(-3) + '     | ' + xStr + '|    ' + (s.missing ? 'Yes' : 'No ') + '    | ' + dir + '| ' + pred;
@@ -2866,14 +2759,14 @@ function drawMissingValues(ctx, w, h, missRate) {
   }
 
   // Summary stats
-  ctx.fillStyle = '#10ac84';
+  ctx.fillStyle = '#8ab87a';
   ctx.font = '12px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('Present: ' + (nSamples - missCount) + '/' + nSamples + '  |  Missing: ' + missCount + '/' + nSamples + '  |  Default direction: ' + (defaultRight ? 'Right' : 'Left') + ' (learned)', tableX, h - 25);
+  ctx.fillText('Present ' + (nSamples - missCount) + '/' + nSamples + ' | Missing ' + missCount + '/' + nSamples + ' | Default ' + (defaultRight ? 'Right' : 'Left'), tableX, h - 25);
 
   ctx.fillStyle = '#888';
   ctx.font = '11px Inter, sans-serif';
-  ctx.fillText('XGBoost learns optimal default direction at each split during training to minimize loss.', tableX, h - 5);
+  ctx.fillText('XGBoost learns the default missing-value direction at each split.', tableX, h - 5);
 }
 
 // ======= 10. EARLY STOPPING =======
@@ -2903,7 +2796,7 @@ function drawEarlyStopAtRound(maxRound) {
   document.getElementById('esLRVal').textContent = lr.toFixed(2);
 
   ctx.clearRect(0, 0, w, h);
-  ctx.fillStyle = '#0d0d1a';
+  ctx.fillStyle = '#0d0d14';
   ctx.fillRect(0, 0, w, h);
 
   var plotX = 70, plotY = 40, plotW = w - 140, plotH = h - 100;
@@ -2971,7 +2864,7 @@ function drawEarlyStopAtRound(maxRound) {
     py = Math.max(plotY, Math.min(plotY + plotH, py));
     if (t === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
   }
-  ctx.strokeStyle = '#10ac84';
+  ctx.strokeStyle = '#8ab87a';
   ctx.lineWidth = 2;
   ctx.stroke();
 
@@ -2983,7 +2876,7 @@ function drawEarlyStopAtRound(maxRound) {
     py = Math.max(plotY, Math.min(plotY + plotH, py));
     if (t === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
   }
-  ctx.strokeStyle = '#ff6b6b';
+  ctx.strokeStyle = '#c96e8a';
   ctx.lineWidth = 2;
   ctx.stroke();
 
@@ -2993,10 +2886,10 @@ function drawEarlyStopAtRound(maxRound) {
     var by = plotY + plotH - (bestValLoss / maxLoss) * plotH;
     by = Math.max(plotY, Math.min(plotY + plotH, by));
     ctx.beginPath(); ctx.arc(bx, by, 5, 0, Math.PI*2);
-    ctx.fillStyle = '#10ac84'; ctx.fill();
+    ctx.fillStyle = '#8ab87a'; ctx.fill();
     ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
 
-    ctx.fillStyle = '#10ac84';
+    ctx.fillStyle = '#8ab87a';
     ctx.font = '10px monospace';
     ctx.textAlign = 'left';
     ctx.fillText('Best: round ' + (bestRound+1) + ', loss=' + bestValLoss.toFixed(4), bx + 10, by - 8);
@@ -3008,13 +2901,13 @@ function drawEarlyStopAtRound(maxRound) {
     ctx.beginPath();
     ctx.moveTo(sx, plotY);
     ctx.lineTo(sx, plotY + plotH);
-    ctx.strokeStyle = '#ffd93d';
+    ctx.strokeStyle = '#e0c992';
     ctx.lineWidth = 2;
     ctx.setLineDash([6, 4]);
     ctx.stroke();
     ctx.setLineDash([]);
 
-    ctx.fillStyle = '#ffd93d';
+    ctx.fillStyle = '#e0c992';
     ctx.font = '12px Inter, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('STOP', sx, plotY - 5);
@@ -3026,20 +2919,20 @@ function drawEarlyStopAtRound(maxRound) {
   if (bestRound < drawUpTo && drawUpTo > bestRound + patience) {
     var overX = plotX + (bestRound / (totalRounds - 1)) * plotW;
     var endX = plotX + ((drawUpTo - 1) / (totalRounds - 1)) * plotW;
-    ctx.fillStyle = 'rgba(255,107,107,0.05)';
+    ctx.fillStyle = 'rgba(201, 110, 138,0.05)';
     ctx.fillRect(overX, plotY, endX - overX, plotH);
-    ctx.fillStyle = 'rgba(255,107,107,0.4)';
+    ctx.fillStyle = 'rgba(201, 110, 138,0.4)';
     ctx.font = '11px Inter, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('Overfitting Region', (overX + endX) / 2, plotY + 20);
   }
 
   // Legend in plot
-  ctx.fillStyle = '#10ac84';
+  ctx.fillStyle = '#8ab87a';
   ctx.font = '11px monospace';
   ctx.textAlign = 'left';
   ctx.fillText('Train Loss', plotX + plotW - 130, plotY + 20);
-  ctx.fillStyle = '#ff6b6b';
+  ctx.fillStyle = '#c96e8a';
   ctx.fillText('Val Loss', plotX + plotW - 130, plotY + 35);
 }
 
