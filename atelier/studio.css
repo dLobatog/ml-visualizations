@@ -133,7 +133,14 @@ a {
   line-height: 0.96;
   font-weight: 400;
   letter-spacing: -0.03em;
+}
+
+.hero h1 {
   max-width: 10ch;
+}
+
+.chapter-hero h1 {
+  max-width: 14ch;
 }
 
 .lede {
@@ -619,11 +626,91 @@ code {
 }
 
 .viz-panel {
+  position: relative;
+  z-index: 1;
   padding: 24px;
   background:
     linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015)),
     var(--panel-strong);
   overflow: hidden;
+}
+
+.viz-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.viz-toolbar-label {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+}
+
+.viz-shell {
+  display: grid;
+  grid-template-areas:
+    'support'
+    'stage'
+    'readout';
+  gap: 18px;
+}
+
+.viz-support {
+  grid-area: support;
+}
+
+.viz-stage {
+  grid-area: stage;
+  cursor: zoom-in;
+}
+
+.viz-stage:focus-visible {
+  outline: 1px solid rgba(201, 169, 110, 0.5);
+  outline-offset: 8px;
+  border-radius: 18px;
+}
+
+.viz-expand-button {
+  appearance: none;
+  border: 1px solid rgba(201, 169, 110, 0.22);
+  border-radius: 999px;
+  background: rgba(201, 169, 110, 0.08);
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: transform 180ms ease, background 180ms ease, border-color 180ms ease, color 180ms ease;
+}
+
+.viz-panel.is-expanded .viz-expand-button {
+  position: sticky;
+  top: 0;
+  right: 0;
+  margin-left: auto;
+  z-index: 3;
+  background: rgba(17, 17, 26, 0.96);
+  border-color: rgba(201, 169, 110, 0.42);
+}
+
+.viz-panel:not(.is-expanded) .viz-expand-button {
+  display: none;
+}
+
+.viz-expand-button:hover,
+.viz-expand-button:focus-visible {
+  transform: translateY(-1px);
+  background: rgba(201, 169, 110, 0.14);
+  border-color: rgba(201, 169, 110, 0.38);
+  color: #f0d6a5;
+  outline: none;
 }
 
 .control-row {
@@ -660,7 +747,7 @@ code {
   max-width: 100%;
   height: auto;
   aspect-ratio: 740 / 360;
-  min-height: 280px;
+  min-height: 320px;
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.06);
   background:
@@ -669,7 +756,75 @@ code {
   display: block;
 }
 
+body.viz-expanded-open {
+  overflow: hidden;
+}
+
+.viz-panel.is-expanded {
+  position: fixed;
+  inset: 4vh 4vw;
+  z-index: 60;
+  width: min(1380px, 92vw);
+  max-width: 92vw;
+  max-height: 92vh;
+  margin: auto;
+  overflow: auto;
+  padding: 28px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02)),
+    #11111a;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 0 0 100vmax rgba(7, 7, 12, 0.82),
+    0 28px 90px rgba(0, 0, 0, 0.5);
+}
+
+.viz-panel.is-expanded .viz-toolbar {
+  margin-bottom: 20px;
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  padding-bottom: 12px;
+  background: linear-gradient(180deg, rgba(17,17,26,0.98), rgba(17,17,26,0.86));
+  backdrop-filter: blur(6px);
+}
+
+.viz-panel.is-expanded .viz-canvas {
+  min-height: 620px;
+}
+
+.viz-panel.is-expanded .viz-shell {
+  grid-template-columns: 1fr;
+  grid-template-areas:
+    'support'
+    'stage'
+    'readout';
+  gap: 20px;
+}
+
+.viz-panel.is-expanded .viz-stage {
+  cursor: default;
+}
+
+.viz-panel.is-expanded .viz-support {
+  padding: 0 2px;
+}
+
+.viz-panel.is-expanded .control-row {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.viz-panel.is-expanded .lab-readout {
+  margin-top: 0;
+}
+
+.viz-panel.is-expanded .takeaway-line {
+  font-size: clamp(1.25rem, 1.7vw, 1.8rem);
+}
+
 .lab-readout {
+  grid-area: readout;
   margin-top: 18px;
   padding: 20px 22px;
   background: rgba(255, 255, 255, 0.03);
@@ -1161,6 +1316,38 @@ em {
 
   .viz-canvas {
     min-height: 240px;
+  }
+
+  .viz-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .viz-panel.is-expanded {
+    inset: 2.5vh 3vw;
+    width: auto;
+    max-width: none;
+    max-height: 95vh;
+    padding: 20px;
+  }
+
+  .viz-panel.is-expanded .viz-shell {
+    grid-template-areas:
+      'support'
+      'stage'
+      'readout';
+  }
+
+  .viz-panel.is-expanded .control-row {
+    grid-template-columns: 1fr;
+  }
+
+  .viz-panel.is-expanded .viz-canvas {
+    min-height: 360px;
+  }
+
+  .viz-panel:not(.is-expanded) .viz-expand-button {
+    display: none;
   }
 
   .formula-annotation {

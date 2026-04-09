@@ -257,10 +257,11 @@ Core sections:
 - exploration versus exploitation
 
 Current status:
-- Only a light bandit / alignment bridge exists
+- Dedicated atelier chapter now exists
 
 Missing depth:
-- the full RL ladder
+- policy gradients / actor-critic family
+- PPO and modern alignment-side RL framing
 
 ### 13. Evaluation, Experimentation, And Production ML
 
@@ -333,11 +334,11 @@ Current status:
 These are the gaps that most affect the usefulness of the atelier as an interview-prep and refresh resource.
 
 1. Neural Network Basics
-2. Linear Algebra For ML
-3. Adaptation, Compression, And Efficient Serving
-4. Generative Models
-5. Reinforcement Learning
-6. Graph Machine Learning
+2. Adaptation, Compression, And Efficient Serving
+3. Generative Models
+4. Reinforcement Learning
+5. Graph Machine Learning
+6. Interpretability And Mechanistic Understanding
 
 ## Recommended Build Order
 
@@ -355,14 +356,14 @@ Reason:
   - backpropagation
   - gradient descent
 
-2. Adaptation, Compression, And Efficient Serving
+2. Linear Algebra For ML
+Reason:
+- It makes many other chapters clearer and more elegant, especially embeddings, matrix factorization, and attention.
+
+3. Adaptation, Compression, And Efficient Serving
 Reason:
 - Very interview-relevant.
 - Right now the LLM coverage stops too early without LoRA, quantization, distillation, and pre-train/fine-tune framing.
-
-3. Linear Algebra For ML
-Reason:
-- It makes many other chapters clearer and more elegant, especially embeddings, matrix factorization, and attention.
 
 4. Generative Models
 Reason:
@@ -386,29 +387,26 @@ Reason:
 
 ## Proposed Next Chapter
 
-### Neural Network Basics
+### Adaptation, Compression, And Efficient Serving
 
 Why this should be next:
-- It unlocks the most requested beginner-to-intermediate topics in one move.
-- It makes the current deep-learning chapter easier to appreciate.
-- It gives the atelier a much stronger teaching progression:
-  - classical models
-  - neuron and backprop
-  - optimization and stability
-  - transformers
+- It fills one of the biggest remaining interview-relevant gaps.
+- The current transformer chapter stops before the practical post-training and deployment layer.
+- It is the cleanest place to cover:
+  - pre-training vs fine-tuning
+  - LoRA / DoRA and parameter-efficient tuning
+  - quantization
+  - knowledge distillation
+  - serving tradeoffs for modern LLMs
 
 Proposed section order:
-1. What is a neuron?
-2. Activation functions
-3. Output functions: sigmoid, softmax, linear
-4. Forward pass
-5. Loss and prediction error
-6. Chain rule
-7. Backpropagation
-8. Gradient descent
-9. Optimizers
-10. Learning rate schedules
+1. Pre-training versus fine-tuning
+2. Full fine-tuning versus PEFT
+3. LoRA intuition
+4. Quantization: memory versus fidelity
+5. Knowledge distillation
+6. Serving tradeoffs: latency, memory, throughput
 
 Notes:
-- Weight initialization and normalization should stay mostly in the Optimization And Training Stability chapter, with light references here.
-- The chapter should feel intuitive and geometric, not like a derivation dump.
+- Keep this chapter concrete and systems-aware rather than purely architectural.
+- Tie every section back to the cost-quality tradeoff that shows up in real deployments.

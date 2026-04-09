@@ -141,8 +141,325 @@ const chapters = {
       },
     ],
   },
+  'linear-algebra': {
+    navMeta: 'chapter 02 / linear algebra for ml',
+    eyebrow: 'Linear Algebra',
+    title: 'The geometry underneath ML gets much easier once vectors stop feeling abstract.',
+    lede:
+      'This chapter is about the pieces of linear algebra that keep showing up in machine learning: vectors, dot products, matrix multiplication, eigenvectors, and SVD. The goal is not proof. The goal is to make the later chapters feel visually obvious.',
+    sections: [
+      {
+        id: 'vectors',
+        nav: 'Vectors',
+        label: 'Concept 01',
+        title: 'Vectors: magnitude and direction in one object',
+        summary:
+          'A vector is the simplest useful ML object: one thing that has both size and direction, whether that thing is a feature point, an embedding, or a gradient.',
+        what:
+          'The easiest way to think about a vector is as an <strong>arrow from the origin</strong>. Its <strong>direction</strong> tells you where it points. Its <strong>magnitude</strong> tells you how large it is. In ML, vectors are everywhere: feature rows, hidden states, embeddings, gradients, and parameter updates all live as vectors.',
+        why:
+          'If vectors feel concrete, then ideas like normalization, cosine similarity, and gradient updates stop feeling like disconnected jargon.',
+        interview:
+          'The useful sentence is: <em>a vector packages multiple coordinates into one geometric object with length and direction.</em>',
+        details: [
+          'Normalizing a vector keeps its direction but removes its magnitude, which is why cosine similarity can focus on meaning rather than scale.',
+          'Gradients are vectors too: they point toward the direction of steepest increase, so gradient descent walks against them.',
+        ],
+        math: {
+          title: 'Vector length',
+          formula: [
+            '\\lVert v \\rVert_2 = \\sqrt{v_1^2 + v_2^2}',
+            '\\hat{v} = \\frac{v}{\\lVert v \\rVert_2}',
+          ],
+          note: 'The first line gives the vector length. The second line makes a unit vector pointing in the same direction.',
+        },
+        code: {
+          title: 'Code sketch',
+          lang: 'python',
+          snippet:
+            'v = np.array([x, y])\nlength = np.linalg.norm(v)\nunit_v = v / max(length, 1e-8)',
+        },
+        quiz: {
+          prompt: 'What changes when you normalize a vector?',
+          options: [
+            {
+              text: 'Its length becomes 1, but its direction stays the same',
+              correct: true,
+              explanation: 'Exactly. Normalization removes scale while preserving orientation.',
+            },
+            {
+              text: 'Its direction changes, but its magnitude stays the same',
+              correct: false,
+              explanation: 'That is the opposite of what normalization is meant to do.',
+            },
+            {
+              text: 'It turns from a vector into a scalar',
+              correct: false,
+              explanation: 'No. It is still a vector, just rescaled.',
+            },
+          ],
+        },
+        viz: 'vectors',
+        controls: [
+          { key: 'x', label: 'x component', min: -1.2, max: 1.2, step: 0.05, value: 0.8, format: 'decimal2' },
+          { key: 'y', label: 'y component', min: -1.2, max: 1.2, step: 0.05, value: 0.45, format: 'decimal2' },
+        ],
+        presets: [
+          { label: 'Long diagonal', values: { x: 0.95, y: 0.7 } },
+          { label: 'Mostly vertical', values: { x: 0.2, y: 1.0 } },
+          { label: 'Negative x', values: { x: -0.8, y: 0.4 } },
+        ],
+      },
+      {
+        id: 'dot-products',
+        nav: 'Dot Product',
+        label: 'Concept 02',
+        title: 'Dot product: alignment turned into one number',
+        summary:
+          'The dot product is large when two vectors point in a similar direction, small when they are orthogonal, and negative when they point against each other.',
+        what:
+          'The dot product is best understood as a measure of <strong>alignment</strong>. It grows when two arrows point the same way and shrinks when they disagree. If one vector projects strongly onto another, the dot product is large. That is why embeddings, retrieval, and attention all use variants of this idea.',
+        why:
+          'A huge amount of ML quietly boils down to “how aligned are these two vectors?” Similarity search, matching scores, and attention weights all reuse that geometry.',
+        interview:
+          'The short sentence is: <em>dot product combines magnitude and angle; cosine similarity isolates the angle part.</em>',
+        details: [
+          'If the vectors are normalized first, the dot product becomes cosine similarity.',
+          'Orthogonal vectors have dot product zero, which means they share no projection along each other.',
+        ],
+        math: {
+          title: 'Alignment formula',
+          formula: [
+            'u \\cdot v = \\sum_i u_i v_i',
+            'u \\cdot v = \\lVert u \\rVert \\lVert v \\rVert \\cos \\theta',
+          ],
+          note: 'The coordinate view and the geometric view are the same quantity seen from two angles.',
+        },
+        code: {
+          title: 'Code sketch',
+          lang: 'python',
+          snippet:
+            'dot = np.dot(u, v)\ncosine = dot / (np.linalg.norm(u) * np.linalg.norm(v) + 1e-8)',
+        },
+        quiz: {
+          prompt: 'If two non-zero vectors are perpendicular, what is their dot product?',
+          options: [
+            {
+              text: 'Zero, because one vector has no projection onto the other',
+              correct: true,
+              explanation: 'Right. Orthogonal means the shared directional component vanishes.',
+            },
+            {
+              text: 'One, because the vectors are normalized',
+              correct: false,
+              explanation: 'Perpendicular vectors only have dot product one if they are not actually perpendicular.',
+            },
+            {
+              text: 'Negative, because they point in different directions',
+              correct: false,
+              explanation: 'Negative requires them to point against each other, not merely at right angles.',
+            },
+          ],
+        },
+        viz: 'dot-products',
+        controls: [
+          { key: 'angle', label: 'Angle', min: 0, max: 180, step: 1, value: 35, format: 'integer' },
+          { key: 'uMag', label: 'Vector u length', min: 0.5, max: 1.5, step: 0.05, value: 1.05, format: 'decimal2' },
+          { key: 'vMag', label: 'Vector v length', min: 0.5, max: 1.5, step: 0.05, value: 0.95, format: 'decimal2' },
+        ],
+        presets: [
+          { label: 'Well aligned', values: { angle: 18, uMag: 1.1, vMag: 1.0 } },
+          { label: 'Orthogonal', values: { angle: 90, uMag: 1.0, vMag: 1.0 } },
+          { label: 'Opposing', values: { angle: 155, uMag: 1.0, vMag: 1.15 } },
+        ],
+      },
+      {
+        id: 'matrix-multiply',
+        nav: 'Matrix Maps',
+        label: 'Concept 03',
+        title: 'Matrix multiplication: a learned linear map',
+        summary:
+          'A matrix is a machine that takes one vector in and sends another vector out. It can stretch, shrink, rotate, or mix coordinates together.',
+        what:
+          'The most useful mental model is that a matrix is a <strong>coordinate mixer</strong>. Each output coordinate is a weighted combination of the input coordinates. In neural nets, linear layers are just matrix multiplications followed by nonlinearities. In recommendation, embedding tables and projections are matrix operations everywhere.',
+        why:
+          'Once matrix multiplication feels like geometry instead of bookkeeping, layer shapes, projections, and learned transformations become much easier to reason about.',
+        interview:
+          'The reusable sentence is: <em>a matrix applies the same learned linear transformation to every input vector.</em>',
+        details: [
+          'The determinant tells you how the transformation scales signed area in 2D.',
+          'Shear is a good reminder that a matrix can mix coordinates without just scaling axes independently.',
+        ],
+        math: {
+          title: 'Linear transform',
+          formula: 'y = A x',
+          note: 'Read it as: one vector x goes in, a transformed vector y comes out.',
+        },
+        code: {
+          title: 'Code sketch',
+          lang: 'python',
+          snippet:
+            'A = np.array([[sx, shear], [0.0, sy]])\nx = np.array([x1, x2])\ny = A @ x',
+        },
+        quiz: {
+          prompt: 'What does the determinant tell you in this 2D picture?',
+          options: [
+            {
+              text: 'How much the matrix scales signed area',
+              correct: true,
+              explanation: 'Exactly. In 2D, determinant is the area multiplier, with sign indicating orientation flip.',
+            },
+            {
+              text: 'The average value of all matrix entries',
+              correct: false,
+              explanation: 'No. Determinant is about the transformation as a whole, not the arithmetic mean of entries.',
+            },
+            {
+              text: 'How nonlinear the transformation is',
+              correct: false,
+              explanation: 'Matrices are linear maps. Determinant does not measure nonlinearity.',
+            },
+          ],
+        },
+        viz: 'matrix-multiply',
+        controls: [
+          { key: 'sx', label: 'x scale', min: 0.4, max: 1.8, step: 0.05, value: 1.2, format: 'decimal2' },
+          { key: 'sy', label: 'y scale', min: 0.4, max: 1.8, step: 0.05, value: 0.85, format: 'decimal2' },
+          { key: 'shear', label: 'shear', min: -1.0, max: 1.0, step: 0.05, value: 0.35, format: 'decimal2' },
+        ],
+        presets: [
+          { label: 'Mostly scaling', values: { sx: 1.4, sy: 0.7, shear: 0.0 } },
+          { label: 'Sheared map', values: { sx: 1.15, sy: 0.9, shear: 0.65 } },
+          { label: 'Compressed', values: { sx: 0.65, sy: 0.55, shear: -0.35 } },
+        ],
+      },
+      {
+        id: 'eigen',
+        nav: 'Eigen',
+        label: 'Concept 04',
+        title: 'Eigenvectors: the directions a transform does not bend',
+        summary:
+          'Most directions change both length and direction under a matrix. Eigenvectors are the rare directions that only get stretched or shrunk.',
+        what:
+          'Eigenvectors are easiest to remember as the <strong>special directions of a matrix</strong>. Push on the matrix along one of those directions and the output stays on the same line. Only the length changes, and that scale factor is the eigenvalue.',
+        why:
+          'This idea keeps coming back in PCA, dynamical systems, graph methods, and any place where “dominant directions” matter.',
+        interview:
+          'The sentence worth remembering is: <em>an eigenvector keeps its direction under the linear map; the eigenvalue says how much it stretches.</em>',
+        details: [
+          'Large positive eigenvalues stretch strongly along that direction.',
+          'A small eigenvalue means the matrix suppresses variation along that direction.',
+        ],
+        math: {
+          title: 'Eigen relation',
+          formula: 'A v = \\lambda v',
+          note: 'The output still points along v. The only thing that changes is scale, measured by λ.',
+        },
+        code: {
+          title: 'Code sketch',
+          lang: 'python',
+          snippet:
+            'A = np.array([[a, c], [c, d]])\nvalues, vectors = np.linalg.eig(A)',
+        },
+        quiz: {
+          prompt: 'What makes an eigenvector special compared with an arbitrary direction?',
+          options: [
+            {
+              text: 'Its direction survives the transform; only its magnitude changes',
+              correct: true,
+              explanation: 'Exactly. Most directions bend; an eigenvector does not.',
+            },
+            {
+              text: 'Its coordinates must all be positive',
+              correct: false,
+              explanation: 'No. Eigenvectors can have any sign pattern.',
+            },
+            {
+              text: 'It always has length 1',
+              correct: false,
+              explanation: 'Eigenvectors are often normalized for convenience, but that is not what makes them eigenvectors.',
+            },
+          ],
+        },
+        viz: 'eigen',
+        controls: [
+          { key: 'a', label: 'stretch x', min: 0.5, max: 1.8, step: 0.05, value: 1.35, format: 'decimal2' },
+          { key: 'd', label: 'stretch y', min: 0.5, max: 1.8, step: 0.05, value: 0.8, format: 'decimal2' },
+          { key: 'c', label: 'coupling', min: -0.8, max: 0.8, step: 0.05, value: 0.35, format: 'decimal2' },
+        ],
+        presets: [
+          { label: 'Clear dominant axis', values: { a: 1.55, d: 0.7, c: 0.2 } },
+          { label: 'Rotated principal dirs', values: { a: 1.2, d: 0.8, c: 0.55 } },
+          { label: 'Near isotropic', values: { a: 1.0, d: 0.95, c: 0.1 } },
+        ],
+      },
+      {
+        id: 'svd',
+        nav: 'SVD',
+        label: 'Concept 05',
+        title: 'SVD: rotate, stretch, rotate',
+        summary:
+          'SVD says any matrix can be understood as one rotation of the input, a stretch along orthogonal axes, and another rotation of the output.',
+        what:
+          'The practical picture is: <strong>first align the input to a convenient basis, then stretch each axis by a singular value, then rotate the result into the final orientation.</strong> When one singular value is much larger than the others, the matrix is close to low-rank, which is why SVD helps with compression and latent structure.',
+        why:
+          'SVD powers dimensionality reduction, low-rank approximation, recommender intuition, and many of the “keep the most important directions” tricks used all over ML.',
+        interview:
+          'The one-liner is: <em>SVD decomposes a matrix into input rotation, axis-wise scaling, and output rotation.</em>',
+        details: [
+          'If the smaller singular values are tiny, a rank-k approximation can keep most of the useful signal while throwing away noise or detail.',
+          'This same geometry is what makes PCA feel like “keep the strongest directions of variation.”',
+        ],
+        math: {
+          title: 'SVD decomposition',
+          formula: [
+            'A = U \\Sigma V^T',
+            'A_k = U_k \\Sigma_k V_k^T',
+          ],
+          note: 'The first line is the full factorization. The second is the low-rank approximation that keeps only the strongest singular directions.',
+        },
+        code: {
+          title: 'Code sketch',
+          lang: 'python',
+          snippet:
+            'U, S, Vt = np.linalg.svd(A, full_matrices=False)\nA_rank1 = U[:, :1] @ np.diag(S[:1]) @ Vt[:1, :]',
+        },
+        quiz: {
+          prompt: 'Why does SVD help with compression?',
+          options: [
+            {
+              text: 'Because a few large singular values often capture most of the important structure',
+              correct: true,
+              explanation: 'Exactly. Keeping only the dominant singular directions can preserve most of the signal.',
+            },
+            {
+              text: 'Because it always makes the matrix sparse',
+              correct: false,
+              explanation: 'No. SVD is about structured low-rank approximation, not guaranteed sparsity.',
+            },
+            {
+              text: 'Because it removes the need for matrix multiplication',
+              correct: false,
+              explanation: 'Not at all. It changes how we understand or approximate a matrix, not whether multiplication exists.',
+            },
+          ],
+        },
+        viz: 'svd',
+        controls: [
+          { key: 'sigma1', label: 'major stretch', min: 0.8, max: 1.8, step: 0.05, value: 1.55, format: 'decimal2' },
+          { key: 'sigma2', label: 'minor stretch', min: 0.05, max: 1.2, step: 0.05, value: 0.45, format: 'decimal2' },
+          { key: 'inputRotate', label: 'input basis', min: -70, max: 70, step: 1, value: 28, format: 'integer' },
+        ],
+        presets: [
+          { label: 'Strong low-rank', values: { sigma1: 1.7, sigma2: 0.15, inputRotate: 26 } },
+          { label: 'Balanced map', values: { sigma1: 1.3, sigma2: 0.95, inputRotate: 18 } },
+          { label: 'Compressed detail', values: { sigma1: 1.55, sigma2: 0.35, inputRotate: -32 } },
+        ],
+      },
+    ],
+  },
   'neural-basics': {
-    navMeta: 'chapter 03 / neural network basics',
+    navMeta: 'chapter 04 / neural network basics',
     eyebrow: 'Neural Network Basics',
     title: 'Neural networks stop feeling magical once each piece has a small job.',
     lede:
@@ -705,7 +1022,7 @@ const chapters = {
     ],
   },
   'deep-learning': {
-    navMeta: 'chapter 04 / optimization and gradient flow',
+    navMeta: 'chapter 05 / optimization and gradient flow',
     eyebrow: 'Deep Learning',
     title: 'The mechanics that make neural networks train or break.',
     lede:
@@ -1082,7 +1399,7 @@ const chapters = {
     ],
   },
   'transformers-rag': {
-    navMeta: 'chapter 05 / transformers and retrieval',
+    navMeta: 'chapter 06 / transformers and retrieval',
     eyebrow: 'Transformers And RAG',
     title: 'Representation, context, and grounding are different jobs.',
     lede:
@@ -1266,9 +1583,63 @@ const chapters = {
         ],
       },
       {
+        id: 'transformer-block',
+        nav: 'Block',
+        label: 'Concept 04',
+        title: 'Transformer block: context mixing first, feature rewriting second',
+        summary:
+          'A transformer layer is easier to understand when you split it into jobs: attention mixes information across tokens, then the MLP rewrites each token locally.',
+        what:
+          'The key idea is that a transformer block does <strong>two different kinds of work</strong>. <strong>Self-attention</strong> lets one token pull useful context from other tokens. Then the <strong>MLP / feed-forward layer</strong> transforms that updated token state on its own. Residual connections keep the previous representation alive so each sublayer adds a correction instead of overwriting everything.',
+        why:
+          'This is the mental model that helps interviews stop feeling like memorizing a diagram. Attention is about communication across tokens. The MLP is about computation inside one token.',
+        interview:
+          'The one-liner is: <em>a transformer block alternates context mixing and per-token feature rewriting, with residual paths making each step an update rather than a reset.</em>',
+        details: [
+          'Attention answers “which other tokens matter right now?” while the MLP answers “how should this token state be transformed after seeing that context?”',
+          'Residual connections matter because they keep optimization stable and let each sublayer learn an incremental change instead of rebuilding the full representation from scratch.',
+        ],
+        code: {
+          title: 'Code sketch',
+          lang: 'python',
+          snippet:
+            'x = x + self_attention(norm(x))\nx = x + mlp(norm(x))',
+        },
+        quiz: {
+          prompt: 'What is the cleanest distinction between attention and the MLP inside one transformer block?',
+          options: [
+            {
+              text: 'Attention mixes information across tokens; the MLP rewrites each token state locally',
+              correct: true,
+              explanation: 'Exactly. That split gives you the right intuition for what each sublayer is for.',
+            },
+            {
+              text: 'Attention handles training while the MLP handles inference',
+              correct: false,
+              explanation: 'No. Both sublayers are active in both training and inference.',
+            },
+            {
+              text: 'Attention computes probabilities while the MLP stores the KV cache',
+              correct: false,
+              explanation: 'The KV cache stores keys and values across decoding steps; it is not the job of the MLP itself.',
+            },
+          ],
+        },
+        viz: 'transformer-block',
+        controls: [
+          { key: 'contextNeed', label: 'Need for context mixing', min: 0.1, max: 0.98, step: 0.01, value: 0.72, format: 'percent' },
+          { key: 'rewrite', label: 'Need for feature rewriting', min: 0.1, max: 0.98, step: 0.01, value: 0.58, format: 'percent' },
+        ],
+        presets: [
+          { label: 'Context-heavy', values: { contextNeed: 0.88, rewrite: 0.46 } },
+          { label: 'Balanced block', values: { contextNeed: 0.72, rewrite: 0.58 } },
+          { label: 'Feature-heavy', values: { contextNeed: 0.38, rewrite: 0.9 } },
+        ],
+      },
+      {
         id: 'attention',
         nav: 'Attention',
-        label: 'Concept 04',
+        label: 'Concept 05',
         title: 'Attention: the model decides which earlier tokens deserve context weight right now',
         summary:
           'Self-attention is a relevance mechanism. For the current token, it scores earlier tokens, normalizes those scores, and mixes information according to the resulting weights.',
@@ -1327,7 +1698,7 @@ const chapters = {
       {
         id: 'kv-cache',
         nav: 'KV cache',
-        label: 'Concept 05',
+        label: 'Concept 06',
         title: 'KV cache: decoding gets faster by reusing past attention state',
         summary:
           'Autoregressive generation would be painfully wasteful if the model recomputed every previous key and value on every step. The KV cache exists to reuse what was already computed.',
@@ -1381,7 +1752,7 @@ const chapters = {
       {
         id: 'rag',
         nav: 'RAG',
-        label: 'Concept 06',
+        label: 'Concept 07',
         title: 'RAG: retrieval gives generation a place to stand',
         summary:
           'A base model answers from its parameters. RAG adds a retrieval step so generation can lean on external evidence instead of guessing from memory alone.',
@@ -1434,8 +1805,729 @@ const chapters = {
       },
     ],
   },
+  adaptation: {
+    navMeta: 'chapter 07 / adaptation, compression, and serving',
+    eyebrow: 'Adaptation, Compression, And Serving',
+    title: 'Modern LLM work is often about bending a model to a task without breaking the economics.',
+    lede:
+      'This chapter is the practical layer after transformers: when to fine-tune, when to use adapters, why quantization changes the memory budget, how distillation trades quality for speed, and why serving is always a latency-versus-throughput negotiation.',
+    sections: [
+      {
+        id: 'pretrain-finetune',
+        nav: 'Pretrain vs FT',
+        label: 'Concept 01',
+        title: 'Pre-training versus fine-tuning: breadth first, specialization second',
+        summary:
+          'Pre-training gives a model broad reusable representations. Fine-tuning bends those representations toward one narrower task or domain.',
+        what:
+          'The clean mental model is that <strong>pre-training builds a general prior</strong> and <strong>fine-tuning spends it</strong> on a specific job. A big pre-trained model has broad language or multimodal competence. Fine-tuning then shifts that competence toward your task, your data distribution, and your failure modes.',
+        why:
+          'A lot of ML confusion comes from treating pre-training and fine-tuning as the same thing at different scales. They are not. One learns broad structure; the other steers it.',
+        interview:
+          'The interview sentence is: <em>pre-training learns reusable representations from broad data, while fine-tuning specializes those representations for a narrower objective.</em>',
+        details: [
+          'Large domain gap means you need more adaptation signal because the base model prior is less aligned with your task.',
+          'Very small task data can still help if the base model is already close to the right domain.',
+        ],
+        code: {
+          title: 'Code sketch',
+          lang: 'python',
+          snippet:
+            'base_model = load_pretrained_model()\nfor batch in task_data:\n    loss = task_objective(base_model(batch))\n    loss.backward()\n    optimizer.step()',
+        },
+        quiz: {
+          prompt: 'Why does a strong pre-trained model often need surprisingly little fine-tuning data?',
+          options: [
+            {
+              text: 'Because pre-training already learned broad structure, so fine-tuning mostly needs to steer rather than learn from scratch',
+              correct: true,
+              explanation: 'Exactly. Fine-tuning often works by bending a strong prior, not rebuilding one.',
+            },
+            {
+              text: 'Because fine-tuning never changes the model parameters very much',
+              correct: false,
+              explanation: 'Not necessarily. Some fine-tuning runs change a lot; the point is that the starting representation is already useful.',
+            },
+            {
+              text: 'Because task-specific data is less important than optimization hyperparameters',
+              correct: false,
+              explanation: 'Hyperparameters matter, but the main story is still the quality of the prior plus the adaptation data.',
+            },
+          ],
+        },
+        viz: 'pretrain-finetune',
+        controls: [
+          { key: 'taskData', label: 'Task data strength', min: 0.1, max: 0.95, step: 0.01, value: 0.54, format: 'percent' },
+          { key: 'domainGap', label: 'Domain gap', min: 0.05, max: 0.95, step: 0.01, value: 0.34, format: 'percent' },
+        ],
+        presets: [
+          { label: 'Close domain', values: { taskData: 0.42, domainGap: 0.16 } },
+          { label: 'Balanced adaptation', values: { taskData: 0.54, domainGap: 0.34 } },
+          { label: 'Hard domain shift', values: { taskData: 0.74, domainGap: 0.82 } },
+        ],
+      },
+      {
+        id: 'peft',
+        nav: 'PEFT',
+        label: 'Concept 02',
+        title: 'Full fine-tuning versus PEFT: not every task needs every weight to move',
+        summary:
+          'Parameter-efficient fine-tuning methods update a tiny subset of trainable parameters while keeping the frozen base model intact.',
+        what:
+          'The main idea is simple: if the base model already contains a lot of useful structure, you may not need to rewrite all of it. <strong>PEFT methods keep the expensive base frozen</strong> and only learn a lightweight adaptation layer or low-rank update.',
+        why:
+          'This matters because training memory, checkpoint size, deployment complexity, and experimentation speed all improve when you stop touching the whole model.',
+        interview:
+          'The crisp answer is: <em>PEFT keeps most of the model frozen and learns a small task-specific adjustment instead of full fine-tuning.</em>',
+        details: [
+          'Full fine-tuning can still win when the task is very different or the quality bar is extremely high.',
+          'PEFT is attractive when many tasks share the same base model because adapters are easy to swap without duplicating the full checkpoint.',
+        ],
+        code: {
+          title: 'Code sketch',
+          lang: 'python',
+          snippet:
+            'for name, param in model.named_parameters():\n    param.requires_grad = is_adapter_parameter(name)\ntrainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)',
+        },
+        quiz: {
+          prompt: 'What is the main reason PEFT is attractive in practice?',
+          options: [
+            {
+              text: 'It cuts adaptation cost by training only a small task-specific slice instead of duplicating and updating the whole model',
+              correct: true,
+              explanation: 'Exactly. The cost and deployment story is the practical win.',
+            },
+            {
+              text: 'It guarantees better accuracy than full fine-tuning',
+              correct: false,
+              explanation: 'No. It often trades a little flexibility for a lot of efficiency.',
+            },
+            {
+              text: 'It removes the need for a base model checkpoint',
+              correct: false,
+              explanation: 'The base checkpoint is still central; PEFT adds a lightweight learned delta around it.',
+            },
+          ],
+        },
+        viz: 'peft',
+        controls: [
+          { key: 'modelScale', label: 'Base model size', min: 0.2, max: 0.98, step: 0.01, value: 0.68, format: 'percent' },
+          { key: 'budget', label: 'Training budget', min: 0.08, max: 0.95, step: 0.01, value: 0.42, format: 'percent' },
+        ],
+        presets: [
+          { label: 'Small budget', values: { modelScale: 0.78, budget: 0.18 } },
+          { label: 'Balanced team', values: { modelScale: 0.68, budget: 0.42 } },
+          { label: 'Big training room', values: { modelScale: 0.58, budget: 0.82 } },
+        ],
+      },
+      {
+        id: 'lora',
+        nav: 'LoRA',
+        label: 'Concept 03',
+        title: 'LoRA: learn a low-rank update instead of rewriting the whole matrix',
+        summary:
+          'LoRA says the task-specific change often lives in a much smaller subspace than the full weight matrix, so you can learn a skinny update instead of a full replacement.',
+        what:
+          'Instead of updating a full weight matrix <code>W</code>, LoRA keeps <code>W</code> frozen and learns a low-rank correction <code>BA</code>. That means the model can adapt in a restricted but often sufficient subspace, which is why the trainable parameter count collapses so much.',
+        why:
+          'This is the most reusable PEFT intuition to have in interviews. It explains why LoRA can be cheap, modular, and surprisingly strong when the task does not require rewriting the whole representation space.',
+        interview:
+          'The sentence worth remembering is: <em>LoRA freezes the base weights and learns a low-rank delta that captures the task-specific correction.</em>',
+        details: [
+          'Higher rank means more expressive updates, but also more trainable parameters and larger adapter checkpoints.',
+          'DoRA changes the decomposition but keeps the same spirit: separate a smaller adaptation signal from the frozen backbone.',
+        ],
+        math: {
+          title: 'Low-rank update',
+          formula: [
+            'W^{\\prime} = W + \\Delta W',
+            '\\Delta W = B A',
+          ],
+          note: 'The frozen base matrix stays in place. The adapter only learns the correction term.',
+        },
+        code: {
+          title: 'Code sketch',
+          lang: 'python',
+          snippet:
+            'base = frozen_linear(x)\ndelta = B @ (A @ x)\nout = base + alpha * delta',
+        },
+        quiz: {
+          prompt: 'Why does increasing LoRA rank usually help, but not for free?',
+          options: [
+            {
+              text: 'Because a higher-rank update can express richer corrections, but it also costs more trainable parameters and memory',
+              correct: true,
+              explanation: 'Exactly. Rank is a capacity knob, not a free quality knob.',
+            },
+            {
+              text: 'Because higher rank freezes more of the model',
+              correct: false,
+              explanation: 'No. Higher rank does the opposite: it makes the adapter more expressive.',
+            },
+            {
+              text: 'Because LoRA rank only affects inference latency, not training cost',
+              correct: false,
+              explanation: 'Rank affects both the training footprint and the adapter size.',
+            },
+          ],
+        },
+        viz: 'lora',
+        controls: [
+          { key: 'rank', label: 'Adapter rank', min: 1, max: 32, step: 1, value: 8, format: 'integer' },
+          { key: 'coverage', label: 'Target layer coverage', min: 0.1, max: 0.95, step: 0.01, value: 0.52, format: 'percent' },
+        ],
+        presets: [
+          { label: 'Tiny adapter', values: { rank: 2, coverage: 0.34 } },
+          { label: 'Practical LoRA', values: { rank: 8, coverage: 0.52 } },
+          { label: 'High-capacity adapter', values: { rank: 24, coverage: 0.82 } },
+        ],
+      },
+      {
+        id: 'quantization',
+        nav: 'Quantization',
+        label: 'Concept 04',
+        title: 'Quantization: fewer bits buy memory and throughput at the price of numerical fidelity',
+        summary:
+          'Quantization stores weights or activations with fewer bits, shrinking memory and often improving throughput, but it also introduces approximation error.',
+        what:
+          'The easiest way to picture quantization is that you replace a smooth range of real numbers with a smaller set of buckets. Fewer buckets means cheaper storage and faster kernels, but also more rounding error. Good quantization is about making that error small enough that the product trade still wins.',
+        why:
+          'This is one of the most important deployment levers for large models because memory often becomes the real bottleneck before raw compute does.',
+        interview:
+          'The short line is: <em>quantization trades numerical precision for memory savings and often higher serving throughput.</em>',
+        details: [
+          'Very low-bit setups can work surprisingly well when the model has redundancy, but sensitive layers may still need special handling.',
+          'Quantization is especially valuable when memory bandwidth, batch size, or KV-cache growth is the bottleneck.',
+        ],
+        math: {
+          title: 'Bucketed approximation',
+          formula: [
+            'q = \\operatorname{round}(x / s)',
+            '\\hat{x} = s q',
+          ],
+          note: 'Scale s turns a real value into an integer bucket and back into an approximate reconstructed value.',
+        },
+        code: {
+          title: 'Code sketch',
+          lang: 'python',
+          snippet:
+            'q = np.round(weights / scale).astype(np.int8)\nweights_hat = scale * q',
+        },
+        quiz: {
+          prompt: 'Why does quantization often help serving even when the arithmetic is only a little faster?',
+          options: [
+            {
+              text: 'Because shrinking the model cuts memory traffic and can let more of it stay on faster hardware',
+              correct: true,
+              explanation: 'Exactly. The real win is often memory footprint and bandwidth, not only raw math speed.',
+            },
+            {
+              text: 'Because quantization removes the need for KV cache',
+              correct: false,
+              explanation: 'No. It can reduce cache cost, but it does not remove the cache concept.',
+            },
+            {
+              text: 'Because fewer bits always improve accuracy',
+              correct: false,
+              explanation: 'The whole trade is that quality can degrade as precision falls.',
+            },
+          ],
+        },
+        viz: 'quantization',
+        controls: [
+          { key: 'bits', label: 'Precision (bits)', min: 2, max: 16, step: 1, value: 8, format: 'integer' },
+          { key: 'context', label: 'Memory pressure', min: 0.1, max: 0.98, step: 0.01, value: 0.58, format: 'percent' },
+        ],
+        presets: [
+          { label: 'FP16-ish', values: { bits: 16, context: 0.46 } },
+          { label: '8-bit deploy', values: { bits: 8, context: 0.58 } },
+          { label: 'Aggressive low-bit', values: { bits: 4, context: 0.84 } },
+        ],
+      },
+      {
+        id: 'distillation',
+        nav: 'Distillation',
+        label: 'Concept 05',
+        title: 'Knowledge distillation: a smaller student can learn from a softer teacher signal',
+        summary:
+          'Distillation trains a smaller model not just on hard labels, but on the teacher’s probability distribution, which carries extra structure about confusable alternatives.',
+        what:
+          'A hard label only tells you the correct answer. A teacher distribution says more: which wrong answers were close, how confident the teacher was, and which alternatives looked similar. <strong>Distillation uses that softer target to compress behavior into a smaller student.</strong>',
+        why:
+          'This is the classic quality-speed tradeoff for deployment. You give up some flexibility and ceiling, but you can gain a much cheaper model that still preserves important behavior.',
+        interview:
+          'The simple sentence is: <em>distillation teaches a smaller student with the teacher’s soft targets, not only with ground-truth labels.</em>',
+        details: [
+          'Temperature makes the teacher distribution softer so the student can see relative preference structure instead of only the top class.',
+          'Distillation is especially attractive when a large teacher is too expensive to serve but can still be used offline during training.',
+        ],
+        math: {
+          title: 'Distillation loss',
+          formula: '\\mathcal{L} = \\alpha\\,\\mathcal{L}_{hard} + (1-\\alpha) T^2\\,KL(p_T^{teacher} \\parallel p_T^{student})',
+          note: 'One term learns from hard labels. The other matches the softer teacher distribution at temperature T.',
+        },
+        code: {
+          title: 'Code sketch',
+          lang: 'python',
+          snippet:
+            'teacher_probs = softmax(teacher_logits / T)\nstudent_probs = softmax(student_logits / T)\nloss = alpha * hard_loss + (1 - alpha) * (T ** 2) * kl(teacher_probs, student_probs)',
+        },
+        quiz: {
+          prompt: 'Why are soft teacher targets often more informative than hard one-hot labels?',
+          options: [
+            {
+              text: 'Because they reveal which alternatives were almost correct, not just which class won',
+              correct: true,
+              explanation: 'Exactly. The teacher distribution contains structure about confusion and similarity.',
+            },
+            {
+              text: 'Because they eliminate the need for ground-truth data',
+              correct: false,
+              explanation: 'No. Distillation often complements supervision rather than replacing it.',
+            },
+            {
+              text: 'Because a student always matches the teacher exactly if the temperature is high enough',
+              correct: false,
+              explanation: 'Temperature helps reveal structure; it does not guarantee perfect imitation.',
+            },
+          ],
+        },
+        viz: 'distillation',
+        controls: [
+          { key: 'student', label: 'Student size', min: 0.15, max: 0.95, step: 0.01, value: 0.46, format: 'percent' },
+          { key: 'temperature', label: 'Teacher softness', min: 0.6, max: 4.0, step: 0.05, value: 2.0, format: 'decimal2' },
+        ],
+        presets: [
+          { label: 'Tiny fast student', values: { student: 0.22, temperature: 2.4 } },
+          { label: 'Balanced student', values: { student: 0.46, temperature: 2.0 } },
+          { label: 'Large faithful student', values: { student: 0.74, temperature: 1.2 } },
+        ],
+      },
+      {
+        id: 'serving',
+        nav: 'Serving',
+        label: 'Concept 06',
+        title: 'Serving tradeoffs: latency, throughput, and memory cannot all be optimized at once',
+        summary:
+          'Inference systems are not judged only by quality. They are judged by how much memory they consume, how many requests they can serve, and how quickly users get the first token.',
+        what:
+          'The practical mental model is a triangle: <strong>latency</strong>, <strong>throughput</strong>, and <strong>memory footprint</strong>. Batching helps throughput but can hurt latency. Longer contexts improve answer quality but blow up KV cache. Lower precision shrinks memory but may cost some accuracy. Serving is mostly about choosing where to spend pain.',
+        why:
+          'Interview answers sound much stronger when they acknowledge that deployment is a resource allocation problem, not just a model-quality problem.',
+        interview:
+          'The concise answer is: <em>serving is a systems tradeoff between memory, latency, throughput, and quality under a real workload.</em>',
+        details: [
+          'First-token latency and total completion latency matter differently depending on the product surface.',
+          'For long-context workloads, KV-cache memory can dominate even if the weights themselves are already quantized.',
+        ],
+        code: {
+          title: 'Code sketch',
+          lang: 'python',
+          snippet:
+            'effective_batch = scheduler.merge(requests)\nlatency = model.forward(effective_batch, kv_cache)\nthroughput = tokens_served / wall_clock_time',
+        },
+        quiz: {
+          prompt: 'What usually happens when you increase batch size to improve throughput?',
+          options: [
+            {
+              text: 'Throughput often rises, but per-request latency can also rise because requests wait to be grouped',
+              correct: true,
+              explanation: 'Exactly. Batching is a throughput win that can still hurt latency-sensitive products.',
+            },
+            {
+              text: 'Memory usage always falls because the GPU is used more efficiently',
+              correct: false,
+              explanation: 'No. Larger effective batches often increase active memory pressure.',
+            },
+            {
+              text: 'Quantization becomes unnecessary',
+              correct: false,
+              explanation: 'Not at all. Quantization and batching solve different parts of the serving problem.',
+            },
+          ],
+        },
+        viz: 'serving-tradeoffs',
+        controls: [
+          { key: 'batch', label: 'Batching aggressiveness', min: 0.08, max: 0.98, step: 0.01, value: 0.44, format: 'percent' },
+          { key: 'context', label: 'Context length pressure', min: 0.1, max: 0.98, step: 0.01, value: 0.56, format: 'percent' },
+          { key: 'precision', label: 'Precision budget', min: 0.1, max: 0.98, step: 0.01, value: 0.62, format: 'percent' },
+        ],
+        presets: [
+          { label: 'Low-latency chat', values: { batch: 0.16, context: 0.38, precision: 0.74 } },
+          { label: 'Balanced service', values: { batch: 0.44, context: 0.56, precision: 0.62 } },
+          { label: 'Throughput-heavy backend', values: { batch: 0.82, context: 0.74, precision: 0.34 } },
+        ],
+      },
+    ],
+  },
+  rl: {
+    navMeta: 'chapter 15 / reinforcement learning',
+    eyebrow: 'Reinforcement Learning',
+    title: 'RL gets less mystical once you see it as learning from delayed consequences instead of labeled answers.',
+    lede:
+      'This chapter rebuilds reinforcement learning from the environment loop upward: states, actions, rewards, returns, TD learning, Q-learning, DQN, and the exploration tradeoffs that make online learning hard in practice.',
+    sections: [
+      {
+        id: 'mdp',
+        nav: 'MDP',
+        label: 'Concept 01',
+        title: 'Markov decision process: the environment is a loop, not a labeled dataset',
+        summary:
+          'In RL, the model does not just predict on a fixed dataset. It acts, changes the future data it will see, and only later discovers whether that action was good.',
+        what:
+          'The cleanest mental model is a loop: the agent sees a <strong>state</strong>, chooses an <strong>action</strong>, receives a <strong>reward</strong>, and lands in a <strong>next state</strong>. The Markov part means the current state should contain the information needed for good decisions, rather than requiring the full history.',
+        why:
+          'This is the conceptual jump from supervised learning. The model is not only estimating labels; it is participating in a system whose future observations depend on what it does now.',
+        interview:
+          'The sentence worth remembering is: <em>an MDP models sequential decision-making where actions influence future states and future rewards.</em>',
+        details: [
+          'If the state is missing important context, the process is no longer really Markov from the agent’s point of view.',
+          'A reward can arrive much later than the action that caused it, which is the root of the credit-assignment problem.',
+        ],
+        math: {
+          title: 'Environment loop',
+          formula: 's_t \\xrightarrow{a_t} r_{t+1}, s_{t+1}',
+          note: 'Read it as: from state s_t, the agent chooses action a_t, then receives reward r_{t+1} and moves to state s_{t+1}.',
+        },
+        code: {
+          title: 'Code sketch',
+          lang: 'python',
+          snippet:
+            'state = env.reset()\nfor t in range(horizon):\n    action = policy(state)\n    next_state, reward, done, _ = env.step(action)\n    state = next_state\n    if done:\n        break',
+        },
+        quiz: {
+          prompt: 'What makes RL different from standard supervised learning at the data-collection level?',
+          options: [
+            {
+              text: 'The agent’s actions change which future states and rewards it will observe',
+              correct: true,
+              explanation: 'Exactly. The policy affects the future data distribution, which is a huge conceptual difference from fixed supervised datasets.',
+            },
+            {
+              text: 'RL never uses rewards as a training signal',
+              correct: false,
+              explanation: 'No. Rewards are the central learning signal; they are just delayed and noisier than labels.',
+            },
+            {
+              text: 'States are always images while supervised learning uses tables',
+              correct: false,
+              explanation: 'Not at all. States can be anything from vectors to text to images.',
+            },
+          ],
+        },
+        viz: 'mdp',
+        controls: [
+          { key: 'rewardDelay', label: 'Reward delay', min: 0.1, max: 0.95, step: 0.01, value: 0.46, format: 'percent' },
+          { key: 'stochasticity', label: 'Environment uncertainty', min: 0.05, max: 0.95, step: 0.01, value: 0.34, format: 'percent' },
+        ],
+        presets: [
+          { label: 'Immediate feedback', values: { rewardDelay: 0.14, stochasticity: 0.18 } },
+          { label: 'Typical delayed reward', values: { rewardDelay: 0.46, stochasticity: 0.34 } },
+          { label: 'Long noisy horizon', values: { rewardDelay: 0.82, stochasticity: 0.76 } },
+        ],
+      },
+      {
+        id: 'value-functions',
+        nav: 'Value',
+        label: 'Concept 02',
+        title: 'Return and value: good actions are the ones that make future reward look better',
+        summary:
+          'The point of RL is not to chase the next reward only. It is to choose actions that improve the total discounted return over time.',
+        what:
+          'The <strong>return</strong> is the total future reward, usually discounted so that near-term outcomes count more than far-away ones. A <strong>value function</strong> predicts that return from a state, while an <strong>action-value</strong> function predicts it from a state-action pair.',
+        why:
+          'This is how RL stops being greedy. The action with the best immediate reward may still be terrible if it traps the agent in bad future states.',
+        interview:
+          'The compact line is: <em>value functions summarize expected future return, not just immediate reward.</em>',
+        details: [
+          'Discounting with γ is partly mathematical convenience and partly a way of expressing how much the future should matter.',
+          'Q-values are often easier to use directly for control because they score actions, not just states.',
+        ],
+        math: {
+          title: 'Return and value',
+          formula: [
+            'G_t = r_{t+1} + \\gamma r_{t+2} + \\gamma^2 r_{t+3} + \\cdots',
+            'V^{\\pi}(s) = \\mathbb{E}[G_t \\mid s_t = s]',
+            'Q^{\\pi}(s, a) = \\mathbb{E}[G_t \\mid s_t = s, a_t = a]',
+          ],
+          note: 'Return is the future reward stream. Value functions are expectations of that return under a policy.',
+        },
+        code: {
+          title: 'Code sketch',
+          lang: 'python',
+          snippet:
+            'G = 0.0\nfor reward in reversed(rewards):\n    G = reward + gamma * G',
+        },
+        quiz: {
+          prompt: 'Why can an action with small immediate reward still be optimal?',
+          options: [
+            {
+              text: 'Because it may lead to states with much better future return',
+              correct: true,
+              explanation: 'Exactly. RL optimizes long-run return, not just immediate payoff.',
+            },
+            {
+              text: 'Because discounting makes future rewards always larger',
+              correct: false,
+              explanation: 'No. Discounting usually makes future rewards count less, not more.',
+            },
+            {
+              text: 'Because value functions ignore rewards and only track state transitions',
+              correct: false,
+              explanation: 'Value functions are explicitly about expected rewards over time.',
+            },
+          ],
+        },
+        viz: 'value-functions',
+        controls: [
+          { key: 'gamma', label: 'Discount factor', min: 0.1, max: 0.99, step: 0.01, value: 0.88, format: 'percent' },
+          { key: 'futureBonus', label: 'Future payoff', min: 0.1, max: 0.95, step: 0.01, value: 0.64, format: 'percent' },
+        ],
+        presets: [
+          { label: 'Short horizon', values: { gamma: 0.32, futureBonus: 0.66 } },
+          { label: 'Balanced horizon', values: { gamma: 0.88, futureBonus: 0.64 } },
+          { label: 'Long horizon', values: { gamma: 0.97, futureBonus: 0.82 } },
+        ],
+      },
+      {
+        id: 'td-learning',
+        nav: 'TD',
+        label: 'Concept 03',
+        title: 'Temporal difference learning: update from one real reward plus one estimated future',
+        summary:
+          'TD learning avoids waiting until the whole episode is over. It bootstraps by combining the observed immediate reward with the current estimate of the next state.',
+        what:
+          'The key idea is <strong>bootstrapping</strong>: instead of waiting for the full final return, you use today’s reward plus your current guess about tomorrow. That makes learning online and incremental, even though it also means you are learning partly from your own imperfect estimates.',
+        why:
+          'This is one of the core ideas that powers modern RL. Without TD-style updates, many RL problems would learn far too slowly from long trajectories.',
+        interview:
+          'The useful phrase is: <em>TD learning updates toward a target that mixes one-step evidence with a bootstrapped value estimate.</em>',
+        details: [
+          'Monte Carlo waits for complete returns; TD updates early using partial information.',
+          'The TD error tells you whether the current estimate was too optimistic or too pessimistic.',
+        ],
+        math: {
+          title: 'TD update',
+          formula: [
+            '\\delta_t = r_{t+1} + \\gamma V(s_{t+1}) - V(s_t)',
+            'V(s_t) \\leftarrow V(s_t) + \\alpha \\delta_t',
+          ],
+          note: 'The TD error is the surprise. The update moves the old estimate in the direction of that surprise.',
+        },
+        code: {
+          title: 'Code sketch',
+          lang: 'python',
+          snippet:
+            'td_error = reward + gamma * V[next_state] - V[state]\nV[state] += alpha * td_error',
+        },
+        quiz: {
+          prompt: 'What is the main benefit of TD learning over waiting for full returns?',
+          options: [
+            {
+              text: 'It can update online from partial experience instead of waiting for the episode to finish',
+              correct: true,
+              explanation: 'Exactly. That is the practical power of bootstrapping.',
+            },
+            {
+              text: 'It removes the need for a learning rate',
+              correct: false,
+              explanation: 'No. TD updates still need a step size.',
+            },
+            {
+              text: 'It guarantees an unbiased target at every step',
+              correct: false,
+              explanation: 'No. Bootstrapping introduces bias because part of the target is estimated.',
+            },
+          ],
+        },
+        viz: 'td-learning',
+        controls: [
+          { key: 'alpha', label: 'Learning rate', min: 0.05, max: 0.95, step: 0.01, value: 0.34, format: 'percent' },
+          { key: 'gamma', label: 'Discount factor', min: 0.1, max: 0.99, step: 0.01, value: 0.86, format: 'percent' },
+        ],
+        presets: [
+          { label: 'Small cautious step', values: { alpha: 0.12, gamma: 0.82 } },
+          { label: 'Balanced TD', values: { alpha: 0.34, gamma: 0.86 } },
+          { label: 'Aggressive update', values: { alpha: 0.78, gamma: 0.92 } },
+        ],
+      },
+      {
+        id: 'q-learning',
+        nav: 'Q-Learning',
+        label: 'Concept 04',
+        title: 'Q-learning: learn action values by backing up from the best next action',
+        summary:
+          'Q-learning updates one state-action estimate toward the immediate reward plus the best value available in the next state.',
+        what:
+          'The useful picture is a table of action values. Each time the agent acts, it revises one cell using the reward it saw plus the best-looking option in the next state. That <strong>max over next actions</strong> is what makes Q-learning an off-policy control method.',
+        why:
+          'This is one of the most reusable RL algorithms to understand in interviews because it directly connects exploration, bootstrapping, and control.',
+        interview:
+          'The crisp line is: <em>Q-learning learns action values off-policy by updating toward reward plus the max next-state Q-value.</em>',
+        details: [
+          'Because it uses the best next action in the target, Q-learning can learn a greedy policy even while the behavior policy is still exploring.',
+          'The same bootstrapping idea from TD learning is still there, just applied to action values instead of state values.',
+        ],
+        math: {
+          title: 'Q-learning update',
+          formula: 'Q(s,a) \\leftarrow Q(s,a) + \\alpha \\left[r + \\gamma \\max_{a\\prime} Q(s\\prime, a\\prime) - Q(s,a)\\right]',
+          note: 'One cell in the Q-table is nudged toward a target built from the observed reward plus the best estimated next action.',
+        },
+        code: {
+          title: 'Code sketch',
+          lang: 'python',
+          snippet:
+            'target = reward + gamma * np.max(Q[next_state])\nQ[state, action] += alpha * (target - Q[state, action])',
+        },
+        quiz: {
+          prompt: 'Why is Q-learning called off-policy?',
+          options: [
+            {
+              text: 'Because the update target uses the best next action, even if the behavior policy did something more exploratory',
+              correct: true,
+              explanation: 'Exactly. The learning target is about the greedy next action, not necessarily the action the behavior policy would sample.',
+            },
+            {
+              text: 'Because it never needs to interact with the environment',
+              correct: false,
+              explanation: 'No. It still learns from environment transitions.',
+            },
+            {
+              text: 'Because it only works with offline datasets',
+              correct: false,
+              explanation: 'That is not what off-policy means here.',
+            },
+          ],
+        },
+        viz: 'q-learning',
+        controls: [
+          { key: 'reward', label: 'Immediate reward', min: -1.0, max: 1.0, step: 0.05, value: 0.45, format: 'decimal2' },
+          { key: 'nextBest', label: 'Best next Q', min: 0.0, max: 1.2, step: 0.05, value: 0.75, format: 'decimal2' },
+          { key: 'alpha', label: 'Learning rate', min: 0.05, max: 0.95, step: 0.01, value: 0.32, format: 'percent' },
+        ],
+        presets: [
+          { label: 'Bad immediate, good future', values: { reward: -0.3, nextBest: 1.0, alpha: 0.28 } },
+          { label: 'Balanced backup', values: { reward: 0.45, nextBest: 0.75, alpha: 0.32 } },
+          { label: 'Big positive surprise', values: { reward: 0.9, nextBest: 0.55, alpha: 0.62 } },
+        ],
+      },
+      {
+        id: 'dqn',
+        nav: 'DQN',
+        label: 'Concept 05',
+        title: 'DQN: replace the Q-table with a neural approximator, then stabilize the updates',
+        summary:
+          'When the state space is too large for a table, DQN uses a neural network to predict Q-values. But that makes learning less stable, so replay buffers and target networks become crucial.',
+        what:
+          'The two stabilizers to remember are <strong>experience replay</strong> and a <strong>target network</strong>. Replay breaks up highly correlated online experience by sampling shuffled past transitions. The target network keeps the bootstrap target from chasing a moving network every single step.',
+        why:
+          'This is the bridge from tabular RL to deep RL. It explains why naive “just replace the table with a neural net” usually behaves badly without extra machinery.',
+        interview:
+          'The reliable sentence is: <em>DQN approximates Q-values with a neural network and stabilizes training with replay and target networks.</em>',
+        details: [
+          'Replay is a data-distribution fix as much as a sample-efficiency trick.',
+          'Target networks reduce the feedback loop where the same network defines both the prediction and the target.',
+        ],
+        math: {
+          title: 'DQN loss',
+          formula: '\\mathcal{L}(\\theta) = \\left(r + \\gamma \\max_{a\\prime} Q_{\\theta^-}(s\\prime, a\\prime) - Q_{\\theta}(s,a)\\right)^2',
+          note: 'The live network predicts. The slower target network defines the bootstrap target.',
+        },
+        code: {
+          title: 'Code sketch',
+          lang: 'python',
+          snippet:
+            'target = reward + gamma * target_net(next_state).max()\npred = online_net(state)[action]\nloss = (target - pred) ** 2',
+        },
+        quiz: {
+          prompt: 'Why does DQN use a separate target network?',
+          options: [
+            {
+              text: 'To make the bootstrap target move more slowly and reduce feedback instability',
+              correct: true,
+              explanation: 'Exactly. A stable-ish target is easier to chase than one that changes every update.',
+            },
+            {
+              text: 'To avoid storing replay data',
+              correct: false,
+              explanation: 'No. Replay and target networks solve different stability problems.',
+            },
+            {
+              text: 'Because the online network cannot predict Q-values directly',
+              correct: false,
+              explanation: 'It can. The target network is there for stability, not capability.',
+            },
+          ],
+        },
+        viz: 'dqn',
+        controls: [
+          { key: 'replay', label: 'Replay coverage', min: 0.1, max: 0.95, step: 0.01, value: 0.68, format: 'percent' },
+          { key: 'targetLag', label: 'Target lag', min: 0.05, max: 0.95, step: 0.01, value: 0.42, format: 'percent' },
+        ],
+        presets: [
+          { label: 'Naive online updates', values: { replay: 0.12, targetLag: 0.08 } },
+          { label: 'Stable DQN', values: { replay: 0.68, targetLag: 0.42 } },
+          { label: 'Very slow target', values: { replay: 0.84, targetLag: 0.82 } },
+        ],
+      },
+      {
+        id: 'exploration',
+        nav: 'Explore',
+        label: 'Concept 06',
+        title: 'Exploration versus exploitation: you need enough randomness to discover better actions before you can commit',
+        summary:
+          'If you exploit too early, you can get trapped in a mediocre policy. If you explore forever, you waste reward. RL is always balancing those two errors.',
+        what:
+          'The easiest way to see the issue is epsilon-greedy behavior: most of the time you choose the current best-looking action, but some fraction of the time you deliberately try something else. That random exploration is expensive in the short term, but it is often the only way to discover a better long-run policy.',
+        why:
+          'This tradeoff sits under bandits, Q-learning, DQN, and modern RL systems. It is one of the most interview-friendly intuitions because it exposes why online learning is hard.',
+        interview:
+          'The line to keep is: <em>without exploration, the agent cannot discover whether its current best-looking action is actually best.</em>',
+        details: [
+          'Annealing exploration over time is common because the agent needs more discovery early than late.',
+          'Exploration is not free; in real products it can mean real user cost, latency, or risk.',
+        ],
+        code: {
+          title: 'Code sketch',
+          lang: 'python',
+          snippet:
+            'if random.random() < epsilon:\n    action = random_action()\nelse:\n    action = np.argmax(Q[state])',
+        },
+        quiz: {
+          prompt: 'What is the main failure mode of too little exploration?',
+          options: [
+            {
+              text: 'The agent may lock into a decent-looking action before it ever discovers a better one',
+              correct: true,
+              explanation: 'Exactly. Under-exploration can create confident mediocrity.',
+            },
+            {
+              text: 'The reward function stops existing',
+              correct: false,
+              explanation: 'No. The issue is not that rewards disappear, but that the agent sees too little of the action space.',
+            },
+            {
+              text: 'The value function becomes unbiased',
+              correct: false,
+              explanation: 'Not at all. Exploration level does not magically remove estimation bias.',
+            },
+          ],
+        },
+        viz: 'bandit',
+        controls: [
+          { key: 'epsilon', label: 'Explore rate', min: 0.01, max: 0.5, step: 0.01, value: 0.12, format: 'percent' },
+          { key: 'valueGap', label: 'Arm gap', min: 0.02, max: 0.4, step: 0.01, value: 0.14, format: 'decimal2' },
+        ],
+        presets: [
+          { label: 'Under-exploring', values: { epsilon: 0.03, valueGap: 0.08 } },
+          { label: 'Balanced search', values: { epsilon: 0.12, valueGap: 0.14 } },
+          { label: 'Too random', values: { epsilon: 0.34, valueGap: 0.24 } },
+        ],
+      },
+    ],
+  },
   metrics: {
-    navMeta: 'chapter 06 / metrics and calibration',
+    navMeta: 'chapter 08 / metrics and calibration',
     eyebrow: 'Metrics And Calibration',
     title: 'A model score is only useful if you know how to read it.',
     lede:
@@ -1632,7 +2724,7 @@ const chapters = {
     ],
   },
   systems: {
-    navMeta: 'chapter 08 / retrieval and systems',
+    navMeta: 'chapter 10 / retrieval and systems',
     eyebrow: 'Retrieval And Systems',
     title: 'Recommendation and search become simpler once you separate stages.',
     lede:
@@ -1757,7 +2849,7 @@ const chapters = {
     ],
   },
   generative: {
-    navMeta: 'chapter 12 / generation and decision-making',
+    navMeta: 'chapter 14 / generation and decision-making',
     eyebrow: 'Generation And Decision-Making',
     title: 'Sampling and action selection are easier to read once you see the tradeoff.',
     lede:
@@ -1888,7 +2980,7 @@ const chapters = {
     ],
   },
   recommendation: {
-    navMeta: 'chapter 07 / recommendation depth',
+    navMeta: 'chapter 09 / recommendation depth',
     eyebrow: 'Recommendation Depth',
     title: 'Modern recommenders work because different signals take turns carrying the job.',
     lede:
@@ -2040,7 +3132,7 @@ const chapters = {
     ],
   },
   classical: {
-    navMeta: 'chapter 02 / classical ml and statistics',
+    navMeta: 'chapter 03 / classical ml and statistics',
     eyebrow: 'Classical ML And Stats',
     title: 'A lot of ML questions are really statistics questions in disguise.',
     lede:
@@ -2198,7 +3290,7 @@ const chapters = {
     ],
   },
   production: {
-    navMeta: 'chapter 09 / production ml systems',
+    navMeta: 'chapter 11 / production ml systems',
     eyebrow: 'Production ML Systems',
     title: 'Good offline models still fail when the surrounding system lies to them.',
     lede:
@@ -2345,7 +3437,7 @@ const chapters = {
     ],
   },
   gbdt: {
-    navMeta: 'chapter 10 / gbdts and tabular learning',
+    navMeta: 'chapter 12 / gbdts and tabular learning',
     eyebrow: 'GBDTs And Tabular ML',
     title: 'Tabular models win by making many small, useful corrections.',
     lede:
@@ -2450,7 +3542,7 @@ const chapters = {
     ],
   },
   'data-features': {
-    navMeta: 'chapter 11 / data and features',
+    navMeta: 'chapter 13 / data and features',
     eyebrow: 'Data And Features',
     title: 'Many bad models are really bad datasets with good branding.',
     lede:
@@ -2550,7 +3642,7 @@ const chapters = {
     ],
   },
   'alignment-depth': {
-    navMeta: 'chapter 13 / generative and alignment depth',
+    navMeta: 'chapter 16 / generative and alignment depth',
     eyebrow: 'Alignment Depth',
     title: 'Good generation is not just about quality; it is about steering and not gaming the wrong objective.',
     lede:
@@ -2728,6 +3820,34 @@ const chapterGuides = {
       },
     ],
   },
+  'linear-algebra': {
+    resources: [
+      {
+        kind: 'Video',
+        title: '3Blue1Brown: Essence of linear algebra',
+        url: 'https://www.youtube.com/playlist?list=PLZHQObOWTQDMsr9K-rj53DwVRMYO3t5Yr',
+        source: '3Blue1Brown',
+      },
+      {
+        kind: 'Video',
+        title: 'StatQuest: Singular value decomposition',
+        url: 'https://www.youtube.com/watch?v=P5mlg91as1c',
+        source: 'StatQuest',
+      },
+      {
+        kind: 'Course',
+        title: 'MIT 18.06: Linear algebra with Gilbert Strang',
+        url: 'https://ocw.mit.edu/courses/18-06-linear-algebra-spring-2010/',
+        source: 'MIT OpenCourseWare',
+      },
+      {
+        kind: 'Video',
+        title: 'StatQuest: PCA, step-by-step',
+        url: 'https://www.youtube.com/watch?v=FgakZw6K1QQ',
+        source: 'StatQuest',
+      },
+    ],
+  },
   'neural-basics': {
     route: 'Best first stop if neural networks still feel like a bundle of terms instead of one coherent mechanism.',
     prerequisites: 'Foundations and a little algebra help, but this chapter is meant to be approachable on its own.',
@@ -2860,6 +3980,62 @@ const chapterGuides = {
         title: 'FlashAttention',
         url: 'https://arxiv.org/abs/2205.14135',
         source: 'Dao et al.',
+      },
+    ],
+  },
+  adaptation: {
+    resources: [
+      {
+        kind: 'Paper',
+        title: 'LoRA: Low-Rank Adaptation of Large Language Models',
+        url: 'https://arxiv.org/abs/2106.09685',
+        source: 'Hu et al.',
+      },
+      {
+        kind: 'Paper',
+        title: 'QLoRA: Efficient Finetuning of Quantized LLMs',
+        url: 'https://arxiv.org/abs/2305.14314',
+        source: 'Dettmers et al.',
+      },
+      {
+        kind: 'Paper',
+        title: 'Distilling the Knowledge in a Neural Network',
+        url: 'https://arxiv.org/abs/1503.02531',
+        source: 'Hinton et al.',
+      },
+      {
+        kind: 'Paper',
+        title: 'Efficient Memory Management for Large Language Model Serving with PagedAttention',
+        url: 'https://arxiv.org/abs/2309.06180',
+        source: 'Kwon et al.',
+      },
+    ],
+  },
+  rl: {
+    resources: [
+      {
+        kind: 'Book',
+        title: 'Reinforcement Learning: An Introduction',
+        url: 'http://incompleteideas.net/book/the-book-2nd.html',
+        source: 'Sutton and Barto',
+      },
+      {
+        kind: 'Course',
+        title: 'David Silver: Reinforcement Learning',
+        url: 'https://www.youtube.com/playlist?list=PLqYmG7hTraZBKeNJ-JE_eyJHZ7XgBoAyb',
+        source: 'DeepMind / UCL',
+      },
+      {
+        kind: 'Paper',
+        title: 'Playing Atari with Deep Reinforcement Learning',
+        url: 'https://arxiv.org/abs/1312.5602',
+        source: 'Mnih et al.',
+      },
+      {
+        kind: 'Course',
+        title: 'Berkeley CS285: Deep RL',
+        url: 'https://rail.eecs.berkeley.edu/deeprlcourse/',
+        source: 'Berkeley CS285',
       },
     ],
   },
@@ -3197,6 +4373,78 @@ const formulaAnnotations = {
     ['H(p, q)', 'the surprise you pay when the world follows p but your model predicts q', 'if spam is usually rare but your classifier is confidently wrong, cross-entropy rises.'],
     ['KL(p \\parallel q)', 'the extra cost caused purely by your model being mismatched to reality', 'if the true class probability is 0.7 and your model says 0.2, this mismatch penalty is large.'],
     ['p(x), q(x)', 'the real probability and the model’s guessed probability for outcome x', 'p(spam)=0.7 could be the data, while q(spam)=0.2 is what your model predicted.'],
+  ],
+  vectors: [
+    ['v', 'the vector itself, holding all coordinates together as one geometric object', 'an embedding for one sentence or the gradient update for one minibatch can both be treated as vectors.'],
+    ['\\lVert v \\rVert_2', 'the Euclidean length of the vector', 'a larger gradient norm means the optimizer is proposing a larger overall step.'],
+    ['\\hat{v}', 'the normalized version of the vector with length 1', 'cosine similarity usually compares unit-normalized embeddings so scale does not dominate meaning.'],
+  ],
+  'dot-products': [
+    ['u \\cdot v', 'the alignment score between the two vectors', 'a query embedding and a relevant document embedding usually have a larger dot product than a query and an unrelated chunk.'],
+    ['\\lVert u \\rVert, \\lVert v \\rVert', 'the lengths of the two vectors', 'if you double one vector’s magnitude without changing its direction, the raw dot product also doubles.'],
+    ['\\theta', 'the angle between the vectors', 'two embeddings pointing in nearly the same direction have a small θ and high cosine similarity.'],
+  ],
+  'matrix-multiply': [
+    ['x', 'the input vector before the transform', 'this could be one hidden state entering a linear layer.'],
+    ['A', 'the matrix representing the learned linear map', 'in a neural network layer, A contains the weights that mix the incoming features.'],
+    ['y', 'the transformed output vector', 'after the layer mixes the inputs, y is the representation passed to the next step.'],
+  ],
+  eigen: [
+    ['A', 'the matrix or linear transform you are studying', 'this might be a covariance matrix in PCA or a graph-related operator in graph ML.'],
+    ['v', 'a direction that survives the transform without bending', 'if you move data along this principal direction, the output stays on the same line.'],
+    ['\\lambda', 'the stretch or shrink factor along that special direction', 'a large λ means the transform amplifies variation along that axis.'],
+  ],
+  svd: [
+    ['U', 'the output-side rotation that orients the final result', 'after stretching, U can tilt the ellipse into the final direction you observe.'],
+    ['\\Sigma', 'the diagonal matrix of singular values that stretches each orthogonal axis', 'if one singular value is much bigger than the others, most of the useful structure lies along one dominant direction.'],
+    ['V^T', 'the input-side rotation that aligns the original coordinates to the special stretch axes', 'before the stretch happens, V^T turns the input so the important directions line up with the diagonal scaling.'],
+    ['A_k', 'the low-rank approximation that keeps only the top singular directions', 'in recommender systems or compression, rank-1 or rank-k structure can keep most of the signal while discarding weaker detail.'],
+  ],
+  lora: [
+    ['W', 'the frozen base weight matrix that already contains the pre-trained knowledge', 'think of this as the original linear layer inside the model that you do not want to rewrite for every new task.'],
+    ['\\Delta W', 'the task-specific correction learned during adaptation', 'for a customer-support adapter, this is the small learned change that nudges the model toward that style and domain.'],
+    ['B A', 'the low-rank factorization of the adapter update', 'instead of learning one huge dense matrix, LoRA learns two skinny matrices whose product approximates the useful correction.'],
+    ['W^{\\prime}', 'the effective adapted weight used at inference time', 'the model behaves as if it had updated weights, even though the large base matrix stayed frozen.'],
+  ],
+  quantization: [
+    ['x', 'the original real-valued weight or activation before quantization', 'a floating-point weight like 0.137 in the original model checkpoint.'],
+    ['s', 'the scale used to map real values into discrete buckets', 'if one layer has a wider numeric range, it may need a different scale than another layer.'],
+    ['q', 'the integer bucket index after rounding', 'in 8-bit quantization, q might be one of only 256 representable values.'],
+    ['\\hat{x}', 'the reconstructed approximate value after dequantization', 'the model does not get the exact original weight back, only a close approximation.'],
+  ],
+  distillation: [
+    ['\\alpha', 'the weight balancing hard-label supervision versus teacher imitation', 'a larger α means you trust the ground-truth labels more than the teacher behavior.'],
+    ['\\mathcal{L}_{hard}', 'the ordinary supervised loss on the student', 'for classification, this could be the usual cross-entropy against the true label.'],
+    ['T', 'the temperature that softens the teacher and student distributions', 'higher T makes the teacher reveal more of its uncertainty over near-miss classes.'],
+    ['KL(p_T^{teacher} \\parallel p_T^{student})', 'the mismatch between the teacher and student soft distributions', 'if the teacher thinks “cat” and “fox” are close but the student does not, this term stays high.'],
+  ],
+  mdp: [
+    ['s_t', 'the current state the agent observes before acting', 'in a game, this could be the current board position or screen frame.'],
+    ['a_t', 'the action chosen in that state', 'move left, accelerate, recommend an item, or place a bid.'],
+    ['r_{t+1}', 'the reward observed after taking that action', 'the agent might get +1 for success, 0 for neutral, or a penalty for a mistake.'],
+    ['s_{t+1}', 'the next state reached after the action', 'after moving, the environment changes and the agent sees a new situation.'],
+  ],
+  'value-functions': [
+    ['G_t', 'the discounted future return starting at time t', 'if rewards over the next steps are 1, 1, and 1, the return depends on how strongly γ discounts those later rewards.'],
+    ['\\gamma', 'the discount factor telling you how much the future matters', 'γ close to 1 means long-term rewards matter a lot; γ small means the agent is much more short-sighted.'],
+    ['V^{\\pi}(s)', 'the expected return from state s under policy π', 'how good this state is if you keep following the current policy from here onward.'],
+    ['Q^{\\pi}(s,a)', 'the expected return from taking action a in state s, then following policy π', 'how good “move left now” is in this state if you continue with the current policy afterwards.'],
+  ],
+  'td-learning': [
+    ['\\delta_t', 'the temporal-difference error or one-step surprise', 'if the reward plus next-state estimate is much better than expected, δ is positive and the current value was too low.'],
+    ['\\alpha', 'the learning rate that controls how hard you chase the TD target', 'small α changes values cautiously; large α reacts strongly to each new transition.'],
+    ['r_{t+1} + \\gamma V(s_{t+1})', 'the bootstrapped target mixing one real reward with one estimated future value', 'you observed one reward now, then rely on your current guess about how good the next state is.'],
+  ],
+  'q-learning': [
+    ['Q(s,a)', 'the current estimate of how good action a is in state s', 'in a grid world, this could be the value of moving right from one particular cell.'],
+    ['\\max_{a\\prime} Q(s\\prime, a\\prime)', 'the best-looking action value in the next state', 'after stepping into the next cell, this term asks what the strongest next move currently looks like.'],
+    ['\\alpha', 'the step size for revising the chosen state-action pair', 'higher α makes one surprising transition move the Q-table faster.'],
+  ],
+  dqn: [
+    ['Q_{\\theta}(s,a)', 'the online network prediction for the chosen action', 'the current neural net’s guess for how good “jump” is in the current Atari frame.'],
+    ['Q_{\\theta^-}(s\\prime, a\\prime)', 'the slower target-network estimate used in the bootstrap target', 'a lagged copy of the network keeps the target from changing too chaotically every update.'],
+    ['\\theta', 'the parameters of the online Q-network being trained', 'these weights are updated every optimization step.'],
+    ['\\theta^-', 'the parameters of the target network updated more slowly', 'every so often the target net is synced from the online net to stabilize learning.'],
   ],
   neuron: [
     ['x_1, x_2', 'the input features arriving at the neuron', 'For example: one input might represent the presence of a keyword and another the strength of a user signal.'],
@@ -3596,45 +4844,55 @@ function renderSectionMarkup(section) {
       </div>
       <div class="concept-column">
         <section class="viz-panel" data-viz="${section.viz}">
-          <div class="preset-row">
-            ${section.presets
-              .map(
-                (preset, index) =>
-                  `<button class="preset-button${index === 1 || (index === 0 && section.presets.length === 1) ? ' active' : ''}" type="button" data-preset='${JSON.stringify(
-                    preset.values
-                  )}'>${preset.label}</button>`
-              )
-              .join('')}
+          <div class="viz-toolbar">
+            <span class="viz-toolbar-label">Interactive visualization</span>
+            <button type="button" class="viz-expand-button" aria-expanded="false">Expand view</button>
           </div>
-          <div class="control-row">
-            ${section.controls
-              .map(
-                (control) => `
-                <div class="control-group">
-                  <label for="${section.id}-${control.key}">
-                    <span>${control.label}</span>
-                    <span data-value="${control.key}">${formatValue(control.value, control.format)}</span>
-                  </label>
-                  <input
-                    id="${section.id}-${control.key}"
-                    type="range"
-                    min="${control.min}"
-                    max="${control.max}"
-                    step="${control.step}"
-                    value="${control.value}"
-                    data-key="${control.key}"
-                    data-format="${control.format}"
-                  >
-                </div>
-              `
-              )
-              .join('')}
-          </div>
-          <canvas class="viz-canvas" width="740" height="360"></canvas>
-          <div class="lab-readout">
-            <strong class="takeaway-label">Current read</strong>
-            <div class="takeaway-line" data-role="takeaway"></div>
-            <div class="metric-row" data-role="metrics"></div>
+          <div class="viz-shell">
+            <div class="viz-support">
+              <div class="preset-row">
+                ${section.presets
+                  .map(
+                    (preset, index) =>
+                      `<button class="preset-button${index === 1 || (index === 0 && section.presets.length === 1) ? ' active' : ''}" type="button" data-preset='${JSON.stringify(
+                        preset.values
+                      )}'>${preset.label}</button>`
+                  )
+                  .join('')}
+              </div>
+              <div class="control-row">
+                ${section.controls
+                  .map(
+                    (control) => `
+                    <div class="control-group">
+                      <label for="${section.id}-${control.key}">
+                        <span>${control.label}</span>
+                        <span data-value="${control.key}">${formatValue(control.value, control.format)}</span>
+                      </label>
+                      <input
+                        id="${section.id}-${control.key}"
+                        type="range"
+                        min="${control.min}"
+                        max="${control.max}"
+                        step="${control.step}"
+                        value="${control.value}"
+                        data-key="${control.key}"
+                        data-format="${control.format}"
+                      >
+                    </div>
+                  `
+                  )
+                  .join('')}
+              </div>
+            </div>
+            <div class="viz-stage" tabindex="0" role="button" aria-label="Expand visualization">
+              <canvas class="viz-canvas" width="740" height="360"></canvas>
+            </div>
+            <div class="lab-readout">
+              <strong class="takeaway-label">Current read</strong>
+              <div class="takeaway-line" data-role="takeaway"></div>
+              <div class="metric-row" data-role="metrics"></div>
+            </div>
           </div>
         </section>
       </div>
@@ -3747,7 +5005,9 @@ function renderQuizTool(section) {
 
 function mountVisualization(card, section) {
   const panel = card.querySelector('.viz-panel');
+  const stage = panel.querySelector('.viz-stage');
   const canvas = panel.querySelector('canvas');
+  const expandButton = panel.querySelector('.viz-expand-button');
   const inputs = Array.from(panel.querySelectorAll('input'));
   const valueLabels = Object.fromEntries(
     inputs.map((input) => [input.dataset.key, panel.querySelector(`[data-value="${input.dataset.key}"]`)])
@@ -3769,6 +5029,33 @@ function mountVisualization(card, section) {
     });
   }
 
+  function setExpanded(nextExpanded) {
+    const openPanel = document.querySelector('.viz-panel.is-expanded');
+    if (nextExpanded && openPanel && openPanel !== panel) {
+      openPanel.classList.remove('is-expanded');
+      const openButton = openPanel.querySelector('.viz-expand-button');
+      const openStage = openPanel.querySelector('.viz-stage');
+      if (openButton) {
+        openButton.textContent = 'Expand view';
+        openButton.setAttribute('aria-expanded', 'false');
+      }
+      if (openStage) openStage.setAttribute('aria-label', 'Expand visualization');
+    }
+
+    panel.classList.toggle('is-expanded', nextExpanded);
+    if (expandButton) {
+      expandButton.textContent = nextExpanded ? 'Close view' : 'Expand view';
+      expandButton.setAttribute('aria-expanded', nextExpanded ? 'true' : 'false');
+    }
+    if (stage) {
+      stage.setAttribute('aria-label', nextExpanded ? 'Expanded visualization' : 'Expand visualization');
+    }
+    document.body.classList.toggle('viz-expanded-open', !!document.querySelector('.viz-panel.is-expanded'));
+    requestAnimationFrame(render);
+  }
+
+  panel.__setExpanded = setExpanded;
+
   function render() {
     const state = getState();
     syncLabels(state);
@@ -3776,6 +5063,11 @@ function mountVisualization(card, section) {
     const renderers = {
       bayes: drawBayes,
       entropy: drawEntropy,
+      vectors: drawVectors,
+      'dot-products': drawDotProducts,
+      'matrix-multiply': drawMatrixMultiply,
+      eigen: drawEigen,
+      svd: drawSvd,
       neuron: drawNeuron,
       'activation-basics': drawActivationBasics,
       'output-functions': drawOutputFunctions,
@@ -3794,9 +5086,21 @@ function mountVisualization(card, section) {
       tokenization: drawTokenization,
       embeddings: drawEmbeddings,
       positional: drawPositional,
+      'transformer-block': drawTransformerBlock,
       attention: drawAttention,
       'kv-cache': drawKvCache,
       rag: drawRag,
+      'pretrain-finetune': drawPretrainFineTune,
+      peft: drawPeft,
+      lora: drawLora,
+      quantization: drawQuantization,
+      distillation: drawDistillation,
+      'serving-tradeoffs': drawServingTradeoffs,
+      mdp: drawMdp,
+      'value-functions': drawValueFunctions,
+      'td-learning': drawTdLearning,
+      'q-learning': drawQLearning,
+      dqn: drawDqn,
       'threshold-metrics': drawThresholdMetrics,
       calibration: drawCalibration,
       'ranking-metrics': drawRankingMetrics,
@@ -3843,6 +5147,22 @@ function mountVisualization(card, section) {
     observer.observe(canvas);
   }
 
+  if (expandButton) {
+    expandButton.addEventListener('click', () => setExpanded(!panel.classList.contains('is-expanded')));
+  }
+
+  if (stage) {
+    stage.addEventListener('click', () => {
+      if (!panel.classList.contains('is-expanded')) setExpanded(true);
+    });
+    stage.addEventListener('keydown', (event) => {
+      if ((event.key === 'Enter' || event.key === ' ') && !panel.classList.contains('is-expanded')) {
+        event.preventDefault();
+        setExpanded(true);
+      }
+    });
+  }
+
   const activePreset = panel.querySelector('.preset-button.active');
   if (activePreset) {
     const values = JSON.parse(activePreset.dataset.preset);
@@ -3852,6 +5172,20 @@ function mountVisualization(card, section) {
   }
   render();
 }
+
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape') return;
+  const panel = document.querySelector('.viz-panel.is-expanded');
+  if (!panel) return;
+  if (typeof panel.__setExpanded === 'function') panel.__setExpanded(false);
+});
+
+document.addEventListener('click', (event) => {
+  const openPanel = document.querySelector('.viz-panel.is-expanded');
+  if (!openPanel) return;
+  if (event.target.closest('.viz-panel.is-expanded')) return;
+  if (typeof openPanel.__setExpanded === 'function') openPanel.__setExpanded(false);
+});
 
 function mountGeometry(card, section) {
   if (!section.geometry || section.geometry.type !== 'bayes-area') return;
@@ -4006,38 +5340,135 @@ function drawBayes(ctx, state, takeaway, metrics) {
 function drawEntropy(ctx, state, takeaway, metrics) {
   const p = state.p;
   const q = state.q;
+  const p0 = 1 - p;
+  const q0 = 1 - q;
   const entropy = binaryEntropy(p);
   const crossEntropy = binaryCrossEntropy(p, q);
   const kl = crossEntropy - entropy;
+  const trueSurprise1 = -Math.log2(clamp01(p));
+  const trueSurprise0 = -Math.log2(clamp01(p0));
+  const modelSurprise1 = -Math.log2(clamp01(q));
+  const modelSurprise0 = -Math.log2(clamp01(q0));
+  const entropyParts = [p * trueSurprise1, p0 * trueSurprise0];
 
   clearCanvas(ctx);
 
   ctx.fillStyle = '#e8e4de';
   ctx.font = '28px "EB Garamond", serif';
-  ctx.fillText('True distribution versus model distribution', 58, 62);
+  ctx.fillText('Cross-entropy is built-in uncertainty plus mismatch', 56, 58);
 
-  drawDistributionCard(ctx, 70, 108, 230, 170, 'True distribution p', p, '#6ea5c9');
-  drawDistributionCard(ctx, 332, 108, 230, 170, 'Model distribution q', q, '#c9a96e');
+  const cards = [
+    {
+      label: 'Outcome A',
+      y: 98,
+      trueProb: p,
+      modelProb: q,
+      trueSurprise: trueSurprise1,
+      modelSurprise: modelSurprise1,
+      accent: '#6ea5c9',
+    },
+    {
+      label: 'Outcome B',
+      y: 204,
+      trueProb: p0,
+      modelProb: q0,
+      trueSurprise: trueSurprise0,
+      modelSurprise: modelSurprise0,
+      accent: '#c96e8a',
+    },
+  ];
 
-  ctx.strokeStyle = 'rgba(255,255,255,0.09)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(596, 106);
-  ctx.lineTo(596, 286);
-  ctx.stroke();
+  cards.forEach((card) => {
+    ctx.fillStyle = `${card.accent}15`;
+    ctx.strokeStyle = `${card.accent}`;
+    ctx.lineWidth = 1.2;
+    roundRect(ctx, 56, card.y, 334, 86, 18, true, true);
+    ctx.fillStyle = '#8a8680';
+    ctx.font = '12px "JetBrains Mono", monospace';
+    ctx.fillText(card.label.toUpperCase(), 78, card.y + 22);
 
+    ctx.fillStyle = '#e8e4de';
+    ctx.font = '16px "EB Garamond", serif';
+    ctx.fillText('true p', 78, card.y + 50);
+    ctx.fillText('model q', 78, card.y + 74);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    roundRect(ctx, 148, card.y + 36, 122, 12, 8, true, false);
+    roundRect(ctx, 148, card.y + 60, 122, 12, 8, true, false);
+    ctx.fillStyle = '#6ea5c9';
+    roundRect(ctx, 148, card.y + 36, 122 * card.trueProb, 12, 8, true, false);
+    ctx.fillStyle = '#c9a96e';
+    roundRect(ctx, 148, card.y + 60, 122 * card.modelProb, 12, 8, true, false);
+
+    ctx.fillStyle = '#8a8680';
+    ctx.font = '11px "JetBrains Mono", monospace';
+    ctx.fillText(`${Math.round(card.trueProb * 100)}%`, 282, card.y + 47);
+    ctx.fillText(`${Math.round(card.modelProb * 100)}%`, 282, card.y + 71);
+
+    ctx.fillStyle = '#e8e4de';
+    ctx.font = '13px "EB Garamond", serif';
+    ctx.fillText(`surprise from truth: ${card.trueSurprise.toFixed(2)} bits`, 78, card.y + 104 - 18);
+    ctx.fillText(`surprise paid by model: ${card.modelSurprise.toFixed(2)} bits`, 78, card.y + 104);
+  });
+
+  ctx.fillStyle = 'rgba(255,255,255,0.04)';
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  roundRect(ctx, 426, 98, 258, 192, 22, true, true);
   ctx.fillStyle = '#8a8680';
   ctx.font = '12px "JetBrains Mono", monospace';
-  ctx.fillText('H(P)', 620, 128);
-  ctx.fillText('H(P, Q)', 620, 194);
-  ctx.fillText('KL GAP', 620, 260);
+  ctx.fillText('AVERAGE SURPRISE PER EXAMPLE', 448, 124);
+
+  const barX = 474;
+  const barBase = 258;
+  const barWidth = 70;
+  const maxBits = 1.8;
+  const totalH = (entropy / maxBits) * 124;
+  const extraH = (Math.max(0, kl) / maxBits) * 124;
+  const partScale = totalH / Math.max(entropy, 1e-6);
+  const firstPartH = entropyParts[0] * partScale;
+  const secondPartH = entropyParts[1] * partScale;
+
+  ctx.fillStyle = 'rgba(255,255,255,0.06)';
+  roundRect(ctx, barX, 124, barWidth, 134, 16, true, false);
+  ctx.fillStyle = '#6ea5c9';
+  roundRect(ctx, barX, barBase - firstPartH, barWidth, firstPartH, 16, true, false);
+  ctx.fillStyle = '#c96e8a';
+  roundRect(ctx, barX, barBase - firstPartH - secondPartH, barWidth, secondPartH, 12, true, false);
+  ctx.fillStyle = '#c9a96e';
+  roundRect(ctx, barX, barBase - totalH - extraH, barWidth, extraH, 12, true, false);
 
   ctx.fillStyle = '#e8e4de';
-  ctx.font = '34px "EB Garamond", serif';
-  ctx.fillText(entropy.toFixed(3), 620, 164);
-  ctx.fillText(crossEntropy.toFixed(3), 620, 230);
-  ctx.fillStyle = '#c9a96e';
-  ctx.fillText(kl.toFixed(3), 620, 296);
+  ctx.font = '15px "EB Garamond", serif';
+  ctx.fillText('entropy', 462, 280);
+  [
+    ['task uncertainty', entropy, '#6ea5c9'],
+    ['extra mismatch', kl, '#c9a96e'],
+    ['total cross-entropy', crossEntropy, '#e8e4de'],
+  ].forEach(([label, value, color], index) => {
+    const y = 148 + index * 38;
+    if (index < 2) {
+      ctx.fillStyle = color;
+      roundRect(ctx, 560, y - 11, 16, 10, 6, true, false);
+    }
+    ctx.fillStyle = '#8a8680';
+    ctx.font = '11px "JetBrains Mono", monospace';
+    ctx.fillText(String(label).toUpperCase(), 586, y - 2);
+    ctx.fillStyle = index === 2 ? '#e8e4de' : color;
+    ctx.font = '24px "EB Garamond", serif';
+    ctx.fillText(Number(value).toFixed(3), 586, y + 22);
+  });
+  ctx.fillStyle = '#e8e4de';
+  ctx.font = '14px "EB Garamond", serif';
+  wrapText(
+    ctx,
+    Math.abs(kl) < 0.04
+      ? 'When q matches p, the gold cap nearly disappears.'
+      : 'The gold cap is the avoidable part: it is your model mismatch.',
+    448,
+    314,
+    214,
+    18
+  );
 
   takeaway.textContent =
     Math.abs(kl) < 0.03
@@ -4860,6 +6291,121 @@ function drawPositional(ctx, state, takeaway, metrics) {
   ]);
 }
 
+function drawTransformerBlock(ctx, state, takeaway, metrics) {
+  const contextNeed = state.contextNeed;
+  const rewrite = state.rewrite;
+  const residualCarry = clamp01(0.34 + (1 - Math.abs(contextNeed - rewrite)) * 0.44);
+  const attentionGain = clamp01(0.18 + contextNeed * 0.74);
+  const mlpGain = clamp01(0.18 + rewrite * 0.72);
+
+  clearCanvas(ctx);
+
+  ctx.fillStyle = '#e8e4de';
+  ctx.font = '28px "EB Garamond", serif';
+  wrapText(ctx, 'One transformer block: mix across tokens, then rewrite each token locally', 56, 58, 600, 28);
+
+  const laneY = 182;
+  const tokenXs = [82, 130, 178];
+  tokenXs.forEach((x, index) => {
+    ctx.fillStyle = 'rgba(110,165,201,0.16)';
+    ctx.strokeStyle = '#6ea5c9';
+    roundRect(ctx, x, laneY - 22, 30, 44, 12, true, true);
+    ctx.fillStyle = '#e8e4de';
+    ctx.font = '14px "JetBrains Mono", monospace';
+    ctx.fillText(`t${index + 1}`, x + 6, laneY + 5);
+  });
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.moveTo(210, laneY);
+  ctx.lineTo(256, laneY);
+  ctx.moveTo(462, laneY);
+  ctx.lineTo(508, laneY);
+  ctx.stroke();
+
+  ctx.fillStyle = 'rgba(201,169,110,0.14)';
+  ctx.strokeStyle = '#c9a96e';
+  roundRect(ctx, 256, 110, 206, 96, 18, true, true);
+  ctx.fillStyle = '#8a8680';
+  ctx.font = '12px "JetBrains Mono", monospace';
+  ctx.fillText('SELF-ATTENTION', 278, 136);
+  ctx.fillStyle = '#e8e4de';
+  ctx.font = '18px "EB Garamond", serif';
+  wrapText(ctx, 'lets this token pull the right context from other tokens', 278, 164, 164, 20);
+
+  const arrowAlpha = 0.2 + contextNeed * 0.7;
+  [
+    [96, 170],
+    [144, 170],
+    [192, 170],
+  ].forEach(([x, y], index) => {
+    ctx.strokeStyle = `rgba(201,169,110,${arrowAlpha - index * 0.14})`;
+    ctx.lineWidth = 2.2 - index * 0.4;
+    ctx.beginPath();
+    ctx.moveTo(x + 12, y);
+    ctx.bezierCurveTo(222, 94 + index * 32, 252, 94 + index * 18, 302, 138);
+    ctx.stroke();
+  });
+
+  ctx.fillStyle = 'rgba(255,255,255,0.06)';
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  roundRect(ctx, 284, 224, 150, 34, 16, true, true);
+  ctx.fillStyle = '#8a8680';
+  ctx.font = '11px "JetBrains Mono", monospace';
+  ctx.fillText('RESIDUAL + NORM', 324, 245);
+
+  ctx.fillStyle = 'rgba(110,165,201,0.14)';
+  ctx.strokeStyle = '#6ea5c9';
+  roundRect(ctx, 508, 110, 164, 96, 18, true, true);
+  ctx.fillStyle = '#8a8680';
+  ctx.font = '12px "JetBrains Mono", monospace';
+  ctx.fillText('MLP / FEED-FORWARD', 530, 136);
+  ctx.fillStyle = '#e8e4de';
+  ctx.font = '18px "EB Garamond", serif';
+  wrapText(ctx, 'rewrites the token state after context has been mixed in', 530, 164, 120, 20);
+
+  [0, 1, 2].forEach((index) => {
+    const x = 534 + index * 34;
+    const h = 20 + rewrite * 18 + index * 6;
+    ctx.fillStyle = 'rgba(110,165,201,0.18)';
+    roundRect(ctx, x, 228 - h, 22, h, 10, true, false);
+  });
+
+  ctx.fillStyle = 'rgba(255,255,255,0.06)';
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  roundRect(ctx, 532, 224, 116, 34, 16, true, true);
+  ctx.fillStyle = '#8a8680';
+  ctx.font = '11px "JetBrains Mono", monospace';
+  ctx.fillText('RESIDUAL + NORM', 550, 245);
+
+  [['context mixing', attentionGain, '#c9a96e'], ['feature rewrite', mlpGain, '#6ea5c9'], ['residual carry', residualCarry, '#c96e8a']].forEach(
+    ([label, value, color], index) => {
+      const y = 112 + index * 62;
+      ctx.fillStyle = '#8a8680';
+      ctx.font = '12px "JetBrains Mono", monospace';
+      ctx.fillText(String(label).toUpperCase(), 56, 306 + index * 18);
+      ctx.fillStyle = 'rgba(255,255,255,0.06)';
+      roundRect(ctx, 236, 292 + index * 18, 160, 12, 8, true, false);
+      ctx.fillStyle = color;
+      roundRect(ctx, 236, 292 + index * 18, 160 * Number(value), 12, 8, true, false);
+    }
+  );
+
+  takeaway.textContent =
+    contextNeed > rewrite + 0.18
+      ? 'This block is mostly earning its keep by pulling in outside context; the MLP is doing a lighter rewrite afterward.'
+      : rewrite > contextNeed + 0.18
+        ? 'This block is mostly about reshaping the token state after a modest amount of context mixing.'
+        : 'A healthy transformer block does both jobs: attention gathers context, then the MLP refines the token representation.';
+
+  metrics.innerHTML = metricMarkup([
+    ['Context mixing', `${Math.round(attentionGain * 100)}%`],
+    ['Feature rewrite', `${Math.round(mlpGain * 100)}%`],
+    ['Residual carry', `${Math.round(residualCarry * 100)}%`],
+  ]);
+}
+
 function drawAttention(ctx, state, takeaway, metrics) {
   const match = state.match;
   const sharpness = state.sharpness;
@@ -4879,54 +6425,80 @@ function drawAttention(ctx, state, takeaway, metrics) {
 
   ctx.fillStyle = '#e8e4de';
   ctx.font = '28px "EB Garamond", serif';
-  ctx.fillText('One current token choosing where to look back', 56, 58);
+  ctx.fillText('Attention is score, normalize, then mix', 56, 58);
 
-  const tokens = [
-    { x: 86, label: 'the', accent: '#6ea5c9' },
-    { x: 210, label: 'model', accent: '#6ea5c9' },
-    { x: 334, label: 'found', accent: '#c9a96e' },
-    { x: 458, label: 'evidence', accent: '#c96e8a' },
-  ];
-
-  tokens.forEach((token, index) => {
-    const weight = weights[index];
-    const barHeight = 120 * weight;
-    ctx.fillStyle = `${token.accent}18`;
-    ctx.strokeStyle = token.accent;
-    roundRect(ctx, token.x, 146, 86, 124, 18, true, true);
-    ctx.fillStyle = token.accent;
-    roundRect(ctx, token.x + 24, 246 - barHeight, 38, barHeight, 14, true, false);
-    ctx.fillStyle = '#e8e4de';
-    ctx.font = '18px "EB Garamond", serif';
-    ctx.fillText(token.label, token.x + 18, 180);
-    ctx.fillStyle = '#8a8680';
-    ctx.font = '12px "JetBrains Mono", monospace';
-    ctx.fillText(`${Math.round(weight * 100)}%`, token.x + 22, 204);
-  });
-
+  ctx.fillStyle = 'rgba(255,255,255,0.05)';
   ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-  ctx.beginPath();
-  ctx.moveTo(584, 96);
-  ctx.lineTo(584, 286);
-  ctx.stroke();
-
+  roundRect(ctx, 56, 104, 116, 166, 20, true, true);
   ctx.fillStyle = '#8a8680';
   ctx.font = '12px "JetBrains Mono", monospace';
-  ctx.fillText('TOP WEIGHT', 616, 126);
-  ctx.fillText('ATTENTION ENTROPY', 616, 194);
-  ctx.fillText('CONTEXT STYLE', 616, 262);
-
+  ctx.fillText('QUERY TOKEN', 78, 130);
+  ctx.fillStyle = 'rgba(201,169,110,0.18)';
+  ctx.strokeStyle = '#c9a96e';
+  roundRect(ctx, 82, 160, 64, 34, 16, true, true);
   ctx.fillStyle = '#e8e4de';
-  ctx.font = '34px "EB Garamond", serif';
-  ctx.fillText(`${Math.round(focus * 100)}%`, 616, 160);
-  ctx.fillText(entropy.toFixed(2), 616, 228);
-  ctx.fillStyle = '#c9a96e';
-  ctx.font = '22px "EB Garamond", serif';
-  ctx.fillText(
-    sharpness > 1.15 ? 'very focused' : sharpness < 0.55 ? 'broad scan' : 'mixed focus',
-    616,
-    294
-  );
+  ctx.font = '24px "EB Garamond", serif';
+  ctx.fillText('it', 107, 184);
+  ctx.font = '15px "EB Garamond", serif';
+  wrapText(ctx, 'This token asks which earlier tokens matter right now.', 78, 224, 72, 18);
+
+  const labels = ['the', 'model', 'found', 'evidence'];
+  const accents = ['#6ea5c9', '#6ea5c9', '#c96e8a', '#c9a96e'];
+  labels.forEach((label, index) => {
+    const y = 126 + index * 38;
+    const raw = rawScores[index];
+    const weight = weights[index];
+
+    ctx.strokeStyle = `rgba(201,169,110,${0.12 + weight * 0.7})`;
+    ctx.lineWidth = 1 + weight * 4;
+    ctx.beginPath();
+    ctx.moveTo(172, 178);
+    ctx.bezierCurveTo(214, y - 16, 214, y, 248, y);
+    ctx.stroke();
+
+    ctx.fillStyle = `${accents[index]}18`;
+    ctx.strokeStyle = accents[index];
+    roundRect(ctx, 248, y - 16, 88, 28, 14, true, true);
+    ctx.fillStyle = '#e8e4de';
+    ctx.font = '16px "EB Garamond", serif';
+    ctx.fillText(label, 268, y + 3);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    roundRect(ctx, 356, y - 10, 110, 10, 7, true, false);
+    ctx.fillStyle = '#8a8680';
+    ctx.font = '11px "JetBrains Mono", monospace';
+    ctx.fillText(raw.toFixed(2), 474, y + 1);
+    ctx.fillStyle = accents[index];
+    roundRect(ctx, 356, y - 10, 110 * Math.min(raw / 1.4, 1), 10, 7, true, false);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    roundRect(ctx, 528, y - 10, 126, 10, 7, true, false);
+    ctx.fillStyle = accents[index];
+    roundRect(ctx, 528, y - 10, 126 * weight, 10, 7, true, false);
+    ctx.fillStyle = '#e8e4de';
+    ctx.font = '13px "JetBrains Mono", monospace';
+    ctx.fillText(`${Math.round(weight * 100)}%`, 664, y + 1);
+  });
+
+  ctx.fillStyle = '#8a8680';
+  ctx.font = '11px "JetBrains Mono", monospace';
+  ctx.fillText('KEY / VALUE', 252, 108);
+  ctx.fillText('RAW SCORE', 356, 108);
+  ctx.fillText('SOFTMAX WEIGHT', 528, 108);
+
+  const blendX = 248;
+  const blendY = 298;
+  const blendW = 406;
+  let cursor = blendX;
+  weights.forEach((weight, index) => {
+    const w = blendW * weight;
+    ctx.fillStyle = `${accents[index]}88`;
+    roundRect(ctx, cursor, blendY, w, 22, 10, true, false);
+    cursor += w;
+  });
+  ctx.fillStyle = '#8a8680';
+  ctx.font = '11px "JetBrains Mono", monospace';
+  ctx.fillText('MIXED CONTEXT VECTOR', 248, 288);
 
   takeaway.textContent =
     sharpness > 1.15
@@ -5086,6 +6658,628 @@ function drawRag(ctx, state, takeaway, metrics) {
     ['Retrieved evidence', `${Math.round(retrieval * 100)}%`],
     ['Context usage', `${Math.round(contextUse * 100)}%`],
     ['Grounded answer', `${Math.round(groundedness * 100)}%`],
+  ]);
+}
+
+function drawPretrainFineTune(ctx, state, takeaway, metrics) {
+  const breadth = clamp01(0.48 + (1 - state.domainGap) * 0.34);
+  const specialization = clamp01(0.24 + state.taskData * 0.54 - state.domainGap * 0.1);
+  const forgetting = clamp01(0.1 + state.taskData * state.domainGap * 0.62);
+
+  clearCanvas(ctx);
+  ctx.fillStyle = '#e8e4de';
+  ctx.font = '28px "EB Garamond", serif';
+  ctx.fillText('Pre-training builds broad capability; fine-tuning bends it toward one task', 56, 58);
+
+  [
+    { x: 94, label: 'broad coverage', value: breadth, color: '#6ea5c9' },
+    { x: 286, label: 'task fit', value: specialization, color: '#c9a96e' },
+    { x: 478, label: 'forgetting risk', value: forgetting, color: '#c96e8a' },
+  ].forEach((bar) => {
+    const h = 180 * bar.value;
+    const y = 268 - h;
+    ctx.fillStyle = `${bar.color}22`;
+    ctx.strokeStyle = bar.color;
+    roundRect(ctx, bar.x, y, 106, h, 18, true, true);
+    ctx.fillStyle = '#e8e4de';
+    ctx.font = '17px "EB Garamond", serif';
+    ctx.fillText(bar.label, bar.x - 6, 304);
+  });
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(642, 100);
+  ctx.lineTo(642, 286);
+  ctx.stroke();
+  ctx.fillStyle = '#8a8680';
+  ctx.font = '12px "JetBrains Mono", monospace';
+  ctx.fillText('DOMAIN GAP', 664, 124);
+  ctx.fillText('TASK DATA', 664, 206);
+  ctx.fillStyle = '#e8e4de';
+  ctx.font = '32px "EB Garamond", serif';
+  ctx.fillText(`${Math.round(state.domainGap * 100)}%`, 664, 160);
+  ctx.fillText(`${Math.round(state.taskData * 100)}%`, 664, 242);
+
+  takeaway.textContent =
+    state.domainGap > 0.7
+      ? 'The base model prior is not especially aligned here, so adaptation needs to do more real work.'
+      : specialization > 0.62
+        ? 'The task is getting real specialization without giving up too much of the base model’s broad prior.'
+        : 'Fine-tuning is mostly a steering step when the base model is already close to the right domain.';
+
+  metrics.innerHTML = metricMarkup([
+    ['Breadth', `${Math.round(breadth * 100)}%`],
+    ['Task fit', `${Math.round(specialization * 100)}%`],
+    ['Forgetting', `${Math.round(forgetting * 100)}%`],
+  ]);
+}
+
+function drawPeft(ctx, state, takeaway, metrics) {
+  const fullCost = clamp01(0.38 + state.modelScale * 0.5);
+  const peftCost = clamp01(0.08 + state.modelScale * 0.1 + (1 - state.budget) * 0.04);
+  const fullFlex = clamp01(0.48 + state.budget * 0.4);
+  const peftFlex = clamp01(0.36 + state.budget * 0.22 + (1 - state.modelScale) * 0.08);
+  const adapterAdvantage = fullCost - peftCost;
+
+  clearCanvas(ctx);
+  ctx.fillStyle = '#e8e4de';
+  ctx.font = '28px "EB Garamond", serif';
+  ctx.fillText('PEFT keeps the base frozen and spends the budget on a much smaller trainable slice', 56, 58);
+
+  const cards = [
+    { x: 82, title: 'full fine-tuning', cost: fullCost, flex: fullFlex, color: '#c96e8a' },
+    { x: 392, title: 'peft / adapters', cost: peftCost, flex: peftFlex, color: '#c9a96e' },
+  ];
+  cards.forEach((card) => {
+    ctx.fillStyle = 'rgba(255,255,255,0.025)';
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    roundRect(ctx, card.x, 106, 228, 194, 20, true, true);
+    ctx.fillStyle = '#8a8680';
+    ctx.font = '12px "JetBrains Mono", monospace';
+    ctx.fillText(card.title.toUpperCase(), card.x + 18, 132);
+    ctx.fillText('TRAINING COST', card.x + 18, 166);
+    ctx.fillText('ADAPTATION FLEX', card.x + 18, 236);
+    ctx.fillStyle = 'rgba(255,255,255,0.07)';
+    roundRect(ctx, card.x + 18, 178, 166, 18, 10, true, false);
+    roundRect(ctx, card.x + 18, 248, 166, 18, 10, true, false);
+    ctx.fillStyle = card.color;
+    roundRect(ctx, card.x + 18, 178, 166 * card.cost, 18, 10, true, false);
+    roundRect(ctx, card.x + 18, 248, 166 * card.flex, 18, 10, true, false);
+    ctx.fillStyle = '#e8e4de';
+    ctx.font = '18px "EB Garamond", serif';
+    ctx.fillText(`${Math.round(card.cost * 100)}%`, card.x + 190, 193);
+    ctx.fillText(`${Math.round(card.flex * 100)}%`, card.x + 190, 263);
+  });
+
+  takeaway.textContent =
+    adapterAdvantage > 0.45
+      ? 'The cost gap is big enough that PEFT is the obvious first thing to try before reaching for full fine-tuning.'
+      : state.budget > 0.75
+        ? 'With a large enough budget, full fine-tuning becomes more realistic if the task really needs maximum flexibility.'
+        : 'PEFT wins by keeping most of the capability in place while only paying for a small task-specific adjustment.';
+
+  metrics.innerHTML = metricMarkup([
+    ['Full FT cost', `${Math.round(fullCost * 100)}%`],
+    ['PEFT cost', `${Math.round(peftCost * 100)}%`],
+    ['Cost saved', `${Math.round(adapterAdvantage * 100)} pts`],
+  ]);
+}
+
+function drawLora(ctx, state, takeaway, metrics) {
+  const rankNorm = Math.min(state.rank / 32, 1);
+  const trainableShare = clamp01(0.02 + rankNorm * 0.18 + state.coverage * 0.08);
+  const adaptationPower = clamp01(0.24 + rankNorm * 0.54 + state.coverage * 0.18);
+  const adapterSize = clamp01(0.06 + rankNorm * 0.32 + state.coverage * 0.08);
+
+  clearCanvas(ctx);
+  ctx.fillStyle = '#e8e4de';
+  ctx.font = '28px "EB Garamond", serif';
+  ctx.fillText('LoRA keeps the big matrix frozen and learns a skinny correction around it', 56, 58);
+
+  ctx.fillStyle = 'rgba(110,165,201,0.12)';
+  ctx.strokeStyle = '#6ea5c9';
+  roundRect(ctx, 88, 118, 170, 126, 20, true, true);
+  ctx.fillStyle = '#8a8680';
+  ctx.font = '12px "JetBrains Mono", monospace';
+  ctx.fillText('FROZEN BASE W', 112, 144);
+  ctx.fillStyle = '#e8e4de';
+  ctx.font = '22px "EB Garamond", serif';
+  ctx.fillText('large dense matrix', 112, 186);
+
+  ctx.fillStyle = 'rgba(201,169,110,0.14)';
+  ctx.strokeStyle = '#c9a96e';
+  roundRect(ctx, 316, 132, 72, 96, 18, true, true);
+  roundRect(ctx, 430, 132, 72, 96, 18, true, true);
+  ctx.fillStyle = '#8a8680';
+  ctx.font = '12px "JetBrains Mono", monospace';
+  ctx.fillText('A', 350, 120);
+  ctx.fillText('B', 464, 120);
+  ctx.fillStyle = '#e8e4de';
+  ctx.font = '20px "EB Garamond", serif';
+  ctx.fillText(`rank ${Math.round(state.rank)}`, 326, 188);
+  ctx.fillText(`cov ${Math.round(state.coverage * 100)}%`, 430, 188);
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.beginPath();
+  ctx.moveTo(562, 106);
+  ctx.lineTo(562, 286);
+  ctx.stroke();
+
+  [['trainable share', trainableShare, '#c96e8a'], ['adapter power', adaptationPower, '#c9a96e'], ['adapter size', adapterSize, '#6ea5c9']].forEach(
+    ([label, value, color], index) => {
+      const y = 128 + index * 58;
+      ctx.fillStyle = '#8a8680';
+      ctx.font = '12px "JetBrains Mono", monospace';
+      ctx.fillText(String(label).toUpperCase(), 592, y - 6);
+      ctx.fillStyle = 'rgba(255,255,255,0.06)';
+      roundRect(ctx, 592, y + 6, 116, 16, 9, true, false);
+      ctx.fillStyle = color;
+      roundRect(ctx, 592, y + 6, 116 * Number(value), 16, 9, true, false);
+    }
+  );
+
+  takeaway.textContent =
+    state.rank <= 3
+      ? 'This adapter is extremely cheap, but the correction subspace is narrow.'
+      : state.rank >= 20
+        ? 'A high-rank adapter gives you more expressive correction, but you are paying more of the full fine-tuning bill.'
+        : 'LoRA is attractive when the useful task correction is much smaller than the full base matrix.';
+
+  metrics.innerHTML = metricMarkup([
+    ['Trainable share', `${Math.round(trainableShare * 100)}%`],
+    ['Power', `${Math.round(adaptationPower * 100)}%`],
+    ['Rank', `${Math.round(state.rank)}`],
+  ]);
+}
+
+function drawQuantization(ctx, state, takeaway, metrics) {
+  const bits = state.bits;
+  const memoryRatio = bits / 16;
+  const speedup = clamp01(0.34 + (1 - memoryRatio) * 0.76 - state.context * 0.08);
+  const quality = clamp01(0.96 - Math.max(0, (8 - bits) / 8) * 0.32 - Math.max(0, state.context - 0.65) * 0.08);
+
+  clearCanvas(ctx);
+  ctx.fillStyle = '#e8e4de';
+  ctx.font = '28px "EB Garamond", serif';
+  ctx.fillText('Fewer bits shrink memory first, then start to tax output fidelity', 56, 58);
+
+  const bars = [
+    { x: 94, label: 'memory share', value: memoryRatio, color: '#6ea5c9' },
+    { x: 286, label: 'throughput gain', value: speedup, color: '#c9a96e' },
+    { x: 478, label: 'quality retained', value: quality, color: '#c96e8a' },
+  ];
+  bars.forEach((bar) => {
+    const h = 180 * bar.value;
+    const y = 268 - h;
+    ctx.fillStyle = `${bar.color}22`;
+    ctx.strokeStyle = bar.color;
+    roundRect(ctx, bar.x, y, 106, h, 18, true, true);
+    ctx.fillStyle = '#e8e4de';
+    ctx.font = '17px "EB Garamond", serif';
+    ctx.fillText(bar.label, bar.x - 8, 304);
+  });
+
+  ctx.fillStyle = '#8a8680';
+  ctx.font = '12px "JetBrains Mono", monospace';
+  ctx.fillText('PRECISION', 668, 128);
+  ctx.fillText('CONTEXT', 668, 216);
+  ctx.fillStyle = '#e8e4de';
+  ctx.font = '32px "EB Garamond", serif';
+  ctx.fillText(`${bits}-bit`, 668, 164);
+  ctx.fillText(`${Math.round(state.context * 100)}%`, 668, 252);
+
+  takeaway.textContent =
+    bits <= 4
+      ? 'You are getting a huge memory win, but quality is now sensitive enough that layer handling and calibration really matter.'
+      : bits <= 8
+        ? 'This is the sweet spot many teams like: big memory relief without usually wrecking the model.'
+        : 'Higher precision keeps you close to the original model behavior, but you pay for that comfort in memory.';
+
+  metrics.innerHTML = metricMarkup([
+    ['Memory', `${Math.round(memoryRatio * 100)}%`],
+    ['Speed gain', `${Math.round(speedup * 100)}%`],
+    ['Quality', `${Math.round(quality * 100)}%`],
+  ]);
+}
+
+function drawDistillation(ctx, state, takeaway, metrics) {
+  const student = state.student;
+  const temperature = state.temperature;
+  const retention = clamp01(0.42 + student * 0.44 + Math.min(temperature, 2.5) * 0.06);
+  const latency = clamp01(0.18 + student * 0.64);
+  const softness = clamp01(0.18 + temperature / 4.2);
+
+  clearCanvas(ctx);
+  ctx.fillStyle = '#e8e4de';
+  ctx.font = '28px "EB Garamond", serif';
+  ctx.fillText('A student learns more than the top class when the teacher reveals softer preferences', 56, 58);
+
+  const xs = [96, 172, 248];
+  const teacher = [0.52 - softness * 0.12, 0.3 + softness * 0.04, 0.18 + softness * 0.08];
+  const studentDist = [0.5 - softness * 0.08, 0.3 + softness * 0.03, 0.2 + softness * 0.05];
+  [teacher, studentDist].forEach((dist, row) => {
+    dist.forEach((value, idx) => {
+      const x = xs[idx];
+      const yBase = row === 0 ? 220 : 298;
+      const h = 104 * value;
+      ctx.fillStyle = row === 0 ? 'rgba(201,169,110,0.22)' : 'rgba(110,165,201,0.22)';
+      ctx.strokeStyle = row === 0 ? '#c9a96e' : '#6ea5c9';
+      roundRect(ctx, x, yBase - h, 42, h, 12, true, true);
+    });
+  });
+  ctx.fillStyle = '#8a8680';
+  ctx.font = '12px "JetBrains Mono", monospace';
+  ctx.fillText('TEACHER', 92, 236);
+  ctx.fillText('STUDENT', 92, 314);
+
+  [['quality retained', retention, '#c9a96e'], ['latency cost', latency, '#c96e8a'], ['softness', softness, '#6ea5c9']].forEach(
+    ([label, value, color], index) => {
+      const y = 136 + index * 58;
+      ctx.fillStyle = '#8a8680';
+      ctx.font = '12px "JetBrains Mono", monospace';
+      ctx.fillText(String(label).toUpperCase(), 430, y - 6);
+      ctx.fillStyle = 'rgba(255,255,255,0.06)';
+      roundRect(ctx, 430, y + 6, 214, 16, 9, true, false);
+      ctx.fillStyle = color;
+      roundRect(ctx, 430, y + 6, 214 * Number(value), 16, 9, true, false);
+    }
+  );
+
+  takeaway.textContent =
+    student < 0.28
+      ? 'This student is very cheap, but a lot of the teacher behavior will be hard to preserve.'
+      : temperature > 3
+        ? 'The teacher is exposing a lot of relative preference structure, which helps the student learn softer class boundaries.'
+        : 'Distillation works best when the student is small enough to matter, but not so small that the teacher signal has nowhere to go.';
+
+  metrics.innerHTML = metricMarkup([
+    ['Retention', `${Math.round(retention * 100)}%`],
+    ['Student size', `${Math.round(student * 100)}%`],
+    ['Softness', `${temperature.toFixed(1)}`],
+  ]);
+}
+
+function drawServingTradeoffs(ctx, state, takeaway, metrics) {
+  const latency = clamp01(0.24 + state.context * 0.5 + state.batch * 0.24 - state.precision * 0.18);
+  const throughput = clamp01(0.22 + state.batch * 0.64 + (1 - state.precision) * 0.1 - state.context * 0.12);
+  const memory = clamp01(0.28 + state.context * 0.54 + state.batch * 0.18 + state.precision * 0.18);
+
+  clearCanvas(ctx);
+  ctx.fillStyle = '#e8e4de';
+  ctx.font = '28px "EB Garamond", serif';
+  ctx.fillText('Serving is a negotiation between latency, throughput, and memory', 56, 58);
+
+  const metricsBars = [
+    { x: 90, label: 'latency pressure', value: latency, color: '#c96e8a' },
+    { x: 282, label: 'throughput', value: throughput, color: '#c9a96e' },
+    { x: 474, label: 'memory load', value: memory, color: '#6ea5c9' },
+  ];
+  metricsBars.forEach((bar) => {
+    const h = 180 * bar.value;
+    const y = 268 - h;
+    ctx.fillStyle = `${bar.color}22`;
+    ctx.strokeStyle = bar.color;
+    roundRect(ctx, bar.x, y, 108, h, 18, true, true);
+    ctx.fillStyle = '#e8e4de';
+    ctx.font = '17px "EB Garamond", serif';
+    ctx.fillText(bar.label, bar.x - 10, 304);
+  });
+
+  ctx.fillStyle = '#8a8680';
+  ctx.font = '12px "JetBrains Mono", monospace';
+  ctx.fillText('BATCH', 662, 118);
+  ctx.fillText('CONTEXT', 662, 176);
+  ctx.fillText('PRECISION', 662, 234);
+  ctx.fillStyle = '#e8e4de';
+  ctx.font = '26px "EB Garamond", serif';
+  ctx.fillText(`${Math.round(state.batch * 100)}%`, 662, 144);
+  ctx.fillText(`${Math.round(state.context * 100)}%`, 662, 202);
+  ctx.fillText(`${Math.round(state.precision * 100)}%`, 662, 260);
+
+  takeaway.textContent =
+    state.batch > 0.7
+      ? 'This setup is optimized for throughput, but some requests will wait longer before they even start running.'
+      : state.context > 0.75
+        ? 'Long context is now dominating the serving story; KV-cache and memory pressure are doing most of the damage.'
+        : 'There is no single best point here. The right setting depends on whether your product cares most about latency, cost, or total tokens served.';
+
+  metrics.innerHTML = metricMarkup([
+    ['Latency', `${Math.round(latency * 100)}%`],
+    ['Throughput', `${Math.round(throughput * 100)}%`],
+    ['Memory', `${Math.round(memory * 100)}%`],
+  ]);
+}
+
+function drawMdp(ctx, state, takeaway, metrics) {
+  const delayedShare = state.rewardDelay;
+  const stochasticity = state.stochasticity;
+  const immediateReward = clamp01(0.72 - delayedShare * 0.42);
+  const futureReward = clamp01(0.28 + delayedShare * 0.58 - stochasticity * 0.08);
+  const creditDifficulty = clamp01(0.18 + delayedShare * 0.54 + stochasticity * 0.22);
+
+  clearCanvas(ctx);
+  ctx.fillStyle = '#e8e4de';
+  ctx.font = '28px "EB Garamond", serif';
+  ctx.fillText('State, action, reward, next state: the agent is inside a feedback loop', 56, 58);
+
+  const nodes = [
+    { x: 96, y: 180, w: 110, h: 60, label: 'state', accent: '#6ea5c9' },
+    { x: 250, y: 180, w: 110, h: 60, label: 'action', accent: '#c9a96e' },
+    { x: 404, y: 180, w: 110, h: 60, label: 'reward', accent: '#c96e8a' },
+    { x: 558, y: 180, w: 110, h: 60, label: 'next state', accent: '#6ea5c9' },
+  ];
+  nodes.forEach((node) => {
+    ctx.fillStyle = `${node.accent}18`;
+    ctx.strokeStyle = node.accent;
+    roundRect(ctx, node.x, node.y, node.w, node.h, 16, true, true);
+    ctx.fillStyle = '#e8e4de';
+    ctx.font = '18px "EB Garamond", serif';
+    ctx.fillText(node.label, node.x + 18, node.y + 36);
+  });
+  ctx.strokeStyle = 'rgba(255,255,255,0.16)';
+  ctx.lineWidth = 2;
+  [[206, 305], [360, 459], [514, 613]].forEach(([x1, x2]) => {
+    ctx.beginPath();
+    ctx.moveTo(x1, 210);
+    ctx.lineTo(x2, 210);
+    ctx.stroke();
+  });
+  ctx.beginPath();
+  ctx.moveTo(613, 250);
+  ctx.bezierCurveTo(640, 308, 156, 308, 150, 250);
+  ctx.stroke();
+
+  ctx.fillStyle = '#8a8680';
+  ctx.font = '12px "JetBrains Mono", monospace';
+  ctx.fillText('IMMEDIATE SIGNAL', 86, 314);
+  ctx.fillText('FUTURE CONSEQUENCE', 284, 314);
+  ctx.fillText('CREDIT ASSIGNMENT', 522, 314);
+
+  ctx.fillStyle = '#e8e4de';
+  ctx.font = '28px "EB Garamond", serif';
+  ctx.fillText(`${Math.round(immediateReward * 100)}%`, 112, 348);
+  ctx.fillText(`${Math.round(futureReward * 100)}%`, 318, 348);
+  ctx.fillText(`${Math.round(creditDifficulty * 100)}%`, 548, 348);
+
+  takeaway.textContent =
+    delayedShare > 0.7
+      ? 'The reward is arriving far from the action that caused it, so the real problem is credit assignment.'
+      : stochasticity > 0.65
+        ? 'The feedback loop is noisy enough that the agent needs many interactions to know whether one action was actually good.'
+        : 'RL feels easiest when the reward is both informative and not too delayed.';
+
+  metrics.innerHTML = metricMarkup([
+    ['Delay', `${Math.round(delayedShare * 100)}%`],
+    ['Uncertainty', `${Math.round(stochasticity * 100)}%`],
+    ['Credit difficulty', `${Math.round(creditDifficulty * 100)}%`],
+  ]);
+}
+
+function drawValueFunctions(ctx, state, takeaway, metrics) {
+  const gamma = state.gamma;
+  const futureBonus = state.futureBonus;
+  const shortPath = 0.35 + 0.18 * futureBonus;
+  const longPath = 0.08 + gamma * futureBonus * 0.92;
+  const preferred = longPath > shortPath ? 'patient path' : 'greedy path';
+  const gap = Math.abs(longPath - shortPath);
+
+  clearCanvas(ctx);
+  ctx.fillStyle = '#e8e4de';
+  ctx.font = '28px "EB Garamond", serif';
+  ctx.fillText('Return decides whether the future bonus is worth waiting for', 56, 58);
+
+  const bars = [
+    { x: 106, label: 'greedy path', value: shortPath, color: '#c96e8a' },
+    { x: 310, label: 'patient path', value: longPath, color: '#c9a96e' },
+  ];
+  bars.forEach((bar) => {
+    const h = 188 * bar.value;
+    const y = 268 - h;
+    ctx.fillStyle = `${bar.color}20`;
+    ctx.strokeStyle = bar.color;
+    roundRect(ctx, bar.x, y, 126, h, 18, true, true);
+    ctx.fillStyle = '#e8e4de';
+    ctx.font = '18px "EB Garamond", serif';
+    ctx.fillText(bar.label, bar.x - 2, 304);
+  });
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.beginPath();
+  ctx.moveTo(516, 100);
+  ctx.lineTo(516, 286);
+  ctx.stroke();
+  ctx.fillStyle = '#8a8680';
+  ctx.font = '12px "JetBrains Mono", monospace';
+  ctx.fillText('DISCOUNT γ', 548, 120);
+  ctx.fillText('FUTURE BONUS', 548, 192);
+  ctx.fillText('VALUE GAP', 548, 264);
+  ctx.fillStyle = '#e8e4de';
+  ctx.font = '32px "EB Garamond", serif';
+  ctx.fillText(gamma.toFixed(2), 548, 154);
+  ctx.fillText(futureBonus.toFixed(2), 548, 226);
+  ctx.fillText(gap.toFixed(2), 548, 298);
+
+  takeaway.textContent =
+    gamma < 0.45
+      ? 'With a short horizon, the agent mostly cares about immediate reward, so the greedy path wins.'
+      : longPath > shortPath
+        ? 'The discounted future is still large enough that the patient path becomes more valuable.'
+        : 'The future bonus exists, but not enough survives discounting to overturn the greedy choice.';
+
+  metrics.innerHTML = metricMarkup([
+    ['Best path', preferred],
+    ['Greedy value', shortPath.toFixed(2)],
+    ['Patient value', longPath.toFixed(2)],
+  ]);
+}
+
+function drawTdLearning(ctx, state, takeaway, metrics) {
+  const alpha = state.alpha;
+  const gamma = state.gamma;
+  const reward = 0.42;
+  const current = 0.48;
+  const nextEstimate = 0.62;
+  const target = reward + gamma * nextEstimate;
+  const tdError = target - current;
+  const updated = current + alpha * tdError;
+
+  clearCanvas(ctx);
+  ctx.fillStyle = '#e8e4de';
+  ctx.font = '28px "EB Garamond", serif';
+  ctx.fillText('TD learning nudges a value toward one real reward plus one estimated future', 56, 58);
+
+  const cards = [
+    { x: 92, label: 'current V(s)', value: current, color: '#6ea5c9' },
+    { x: 274, label: 'TD target', value: target / 1.4, color: '#c9a96e' },
+    { x: 456, label: 'updated V(s)', value: updated / 1.4, color: '#c96e8a' },
+  ];
+  cards.forEach((card) => {
+    const h = 182 * card.value;
+    const y = 270 - h;
+    ctx.fillStyle = `${card.color}20`;
+    ctx.strokeStyle = card.color;
+    roundRect(ctx, card.x, y, 112, h, 18, true, true);
+    ctx.fillStyle = '#e8e4de';
+    ctx.font = '17px "EB Garamond", serif';
+    ctx.fillText(card.label, card.x - 6, 304);
+  });
+
+  ctx.fillStyle = '#8a8680';
+  ctx.font = '12px "JetBrains Mono", monospace';
+  ctx.fillText('TD ERROR', 648, 120);
+  ctx.fillText('ALPHA', 648, 192);
+  ctx.fillText('GAMMA', 648, 264);
+  ctx.fillStyle = tdError >= 0 ? '#c9a96e' : '#c96e8a';
+  ctx.font = '30px "EB Garamond", serif';
+  ctx.fillText(tdError.toFixed(2), 648, 154);
+  ctx.fillStyle = '#e8e4de';
+  ctx.fillText(alpha.toFixed(2), 648, 226);
+  ctx.fillText(gamma.toFixed(2), 648, 298);
+
+  takeaway.textContent =
+    alpha > 0.7
+      ? 'This update is reacting hard to one TD target, which speeds learning but makes estimates more jittery.'
+      : Math.abs(tdError) < 0.08
+        ? 'The current value estimate is already close to the TD target, so the surprise is small.'
+        : 'TD learning improves a value estimate by using one observed reward plus one bootstrapped guess about the future.';
+
+  metrics.innerHTML = metricMarkup([
+    ['Current', current.toFixed(2)],
+    ['Target', target.toFixed(2)],
+    ['Updated', updated.toFixed(2)],
+  ]);
+}
+
+function drawQLearning(ctx, state, takeaway, metrics) {
+  const reward = state.reward;
+  const nextBest = state.nextBest;
+  const alpha = state.alpha;
+  const gamma = 0.9;
+  const current = 0.38;
+  const target = reward + gamma * nextBest;
+  const updated = current + alpha * (target - current);
+
+  clearCanvas(ctx);
+  ctx.fillStyle = '#e8e4de';
+  ctx.font = '28px "EB Garamond", serif';
+  ctx.fillText('One Q-table cell gets revised toward reward plus the best-looking next action', 56, 58);
+
+  const gridX = 92;
+  const gridY = 122;
+  const cellW = 84;
+  const cellH = 54;
+  for (let r = 0; r < 2; r += 1) {
+    for (let c = 0; c < 3; c += 1) {
+      const x = gridX + c * (cellW + 14);
+      const y = gridY + r * (cellH + 14);
+      const highlighted = r === 0 && c === 1;
+      ctx.fillStyle = highlighted ? 'rgba(201,169,110,0.18)' : 'rgba(255,255,255,0.03)';
+      ctx.strokeStyle = highlighted ? '#c9a96e' : 'rgba(255,255,255,0.08)';
+      roundRect(ctx, x, y, cellW, cellH, 12, true, true);
+      ctx.fillStyle = '#e8e4de';
+      ctx.font = '18px "EB Garamond", serif';
+      const val = highlighted ? current.toFixed(2) : (0.18 + r * 0.14 + c * 0.09).toFixed(2);
+      ctx.fillText(val, x + 24, y + 34);
+    }
+  }
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.beginPath();
+  ctx.moveTo(422, 100);
+  ctx.lineTo(422, 286);
+  ctx.stroke();
+  ctx.fillStyle = '#8a8680';
+  ctx.font = '12px "JetBrains Mono", monospace';
+  ctx.fillText('CURRENT Q', 454, 118);
+  ctx.fillText('TARGET', 454, 176);
+  ctx.fillText('UPDATED Q', 454, 234);
+  ctx.fillText('MAX NEXT', 454, 292);
+  ctx.fillStyle = '#e8e4de';
+  ctx.font = '30px "EB Garamond", serif';
+  ctx.fillText(current.toFixed(2), 454, 150);
+  ctx.fillText(target.toFixed(2), 454, 208);
+  ctx.fillText(updated.toFixed(2), 454, 266);
+  ctx.fillText(nextBest.toFixed(2), 454, 324);
+
+  takeaway.textContent =
+    reward < 0 && nextBest > 0.8
+      ? 'The immediate reward hurts, but the update still values the action because it leads into a very promising next state.'
+      : updated > current
+        ? 'This transition makes the chosen action look better than it used to, so the Q-value moves up.'
+        : 'Q-learning backs up the best-looking future, which is why it can learn control even while behaving exploratorily.';
+
+  metrics.innerHTML = metricMarkup([
+    ['Reward', reward.toFixed(2)],
+    ['Target', target.toFixed(2)],
+    ['Update size', (updated - current).toFixed(2)],
+  ]);
+}
+
+function drawDqn(ctx, state, takeaway, metrics) {
+  const replay = state.replay;
+  const targetLag = state.targetLag;
+  const stability = clamp01(0.18 + replay * 0.42 + targetLag * 0.26);
+  const dataDiversity = clamp01(0.16 + replay * 0.68);
+  const staleness = clamp01(0.1 + targetLag * 0.56);
+
+  clearCanvas(ctx);
+  ctx.fillStyle = '#e8e4de';
+  ctx.font = '28px "EB Garamond", serif';
+  ctx.fillText('DQN needs replay and target networks because the naive neural update is too unstable', 56, 58);
+
+  const panels = [
+    { x: 90, title: 'experience replay', fill: replay, color: '#6ea5c9', subtitle: 'shuffles correlated experience' },
+    { x: 306, title: 'target network', fill: targetLag, color: '#c9a96e', subtitle: 'slows the moving target' },
+    { x: 522, title: 'training stability', fill: stability, color: '#c96e8a', subtitle: 'combined effect' },
+  ];
+  panels.forEach((panel) => {
+    ctx.fillStyle = 'rgba(255,255,255,0.025)';
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    roundRect(ctx, panel.x, 116, 156, 164, 18, true, true);
+    ctx.fillStyle = '#8a8680';
+    ctx.font = '12px "JetBrains Mono", monospace';
+    ctx.fillText(panel.title.toUpperCase(), panel.x + 16, 140);
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    roundRect(ctx, panel.x + 16, 186, 124, 18, 10, true, false);
+    ctx.fillStyle = panel.color;
+    roundRect(ctx, panel.x + 16, 186, 124 * panel.fill, 18, 10, true, false);
+    ctx.fillStyle = '#e8e4de';
+    ctx.font = '15px "EB Garamond", serif';
+    wrapText(ctx, panel.subtitle, panel.x + 16, 228, 128, 18);
+  });
+
+  takeaway.textContent =
+    replay < 0.2 && targetLag < 0.15
+      ? 'This is close to the naive deep Q-learning setup that tends to oscillate or explode.'
+      : targetLag > 0.75
+        ? 'The target is very stable now, but it may also be stale enough that learning reacts slowly.'
+        : 'Replay fights correlation, and the target network fights chasing your own moving prediction too aggressively.';
+
+  metrics.innerHTML = metricMarkup([
+    ['Stability', `${Math.round(stability * 100)}%`],
+    ['Replay diversity', `${Math.round(dataDiversity * 100)}%`],
+    ['Target staleness', `${Math.round(staleness * 100)}%`],
   ]);
 }
 
@@ -6328,6 +8522,470 @@ function drawBandit(ctx, state, takeaway, metrics) {
   ]);
 }
 
+function drawVectors(ctx, state, takeaway, metrics) {
+  const { x, y } = state;
+  const norm = Math.hypot(x, y);
+  const unitX = norm > 1e-8 ? x / norm : 0;
+  const unitY = norm > 1e-8 ? y / norm : 0;
+
+  clearCanvas(ctx);
+
+  ctx.fillStyle = '#e8e4de';
+  ctx.font = '28px "EB Garamond", serif';
+  ctx.fillText('A vector is one object with both direction and magnitude', 56, 58);
+
+  const origin = { x: 178, y: 236 };
+  const scale = 105;
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(origin.x - 132, origin.y);
+  ctx.lineTo(origin.x + 132, origin.y);
+  ctx.moveTo(origin.x, origin.y - 132);
+  ctx.lineTo(origin.x, origin.y + 132);
+  ctx.stroke();
+
+  for (let i = -2; i <= 2; i += 1) {
+    if (i === 0) continue;
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.beginPath();
+    ctx.moveTo(origin.x - 124, origin.y + i * 52);
+    ctx.lineTo(origin.x + 124, origin.y + i * 52);
+    ctx.moveTo(origin.x + i * 52, origin.y - 124);
+    ctx.lineTo(origin.x + i * 52, origin.y + 124);
+    ctx.stroke();
+  }
+
+  const tip = { x: origin.x + x * scale, y: origin.y - y * scale };
+  const unitTip = { x: origin.x + unitX * 82, y: origin.y - unitY * 82 };
+
+  ctx.strokeStyle = 'rgba(110,165,201,0.48)';
+  ctx.lineWidth = 6;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(origin.x, origin.y);
+  ctx.lineTo(unitTip.x, unitTip.y);
+  ctx.stroke();
+
+  ctx.strokeStyle = '#c9a96e';
+  ctx.lineWidth = 7;
+  ctx.beginPath();
+  ctx.moveTo(origin.x, origin.y);
+  ctx.lineTo(tip.x, tip.y);
+  ctx.stroke();
+
+  ctx.fillStyle = '#6ea5c9';
+  ctx.beginPath();
+  ctx.arc(unitTip.x, unitTip.y, 6, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#c9a96e';
+  ctx.beginPath();
+  ctx.arc(tip.x, tip.y, 7, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#8a8680';
+  ctx.font = '12px "JetBrains Mono", monospace';
+  ctx.fillText('RAW VECTOR', 400, 112);
+  ctx.fillText('UNIT VECTOR', 400, 198);
+  ctx.fillText('COMPONENTS', 400, 284);
+
+  ctx.fillStyle = '#e8e4de';
+  ctx.font = '32px "EB Garamond", serif';
+  ctx.fillText(`${norm.toFixed(2)}`, 400, 150);
+  ctx.fillStyle = '#6ea5c9';
+  ctx.fillText(`(${unitX.toFixed(2)}, ${unitY.toFixed(2)})`, 400, 236);
+  ctx.fillStyle = '#e8e4de';
+  ctx.fillText(`(${x.toFixed(2)}, ${y.toFixed(2)})`, 400, 322);
+
+  takeaway.textContent =
+    norm < 0.35
+      ? 'This vector is small, but it still has a direction. A tiny gradient is still a gradient.'
+      : Math.abs(norm - 1) < 0.1
+        ? 'The vector is already close to unit length, which is why normalization would barely change anything.'
+        : 'Normalizing this vector would keep the same direction but remove the scale information.';
+
+  metrics.innerHTML = metricMarkup([
+    ['Length', norm.toFixed(2)],
+    ['x', x.toFixed(2)],
+    ['y', y.toFixed(2)],
+  ]);
+}
+
+function drawDotProducts(ctx, state, takeaway, metrics) {
+  const angleRad = (state.angle * Math.PI) / 180;
+  const u = { x: state.uMag, y: 0 };
+  const v = { x: state.vMag * Math.cos(angleRad), y: state.vMag * Math.sin(angleRad) };
+  const dot = u.x * v.x + u.y * v.y;
+  const cosine = dot / Math.max(state.uMag * state.vMag, 1e-8);
+  const projection = state.vMag * Math.cos(angleRad);
+
+  clearCanvas(ctx);
+
+  ctx.fillStyle = '#e8e4de';
+  ctx.font = '28px "EB Garamond", serif';
+  ctx.fillText('Dot product measures how much one vector points along another', 56, 58);
+
+  const origin = { x: 184, y: 246 };
+  const scale = 104;
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(origin.x - 138, origin.y);
+  ctx.lineTo(origin.x + 138, origin.y);
+  ctx.moveTo(origin.x, origin.y - 138);
+  ctx.lineTo(origin.x, origin.y + 38);
+  ctx.stroke();
+
+  const uTip = { x: origin.x + u.x * scale, y: origin.y };
+  const vTip = { x: origin.x + v.x * scale, y: origin.y - v.y * scale };
+  const projTip = { x: origin.x + projection * scale, y: origin.y };
+
+  ctx.strokeStyle = '#6ea5c9';
+  ctx.lineWidth = 7;
+  ctx.beginPath();
+  ctx.moveTo(origin.x, origin.y);
+  ctx.lineTo(uTip.x, uTip.y);
+  ctx.stroke();
+
+  ctx.strokeStyle = '#c96e8a';
+  ctx.beginPath();
+  ctx.moveTo(origin.x, origin.y);
+  ctx.lineTo(vTip.x, vTip.y);
+  ctx.stroke();
+
+  ctx.setLineDash([8, 8]);
+  ctx.strokeStyle = 'rgba(201,169,110,0.8)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(vTip.x, vTip.y);
+  ctx.lineTo(projTip.x, projTip.y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = '#8a8680';
+  ctx.font = '12px "JetBrains Mono", monospace';
+  ctx.fillText('U', uTip.x + 10, uTip.y - 8);
+  ctx.fillText('V', vTip.x + 10, vTip.y);
+  ctx.fillText('PROJECTION OF V ON U', projTip.x - 46, projTip.y + 28);
+  ctx.fillText('DOT PRODUCT', 432, 106);
+  ctx.fillText('COSINE', 432, 188);
+  ctx.fillText('ANGLE', 432, 270);
+
+  ctx.fillStyle = '#e8e4de';
+  ctx.font = '32px "EB Garamond", serif';
+  ctx.fillText(dot.toFixed(2), 432, 144);
+  ctx.fillStyle = cosine > 0 ? '#c9a96e' : '#c96e8a';
+  ctx.fillText(cosine.toFixed(2), 432, 226);
+  ctx.fillStyle = '#e8e4de';
+  ctx.fillText(`${Math.round(state.angle)}°`, 432, 308);
+
+  takeaway.textContent =
+    cosine > 0.75
+      ? 'These vectors are strongly aligned, so the dot product is doing exactly what similarity search wants.'
+      : cosine > 0.1
+        ? 'There is some shared direction here, but the alignment is not especially strong.'
+        : cosine > -0.1
+          ? 'They are nearly orthogonal, so one vector carries almost no projection along the other.'
+          : 'The vectors point against each other, which is why the dot product turns negative.';
+
+  metrics.innerHTML = metricMarkup([
+    ['Dot', dot.toFixed(2)],
+    ['Cosine', cosine.toFixed(2)],
+    ['Projection', projection.toFixed(2)],
+  ]);
+}
+
+function drawMatrixMultiply(ctx, state, takeaway, metrics) {
+  const A = [
+    [state.sx, state.shear],
+    [0, state.sy],
+  ];
+  const transform = ([x, y]) => [A[0][0] * x + A[0][1] * y, A[1][0] * x + A[1][1] * y];
+  const determinant = state.sx * state.sy;
+
+  clearCanvas(ctx);
+
+  ctx.fillStyle = '#e8e4de';
+  ctx.font = '28px "EB Garamond", serif';
+  ctx.fillText('A matrix maps every input vector through the same linear rule', 56, 58);
+
+  const drawPanel = (ox, oy, label, transformed) => {
+    ctx.fillStyle = '#8a8680';
+    ctx.font = '12px "JetBrains Mono", monospace';
+    ctx.fillText(label, ox - 36, oy - 128);
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(ox - 110, oy);
+    ctx.lineTo(ox + 110, oy);
+    ctx.moveTo(ox, oy - 110);
+    ctx.lineTo(ox, oy + 110);
+    ctx.stroke();
+
+    const scale = 88;
+    const points = transformed
+      ? [[0, 0], transform([1, 0]), transform([1, 1]), transform([0, 1])]
+      : [[0, 0], [1, 0], [1, 1], [0, 1]];
+    ctx.fillStyle = transformed ? 'rgba(201,169,110,0.18)' : 'rgba(110,165,201,0.12)';
+    ctx.strokeStyle = transformed ? '#c9a96e' : '#6ea5c9';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    points.forEach(([px, py], index) => {
+      const pxCanvas = ox + px * scale;
+      const pyCanvas = oy - py * scale;
+      if (index === 0) ctx.moveTo(pxCanvas, pyCanvas);
+      else ctx.lineTo(pxCanvas, pyCanvas);
+    });
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    const basis = transformed ? [transform([1, 0]), transform([0, 1])] : [[1, 0], [0, 1]];
+    [['e₁', basis[0], '#6ea5c9'], ['e₂', basis[1], '#c96e8a']].forEach(([name, vec, color]) => {
+      const [vx, vy] = vec;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(ox, oy);
+      ctx.lineTo(ox + vx * scale, oy - vy * scale);
+      ctx.stroke();
+      ctx.fillStyle = color;
+      ctx.font = '14px "EB Garamond", serif';
+      ctx.fillText(name, ox + vx * scale + 8, oy - vy * scale + 4);
+    });
+  };
+
+  drawPanel(170, 232, 'INPUT SPACE', false);
+  drawPanel(468, 232, 'AFTER y = Ax', true);
+
+  ctx.fillStyle = '#8a8680';
+  ctx.font = '12px "JetBrains Mono", monospace';
+  ctx.fillText('DETERMINANT', 620, 124);
+  ctx.fillText('SHEAR', 620, 210);
+  ctx.fillText('AREA SCALE', 620, 296);
+
+  ctx.fillStyle = '#e8e4de';
+  ctx.font = '30px "EB Garamond", serif';
+  ctx.fillText(determinant.toFixed(2), 620, 158);
+  ctx.fillText(state.shear.toFixed(2), 620, 244);
+  ctx.fillStyle = determinant > 1 ? '#c9a96e' : '#6ea5c9';
+  ctx.fillText(`${(determinant * 100).toFixed(0)}%`, 620, 330);
+
+  takeaway.textContent =
+    Math.abs(state.shear) > 0.45
+      ? 'This matrix is clearly mixing coordinates, not just scaling axes independently.'
+      : determinant > 1.15
+        ? 'The map is expanding area overall, which is exactly what the determinant is telling you.'
+        : 'This is a gentle linear map: mostly scaling, with only a modest amount of coordinate mixing.';
+
+  metrics.innerHTML = metricMarkup([
+    ['det(A)', determinant.toFixed(2)],
+    ['x scale', state.sx.toFixed(2)],
+    ['y scale', state.sy.toFixed(2)],
+  ]);
+}
+
+function drawEigen(ctx, state, takeaway, metrics) {
+  const { a, d, c } = state;
+  const trace = a + d;
+  const gap = Math.sqrt((a - d) ** 2 + 4 * c * c);
+  const lambda1 = (trace + gap) / 2;
+  const lambda2 = (trace - gap) / 2;
+
+  const eigenvectorFor = (lambda) => {
+    let x = c;
+    let y = lambda - a;
+    if (Math.abs(x) + Math.abs(y) < 1e-8) {
+      x = lambda - d;
+      y = c;
+    }
+    const norm = Math.hypot(x, y) || 1;
+    return { x: x / norm, y: y / norm };
+  };
+
+  const v1 = eigenvectorFor(lambda1);
+  const v2 = eigenvectorFor(lambda2);
+
+  clearCanvas(ctx);
+
+  ctx.fillStyle = '#e8e4de';
+  ctx.font = '28px "EB Garamond", serif';
+  ctx.fillText('Eigenvectors are the directions a matrix stretches without bending', 56, 58);
+
+  const drawEigenPanel = (ox, oy, transformed) => {
+    ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(ox - 118, oy);
+    ctx.lineTo(ox + 118, oy);
+    ctx.moveTo(ox, oy - 118);
+    ctx.lineTo(ox, oy + 118);
+    ctx.stroke();
+
+    const scale = 88;
+    ctx.strokeStyle = transformed ? 'rgba(201,169,110,0.38)' : 'rgba(255,255,255,0.12)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i <= 100; i += 1) {
+      const t = (Math.PI * 2 * i) / 100;
+      const point = transformed
+        ? {
+            x: (a * Math.cos(t) + c * Math.sin(t)) * scale,
+            y: (c * Math.cos(t) + d * Math.sin(t)) * scale,
+          }
+        : { x: Math.cos(t) * scale, y: Math.sin(t) * scale };
+      const px = ox + point.x;
+      const py = oy - point.y;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+
+    const drawEigLine = (vec, lambda, color) => {
+      const stretch = transformed ? lambda : 1;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(ox - vec.x * scale * stretch, oy + vec.y * scale * stretch);
+      ctx.lineTo(ox + vec.x * scale * stretch, oy - vec.y * scale * stretch);
+      ctx.stroke();
+    };
+
+    drawEigLine(v1, lambda1, '#c9a96e');
+    drawEigLine(v2, lambda2, '#6ea5c9');
+  };
+
+  ctx.fillStyle = '#8a8680';
+  ctx.font = '12px "JetBrains Mono", monospace';
+  ctx.fillText('ORIGINAL SPACE', 100, 96);
+  ctx.fillText('AFTER APPLYING A', 392, 96);
+
+  drawEigenPanel(172, 222, false);
+  drawEigenPanel(466, 222, true);
+
+  ctx.fillText('LAMBDA 1', 620, 132);
+  ctx.fillText('LAMBDA 2', 620, 210);
+  ctx.fillText('COUPLING', 620, 288);
+  ctx.fillStyle = '#c9a96e';
+  ctx.font = '30px "EB Garamond", serif';
+  ctx.fillText(lambda1.toFixed(2), 620, 166);
+  ctx.fillStyle = '#6ea5c9';
+  ctx.fillText(lambda2.toFixed(2), 620, 244);
+  ctx.fillStyle = '#e8e4de';
+  ctx.fillText(c.toFixed(2), 620, 322);
+
+  takeaway.textContent =
+    Math.abs(lambda1 - lambda2) < 0.18
+      ? 'The transform is close to isotropic here, so no direction is overwhelmingly special.'
+      : Math.abs(c) > 0.4
+        ? 'The matrix mixes the axes, but the eigenvectors reveal the hidden rotated directions it really cares about.'
+        : 'Even a simple-looking matrix has preferred directions where it only stretches instead of bending.';
+
+  metrics.innerHTML = metricMarkup([
+    ['λ₁', lambda1.toFixed(2)],
+    ['λ₂', lambda2.toFixed(2)],
+    ['Gap', (lambda1 - lambda2).toFixed(2)],
+  ]);
+}
+
+function drawSvd(ctx, state, takeaway, metrics) {
+  const sigma1 = state.sigma1;
+  const sigma2 = state.sigma2;
+  const inputAngle = (state.inputRotate * Math.PI) / 180;
+  const outputAngle = (26 * Math.PI) / 180;
+  const retained = (sigma1 * sigma1) / Math.max(sigma1 * sigma1 + sigma2 * sigma2, 1e-8);
+
+  const rotate = (point, angle) => ({
+    x: point.x * Math.cos(angle) - point.y * Math.sin(angle),
+    y: point.x * Math.sin(angle) + point.y * Math.cos(angle),
+  });
+
+  const circlePoints = [];
+  for (let i = 0; i <= 96; i += 1) {
+    const t = (Math.PI * 2 * i) / 96;
+    circlePoints.push({ x: Math.cos(t), y: Math.sin(t) });
+  }
+
+  const drawMiniPanel = (ox, oy, label, transformPoint, color) => {
+    ctx.fillStyle = '#8a8680';
+    ctx.font = '12px "JetBrains Mono", monospace';
+    ctx.fillText(label, ox - 46, oy - 124);
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(ox - 90, oy);
+    ctx.lineTo(ox + 90, oy);
+    ctx.moveTo(ox, oy - 90);
+    ctx.lineTo(ox, oy + 90);
+    ctx.stroke();
+
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    circlePoints.forEach((point, index) => {
+      const p = transformPoint(point);
+      const px = ox + p.x * 60;
+      const py = oy - p.y * 60;
+      if (index === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    });
+    ctx.stroke();
+  };
+
+  clearCanvas(ctx);
+
+  ctx.fillStyle = '#e8e4de';
+  ctx.font = '28px "EB Garamond", serif';
+  ctx.fillText('SVD says every matrix can be read as rotate, stretch, rotate', 56, 58);
+
+  drawMiniPanel(136, 220, 'INPUT', (p) => p, 'rgba(255,255,255,0.16)');
+  drawMiniPanel(320, 220, 'Vᵀ: ALIGN', (p) => rotate(p, -inputAngle), '#6ea5c9');
+  drawMiniPanel(504, 220, 'Σ: STRETCH', (p) => {
+    const aligned = rotate(p, -inputAngle);
+    return { x: aligned.x * sigma1, y: aligned.y * sigma2 };
+  }, '#c9a96e');
+  drawMiniPanel(688, 220, 'U: OUTPUT', (p) => {
+    const aligned = rotate(p, -inputAngle);
+    const stretched = { x: aligned.x * sigma1, y: aligned.y * sigma2 };
+    return rotate(stretched, outputAngle);
+  }, '#c96e8a');
+
+  ctx.fillStyle = '#8a8680';
+  ctx.font = '12px "JetBrains Mono", monospace';
+  ctx.fillText('SINGULAR VALUES', 84, 334);
+  ctx.fillText('RANK-1 ENERGY', 288, 334);
+  ctx.fillText('INPUT BASIS', 524, 334);
+
+  ctx.fillStyle = 'rgba(255,255,255,0.08)';
+  roundRect(ctx, 84, 344, 116, 14, 8, true, false);
+  roundRect(ctx, 84, 370, 116, 14, 8, true, false);
+  ctx.fillStyle = '#c9a96e';
+  roundRect(ctx, 84, 344, 116 * Math.min(sigma1 / 1.8, 1), 14, 8, true, false);
+  ctx.fillStyle = '#6ea5c9';
+  roundRect(ctx, 84, 370, 116 * Math.min(sigma2 / 1.2, 1), 14, 8, true, false);
+
+  ctx.fillStyle = '#e8e4de';
+  ctx.font = '30px "EB Garamond", serif';
+  ctx.fillText(`${(retained * 100).toFixed(0)}%`, 288, 372);
+  ctx.fillText(`${Math.round(state.inputRotate)}°`, 524, 372);
+
+  takeaway.textContent =
+    retained > 0.9
+      ? 'Almost all the action lives along one singular direction, so a low-rank approximation would keep most of the structure.'
+      : retained > 0.7
+        ? 'There is one dominant direction, but the second singular direction still carries visible detail.'
+        : 'This map is not especially low-rank; both singular directions matter materially.';
+
+  metrics.innerHTML = metricMarkup([
+    ['σ₁', sigma1.toFixed(2)],
+    ['σ₂', sigma2.toFixed(2)],
+    ['Rank-1 retained', `${(retained * 100).toFixed(0)}%`],
+  ]);
+}
+
 function drawNeuron(ctx, state, takeaway, metrics) {
   const { x1, x2, w1, w2, bias } = state;
   const c1 = x1 * w1;
@@ -6435,80 +9093,123 @@ function drawActivationBasics(ctx, state, takeaway, metrics) {
   const tanh = Math.tanh(z * slope);
   const relu = Math.max(0, z * slope);
   const sigGrad = slope * sig * (1 - sig);
+  const tanhGrad = slope * (1 - tanh * tanh);
+  const reluGrad = z * slope > 0 ? slope : 0;
 
   clearCanvas(ctx);
 
   ctx.fillStyle = '#e8e4de';
   ctx.font = '26px "EB Garamond", serif';
-  wrapText(ctx, 'Different activations keep the same input in different regimes', 56, 58, 560, 30);
+  wrapText(ctx, 'The same pre-activation lands in very different regimes depending on the activation', 56, 58, 620, 30);
 
-  const originX = 76;
-  const originY = 250;
-  const width = 380;
-  const height = 150;
-  const toX = (v) => originX + ((v + 3) / 6) * width;
-  const toY = (v) => originY - ((v + 1.2) / 3.4) * height;
-
-  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(originX, originY);
-  ctx.lineTo(originX + width, originY);
-  ctx.moveTo(originX + width / 2, originY - height);
-  ctx.lineTo(originX + width / 2, originY + 12);
-  ctx.stroke();
-
-  const series = [
-    { color: '#6ea5c9', fn: (x) => 1 / (1 + Math.exp(-(x * slope))), label: 'sigmoid' },
-    { color: '#c96e8a', fn: (x) => Math.tanh(x * slope), label: 'tanh' },
-    { color: '#c9a96e', fn: (x) => Math.max(0, x * slope) / 3, label: 'relu' },
+  const cards = [
+    {
+      x: 56,
+      label: 'sigmoid',
+      color: '#6ea5c9',
+      fn: (x) => 1 / (1 + Math.exp(-(x * slope))),
+      output: sig,
+      grad: sigGrad,
+      regime: Math.abs(z * slope) > 2 ? 'saturated' : 'responsive center',
+      yMin: -0.05,
+      yMax: 1.05,
+    },
+    {
+      x: 276,
+      label: 'tanh',
+      color: '#c96e8a',
+      fn: (x) => Math.tanh(x * slope),
+      output: tanh,
+      grad: tanhGrad,
+      regime: Math.abs(z * slope) > 1.8 ? 'saturated edge' : 'responsive center',
+      yMin: -1.05,
+      yMax: 1.05,
+    },
+    {
+      x: 496,
+      label: 'relu',
+      color: '#c9a96e',
+      fn: (x) => Math.max(0, x * slope),
+      output: relu,
+      grad: reluGrad,
+      regime: z * slope <= 0 ? 'off / dead side' : 'linear active side',
+      yMin: -0.1,
+      yMax: 3.2,
+    },
   ];
 
-  series.forEach((seriesItem) => {
-    ctx.strokeStyle = seriesItem.color;
+  cards.forEach((card) => {
+    const cardY = 98;
+    const cardW = 188;
+    const cardH = 206;
+    const plotX = card.x + 14;
+    const plotY = cardY + 30;
+    const plotW = 160;
+    const plotH = 96;
+    const toX = (v) => plotX + ((v + 3) / 6) * plotW;
+    const toY = (v) => plotY + plotH - ((v - card.yMin) / (card.yMax - card.yMin)) * plotH;
+
+    ctx.fillStyle = `${card.color}14`;
+    ctx.strokeStyle = card.color;
+    ctx.lineWidth = 1.2;
+    roundRect(ctx, card.x, cardY, cardW, cardH, 18, true, true);
+    ctx.fillStyle = '#8a8680';
+    ctx.font = '12px "JetBrains Mono", monospace';
+    ctx.fillText(card.label.toUpperCase(), card.x + 18, cardY + 24);
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(plotX, toY(0));
+    ctx.lineTo(plotX + plotW, toY(0));
+    ctx.moveTo(toX(0), plotY);
+    ctx.lineTo(toX(0), plotY + plotH);
+    ctx.stroke();
+
+    ctx.strokeStyle = card.color;
     ctx.lineWidth = 2.2;
     ctx.beginPath();
     for (let i = 0; i <= 100; i += 1) {
-      const x = -3 + (6 * i) / 100;
-      const y = seriesItem.fn(x);
-      const px = toX(x);
-      const py = seriesItem.label === 'relu' ? originY - y * height : toY(y);
+      const sampleX = -3 + (6 * i) / 100;
+      const sampleY = card.fn(sampleX);
+      const px = toX(sampleX);
+      const py = toY(sampleY);
       if (i === 0) ctx.moveTo(px, py);
       else ctx.lineTo(px, py);
     }
     ctx.stroke();
-  });
 
-  const markerX = toX(z);
-  ctx.strokeStyle = '#e8e4de';
-  ctx.lineWidth = 1.2;
-  ctx.beginPath();
-  ctx.moveTo(markerX, originY - height);
-  ctx.lineTo(markerX, originY + 8);
-  ctx.stroke();
+    const pointX = toX(z);
+    const pointY = toY(card.output);
+    ctx.strokeStyle = 'rgba(255,255,255,0.24)';
+    ctx.beginPath();
+    ctx.moveTo(pointX, plotY);
+    ctx.lineTo(pointX, plotY + plotH);
+    ctx.stroke();
+    ctx.fillStyle = card.color;
+    ctx.beginPath();
+    ctx.arc(pointX, pointY, 5, 0, Math.PI * 2);
+    ctx.fill();
 
-  ctx.fillStyle = '#8a8680';
-  ctx.font = '12px "JetBrains Mono", monospace';
-  ctx.fillText(`z=${z.toFixed(2)}`, markerX - 26, originY - height - 10);
-
-  const stats = [
-    ['sigmoid', sig, '#6ea5c9'],
-    ['tanh', (tanh + 1) / 2, '#c96e8a'],
-    ['relu', Math.min(1, relu / 3), '#c9a96e'],
-  ];
-  stats.forEach(([label, value, color], index) => {
-    const y = 126 + index * 66;
-    ctx.fillStyle = color;
-    roundRect(ctx, 510, y - 7, 16, 10, 6, true, false);
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    roundRect(ctx, card.x + 18, 214, 116, 22, 11, true, false);
     ctx.fillStyle = '#e8e4de';
-    ctx.font = '18px "EB Garamond", serif';
-    ctx.fillText(String(label), 536, y + 2);
+    ctx.font = '14px "EB Garamond", serif';
+    ctx.fillText(card.regime, card.x + 28, 229);
+
     ctx.fillStyle = '#8a8680';
-    ctx.font = '12px "JetBrains Mono", monospace';
-    ctx.fillText('OUTPUT', 536, y + 24);
+    ctx.font = '11px "JetBrains Mono", monospace';
+    ctx.fillText('OUTPUT', card.x + 18, 256);
+    ctx.fillText('LOCAL SLOPE', card.x + 98, 256);
     ctx.fillStyle = '#e8e4de';
-    ctx.font = '28px "EB Garamond", serif';
-    ctx.fillText(`${Number(value).toFixed(2)}`, 536, y + 54);
+    ctx.font = '24px "EB Garamond", serif';
+    ctx.fillText(card.output.toFixed(2), card.x + 18, 286);
+    ctx.fillText(card.grad.toFixed(2), card.x + 108, 286);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    roundRect(ctx, card.x + 18, 292, 146, 10, 7, true, false);
+    ctx.fillStyle = card.color;
+    roundRect(ctx, card.x + 18, 292, 146 * Math.min(card.grad / 1.5, 1), 10, 7, true, false);
   });
 
   takeaway.textContent =

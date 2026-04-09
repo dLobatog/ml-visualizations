@@ -14,18 +14,24 @@ The canonical chapter expansion plan now lives in `CURRICULUM_PLAN.md`.
 ## Planned chapter order
 
 1. Foundations: Bayes, entropy, optimization intuition
-2. Deep learning: optimization, initialization, normalization, residuals
-3. Retrieval and recommendation
-4. Transformers and RAG
-5. Metrics and calibration
-6. Production ML systems
-7. GBDTs, data, and applied tabular ML
-8. Generative models and alignment
+2. Linear algebra for ML
+3. Classical ML and stats
+4. Neural network basics
+5. Deep learning: optimization, initialization, normalization, residuals
+6. Transformers and RAG
+7. Metrics and calibration
+8. Retrieval and recommendation
+9. Production ML systems
+10. GBDTs, data, and applied tabular ML
+11. Generative models and alignment
 
 ## Rebuilt chapter surface now live
 
 - Foundations
+- Linear algebra for ML
+- Neural network basics
 - Deep learning
+- Adaptation, compression, and serving
 - Retrieval and systems
 - Generation and decision-making
 - Transformers and RAG
@@ -35,6 +41,7 @@ The canonical chapter expansion plan now lives in `CURRICULUM_PLAN.md`.
 - Production ML systems
 - GBDTs and tabular ML
 - Data and features
+- Reinforcement learning
 - Alignment depth
 
 ## Remaining emphasis areas
