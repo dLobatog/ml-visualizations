@@ -6439,8 +6439,8 @@ function drawActivationBasics(ctx, state, takeaway, metrics) {
   clearCanvas(ctx);
 
   ctx.fillStyle = '#e8e4de';
-  ctx.font = '28px "EB Garamond", serif';
-  ctx.fillText('Different activations keep the same input in different regimes', 56, 58);
+  ctx.font = '26px "EB Garamond", serif';
+  wrapText(ctx, 'Different activations keep the same input in different regimes', 56, 58, 560, 30);
 
   const originX = 76;
   const originY = 250;
@@ -6464,7 +6464,7 @@ function drawActivationBasics(ctx, state, takeaway, metrics) {
     { color: '#c9a96e', fn: (x) => Math.max(0, x * slope) / 3, label: 'relu' },
   ];
 
-  series.forEach((seriesItem, idx) => {
+  series.forEach((seriesItem) => {
     ctx.strokeStyle = seriesItem.color;
     ctx.lineWidth = 2.2;
     ctx.beginPath();
@@ -6477,12 +6477,6 @@ function drawActivationBasics(ctx, state, takeaway, metrics) {
       else ctx.lineTo(px, py);
     }
     ctx.stroke();
-
-    ctx.fillStyle = seriesItem.color;
-    roundRect(ctx, 510, 112 + idx * 54, 16, 10, 6, true, false);
-    ctx.fillStyle = '#e8e4de';
-    ctx.font = '16px "EB Garamond", serif';
-    ctx.fillText(seriesItem.label, 536, 122 + idx * 54);
   });
 
   const markerX = toX(z);
@@ -6498,18 +6492,23 @@ function drawActivationBasics(ctx, state, takeaway, metrics) {
   ctx.fillText(`z=${z.toFixed(2)}`, markerX - 26, originY - height - 10);
 
   const stats = [
-    ['SIGMOID', sig],
-    ['TANH', (tanh + 1) / 2],
-    ['RELU', Math.min(1, relu / 3)],
+    ['sigmoid', sig, '#6ea5c9'],
+    ['tanh', (tanh + 1) / 2, '#c96e8a'],
+    ['relu', Math.min(1, relu / 3), '#c9a96e'],
   ];
-  stats.forEach(([label, value], index) => {
-    const y = 144 + index * 52;
+  stats.forEach(([label, value, color], index) => {
+    const y = 126 + index * 66;
+    ctx.fillStyle = color;
+    roundRect(ctx, 510, y - 7, 16, 10, 6, true, false);
+    ctx.fillStyle = '#e8e4de';
+    ctx.font = '18px "EB Garamond", serif';
+    ctx.fillText(String(label), 536, y + 2);
     ctx.fillStyle = '#8a8680';
     ctx.font = '12px "JetBrains Mono", monospace';
-    ctx.fillText(String(label), 510, y);
+    ctx.fillText('OUTPUT', 536, y + 24);
     ctx.fillStyle = '#e8e4de';
-    ctx.font = '26px "EB Garamond", serif';
-    ctx.fillText(`${Number(value).toFixed(2)}`, 510, y + 28);
+    ctx.font = '28px "EB Garamond", serif';
+    ctx.fillText(`${Number(value).toFixed(2)}`, 536, y + 54);
   });
 
   takeaway.textContent =
